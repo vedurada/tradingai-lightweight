@@ -22,14 +22,20 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name
 logger = logging.getLogger("tradingai")
 
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "instruments.json")
+SETTINGS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "settings.json")
 
 def load_config() -> dict:
     with open(CONFIG_PATH) as f:
         return json.load(f)
 
+def load_settings() -> dict:
+    with open(SETTINGS_PATH) as f:
+        return json.load(f)
+
 def generate_data() -> None:
     config = load_config()
-    db = Database(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", config["database"]))
+    settings = load_settings()
+    db = Database(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", settings["database"]))
     fetcher = MarketFetcher()
     options_engine = OptionsEngine()
     regime_engine = RegimeEngine()

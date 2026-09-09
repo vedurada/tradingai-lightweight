@@ -3,6 +3,8 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
+import time
 from datetime import datetime, timezone
 from typing import Any, Optional
 
@@ -38,6 +40,7 @@ class AIOutlookEngine:
         if not self._validate(outlook):
             logger.warning(f"AI outlook for {symbol} invalid, using fallback")
             outlook = self._fallback(symbol, data)
+        logger.info(f"AI outlook for {symbol}: {outlook.get('market_regime', '?')} bias={outlook.get('directional_bias', '?')} conf={outlook.get('confidence', '?')}")
         self._cache[f"ai:{symbol}"] = outlook
         return outlook
 
@@ -59,19 +62,52 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
     def _call_llm(self, prompt: str, data: dict) -> dict:
         llm_api_key = os.environ.get("LLM_API_KEY", "")
         llm_url = os.environ.get("LLM_API_URL", "")
-        if not llm_api_key or not llm_url:
+        llm_provider = os.environ.get("LLM_PROVIDER", "gemini")
+        if not llm_api_key:
             logger.info("No LLM configured, generating rule-based outlook")
             return self._rule_based_outlook(data)
+        url = llm_url or ("https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + llm_api_key if llm_provider == "gemini" else "https://api.openai.com/v1/chat/completions")
+        model = "mistral-tiny" if ("mistral" in url and llm_provider != "gemini") else ("gpt-4o-mini" if llm_provider != "gemini" else "gemini-2.0-flash")
+        for attempt in range(3):
+            try:
+                import urllib.request
+                if llm_provider == "gemini" or "gemini" in url:
+                    payload = json.dumps({"contents": [{"role": "user", "parts": [prompt]}], "generationConfig": {"temperature": 0.3}}).encode()
+                    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
+                else:
+                    payload = json.dumps({"model": model, "messages": [{"role": "system", "content": "You are a market analyst. Return valid JSON only."}, {"role": "user", "content": prompt}], "temperature": 0.3}).encode()
+                    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {llm_api_key}"}, method="POST")
+                logger.info(f"LLM attempt {attempt + 1}: {url[:60]} model={model}")
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    result = json.loads(resp.read().decode())
+                    if llm_provider == "gemini":
+                        content = result["candidates"][0]["content"]["parts"][0]["text"]
+                    else:
+                        content = result["choices"][0]["message"]["content"]
+                    content = self._parse_json(content)
+                    if content:
+                        return content
+            except Exception as e:
+                logger.error(f"LLM attempt {attempt + 1} failed: {e}")
+                if attempt < 2:
+                    time.sleep(5)
+        return self._rule_based_outlook(data)
+
+    def _parse_json(self, content: str) -> Optional[dict]:
         try:
-            import urllib.request
-            payload = json.dumps({"model": "gpt-4o-mini", "messages": [{"role": "system", "content": "You are a market analyst. Return valid JSON only."}, {"role": "user", "content": prompt}], "temperature": 0.3}).encode()
-            req = urllib.request.Request(llm_url, data=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {llm_api_key}"}, method="POST")
-            with urllib.request.urlopen(req, timeout=30) as resp:
-                result = json.loads(resp.read().decode())
-                return json.loads(result["choices"][0]["message"]["content"])
+            content = content.strip()
+            if content.startswith("```"):
+                content = content.split("```", 2)[1]
+                if content.startswith("json"):
+                    content = content[4:]
+                content = content.strip()
+            content = re.sub(r"//.*$", "", content, flags=re.MULTILINE)
+            content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
+            content = re.sub(r",\s*([}\]])", r"\1", content)
+            return json.loads(content)
         except Exception as e:
-            logger.error(f"LLM call failed: {e}")
-            return self._rule_based_outlook(data)
+            logger.error(f"JSON parse failed: {e}")
+            return None
 
     def _rule_based_outlook(self, data: dict) -> dict:
         price = data.get("price", 0)
