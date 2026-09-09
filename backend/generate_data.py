@@ -47,7 +47,7 @@ def generate_data() -> None:
     all_instruments = config["indices"] + config["stocks"]
     os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data"), exist_ok=True)
 
-    market_data = {"source": "Yahoo Finance", "last_updated": datetime.now(timezone.utc).isoformat(), "instruments": {}}
+    market_data = {"source": "Yahoo Finance", "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds'), "instruments": {}}
 
     for inst in all_instruments:
         symbol = inst["symbol"]
@@ -92,7 +92,7 @@ def generate_data() -> None:
             "strategy": strategy,
             "ai_outlook": ai_outlook,
             "data_quality": data_quality,
-            "last_updated": datetime.now(timezone.utc).isoformat(),
+            "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
         }
 
         market_data["instruments"][symbol] = instrument_data
