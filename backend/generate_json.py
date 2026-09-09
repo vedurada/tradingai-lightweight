@@ -24,7 +24,13 @@ def load_config() -> dict:
 
 def generate_json() -> None:
     config = load_config()
-    db = Database(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", config["database"]))
+    settings = {}
+    settings_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "settings.json")
+    if os.path.exists(settings_path):
+        with open(settings_path) as f:
+            settings = json.load(f)
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", settings.get("database", "database/tradingai.db"))
+    db = Database(db_path)
     fetcher = MarketFetcher()
     options_engine = OptionsEngine()
     regime_engine = RegimeEngine()
@@ -48,12 +54,11 @@ def generate_json() -> None:
 
         ohlcv = fetcher.fetch_ohlcv(symbol, yf_symbol, period="60d", interval="1d", limit=20)
         vix = fetcher.fetch_vix()
-        options = fetcher.fetch_option_chain(symbol, yf_symbol) if symbol in ["NIFTY", "BANKNIFTY"] else None
 
         indicators = calculate_all_indicators(ohlcv, quote) if ohlcv else {}
         pivot_data = calculate_pivot(quote)
         cpr_data = calculate_cpr(pivot_data)
-        options_analysis = options_engine.analyze_options(options, quote["price"]) if options else {"data_unavailable": True, "message": "Options data unavailable"}
+        options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
         regime = regime_engine.evaluate(price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"], rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"), vix_price=vix["price"] if vix else 0, bollinger=indicators.get("bollinger_bands"), pivot=pivot_data, support_resistance=indicators.get("support_resistance"), pcr=options_analysis.get("pcr"))
         scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"])
         strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL")

@@ -36,7 +36,7 @@ async function loadHistory() {
   if (!grid) return;
   grid.innerHTML = '';
 
-  const files = ['nifty', 'banknifty', 'finnifty', 'midcpnifty', 'sensex'];
+  const files = ['nifty', 'banknifty', 'sensex'];
   for (const f of files) {
     const data = await fetchJSON(f);
     if (!data) continue;

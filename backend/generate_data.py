@@ -42,6 +42,7 @@ def generate_data() -> None:
     scenario_engine = ScenarioEngine()
     strategy_engine = StrategyEngine()
     ai_engine = AIOutlookEngine()
+    skip_llm = os.environ.get("SKIP_LLM", "0") == "1"
 
     all_instruments = config["indices"] + config["stocks"]
     os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data"), exist_ok=True)
@@ -60,12 +61,11 @@ def generate_data() -> None:
 
         ohlcv = fetcher.fetch_ohlcv(symbol, yf_symbol, period="60d", interval="1d", limit=20)
         vix = fetcher.fetch_vix()
-        options = fetcher.fetch_option_chain(symbol, yf_symbol) if symbol in ["NIFTY", "BANKNIFTY"] else None
 
         indicators = calculate_all_indicators(ohlcv, quote) if ohlcv else {}
         pivot_data = calculate_pivot(quote)
         cpr_data = calculate_cpr(pivot_data)
-        options_analysis = options_engine.analyze_options(options, quote["price"]) if options else {"data_unavailable": True, "message": "Options data unavailable"}
+        options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
 
         regime = regime_engine.evaluate(
             price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"],
@@ -77,7 +77,7 @@ def generate_data() -> None:
 
         scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"])
         strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL")
-        ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
+        ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])}) if not skip_llm else ai_engine._fallback(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
 
         instrument_data = {
             "quote": quote,

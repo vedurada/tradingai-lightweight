@@ -2,8 +2,6 @@
   "indices": [
     {"name": "NIFTY 50", "symbol": "NIFTY", "yfinance_symbol": "^NSEI", "page": "indices/nifty.html"},
     {"name": "BANK NIFTY", "symbol": "BANKNIFTY", "yfinance_symbol": "^NSEBANK", "page": "indices/banknifty.html"},
-    {"name": "FINNIFTY", "symbol": "FINNIFTY", "yfinance_symbol": "^NSEFIN", "page": "indices/finnifty.html"},
-    {"name": "MIDCP NIFTY", "symbol": "MIDCPNIFTY", "yfinance_symbol": "^NSEMDCP", "page": "indices/midcpnifty.html"},
     {"name": "SENSEX", "symbol": "SENSEX", "yfinance_symbol": "^BSESN", "page": "indices/sensex.html"}
   ],
   "stocks": [
