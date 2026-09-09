@@ -1,0 +1,22 @@
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0e1a; color: #e2e8f0; line-height: 1.6; }
+header { background: #111827; padding: 1rem 2rem; border-bottom: 1px solid #1e293b; }
+header h1 { color: #22c55e; font-size: 1.5rem; }
+header nav { margin-top: 0.5rem; }
+header nav a { color: #94a3b8; text-decoration: none; margin-right: 1rem; font-size: 0.9rem; }
+header nav a:hover { color: #22c55e; }
+main { max-width: 1200px; margin: 0 auto; padding: 1rem 2rem; }
+h2 { color: #22c55e; margin: 1.5rem 0 1rem; }
+.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
+.card { background: #111827; border: 1px solid #1e293b; border-radius: 8px; padding: 1rem; }
+.card h3 { color: #22c55e; font-size: 1rem; margin-bottom: 0.5rem; }
+.price { font-size: 2rem; font-weight: bold; color: #e2e8f0; }
+.regime { font-size: 1.2rem; font-weight: 600; margin: 0.5rem 0; }
+.status { color: #94a3b8; font-size: 0.85rem; margin-top: 1rem; }
+.badge { display: inline-block; padding: 0.2rem 0.5rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+.badge-green { background: #22c55e20; color: #22c55e; }
+.badge-red { background: #ef444420; color: #ef4444; }
+.badge-yellow { background: #eab30820; color: #eab308; }
+.badge-blue { background: #3b82f620; color: #3b82f6; }
+footer { margin-top: 2rem; padding: 1rem 0; border-top: 1px solid #1e293b; color: #64748b; font-size: 0.8rem; }
+@media (max-width: 768px) { .grid { grid-template-columns: 1fr; } main { padding: 1rem; } }

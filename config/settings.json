@@ -1,0 +1,12 @@
+{
+  "database": "database/tradingai.db",
+  "data_dir": "data",
+  "log_dir": "logs",
+  "yfinance_timeout": 30,
+  "cache_ttl": 300,
+  "llm_provider": "openai",
+  "llm_model": "gpt-4o-mini",
+  "lock_dir": "/tmp/tradingai",
+  "nginx_static_dir": "/var/www/tradingai.in/html",
+  "api_port": 8000
+}

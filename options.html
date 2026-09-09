@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Options Strategy - TradingAI</title>
+<meta name="description" content="Options strategy scanner and analysis">
+<link rel="canonical" href="https://tradingai.in/options.html">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+  <h1>TradingAI</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="market.html">Market</a>
+    <a href="indices/nifty.html">NIFTY</a>
+    <a href="indices/banknifty.html">Bank NIFTY</a>
+    <a href="options.html">Options</a>
+    <a href="scanner.html">Scanner</a>
+    <a href="strategies.html">Strategies</a>
+  </nav>
+</header>
+<main>
+  <h2>Options Strategy</h2>
+  <div id="options-filters">
+    <button onclick="filterOptions('all')">All</button>
+    <button onclick="filterOptions('bullish')">Bullish</button>
+    <button onclick="filterOptions('bearish')">Bearish</button>
+    <button onclick="filterOptions('neutral')">Neutral</button>
+    <button onclick="filterOptions('high_iv')">High IV</button>
+    <button onclick="filterOptions('defined_risk')">Defined Risk</button>
+  </div>
+  <div id="options-grid" class="grid"></div>
+  <footer>
+    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
+    <p id="last-updated"></p>
+  </footer>
+</main>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/options.js"></script>
+</body>
+</html>

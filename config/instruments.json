@@ -1,0 +1,34 @@
+{
+  "indices": [
+    {"name": "NIFTY 50", "symbol": "NIFTY", "yfinance_symbol": "^NSEI", "page": "indices/nifty.html"},
+    {"name": "BANK NIFTY", "symbol": "BANKNIFTY", "yfinance_symbol": "^NSEBANK", "page": "indices/banknifty.html"},
+    {"name": "FINNIFTY", "symbol": "FINNIFTY", "yfinance_symbol": "^NSEFIN", "page": "indices/finnifty.html"},
+    {"name": "MIDCP NIFTY", "symbol": "MIDCPNIFTY", "yfinance_symbol": "^NSEMDCP", "page": "indices/midcpnifty.html"},
+    {"name": "SENSEX", "symbol": "SENSEX", "yfinance_symbol": "^BSESN", "page": "indices/sensex.html"}
+  ],
+  "stocks": [
+    {"name": "Reliance Industries", "symbol": "RELIANCE", "yfinance_symbol": "RELIANCE.NS"},
+    {"name": "HDFC Bank", "symbol": "HDFCBANK", "yfinance_symbol": "HDFCBANK.NS"},
+    {"name": "ICICI Bank", "symbol": "ICICIBANK", "yfinance_symbol": "ICICIBANK.NS"},
+    {"name": "State Bank of India", "symbol": "SBIN", "yfinance_symbol": "SBIN.NS"},
+    {"name": "Infosys", "symbol": "INFY", "yfinance_symbol": "INFY.NS"},
+    {"name": "TCS", "symbol": "TCS", "yfinance_symbol": "TCS.NS"},
+    {"name": "Larsen & Toubro", "symbol": "LT", "yfinance_symbol": "LT.NS"},
+    {"name": "Axis Bank", "symbol": "AXISBANK", "yfinance_symbol": "AXISBANK.NS"},
+    {"name": "Adani Enterprises", "symbol": "ADANIENT", "yfinance_symbol": "ADANIENT.NS"},
+    {"name": "Bharti Airtel", "symbol": "BHARTIARTL", "yfinance_symbol": "BHARTIARTL.NS"}
+  ],
+  "refresh_intervals": {
+    "pre_market": 3600,
+    "market_open": 300,
+    "active_stocks": 60,
+    "less_active": 900,
+    "historical": 86400
+  },
+  "ai_schedule": ["09:15", "09:30", "10:15", "11:30", "14:30"],
+  "data_retention": {
+    "minute_data_hours": 24,
+    "five_minute_data_days": 90,
+    "daily_data_years": 5
+  }
+}
