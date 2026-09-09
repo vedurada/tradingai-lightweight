@@ -14,7 +14,11 @@
     {"name": "Larsen & Toubro", "symbol": "LT", "yfinance_symbol": "LT.NS"},
     {"name": "Axis Bank", "symbol": "AXISBANK", "yfinance_symbol": "AXISBANK.NS"},
     {"name": "Adani Enterprises", "symbol": "ADANIENT", "yfinance_symbol": "ADANIENT.NS"},
-    {"name": "Bharti Airtel", "symbol": "BHARTIARTL", "yfinance_symbol": "BHARTIARTL.NS"}
+    {"name": "Bharti Airtel", "symbol": "BHARTIARTL", "yfinance_symbol": "BHARTIARTL.NS"},
+    {"name": "Wipro", "symbol": "WIPRO", "yfinance_symbol": "WIPRO.NS"},
+    {"name": "HCL Technologies", "symbol": "HCLTECH", "yfinance_symbol": "HCLTECH.NS"},
+    {"name": "Tech Mahindra", "symbol": "TECHM", "yfinance_symbol": "TECHM.NS"},
+    {"name": "Maruti Suzuki", "symbol": "MARUTI", "yfinance_symbol": "MARUTI.NS"}
   ],
   "refresh_intervals": {
     "pre_market": 3600,

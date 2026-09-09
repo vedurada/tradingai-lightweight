@@ -65,6 +65,7 @@ class MarketFetcher:
                 "previous_close": round(prev_close, 2),
                 "volume": volume,
                 "timestamp": datetime.now(timezone.utc).isoformat(),
+                "stale": price == 0,
             }
             self._set_cache(f"quote:{symbol}", quote)
             return quote
