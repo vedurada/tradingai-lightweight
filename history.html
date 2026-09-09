@@ -22,14 +22,26 @@
   </nav>
 </header>
 <main>
+  <div id="last-updated-bar" class="updated-bar"></div>
   <h2>AI Outlook History</h2>
-  <div id="history-grid"></div>
+  <div id="history-grid" class="grid"></div>
   <footer>
-    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-    <p id="last-updated"></p>
+    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
   </footer>
 </main>
-<script src="assets/js/api.js"></script>
-<script src="assets/js/dashboard.js"></script>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/data/${path}.json?_=${ts}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
+function regimeColor(regime){if(!regime)return'#94a3b8';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
+let refreshInterval=null;
+function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
+function setLastUpdated(timestamp){const bar=document.getElementById('last-updated-bar');if(!bar)return;if(!timestamp){bar.textContent='Last refreshed: —';return;}const d=new Date(timestamp);if(isNaN(d.getTime())){bar.textContent='Last refreshed: —';return;}const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');const s=String(d.getSeconds()).padStart(2,'0');const day=d.getDate();const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const month=months[d.getMonth()];const year=d.getFullYear();bar.textContent=`Last refreshed: ${day} ${month} ${year}, ${h}:${m}:${s} IST`;}
+function startDataRefresh(callback,intervalMs=30000){stopDataRefresh();refreshInterval=setInterval(()=>{if(!isMarketHours())return;callback();},intervalMs);}
+function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+async function loadHistory(){const grid=document.getElementById('history-grid');if(!grid)return;grid.innerHTML='<div class="card">Loading history...</div>';const data=await fetchJSON('history');if(!data){grid.innerHTML='<div class="card">No history data yet</div>';return;}const symbols=Object.keys(data).sort();if(!symbols.length){grid.innerHTML='<div class="card">No history data yet</div>';return;}let totalEntries=0,wins=0,losses=0,flats=0,totalPoints=0,countPoints=0;for(const sym of symbols){for(const e of data[sym]){totalEntries++;if(e.result==='WIN')wins++;else if(e.result==='LOSS')losses++;else flats++;if(e.points!=null){totalPoints+=e.points;countPoints++;}}}const winRate=totalEntries>0?((wins/totalEntries)*100).toFixed(1):0;const avgPoints=countPoints>0?(totalPoints/countPoints).toFixed(2):0;let html=`<div class="card" style="margin-bottom:1rem"><h3>Analytics</h3><div class="status">Total: ${totalEntries} | Wins: ${wins} | Losses: ${losses} | Flats: ${flats} | Win Rate: ${winRate}% | Avg Points: ${avgPoints}</div></div>`;for(const symbol of symbols){const entries=data[symbol];for(const e of entries){const pts=e.points!=null?e.points:'—';const res=e.result||'OPEN';const rc=res==='WIN'?'#22c55e':res==='LOSS'?'#ef4444':'#94a3b8';const locked=e.locked_price?formatPrice(e.locked_price):'—';const closed=e.closed_price?formatPrice(e.closed_price):'—';html+=`<div class="card" style="margin-bottom:0.5rem"><div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem"><strong>${symbol}</strong><span style="color:${rc};font-weight:bold">${res}</span><span>${e.date}</span><span>${e.strategy||'N/A'}</span><span>${locked} → ${closed}</span><span style="color:${rc}">${pts} pts</span><span>${e.market_regime||'N/A'} | ${e.directional_bias||'N/A'}</span></div><details style="margin-top:0.5rem"><summary style="cursor:pointer;color:#22c55e">Details</summary><div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:0.3rem;margin-top:0.5rem"><div>Conf: ${e.confidence||'N/A'}%</div><div>Evidence: ${e.evidence_strength||'N/A'}</div><div>Vol: ${e.volatility_classification||'N/A'}</div><div>Structure: ${e.market_structure||'N/A'}</div><div>Env: ${e.strategy_environment||'N/A'}</div><div>Invalidation: ${e.invalidation||'N/A'}</div><div>No-Trade: ${(e.no_trade_conditions||[]).join(', ')||'N/A'}</div><div>Summary: ${e.market_summary||'N/A'}</div></div></details></div>`;}}grid.innerHTML=html;setLastUpdated(new Date().toISOString());}
+document.addEventListener('DOMContentLoaded',()=>{loadHistory();startDataRefresh(loadHistory);});
+</script>
 </body>
 </html>

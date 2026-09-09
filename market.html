@@ -5,32 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Market Overview - TradingAI</title>
 <meta name="description" content="Indian market overview - NIFTY, BANKNIFTY, SENSEX">
-    <link rel="canonical" href="https://tradingai.in/market.html">
-    <link rel="stylesheet" href="assets/css/main.css">
-  </head>
-  <body>
-    <header>
-      <h1>TradingAI</h1>
-      <nav>
-        <a href="index.html">Home</a>
-        <a href="market.html">Market</a>
-        <a href="indices/nifty.html">NIFTY</a>
-        <a href="indices/banknifty.html">Bank NIFTY</a>
-        <a href="scanner.html">Scanner</a>
-        <a href="strategies.html">Strategies</a>
+<link rel="canonical" href="https://tradingai.in/market.html">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+  <h1>TradingAI</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="market.html">Market</a>
+    <a href="indices/nifty.html">NIFTY</a>
+    <a href="indices/banknifty.html">Bank NIFTY</a>
+    <a href="scanner.html">Scanner</a>
+    <a href="strategies.html">Strategies</a>
+    <a href="history.html">History</a>
   </nav>
 </header>
 <main>
+  <div id="last-updated-bar" class="updated-bar"></div>
   <h2>Market Overview</h2>
   <div id="market-grid" class="grid"></div>
   <div id="vix-section"></div>
-  <div id="sector-section"></div>
   <footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-    <p id="last-updated"></p>
   </footer>
 </main>
-<script src="assets/js/api.js"></script>
-<script src="assets/js/market.js"></script>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/data/${path}.json?_=${ts}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
+function regimeColor(regime){if(!regime)return'#94a3b8';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
+let refreshInterval=null;
+function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
+function setLastUpdated(timestamp){const bar=document.getElementById('last-updated-bar');if(!bar)return;if(!timestamp){bar.textContent='Last refreshed: —';return;}const d=new Date(timestamp);if(isNaN(d.getTime())){bar.textContent='Last refreshed: —';return;}const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');const s=String(d.getSeconds()).padStart(2,'0');const day=d.getDate();const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const month=months[d.getMonth()];const year=d.getFullYear();bar.textContent=`Last refreshed: ${day} ${month} ${year}, ${h}:${m}:${s} IST`;}
+function startDataRefresh(callback,intervalMs=30000){stopDataRefresh();refreshInterval=setInterval(()=>{if(!isMarketHours())return;callback();},intervalMs);}
+function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+async function loadMarket(){const data=await fetchJSON('market');if(!data)return;const grid=document.getElementById('market-grid');if(grid){grid.innerHTML='';for(const[symbol,inst]of Object.entries(data.instruments||{})){const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${symbol}</h3><div class="price">${formatPrice(inst.quote?.price)}</div><div style="color:${inst.quote?.change>=0?'#22c55e':'#ef4444'}">${formatChange(inst.quote?.change)} (${formatChange(inst.quote?.change_pct)}%)</div><span class="badge" style="background:${regimeColor(inst.regime?.regime)}20;color:${regimeColor(inst.regime?.regime)}">${inst.regime?.regime||'N/A'}</span><div class="status">VWAP: ${formatPrice(inst.indicators?.vwap)} | RSI: ${inst.indicators?.rsi?.toFixed(1)||'N/A'}</div><div class="status">Support: ${(inst.indicators?.support_resistance?.support||[]).join(', ')||'N/A'}</div><div class="status">Resistance: ${(inst.indicators?.support_resistance?.resistance||[]).join(', ')||'N/A'}</div>`;grid.appendChild(card);}}const vix=await fetchJSON('vix');const vixEl=document.getElementById('vix-section');if(vixEl&&vix){vixEl.innerHTML=`<h3>India VIX</h3><div class="price">${formatPrice(vix.price)}</div><div>${formatChange(vix.change)} (${formatChange(vix.change_pct)}%)</div>`;}setLastUpdated(data.last_updated);}
+document.addEventListener('DOMContentLoaded',()=>{loadMarket();startDataRefresh(loadMarket);});
+</script>
 </body>
 </html>

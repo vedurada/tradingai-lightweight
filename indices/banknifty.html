@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>BANKNIFTY - TradingAI</title>
-<meta name="description" content="BANK NIFTY options strategy and market outlook">
+<title>Bank NIFTY - TradingAI</title>
+<meta name="description" content="Bank NIFTY technical analysis and market outlook">
 <link rel="canonical" href="https://tradingai.in/indices/banknifty.html">
 <link rel="stylesheet" href="../assets/css/main.css">
 </head>
@@ -16,26 +16,42 @@
     <a href="../market.html">Market</a>
     <a href="nifty.html">NIFTY</a>
     <a href="banknifty.html">Bank NIFTY</a>
-    <a href="../options.html">Options</a>
     <a href="../scanner.html">Scanner</a>
     <a href="../strategies.html">Strategies</a>
+    <a href="../history.html">History</a>
   </nav>
 </header>
 <main>
-  <h2>BANK NIFTY Outlook</h2>
+  <div id="last-updated-bar" class="updated-bar"></div>
+  <h2>Bank NIFTY Outlook</h2>
   <div id="nifty-price" class="price">-</div>
   <div id="nifty-regime" class="regime"></div>
   <div id="nifty-outlook"></div>
+  <div id="nifty-outlook-detail" class="status"></div>
+  <div id="nifty-outlook-fields" class="status"></div>
   <div id="nifty-indicators"></div>
-  <div id="nifty-options"></div>
   <div id="nifty-scenarios"></div>
   <div id="nifty-strategy"></div>
+  <div id="nifty-outlook-history"></div>
+  <div id="nifty-history"></div>
   <footer>
-    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-    <p id="last-updated"></p>
+    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
   </footer>
 </main>
-<script src="../assets/js/api.js"></script>
-<script src="../assets/js/market.js"></script>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/data/${path}.json?_=${ts}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
+function regimeColor(regime){if(!regime)return'#94a3b8';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
+function populateIndicators(el,indicators){if(!indicators)return;el.innerHTML=`<div class="status">VWAP: ${formatPrice(indicators.vwap)} | RSI: ${indicators.rsi?.toFixed(1)||'N/A'}</div><div class="status">MACD: ${indicators.macd?.macd?.toFixed(4)||'N/A'} | ADX: ${indicators.adx?.toFixed(1)||'N/A'}</div><div class="status">EMA20: ${formatPrice(indicators.ema20)} | EMA50: ${formatPrice(indicators.ema50)}</div><div class="status">Pivot: ${formatPrice(indicators.pivot?.pivot)} | BC: ${formatPrice(indicators.cpr?.bc)} | TC: ${formatPrice(indicators.cpr?.tc)}</div><div class="status">Support: ${(indicators.support_resistance?.support||[]).join(', ')||'N/A'}</div><div class="status">Resistance: ${(indicators.support_resistance?.resistance||[]).join(', ')||'N/A'}</div>`;}
+let refreshInterval=null;
+function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
+function setLastUpdated(timestamp){const bar=document.getElementById('last-updated-bar');if(!bar)return;if(!timestamp){bar.textContent='Last refreshed: —';return;}const d=new Date(timestamp);if(isNaN(d.getTime())){bar.textContent='Last refreshed: —';return;}const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');const s=String(d.getSeconds()).padStart(2,'0');const day=d.getDate();const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const month=months[d.getMonth()];const year=d.getFullYear();bar.textContent=`Last refreshed: ${day} ${month} ${year}, ${h}:${m}:${s} IST`;}
+function startDataRefresh(callback,intervalMs=30000){stopDataRefresh();refreshInterval=setInterval(()=>{if(!isMarketHours())return;callback();},intervalMs);}
+function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+async function loadBankNifty(){const data=await fetchJSON('banknifty');if(!data)return;const priceEl=document.getElementById('nifty-price');if(priceEl)priceEl.textContent=formatPrice(data.quote?.price);const regimeEl=document.getElementById('nifty-regime');if(regimeEl)regimeEl.innerHTML=`<span class="badge" style="background:${regimeColor(data.regime?.regime)}20;color:${regimeColor(data.regime?.regime)}">${data.regime?.regime||'N/A'}</span>`;const outlookEl=document.getElementById('nifty-outlook');if(outlookEl&&data.ai_outlook)outlookEl.innerHTML=`<p>${data.ai_outlook.market_summary||'N/A'}</p><div class="status">Bias: ${data.ai_outlook.directional_bias||'N/A'} | Conf: ${data.ai_outlook.confidence||'N/A'}% | Evidence: ${data.ai_outlook.evidence_strength||'N/A'}</div><div class="status">Vol: ${data.ai_outlook.volatility_classification||'N/A'} | Structure: ${data.ai_outlook.market_structure||'N/A'}</div><div class="status">Env: ${data.ai_outlook.strategy_environment||'N/A'} | Invalidation: ${data.ai_outlook.invalidation||'N/A'}</div>`;const outlookDetailEl=document.getElementById('nifty-outlook-detail');if(outlookDetailEl&&data.ai_outlook){const nt=(data.ai_outlook.no_trade_conditions||[]).join(', ');outlookDetailEl.innerHTML=`<div class="status">No-Trade: ${nt||'N/A'}</div>`;}const indicatorsEl=document.getElementById('nifty-indicators');if(indicatorsEl)populateIndicators(indicatorsEl,data.indicators);const scenariosEl=document.getElementById('nifty-scenarios');if(scenariosEl&&data.scenarios)scenariosEl.innerHTML=data.scenarios.map(s=>`<div class="status">${s.scenario_type||'N/A'}: ${s.description||'N/A'} | Target: ${s.target||'N/A'} | Stop: ${s.stop_loss||'N/A'}</div>`).join('');const strategyEl=document.getElementById('nifty-strategy');if(strategyEl&&data.strategy){const s=data.strategy.strategies?.[0];strategyEl.innerHTML=s?`<div class="status">${s.strategy||'N/A'}</div><div class="status">Entry: ${s.entry_trigger||'N/A'} | Stop: ${s.stop_loss||'N/A'} | Target: ${s.target||'N/A'}</div>`:'';}const historyEl=document.getElementById('nifty-history');if(historyEl){const histData=await fetchJSON('history');if(histData&&histData.BANKNIFTY){const entries=histData.BANKNIFTY.slice(0,7);let html='<h3>P&L History</h3><table class="history-table"><thead><tr><th>Date</th><th>Locked</th><th>Closed</th><th>Points</th><th>Result</th></tr></thead><tbody>';for(const e of entries){const pts=e.points!=null?e.points:'—';const res=e.result||'OPEN';const rc=res==='WIN'?'#22c55e':res==='LOSS'?'#ef4444':'#94a3b8';html+=`<tr><td>${e.date}</td><td>${formatPrice(e.locked_price)}</td><td>${e.closed_price?formatPrice(e.closed_price):'—'}</td><td style="color:${rc};font-weight:bold">${pts}</td><td style="color:${rc}">${res}</td></tr>`;}html+='</tbody></table>';historyEl.innerHTML=html;}}const outlookHistEl=document.getElementById('nifty-outlook-history');if(outlookHistEl){const histData=await fetchJSON('history');if(histData&&histData.BANKNIFTY){const entries=histData.BANKNIFTY.slice(0,5);let html='<h3>AI Outlook History</h3>';for(const e of entries){const rc=e.result==='WIN'?'#22c55e':e.result==='LOSS'?'#ef4444':'#94a3b8';html+=`<div class="card" style="margin-bottom:0.5rem"><div class="status">${e.date} | ${e.market_regime||'N/A'} | Conf: ${e.confidence||'N/A'}% | Evidence: ${e.evidence_strength||'N/A'} | <span style="color:${rc}">${e.result||'OPEN'}</span></div><div class="status">Strategy: ${e.strategy||'N/A'} | Bias: ${e.directional_bias||'N/A'} | Vol: ${e.volatility_classification||'N/A'} | Structure: ${e.market_structure||'N/A'}</div><div class="status">Env: ${e.strategy_environment||'N/A'} | Invalidation: ${e.invalidation||'N/A'}</div><div class="status">${e.market_summary||''}</div></div>`;}outlookHistEl.innerHTML=html;}}setLastUpdated(data.last_updated);}
+document.addEventListener('DOMContentLoaded',()=>{loadBankNifty();startDataRefresh(loadBankNifty);});
+</script>
 </body>
 </html>

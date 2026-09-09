@@ -21,9 +21,11 @@
     <a href="indices/banknifty.html">Bank NIFTY</a>
     <a href="scanner.html">Scanner</a>
     <a href="strategies.html">Strategies</a>
+    <a href="history.html">History</a>
   </nav>
 </header>
 <main>
+  <div id="last-updated-bar" class="updated-bar"></div>
   <section id="market-condition">
     <h2>Today's Market Condition</h2>
     <div id="market-grid" class="grid"></div>
@@ -35,10 +37,26 @@
   </section>
   <footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-    <p id="last-updated"></p>
   </footer>
 </main>
-<script src="assets/js/api.js"></script>
-<script src="assets/js/dashboard.js"></script>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/data/${path}.json?_=${ts}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
+function regimeColor(regime){if(!regime)return'#94a3b8';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
+function populateAI(el,ai){if(!ai)return;el.innerHTML=`<h3>AI Outlook</h3><p>${ai.market_summary||'N/A'}</p><div class="status">Trend: ${ai.trend_analysis||'N/A'}</div><div class="status">Momentum: ${ai.momentum_analysis||'N/A'}</div><div class="status">Volatility: ${ai.volatility_analysis||'N/A'}</div><div class="status">Confidence: ${ai.confidence||'N/A'}%</div>`;}
+function populateScenarios(el,scenarios){if(!scenarios)return;el.innerHTML=`<div class="card"><h3>Bullish</h3><div class="status">${scenarios.bullish?.trigger||'N/A'}</div><div class="status">Target: ${scenarios.bullish?.target||'N/A'}</div></div><div class="card"><h3>Bearish</h3><div class="status">${scenarios.bearish?.trigger||'N/A'}</div><div class="status">Target: ${scenarios.bearish?.target||'N/A'}</div></div><div class="card"><h3>Range</h3><div class="status">${scenarios.range?.condition||'N/A'}</div><div class="status">Strategy: ${scenarios.range?.strategy_environment||'N/A'}</div></div>`;}
+let refreshInterval=null;
+function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
+function setLastUpdated(timestamp){const bar=document.getElementById('last-updated-bar');if(!bar)return;if(!timestamp){bar.textContent='Last refreshed: —';return;}const d=new Date(timestamp);if(isNaN(d.getTime())){bar.textContent='Last refreshed: —';return;}const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');const s=String(d.getSeconds()).padStart(2,'0');const day=d.getDate();const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const month=months[d.getMonth()];const year=d.getFullYear();bar.textContent=`Last refreshed: ${day} ${month} ${year}, ${h}:${m}:${s} IST`;}
+function startDataRefresh(callback,intervalMs=30000){stopDataRefresh();refreshInterval=setInterval(()=>{if(!isMarketHours())return;callback();},intervalMs);}
+function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+function showStale(data_quality){if(data_quality==='STALE'||data_quality==='PARTIAL'){const el=document.getElementById('market-status');if(el){el.innerHTML=`<span class="badge badge-yellow">${data_quality==='STALE'?'STALE DATA':'PARTIAL DATA'}</span>`;}}}
+function toggleDarkMode(){const body=document.body;const isDark=body.dataset.theme==='dark';if(isDark){body.dataset.theme='light';body.style.background='#ffffff';body.style.color='#1a202c';document.querySelectorAll('.card,header,.updated-bar').forEach(el=>{el.style.background='#f7fafc';el.style.borderColor='#e2e8f0';});}else{body.dataset.theme='dark';body.style.background='#0a0e1a';body.style.color='#e2e8f0';document.querySelectorAll('.card,header,.updated-bar').forEach(el=>{el.style.background='#111827';el.style.borderColor='#1e293b';});}localStorage.setItem('theme',isDark?'light':'dark');}
+(function(){const saved=localStorage.getItem('theme');if(saved==='light'){document.body.dataset.theme='light';document.body.style.background='#ffffff';document.body.style.color='#1a202c';}})();
+async function loadDashboard(){const data=await fetchJSON('market');if(!data||!data.instruments)return;const grid=document.getElementById('market-grid');if(grid){grid.innerHTML='';for(const[symbol,inst]of Object.entries(data.instruments)){const card=document.createElement('div');card.className='card';const ao=inst.ai_outlook||{};card.innerHTML=`<h3>${symbol}</h3><div class="price">${formatPrice(inst.quote?.price)}</div><div style="color:${inst.quote?.change>=0?'#22c55e':'#ef4444'}">${formatChange(inst.quote?.change)} (${formatChange(inst.quote?.change_pct)}%)</div><span class="badge" style="background:${regimeColor(inst.regime?.regime)}20;color:${regimeColor(inst.regime?.regime)}">${inst.regime?.regime||'N/A'}</span><div class="status">Support: ${(inst.indicators?.support_resistance?.support||[]).join(', ')||'N/A'}</div><div class="status">Resistance: ${(inst.indicators?.support_resistance?.resistance||[]).join(', ')||'N/A'}</div><div class="status">Strategy: ${inst.strategy?.strategies?.[0]?.strategy||'N/A'}</div><div class="status">Evidence: ${ao.evidence_strength||'N/A'} | Vol: ${ao.volatility_classification||'N/A'} | Structure: ${ao.market_structure||'N/A'}</div><div class="status">Env: ${ao.strategy_environment||'N/A'} | Invalidation: ${ao.invalidation||'N/A'}</div><div class="status">${inst.data_quality||'N/A'}</div>`;grid.appendChild(card);}}const outlook=document.getElementById('outlook-content');if(outlook&&data.ai_outlook)populateAI(outlook,data.ai_outlook);setLastUpdated(data.last_updated);showStale(data.data_quality);}
+document.addEventListener('DOMContentLoaded',()=>{loadDashboard();startDataRefresh(loadDashboard);});
+</script>
 </body>
 </html>

@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strategy Library - TradingAI</title>
-<meta name="description" content="Technical strategy library - breakout, reversal, trend-following">
+<title>Strategies - TradingAI</title>
+<meta name="description" content="Options strategies based on market conditions">
 <link rel="canonical" href="https://tradingai.in/strategies.html">
 <link rel="stylesheet" href="assets/css/main.css">
 </head>
@@ -18,17 +18,30 @@
     <a href="indices/banknifty.html">Bank NIFTY</a>
     <a href="scanner.html">Scanner</a>
     <a href="strategies.html">Strategies</a>
+    <a href="history.html">History</a>
   </nav>
 </header>
 <main>
-  <h2>Strategy Library</h2>
-  <div id="market-grid"></div>
+  <div id="last-updated-bar" class="updated-bar"></div>
+  <h2>Options Strategies</h2>
+  <div id="strategy-grid" class="grid"></div>
   <footer>
-    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-    <p id="last-updated"></p>
+    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
   </footer>
 </main>
-<script src="assets/js/api.js"></script>
-<script src="assets/js/dashboard.js"></script>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/data/${path}.json?_=${ts}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
+function regimeColor(regime){if(!regime)return'#94a3b8';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
+let refreshInterval=null;
+function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
+function setLastUpdated(timestamp){const bar=document.getElementById('last-updated-bar');if(!bar)return;if(!timestamp){bar.textContent='Last refreshed: —';return;}const d=new Date(timestamp);if(isNaN(d.getTime())){bar.textContent='Last refreshed: —';return;}const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');const s=String(d.getSeconds()).padStart(2,'0');const day=d.getDate();const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const month=months[d.getMonth()];const year=d.getFullYear();bar.textContent=`Last refreshed: ${day} ${month} ${year}, ${h}:${m}:${s} IST`;}
+function startDataRefresh(callback,intervalMs=30000){stopDataRefresh();refreshInterval=setInterval(()=>{if(!isMarketHours())return;callback();},intervalMs);}
+function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+async function loadStrategies(){const grid=document.getElementById('strategy-grid');if(!grid)return;grid.innerHTML='<div class="card">Loading strategies...</div>';const symbols=['nifty','banknifty','sensex'];let html='';for(const sym of symbols){const data=await fetchJSON(sym);if(!data)continue;const strategy=data.strategy||{};const regime=data.regime||{};const scenarios=data.scenarios||[];html+=`<div class="card"><h3>${sym.toUpperCase()}</h3><div class="status">Regime: ${regime.regime||'N/A'}</div><div class="status">Confidence: ${regime.confidence||'N/A'}%</div><div class="status">Strategy: ${strategy.strategies?.[0]?.strategy||'N/A'}</div><div class="status">Market: ${strategy.strategies?.[0]?.market_condition||'N/A'}</div><div class="status">Expiry: ${strategy.strategies?.[0]?.expiry||'N/A'}</div><div class="status">Entry: ${strategy.strategies?.[0]?.entry_trigger||'N/A'}</div><div class="status">Stop Loss: ${strategy.strategies?.[0]?.stop_loss||'N/A'}</div><div class="status">Target: ${strategy.strategies?.[0]?.target||'N/A'}</div>${scenarios.length?'<h4>Scenarios</h4>':''}${scenarios.map(s=>`<div class="status">${s.scenario_type||'N/A'}: ${s.description||'N/A'}</div><div class="status">Trigger: ${s.trigger||'N/A'} | Target: ${s.target||'N/A'} | Stop: ${s.stop_loss||'N/A'}</div>`).join('')}</div>`;}if(!html){html='<div class="card">No strategy data available</div>'}grid.innerHTML=html;setLastUpdated(new Date().toISOString());}
+document.addEventListener('DOMContentLoaded',()=>{loadStrategies();startDataRefresh(loadStrategies);});
+</script>
 </body>
 </html>
