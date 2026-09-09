@@ -31,4 +31,4 @@ async function loadMarket() {
   showStale(data.data_quality);
 }
 
-document.addEventListener('DOMContentLoaded', loadMarket);
+document.addEventListener('DOMContentLoaded', () => { loadMarket(); startDataRefresh(loadMarket); });

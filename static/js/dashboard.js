@@ -8,6 +8,7 @@ async function loadDashboard() {
     for (const [symbol, inst] of Object.entries(data.instruments)) {
       const card = document.createElement('div');
       card.className = 'card';
+      const ao = inst.ai_outlook || {};
       card.innerHTML = `
         <h3>${symbol}</h3>
         <div class="price">${formatPrice(inst.quote?.price)}</div>
@@ -16,6 +17,8 @@ async function loadDashboard() {
         <div class="status">Support: ${(inst.indicators?.support_resistance?.support || []).join(', ') || 'N/A'}</div>
         <div class="status">Resistance: ${(inst.indicators?.support_resistance?.resistance || []).join(', ') || 'N/A'}</div>
         <div class="status">Strategy: ${inst.strategy?.strategies?.[0]?.strategy || 'N/A'}</div>
+        <div class="status">Evidence: ${ao.evidence_strength || 'N/A'} | Vol: ${ao.volatility_classification || 'N/A'} | Structure: ${ao.market_structure || 'N/A'}</div>
+        <div class="status">Env: ${ao.strategy_environment || 'N/A'} | Invalidation: ${ao.invalidation || 'N/A'}</div>
         <div class="status">${inst.data_quality || 'N/A'}</div>
       `;
       grid.appendChild(card);
@@ -58,4 +61,5 @@ async function loadHistory() {
 document.addEventListener('DOMContentLoaded', () => {
   if (document.getElementById('market-grid')) loadDashboard();
   if (document.getElementById('history-grid')) loadHistory();
+  startDataRefresh(() => { if (document.getElementById('market-grid')) loadDashboard(); if (document.getElementById('history-grid')) loadHistory(); });
 });

@@ -2,7 +2,8 @@ const API_BASE = '';
 
 async function fetchJSON(path) {
   try {
-    const res = await fetch(`${API_BASE}/data/${path}.json`);
+    const ts = Date.now();
+    const res = await fetch(`${API_BASE}/data/${path}.json?_=${ts}`);
     if (!res.ok) throw new Error('Not found');
     return await res.json();
   } catch {
@@ -121,11 +122,49 @@ function populateIndicators(el, indicators) {
   `;
 }
 
-function setLastUpdated(ts) {
-  const el = document.getElementById('last-updated');
-  if (el && ts) {
-    el.textContent = 'Last updated: ' + new Date(ts).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
-  }
+let refreshInterval = null;
+
+function isMarketHours() {
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) { bar.textContent = 'Last refreshed: —'; return; }
+  const ist = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const d = new Date(ist);
+  const day = d.getDay();
+  if (day === 0 || day === 6) return false;
+  const h = d.getHours();
+  const m = d.getMinutes();
+  const mins = h * 60 + m;
+  return mins >= 570 && mins < 990;
+}
+
+function setLastUpdated(timestamp) {
+  const bar = document.getElementById('last-updated-bar');
+  if (!bar) return;
+  if (!timestamp) { bar.textContent = 'Last refreshed: —'; return; }
+  const d = new Date(timestamp);
+  if (isNaN(d.getTime())) { bar.textContent = 'Last refreshed: —'; return; }
+  const h = String(d.getHours()).padStart(2, '0');
+  const m = String(d.getMinutes()).padStart(2, '0');
+  const s = String(d.getSeconds()).padStart(2, '0');
+  const day = d.getDate();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const month = months[d.getMonth()];
+  const year = d.getFullYear();
+  bar.textContent = `Last refreshed: ${day} ${month} ${year}, ${h}:${m}:${s} IST`;
+}
+
+function startDataRefresh(callback, intervalMs = 30000) {
+  stopDataRefresh();
+  refreshInterval = setInterval(() => {
+    if (!isMarketHours()) return;
+    const el = document.getElementById('last-updated');
+    if (el) el.textContent = 'Refreshing...';
+    callback();
+  }, intervalMs);
+}
+
+function stopDataRefresh() {
+  if (refreshInterval) { clearInterval(refreshInterval); refreshInterval = null; }
 }
 
 function showStale(data_quality) {
@@ -136,3 +175,29 @@ function showStale(data_quality) {
     }
   }
 }
+
+function toggleDarkMode() {
+  const body = document.body;
+  const isDark = body.dataset.theme === 'dark';
+  if (isDark) {
+    body.dataset.theme = 'light';
+    body.style.background = '#ffffff';
+    body.style.color = '#1a202c';
+    document.querySelectorAll('.card, header, .updated-bar').forEach(el => { el.style.background = '#f7fafc'; el.style.borderColor = '#e2e8f0'; });
+  } else {
+    body.dataset.theme = 'dark';
+    body.style.background = '#0a0e1a';
+    body.style.color = '#e2e8f0';
+    document.querySelectorAll('.card, header, .updated-bar').forEach(el => { el.style.background = '#111827'; el.style.borderColor = '#1e293b'; });
+  }
+  localStorage.setItem('theme', isDark ? 'light' : 'dark');
+}
+
+(function() {
+  const saved = localStorage.getItem('theme');
+  if (saved === 'light') {
+    document.body.dataset.theme = 'light';
+    document.body.style.background = '#ffffff';
+    document.body.style.color = '#1a202c';
+  }
+})();

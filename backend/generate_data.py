@@ -72,12 +72,14 @@ def generate_data() -> None:
             rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"),
             vix_price=vix["price"] if vix else 0, bollinger=indicators.get("bollinger_bands"),
             pivot=pivot_data, support_resistance=indicators.get("support_resistance"),
-            pcr=options_analysis.get("pcr"),
+            pcr=options_analysis.get("pcr"), volume=quote.get("volume"), avg_volume=indicators.get("avg_volume"),
         )
 
-        scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"])
+        scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"], adx=indicators.get("adx"), vix_price=vix["price"] if vix else 0)
         strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL")
-        ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])}) if not skip_llm else ai_engine._fallback(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
+        ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
+
+        data_quality = "STALE" if quote.get("stale") else ("GOOD" if ohlcv else "PARTIAL")
 
         instrument_data = {
             "quote": quote,
@@ -89,8 +91,8 @@ def generate_data() -> None:
             "scenarios": scenarios,
             "strategy": strategy,
             "ai_outlook": ai_outlook,
-            "data_quality": "GOOD" if ohlcv else "PARTIAL",
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "data_quality": data_quality,
+            "last_updated": datetime.now(timezone.utc).isoformat(),
         }
 
         market_data["instruments"][symbol] = instrument_data
