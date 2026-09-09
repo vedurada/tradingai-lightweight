@@ -24,6 +24,15 @@ class MarketFetcher:
         self._cache[key] = value
         self._cache_time[key] = datetime.now(timezone.utc).timestamp()
 
+    def _get_prev_close(self, ticker: Any, price: float) -> float:
+        try:
+            hist = ticker.history(period="2d")
+            if len(hist) >= 2:
+                return float(hist.iloc[-2]["Close"])
+        except Exception:
+            pass
+        return price
+
     def fetch_quote(self, symbol: str, yf_symbol: str) -> Optional[dict]:
         cached = self._cached(f"quote:{symbol}")
         if cached:
@@ -32,7 +41,6 @@ class MarketFetcher:
             ticker = yf.Ticker(yf_symbol)
             info = ticker.info or {}
             price = info.get("regularMarketPrice", info.get("currentPrice", 0))
-            prev_close = info.get("previousClose", 0)
             open_price = info.get("open", 0)
             high = info.get("dayHigh", 0)
             low = info.get("dayLow", 0)
@@ -48,8 +56,7 @@ class MarketFetcher:
                     low = float(row["Low"])
                     volume = int(row["Volume"])
 
-            if prev_close == 0:
-                prev_close = price
+            prev_close = self._get_prev_close(ticker, price)
 
             change = price - prev_close
             change_pct = (change / prev_close * 100) if prev_close else 0
@@ -106,7 +113,7 @@ class MarketFetcher:
             ticker = yf.Ticker("^VIX")
             info = ticker.info or {}
             price = info.get("regularMarketPrice", info.get("currentPrice", 0))
-            prev = info.get("previousClose", price + 0.15)
+            prev = self._get_prev_close(ticker, price)
             change = price - prev
             change_pct = (change / prev * 100) if prev else 0
             vix = {
