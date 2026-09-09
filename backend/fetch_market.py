@@ -121,7 +121,7 @@ class MarketFetcher:
                 "price": round(price, 2),
                 "change": round(change, 2),
                 "change_pct": round(change_pct, 2),
-                "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds'),
+                "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
             }
             self._set_cache("vix", vix)
             return vix
