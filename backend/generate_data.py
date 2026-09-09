@@ -76,7 +76,7 @@ def generate_data() -> None:
         )
 
         scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"], adx=indicators.get("adx"), vix_price=vix["price"] if vix else 0)
-        strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL")
+        strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL", vix_price=vix["price"] if vix else 0, vix_change_pct=vix["change_pct"] if vix else 0, symbol=symbol)
         ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
 
         data_quality = "STALE" if quote.get("stale") else ("GOOD" if ohlcv else "PARTIAL")

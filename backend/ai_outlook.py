@@ -4,9 +4,8 @@ import json
 import logging
 import os
 import re
-import time
 from datetime import datetime, timezone
-from typing import Any, Optional
+from typing import Any
 
 logger = logging.getLogger("tradingai.ai")
 
@@ -67,9 +66,6 @@ class AIOutlookEngine:
             return cached
         prompt = self._build_prompt(symbol, data)
         outlook = self._call_llm_chain(prompt, data)
-        if not self._validate(outlook):
-            logger.warning(f"AI outlook for {symbol} invalid, using fallback")
-            outlook = self._fallback(symbol, data)
         logger.info(f"AI outlook for {symbol}: {outlook.get('market_regime', '?')} bias={outlook.get('directional_bias', '?')} conf={outlook.get('confidence', '?')}")
         self._cache[f"ai:{symbol}"] = outlook
         return outlook
@@ -90,80 +86,7 @@ Regime: {data.get('regime', 'N/A')}
 Return valid JSON with: asset, date, market_regime, directional_bias, confidence, evidence_strength, volatility_classification, market_structure, market_summary, trend_analysis, momentum_analysis, volatility_analysis, support_levels, resistance_levels, options_analysis, bullish_scenario, bearish_scenario, range_scenario, primary_strategy, alternative_strategies, intraday_plan, no_trade_conditions, strategy_environment, invalidation, risk_warnings, data_quality, generated_at"""
 
     def _call_llm_chain(self, prompt: str, data: dict) -> dict:
-        if os.environ.get("SKIP_LLM", "0") == "1":
-            logger.info("SKIP_LLM=1, using rule-based outlook")
-            return self._rule_based_outlook(data)
-        providers = self._get_providers()
-        for provider_name, provider_config in providers:
-            try:
-                result = self._call_provider(provider_name, provider_config, prompt)
-                if result and self._validate(result):
-                    return result
-            except Exception as e:
-                logger.error(f"LLM {provider_name} failed: {e}")
-                continue
-        logger.info("All LLM providers failed, using rule-based outlook")
         return self._rule_based_outlook(data)
-
-    def _get_providers(self) -> list[tuple[str, dict]]:
-        providers = []
-        gemini_key = os.environ.get("LLM_API_KEY", "")
-        gemini_url = os.environ.get("LLM_API_URL", "")
-        if gemini_key:
-            providers.append(("gemini", {"url": gemini_url or "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=" + gemini_key, "key": gemini_key, "provider": "gemini"}))
-        mistral_key = os.environ.get("MISTRAL_API_KEY", "")
-        if mistral_key:
-            providers.append(("mistral", {"url": "https://api.mistral.ai/v1/chat/completions", "key": mistral_key, "provider": "mistral"}))
-        openai_key = os.environ.get("OPENAI_API_KEY", "")
-        if openai_key:
-            providers.append(("openai", {"url": "https://api.openai.com/v1/chat/completions", "key": openai_key, "provider": "openai"}))
-        return providers
-
-    def _call_provider(self, name: str, config: dict, prompt: str) -> Optional[dict]:
-        import urllib.request
-        url = config["url"]
-        key = config["key"]
-        provider = config["provider"]
-        model = "mistral-tiny" if provider == "mistral" else ("gpt-4o-mini" if provider == "openai" else "gemini-2.0-flash")
-        for attempt in range(2):
-            try:
-                if provider == "gemini":
-                    payload = json.dumps({"contents": [{"role": "user", "parts": [prompt]}], "generationConfig": {"temperature": 0.3}}).encode()
-                    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json"}, method="POST")
-                else:
-                    payload = json.dumps({"model": model, "messages": [{"role": "system", "content": "You are a market analyst. Return valid JSON only."}, {"role": "user", "content": prompt}], "temperature": 0.3}).encode()
-                    req = urllib.request.Request(url, data=payload, headers={"Content-Type": "application/json", "Authorization": f"Bearer {key}"}, method="POST")
-                logger.info(f"LLM {name} attempt {attempt + 1}: model={model}")
-                with urllib.request.urlopen(req, timeout=30) as resp:
-                    result = json.loads(resp.read().decode())
-                    if provider == "gemini":
-                        content = result["candidates"][0]["content"]["parts"][0]["text"]
-                    else:
-                        content = result["choices"][0]["message"]["content"]
-                    content = self._parse_json(content)
-                    if content:
-                        return content
-            except Exception as e:
-                logger.error(f"LLM {name} attempt {attempt + 1} failed: {e}")
-                if attempt < 1:
-                    time.sleep(3)
-        return None
-
-    def _parse_json(self, content: str) -> Optional[dict]:
-        try:
-            content = content.strip()
-            if content.startswith("```"):
-                content = content.split("```", 2)[1]
-                if content.startswith("json"):
-                    content = content[4:]
-                content = content.strip()
-            content = re.sub(r"//.*$", "", content, flags=re.MULTILINE)
-            content = re.sub(r"/\*.*?\*/", "", content, flags=re.DOTALL)
-            content = re.sub(r",\s*([}\]])", r"\1", content)
-            return json.loads(content)
-        except Exception as e:
-            logger.error(f"JSON parse failed: {e}")
-            return None
 
     def _rule_based_outlook(self, data: dict) -> dict:
         price = data.get("price", 0)
@@ -222,9 +145,3 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
-    def _validate(self, outlook: dict) -> bool:
-        required = ["asset", "date", "market_regime", "confidence"]
-        return all(k in outlook for k in required)
-
-    def _fallback(self, symbol: str, data: dict) -> dict:
-        return self._rule_based_outlook(data)
