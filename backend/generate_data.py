@@ -46,6 +46,7 @@ def generate_data() -> None:
 
     all_instruments = config["indices"] + config["stocks"]
     os.makedirs(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data"), exist_ok=True)
+    vix_data = None
 
     market_data = {"source": "Yahoo Finance", "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds'), "instruments": {}}
 
@@ -61,6 +62,8 @@ def generate_data() -> None:
 
         ohlcv = fetcher.fetch_ohlcv(symbol, yf_symbol, period="60d", interval="1d", limit=20)
         vix = fetcher.fetch_vix()
+        if vix:
+            vix_data = vix
 
         indicators = calculate_all_indicators(ohlcv, quote) if ohlcv else {}
         pivot_data = calculate_pivot(quote)
@@ -102,6 +105,10 @@ def generate_data() -> None:
 
     with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "market.json"), "w") as f:
         json.dump(market_data, f, indent=2, default=str)
+
+    if vix_data:
+        with open(os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "data", "vix.json"), "w") as f:
+            json.dump(vix_data, f, indent=2, default=str)
 
     logger.info(f"Generated data for {len(market_data['instruments'])} instruments")
 
