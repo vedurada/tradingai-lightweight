@@ -97,6 +97,10 @@ Ops: `data_status`, `alerts`.
 - **Stocks/ETFs:** BUY/HOLD/EXIT via `select_stock_outlook()` — regime first, VWAP+RSI fallback. Numeric levels from `_stock_levels()`: T1 = nearest resistance (else +8%/2×ATR), T2 (+12%/3×ATR), stop = support (else −5%/1.5×ATR), with upside/risk/RR percentages embedded in text fields.
 - `strategies.legs` holds `{"legs": [...], "all_strategies": [...]}`; API rebuilds legacy `{strategies: [...]}`.
 
+## 8b. Stock investment views (`backend/investment.py`, table `investment_views`)
+
+Stocks are investments, not intraday signals: SHORT horizon (weeks: SMA20/50 + RSI + 20d return → BUY/HOLD/EXIT with swing target/stop) and LONG horizon (months: SMA200 + 52w position + P/E + analyst upside + dividend → ACCUMULATE/HOLD/AVOID + fair value). Computed from `price_1d` + stored fundamentals (zero extra Yahoo calls), stored per (symbol, date, horizon). API: `/api/investment/<sym>` + `investment` block in symbol payloads; scanner shows long-term badge.
+
 ## 9. P&L tracker (`pnl_tracker.py`)
 
 - `lock` 9:30 IST (cron `30 9 * * 1-5`): 09:30-candle entry + strategy/regime/bias snapshot. Direction from bias: BEARISH→SHORT else LONG.
