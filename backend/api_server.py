@@ -154,6 +154,28 @@ def _parse_json_field(value, default=None):
         return default
 
 
+def _to_ist_iso(ts):
+    """Normalize DB timestamps to ISO with IST offset.
+
+    price_1m candles are stored naive ('YYYY-MM-DD HH:MM:SS') in exchange-local
+    (IST) time; other tables store UTC ISO. Returns ISO-8601 with offset, or None.
+    """
+    if not ts:
+        return None
+    s = str(ts).strip()
+    try:
+        if "T" in s:
+            if s.endswith("Z"):
+                return s
+            if "+" in s[10:] or s[10:].count("-") > 2:
+                return s
+            return s + "+00:00"
+        # Naive 'YYYY-MM-DD HH:MM:SS' -> IST.
+        return s.replace(" ", "T") + "+05:30"
+    except Exception:
+        return None
+
+
 def _build_quote(symbol, price_row):
     """price_1m row -> legacy quote shape {price, change, change_pct, ...}."""
     if not price_row:
@@ -176,7 +198,7 @@ def _build_quote(symbol, price_row):
         "change_pct": round(change / prev * 100, 2) if prev else 0,
         "open": d.get("open", 0), "high": d.get("high", 0), "low": d.get("low", 0),
         "previous_close": prev, "volume": d.get("volume", 0),
-        "timestamp": d.get("timestamp"), "stale": False,
+        "timestamp": _to_ist_iso(d.get("timestamp")), "stale": False,
     }
 
 
@@ -264,12 +286,10 @@ def _symbol_data(symbol):
             result["expiry"] = get_current_expiry() if callable(get_current_expiry) else {}
     except Exception:
         pass
-    last_ts = None
-    for key in ("quote", "indicators", "regime", "strategy"):
-        ts = (result.get(key) or {}).get("timestamp")
-        if ts and (not last_ts or ts > last_ts):
-            last_ts = ts
-    result["last_updated"] = last_ts
+    # last_updated = MARKET DATA time (quote candle), never computation time.
+    quote_ts = (result.get("quote") or {}).get("timestamp")
+    result["last_updated"] = quote_ts
+    result["computed_at"] = datetime.now(timezone.utc).isoformat()
     result["data_quality"] = (result.get("ai_outlook") or {}).get("data_quality", "GOOD")
     conn.close()
     return jsonify(result)
