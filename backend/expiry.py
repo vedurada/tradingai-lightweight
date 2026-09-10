@@ -46,8 +46,40 @@ def _now_ist() -> datetime:
     return datetime.now(timezone.utc).astimezone(IST)
 
 
+_DB_HOLIDAYS: frozenset = frozenset()
+_DB_HOLIDAYS_LOADED = False
+
+
+def _db_holidays() -> frozenset:
+    """Live NSE holiday calendar from SQLite (refreshed weekly by bhavcopy.py);
+    falls back to the hardcoded set when the table is empty/missing."""
+    global _DB_HOLIDAYS, _DB_HOLIDAYS_LOADED
+    if _DB_HOLIDAYS_LOADED:
+        return _DB_HOLIDAYS
+    _DB_HOLIDAYS_LOADED = True
+    try:
+        import os
+        import sqlite3
+        db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+        if os.path.exists(db):
+            conn = sqlite3.connect(db)
+            rows = conn.execute("SELECT date FROM nse_holidays").fetchall()
+            conn.close()
+            if rows:
+                _DB_HOLIDAYS = frozenset(r[0] for r in rows)
+    except Exception:
+        pass
+    return _DB_HOLIDAYS
+
+
 def _is_trading_day(d: date) -> bool:
-    return d.weekday() < 5 and d.isoformat() not in HOLIDAYS_IST
+    if d.weekday() >= 5:
+        return False
+    iso = d.isoformat()
+    live = _db_holidays()
+    if live:
+        return iso not in live
+    return iso not in HOLIDAYS_IST
 
 
 def _prev_trading_day(d: date) -> date:
