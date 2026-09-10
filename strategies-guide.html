@@ -24,6 +24,7 @@
   </nav>
 </header>
 <main>
+  <div class="updated-bar"><span id="live-clock"></span></div>
   <h2>Options Strategies Guide</h2>
   <p class="status">Every strategy below is one TradingAI can assign to NIFTY / BANKNIFTY / FINNIFTY / SENSEX.
   Stocks always get BUY / HOLD / EXIT instead — never option legs.
@@ -41,8 +42,8 @@ var GUIDE=[
 {strategy:"Bear Call Spread",outlook:"Bearish",structure:"SELL OTM CALL + BUY further OTM CALL",maxProfit:"Net premium received",maxLoss:"Strike width − net premium",breakeven:"Lower strike + net premium",use:"Mildly bearish or neutral; premium credit with defined risk.",risk:"Loss if index rallies above higher call strike."},
 {strategy:"Iron Condor",outlook:"Range-bound",structure:"SELL OTM PUT spread + SELL OTM CALL spread (4 legs)",maxProfit:"Total net premium received",maxLoss:"Strike width − net premium",breakeven:"Wings ± net premium",use:"Index stuck between support and resistance into expiry.",risk:"Breakout either side beyond wings causes max loss."},
 {strategy:"Defined-risk premium selling",outlook:"High IV",structure:"SELL OTM PUT spread + SELL OTM CALL spread",maxProfit:"Total net premium received",maxLoss:"Strike width − net premium",breakeven:"Wings ± net premium",use:"Elevated IV with no clear direction; harvest time decay.",risk:"Volatility crush or sharp breakout hurts both sides."},
-{strategy:"Long Straddle (ND Intraday)",outlook:"Non-directional",structure:"BUY ATM CALL + BUY ATM PUT, same expiry",maxProfit:"Unlimited (either direction)",maxLoss:"Total premium paid",breakeven:"ATM ± total premium",use:"Big move expected, direction unknown (e.g. event day, low VIX).",risk:"Time decay kills both legs if index stays flat."},
-{strategy:"Long Strangle (ND Intraday)",outlook:"Non-directional",structure:"BUY 1-strike OTM CALL + BUY 1-strike OTM PUT",maxProfit:"Unlimited",maxLoss:"Total premium paid",breakeven:"Each strike ± its premium share",use:"Cheaper than straddle when VIX is normal; needs a bigger move.",risk:"Needs a larger move to profit; exits at 3:20 PM or 2% premium stop."},
+{strategy:"Long Straddle",outlook:"Non-directional",structure:"BUY ATM CALL + BUY ATM PUT, same expiry",maxProfit:"Unlimited (either direction)",maxLoss:"Total premium paid",breakeven:"ATM ± total premium",use:"Big move expected, direction unknown (e.g. event day, low VIX).",risk:"Time decay kills both legs if index stays flat."},
+{strategy:"Long Strangle",outlook:"Non-directional",structure:"BUY 1-strike OTM CALL + BUY 1-strike OTM PUT",maxProfit:"Unlimited",maxLoss:"Total premium paid",breakeven:"Each strike ± its premium share",use:"Cheaper than straddle when VIX is normal; needs a bigger move.",risk:"Needs a larger move to profit; exits at 3:20 PM or 2% premium stop."},
 {strategy:"NO TRADE",outlook:"Unclear",structure:"No legs",maxProfit:"—",maxLoss:"—",breakeven:"—",use:"Conflicting signals, stale data, or extreme VIX. Capital protection is a position.",risk:"FOMO — trading anyway."}
 ];
 (function(){
@@ -51,6 +52,7 @@ for(var i=0;i<GUIDE.length;i++){var g=GUIDE[i];
 html+='<div class="card"><h3>'+g.strategy+'</h3><div class="status">Outlook: '+g.outlook+'</div><div class="status"><strong>Structure:</strong> '+g.structure+'</div><div class="status">Max profit: '+g.maxProfit+'</div><div class="status">Max loss: '+g.maxLoss+'</div><div class="status">Breakeven: '+g.breakeven+'</div><div class="status"><strong>Use when:</strong> '+g.use+'</div><div class="status"><strong>Risk:</strong> '+g.risk+'</div></div>';}
 grid.innerHTML=html;
 })();
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 </script>
 </body>
 </html>

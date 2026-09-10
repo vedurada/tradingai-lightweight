@@ -14,7 +14,10 @@ CREATE TABLE IF NOT EXISTS symbols (
     type TEXT CHECK(type IN ('index', 'stock', 'etf', 'vix')),
     category TEXT,
     active INTEGER DEFAULT 1,
-    created_at TEXT
+    created_at TEXT,
+    lot_size INTEGER,
+    lot_source TEXT,
+    lot_as_of TEXT
 );
 
 CREATE TABLE IF NOT EXISTS price_1m (
