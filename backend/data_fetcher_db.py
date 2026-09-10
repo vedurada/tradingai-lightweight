@@ -203,6 +203,61 @@ def store_fundamentals(conn: sqlite3.Connection, symbol: str, data: dict) -> Non
     conn.commit()
 
 
+def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dict) -> None:
+    try:
+        from fetch_market import MarketFetcher
+        from indicators import calculate_all_indicators, calculate_pivot, calculate_cpr
+        from options import OptionsEngine
+        from regime import RegimeEngine
+        from scenarios import ScenarioEngine
+        from strategies import StrategyEngine
+        from ai_outlook import AIOutlookEngine
+        from expiry import get_current_expiry
+
+        fetcher = MarketFetcher()
+        config = load_config()
+        yf_symbol = ""
+        for inst in config["indices"] + config["stocks"]:
+            if inst["symbol"] == symbol:
+                yf_symbol = inst["yfinance_symbol"]
+                break
+        if not yf_symbol:
+            return
+        ohlcv = fetcher.fetch_ohlcv(symbol, yf_symbol, period="60d", interval="1d", limit=20)
+        quote = info if info else fetcher.fetch_quote(symbol, yf_symbol) or {"price": 0, "previous_close": 0, "stale": True}
+        if not quote or quote.get("price", 0) == 0:
+            return
+        indicators = calculate_all_indicators(ohlcv, quote) if ohlcv else {}
+        pivot_data = calculate_pivot(quote)
+        cpr_data = calculate_cpr(pivot_data)
+        options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
+        regime_engine = RegimeEngine()
+        regime = regime_engine.evaluate(
+            price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"],
+            rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"),
+            vix_price=0, bollinger=indicators.get("bollinger_bands"), pivot=pivot_data,
+            support_resistance=indicators.get("support_resistance"), pcr=options_analysis.get("pcr"),
+            volume=quote.get("volume"), avg_volume=indicators.get("avg_volume"),
+        )
+        scenario_engine = ScenarioEngine()
+        scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"])
+        strategy_engine = StrategyEngine()
+        strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL")
+        ai_engine = AIOutlookEngine()
+        ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False)})
+        timestamp = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+        conn.execute("INSERT OR REPLACE INTO market_regime (symbol, timestamp, regime, confidence, evidence, trend, momentum, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, regime["regime"], regime["confidence"], "", regime.get("trend", ""), regime.get("momentum", ""), regime.get("volatility", "")))
+        conn.execute("INSERT OR REPLACE INTO indicators (symbol, timestamp, ema9, ema20, ema50, ema100, ema200, sma20, sma50, sma200, vwap, rsi, macd, macd_signal, macd_histogram, atr, adx, di_plus, di_minus, bollinger_upper, bollinger_middle, bollinger_lower, bollinger_width, pivot, r1, s1, r2, s2, r3, s3, cpr_classification, day_high, day_low, prev_day_high, prev_day_low, prev_day_close, open_range_high, open_range_low) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, indicators.get("ema9",0), indicators.get("ema20",0), indicators.get("ema50",0), indicators.get("ema100",0), indicators.get("ema200",0), indicators.get("sma20",0), indicators.get("sma50",0), indicators.get("sma200",0), indicators.get("vwap",0), indicators.get("rsi",0), indicators.get("macd",0), indicators.get("macd_signal",0), indicators.get("macd_histogram",0), indicators.get("atr",0), indicators.get("adx",0), indicators.get("di_plus",0), indicators.get("di_minus",0), indicators.get("bollinger_bands",{}).get("upper",0) if isinstance(indicators.get("bollinger_bands"), dict) else 0, indicators.get("bollinger_bands",{}).get("middle",0) if isinstance(indicators.get("bollinger_bands"), dict) else 0, indicators.get("bollinger_bands",{}).get("lower",0) if isinstance(indicators.get("bollinger_bands"), dict) else 0, indicators.get("bollinger_bands",{}).get("width",0) if isinstance(indicators.get("bollinger_bands"), dict) else 0, pivot_data.get("pivot",0), pivot_data.get("r1",0), pivot_data.get("s1",0), pivot_data.get("r2",0), pivot_data.get("s2",0), pivot_data.get("r3",0), pivot_data.get("s3",0), cpr_data.get("classification",""), quote.get("high",0), quote.get("low",0), 0, 0, quote.get("previous_close",0), 0, 0))
+        if scenarios:
+            conn.execute("INSERT OR REPLACE INTO scenarios (symbol, timestamp, bullish_trigger, bullish_confirmation, bullish_target, bullish_invalidation, bearish_trigger, bearish_confirmation, bearish_target, bearish_invalidation, range_condition, range_strategy, range_invalidation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, scenarios[0].get("bullish_trigger",""), scenarios[0].get("bullish_confirmation",""), scenarios[0].get("bullish_target",""), scenarios[0].get("bullish_invalidation",""), scenarios[0].get("bearish_trigger",""), scenarios[0].get("bearish_confirmation",""), scenarios[0].get("bearish_target",""), scenarios[0].get("bearish_invalidation",""), scenarios[0].get("range_condition",""), scenarios[0].get("range_strategy",""), scenarios[0].get("range_invalidation","")))
+        if strategy:
+            conn.execute("INSERT OR REPLACE INTO strategies (symbol, timestamp, strategy, market_condition, expiry, legs, entry_trigger, maximum_profit, maximum_loss, breakeven, stop_loss, target, adjustment, exit, time_based_exit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, strategy.get("strategy",""), strategy.get("market_condition",""), strategy.get("expiry",""), json.dumps(strategy.get("legs",[])), strategy.get("entry_trigger",""), strategy.get("maximum_profit",""), strategy.get("maximum_loss",""), strategy.get("breakeven",""), strategy.get("stop_loss",""), strategy.get("target",""), strategy.get("adjustment",""), strategy.get("exit",""), strategy.get("time_based_exit","")))
+        conn.execute("INSERT OR REPLACE INTO ai_outlooks (symbol, timestamp, outlook, data_quality) VALUES (?, ?, ?, ?)", (symbol, timestamp, ai_outlook.get("outlook",""), quote.get("stale",False) and "STALE" or "GOOD"))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Regime/strategy error for {symbol}: {e}")
+
+
 def update_data_status(conn: sqlite3.Connection, symbol: str, interval_type: str) -> None:
     now = datetime.now(timezone.utc).isoformat()
     conn.execute("INSERT OR REPLACE INTO data_status (symbol, last_fetch, last_1m_fetch, last_5m_fetch, last_15m_fetch, last_options_fetch, last_vix_fetch, status, error_count) VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', 0)",
@@ -290,6 +345,16 @@ def fetch_all() -> None:
         if info:
             store_fundamentals(conn, sym_name, info)
         update_data_status(conn, sym_name, "info")
+        try:
+            store_regime_and_strategies(conn, sym_name, info)
+        except Exception as e:
+            logger.error(f"Regime/strategy error for {sym_name}: {e}")
+
+    for yf_sym, symbol in [("^NSEI", "NIFTY"), ("^NSEBANK", "BANKNIFTY"), ("^BSESN", "SENSEX")]:
+        try:
+            store_regime_and_strategies(conn, symbol, {})
+        except Exception as e:
+            logger.error(f"Regime/strategy error for {symbol}: {e}")
 
     snapshot = fetch_market_snapshot(conn)
     logger.info(f"Market snapshot: NIFTY={snapshot.get('nifty')}, BANKNIFTY={snapshot.get('banknifty')}, VIX={snapshot.get('vix')}")
