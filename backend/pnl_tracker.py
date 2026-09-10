@@ -63,6 +63,17 @@ def _last_candle_of_day(conn: sqlite3.Connection, symbol: str, date_str: str):
     return (row["close"], row["timestamp"]) if row else (None, None)
 
 
+def _exit_candle(conn: sqlite3.Connection, symbol: str, date_str: str, exit_label: str = EXIT_LABEL):
+    """Strict 3:20 PM exit candle; fallback to last candle of the day."""
+    row = conn.execute(
+        "SELECT close, timestamp FROM price_1m WHERE symbol=? AND timestamp LIKE ? ORDER BY timestamp ASC LIMIT 1",
+        (symbol, f"{date_str} {exit_label}%"),
+    ).fetchone()
+    if row:
+        return (row["close"], row["timestamp"])
+    return _last_candle_of_day(conn, symbol, date_str)
+
+
 def _snapshot(conn: sqlite3.Connection, symbol: str) -> dict:
     snap = {"strategy": "", "regime": "", "bias": "", "confidence": 0, "summary": ""}
     try:
@@ -132,7 +143,7 @@ def close(date_str: str | None = None, exit_label: str = EXIT_LABEL) -> None:
     date_str = date_str or _ist_today()
     conn = _conn()
     for symbol in INDEX_SYMBOLS:
-        price, ts = _last_candle_of_day(conn, symbol, date_str)
+        price, ts = _exit_candle(conn, symbol, date_str, exit_label)
         if price is None:
             price, ts = _latest_price(conn, symbol)
         if price is None:
@@ -167,7 +178,7 @@ def backfill(date_str: str | None = None) -> None:
     conn = _conn()
     for symbol in INDEX_SYMBOLS:
         entry, _ = _candle_price(conn, symbol, date_str, "09:30")
-        exit_p, _ = _last_candle_of_day(conn, symbol, date_str)
+        exit_p, _ = _exit_candle(conn, symbol, date_str, EXIT_LABEL)
         if entry is None or exit_p is None:
             print(f"backfill {symbol} {date_str}: missing candles, skipped")
             continue
