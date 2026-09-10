@@ -279,9 +279,32 @@ def init_database(db_path: str = DB_PATH) -> None:
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.executescript(SCHEMA)
+    _migrate_indicators(conn)
     conn.commit()
     conn.close()
     print(f"Database initialized: {db_path}")
+
+def _migrate_indicators(conn: sqlite3.Connection) -> None:
+    c = conn.cursor()
+    c.execute("PRAGMA table_info(indicators)")
+    cols = {row[1] for row in c.fetchall()}
+    additions = {
+        "ema9": "REAL", "sma20": "REAL", "sma50": "REAL", "sma200": "REAL",
+        "bollinger_width": "REAL", "pivot": "REAL", "r1": "REAL", "s1": "REAL",
+        "r2": "REAL", "s2": "REAL", "r3": "REAL", "s3": "REAL",
+        "cpr_classification": "TEXT", "day_high": "REAL", "day_low": "REAL",
+        "prev_day_high": "REAL", "prev_day_low": "REAL", "prev_day_close": "REAL",
+        "open_range_high": "REAL", "open_range_low": "REAL", "di_plus": "REAL",
+        "di_minus": "REAL",
+    }
+    for col_name, col_type in additions.items():
+        if col_name not in cols:
+            try:
+                c.execute(f"ALTER TABLE indicators ADD COLUMN {col_name} {col_type}")
+                print(f"  Added column: indicators.{col_name}")
+            except Exception as e:
+                print(f"  Could not add {col_name}: {e}")
+    conn.commit()
 
 if __name__ == "__main__":
     init_database()
