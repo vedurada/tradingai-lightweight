@@ -35,4 +35,8 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_D
 
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR/backend && SKIP_LLM=1 /usr/bin/python3 generate_data.py && SKIP_LLM=1 /usr/bin/python3 generate_json.py && mkdir -p /var/www/tradingai.in/html/data && cp $PROJECT_DIR/data/*.json /var/www/tradingai.in/html/data/ 2>/dev/null; true"
 
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR/backend && /usr/bin/python3 db_schema.py && SKIP_LLM=1 /usr/bin/python3 data_fetcher_db.py && mkdir -p /var/www/tradingai.in/html/data && cp $PROJECT_DIR/data/*.json /var/www/tradingai.in/html/data/ 2>/dev/null; true"
+
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR/backend && nohup /usr/bin/python3 api_server.py > /opt/tradingai/logs/api_server.log 2>&1 &"
+
 echo "=== Deployment complete ==="
