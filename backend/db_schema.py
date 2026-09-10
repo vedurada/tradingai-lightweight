@@ -116,6 +116,23 @@ CREATE TABLE IF NOT EXISTS option_chain (
 CREATE INDEX IF NOT EXISTS idx_opt_chain_symbol_expiry ON option_chain(symbol, expiry);
 CREATE INDEX IF NOT EXISTS idx_opt_chain_strike ON option_chain(symbol, strike);
 
+CREATE TABLE IF NOT EXISTS index_breadth (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    index_name TEXT,
+    timestamp TEXT,
+    last REAL,
+    change_pct REAL,
+    advances INTEGER,
+    declines INTEGER,
+    unchanged INTEGER,
+    open REAL,
+    high REAL,
+    low REAL,
+    prev_close REAL,
+    UNIQUE(index_name, timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_idxbreadth_name_ts ON index_breadth(index_name, timestamp DESC);
+
 CREATE TABLE IF NOT EXISTS market_breadth (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT,

@@ -41,3 +41,7 @@ footer { margin-top: 2rem; padding: 1rem 0; border-top: 1px solid #e2e8f0; color
 .updated-bar { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 6px; padding: 0.4rem 0.8rem; margin-bottom: 1rem; color: #475569; font-size: 0.8rem; display: flex; justify-content: center; align-items: center; flex-wrap: wrap; gap: 0.4rem 1rem; text-align: center; }
 .updated-bar #live-clock { white-space: nowrap; color: #0f172a; font-weight: bold; }
 select, input, button { font-size: 0.85rem; padding: 0.3rem 0.5rem; border: 1px solid #cbd5e1; border-radius: 4px; background: #ffffff; color: #0f172a; }
+.ticker-wrap { overflow: hidden; background: #0f172a; border-radius: 6px; margin-bottom: 1rem; }
+.ticker-track { display: inline-flex; gap: 2.5rem; white-space: nowrap; padding: 0.45rem 1rem; animation: tickscroll 45s linear infinite; color: #e2e8f0; font-size: 0.85rem; }
+.ticker-wrap:hover .ticker-track { animation-play-state: paused; }
+@keyframes tickscroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }

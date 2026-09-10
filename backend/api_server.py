@@ -485,6 +485,19 @@ def breadth():
         return jsonify(row_to_dict(row))
     return jsonify({"error": "no breadth"}), 404
 
+@app.route("/api/index-breadth")
+def index_breadth():
+    """Latest official NSE advances/declines per index."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT b.* FROM index_breadth b
+        JOIN (SELECT index_name, MAX(timestamp) AS ts FROM index_breadth GROUP BY index_name) m
+          ON m.index_name=b.index_name AND m.ts=b.timestamp
+        ORDER BY b.index_name""").fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+
 @app.route("/api/breadth/history")
 def breadth_history():
     limit = request.args.get("limit", 100, type=int)

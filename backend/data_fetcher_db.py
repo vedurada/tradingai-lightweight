@@ -737,6 +737,10 @@ def fetch_all() -> None:
         build_breadth(conn)
     except Exception as e:
         logger.warning(f"Breadth skip: {e}")
+    try:
+        fetch_nse_index_breadth(conn)
+    except Exception as e:
+        logger.warning(f"NSE breadth skip: {e}")
     snapshot = fetch_market_snapshot(conn)
     logger.info(f"Market snapshot: NIFTY={snapshot.get('nifty')}, BANKNIFTY={snapshot.get('banknifty')}, VIX={snapshot.get('vix')}")
 
@@ -744,10 +748,60 @@ def fetch_all() -> None:
     conn.execute("DELETE FROM option_chain WHERE fetched_at < datetime('now', '-3 days')")
     conn.execute("DELETE FROM fundamentals WHERE timestamp < datetime('now', '-7 days')")
     conn.execute("DELETE FROM news WHERE timestamp < datetime('now', '-30 days')")
+    conn.execute("DELETE FROM index_breadth WHERE timestamp < datetime('now', '-7 days')")
     conn.commit()
     conn.close()
 
     logger.info("Fetch complete!")
+
+
+NSE_INDEX_MAP = {"NIFTY 50": "NIFTY", "NIFTY BANK": "BANKNIFTY", "NIFTY FIN SERVICE": "FINNIFTY",
+                 "NIFTY FINANCIAL SERVICES": "FINNIFTY", "INDIA VIX": "VIX"}
+
+
+def fetch_nse_index_breadth(conn: sqlite3.Connection) -> None:
+    """NSE allIndices: official quotes + advances/declines per index (one light call)."""
+    try:
+        from curl_cffi import requests as cr
+    except Exception:
+        return
+    try:
+        s = cr.Session(impersonate="chrome124")
+        s.get("https://www.nseindia.com", timeout=20)
+        r = s.get("https://www.nseindia.com/api/allIndices", timeout=20,
+                  headers={"Accept": "*/*", "Referer": "https://www.nseindia.com/"})
+        data = r.json().get("data", [])
+    except Exception as e:
+        logger.warning(f"NSE index breadth skip: {e}")
+        return
+    now = datetime.now(timezone.utc).isoformat()
+    n = 0
+    for x in data:
+        name = (x.get("indexSymbol") or x.get("index") or "").strip().upper()
+        sym = NSE_INDEX_MAP.get(name, None)
+        if not sym:
+            for k, v in NSE_INDEX_MAP.items():
+                if k in name or name in k:
+                    sym = v
+                    break
+        if not sym:
+            continue
+        try:
+            conn.execute(
+                """INSERT OR IGNORE INTO index_breadth
+                   (index_name, timestamp, last, change_pct, advances, declines, unchanged, open, high, low, prev_close)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (sym, now,
+                 float(x.get("last") or 0), float(x.get("percentChange") or 0),
+                 int(x.get("advances") or 0), int(x.get("declines") or 0), int(x.get("unchanged") or 0),
+                 float(x.get("open") or 0), float(x.get("high") or 0), float(x.get("low") or 0),
+                 float(x.get("previousClose") or 0)))
+            n += 1
+        except Exception:
+            continue
+    conn.commit()
+    if n:
+        logger.info(f"NSE index breadth: {n} indices")
 
 
 def build_breadth(conn: sqlite3.Connection) -> None:
