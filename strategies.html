@@ -215,15 +215,25 @@ document.addEventListener('DOMContentLoaded',function(){var q=new URLSearchParam
 </script>
 <script>
 (function(){var BASE='';
+function marketOpen(){try{var n=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));var d=n.getDay();if(d===0||d===6)return false;var m=n.getHours()*60+n.getMinutes();return m>=555&&m<930;}catch(e){return true;}}
+async function jget(p){try{var r=await fetch(BASE+'/api/'+p);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
+function rc(r){if(!r)return'#94a3b8';r=String(r).toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
 async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
-var m=null,ib=null;
-try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
-try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
 var items=[];
-if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
-items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
-if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
-if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+if(marketOpen()){
+  var syms=['nifty','banknifty','finnifty','sensex'];
+  for(var i=0;i<syms.length;i++){var d=await jget(syms[i]);if(!d)continue;
+    var s=((d.strategy||{}).strategies||[])[0]||{};var rg=(d.regime||{}).regime||'';
+    items.push('<span><strong>'+syms[i].toUpperCase()+'</strong> '+(s.strategy||'—')+' <span style="color:'+rc(rg)+'">● '+rg.replace(/_/g,' ')+'</span>'+(d.strategy&&d.strategy.locked?' · Locked':'')+'</span>');}
+  if(!items.length)return;
+} else {
+  var m=await jget('market');var ib=await jget('index-breadth');
+  if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+  items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+  if(ib&&ib.length){for(var j=0;j<ib.length;j++){var b=ib[j];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+  if(!items.length)return;
+}
+var html=items.join('');el.innerHTML=html+html;}catch(e){}}
 document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
 })();
 </script>
