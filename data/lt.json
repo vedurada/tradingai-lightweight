@@ -1,0 +1,243 @@
+{
+  "source": "Yahoo Finance",
+  "last_updated": "2026-09-10T11:50:07.548Z",
+  "data_timestamp": "2026-09-10T11:50:07.548Z",
+  "data_quality": "GOOD",
+  "quote": {
+    "symbol": "LT",
+    "price": 3955.0,
+    "change": 32.4,
+    "change_pct": 0.83,
+    "open": 3949.4,
+    "high": 3965.5,
+    "low": 3910.0,
+    "previous_close": 3922.6,
+    "volume": 1375980,
+    "timestamp": "2026-09-10T11:50:07.413515+00:00",
+    "stale": false
+  },
+  "indicators": {
+    "vwap": 4022.41,
+    "pivot": {
+      "pivot": 3932.7,
+      "r1": 3955.4,
+      "s1": 3899.9,
+      "r2": 3988.2,
+      "s2": 3877.2,
+      "r3": 4010.9,
+      "s3": 3844.4
+    },
+    "cpr": {
+      "pivot": 3932.7,
+      "bc": 3916.3,
+      "tc": 3944.05,
+      "width": 27.75,
+      "classification": "WIDE"
+    },
+    "bollinger_bands": {
+      "upper": 4138.79,
+      "middle": 4025.55,
+      "lower": 3912.31,
+      "period": 20
+    },
+    "rsi": 31.35,
+    "macd": null,
+    "adx": 24.58,
+    "atr": 55.11,
+    "support_resistance": {
+      "support": [
+        4027.7,
+        4038.0,
+        4044.9
+      ],
+      "resistance": [
+        4024.8,
+        4023.0,
+        4021.3
+      ],
+      "prev_high": 4125.3,
+      "prev_low": 3910.0
+    },
+    "ema20": 4006.38,
+    "ema50": null,
+    "ema100": null,
+    "ema200": null
+  },
+  "pivot": {
+    "pivot": 3932.7,
+    "r1": 3955.4,
+    "s1": 3899.9,
+    "r2": 3988.2,
+    "s2": 3877.2,
+    "r3": 4010.9,
+    "s3": 3844.4
+  },
+  "cpr": {
+    "pivot": 3932.7,
+    "bc": 3916.3,
+    "tc": 3944.05,
+    "width": 27.75,
+    "classification": "WIDE"
+  },
+  "options": {
+    "data_unavailable": true,
+    "message": "Options data unavailable"
+  },
+  "regime": {
+    "regime": "RANGE_BOUND",
+    "confidence": 25.0,
+    "reasons": [
+      "Price near VWAP - range bound",
+      "RSI 31.35 - bearish momentum",
+      "Price within Bollinger bands",
+      "Near strong support"
+    ],
+    "scores": {
+      "trend_up": 10.0,
+      "trend_down": 20.0,
+      "range": 25.0,
+      "high_vol": 0.0
+    },
+    "timestamp": "2026-09-10T11:50:07.536961+00:00"
+  },
+  "scenarios": {
+    "bullish": {
+      "trigger": "Price breaks above resistance",
+      "confirmation": "5-min close above resistance + volume",
+      "target": 4024.8,
+      "invalidation": "Below pivot",
+      "strategy_environment": "TRENDING_BULLISH",
+      "probability": 0.15
+    },
+    "bearish": {
+      "trigger": "Price breaks below support",
+      "confirmation": "5-min close below support + volume",
+      "target": 4044.9,
+      "invalidation": "Above pivot",
+      "strategy_environment": "TRENDING_BEARISH",
+      "probability": 0.1
+    },
+    "range": {
+      "condition": "Price between 4044.9 and 4024.8",
+      "strategy_environment": "Iron Condor / Butterfly",
+      "invalidation": "Breakout above resistance or breakdown below support",
+      "probability": 0.4
+    },
+    "breakout": {
+      "trigger": "Volume spike + close beyond support/resistance",
+      "confirmation": "2 consecutive closes beyond level",
+      "target": "Next major level",
+      "invalidation": "Return to range",
+      "strategy_environment": "BREAKOUT",
+      "probability": 0.35
+    },
+    "reversal": {
+      "trigger": "RSI divergence + price at support/resistance",
+      "confirmation": "MACD crossover + volume increase",
+      "target": "Opposite side of range",
+      "invalidation": "Continue trend",
+      "strategy_environment": "REVERSAL",
+      "probability": 0.05
+    }
+  },
+  "strategy": {
+    "regime": "RANGE_BOUND",
+    "confidence": 25.0,
+    "data_quality": "GOOD",
+    "strategies": [
+      {
+        "strategy": "Iron Condor",
+        "market_condition": "Range-bound",
+        "expiry": "NEXT_WEEKLY",
+        "legs": [
+          "SELL OTM CALL",
+          "BUY OTM CALL",
+          "SELL OTM PUT",
+          "BUY OTM PUT"
+        ],
+        "entry_trigger": "Price between support and resistance",
+        "maximum_profit": "Premium received",
+        "maximum_loss": "Strike width - premium",
+        "breakeven": "Wings \u00b1 premium",
+        "stop_loss": "Breakout/breakdown",
+        "adjustment": "Roll both sides",
+        "exit": "At expiry",
+        "strategy_environment": "RANGE_BOUND",
+        "invalidation": "Breakout above resistance or breakdown below support",
+        "position_size": "10%"
+      }
+    ],
+    "position_size": "10%",
+    "timestamp": "2026-09-10T11:50:07.536992+00:00"
+  },
+  "ai_outlook": {
+    "asset": "LT",
+    "date": "2026-09-10",
+    "market_regime": "RANGE_BOUND",
+    "directional_bias": "NEUTRAL",
+    "confidence": 45,
+    "evidence_strength": 0.5,
+    "volatility_classification": "MEDIUM",
+    "market_structure": "RANGE",
+    "market_summary": "LT analysis - RANGE_BOUND",
+    "trend_analysis": "Price vs EMA: 3955.0 vs 4006.38",
+    "momentum_analysis": "RSI: 31.35, MACD: None",
+    "volatility_analysis": "ATR: 55.11, VIX: 16.6",
+    "support_levels": [
+      4027.7,
+      4038.0,
+      4044.9
+    ],
+    "resistance_levels": [
+      4024.8,
+      4023.0,
+      4021.3
+    ],
+    "options_analysis": "DATA UNAVAILABLE",
+    "bullish_scenario": {
+      "trigger": "Price above VWAP",
+      "confirmation": "Break above resistance",
+      "target": "Next resistance",
+      "invalidation": "Below pivot"
+    },
+    "bearish_scenario": {
+      "trigger": "Price below VWAP",
+      "confirmation": "Break below support",
+      "target": "Next support",
+      "invalidation": "Above pivot"
+    },
+    "range_scenario": {
+      "condition": "Price between support and resistance",
+      "strategy_environment": "Iron Condor",
+      "invalidation": "Breakout/breakdown"
+    },
+    "primary_strategy": {
+      "strategy": "Defined-risk spread",
+      "market_condition": "RANGE_BOUND",
+      "expiry": "NEXT_WEEKLY",
+      "legs": [],
+      "entry_trigger": "Wait for signal",
+      "maximum_profit": "N/A",
+      "maximum_loss": "N/A",
+      "breakeven": "N/A",
+      "stop_loss": "N/A",
+      "target": "N/A",
+      "adjustment": "N/A",
+      "exit": "N/A"
+    },
+    "alternative_strategies": [],
+    "intraday_plan": [],
+    "no_trade_conditions": [
+      "Unclear direction",
+      "Low liquidity",
+      "Conflicting indicators"
+    ],
+    "strategy_environment": "RANGE_BOUND",
+    "invalidation": "Break of key support/resistance",
+    "risk_warnings": [
+      "This is decision-support, not a guaranteed signal"
+    ],
+    "data_quality": "PARTIAL",
+    "generated_at": "2026-09-10T11:50:07.537062+00:00"
+  }
+}

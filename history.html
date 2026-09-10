@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>History - TradingAI</title>
+<meta name="description" content="Previous AI outlooks and market analysis history">
+<link rel="canonical" href="https://tradingai.in/history.html">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+  <h1>TradingAI</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="market.html">Market</a>
+    <a href="indices/nifty.html">NIFTY</a>
+    <a href="indices/banknifty.html">Bank NIFTY</a>
+    <a href="scanner.html">Scanner</a>
+    <a href="strategies.html">Strategies</a>
+    <a href="strategy-builder.html">Builder</a>
+    <a href="strategies-guide.html">Guide</a>
+    <a href="history.html">History</a>
+  </nav>
+</header>
+<main>
+  <div id="last-updated-bar" class="updated-bar"></div>
+  <h2>Index P&amp;L History <span class="status">Entry 9:30 AM → Exit 3:20 PM IST</span></h2>
+  <div style="margin-bottom:1rem" id="history-filters"></div>
+  <div id="history-grid" class="pnl-full"></div>
+  <footer>
+    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
+  </footer>
+</main>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+var _lastDataTs=null;function fmtIST(ts){try{var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#ef4444';bar.textContent='Update failed \u2014 retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: \u2014';return;}bar.textContent='Data as of '+show+' IST';}
+let refreshInterval=null;
+function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
+function startDataRefresh(callback,intervalMs){intervalMs=intervalMs||30000;stopDataRefresh();refreshInterval=setInterval(function(){callback();},intervalMs);}
+function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+var histFilter='all';
+function setHistFilter(f){histFilter=f;loadHistory();}
+async function loadHistory(){var grid=document.getElementById('history-grid');if(!grid)return;grid.innerHTML='<div class="card">Loading history...</div>';var data=await fetchJSON('history');if(!data){grid.innerHTML='<div class="card">No history data yet</div>';setLastUpdated(null,false);return;}var symbols=Object.keys(data).sort();if(!symbols.length){grid.innerHTML='<div class="card">No history data yet</div>';return;}var fbar=document.getElementById('history-filters');if(fbar){var fh='<button onclick="setHistFilter(\'all\')" class="badge" style="cursor:pointer;border:none;margin-right:0.3rem">All</button>';for(var fi=0;fi<symbols.length;fi++){fh+='<button onclick="setHistFilter(\''+symbols[fi]+'\')" class="badge" style="cursor:pointer;border:none;margin-right:0.3rem">'+symbols[fi]+'</button>';}fbar.innerHTML=fh;}var rows=[];for(var si=0;si<symbols.length;si++){var sym=symbols[si];if(histFilter!=='all'&&sym!==histFilter)continue;var entries=data[sym]||[];for(var ei=0;ei<entries.length;ei++){var e=entries[ei];e._sym=sym;rows.push(e);}}rows.sort(function(a,b){return (b.date||'')<(a.date||'')?-1:1;});var settled=rows.filter(function(e){return e.result==='WIN'||e.result==='LOSS'||e.result==='FLAT';});var wins=0,losses=0,flats=0,totalPoints=0,best=null,worst=null;for(var ri=0;ri<settled.length;ri++){var se=settled[ri];if(se.result==='WIN')wins++;else if(se.result==='LOSS')losses++;else flats++;if(se.points!=null){totalPoints+=se.points;if(best==null||se.points>best)best=se.points;if(worst==null||se.points<worst)worst=se.points;}}var winRate=settled.length>0?((wins/settled.length)*100).toFixed(1):0;var avg=settled.length>0?(totalPoints/settled.length).toFixed(2):0;function numColor(v){return v>0?'#22c55e':v<0?'#ef4444':'#94a3b8';}function numHtml(v,dec){if(v==null||isNaN(v))return '—';var s=(v>=0?'+':'')+Number(v).toFixed(dec==null?2:dec);return '<span style="color:'+numColor(v)+';font-weight:bold">'+s+'</span>';}var html='<div class="card" style="margin-bottom:1rem"><h3>P&amp;L Summary (9:30 entry → 3:20 exit)</h3><div class="status">Settled: '+settled.length+' | Wins: '+wins+' | Losses: '+losses+' | Flats: '+flats+' | Win Rate: '+winRate+'% | Total: '+numHtml(totalPoints)+' pts | Avg: '+numHtml(parseFloat(avg))+' pts | Best: '+(best!=null?numHtml(best):'—')+' | Worst: '+(worst!=null?numHtml(worst):'—')+'</div></div>';html+='<div class="card" style="overflow-x:auto"><table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Date</th><th>Symbol</th><th>Outlook</th><th>Direction</th><th>Entry Time</th><th>Entry Price</th><th>Exit Time</th><th>Exit Price</th><th>Points</th><th>Result</th><th>Strategy</th></tr></thead><tbody>';for(var rj=0;rj<rows.length;rj++){var e2=rows[rj];var res2=e2.result||'OPEN';var rc2=res2==='WIN'?'#22c55e':res2==='LOSS'?'#ef4444':'#94a3b8';var pts2=e2.points!=null?numHtml(e2.points):'—';var bias=(e2.directional_bias||'').toUpperCase();var outlook=bias.indexOf('BULL')!==-1?'BUY':(bias.indexOf('BEAR')!==-1?'SELL':(bias?bias:'—'));var oc=outlook==='BUY'?'#22c55e':outlook==='SELL'?'#ef4444':'#eab308';var dir=e2.direction||(outlook==='SELL'?'SHORT':(outlook==='BUY'?'LONG':'—'));var dc=dir==='SHORT'?'#ef4444':dir==='LONG'?'#22c55e':'#94a3b8';html+='<tr><td>'+(e2.date||'—')+'</td><td><strong>'+e2._sym+'</strong></td><td style="color:'+oc+';font-weight:bold">'+outlook+'</td><td style="color:'+dc+';font-weight:bold">'+dir+'</td><td>'+(e2.entry_time||'09:30')+'</td><td>'+(e2.locked_price!=null?formatPrice(e2.locked_price):'—')+'</td><td>'+(e2.exit_time||(e2.closed_price!=null?e2.exit_time:'—')||'—')+'</td><td>'+(e2.closed_price!=null?formatPrice(e2.closed_price):'—')+'</td><td>'+pts2+'</td><td style="color:'+rc2+';font-weight:bold">'+res2+'</td><td>'+(e2.strategy||'N/A')+'</td></tr>';}html+='</tbody></table></div>';grid.innerHTML=html;setLastUpdated(new Date().toISOString(),true);}
+document.addEventListener('DOMContentLoaded',function(){loadHistory();startDataRefresh(loadHistory);});
+</script>
+</body>
+</html>

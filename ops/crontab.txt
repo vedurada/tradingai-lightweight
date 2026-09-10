@@ -1,0 +1,14 @@
+# TradingAI cron — install with: crontab ops/crontab.txt  (times are VM-local, Asia/Kolkata)
+# TradingAI Market Hours Cron (9:30 AM - 3:30 PM IST, Mon-Fri)
+* 9-15 * * 1-5 cd /opt/tradingai/backend && SKIP_LLM=1 /usr/bin/python3 data_fetcher_db.py >> /opt/tradingai/logs/data.log 2>&1
+*/5 9-15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 monitor.py >> /opt/tradingai/logs/monitor.log 2>&1
+0 */2 9-15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 alert.py >> /opt/tradingai/logs/alerts.log 2>&1
+*/5 * * * * pgrep -f '[p]ython3 api_server' > /dev/null || (cd /opt/tradingai/backend && setsid /usr/bin/python3 api_server.py >>/opt/tradingai/logs/api_server.log 2>&1 0</dev/null &)
+@reboot cd /opt/tradingai/backend && setsid /usr/bin/python3 api_server.py >>/opt/tradingai/logs/api_server.log 2>&1 0</dev/null &
+30 9 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py lock >> /opt/tradingai/logs/pnl.log 2>&1
+20 15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py close >> /opt/tradingai/logs/pnl.log 2>&1
+0 2 1 * * cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py archive 365 >> /opt/tradingai/logs/pnl.log 2>&1
+# Daily off-site backup to git (data-safe snapshot, verifies push): 6:30 PM IST daily
+30 18 * * * /opt/tradingai/ops/vm-backup.sh >> /opt/tradingai/logs/backup.log 2>&1
+# Daily off-site backup to git (data-safe snapshot, verifies push): 6:30 PM IST daily
+30 18 * * * /opt/tradingai/ops/vm-backup.sh >> /opt/tradingai/logs/backup.log 2>&1

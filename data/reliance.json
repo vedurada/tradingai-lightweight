@@ -1,0 +1,261 @@
+{
+  "source": "Yahoo Finance",
+  "last_updated": "2026-09-10T11:50:01.415Z",
+  "data_timestamp": "2026-09-10T11:50:01.415Z",
+  "data_quality": "GOOD",
+  "quote": {
+    "symbol": "RELIANCE",
+    "price": 1274.0,
+    "change": -5.0,
+    "change_pct": -0.39,
+    "open": 1278.5,
+    "high": 1285.3,
+    "low": 1266.3,
+    "previous_close": 1279.0,
+    "volume": 9290437,
+    "timestamp": "2026-09-10T11:50:01.144871+00:00",
+    "stale": false
+  },
+  "indicators": {
+    "vwap": 1300.77,
+    "pivot": {
+      "pivot": 1276.87,
+      "r1": 1287.43,
+      "s1": 1268.43,
+      "r2": 1295.87,
+      "s2": 1257.87,
+      "r3": 1306.43,
+      "s3": 1249.43
+    },
+    "cpr": {
+      "pivot": 1276.87,
+      "bc": 1272.65,
+      "tc": 1282.15,
+      "width": 9.5,
+      "classification": "WIDE"
+    },
+    "bollinger_bands": {
+      "upper": 1334.18,
+      "middle": 1303.16,
+      "lower": 1272.14,
+      "period": 20
+    },
+    "rsi": 38.15,
+    "macd": null,
+    "adx": 29.75,
+    "atr": 21.94,
+    "support_resistance": {
+      "support": [
+        1306.8,
+        1308.4,
+        1311.8
+      ],
+      "resistance": [
+        1302.5,
+        1302.4,
+        1301.9
+      ],
+      "prev_high": 1333.0,
+      "prev_low": 1266.3
+    },
+    "ema20": 1300.21,
+    "ema50": null,
+    "ema100": null,
+    "ema200": null
+  },
+  "pivot": {
+    "pivot": 1276.87,
+    "r1": 1287.43,
+    "s1": 1268.43,
+    "r2": 1295.87,
+    "s2": 1257.87,
+    "r3": 1306.43,
+    "s3": 1249.43
+  },
+  "cpr": {
+    "pivot": 1276.87,
+    "bc": 1272.65,
+    "tc": 1282.15,
+    "width": 9.5,
+    "classification": "WIDE"
+  },
+  "options": {
+    "data_unavailable": true,
+    "message": "Options data unavailable"
+  },
+  "regime": {
+    "regime": "TRENDING_BEARISH",
+    "confidence": 35.0,
+    "reasons": [
+      "Price near VWAP - range bound",
+      "RSI 38.15 - bearish momentum",
+      "ADX 29.75 - trending",
+      "Price within Bollinger bands",
+      "Near strong support"
+    ],
+    "scores": {
+      "trend_up": 10.0,
+      "trend_down": 35.0,
+      "range": 25.0,
+      "high_vol": 0.0
+    },
+    "timestamp": "2026-09-10T11:50:01.410248+00:00"
+  },
+  "scenarios": {
+    "bullish": {
+      "trigger": "Price breaks above resistance",
+      "confirmation": "5-min close above resistance + volume",
+      "target": 1302.5,
+      "invalidation": "Below pivot",
+      "strategy_environment": "TRENDING_BULLISH",
+      "probability": 0.2
+    },
+    "bearish": {
+      "trigger": "Price below VWAP with RSI > 30",
+      "confirmation": "Break below support with volume",
+      "target": 1311.8,
+      "invalidation": "Above pivot",
+      "strategy_environment": "TRENDING_BEARISH",
+      "probability": 0.5
+    },
+    "range": {
+      "condition": "Price between 1311.8 and 1302.5",
+      "strategy_environment": "Iron Condor / Butterfly",
+      "invalidation": "Breakout above resistance or breakdown below support",
+      "probability": 0.2
+    },
+    "breakout": {
+      "trigger": "Volume spike + close beyond support/resistance",
+      "confirmation": "2 consecutive closes beyond level",
+      "target": "Next major level",
+      "invalidation": "Return to range",
+      "strategy_environment": "BREAKOUT",
+      "probability": 0.15
+    },
+    "reversal": {
+      "trigger": "RSI divergence + price at support/resistance",
+      "confirmation": "MACD crossover + volume increase",
+      "target": "Opposite side of range",
+      "invalidation": "Continue trend",
+      "strategy_environment": "REVERSAL",
+      "probability": 0.05
+    }
+  },
+  "strategy": {
+    "regime": "TRENDING_BEARISH",
+    "confidence": 35.0,
+    "data_quality": "GOOD",
+    "strategies": [
+      {
+        "strategy": "Bear Put Spread",
+        "market_condition": "Bearish trend",
+        "expiry": "NEXT_WEEKLY",
+        "legs": [
+          "BUY ATM PUT",
+          "SELL 1-2 OTM PUT"
+        ],
+        "entry_trigger": "Price below VWAP, RSI > 30",
+        "maximum_profit": "Strike width - premium",
+        "maximum_loss": "Premium + costs",
+        "breakeven": "Higher strike - premium",
+        "stop_loss": "Above higher strike",
+        "adjustment": "Roll down both legs",
+        "exit": "At expiry or target",
+        "strategy_environment": "TRENDING_BEARISH",
+        "invalidation": "Price above VWAP or RSI < 25",
+        "position_size": "10%"
+      },
+      {
+        "strategy": "Bear Call Spread",
+        "market_condition": "Bearish trend",
+        "expiry": "NEXT_WEEKLY",
+        "legs": [
+          "SELL OTM CALL",
+          "BUY further OTM CALL"
+        ],
+        "entry_trigger": "Price below VWAP, RSI > 30",
+        "maximum_profit": "Premium received",
+        "maximum_loss": "Strike width - premium",
+        "breakeven": "Lower strike + premium",
+        "stop_loss": "Above higher strike",
+        "adjustment": "Roll up both legs",
+        "exit": "At expiry or target",
+        "strategy_environment": "TRENDING_BEARISH",
+        "invalidation": "Price above higher call strike",
+        "position_size": "10%"
+      }
+    ],
+    "position_size": "10%",
+    "timestamp": "2026-09-10T11:50:01.410295+00:00"
+  },
+  "ai_outlook": {
+    "asset": "RELIANCE",
+    "date": "2026-09-10",
+    "market_regime": "TRENDING_BEARISH",
+    "directional_bias": "BEARISH",
+    "confidence": 65,
+    "evidence_strength": 0.5,
+    "volatility_classification": "MEDIUM",
+    "market_structure": "DOWNTREND",
+    "market_summary": "RELIANCE analysis - TRENDING_BEARISH",
+    "trend_analysis": "Price vs EMA: 1274.0 vs 1300.21",
+    "momentum_analysis": "RSI: 38.15, MACD: None",
+    "volatility_analysis": "ATR: 21.94, VIX: 16.6",
+    "support_levels": [
+      1306.8,
+      1308.4,
+      1311.8
+    ],
+    "resistance_levels": [
+      1302.5,
+      1302.4,
+      1301.9
+    ],
+    "options_analysis": "DATA UNAVAILABLE",
+    "bullish_scenario": {
+      "trigger": "Price above VWAP",
+      "confirmation": "Break above resistance",
+      "target": "Next resistance",
+      "invalidation": "Below pivot"
+    },
+    "bearish_scenario": {
+      "trigger": "Price below VWAP",
+      "confirmation": "Break below support",
+      "target": "Next support",
+      "invalidation": "Above pivot"
+    },
+    "range_scenario": {
+      "condition": "Price between support and resistance",
+      "strategy_environment": "Iron Condor",
+      "invalidation": "Breakout/breakdown"
+    },
+    "primary_strategy": {
+      "strategy": "Defined-risk spread",
+      "market_condition": "TRENDING_BEARISH",
+      "expiry": "NEXT_WEEKLY",
+      "legs": [],
+      "entry_trigger": "Wait for signal",
+      "maximum_profit": "N/A",
+      "maximum_loss": "N/A",
+      "breakeven": "N/A",
+      "stop_loss": "N/A",
+      "target": "N/A",
+      "adjustment": "N/A",
+      "exit": "N/A"
+    },
+    "alternative_strategies": [],
+    "intraday_plan": [],
+    "no_trade_conditions": [
+      "Unclear direction",
+      "Low liquidity",
+      "Conflicting indicators"
+    ],
+    "strategy_environment": "TRENDING_BEARISH",
+    "invalidation": "Break of key support/resistance",
+    "risk_warnings": [
+      "This is decision-support, not a guaranteed signal"
+    ],
+    "data_quality": "PARTIAL",
+    "generated_at": "2026-09-10T11:50:01.410364+00:00"
+  }
+}
