@@ -162,7 +162,15 @@ rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync �
 **Every byte fetched externally must land in SQLite** (nothing lives only in memory/JSON):
 yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundamentals, dividends/splits→corporate_actions, news→news, statements→fundamentals (weekly), options→option_chain(+expiries). Computed data (indicators/regime/scenarios/strategies/outlooks/breadth/snapshots) derived locally and stored. API exposes all of it; pages never call Yahoo directly.
 
-## 17. Future implementations (roadmap)
+## 17. Analytics, SEO & discoverability
+
+- **GA4:** measurement ID `G-MJ3X88QYEL` (stream "tradingai" → https://tradingai.in), gtag.js snippet first in `<head>` of all 11 pages (verified served). If GA4 says "data collection isn't active", it means zero hits arrived — check with an adblock-free visit + Realtime report (standard reports lag 24–48h); Tag Assistant confirms firing.
+- **SEO foundation:** `robots.txt` (allows all but `/api/`, `/data/`), `sitemap.xml` (10 evergreen URLs) + `backend/sitemap_gen.py` (adds dated `market/*.html` pages; run after publishing + weekly). Deploy syncs both + `today/` to web root (sync once silently skipped them — covered by deploy now).
+- **Meta:** unique OG title/description + canonical + JSON-LD (Organization everywhere; WebSite + BreadcrumbList) on all pages.
+- **`/today/` terminal:** pre-open checklist / live mode / close report, session-aware by IST.
+- **Pending owner actions:** Google Search Console + Bing Webmaster verification, sitemap submit, IndexNow on publish.
+
+## 18. Future implementations (roadmap)
 
 1. **Second live source (critical):** Yahoo has no NSE options chain and 15-min-delayed indices — add NSEindia API or a broker WebSocket (Zerodha/Angel/Dhan) for live options + true tick data; keep Yahoo as fallback/archive.
 2. **Intraday aggregation use:** `price_5m`/`price_15m` tables exist but are never populated — aggregate from `price_1m` in-fetcher; base regime screens on 15m, not daily.
