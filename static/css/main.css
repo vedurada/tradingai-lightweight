@@ -57,6 +57,17 @@ select:focus, input:focus, button:focus-visible { outline: 2px solid #86efac; ou
 details { margin-top: 0.6rem; border: 1px solid var(--line); border-radius: 8px; padding: 0.4rem 0.7rem; background: #f8fafc; }
 details summary { cursor: pointer; color: var(--green); font-weight: 600; font-size: 0.85rem; }
 .ticker-wrap { overflow: hidden; background: linear-gradient(90deg, #0f172a, #1e293b); border-radius: 10px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25); border: 1px solid #1e293b; }
+.hero { background: linear-gradient(135deg, #052e16 0%, #15803d 100%); border: none; color: #fff; }
+.hero .price { color: #fff; }
+.hero .status { color: #d1fae5; }
+.hero h2 { color: #fff; }
+.tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; margin-top: 1rem; }
+.tile { background: #ffffff; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.8rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); }
+.tile .t-sym { font-size: 0.72rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; }
+.tile .t-price { font-size: 1.15rem; font-weight: 800; color: #0f172a; font-variant-numeric: tabular-nums; }
+.bbar { display: flex; height: 10px; border-radius: 99px; overflow: hidden; background: #e2e8f0; margin: 0.4rem 0; }
+.bbar .b-adv { background: #15803d; }
+.bbar .b-dec { background: #dc2626; }
 .ticker-track { display: inline-flex; gap: 2.5rem; white-space: nowrap; padding: 0.5rem 1rem; animation: tickscroll 45s linear infinite; color: #e2e8f0; font-size: 0.85rem; }
 .ticker-wrap:hover .ticker-track { animation-play-state: paused; }
 @keyframes tickscroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
