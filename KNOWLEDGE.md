@@ -106,6 +106,10 @@ Ops: `data_status`, `alerts`.
 - Retention: 1 year live. `/api/history` merges both tables, default 365 days, grouped `{SYM: [...]}`.
 - History page columns: Date | Symbol | Outlook(BUY/SELL) | Direction(LONG/SHORT) | Entry Time/Price | Exit Time/Price | Points(±, green/red) | Result | Strategy + summary bar + symbol filters.
 
+
+- Live NSE data (verified 2026-09-10): `option-chain-contract-info` gives authoritative expiry dates per symbol, stored in `option_expiries` by the 9 AM daily refresh; API prefers these over weekday math (payload `source: NSE`).
+- Live NSE lot sizes from `fo_mktlots.csv` into `symbols.lot_size` (NIFTY 65 / BANKNIFTY 30 / FINNIFTY 60, source=NSE; SENSEX 20 source=config until a BSE file is found). Refresh writes only on change; Builder reads live lots from the API.
+
 ## 10. Expiry rules (`expiry.py`)
 
 - NSE=Tuesday, BSE=Thursday (SEBI 1-Sep-2025; NSE circular FAOP/68747).
