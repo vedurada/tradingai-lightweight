@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strategies - TradingAI</title>
-<meta name="description" content="Options strategies based on market conditions">
+<title>Strategy Intelligence - TradingAI</title>
+<meta name="description" content="Index option strategy engine: live calculators, AI analysis, comparison and performance">
 <link rel="canonical" href="https://tradingai.in/strategies.html">
 <link rel="stylesheet" href="assets/css/main.css">
 </head>
@@ -25,26 +25,172 @@
 </header>
 <main>
   <div id="last-updated-bar" class="updated-bar"></div>
-  <h2>Index Options Strategies</h2>
-  <p class="status">Option spreads are shown for tradable indexes only (NIFTY, BANKNIFTY, FINNIFTY, SENSEX). For stocks, see the <a href="scanner.html">Scanner</a> for AI-assisted BUY / HOLD / EXIT outlooks.</p>
-  <div id="strategy-grid" class="grid"></div>
+  <h2>OPTIONS STRATEGY ENGINE <span class="status">index options only — stocks get BUY/HOLD/EXIT on the <a href="scanner.html">Scanner</a></span></h2>
+
+  <div class="card" style="margin-bottom:1rem">
+    <div style="display:flex;flex-wrap:wrap;gap:0.8rem;align-items:end">
+      <label>Index<br><select id="e-index">
+        <option value="NIFTY">NIFTY</option>
+        <option value="BANKNIFTY">BANKNIFTY</option>
+        <option value="FINNIFTY">FINNIFTY</option>
+        <option value="SENSEX">SENSEX</option>
+      </select></label>
+      <label>Expiry<br><select id="e-expiry"><option value="W">—</option></select></label>
+      <div>Spot<br><strong id="e-spot">—</strong></div>
+      <div>VIX<br><strong id="e-vix">—</strong></div>
+    </div>
+    <div style="margin-top:0.6rem" id="e-views">
+      <span class="status">Market View: </span>
+      <button data-view="AUTO" class="badge badge-blue" style="cursor:pointer;border:none;margin-right:0.3rem">Auto</button>
+      <button data-view="Bullish" class="badge badge-green" style="cursor:pointer;border:none;margin-right:0.3rem">Bullish</button>
+      <button data-view="Bearish" class="badge badge-red" style="cursor:pointer;border:none;margin-right:0.3rem">Bearish</button>
+      <button data-view="Range" class="badge badge-yellow" style="cursor:pointer;border:none;margin-right:0.3rem">Range</button>
+      <button data-view="Volatile" class="badge badge-blue" style="cursor:pointer;border:none;margin-right:0.3rem">Volatile</button>
+    </div>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h3>AI STRATEGY ANALYSIS</h3>
+    <div id="e-ai">Loading…</div>
+  </div>
+
+  <h3>STRATEGY CARDS <span class="status">premiums fill live at your broker — ₹ math shown per strike-width</span></h3>
+  <div id="e-groups"></div>
+
+  <div class="card" style="margin-bottom:1rem;overflow-x:auto">
+    <h3>STRATEGY COMPARISON</h3>
+    <table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Strategy</th><th>View</th><th>Max Profit</th><th>Max Loss</th><th>Direction</th><th>Theta</th></tr></thead><tbody>
+    <tr><td>Buy CE</td><td>Bullish</td><td>High</td><td>Premium</td><td>Bullish</td><td>Negative</td></tr>
+    <tr><td>Bull Call Spread</td><td>Moderately bullish</td><td>Limited</td><td>Limited</td><td>Bullish</td><td>Negative</td></tr>
+    <tr><td>Bull Put Spread</td><td>Bullish/neutral</td><td>Limited</td><td>Limited</td><td>Bullish</td><td>Positive</td></tr>
+    <tr><td>Buy PE</td><td>Bearish</td><td>High</td><td>Premium</td><td>Bearish</td><td>Negative</td></tr>
+    <tr><td>Bear Put Spread</td><td>Moderately bearish</td><td>Limited</td><td>Limited</td><td>Bearish</td><td>Negative</td></tr>
+    <tr><td>Bear Call Spread</td><td>Bearish/neutral</td><td>Limited</td><td>Limited</td><td>Bearish</td><td>Positive</td></tr>
+    <tr><td>Iron Condor</td><td>Range</td><td>Limited</td><td>Limited</td><td>Neutral</td><td>Positive</td></tr>
+    <tr><td>Long Straddle/Strangle</td><td>Volatile</td><td>High</td><td>Premium</td><td>Neutral</td><td>Negative</td></tr>
+    </tbody></table>
+  </div>
+
+  <div class="card" style="margin-bottom:1rem">
+    <h3>STRATEGY PERFORMANCE <span class="status">paper trades, 9:30 → 3:20 IST</span></h3>
+    <div id="e-perf" class="status">Loading…</div>
+  </div>
+
   <footer>
-    <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
+    <p>TradingAI provides market analysis and decision-support information. Options involve substantial risk. No structure guarantees profit. <a href="strategies-guide.html">Strategy definitions →</a> <a href="strategy-builder.html">Custom builder →</a></p>
   </footer>
 </main>
 <script>
 const API_BASE='';
-async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
-function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
-function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
-function regimeColor(regime){if(!regime)return'#94a3b8';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
-var _lastDataTs=null;function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#ef4444';bar.textContent='Update failed \u2014 retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: \u2014';return;}bar.textContent='Data as of '+show+' IST';}
-let refreshInterval=null;
-function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
-function startDataRefresh(callback,intervalMs){intervalMs=intervalMs||30000;stopDataRefresh();refreshInterval=setInterval(function(){callback();},intervalMs);}
-function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
-async function loadStrategies(){var grid=document.getElementById('strategy-grid');if(!grid)return;grid.innerHTML='<div class="card">Loading strategies...</div>';var __ok=0,__fails=0;var symbols=['nifty','banknifty','finnifty','sensex'];var html='';for(var si=0;si<symbols.length;si++){var sym=symbols[si];var data=await fetchJSON(sym);if(!data){__fails++;continue;}__ok++;var strategy=data.strategy||{};var regime=data.regime||{};var scenarios=data.scenarios||[];var strategies=strategy.strategies||[];for(var sti=0;sti<strategies.length;sti++){var s=strategies[sti];html+='<div class="card" style="margin-top:0.5rem"><h4>'+(s.strategy||'N/A')+'</h4><div class="status">Market: '+(s.market_condition||'N/A')+'</div><div class="status">Expiry: '+(s.expiry||'N/A')+'</div><div class="status">Entry: '+(s.entry_trigger||'N/A')+'</div><div class="status">Stop Loss: '+(s.stop_loss||'N/A')+'</div><div class="status">Target: '+(s.target||'N/A')+'</div>';}if(scenarios.length){html+='<h4>Scenarios</h4>';for(var ci=0;ci<scenarios.length;ci++){var sc=scenarios[ci];html+='<div class="status">'+(sc.scenario_type||'N/A')+': '+(sc.description||'N/A')+'</div>';html+='<div class="status">Trigger: '+(sc.trigger||'N/A')+' | Target: '+(sc.target||'N/A')+' | Stop: '+(sc.stop_loss||'N/A')+'</div>';}}html+='</div>';}if(!html){html='<div class="card">No strategy data available</div>'}grid.innerHTML=html;setLastUpdated(__ok?new Date().toISOString():null,__ok>0);}
-document.addEventListener('DOMContentLoaded',function(){loadStrategies();startDataRefresh(loadStrategies);});
+var IDX={NIFTY:{step:50,lot:75,api:'nifty',page:'indices/nifty.html'},BANKNIFTY:{step:100,lot:30,api:'banknifty',page:'indices/banknifty.html'},FINNIFTY:{step:50,lot:65,api:'finnifty',page:'indices/nifty.html'},SENSEX:{step:100,lot:20,api:'sensex',page:'indices/nifty.html'}};
+var TPL=[
+{id:'buy-ce',name:'Buy ATM CE',group:'Directional bullish',views:['Bullish'],legs:function(A,S){return[{a:'BUY',t:'CE',k:A,n:'ATM'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' + premium'];},mp:'High (unlimited)',ml:'Premium paid',dir:'Bullish',theta:'Negative',shape:[[-1.2,0],[-0.05,0],[1.2,1]]},
+{id:'bull-call',name:'Bull Call Spread',group:'Directional bullish',views:['Bullish'],legs:function(A,S){return[{a:'BUY',t:'CE',k:A,n:'ATM'},{a:'SELL',t:'CE',k:A+S,n:'cap'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' + net premium'];},mp:'Width − premium',ml:'Premium paid',dir:'Bullish',theta:'Negative',shape:[[-1.2,0],[-0.2,0],[0.2,1],[1.2,1]]},
+{id:'bull-put',name:'Bull Put Spread',group:'Directional bullish',views:['Bullish','Range'],legs:function(A,S){return[{a:'SELL',t:'PE',k:A,n:'ATM'},{a:'BUY',t:'PE',k:A-S,n:'protect'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' − net credit'];},mp:'Net credit',ml:'Width − credit',dir:'Bullish',theta:'Positive',shape:[[-1.2,0],[-0.2,0],[0.2,1],[1.2,1]]},
+{id:'buy-pe',name:'Buy ATM PE',group:'Directional bearish',views:['Bearish'],legs:function(A,S){return[{a:'BUY',t:'PE',k:A,n:'ATM'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' − premium'];},mp:'High',ml:'Premium paid',dir:'Bearish',theta:'Negative',shape:[[-1.2,1],[0.05,0],[1.2,0]]},
+{id:'bear-put',name:'Bear Put Spread',group:'Directional bearish',views:['Bearish'],legs:function(A,S){return[{a:'BUY',t:'PE',k:A,n:'ATM'},{a:'SELL',t:'PE',k:A-S,n:'cap'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' − net premium'];},mp:'Width − premium',ml:'Premium paid',dir:'Bearish',theta:'Negative',shape:[[-1.2,1],[-0.2,1],[0.2,0],[1.2,0]]},
+{id:'bear-call',name:'Bear Call Spread',group:'Directional bearish',views:['Bearish','Range'],legs:function(A,S){return[{a:'SELL',t:'CE',k:A,n:'ATM'},{a:'BUY',t:'CE',k:A+S,n:'protect'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' + net credit'];},mp:'Net credit',ml:'Width − credit',dir:'Bearish',theta:'Positive',shape:[[-1.2,1],[-0.2,1],[0.2,0],[1.2,0]]},
+{id:'iron-condor',name:'Iron Condor',group:'Neutral / range',views:['Range'],legs:function(A,S){return[{a:'SELL',t:'PE',k:A-S,n:'short put'},{a:'BUY',t:'PE',k:A-2*S,n:'wing'},{a:'SELL',t:'CE',k:A+S,n:'short call'},{a:'BUY',t:'CE',k:A+2*S,n:'wing'}];},be:function(A,S){return['Range '+fmt(A-S)+' – '+fmt(A+S)+' ± credit'];},mp:'Total credit',ml:'Width − credit',dir:'Neutral',theta:'Positive',shape:[[-1.2,0],[-0.5,0],[-0.25,1],[0.25,1],[0.5,0],[1.2,0]]},
+{id:'straddle',name:'Long Straddle',group:'High-volatility / event',views:['Volatile'],legs:function(A,S){return[{a:'BUY',t:'CE',k:A,n:'ATM'},{a:'BUY',t:'PE',k:A,n:'ATM'}];},be:function(A,S){return['± total premium around '+fmt(A)];},mp:'Unlimited',ml:'Total premium',dir:'Neutral',theta:'Negative',shape:[[-1.2,1],[-0.05,0],[0.05,0],[1.2,1]]},
+{id:'strangle',name:'Long Strangle',group:'High-volatility / event',views:['Volatile'],legs:function(A,S){return[{a:'BUY',t:'PE',k:A-S,n:'OTM'},{a:'BUY',t:'CE',k:A+S,n:'OTM'}];},be:function(A,S){return['Beyond wings ± premium'];},mp:'Unlimited',ml:'Total premium',dir:'Neutral',theta:'Negative',shape:[[-1.2,1],[-0.4,0],[0.4,0],[1.2,1]]}
+];
+var ST={index:'NIFTY',tenor:'W',viewOverride:null,data:null,vix:null};
+async function fetchJSON(path){try{const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function inr(n){return n!=null?'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
+function regimeColor(r){if(!r)return'#94a3b8';r=String(r).toUpperCase();if(r.includes('BULLISH')||r==='BUY'||r==='BULLISH')return'#22c55e';if(r.includes('BEARISH')||r==='EXIT'||r==='SELL')return'#ef4444';if(r.includes('RANGE')||r==='HOLD'||r==='RANGE')return'#eab308';if(r.includes('VOLATILITY')||r==='VOLATILE')return'#f97316';return'#94a3b8';}
+var _lastDataTs=null;
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
+function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#ef4444';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
+function vixRegime(v){if(v==null)return'—';if(v<12)return'LOW';if(v<15)return'NORMAL';if(v<20)return'ELEVATED';if(v<25)return'HIGH';return'VERY HIGH';}
+function drawPayoff(id,shape){var c=document.getElementById(id);if(!c)return;var dpr=window.devicePixelRatio||1,W=220,H=80;c.width=W*dpr;c.height=H*dpr;var x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);x.strokeStyle='#475569';x.beginPath();x.moveTo(0,H/2);x.lineTo(W,H/2);x.stroke();x.strokeStyle='#22c55e';x.lineWidth=2;x.beginPath();for(var i=0;i<shape.length;i++){var px=(shape[i][0]+1.2)/2.4*W,py=H/2-shape[i][1]*(H/2-6);if(i===0)x.moveTo(px,py);else x.lineTo(px,py);}x.stroke();}
+function detectView(reg,conf){if(!reg)return'Unsure';var r=String(reg).toUpperCase();if(r.includes('BULLISH'))return'Bullish';if(r.includes('BEARISH'))return'Bearish';if(r.includes('RANGE'))return'Range';if(r.includes('VOLATILITY'))return'Volatile';return'Unsure';}
+function atmOf(spot,step){return Math.round(spot/step)*step;}
+async function loadEngine(){
+  var sym=ST.index,meta=IDX[sym];
+  var data=await fetchJSON(meta.api);
+  if(!data||!data.quote){setLastUpdated(null,false);return;}
+  ST.data=data;
+  var vx=await fetchJSON('vix');ST.vix=vx?(vx.price!=null?vx.price:vx.close):null;
+  var spot=data.quote.price;
+  document.getElementById('e-spot').textContent=fmt(spot);
+  document.getElementById('e-vix').textContent=ST.vix!=null?Number(ST.vix).toFixed(2):'—';
+  var exp=data.expiry||{};var es=document.getElementById('e-expiry');
+  var wexp=exp.weekly, mexp=exp.monthly;
+  es.innerHTML='';
+  if(wexp)es.innerHTML+='<option value="W">'+wexp.expiry_label+' (W, '+wexp.days_to_expiry+'d)</option>';
+  if(mexp)es.innerHTML+='<option value="M"'+(ST.tenor==='M'?' selected':'')+'>'+mexp.expiry_label+' (M, '+mexp.days_to_expiry+'d)</option>';
+  if(!wexp&&!mexp)es.innerHTML='<option value="W">—</option>';
+  es.onchange=function(){ST.tenor=es.value;renderAll();};
+  renderAll();
+  setLastUpdated(data.last_updated,true);
+}
+function curView(){
+  if(ST.viewOverride&&ST.viewOverride!=='AUTO')return ST.viewOverride;
+  var reg=(ST.data.regime||{}).regime;
+  return detectView(reg,(ST.data.regime||{}).confidence);
+}
+function renderAll(){
+  var data=ST.data;if(!data)return;
+  var sym=ST.index,meta=IDX[sym],step=meta.step,lot=meta.lot;
+  var spot=data.quote.price,A=atmOf(spot,step),view=curView();
+  var ind=data.indicators||{},ao=data.ai_outlook||{},reg=data.regime||{};
+  var sr=ind.support_resistance||{support:[],resistance:[]};
+  var sup=(sr.support||[]),res=(sr.resistance||[]);
+  var exp=data.expiry||{};var expShow=(ST.tenor==='M'&&exp.monthly)?exp.monthly:(exp.weekly||exp);
+  // AI analysis panel
+  var trend=(ind.vwap&&spot>=ind.vwap)?'ABOVE VWAP':'BELOW VWAP';
+  var er=(sup.length&&res.length)?(fmt(sup[0])+' – '+fmt(res[0])):'—';
+  var vr=vixRegime(ST.vix);
+  var cands=TPL.map(function(t){return {name:t.name,ok:t.views.indexOf(view)!==-1};});
+  var risk=(vr==='HIGH'||vr==='VERY HIGH')?'High':(reg.confidence>=60?'Moderate':'Elevated');
+  var reason='Regime '+ (reg.regime||'unknown') +' ('+(reg.confidence||0)+'%), price '+trend+', VIX '+vr+'; range '+(sup.length?fmt(sup[0]):'—')+'–'+(res.length?fmt(res[0]):'—')+'. Option OI positioning unavailable (no NSE chain feed).';
+  var aiHtml='<div class="status">Market regime: <strong>'+(reg.regime||'N/A')+'</strong> | Trend: '+trend+' | India VIX: '+vr+' | Expected range: '+er+'</div>';
+  aiHtml+='<div class="status">Options positioning — PUT SUPPORT / CALL RESISTANCE: <span style="color:#94a3b8">unavailable (no live NSE option-chain feed yet)</span></div>';
+  aiHtml+='<div class="status">Strategy candidates ('+view+'):</div>';
+  for(var ci=0;ci<cands.length;ci++){aiHtml+='<div class="status">'+(cands[ci].ok?'<span style="color:#22c55e">✓</span>':'<span style="color:#94a3b8">—</span>')+' '+cands[ci].name+'</div>';}
+  aiHtml+='<div class="status">Risk condition: <strong>'+risk+'</strong></div><div class="status">Reason: '+reason+'</div>';
+  aiHtml+='<div class="status"><a href="'+meta.page+'">Open '+sym+' Market Intelligence →</a></div>';
+  document.getElementById('e-ai').innerHTML=aiHtml;
+  // Grouped cards
+  var groups=['Directional bullish','Directional bearish','Neutral / range','High-volatility / event'];
+  var gh='';
+  for(var gi=0;gi<groups.length;gi++){
+    gh+='<h4 style="margin:0.8rem 0 0.3rem">'+groups[gi]+'</h4><div class="grid">';
+    for(var ti=0;ti<TPL.length;ti++){var t=TPL[ti];if(t.group!==groups[gi])continue;
+      var legs=t.legs(A,step);var ok=t.views.indexOf(view)!==-1;
+      var legHtml='';for(var li=0;li<legs.length;li++){legHtml+='<div class="status">'+legs[li].a+' '+fmt(legs[li].k)+' '+legs[li].t+'</div>';}
+      var be=t.be(A,step);
+      gh+='<div class="card"><h4>'+t.name+' '+(ok?'<span style="color:#22c55e">✓</span>':'<span style="color:#94a3b8">—</span>')+'</h4>'
+        +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(A)+' | Expiry '+(expShow.expiry_label||'—')+' ('+(expShow.days_to_expiry!=null?expShow.days_to_expiry:'—')+'d)</div>'
+        +legHtml
+        +'<div class="status">Width '+fmt(step)+' pts ≈ ₹'+Number(step*lot).toLocaleString('en-IN')+'/lot</div>'
+        +'<div class="status">Breakeven: '+be.join(' ; ')+'</div>'
+        +'<div class="status">Max profit: '+t.mp+' | Max loss: '+t.ml+'</div>'
+        +'<div class="status">Direction: '+t.dir+' | Theta: '+t.theta+'</div>'
+        +'<canvas id="po-'+t.id+'" style="width:220px;height:80px"></canvas>'
+        +'<div class="status"><a href="strategy-builder.html?index='+sym+'&template='+t.id+'">Open in Builder →</a> <a href="strategies-guide.html">What is this?</a></div>'
+        +'</div>';
+    }
+    gh+='</div>';
+  }
+  document.getElementById('e-groups').innerHTML=gh;
+  for(var dj=0;dj<TPL.length;dj++){drawPayoff('po-'+TPL[dj].id,TPL[dj].shape);}
+}
+async function loadPerf(){
+  var el=document.getElementById('e-perf');if(!el)return;
+  var hd=await fetchJSON('history');if(!hd){el.textContent='No history yet.';return;}
+  var byName={};
+  Object.keys(hd).forEach(function(sym){(hd[sym]||[]).forEach(function(e){if(e.points==null||!e.strategy)return;var n=e.strategy;byName[n]=byName[n]||{trades:0,wins:0,gw:0,gl:0,pts:0};var b=byName[n];b.trades++;b.pts+=e.points;if(e.result==='WIN'){b.wins++;gw0(b,e);}else if(e.points<0){b.gl+=Math.abs(e.points);}function gw0(bb,ee){bb.gw+=ee.points;}});});
+  var names=Object.keys(byName).sort();if(!names.length){el.textContent='No settled strategy trades yet.';return;}
+  var html='<table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Win rate</th><th>Total pts</th><th>Profit factor</th></tr></thead><tbody>';
+  for(var i=0;i<names.length;i++){var b=byName[names[i]];var wr=(b.wins/b.trades*100).toFixed(1);var pf=b.gl>0?(b.gw/b.gl).toFixed(2):'∞';var tc=b.pts>=0?'#22c55e':'#ef4444';html+='<tr><td>'+names[i]+'</td><td>'+b.trades+'</td><td>'+b.wins+'</td><td>'+wr+'%</td><td style="color:'+tc+';font-weight:bold">'+(b.pts>=0?'+':'')+b.pts.toFixed(2)+'</td><td>'+pf+'</td></tr>';}
+  html+='</tbody></table><div class="status">Paper trades only (9:30 → 3:20 IST). <a href="history.html">View complete history →</a></div>';
+  el.innerHTML=html;
+}
+document.getElementById('e-index').addEventListener('change',function(){ST.index=this.value;ST.tenor='W';ST.viewOverride=null;loadEngine();});
+document.querySelectorAll('#e-views button').forEach(function(b){b.addEventListener('click',function(){ST.viewOverride=b.dataset.view;renderAll();});});
+document.addEventListener('DOMContentLoaded',function(){var q=new URLSearchParams(location.search);var s=(q.get('symbol')||'NIFTY').toUpperCase();if(IDX[s]){ST.index=s;document.getElementById('e-index').value=s;}loadEngine();loadPerf();setInterval(loadEngine,60000);});
 </script>
 </body>
 </html>
