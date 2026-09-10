@@ -610,7 +610,7 @@ def store_investment_views(conn: sqlite3.Connection, symbol: str) -> None:
            VALUES (?, ?, 'LONG', ?, NULL, NULL, ?, ?, ?, ?, ?)
            ON CONFLICT(symbol, date, horizon) DO UPDATE SET rating=excluded.rating, target_price=excluded.target_price,
                 stop_price=excluded.stop_price, fair_value=excluded.fair_value, reason=excluded.reason, confidence=excluded.confidence, score=excluded.score, created_at=excluded.created_at""",
-        (symbol, today, long_v["rating"], None, None, long_v.get("fair_value"), long_v["reason"], long_v["confidence"], long_v["score"], now))
+        (symbol, today, long_v["rating"], long_v.get("fair_value"), long_v["reason"], long_v["confidence"], long_v["score"], now))
     conn.commit()
 
 
