@@ -656,11 +656,11 @@ def fetch_all() -> None:
             update_data_status(conn, etf_sym, "1m")
 
     for inst in large_caps:
-        _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True)
+        _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True, with_investment=True)
 
     if minute % 5 == 0:
         for inst in mid_caps:
-            _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True)
+            _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True, with_investment=True)
         for yf_sym, symbol in [("^NSEI", "NIFTY"), ("^NSEBANK", "BANKNIFTY")]:
             logger.info(f"Fetching options for {symbol}")
             options_data = fetch_yf_options(yf_sym)
@@ -674,7 +674,7 @@ def fetch_all() -> None:
 
     if minute % 15 == 0:
         for inst in small_caps:
-            _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True)
+            _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True, with_investment=True)
         # Company snapshot: info + news/actions/analyst views merged into fundamentals.
         for inst in indices + large_caps:
             try:

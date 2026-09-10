@@ -25,6 +25,16 @@ EVERGREEN = [
     ("strategy-builder.html", "weekly", "0.8"),
     ("strategies-guide.html", "weekly", "0.7"),
     ("history.html", "daily", "0.6"),
+    ("indices/finnifty.html", "daily", "0.9"),
+    ("indices/sensex.html", "daily", "0.9"),
+    ("stock-options.html", "daily", "0.8"),
+    ("learn/", "weekly", "0.7"),
+    ("learn/option-chain.html", "monthly", "0.6"),
+    ("learn/pcr.html", "monthly", "0.6"),
+    ("learn/vwap.html", "monthly", "0.6"),
+    ("learn/cpr.html", "monthly", "0.6"),
+    ("learn/option-greeks.html", "monthly", "0.6"),
+    ("tools/position-size.html", "monthly", "0.7"),
 ]
 
 DAILY_GLOBS = ("market/nifty-outlook-*.html", "market/nifty-close-*.html")

@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Option Greeks in Plain English - TradingAI</title>
+<meta name="description" content="Delta, theta and vega: the three Greeks an Indian index trader actually needs, plus risk management.">
+<link rel="canonical" href="https://tradingai.in/learn/option-greeks.html">
+<meta property="og:title" content="Option Greeks in Plain English - TradingAI">
+<meta property="og:description" content="Delta, theta and vega: the three Greeks an Indian index trader actually needs, plus risk management.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://tradingai.in/learn/option-greeks.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"Article","headline":"Option Greeks in Plain English","description":"Delta, theta and vega: the three Greeks an Indian index trader actually needs, plus risk management."}]}</script>
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1>TradingAI</h1>
+  <p class="tagline">Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../scanner.html">Scanner</a>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../stock-options.html">Stock Options</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../strategies-guide.html">Guide</a>
+    <a href="../history.html">History</a>
+  </nav>
+</header>
+<main>
+  <h2>Option Greeks in Plain English</h2>
+  <div class="card"><h3>Delta</h3><div class="status">How much the premium moves per 1-point index move. ATM options ≈ 0.5 delta; spreads net deltas down to defined risk.</div></div>
+<div class="card"><h3>Theta (time decay)</h3><div class="status">Premium lost per day. Buyers bleed theta (worst on expiry day); sellers collect it — which is why Iron Condors want range + time.</div></div>
+<div class="card"><h3>Vega (IV sensitivity)</h3><div class="status">Premium change per 1% IV move. Long straddles are long vega (want IV expansion); short premium structures are short vega.</div></div>
+<div class="card"><h3>Risk management</h3><div class="status">Defined-risk spreads cap loss at width minus premium; size positions so max loss ≤ 1–2% of capital; never hold short stock options into physical settlement without a plan.</div></div>
+<div class="card"><div class="status">Next: <a href="../strategy-builder.html">Practice in the Builder</a> · <a href="../strategies.html">Strategy engine</a> · <a href="../strategies-guide.html">Strategy definitions</a></div></div>
+  <footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p></footer>
+</main>
+<script>function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();</script>
+</body>
+</html>

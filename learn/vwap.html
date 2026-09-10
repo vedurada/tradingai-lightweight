@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VWAP Explained for Intraday Trading - TradingAI</title>
+<meta name="description" content="Why the volume-weighted average price is the intraday line in the sand, and how TradingAI uses it.">
+<link rel="canonical" href="https://tradingai.in/learn/vwap.html">
+<meta property="og:title" content="VWAP Explained for Intraday Trading - TradingAI">
+<meta property="og:description" content="Why the volume-weighted average price is the intraday line in the sand, and how TradingAI uses it.">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://tradingai.in/learn/vwap.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"Article","headline":"VWAP Explained for Intraday Trading","description":"Why the volume-weighted average price is the intraday line in the sand, and how TradingAI uses it."}]}</script>
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1>TradingAI</h1>
+  <p class="tagline">Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../scanner.html">Scanner</a>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../stock-options.html">Stock Options</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../strategies-guide.html">Guide</a>
+    <a href="../history.html">History</a>
+  </nav>
+</header>
+<main>
+  <h2>VWAP Explained for Intraday Trading</h2>
+  <div class="card"><h3>What VWAP is</h3><div class="status">The average traded price weighted by volume since the session open. Institutions benchmark fills against it, so it acts as intraday fair value.</div></div>
+<div class="card"><h3>How traders use it</h3><div class="status">Sustained trade above VWAP = buyers in control (bullish bias); below = sellers in control. First reclaim or loss of VWAP often starts the day's trend leg.</div></div>
+<div class="card"><h3>How TradingAI uses it</h3><div class="status">Price-vs-VWAP is a core regime input and appears as a Why-chip on every index page. Strategies key entries off it (e.g. Bull Put Spread needs price above VWAP).</div></div>
+<div class="card"><h3>Limits</h3><div class="status">VWAP resets daily (useless for positional views) and whipsaws on range days — pair it with ADX and support/resistance.</div></div>
+<div class="card"><div class="status">Next: <a href="../strategy-builder.html">Practice in the Builder</a> · <a href="../strategies.html">Strategy engine</a> · <a href="../strategies-guide.html">Strategy definitions</a></div></div>
+  <footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p></footer>
+</main>
+<script>function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();</script>
+</body>
+</html>

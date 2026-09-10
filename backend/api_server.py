@@ -366,6 +366,18 @@ def _symbol_data(symbol):
     if outlook:
         result["ai_outlook"] = outlook
     try:
+        stype = conn.execute("SELECT type FROM symbols WHERE symbol=?", (symbol,)).fetchone()
+        if stype and stype["type"] == "stock":
+            inv = {}
+            for r in conn.execute("SELECT * FROM investment_views WHERE symbol=? ORDER BY date DESC, horizon", (symbol,)).fetchall():
+                d = row_to_dict(r)
+                if d.get("horizon") not in inv:
+                    inv[d.get("horizon")] = d
+            if inv:
+                result["investment"] = inv
+    except Exception:
+        pass
+    try:
         srow = conn.execute("SELECT lot_size, lot_source, lot_as_of FROM symbols WHERE symbol=?", (symbol,)).fetchone()
         if srow and srow["lot_size"]:
             result["lot"] = {"size": srow["lot_size"], "source": srow["lot_source"] or "config", "as_of": srow["lot_as_of"]}
@@ -571,6 +583,20 @@ def history():
     for sym in grouped:
         grouped[sym].sort(key=lambda e: e.get("date", ""), reverse=True)
     return jsonify(grouped)
+
+@app.route("/api/investment/<symbol>")
+def investment(symbol):
+    """SHORT (weeks) + LONG (months) investment views for stocks."""
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM investment_views WHERE UPPER(symbol)=UPPER(?) ORDER BY date DESC, horizon", (symbol,)).fetchall()
+    conn.close()
+    out = {}
+    for r in rows:
+        d = row_to_dict(r)
+        if d.get("horizon") not in out:
+            out[d.get("horizon")] = d
+    return jsonify(out if out else {"error": "no investment views"}), 200 if out else 404
+
 
 @app.route("/api/news")
 def news():
