@@ -37,7 +37,7 @@ function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFraction
 function setLastUpdated(timestamp){const bar=document.getElementById('last-updated-bar');if(!bar)return;if(!timestamp){bar.textContent='Last refreshed: —';return;}if(timestamp&&timestamp.includes(".")){timestamp=timestamp.replace(/(\.\d{3})\d+/,"$1");}const d=new Date(timestamp);if(isNaN(d.getTime())){bar.textContent='Last refreshed: —';return;}const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');const s=String(d.getSeconds()).padStart(2,'0');const day=d.getDate();const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const month=months[d.getMonth()];const year=d.getFullYear();bar.textContent='Last refreshed: '+day+' '+month+' '+year+', '+h+':'+m+':'+s+' IST';}
 let refreshInterval=null;
 function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
-function startDataRefresh(callback,intervalMs){intervalMs=intervalMs||30000;stopDataRefresh();refreshInterval=setInterval(function(){if(!isMarketHours())return;callback();},intervalMs);}
+function startDataRefresh(callback,intervalMs){intervalMs=intervalMs||30000;stopDataRefresh();refreshInterval=setInterval(function(){callback();},intervalMs);}
 function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
 var histFilter='all';
 function setHistFilter(f){histFilter=f;loadHistory();}
