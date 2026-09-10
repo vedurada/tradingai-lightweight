@@ -75,8 +75,8 @@ def generate_json() -> None:
 
         output = {
             "source": "Yahoo Finance",
-            "last_updated": datetime.now(timezone.utc).isoformat(),
-            "data_timestamp": datetime.now(timezone.utc).isoformat(),
+            "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
+            "data_timestamp": datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
             "data_quality": data_quality,
             "quote": quote,
             "indicators": {k: v for k, v in indicators.items() if k != "timestamp"},
@@ -103,7 +103,7 @@ def generate_json() -> None:
         "status": "degraded" if stale_instruments else "healthy",
         "stale_instruments": stale_instruments,
         "total_instruments": len(all_instruments),
-        "last_updated": now.isoformat(),
+        "last_updated": now.isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
     }
     with open(os.path.join(data_dir, "health.json"), "w") as f:
         json.dump(health, f, indent=2)
