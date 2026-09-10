@@ -344,7 +344,7 @@ class Database:
         conn = self._conn()
         c = conn.cursor()
         c.execute("""
-            SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, points, result, strategy,
+            SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
                    market_regime, directional_bias, confidence, market_summary,
                    evidence_strength, volatility_classification, market_structure,
                    no_trade_conditions, strategy_environment, invalidation, created_at
@@ -359,7 +359,7 @@ class Database:
         conn = self._conn()
         c = conn.cursor()
         c.execute("""
-            SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, points, result, strategy,
+            SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
                    market_regime, directional_bias, confidence, market_summary,
                    evidence_strength, volatility_classification, market_structure,
                    no_trade_conditions, strategy_environment, invalidation, created_at
@@ -380,11 +380,11 @@ class Database:
         archived = 0
         if weekly:
             c.execute("""
-                INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, points, result,
+                INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
                     strategy, market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
                     no_trade_conditions, strategy_environment, invalidation, created_at, archived_at)
-                SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, points, result, strategy,
+                SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
                     market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
                     no_trade_conditions, strategy_environment, invalidation, created_at, datetime('now')
@@ -394,11 +394,11 @@ class Database:
             c.execute("DELETE FROM history WHERE closed_price IS NOT NULL AND date <= date('now', '-7 days')")
         if monthly:
             c.execute("""
-                INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, points, result,
+                INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
                     strategy, market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
                     no_trade_conditions, strategy_environment, invalidation, created_at, archived_at)
-                SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, points, result, strategy,
+                SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
                     market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
                     no_trade_conditions, strategy_environment, invalidation, created_at, datetime('now')

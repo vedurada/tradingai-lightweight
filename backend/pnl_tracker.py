@@ -74,6 +74,22 @@ def _exit_candle(conn: sqlite3.Connection, symbol: str, date_str: str, exit_labe
     return _last_candle_of_day(conn, symbol, date_str)
 
 
+def _direction_from_bias(bias: str) -> str:
+    b = (bias or "").upper()
+    if "BEAR" in b or b == "SELL":
+        return "SHORT"
+    return "LONG"
+
+
+def _settle(entry_price: float, exit_price: float, direction: str) -> tuple[float, str]:
+    if direction == "SHORT":
+        points = round(entry_price - exit_price, 2)
+    else:
+        points = round(exit_price - entry_price, 2)
+    result = "WIN" if points > 0 else ("LOSS" if points < 0 else "FLAT")
+    return points, result
+
+
 def _snapshot(conn: sqlite3.Connection, symbol: str) -> dict:
     snap = {"strategy": "", "regime": "", "bias": "", "confidence": 0, "summary": ""}
     try:
@@ -122,18 +138,20 @@ def lock(date_str: str | None = None, entry_label: str = ENTRY_LABEL) -> None:
             print(f"lock {symbol} {date_str}: no price available, skipped")
             continue
         snap = _snapshot(conn, symbol)
+        direction = _direction_from_bias(snap["bias"])
         conn.execute(
-            """INSERT INTO history (symbol, date, locked_price, closed_price, entry_time, exit_time, points, result,
+            """INSERT INTO history (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
                     strategy, market_regime, directional_bias, confidence, market_summary, created_at)
-               VALUES (?, ?, ?, NULL, ?, NULL, NULL, 'OPEN', ?, ?, ?, ?, ?, datetime('now'))
+               VALUES (?, ?, ?, NULL, ?, NULL, ?, NULL, 'OPEN', ?, ?, ?, ?, ?, datetime('now'))
                ON CONFLICT(symbol, date) DO UPDATE SET
                     locked_price=excluded.locked_price, entry_time=excluded.entry_time,
+                    direction=excluded.direction,
                     strategy=excluded.strategy, market_regime=excluded.market_regime,
                     directional_bias=excluded.directional_bias, confidence=excluded.confidence,
                     market_summary=excluded.market_summary""",
-            (symbol, date_str, round(float(price), 2), entry_label, snap["strategy"], snap["regime"], snap["bias"], snap["confidence"], snap["summary"]),
+            (symbol, date_str, round(float(price), 2), entry_label, direction, snap["strategy"], snap["regime"], snap["bias"], snap["confidence"], snap["summary"]),
         )
-        print(f"lock {symbol} {date_str} {entry_label}: entry={round(float(price), 2)} ({snap['strategy'] or snap['regime']})")
+        print(f"lock {symbol} {date_str} {entry_label}: {direction} entry={round(float(price), 2)} ({snap['strategy'] or snap['regime']})")
     conn.commit()
     conn.close()
 
@@ -150,16 +168,16 @@ def close(date_str: str | None = None, exit_label: str = EXIT_LABEL) -> None:
             print(f"close {symbol} {date_str}: no price available, skipped")
             continue
         exit_price = round(float(price), 2)
-        row = conn.execute("SELECT locked_price FROM history WHERE symbol=? AND date=?", (symbol, date_str)).fetchone()
+        row = conn.execute("SELECT locked_price, directional_bias, direction FROM history WHERE symbol=? AND date=?", (symbol, date_str)).fetchone()
         if row and row["locked_price"]:
             entry_price = float(row["locked_price"])
-            points = round(exit_price - entry_price, 2)
-            result = "WIN" if points > 0 else ("LOSS" if points < 0 else "FLAT")
+            direction = (row["direction"] if "direction" in row.keys() and row["direction"] else None) or _direction_from_bias(row["directional_bias"] if "directional_bias" in row.keys() else "")
+            points, result = _settle(entry_price, exit_price, direction)
             conn.execute(
-                "UPDATE history SET closed_price=?, exit_time=?, points=?, result=? WHERE symbol=? AND date=?",
-                (exit_price, exit_label, points, result, symbol, date_str),
+                "UPDATE history SET closed_price=?, exit_time=?, direction=?, points=?, result=? WHERE symbol=? AND date=?",
+                (exit_price, exit_label, direction, points, result, symbol, date_str),
             )
-            print(f"close {symbol} {date_str} {exit_label}: entry={entry_price} exit={exit_price} points={points:+} {result}")
+            print(f"close {symbol} {date_str} {exit_label}: {direction} entry={entry_price} exit={exit_price} points={points:+} {result}")
         else:
             conn.execute(
                 """INSERT INTO history (symbol, date, locked_price, closed_price, entry_time, exit_time, points, result, created_at)
@@ -184,23 +202,24 @@ def backfill(date_str: str | None = None) -> None:
             continue
         entry = round(float(entry), 2)
         exit_p = round(float(exit_p), 2)
-        points = round(exit_p - entry, 2)
-        result = "WIN" if points > 0 else ("LOSS" if points < 0 else "FLAT")
         snap = _snapshot(conn, symbol)
+        direction = _direction_from_bias(snap["bias"])
+        points, result = _settle(entry, exit_p, direction)
         conn.execute(
-            """INSERT INTO history (symbol, date, locked_price, closed_price, entry_time, exit_time, points, result,
+            """INSERT INTO history (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
                     strategy, market_regime, directional_bias, confidence, market_summary, created_at)
-               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
+               VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))
                ON CONFLICT(symbol, date) DO UPDATE SET
                     locked_price=excluded.locked_price, closed_price=excluded.closed_price,
                     entry_time=excluded.entry_time, exit_time=excluded.exit_time,
+                    direction=excluded.direction,
                     points=excluded.points, result=excluded.result, strategy=excluded.strategy,
                     market_regime=excluded.market_regime, directional_bias=excluded.directional_bias,
                     confidence=excluded.confidence, market_summary=excluded.market_summary""",
-            (symbol, date_str, entry, exit_p, ENTRY_LABEL, EXIT_LABEL, points, result,
+            (symbol, date_str, entry, exit_p, ENTRY_LABEL, EXIT_LABEL, direction, points, result,
              snap["strategy"], snap["regime"], snap["bias"], snap["confidence"], snap["summary"]),
         )
-        print(f"backfill {symbol} {date_str}: {ENTRY_LABEL} {entry} → {EXIT_LABEL} {exit_p} = {points:+} {result}")
+        print(f"backfill {symbol} {date_str}: {direction} {ENTRY_LABEL} {entry} → {EXIT_LABEL} {exit_p} = {points:+} {result}")
     conn.commit()
     conn.close()
 

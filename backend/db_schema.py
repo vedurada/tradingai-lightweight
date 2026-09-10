@@ -342,6 +342,7 @@ CREATE TABLE IF NOT EXISTS history (
     closed_price REAL,
     entry_time TEXT DEFAULT '09:30',
     exit_time TEXT DEFAULT '15:20',
+    direction TEXT DEFAULT 'LONG',
     points REAL,
     result TEXT,
     strategy TEXT,
@@ -368,6 +369,7 @@ CREATE TABLE IF NOT EXISTS history_archive (
     closed_price REAL,
     entry_time TEXT DEFAULT '09:30',
     exit_time TEXT DEFAULT '15:20',
+    direction TEXT DEFAULT 'LONG',
     points REAL,
     result TEXT,
     strategy TEXT,
@@ -412,12 +414,16 @@ def init_database(db_path: str = DB_PATH) -> None:
             c.execute("ALTER TABLE history ADD COLUMN entry_time TEXT DEFAULT '09:30'")
         if "exit_time" not in hist_cols:
             c.execute("ALTER TABLE history ADD COLUMN exit_time TEXT DEFAULT '15:20'")
+        if "direction" not in hist_cols:
+            c.execute("ALTER TABLE history ADD COLUMN direction TEXT DEFAULT 'LONG'")
         c.execute("PRAGMA table_info(history_archive)")
         arch_cols = {row[1] for row in c.fetchall()}
         if "entry_time" not in arch_cols:
             c.execute("ALTER TABLE history_archive ADD COLUMN entry_time TEXT DEFAULT '09:30'")
         if "exit_time" not in arch_cols:
             c.execute("ALTER TABLE history_archive ADD COLUMN exit_time TEXT DEFAULT '15:20'")
+        if "direction" not in arch_cols:
+            c.execute("ALTER TABLE history_archive ADD COLUMN direction TEXT DEFAULT 'LONG'")
     except Exception:
         pass
     conn.commit()
