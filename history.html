@@ -31,7 +31,7 @@
 </main>
 <script>
 const API_BASE='';
-async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(API_BASE+'/data/'+path+'.json?_='+ts);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
 function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
 function setLastUpdated(timestamp){const bar=document.getElementById('last-updated-bar');if(!bar)return;if(!timestamp){bar.textContent='Last refreshed: —';return;}if(timestamp&&timestamp.includes(".")){timestamp=timestamp.replace(/(\.\d{3})\d+/,"$1");}const d=new Date(timestamp);if(isNaN(d.getTime())){bar.textContent='Last refreshed: —';return;}const h=String(d.getHours()).padStart(2,'0');const m=String(d.getMinutes()).padStart(2,'0');const s=String(d.getSeconds()).padStart(2,'0');const day=d.getDate();const months=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];const month=months[d.getMonth()];const year=d.getFullYear();bar.textContent='Last refreshed: '+day+' '+month+' '+year+', '+h+':'+m+':'+s+' IST';}
 let refreshInterval=null;

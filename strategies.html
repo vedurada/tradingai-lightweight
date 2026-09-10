@@ -31,7 +31,7 @@
 </main>
 <script>
 const API_BASE='';
-async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(API_BASE+'/data/'+path+'.json?_='+ts);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
 function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
 function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
 function regimeColor(regime){if(!regime)return'#94a3b8';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#22c55e';if(r.includes('BEARISH'))return'#ef4444';if(r.includes('RANGE'))return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
