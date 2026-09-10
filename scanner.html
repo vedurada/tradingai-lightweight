@@ -24,9 +24,10 @@
   </nav>
 </header>
 <main>
-  <div class="updated-bar"><span id="live-clock"></span><span id="last-updated-bar"></span></div>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
   <h2>Market Scanner</h2>
-  <div style="margin-bottom:1rem">
+  <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem">
+    <div>
     <button onclick="filterScanner('all')" class="badge badge-green" style="cursor:pointer;border:none;margin-right:0.3rem">All</button>
     <button onclick="filterScanner('bullish')" class="badge badge-green" style="cursor:pointer;border:none;margin-right:0.3rem">Bullish</button>
     <button onclick="filterScanner('bearish')" class="badge badge-red" style="cursor:pointer;border:none;margin-right:0.3rem">Bearish</button>
@@ -40,6 +41,7 @@
     <button onclick="filterScanner('large')" class="badge badge-blue" style="cursor:pointer;border:none;margin-right:0.3rem">Large Cap</button>
     <button onclick="filterScanner('mid')" class="badge badge-blue" style="cursor:pointer;border:none;margin-right:0.3rem">Mid Cap</button>
     <button onclick="filterScanner('small')" class="badge badge-blue" style="cursor:pointer;border:none;margin-right:0.3rem">Small Cap</button>
+  </div><span id="live-clock" style="float:right;color:#e2e8f0;font-weight:bold"></span>
   </div>
   <div id="scanner-grid" class="full-list"></div>
   <footer>

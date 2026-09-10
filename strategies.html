@@ -24,7 +24,7 @@
   </nav>
 </header>
 <main>
-  <div class="updated-bar"><span id="live-clock"></span><span id="last-updated-bar"></span></div>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
   <h2>OPTIONS STRATEGY ENGINE <span class="status">index options only — stocks get BUY/HOLD/EXIT on the <a href="scanner.html">Scanner</a></span></h2>
 
   <div class="card" style="margin-bottom:1rem">
@@ -39,14 +39,15 @@
       <div>Spot<br><strong id="e-spot">—</strong></div>
       <div>VIX<br><strong id="e-vix">—</strong></div>
     </div>
-    <div style="margin-top:0.6rem" id="e-views">
+    <div style="margin-top:0.6rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem"><div id="e-views">
       <span class="status">Market View: </span>
       <button data-view="AUTO" class="badge badge-blue" style="cursor:pointer;border:none;margin-right:0.3rem">Auto</button>
       <button data-view="Bullish" class="badge badge-green" style="cursor:pointer;border:none;margin-right:0.3rem">Bullish</button>
       <button data-view="Bearish" class="badge badge-red" style="cursor:pointer;border:none;margin-right:0.3rem">Bearish</button>
       <button data-view="Range" class="badge badge-yellow" style="cursor:pointer;border:none;margin-right:0.3rem">Range</button>
       <button data-view="Volatile" class="badge badge-blue" style="cursor:pointer;border:none;margin-right:0.3rem">Volatile</button>
-    </div>
+    </div><span id="live-clock" style="float:right;color:#e2e8f0;font-weight:bold"></span>
+  </div>
   </div>
 
   <div class="card" style="margin-bottom:1rem">
