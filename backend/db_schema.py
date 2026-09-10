@@ -340,6 +340,8 @@ CREATE TABLE IF NOT EXISTS history (
     date TEXT,
     locked_price REAL,
     closed_price REAL,
+    entry_time TEXT DEFAULT '09:30',
+    exit_time TEXT DEFAULT '15:20',
     points REAL,
     result TEXT,
     strategy TEXT,
@@ -364,6 +366,8 @@ CREATE TABLE IF NOT EXISTS history_archive (
     date TEXT,
     locked_price REAL,
     closed_price REAL,
+    entry_time TEXT DEFAULT '09:30',
+    exit_time TEXT DEFAULT '15:20',
     points REAL,
     result TEXT,
     strategy TEXT,
@@ -402,6 +406,18 @@ def init_database(db_path: str = DB_PATH) -> None:
         ind_cols = {row[1] for row in c.fetchall()}
         if "support_resistance" not in ind_cols:
             c.execute("ALTER TABLE indicators ADD COLUMN support_resistance TEXT DEFAULT '{}'")
+        c.execute("PRAGMA table_info(history)")
+        hist_cols = {row[1] for row in c.fetchall()}
+        if "entry_time" not in hist_cols:
+            c.execute("ALTER TABLE history ADD COLUMN entry_time TEXT DEFAULT '09:30'")
+        if "exit_time" not in hist_cols:
+            c.execute("ALTER TABLE history ADD COLUMN exit_time TEXT DEFAULT '15:20'")
+        c.execute("PRAGMA table_info(history_archive)")
+        arch_cols = {row[1] for row in c.fetchall()}
+        if "entry_time" not in arch_cols:
+            c.execute("ALTER TABLE history_archive ADD COLUMN entry_time TEXT DEFAULT '09:30'")
+        if "exit_time" not in arch_cols:
+            c.execute("ALTER TABLE history_archive ADD COLUMN exit_time TEXT DEFAULT '15:20'")
     except Exception:
         pass
     conn.commit()
