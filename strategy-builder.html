@@ -62,7 +62,7 @@ var IDX_META={NIFTY:{step:50,lot:75,api:'nifty'},BANKNIFTY:{step:100,lot:30,api:
 async function fetchJSON(path){try{const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 function inr(n){return n!=null?'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
-function setBar(t){var b=document.getElementById('last-updated-bar');if(b)b.textContent=t||'';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST | ';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function setBar(t){var b=document.getElementById('last-updated-bar');if(b)b.textContent=t||'';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 function atm(price,step){return Math.round(price/step)*step;}
 function legRow(i,l){return '<tr><td>'+(i+1)+'</td><td>'+l.action+'</td><td>'+l.type+'</td><td>'+fmt(l.strike)+'</td><td>'+(l.note||'')+'</td></tr>';}
 function buildTemplate(tpl,spot,step,vix){

@@ -34,4 +34,5 @@ footer { margin-top: 2rem; padding: 1rem 0; border-top: 1px solid #1e293b; color
 .history-table td:nth-child(n+4):nth-child(-n+7) { text-align: right; font-variant-numeric: tabular-nums; }
 .history-table tr:hover { background: #1e293b40; }
 @media (max-width: 768px) { .grid { grid-template-columns: 1fr; } main { padding: 1rem; } .history-table { font-size: 0.75rem; min-width: 860px; } .history-table th, .history-table td { padding: 0.4rem 0.5rem; } }
-.updated-bar { background: #111827; border: 1px solid #1e293b; border-radius: 6px; padding: 0.4rem 0.8rem; margin-bottom: 1rem; color: #94a3b8; font-size: 0.8rem; text-align: right; }
+.updated-bar { background: #111827; border: 1px solid #1e293b; border-radius: 6px; padding: 0.4rem 0.8rem; margin-bottom: 1rem; color: #94a3b8; font-size: 0.8rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.4rem 1rem; }
+.updated-bar #live-clock { white-space: nowrap; color: #e2e8f0; font-weight: bold; }
