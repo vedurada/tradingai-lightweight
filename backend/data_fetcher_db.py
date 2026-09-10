@@ -18,18 +18,11 @@ logger = logging.getLogger("tradingai.fetcher")
 CONFIG_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "instruments.json")
 SETTINGS_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "settings.json")
 
-YF_INDICES = {"^NSEI": "NIFTY", "^NSEBANK": "BANKNIFTY", "^BSESN": "SENSEX"}
-YF_VIX = "^VIX"
-YF_ETFS = {"^NIFTYBEES": "NIFTYBEES", "^BANKBEES": "BANKBEES", "^JUNIORBEES": "JUNIORBEES"}
+YF_INDICES = {"^NSEI": "NIFTY", "^NSEBANK": "BANKNIFTY", "^CNXFIN": "FINNIFTY", "^BSESN": "SENSEX"}
+YF_VIX = "^INDIAVIX"
+YF_ETFS = {"NIFTYBEES": "NIFTYBEES.NS", "BANKBEES": "BANKBEES.NS", "JUNIORBEES": "JUNIORBEES.NS"}
 
-ALL_SYMBOLS = ["NIFTY", "BANKNIFTY", "SENSEX", "FINNIFTY", "VIX", "NIFTYBEES", "BANKBEES", "JUNIORBEES"]
-
-STOCK_SYMBOLS = [
-    ("RELIANCE", "RELIANCE.NS"), ("HDFCBANK", "HDFCBANK.NS"), ("ICICIBANK", "ICICIBANK.NS"),
-    ("SBIN", "SBIN.NS"), ("INFY", "INFY.NS"), ("TCS", "TCS.NS"), ("LT", "LT.NS"),
-    ("AXISBANK", "AXISBANK.NS"), ("ADANIENT", "ADANIENT.NS"), ("BHARTIARTL", "BHARTIARTL.NS"),
-    ("WIPRO", "WIPRO.NS"), ("HCLTECH", "HCLTECH.NS"), ("TECHM", "TECHM.NS"), ("MARUTI", "MARUTI.NS"),
-]
+ALL_SYMBOLS = ["NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX", "VIX", "NIFTYBEES", "BANKBEES", "JUNIORBEES"]
 
 SECTORS = ["BANK", "IT", "AUTO", "PHARMA", "ENERGY", "FMCG", "METAL", "REALTY", "FINANCIAL"]
 
@@ -52,17 +45,18 @@ def get_db() -> sqlite3.Connection:
 
 
 def init_symbols(conn: sqlite3.Connection, config: dict) -> None:
-    c = conn.execute("SELECT COUNT(*) FROM symbols")
-    if c.fetchone()[0] == 0:
-        for inst in config["indices"]:
-            conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'index', 'INDEX', 1, datetime('now'))", (inst["symbol"], inst["name"], inst["yfinance_symbol"]))
-        for inst in config["stocks"]:
-            conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'stock', ?, 1, datetime('now'))", (inst["symbol"], inst["name"], inst["yfinance_symbol"], inst.get("sector", "FINANCIAL")))
-        for sym, yf_sym in YF_ETFS.items():
-            conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'etf', 'ETF', 1, datetime('now'))", (sym, sym, yf_sym))
-        conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'vix', 'VOLATILITY', 1, datetime('now'))", ("VIX", "India VIX", YF_VIX))
-        conn.commit()
-        logger.info(f"Initialized {config['indices'].__len__() + config['stocks'].__len__() + len(YF_ETFS) + 1} symbols")
+    for inst in config["indices"]:
+        conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'index', 'INDEX', 1, datetime('now'))", (inst["symbol"], inst["name"], inst["yfinance_symbol"]))
+        conn.execute("UPDATE symbols SET name=?, yfinance_symbol=?, active=1 WHERE symbol=?", (inst["name"], inst["yfinance_symbol"], inst["symbol"]))
+    for inst in config["stocks"]:
+        cap = inst.get("cap", "LARGE")
+        conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'stock', ?, 1, datetime('now'))", (inst["symbol"], inst["name"], inst["yfinance_symbol"], cap))
+        conn.execute("UPDATE symbols SET name=?, yfinance_symbol=?, category=?, active=1 WHERE symbol=?", (inst["name"], inst["yfinance_symbol"], cap, inst["symbol"]))
+    for sym, yf_sym in YF_ETFS.items():
+        conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'etf', 'ETF', 1, datetime('now'))", (sym, sym, yf_sym))
+    conn.execute("INSERT OR IGNORE INTO symbols (symbol, name, yfinance_symbol, type, category, active, created_at) VALUES (?, ?, ?, 'vix', 'VOLATILITY', 1, datetime('now'))", ("VIX", "India VIX", YF_VIX))
+    conn.commit()
+    logger.info(f"Initialized symbols from config: {len(config['indices'])} indices, {len(config['stocks'])} stocks")
 
 
 def fetch_yf_ohlcv(yf_symbol: str, interval: str = "1m", period: str = "2d") -> list[dict]:
@@ -203,6 +197,76 @@ def store_fundamentals(conn: sqlite3.Connection, symbol: str, data: dict) -> Non
     conn.commit()
 
 
+def get_daily_ohlcv(conn: sqlite3.Connection, fetcher, symbol: str, yf_symbol: str, limit: int = 60) -> list[dict]:
+    """Daily candles from DB if fresh, else fetch once and cache in price_1d."""
+    try:
+        row = conn.execute("SELECT timestamp FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        fresh = False
+        if row:
+            try:
+                ts = datetime.fromisoformat(str(row["timestamp"]).replace("Z", "+00:00"))
+                if (datetime.now(timezone.utc) - ts).total_seconds() < 6 * 3600:
+                    fresh = True
+            except Exception:
+                pass
+        if fresh:
+            rows = conn.execute("SELECT timestamp, open, high, low, close, volume FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT ?", (symbol, limit)).fetchall()
+            data = [{"timestamp": r["timestamp"], "open": r["open"], "high": r["high"], "low": r["low"], "close": r["close"], "volume": r["volume"] or 0} for r in reversed(rows)]
+            if len(data) >= 15:
+                return data
+    except Exception:
+        pass
+    data = fetcher.fetch_ohlcv(symbol, yf_symbol, period="6mo", interval="1d", limit=limit) or []
+    for d in data:
+        try:
+            conn.execute("INSERT OR IGNORE INTO price_1d (symbol, timestamp, open, high, low, close, volume) VALUES (?, ?, ?, ?, ?, ?, ?)", (symbol, d.get("timestamp"), d.get("open"), d.get("high"), d.get("low"), d.get("close"), d.get("volume", 0)))
+        except Exception:
+            pass
+    try:
+        conn.commit()
+    except Exception:
+        pass
+    return data
+
+
+def _quote_from_info(symbol: str, info: dict) -> Optional[dict]:
+    if not info or not isinstance(info, dict):
+        return None
+    price = info.get("regularMarketPrice", info.get("currentPrice", 0)) or 0
+    if not price:
+        return None
+    prev = info.get("previousClose", info.get("regularMarketPreviousClose", 0)) or 0
+    change = (price - prev) if prev else 0
+    return {
+        "symbol": symbol, "price": round(price, 2), "change": round(change, 2),
+        "change_pct": round(change / prev * 100, 2) if prev else 0,
+        "open": round(info.get("open", 0) or 0, 2), "high": round(info.get("dayHigh", 0) or 0, 2),
+        "low": round(info.get("dayLow", 0) or 0, 2), "previous_close": round(prev, 2),
+        "volume": info.get("volume", 0) or 0, "timestamp": datetime.now(timezone.utc).isoformat(), "stale": False,
+    }
+
+
+def _quote_from_latest_1m(conn: sqlite3.Connection, symbol: str) -> Optional[dict]:
+    try:
+        row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        price = d.get("close", 0) or 0
+        prev_rows = conn.execute("SELECT close FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 2", (symbol,)).fetchall()
+        prev = prev_rows[1]["close"] if len(prev_rows) > 1 else price
+        change = (price - prev) if prev else 0
+        return {
+            "symbol": symbol, "price": round(price, 2), "change": round(change, 2),
+            "change_pct": round(change / prev * 100, 2) if prev else 0,
+            "open": d.get("open", 0) or 0, "high": d.get("high", 0) or 0, "low": d.get("low", 0) or 0,
+            "previous_close": round(prev, 2), "volume": d.get("volume", 0) or 0,
+            "timestamp": datetime.now(timezone.utc).isoformat(), "stale": False,
+        }
+    except Exception:
+        return None
+
+
 def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dict) -> None:
     try:
         from fetch_market import MarketFetcher
@@ -221,8 +285,11 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
                 break
         if not yf_symbol:
             return
-        ohlcv = fetcher.fetch_ohlcv(symbol, yf_symbol, period="60d", interval="1d", limit=20)
-        quote = info if info else fetcher.fetch_quote(symbol, yf_symbol) or {"price": 0, "previous_close": 0, "stale": True}
+        ohlcv = get_daily_ohlcv(conn, fetcher, symbol, yf_symbol)
+        quote = fetcher.fetch_quote(symbol, yf_symbol)
+        if not quote or quote.get("price", 0) == 0:
+            # Fallback: build quote from fundamentals info dict or latest 1m candle.
+            quote = _quote_from_info(symbol, info) or _quote_from_latest_1m(conn, symbol)
         if not quote or quote.get("price", 0) == 0:
             return
         indicators = calculate_all_indicators(ohlcv, quote) if ohlcv else {}
@@ -252,28 +319,44 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
         bb = ind.get("bollinger_bands", {}) if isinstance(ind.get("bollinger_bands"), dict) else {}
         pivot_d = pivot_data if pivot_data else {}
         cpr_d = cpr_data if cpr_data else {}
-        ind_vals = [symbol, timestamp, ind.get("ema9",0), ind.get("ema20",0), ind.get("ema50",0), ind.get("ema100",0), ind.get("ema200",0), ind.get("sma20",0), ind.get("sma50",0), ind.get("sma200",0), ind.get("vwap",0), ind.get("rsi",0), ind.get("macd",0) or 0, ind.get("macd_signal",0) or 0, ind.get("macd_histogram",0) or 0, ind.get("atr",0), ind.get("adx",0), ind.get("di_plus",0) or 0, ind.get("di_minus",0) or 0, bb.get("upper",0) if isinstance(bb,dict) else 0, bb.get("middle",0) if isinstance(bb,dict) else 0, bb.get("lower",0) if isinstance(bb,dict) else 0, bb.get("width",0) if isinstance(bb,dict) else 0, pivot_d.get("pivot",0), pivot_d.get("r1",0), pivot_d.get("s1",0), pivot_d.get("r2",0), pivot_d.get("s2",0), pivot_d.get("r3",0), pivot_d.get("s3",0), cpr_d.get("classification",""), quote.get("high",0), quote.get("low",0), 0, 0, quote.get("previous_close",0), 0, 0]
-        conn.execute("INSERT OR REPLACE INTO indicators (symbol, timestamp, ema9, ema20, ema50, ema100, ema200, sma20, sma50, sma200, vwap, rsi, macd, macd_signal, macd_histogram, atr, adx, di_plus, di_minus, bollinger_upper, bollinger_middle, bollinger_lower, bollinger_width, pivot, r1, s1, r2, s2, r3, s3, cpr_classification, day_high, day_low, prev_day_high, prev_day_low, prev_day_close, open_range_high, open_range_low) VALUES ({})".format(",".join(["?" for _ in ind_vals])), ind_vals)
+        macd_d = ind.get("macd") if isinstance(ind.get("macd"), dict) else {}
+        sr = ind.get("support_resistance", {}) if isinstance(ind.get("support_resistance"), dict) else {}
+        ind_vals = [symbol, timestamp, ind.get("ema9",0) or 0, ind.get("ema20",0) or 0, ind.get("ema50",0) or 0, ind.get("ema100",0) or 0, ind.get("ema200",0) or 0, ind.get("sma20",0) or 0, ind.get("sma50",0) or 0, ind.get("sma200",0) or 0, ind.get("vwap",0) or 0, ind.get("rsi",0) or 0, macd_d.get("macd",0) or 0, macd_d.get("signal",0) or 0, macd_d.get("histogram",0) or 0, ind.get("atr",0) or 0, ind.get("adx",0) or 0, ind.get("di_plus",0) or 0, ind.get("di_minus",0) or 0, bb.get("upper",0) if isinstance(bb,dict) else 0, bb.get("middle",0) if isinstance(bb,dict) else 0, bb.get("lower",0) if isinstance(bb,dict) else 0, bb.get("width",0) if isinstance(bb,dict) else 0, pivot_d.get("pivot",0), pivot_d.get("r1",0), pivot_d.get("s1",0), pivot_d.get("r2",0), pivot_d.get("s2",0), pivot_d.get("r3",0), pivot_d.get("s3",0), cpr_d.get("classification",""), quote.get("high",0), quote.get("low",0), 0, 0, quote.get("previous_close",0), 0, 0, json.dumps(sr)]
+        conn.execute("INSERT OR REPLACE INTO indicators (symbol, timestamp, ema9, ema20, ema50, ema100, ema200, sma20, sma50, sma200, vwap, rsi, macd, macd_signal, macd_histogram, atr, adx, di_plus, di_minus, bollinger_upper, bollinger_middle, bollinger_lower, bollinger_width, pivot, r1, s1, r2, s2, r3, s3, cpr_classification, day_high, day_low, prev_day_high, prev_day_low, prev_day_close, open_range_high, open_range_low, support_resistance) VALUES ({})".format(",".join(["?" for _ in ind_vals])), ind_vals)
 
-        scenarios = []
+        scenarios_d = {}
         strategy = {}
-        ai_outlook = {"outlook": "N/A"}
+        ai_outlook = {}
+        vix_now = 0
         try:
-            if ohlcv and indicators.get("rsi") and indicators.get("adx"):
-                scenario_engine = ScenarioEngine()
-                scenarios = scenario_engine.generate(regime_info.get("regime","UNKNOWN"), ind.get("support_resistance",{}).get("support",[]), ind.get("support_resistance",{}).get("resistance",[]), quote["price"])
-                strategy_engine = StrategyEngine()
-                strategy = strategy_engine.select(regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "GOOD" if ohlcv else "PARTIAL")
-                ai_engine = AIOutlookEngine()
-                ai_outlook = ai_engine.generate(symbol, {**quote, **ind, "regime": regime_info.get("regime","UNKNOWN"), "options_unavailable": options_analysis.get("data_unavailable", False)})
+            vrow = conn.execute("SELECT close FROM vix_data ORDER BY timestamp DESC LIMIT 1").fetchone()
+            if vrow:
+                vix_now = vrow["close"] or 0
         except Exception:
             pass
+        try:
+            if ohlcv and indicators.get("rsi") is not None and indicators.get("adx") is not None:
+                scenario_engine = ScenarioEngine()
+                scenarios_d = scenario_engine.generate(regime_info.get("regime","UNKNOWN"), ind.get("support_resistance",{}).get("support",[]) if isinstance(ind.get("support_resistance"),dict) else [], ind.get("support_resistance",{}).get("resistance",[]) if isinstance(ind.get("support_resistance"),dict) else [], quote["price"], adx=indicators.get("adx"), vix_price=vix_now) or {}
+                strategy_engine = StrategyEngine()
+                # Indexes get option spreads; stocks/ETFs get BUY/HOLD/EXIT.
+                strategy = strategy_engine.select(regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "GOOD" if ohlcv else "PARTIAL", vix_price=vix_now, vix_change_pct=0, symbol=symbol, price=quote.get("price",0), vwap=indicators.get("vwap",0), rsi=indicators.get("rsi"), adx=indicators.get("adx")) or {}
+                ai_engine = AIOutlookEngine()
+                ai_outlook = ai_engine.generate(symbol, {**quote, **ind, "regime": regime_info.get("regime","UNKNOWN"), "options_unavailable": options_analysis.get("data_unavailable", False)}) or {}
+        except Exception as e:
+            logger.warning(f"Scenario/strategy build skipped for {symbol}: {e}")
 
-        if scenarios:
-            conn.execute("INSERT OR REPLACE INTO scenarios (symbol, timestamp, bullish_trigger, bullish_confirmation, bullish_target, bullish_invalidation, bearish_trigger, bearish_confirmation, bearish_target, bearish_invalidation, range_condition, range_strategy, range_invalidation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, scenarios[0].get("bullish_trigger",""), scenarios[0].get("bullish_confirmation",""), scenarios[0].get("bullish_target",""), scenarios[0].get("bullish_invalidation",""), scenarios[0].get("bearish_trigger",""), scenarios[0].get("bearish_confirmation",""), scenarios[0].get("bearish_target",""), scenarios[0].get("bearish_invalidation",""), scenarios[0].get("range_condition",""), scenarios[0].get("range_strategy",""), scenarios[0].get("range_invalidation","")))
+        if scenarios_d:
+            b = scenarios_d.get("bullish", {}) or {}
+            be = scenarios_d.get("bearish", {}) or {}
+            r = scenarios_d.get("range", {}) or {}
+            conn.execute("INSERT OR REPLACE INTO scenarios (symbol, timestamp, bullish_trigger, bullish_confirmation, bullish_target, bullish_invalidation, bearish_trigger, bearish_confirmation, bearish_target, bearish_invalidation, range_condition, range_strategy, range_invalidation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, b.get("trigger",""), b.get("confirmation",""), str(b.get("target","")), b.get("invalidation",""), be.get("trigger",""), be.get("confirmation",""), str(be.get("target","")), be.get("invalidation",""), r.get("condition",""), r.get("strategy_environment",""), r.get("invalidation","")))
         if strategy:
-            conn.execute("INSERT OR REPLACE INTO strategies (symbol, timestamp, strategy, market_condition, expiry, legs, entry_trigger, maximum_profit, maximum_loss, breakeven, stop_loss, target, adjustment, exit, time_based_exit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, strategy.get("strategy",""), strategy.get("market_condition",""), strategy.get("expiry",""), json.dumps(strategy.get("legs",[])), strategy.get("entry_trigger",""), strategy.get("maximum_profit",""), strategy.get("maximum_loss",""), strategy.get("breakeven",""), strategy.get("stop_loss",""), strategy.get("target",""), strategy.get("adjustment",""), strategy.get("exit",""), strategy.get("time_based_exit","")))
-        conn.execute("INSERT OR REPLACE INTO ai_outlooks (symbol, timestamp, outlook, data_quality) VALUES (?, ?, ?, ?)", (symbol, timestamp, ai_outlook.get("outlook","N/A"), quote.get("stale",False) and "STALE" or "GOOD"))
+            strat_list = strategy.get("strategies", []) if isinstance(strategy, dict) else []
+            primary = strat_list[0] if strat_list else {}
+            if primary:
+                conn.execute("INSERT OR REPLACE INTO strategies (symbol, timestamp, strategy, market_condition, expiry, legs, entry_trigger, maximum_profit, maximum_loss, breakeven, stop_loss, target, adjustment, exit, time_based_exit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, primary.get("strategy",""), primary.get("market_condition",""), primary.get("expiry",""), json.dumps({"legs": primary.get("legs",[]), "all_strategies": strat_list}), primary.get("entry_trigger",""), primary.get("maximum_profit",""), primary.get("maximum_loss",""), primary.get("breakeven",""), primary.get("stop_loss",""), primary.get("target",""), primary.get("adjustment",""), primary.get("exit",""), primary.get("time_based_exit","")))
+        conn.execute("INSERT OR REPLACE INTO ai_outlooks (symbol, timestamp, outlook, data_quality) VALUES (?, ?, ?, ?)", (symbol, timestamp, json.dumps(ai_outlook) if ai_outlook else "{}", quote.get("stale",False) and "STALE" or "GOOD"))
         conn.commit()
     except Exception as e:
         logger.error(f"Regime/strategy error for {symbol}: {repr(e)}")
@@ -308,6 +391,19 @@ def fetch_market_snapshot(conn: sqlite3.Connection) -> dict:
     return snapshot
 
 
+def _fetch_symbol_minute(conn: sqlite3.Connection, symbol: str, yf_symbol: str, with_regime: bool = True) -> None:
+    """Fetch 1m candles + AI-assisted screen for one symbol."""
+    data = fetch_yf_ohlcv(yf_symbol, interval="1m", period="1d")
+    if data:
+        store_price_data(conn, symbol, data, "price_1m")
+        update_data_status(conn, symbol, "1m")
+    if with_regime:
+        try:
+            store_regime_and_strategies(conn, symbol, {})
+        except Exception as e:
+            logger.error(f"Regime/strategy error for {symbol}: {repr(e)}")
+
+
 def fetch_all() -> None:
     config = load_config()
     settings = load_settings()
@@ -317,78 +413,75 @@ def fetch_all() -> None:
 
     now = datetime.now(timezone.utc)
     is_market_hours = now.weekday() < 5 and 9 <= now.hour <= 15
+    minute = now.minute
 
     logger.info(f"Fetching data... market_hours={is_market_hours}")
 
-    all_symbols = list(YF_INDICES.keys()) + list(YF_ETFS.keys()) + [YF_VIX]
+    indices = config.get("indices", [])
+    stocks = config.get("stocks", [])
+    large_caps = [s for s in stocks if s.get("cap", "LARGE") == "LARGE"]
+    mid_caps = [s for s in stocks if s.get("cap") == "MID"]
+    small_caps = [s for s in stocks if s.get("cap") == "SMALL"]
 
-    for yf_sym in all_symbols:
-        symbol = YF_INDICES.get(yf_sym, YF_ETFS.get(yf_sym, "VIX"))
+    for inst in indices:
+        symbol, yf_sym = inst["symbol"], inst["yfinance_symbol"]
         logger.info(f"Fetching {symbol} ({yf_sym})")
-        data = fetch_yf_ohlcv(yf_sym, interval="1m", period="1d")
-        if data:
-            store_price_data(conn, symbol, data, "price_1m")
-            update_data_status(conn, symbol, "1m")
-        info = fetch_yf_info(yf_sym)
-        if info:
-            store_fundamentals(conn, symbol, info)
-        update_data_status(conn, symbol, "info")
-        logger.info(f"  {symbol}: {len(data)} candles, {len(info)} fundamental fields")
+        _fetch_symbol_minute(conn, symbol, yf_sym, with_regime=True)
 
-    vix_info = fetch_yf_info(YF_VIX)
-    if vix_info:
-        vix_data = {
-            "timestamp": now.isoformat(),
-            "open": vix_info.get("open", 0),
-            "high": vix_info.get("dayHigh", 0),
-            "low": vix_info.get("dayLow", 0),
-            "close": vix_info.get("regularMarketPrice", vix_info.get("currentPrice", 0)),
-            "change": vix_info.get("regularMarketChange", 0),
-            "change_pct": vix_info.get("regularMarketChangePercent", 0),
-        }
-        store_vix_data(conn, vix_data["timestamp"], vix_data)
+    vix_data_1m = fetch_yf_ohlcv(YF_VIX, interval="1m", period="1d")
+    if vix_data_1m:
+        store_price_data(conn, "VIX", vix_data_1m, "price_1m")
+        last = vix_data_1m[-1]
+        prev = vix_data_1m[-2]["close"] if len(vix_data_1m) > 1 else last["close"]
+        store_vix_data(conn, datetime.now(timezone.utc).isoformat(), {
+            "open": last["open"], "high": last["high"], "low": last["low"], "close": last["close"],
+            "change": last["close"] - prev, "change_pct": (last["close"] - prev) / prev * 100 if prev else 0,
+        })
         update_data_status(conn, "VIX", "vix")
-        logger.info(f"  VIX: close={vix_data['close']}, change_pct={vix_data['change_pct']:.2f}%")
 
-    for yf_sym, symbol in [("^NSEI", "NIFTY"), ("^NSEBANK", "BANKNIFTY")]:
-        logger.info(f"Fetching options for {symbol}")
-        options_data = fetch_yf_options(yf_sym)
-        if options_data:
-            store_option_chains(conn, symbol, options_data)
-            update_data_status(conn, symbol, "options")
-            call_oi = sum(c["open_interest"] for ch in options_data["chains"] for c in ch["calls"])
-            put_oi = sum(p["open_interest"] for ch in options_data["chains"] for p in ch["puts"])
-            pcr = put_oi / call_oi if call_oi > 0 else 0
-            logger.info(f"  {symbol}: PCR={pcr:.2f}, calls={len(options_data['chains'])}, total OI: CALL={call_oi}, PUT={put_oi}")
-
-    for sym_name, yf_sym in STOCK_SYMBOLS:
-        logger.info(f"Fetching {sym_name} ({yf_sym})")
-        data = fetch_yf_ohlcv(yf_sym, interval="1m", period="1d")
+    for etf_sym, etf_yf in YF_ETFS.items():
+        data = fetch_yf_ohlcv(etf_yf, interval="1m", period="1d")
         if data:
-            store_price_data(conn, sym_name, data, "price_1m")
-            update_data_status(conn, sym_name, "1m")
-        info = fetch_yf_info(yf_sym)
-        if info:
-            store_fundamentals(conn, sym_name, info)
-        update_data_status(conn, sym_name, "info")
-        try:
-            store_regime_and_strategies(conn, sym_name, info)
-        except Exception as e:
-            logger.error(f"Regime/strategy error for {sym_name}: {e}")
+            store_price_data(conn, etf_sym, data, "price_1m")
+            update_data_status(conn, etf_sym, "1m")
 
-    for yf_sym, symbol in [("^NSEI", "NIFTY"), ("^NSEBANK", "BANKNIFTY"), ("^BSESN", "SENSEX")]:
-        try:
-            store_regime_and_strategies(conn, symbol, {})
-        except Exception as e:
-            logger.error(f"Regime/strategy error for {symbol}: {e}")
+    for inst in large_caps:
+        _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True)
 
+    if minute % 5 == 0:
+        for inst in mid_caps:
+            _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True)
+        for yf_sym, symbol in [("^NSEI", "NIFTY"), ("^NSEBANK", "BANKNIFTY")]:
+            logger.info(f"Fetching options for {symbol}")
+            options_data = fetch_yf_options(yf_sym)
+            if options_data:
+                store_option_chains(conn, symbol, options_data)
+                update_data_status(conn, symbol, "options")
+                call_oi = sum(c["open_interest"] for ch in options_data["chains"] for c in ch["calls"])
+                put_oi = sum(p["open_interest"] for ch in options_data["chains"] for p in ch["puts"])
+                pcr = put_oi / call_oi if call_oi > 0 else 0
+                logger.info(f"  {symbol}: PCR={pcr:.2f}, expiries={len(options_data['chains'])}")
+
+    if minute % 15 == 0:
+        for inst in small_caps:
+            _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True)
+        for inst in indices + stocks:
+            try:
+                info = fetch_yf_info(inst["yfinance_symbol"])
+                if info:
+                    store_fundamentals(conn, inst["symbol"], info)
+            except Exception as e:
+                logger.warning(f"Fundamentals skip {inst['symbol']}: {e}")
+        update_data_status(conn, "ALL", "info")
+
+    try:
+        build_breadth(conn)
+    except Exception as e:
+        logger.warning(f"Breadth skip: {e}")
     snapshot = fetch_market_snapshot(conn)
     logger.info(f"Market snapshot: NIFTY={snapshot.get('nifty')}, BANKNIFTY={snapshot.get('banknifty')}, VIX={snapshot.get('vix')}")
 
-    conn.execute("DELETE FROM price_1m WHERE timestamp < datetime('now', '-1 day')")
-    conn.execute("DELETE FROM price_5m WHERE timestamp < datetime('now', '-7 days')")
-    conn.execute("DELETE FROM price_15m WHERE timestamp < datetime('now', '-30 days')")
-    conn.execute("DELETE FROM price_1d WHERE timestamp < datetime('now', '-5 years')")
+    conn.execute("DELETE FROM price_1m WHERE timestamp < datetime('now', '-2 day')")
     conn.execute("DELETE FROM option_chain WHERE fetched_at < datetime('now', '-3 days')")
     conn.execute("DELETE FROM fundamentals WHERE timestamp < datetime('now', '-7 days')")
     conn.commit()
@@ -396,6 +489,35 @@ def fetch_all() -> None:
 
     logger.info("Fetch complete!")
 
+
+def build_breadth(conn: sqlite3.Connection) -> None:
+    """Advance/decline from latest 1m closes vs previous session close."""
+    rows = conn.execute("""
+        SELECT p.symbol, p.close AS last_close,
+               (SELECT close FROM price_1m WHERE symbol=p.symbol AND timestamp < date('now') ORDER BY timestamp DESC LIMIT 1) AS prev_close
+        FROM (SELECT symbol, MAX(timestamp) AS ts FROM price_1m GROUP BY symbol) m
+        JOIN price_1m p ON p.symbol=m.symbol AND p.timestamp=m.ts
+    """).fetchall()
+    adv = dec = unch = 0
+    for r in rows:
+        try:
+            last_c, prev_c = r["last_close"] or 0, r["prev_close"] or 0
+            if not prev_c:
+                continue
+            chg = (last_c - prev_c) / prev_c * 100
+            if chg > 0.05:
+                adv += 1
+            elif chg < -0.05:
+                dec += 1
+            else:
+                unch += 1
+        except Exception:
+            continue
+    ratio = (adv / dec) if dec else float(adv)
+    conn.execute("INSERT OR REPLACE INTO market_breadth (timestamp, advances, declines, unchanged, advance_decline_ratio, pct_above_ema20, pct_above_ema50, pct_above_ema200) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                 (datetime.now(timezone.utc).isoformat(), adv, dec, unch, round(ratio, 2), 0, 0, 0))
+    conn.commit()
+    logger.info(f"Breadth: adv={adv} dec={dec} unch={unch}")
 
 if __name__ == "__main__":
     fetch_all()

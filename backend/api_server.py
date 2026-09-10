@@ -80,9 +80,12 @@ def all_prices():
 def vix():
     conn = get_db()
     row = conn.execute("SELECT * FROM vix_data ORDER BY timestamp DESC LIMIT 1").fetchone()
-    if row:
-        return jsonify(row_to_dict(row))
     conn.close()
+    if row:
+        d = row_to_dict(row)
+        # Legacy frontend expects {price, change, change_pct}.
+        d["price"] = d.get("close", 0)
+        return jsonify(d)
     return jsonify({"error": "no VIX data"}), 404
 
 @app.route("/api/vix/history")
@@ -124,27 +127,150 @@ def banknifty():
 def sensex():
     return _symbol_data("SENSEX")
 
+@app.route("/api/finnifty")
+def finnifty():
+    return _symbol_data("FINNIFTY")
+
+@app.route("/api/<symbol>")
+def symbol_generic(symbol):
+    s = (symbol or "").upper()
+    if s in ("MARKET", "HEALTH", "HISTORY", "VIX", "SNAPSHOT", "SNAPSHOTS", "BREADTH", "SYMBOLS", "STRATEGIES", "OUTLOOKS", "REGIMES", "PRICES", "ETF", "NEWS"):
+        return jsonify({"error": "use dedicated endpoint"}), 404
+    conn = get_db()
+    row = conn.execute("SELECT symbol FROM symbols WHERE UPPER(symbol)=? LIMIT 1", (s,)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": f"unknown symbol {symbol}"}), 404
+    return _symbol_data(s)
+
+def _parse_json_field(value, default=None):
+    if value is None:
+        return default
+    if isinstance(value, (dict, list)):
+        return value
+    try:
+        return json.loads(value)
+    except Exception:
+        return default
+
+
+def _build_quote(symbol, price_row):
+    """price_1m row -> legacy quote shape {price, change, change_pct, ...}."""
+    if not price_row:
+        return None
+    d = row_to_dict(price_row)
+    close = d.get("close", 0) or 0
+    prev = d.get("previous_close", 0) or 0
+    if not prev:
+        try:
+            conn = get_db()
+            prow = conn.execute("SELECT close FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 2", (symbol,)).fetchall()
+            conn.close()
+            if len(prow) > 1:
+                prev = prow[1]["close"] or 0
+        except Exception:
+            pass
+    change = (close - prev) if prev else 0
+    return {
+        "symbol": symbol, "price": close, "change": round(change, 2),
+        "change_pct": round(change / prev * 100, 2) if prev else 0,
+        "open": d.get("open", 0), "high": d.get("high", 0), "low": d.get("low", 0),
+        "previous_close": prev, "volume": d.get("volume", 0),
+        "timestamp": d.get("timestamp"), "stale": False,
+    }
+
+
+def _build_indicators(ind_row):
+    if not ind_row:
+        return None
+    d = row_to_dict(ind_row)
+    sr = _parse_json_field(d.get("support_resistance"), {}) or {}
+    if isinstance(sr, str):
+        sr = {}
+    d["support_resistance"] = {"support": sr.get("support", []), "resistance": sr.get("resistance", [])} if isinstance(sr, dict) else {"support": [], "resistance": []}
+    return d
+
+
+def _build_strategy(strat_row):
+    """DB single row -> legacy {strategies: [...]} shape (options for indexes, BUY/HOLD/EXIT for stocks)."""
+    if not strat_row:
+        return None
+    d = row_to_dict(strat_row)
+    legs_parsed = _parse_json_field(d.get("legs"), None)
+    if isinstance(legs_parsed, dict) and "all_strategies" in legs_parsed:
+        strategies = legs_parsed.get("all_strategies", []) or []
+        legs = legs_parsed.get("legs", [])
+        if strategies:
+            strategies[0]["legs"] = strategies[0].get("legs", legs)
+            return {"strategies": strategies, "timestamp": d.get("timestamp")}
+    single = {k: d.get(k) for k in ("strategy", "market_condition", "expiry", "entry_trigger", "maximum_profit", "maximum_loss", "breakeven", "stop_loss", "target", "adjustment", "exit", "strategy_environment", "invalidation", "position_size")}
+    single["legs"] = legs_parsed if isinstance(legs_parsed, list) else []
+    return {"strategies": [single], "timestamp": d.get("timestamp")}
+
+
+def _build_scenarios(scen_row):
+    """DB flattened row -> legacy list [{scenario_type, description, target, stop_loss, trigger}]."""
+    if not scen_row:
+        return []
+    d = row_to_dict(scen_row)
+    out = []
+    if d.get("bullish_trigger") or d.get("bullish_target"):
+        out.append({"scenario_type": "BULLISH", "description": d.get("bullish_confirmation", ""), "trigger": d.get("bullish_trigger", ""), "target": d.get("bullish_target", ""), "stop_loss": d.get("bullish_invalidation", "")})
+    if d.get("bearish_trigger") or d.get("bearish_target"):
+        out.append({"scenario_type": "BEARISH", "description": d.get("bearish_confirmation", ""), "trigger": d.get("bearish_trigger", ""), "target": d.get("bearish_target", ""), "stop_loss": d.get("bearish_invalidation", "")})
+    if d.get("range_condition"):
+        out.append({"scenario_type": "RANGE", "description": d.get("range_strategy", ""), "trigger": d.get("range_condition", ""), "target": d.get("range_strategy", ""), "stop_loss": d.get("range_invalidation", "")})
+    return out
+
+
+def _build_outlook(outlook_row):
+    if not outlook_row:
+        return None
+    d = row_to_dict(outlook_row)
+    full = _parse_json_field(d.get("outlook"), None)
+    if isinstance(full, dict) and full:
+        return full
+    return {"market_summary": d.get("outlook", ""), "data_quality": d.get("data_quality", "")}
+
+
 def _symbol_data(symbol):
+    symbol = (symbol or "").upper()
     conn = get_db()
     result = {}
     price_row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    if price_row:
-        result["quote"] = row_to_dict(price_row)
+    quote = _build_quote(symbol, price_row)
+    if quote:
+        result["quote"] = quote
     ind_row = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    if ind_row:
-        result["indicators"] = row_to_dict(ind_row)
+    ind = _build_indicators(ind_row)
+    if ind:
+        result["indicators"] = ind
     regime_row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
     if regime_row:
         result["regime"] = row_to_dict(regime_row)
     strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    if strat_row:
-        result["strategy"] = row_to_dict(strat_row)
+    strat = _build_strategy(strat_row)
+    if strat:
+        result["strategy"] = strat
     scen_row = conn.execute("SELECT * FROM scenarios WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    if scen_row:
-        result["scenarios"] = [row_to_dict(scen_row)]
+    result["scenarios"] = _build_scenarios(scen_row)
     outlook_row = conn.execute("SELECT * FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    if outlook_row:
-        result["ai_outlook"] = row_to_dict(outlook_row)
+    outlook = _build_outlook(outlook_row)
+    if outlook:
+        result["ai_outlook"] = outlook
+    try:
+        from expiry import get_current_expiry
+        if symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"):
+            result["expiry"] = get_current_expiry() if callable(get_current_expiry) else {}
+    except Exception:
+        pass
+    last_ts = None
+    for key in ("quote", "indicators", "regime", "strategy"):
+        ts = (result.get(key) or {}).get("timestamp")
+        if ts and (not last_ts or ts > last_ts):
+            last_ts = ts
+    result["last_updated"] = last_ts
+    result["data_quality"] = (result.get("ai_outlook") or {}).get("data_quality", "GOOD")
     conn.close()
     return jsonify(result)
 
@@ -282,32 +408,47 @@ def etf():
 
 @app.route("/api/market")
 def market():
+    """Legacy shape: {instruments: {SYM: symbol_payload}, ai_outlook, last_updated, data_quality}."""
     conn = get_db()
-    result = {}
-    for sym in ["NIFTY", "BANKNIFTY", "SENSEX", "VIX"]:
-        row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (sym,)).fetchone()
-        if row:
-            result[sym] = row_to_dict(row)
-    vix_row = conn.execute("SELECT * FROM vix_data ORDER BY timestamp DESC LIMIT 1").fetchone()
-    if vix_row:
-        result["VIX"] = row_to_dict(vix_row)
-    snap_row = conn.execute("SELECT * FROM market_snapshots ORDER BY timestamp DESC LIMIT 1").fetchone()
-    if snap_row:
-        result["snapshot"] = row_to_dict(snap_row)
+    sym_rows = conn.execute("SELECT symbol FROM symbols WHERE active=1 ORDER BY type, symbol").fetchall()
+    symbols = [r["symbol"] for r in sym_rows] or ["NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"]
     conn.close()
-    return jsonify(result)
+    instruments = {}
+    latest_ts = None
+    # Reuse _symbol_data logic without extra HTTP: query directly.
+    from flask import json as flask_json
+    for sym in symbols:
+        with app.test_request_context():
+            resp = _symbol_data(sym)
+            payload = resp.get_json()
+        if payload and payload.get("quote"):
+            instruments[sym] = payload
+            ts = payload.get("last_updated")
+            if ts and (not latest_ts or ts > latest_ts):
+                latest_ts = ts
+    nifty_ai = (instruments.get("NIFTY") or {}).get("ai_outlook", {})
+    return jsonify({"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments})
 
 @app.route("/api/history")
 def history():
+    """Legacy shape: grouped {SYM: [...]} as old history.json."""
     symbol = request.args.get("symbol", "")
     days = request.args.get("days", 30, type=int)
     conn = get_db()
     if symbol:
-        rows = conn.execute("SELECT * FROM history WHERE symbol=? AND date >= date('now', '-' || ? || ' days') ORDER BY date DESC", (symbol, days)).fetchall()
+        rows = conn.execute("SELECT * FROM history WHERE UPPER(symbol)=UPPER(?) AND date >= date('now', '-' || ? || ' days') ORDER BY date DESC", (symbol, days)).fetchall()
     else:
         rows = conn.execute("SELECT * FROM history WHERE date >= date('now', '-' || ? || ' days') ORDER BY symbol, date DESC", (days,)).fetchall()
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    grouped = {}
+    for r in rows:
+        d = row_to_dict(r)
+        try:
+            d["no_trade_conditions"] = json.loads(d.get("no_trade_conditions") or "[]")
+        except Exception:
+            d["no_trade_conditions"] = []
+        grouped.setdefault(d.get("symbol", "UNKNOWN"), []).append(d)
+    return jsonify(grouped)
 
 @app.route("/api/news")
 def news():

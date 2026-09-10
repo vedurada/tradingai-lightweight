@@ -5,7 +5,16 @@ from typing import Any
 
 
 class StrategyEngine:
-    def select(self, regime: str, confidence: float, data_quality: str, vix_price: float = 0, vix_change_pct: float = 0, symbol: str = "") -> dict[str, Any]:
+    # Option strategies (spreads/condors) are only for tradable index derivatives.
+    INDEX_SYMBOLS = {"NIFTY", "BANKNIFTY", "SENSEX", "FINNIFTY"}
+
+    def is_index(self, symbol: str = "") -> bool:
+        return (symbol or "").upper() in self.INDEX_SYMBOLS
+
+    def select(self, regime: str, confidence: float, data_quality: str, vix_price: float = 0, vix_change_pct: float = 0, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None) -> dict[str, Any]:
+        # Stocks / ETFs get a simple BUY / HOLD / EXIT outlook, never option spreads.
+        if symbol and not self.is_index(symbol):
+            return self.select_stock_outlook(regime, confidence, data_quality, symbol, price, vwap, rsi, adx)
         strategies = []
         position_size = self._position_size(confidence, data_quality)
         nd = self._non_directional_intraday(regime, confidence, vix_price, vix_change_pct, symbol)
@@ -33,8 +42,88 @@ class StrategyEngine:
             strategies = [{"strategy": "NO TRADE", "market_condition": "Unclear", "expiry": "N/A", "legs": [], "entry_trigger": "Wait for clear signal", "maximum_profit": "N/A", "maximum_loss": "N/A", "breakeven": "N/A", "stop_loss": "N/A", "adjustment": "N/A", "exit": "N/A", "strategy_environment": "UNKNOWN", "invalidation": "Wait for confirmation", "position_size": "0%"}]
         return {"regime": regime, "confidence": confidence, "data_quality": data_quality, "strategies": strategies, "position_size": position_size, "timestamp": datetime.now(timezone.utc).isoformat()}
 
+    def select_stock_outlook(self, regime: str, confidence: float, data_quality: str, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None) -> dict[str, Any]:
+        """Simple BUY / HOLD / EXIT outlook for cash-market stocks (no options)."""
+        position_size = self._position_size(confidence, data_quality)
+        if data_quality == "STALE":
+            outlook = "HOLD"
+            reason = "Stale data — wait for fresh prices"
+            env = "UNKNOWN"
+        elif regime == "TRENDING_BULLISH" and confidence >= 50:
+            outlook = "BUY"
+            reason = "Uptrend with strength"
+            env = "TRENDING_BULLISH"
+        elif regime == "TRENDING_BEARISH":
+            outlook = "EXIT"
+            reason = "Downtrend — exit longs / avoid fresh buying"
+            env = "TRENDING_BEARISH"
+        elif regime == "HIGH_VOLATILITY":
+            outlook = "HOLD"
+            reason = "High volatility — reduce risk, wait for clarity"
+            env = "HIGH_VOLATILITY"
+        elif regime == "RANGE_BOUND":
+            outlook = "HOLD"
+            reason = "Range-bound — buy near support, book near resistance"
+            env = "RANGE_BOUND"
+        else:
+            # Fallback on price vs VWAP + RSI when regime is unclear.
+            above_vwap = price > vwap > 0
+            if above_vwap and rsi is not None and 50 <= rsi <= 70 and confidence >= 45:
+                outlook = "BUY"
+                reason = "Price above VWAP with healthy momentum"
+                env = "MOMENTUM"
+            elif rsi is not None and rsi < 30 and confidence >= 40:
+                outlook = "BUY"
+                reason = "Oversold bounce setup (watch for reversal confirmation)"
+                env = "REVERSAL"
+            elif rsi is not None and rsi > 75:
+                outlook = "EXIT"
+                reason = "Overbought — book partial profits"
+                env = "OVERBOUGHT"
+            else:
+                outlook = "HOLD"
+                reason = "No clear edge — wait for confirmation"
+                env = "UNKNOWN"
+        if outlook == "BUY":
+            entry = "Buy in tranches near VWAP / support; confirm with green 15m close"
+            stop = "Below recent swing low / -5% positional stop"
+            target = "Nearest resistance / +8-12% swing target"
+            max_loss = "Defined by stop-loss"
+            max_profit = "Open-ended to resistance"
+        elif outlook == "EXIT":
+            entry = "Exit longs on bounce; no fresh buying"
+            stop = "N/A (risk-off)"
+            target = "Re-enter only above VWAP with momentum"
+            max_loss = "Avoid further downside"
+            max_profit = "Capital protection"
+        else:
+            entry = "Hold existing; fresh entry only on breakout/breakdown with volume"
+            stop = "Below support"
+            target = "Range top"
+            max_loss = "Limited to range"
+            max_profit = "Range move"
+        strategy = {
+            "strategy": outlook,
+            "market_condition": f"Stock outlook | {reason}",
+            "expiry": "N/A",
+            "legs": [],
+            "entry_trigger": entry,
+            "maximum_profit": max_profit,
+            "maximum_loss": max_loss,
+            "breakeven": "N/A",
+            "stop_loss": stop,
+            "target": target,
+            "adjustment": "Re-evaluate on regime change",
+            "exit": "On EXIT signal or stop-loss",
+            "strategy_environment": env,
+            "invalidation": "Regime flip or stop-loss hit",
+            "position_size": position_size,
+            "is_stock_outlook": True,
+        }
+        return {"regime": regime, "confidence": confidence, "data_quality": data_quality, "strategies": [strategy], "position_size": position_size, "timestamp": datetime.now(timezone.utc).isoformat()}
+
     def _non_directional_intraday(self, regime: str, confidence: float, vix_price: float, vix_change_pct: float, symbol: str = "") -> dict[str, Any] | None:
-        if symbol.upper() != "NIFTY":
+        if symbol.upper() not in ("NIFTY", "BANKNIFTY"):
             return None
         from datetime import datetime as dt
         now = dt.now(timezone.utc)

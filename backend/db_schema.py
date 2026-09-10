@@ -189,6 +189,7 @@ CREATE TABLE IF NOT EXISTS indicators (
     prev_day_close REAL,
     open_range_high REAL,
     open_range_low REAL,
+    support_resistance TEXT DEFAULT '{}',
     UNIQUE(symbol, timestamp)
 );
 CREATE INDEX IF NOT EXISTS idx_ind_symbol_ts ON indicators(symbol, timestamp DESC);
@@ -332,17 +333,77 @@ CREATE TABLE IF NOT EXISTS etf_data (
     UNIQUE(symbol, timestamp)
 );
 CREATE INDEX IF NOT EXISTS idx_etf_symbol_ts ON etf_data(symbol, timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS history (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    date TEXT,
+    locked_price REAL,
+    closed_price REAL,
+    points REAL,
+    result TEXT,
+    strategy TEXT,
+    market_regime TEXT,
+    directional_bias TEXT,
+    confidence REAL,
+    market_summary TEXT,
+    evidence_strength REAL DEFAULT 0,
+    volatility_classification TEXT,
+    market_structure TEXT,
+    no_trade_conditions TEXT,
+    strategy_environment TEXT,
+    invalidation TEXT,
+    created_at TEXT,
+    UNIQUE(symbol, date)
+);
+CREATE INDEX IF NOT EXISTS idx_history_symbol_date ON history(symbol, date DESC);
+
+CREATE TABLE IF NOT EXISTS history_archive (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    date TEXT,
+    locked_price REAL,
+    closed_price REAL,
+    points REAL,
+    result TEXT,
+    strategy TEXT,
+    market_regime TEXT,
+    directional_bias TEXT,
+    confidence REAL,
+    market_summary TEXT,
+    created_at TEXT,
+    archived_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS portfolio (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    strategy TEXT,
+    entry_price REAL,
+    quantity INTEGER,
+    direction TEXT,
+    entry_date TEXT,
+    exit_price REAL,
+    exit_date TEXT,
+    points REAL,
+    result TEXT,
+    created_at TEXT
+);
 """
 
 def init_database(db_path: str = DB_PATH) -> None:
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
-    c.execute("DROP TABLE IF EXISTS indicators")
-    c.execute("DROP TABLE IF EXISTS scenarios")
-    c.execute("DROP TABLE IF EXISTS strategies")
-    c.execute("DROP TABLE IF EXISTS market_regime")
     c.executescript(SCHEMA)
+    # Migrate existing DBs: add columns introduced after initial schema.
+    try:
+        c.execute("PRAGMA table_info(indicators)")
+        ind_cols = {row[1] for row in c.fetchall()}
+        if "support_resistance" not in ind_cols:
+            c.execute("ALTER TABLE indicators ADD COLUMN support_resistance TEXT DEFAULT '{}'")
+    except Exception:
+        pass
     conn.commit()
     conn.close()
     print(f"Database initialized: {db_path}")
