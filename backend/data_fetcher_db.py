@@ -777,13 +777,9 @@ def fetch_nse_index_breadth(conn: sqlite3.Connection) -> None:
     now = datetime.now(timezone.utc).isoformat()
     n = 0
     for x in data:
+        # Exact match only: fuzzy matching would map e.g. NIFTY 500 -> NIFTY.
         name = (x.get("indexSymbol") or x.get("index") or "").strip().upper()
-        sym = NSE_INDEX_MAP.get(name, None)
-        if not sym:
-            for k, v in NSE_INDEX_MAP.items():
-                if k in name or name in k:
-                    sym = v
-                    break
+        sym = NSE_INDEX_MAP.get(name)
         if not sym:
             continue
         try:
