@@ -22,7 +22,7 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 | VM app dir | `/opt/tradingai` (repo rsync target) |
 | VM web root | `/var/www/tradingai.in/html` (nginx serves this, NOT /opt) |
 | DB | `/opt/tradingai/database/tradingai.db` (SQLite, WAL off, single writer) |
-| API | Flask `backend/api_server.py` on `127.0.0.1:8000`, proxied at `/api/` by nginx |
+| API | Flask `backend/api_server.py` on `127.0.0.1:8000` as systemd unit `tradingai-api` (`Restart=always`, unit in `ops/systemd/`), proxied at `/api/` by nginx; 2-min curl watchdog restarts on hang |
 | Site | https://tradingai.in (real Let's Encrypt cert since 2026-09-10, auto-renew via certbot timer; HTTP 301 → HTTPS; earlier self-signed cert caused browser warnings) |
 | Market hours | 9:30–15:30 IST, Mon–Fri. Cron uses `9-15` hour field as approximation |
 
@@ -132,18 +132,18 @@ Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; w
 30 9 * * 1-5        pnl_tracker.py lock       (9:30 entries)
 20 15 * * 1-5       pnl_tracker.py close      (3:20 exits)
 0 2 1 * *           pnl_tracker.py archive 365 (monthly)
-*/5 * * * *         API watchdog (bracket-pattern pgrep — plain pattern self-matches!)
+*/2 * * * *         API health watchdog (curl /api/health → systemctl restart; catches hangs too)
 @reboot              API start
 ```
 
 ## 14. Deploy (`deploy-vm.sh`)
 
-rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (`static/*`→`html/static/`, `static/css/main.css`→`html/assets/css/` — pages reference `assets/`, the stale-copy trap) → db_schema → background fetch → restart API (setsid+append; health curl has `|| true` so a slow start can't abort deploy) → rewrite crontab → `sudo systemctl reload nginx`. Deploy kills API first; watchdog covers failures.
+rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync → db_schema → background fetch → install `ops/systemd/tradingai-api.service` + `systemctl restart` → rewrite crontab → `sudo systemctl reload nginx`. Health curl has `|| true` so a slow start can't abort deploy.
 
 ## 15. Bug log (recurring traps)
 
 - `display:block` on `<table>` destroys column layout (history looked "shrunk").
-- `pgrep -f api_server.py` matches its own cron shell → watchdog never fires. Always use `pgrep -f '[p]ython3 api_server'`.
+- `pgrep -f <pattern>` matches its own cron shell → pgrep watchdogs never fire. Use a `curl /api/health` check instead (also catches hangs, not just dead processes).
 - `init_database()` must NEVER DROP tables (once wiped a day of screens).
 - `ScenarioEngine.generate()` returns a **dict**, not a list (`scenarios[0]` → KeyError(0)).
 - `calculate_all_indicators()["macd"]` is a **dict** `{macd,signal,histogram}` — extract before REAL columns.
@@ -151,7 +151,7 @@ rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (
 - `Database.save_history` overwrites the preserved side (close wiped entry with 0) — `pnl_tracker.py` uses raw SQL instead.
 - `ticker.info` numeric-only dict is NOT a quote (no `price` key) — always build quotes via `fetch_quote` or 1m candles.
 - YF constants were inverted (`YF_ETFS` keys) and VIX was US `^VIX`; correct: `^INDIAVIX`, `^CNXFIN` for FINNIFTY, `*.NS` for ETFs.
-- `nohup ... &` without `setsid` dies with the SSH session.
+- `nohup ... &` without `setsid` dies with the SSH session. API now runs under systemd; never start it by hand with nohup.
 
 ## 16. Data sources & persistence policy
 
@@ -170,5 +170,5 @@ yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundam
 8. **Backtesting:** `backtest.py` exists unwired — backtest regime/strategy rules on `price_1d` history.
 9. **Alerts:** `alert.py` + PCR/OI-breakout rules (PCR from option chains when available).
 10. **Expiry holidays:** refresh `HOLIDAYS_IST` each January from NSE/BSE circulars.
-11. **API hardening:** replace Flask dev server with gunicorn + systemd unit (current nohup+watchdog is fragile); add response caching for `/api/market` (currently ~270 queries/page-load).
+11. **API hardening:** systemd unit done; remaining: gunicorn workers (Flask dev server is single-threaded) + response caching for `/api/market` (currently ~270 queries/page-load).
 12. **Auth/admin:** token-gated `/api/*` write endpoints if journaling/notes are added.

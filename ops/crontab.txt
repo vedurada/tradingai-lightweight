@@ -3,8 +3,8 @@
 * 9-15 * * 1-5 cd /opt/tradingai/backend && SKIP_LLM=1 /usr/bin/python3 data_fetcher_db.py >> /opt/tradingai/logs/data.log 2>&1
 */5 9-15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 monitor.py >> /opt/tradingai/logs/monitor.log 2>&1
 0 */2 9-15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 alert.py >> /opt/tradingai/logs/alerts.log 2>&1
-*/5 * * * * pgrep -f '[p]ython3 api_server' > /dev/null || (cd /opt/tradingai/backend && setsid /usr/bin/python3 api_server.py >>/opt/tradingai/logs/api_server.log 2>&1 0</dev/null &)
-@reboot cd /opt/tradingai/backend && setsid /usr/bin/python3 api_server.py >>/opt/tradingai/logs/api_server.log 2>&1 0</dev/null &
+# Self-healing: systemd restarts the API on crash/reboot; this catches hangs (process alive but not answering).
+*/2 * * * * /usr/bin/curl -sf --max-time 10 http://127.0.0.1:8000/api/health > /dev/null || /usr/bin/sudo /usr/bin/systemctl restart tradingai-api
 30 9 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py lock >> /opt/tradingai/logs/pnl.log 2>&1
 20 15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py close >> /opt/tradingai/logs/pnl.log 2>&1
 0 2 1 * * cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py archive 365 >> /opt/tradingai/logs/pnl.log 2>&1

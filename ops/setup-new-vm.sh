@@ -58,7 +58,7 @@ echo "=== 8/8 cron + initial fetch + API ==="
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no "$REPO_ROOT/ops/crontab.txt" "$VM_USER@$VM_HOST:/tmp/tradingai-crontab.txt"
 ssh_vm "grep -v '^#' /tmp/tradingai-crontab.txt | grep -v '^\$' | crontab - && rm /tmp/tradingai-crontab.txt && crontab -l | wc -l"
 ssh_vm "cd $PROJECT_DIR/backend && /usr/bin/python3 db_schema.py && (SKIP_LLM=1 /usr/bin/python3 data_fetcher_db.py >> /opt/tradingai/logs/data.log 2>&1 &)"
-ssh_vm "cd $PROJECT_DIR/backend && setsid /usr/bin/python3 api_server.py >>/opt/tradingai/logs/api_server.log 2>&1 0</dev/null & sleep 4; curl -s http://127.0.0.1:8000/api/health || true"
+ssh_vm "sudo cp $PROJECT_DIR/ops/systemd/tradingai-api.service /etc/systemd/system/tradingai-api.service && sudo systemctl daemon-reload && sudo systemctl enable --now tradingai-api && sleep 4; curl -s http://127.0.0.1:8000/api/health || true"
 
 echo ""
 echo "=== VERIFY (do these now) ==="

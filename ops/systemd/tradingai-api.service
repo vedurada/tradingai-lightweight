@@ -1,0 +1,17 @@
+[Unit]
+Description=TradingAI Flask API (port 8000)
+After=network.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/tradingai/backend
+ExecStart=/usr/bin/python3 api_server.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/tradingai/logs/api_server.log
+StandardError=append:/opt/tradingai/logs/api_server.log
+Environment=API_PORT=8000
+
+[Install]
+WantedBy=multi-user.target
