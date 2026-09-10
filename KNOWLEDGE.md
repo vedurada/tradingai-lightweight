@@ -69,6 +69,7 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 | `ai_outlook.py` | Rule-based outlook (LLM providers removed after 401s); full JSON stored in `ai_outlooks.outlook` |
 | `expiry.py` | Per-index expiry rules (NSE=Tuesday, BSE=Thursday; weeklies only NIFTY/SENSEX) |
 | `pnl_tracker.py` | `lock` (9:30) / `close` (15:20) / `backfill [date]` / `archive [days]` |
+| `bhavcopy.py` | NSE official EOD (`ind_close_all`, incl. index P/E) into `price_1d` — `backfill [days]` / `daily` (18:35 cron) / `holidays` (weekly → `nse_holidays`, auto-used by expiry engine) |
 | `monitor.py` / `alert.py` | Health checks / alerts via cron |
 | `generate_data.py` / `generate_json.py` | LEGACY JSON pipeline (deprecated; weekly archive inside it disabled) |
 | `history_logger.py`, `backtest.py`, `options.py` | Legacy/helpers; backtest not wired to UI |
@@ -139,6 +140,8 @@ Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; w
 0 */2 9-15 * * 1-5  alert.py
 30 9 * * 1-5        pnl_tracker.py lock       (9:30 entries)
 20 15 * * 1-5       pnl_tracker.py close      (3:20 exits)
+35 18 * * 1-5       bhavcopy.py daily         (NSE EOD backfill)
+30 8 * * 1           bhavcopy.py holidays      (weekly holiday sync)
 0 2 1 * *           pnl_tracker.py archive 365 (monthly)
 */2 * * * *         API health watchdog (curl /api/health → systemctl restart; catches hangs too)
 @reboot              API start
