@@ -207,12 +207,10 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
     try:
         from fetch_market import MarketFetcher
         from indicators import calculate_all_indicators, calculate_pivot, calculate_cpr
-        from options import OptionsEngine
         from regime import RegimeEngine
         from scenarios import ScenarioEngine
         from strategies import StrategyEngine
         from ai_outlook import AIOutlookEngine
-        from expiry import get_current_expiry
 
         fetcher = MarketFetcher()
         config = load_config()
@@ -228,39 +226,57 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
         if not quote or quote.get("price", 0) == 0:
             return
         indicators = calculate_all_indicators(ohlcv, quote) if ohlcv else {}
+        if not indicators:
+            indicators = {}
         pivot_data = calculate_pivot(quote)
         cpr_data = calculate_cpr(pivot_data)
         options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
-        regime_engine = RegimeEngine()
-        regime = regime_engine.evaluate(
-            price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"],
-            rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"),
-            vix_price=0, bollinger=indicators.get("bollinger_bands"), pivot=pivot_data,
-            support_resistance=indicators.get("support_resistance"), pcr=options_analysis.get("pcr"),
-            volume=quote.get("volume"), avg_volume=indicators.get("avg_volume"),
-        )
-        scenario_engine = ScenarioEngine()
-        scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"])
-        strategy_engine = StrategyEngine()
-        strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL")
-        ai_engine = AIOutlookEngine()
-        ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False)})
         timestamp = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
-        conn.execute("INSERT OR REPLACE INTO market_regime (symbol, timestamp, regime, confidence, evidence, trend, momentum, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, regime["regime"], regime["confidence"], "", regime.get("trend", ""), regime.get("momentum", ""), regime.get("volatility", "")))
+
+        regime_info = {"regime": "UNKNOWN", "confidence": 0, "trend": "", "momentum": "", "volatility": ""}
+        try:
+            regime_engine = RegimeEngine()
+            regime_info = regime_engine.evaluate(
+                price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"],
+                rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"),
+                vix_price=0, bollinger=indicators.get("bollinger_bands"), pivot=pivot_data,
+                support_resistance=indicators.get("support_resistance"), pcr=options_analysis.get("pcr"),
+                volume=quote.get("volume"), avg_volume=indicators.get("avg_volume"),
+            )
+        except Exception:
+            pass
+
+        conn.execute("INSERT OR REPLACE INTO market_regime (symbol, timestamp, regime, confidence, evidence, trend, momentum, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "", regime_info.get("trend",""), regime_info.get("momentum",""), regime_info.get("volatility","")))
+
         ind = indicators if indicators else {}
         bb = ind.get("bollinger_bands", {}) if isinstance(ind.get("bollinger_bands"), dict) else {}
         pivot_d = pivot_data if pivot_data else {}
         cpr_d = cpr_data if cpr_data else {}
-        ind_vals = [symbol, timestamp, ind.get("ema9",0), ind.get("ema20",0), ind.get("ema50",0), ind.get("ema100",0), ind.get("ema200",0), ind.get("sma20",0), ind.get("sma50",0), ind.get("sma200",0), ind.get("vwap",0), ind.get("rsi",0), ind.get("macd",0), ind.get("macd_signal",0), ind.get("macd_histogram",0), ind.get("atr",0), ind.get("adx",0), ind.get("di_plus",0), ind.get("di_minus",0), bb.get("upper",0), bb.get("middle",0), bb.get("lower",0), bb.get("width",0), pivot_d.get("pivot",0), pivot_d.get("r1",0), pivot_d.get("s1",0), pivot_d.get("r2",0), pivot_d.get("s2",0), pivot_d.get("r3",0), pivot_d.get("s3",0), cpr_d.get("classification",""), quote.get("high",0), quote.get("low",0), 0, 0, quote.get("previous_close",0), 0, 0]
+        ind_vals = [symbol, timestamp, ind.get("ema9",0), ind.get("ema20",0), ind.get("ema50",0), ind.get("ema100",0), ind.get("ema200",0), ind.get("sma20",0), ind.get("sma50",0), ind.get("sma200",0), ind.get("vwap",0), ind.get("rsi",0), ind.get("macd",0) or 0, ind.get("macd_signal",0) or 0, ind.get("macd_histogram",0) or 0, ind.get("atr",0), ind.get("adx",0), ind.get("di_plus",0) or 0, ind.get("di_minus",0) or 0, bb.get("upper",0) if isinstance(bb,dict) else 0, bb.get("middle",0) if isinstance(bb,dict) else 0, bb.get("lower",0) if isinstance(bb,dict) else 0, bb.get("width",0) if isinstance(bb,dict) else 0, pivot_d.get("pivot",0), pivot_d.get("r1",0), pivot_d.get("s1",0), pivot_d.get("r2",0), pivot_d.get("s2",0), pivot_d.get("r3",0), pivot_d.get("s3",0), cpr_d.get("classification",""), quote.get("high",0), quote.get("low",0), 0, 0, quote.get("previous_close",0), 0, 0]
         conn.execute("INSERT OR REPLACE INTO indicators (symbol, timestamp, ema9, ema20, ema50, ema100, ema200, sma20, sma50, sma200, vwap, rsi, macd, macd_signal, macd_histogram, atr, adx, di_plus, di_minus, bollinger_upper, bollinger_middle, bollinger_lower, bollinger_width, pivot, r1, s1, r2, s2, r3, s3, cpr_classification, day_high, day_low, prev_day_high, prev_day_low, prev_day_close, open_range_high, open_range_low) VALUES ({})".format(",".join(["?" for _ in ind_vals])), ind_vals)
+
+        scenarios = []
+        strategy = {}
+        ai_outlook = {"outlook": "N/A"}
+        try:
+            if ohlcv and indicators.get("rsi") and indicators.get("adx"):
+                scenario_engine = ScenarioEngine()
+                scenarios = scenario_engine.generate(regime_info.get("regime","UNKNOWN"), ind.get("support_resistance",{}).get("support",[]), ind.get("support_resistance",{}).get("resistance",[]), quote["price"])
+                strategy_engine = StrategyEngine()
+                strategy = strategy_engine.select(regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "GOOD" if ohlcv else "PARTIAL")
+                ai_engine = AIOutlookEngine()
+                ai_outlook = ai_engine.generate(symbol, {**quote, **ind, "regime": regime_info.get("regime","UNKNOWN"), "options_unavailable": options_analysis.get("data_unavailable", False)})
+        except Exception:
+            pass
+
         if scenarios:
             conn.execute("INSERT OR REPLACE INTO scenarios (symbol, timestamp, bullish_trigger, bullish_confirmation, bullish_target, bullish_invalidation, bearish_trigger, bearish_confirmation, bearish_target, bearish_invalidation, range_condition, range_strategy, range_invalidation) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, scenarios[0].get("bullish_trigger",""), scenarios[0].get("bullish_confirmation",""), scenarios[0].get("bullish_target",""), scenarios[0].get("bullish_invalidation",""), scenarios[0].get("bearish_trigger",""), scenarios[0].get("bearish_confirmation",""), scenarios[0].get("bearish_target",""), scenarios[0].get("bearish_invalidation",""), scenarios[0].get("range_condition",""), scenarios[0].get("range_strategy",""), scenarios[0].get("range_invalidation","")))
         if strategy:
             conn.execute("INSERT OR REPLACE INTO strategies (symbol, timestamp, strategy, market_condition, expiry, legs, entry_trigger, maximum_profit, maximum_loss, breakeven, stop_loss, target, adjustment, exit, time_based_exit) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, strategy.get("strategy",""), strategy.get("market_condition",""), strategy.get("expiry",""), json.dumps(strategy.get("legs",[])), strategy.get("entry_trigger",""), strategy.get("maximum_profit",""), strategy.get("maximum_loss",""), strategy.get("breakeven",""), strategy.get("stop_loss",""), strategy.get("target",""), strategy.get("adjustment",""), strategy.get("exit",""), strategy.get("time_based_exit","")))
-        conn.execute("INSERT OR REPLACE INTO ai_outlooks (symbol, timestamp, outlook, data_quality) VALUES (?, ?, ?, ?)", (symbol, timestamp, ai_outlook.get("outlook",""), quote.get("stale",False) and "STALE" or "GOOD"))
+        conn.execute("INSERT OR REPLACE INTO ai_outlooks (symbol, timestamp, outlook, data_quality) VALUES (?, ?, ?, ?)", (symbol, timestamp, ai_outlook.get("outlook","N/A"), quote.get("stale",False) and "STALE" or "GOOD"))
         conn.commit()
     except Exception as e:
-        logger.error(f"Regime/strategy error for {symbol}: {e}")
+        logger.error(f"Regime/strategy error for {symbol}: {repr(e)}")
 
 
 def update_data_status(conn: sqlite3.Connection, symbol: str, interval_type: str) -> None:
