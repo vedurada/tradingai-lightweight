@@ -33,8 +33,9 @@ echo "Files copied successfully"
 
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance flask flask-cors 2>&1 | tail -3"
 
-# Sync served web root (nginx serves /var/www, repo lives in /opt/tradingai)
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cp $PROJECT_DIR/index.html $PROJECT_DIR/market.html $PROJECT_DIR/scanner.html $PROJECT_DIR/strategies.html $PROJECT_DIR/history.html /var/www/tradingai.in/html/ && cp -r $PROJECT_DIR/indices/* /var/www/tradingai.in/html/indices/ 2>/dev/null; cp -r $PROJECT_DIR/stocks/* /var/www/tradingai.in/html/stocks/ 2>/dev/null; cp -r $PROJECT_DIR/static/* /var/www/tradingai.in/html/static/ 2>/dev/null; cp -r $PROJECT_DIR/assets/* /var/www/tradingai.in/html/assets/ 2>/dev/null; true"
+# Sync served web root (nginx serves /var/www, repo lives in /opt/tradingai).
+# NOTE: pages reference assets/css/main.css, whose source is static/css/main.css.
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cp $PROJECT_DIR/index.html $PROJECT_DIR/market.html $PROJECT_DIR/scanner.html $PROJECT_DIR/strategies.html $PROJECT_DIR/history.html /var/www/tradingai.in/html/ && cp -r $PROJECT_DIR/indices/* /var/www/tradingai.in/html/indices/ 2>/dev/null; cp -r $PROJECT_DIR/stocks/* /var/www/tradingai.in/html/stocks/ 2>/dev/null; mkdir -p /var/www/tradingai.in/html/static /var/www/tradingai.in/html/assets/css /var/www/tradingai.in/html/assets/js; cp -r $PROJECT_DIR/static/* /var/www/tradingai.in/html/static/ 2>/dev/null; cp $PROJECT_DIR/static/css/main.css /var/www/tradingai.in/html/assets/css/main.css; cp $PROJECT_DIR/static/js/*.js /var/www/tradingai.in/html/assets/js/ 2>/dev/null; true"
 
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "pkill -f '[p]ython3 api_server' 2>/dev/null; sleep 1; cd $PROJECT_DIR/backend && /usr/bin/python3 db_schema.py && (SKIP_LLM=1 /usr/bin/python3 data_fetcher_db.py >> /opt/tradingai/logs/data.log 2>&1 &) ; cd $PROJECT_DIR/backend && setsid /usr/bin/python3 api_server.py >>/opt/tradingai/logs/api_server.log 2>&1 0</dev/null & sleep 5; curl -s http://127.0.0.1:8000/api/health || true"
 
