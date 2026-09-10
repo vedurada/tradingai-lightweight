@@ -6,6 +6,7 @@ Index trades: ENTRY 9:30 AM IST, EXIT 3:20 PM IST.
 - `lock`  : record 9:30 entry price (+ strategy/regime snapshot) into history.
 - `close` : record 3:20 exit price, compute points and WIN/LOSS/FLAT.
 - `backfill [YYYY-MM-DD]`: rebuild a past day from stored 1m candles.
+- `archive [days]`: monthly archival of settled rows older than `days` (default 365) to history_archive.
 
 Usage:
     python3 pnl_tracker.py lock
@@ -224,6 +225,24 @@ def backfill(date_str: str | None = None) -> None:
     conn.close()
 
 
+def archive(retention_days: int = 365) -> None:
+    """Monthly archival: move settled rows older than retention to history_archive (permanent)."""
+    conn = _conn()
+    conn.execute(
+        """INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
+                strategy, market_regime, directional_bias, confidence, market_summary, created_at, archived_at)
+           SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
+                strategy, market_regime, directional_bias, confidence, market_summary, created_at, datetime('now')
+           FROM history WHERE closed_price IS NOT NULL AND date <= date('now', '-' || ? || ' days')""",
+        (retention_days,),
+    )
+    n = conn.total_changes
+    conn.execute("DELETE FROM history WHERE closed_price IS NOT NULL AND date <= date('now', '-' || ? || ' days')", (retention_days,))
+    conn.commit()
+    conn.close()
+    print(f"archive: moved {n} rows older than {retention_days}d to history_archive")
+
+
 if __name__ == "__main__":
     cmd = sys.argv[1] if len(sys.argv) > 1 else "close"
     arg = sys.argv[2] if len(sys.argv) > 2 else None
@@ -233,5 +252,7 @@ if __name__ == "__main__":
         close(arg)
     elif cmd == "backfill":
         backfill(arg)
+    elif cmd == "archive":
+        archive(int(arg) if arg and arg.isdigit() else 365)
     else:
         print(__doc__)

@@ -431,23 +431,30 @@ def market():
 
 @app.route("/api/history")
 def history():
-    """Legacy shape: grouped {SYM: [...]} as old history.json."""
+    """Grouped {SYM: [...]} shape; covers history + monthly archive (1-year retention)."""
     symbol = request.args.get("symbol", "")
-    days = request.args.get("days", 30, type=int)
+    days = request.args.get("days", 365, type=int)
     conn = get_db()
     if symbol:
-        rows = conn.execute("SELECT * FROM history WHERE UPPER(symbol)=UPPER(?) AND date >= date('now', '-' || ? || ' days') ORDER BY date DESC", (symbol, days)).fetchall()
+        rows = conn.execute("SELECT *, 'live' AS _src FROM history WHERE UPPER(symbol)=UPPER(?) AND date >= date('now', '-' || ? || ' days') ORDER BY date DESC", (symbol, days)).fetchall()
+        arch = conn.execute("SELECT *, 'archive' AS _src FROM history_archive WHERE UPPER(symbol)=UPPER(?) AND date >= date('now', '-' || ? || ' days') ORDER BY date DESC", (symbol, days)).fetchall()
     else:
-        rows = conn.execute("SELECT * FROM history WHERE date >= date('now', '-' || ? || ' days') ORDER BY symbol, date DESC", (days,)).fetchall()
+        rows = conn.execute("SELECT *, 'live' AS _src FROM history WHERE date >= date('now', '-' || ? || ' days') ORDER BY symbol, date DESC", (days,)).fetchall()
+        arch = conn.execute("SELECT *, 'archive' AS _src FROM history_archive WHERE date >= date('now', '-' || ? || ' days') ORDER BY symbol, date DESC", (days,)).fetchall()
     conn.close()
+    rows = list(rows) + list(arch)
     grouped = {}
     for r in rows:
         d = row_to_dict(r)
+        d.pop("_src", None)
         try:
-            d["no_trade_conditions"] = json.loads(d.get("no_trade_conditions") or "[]")
+            ntc = d.get("no_trade_conditions")
+            d["no_trade_conditions"] = json.loads(ntc) if isinstance(ntc, str) and ntc else (ntc or [])
         except Exception:
             d["no_trade_conditions"] = []
         grouped.setdefault(d.get("symbol", "UNKNOWN"), []).append(d)
+    for sym in grouped:
+        grouped[sym].sort(key=lambda e: e.get("date", ""), reverse=True)
     return jsonify(grouped)
 
 @app.route("/api/news")

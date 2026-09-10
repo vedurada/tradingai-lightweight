@@ -410,6 +410,27 @@ class Database:
         conn.close()
         return archived
 
+    def archive_old_history(self, retention_days: int = 365) -> int:
+        """Monthly archival: move settled rows older than retention to history_archive (permanent)."""
+        conn = self._conn()
+        c = conn.cursor()
+        c.execute("""
+            INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
+                strategy, market_regime, directional_bias, confidence, market_summary,
+                evidence_strength, volatility_classification, market_structure,
+                no_trade_conditions, strategy_environment, invalidation, created_at, archived_at)
+            SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
+                market_regime, directional_bias, confidence, market_summary,
+                evidence_strength, volatility_classification, market_structure,
+                no_trade_conditions, strategy_environment, invalidation, created_at, datetime('now')
+            FROM history WHERE closed_price IS NOT NULL AND date <= date('now', '-' || ? || ' days')
+        """, (retention_days,))
+        archived = c.rowcount
+        c.execute("DELETE FROM history WHERE closed_price IS NOT NULL AND date <= date('now', '-' || ? || ' days')", (retention_days,))
+        conn.commit()
+        conn.close()
+        return archived
+
     def save_portfolio(self, symbol: str, strategy: str, entry_price: float, quantity: int,
                        direction: str, entry_date: str) -> None:
         conn = self._conn()

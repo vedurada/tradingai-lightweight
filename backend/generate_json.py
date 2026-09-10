@@ -108,7 +108,7 @@ def generate_json() -> None:
     with open(os.path.join(data_dir, "health.json"), "w") as f:
         json.dump(health, f, indent=2)
 
-    archived = archive_history(weekly=True, monthly=False)
+    archived = archive_history(weekly=False, monthly=False)
     if archived:
         print(f"Archived {archived} old history entries")
 
