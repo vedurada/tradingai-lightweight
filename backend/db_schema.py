@@ -204,6 +204,66 @@ CREATE TABLE IF NOT EXISTS signals (
 );
 CREATE INDEX IF NOT EXISTS idx_sig_symbol_ts ON signals(symbol, timestamp DESC);
 
+CREATE TABLE IF NOT EXISTS scenarios (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    timestamp TEXT,
+    bullish_trigger TEXT,
+    bullish_confirmation TEXT,
+    bullish_target TEXT,
+    bullish_invalidation TEXT,
+    bearish_trigger TEXT,
+    bearish_confirmation TEXT,
+    bearish_target TEXT,
+    bearish_invalidation TEXT,
+    range_condition TEXT,
+    range_strategy TEXT,
+    range_invalidation TEXT,
+    UNIQUE(symbol, timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_scen_symbol_ts ON scenarios(symbol, timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS strategies (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    timestamp TEXT,
+    strategy TEXT,
+    market_condition TEXT,
+    expiry TEXT,
+    legs TEXT,
+    entry_trigger TEXT,
+    maximum_profit TEXT,
+    maximum_loss TEXT,
+    breakeven TEXT,
+    stop_loss TEXT,
+    target TEXT,
+    adjustment TEXT,
+    exit TEXT,
+    time_based_exit TEXT,
+    UNIQUE(symbol, timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_strat_symbol_ts ON strategies(symbol, timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS ai_outlooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    timestamp TEXT,
+    outlook TEXT,
+    data_quality TEXT,
+    UNIQUE(symbol, timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_outlook_symbol_ts ON ai_outlooks(symbol, timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS alerts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    timestamp TEXT,
+    alert_type TEXT,
+    message TEXT,
+    read INTEGER DEFAULT 0
+);
+CREATE INDEX IF NOT EXISTS idx_alerts_symbol_ts ON alerts(symbol, timestamp DESC);
+
 CREATE TABLE IF NOT EXISTS market_regime (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,
