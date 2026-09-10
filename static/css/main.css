@@ -23,6 +23,10 @@ footer { margin-top: 2rem; padding: 1rem 0; border-top: 1px solid #1e293b; color
 .pnl-full .card { margin-bottom: 1rem; }
 .full-list { display: block; width: 100%; }
 .full-list .card { margin-bottom: 1rem; }
+.scan-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; table-layout: fixed; }
+.scan-table th, .scan-table td { padding: 0.4rem 0.35rem; overflow: hidden; text-overflow: ellipsis; }
+.scan-table th:nth-child(n+7), .scan-table td:nth-child(n+7) { white-space: normal; word-break: break-word; }
+.scan-table th:nth-child(n+3):nth-child(-n+4), .scan-table td:nth-child(n+3):nth-child(-n+4) { text-align: right; font-variant-numeric: tabular-nums; }
 .history-table { width: 100%; min-width: 1020px; border-collapse: collapse; font-size: 0.85rem; }
 .history-table th { background: #1e293b; color: #22c55e; padding: 0.6rem 0.8rem; text-align: left; font-weight: 600; white-space: nowrap; }
 .history-table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #1e293b; color: #e2e8f0; white-space: nowrap; }

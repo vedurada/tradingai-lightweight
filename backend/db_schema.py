@@ -361,6 +361,20 @@ CREATE TABLE IF NOT EXISTS history (
 );
 CREATE INDEX IF NOT EXISTS idx_history_symbol_date ON history(symbol, date DESC);
 
+CREATE TABLE IF NOT EXISTS daily_strategy (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    date TEXT,
+    strategy_json TEXT,
+    regime TEXT,
+    confidence REAL,
+    bias TEXT,
+    locked_at TEXT DEFAULT '09:30',
+    created_at TEXT,
+    UNIQUE(symbol, date)
+);
+CREATE INDEX IF NOT EXISTS idx_dailystrat_symbol_date ON daily_strategy(symbol, date DESC);
+
 CREATE TABLE IF NOT EXISTS history_archive (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,

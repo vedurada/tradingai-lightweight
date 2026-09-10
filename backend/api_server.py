@@ -230,6 +230,33 @@ def _build_strategy(strat_row):
     return {"strategies": [single], "timestamp": d.get("timestamp")}
 
 
+def _ist_today():
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
+    except Exception:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _locked_strategy(conn, symbol):
+    """Today's 9:30 AM locked strategy (indexes), if the lock cron has run."""
+    try:
+        row = conn.execute("SELECT * FROM daily_strategy WHERE symbol=? AND date=?", (symbol, _ist_today())).fetchone()
+    except Exception:
+        return None
+    if not row:
+        return None
+    d = row_to_dict(row)
+    try:
+        strategies = json.loads(d.get("strategy_json") or "[]")
+    except Exception:
+        strategies = []
+    if not strategies:
+        return None
+    return {"strategies": strategies, "locked": True, "locked_at": d.get("locked_at", "09:30"),
+            "regime": d.get("regime", ""), "timestamp": d.get("created_at")}
+
+
 def _build_scenarios(scen_row):
     """DB flattened row -> legacy list [{scenario_type, description, target, stop_loss, trigger}]."""
     if not scen_row:
@@ -270,8 +297,10 @@ def _symbol_data(symbol):
     regime_row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
     if regime_row:
         result["regime"] = row_to_dict(regime_row)
-    strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    strat = _build_strategy(strat_row)
+    strat = _locked_strategy(conn, symbol)
+    if not strat:
+        strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        strat = _build_strategy(strat_row)
     if strat:
         result["strategy"] = strat
     scen_row = conn.execute("SELECT * FROM scenarios WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
