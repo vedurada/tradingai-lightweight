@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Options Strategies Guide - TradingAI</title>
+<meta name="description" content="Definitions of every options strategy used on TradingAI.in">
+<link rel="canonical" href="https://tradingai.in/strategies-guide.html">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+  <h1>TradingAI</h1>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="market.html">Market</a>
+    <a href="indices/nifty.html">NIFTY</a>
+    <a href="indices/banknifty.html">Bank NIFTY</a>
+    <a href="scanner.html">Scanner</a>
+    <a href="strategies.html">Strategies</a>
+    <a href="strategy-builder.html">Builder</a>
+    <a href="strategies-guide.html">Guide</a>
+    <a href="history.html">History</a>
+  </nav>
+</header>
+<main>
+  <h2>Options Strategies Guide</h2>
+  <p class="status">Every strategy below is one TradingAI can assign to NIFTY / BANKNIFTY / FINNIFTY / SENSEX.
+  Stocks always get BUY / HOLD / EXIT instead — never option legs.
+  <a href="strategy-builder.html">Open the Strategy Builder →</a></p>
+  <div id="guide-grid" class="grid"></div>
+  <footer>
+    <p>TradingAI provides market analysis and decision-support information. Options involve substantial risk, including loss of capital. No strategy guarantees profit. Verify lot sizes and premiums with your broker before trading.</p>
+  </footer>
+</main>
+<script>
+var GUIDE=[
+{strategy:"Bull Call Spread",outlook:"Bullish",structure:"BUY ATM CALL + SELL 1-strike OTM CALL",maxProfit:"Strike width − net premium paid",maxLoss:"Net premium paid",breakeven:"Lower strike + net premium",use:"Moderately bullish: cheaper than naked call, capped upside.",risk:"Loss limited to premium; upside capped at higher strike."},
+{strategy:"Bull Put Spread",outlook:"Bullish",structure:"SELL OTM PUT + BUY further OTM PUT",maxProfit:"Net premium received",maxLoss:"Strike width − net premium",breakeven:"Higher strike − net premium",use:"Mildly bullish or neutral; premium credit with defined risk.",risk:"Loss if index falls below lower put strike."},
+{strategy:"Bear Put Spread",outlook:"Bearish",structure:"BUY ATM PUT + SELL 1-strike OTM PUT",maxProfit:"Strike width − net premium paid",maxLoss:"Net premium paid",breakeven:"Higher strike − net premium",use:"Moderately bearish: cheaper than naked put, capped profit.",risk:"Loss limited to premium; profit capped at lower strike."},
+{strategy:"Bear Call Spread",outlook:"Bearish",structure:"SELL OTM CALL + BUY further OTM CALL",maxProfit:"Net premium received",maxLoss:"Strike width − net premium",breakeven:"Lower strike + net premium",use:"Mildly bearish or neutral; premium credit with defined risk.",risk:"Loss if index rallies above higher call strike."},
+{strategy:"Iron Condor",outlook:"Range-bound",structure:"SELL OTM PUT spread + SELL OTM CALL spread (4 legs)",maxProfit:"Total net premium received",maxLoss:"Strike width − net premium",breakeven:"Wings ± net premium",use:"Index stuck between support and resistance into expiry.",risk:"Breakout either side beyond wings causes max loss."},
+{strategy:"Defined-risk premium selling",outlook:"High IV",structure:"SELL OTM PUT spread + SELL OTM CALL spread",maxProfit:"Total net premium received",maxLoss:"Strike width − net premium",breakeven:"Wings ± net premium",use:"Elevated IV with no clear direction; harvest time decay.",risk:"Volatility crush or sharp breakout hurts both sides."},
+{strategy:"Long Straddle (ND Intraday)",outlook:"Non-directional",structure:"BUY ATM CALL + BUY ATM PUT, same expiry",maxProfit:"Unlimited (either direction)",maxLoss:"Total premium paid",breakeven:"ATM ± total premium",use:"Big move expected, direction unknown (e.g. event day, low VIX).",risk:"Time decay kills both legs if index stays flat."},
+{strategy:"Long Strangle (ND Intraday)",outlook:"Non-directional",structure:"BUY 1-strike OTM CALL + BUY 1-strike OTM PUT",maxProfit:"Unlimited",maxLoss:"Total premium paid",breakeven:"Each strike ± its premium share",use:"Cheaper than straddle when VIX is normal; needs a bigger move.",risk:"Needs a larger move to profit; exits at 3:20 PM or 2% premium stop."},
+{strategy:"NO TRADE",outlook:"Unclear",structure:"No legs",maxProfit:"—",maxLoss:"—",breakeven:"—",use:"Conflicting signals, stale data, or extreme VIX. Capital protection is a position.",risk:"FOMO — trading anyway."}
+];
+(function(){
+var grid=document.getElementById('guide-grid');if(!grid)return;var html='';
+for(var i=0;i<GUIDE.length;i++){var g=GUIDE[i];
+html+='<div class="card"><h3>'+g.strategy+'</h3><div class="status">Outlook: '+g.outlook+'</div><div class="status"><strong>Structure:</strong> '+g.structure+'</div><div class="status">Max profit: '+g.maxProfit+'</div><div class="status">Max loss: '+g.maxLoss+'</div><div class="status">Breakeven: '+g.breakeven+'</div><div class="status"><strong>Use when:</strong> '+g.use+'</div><div class="status"><strong>Risk:</strong> '+g.risk+'</div></div>';}
+grid.innerHTML=html;
+})();
+</script>
+</body>
+</html>

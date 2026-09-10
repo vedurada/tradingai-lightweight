@@ -1,50 +1,316 @@
 {
   "indices": [
-    {"name": "NIFTY 50", "symbol": "NIFTY", "yfinance_symbol": "^NSEI", "page": "indices/nifty.html"},
-    {"name": "BANK NIFTY", "symbol": "BANKNIFTY", "yfinance_symbol": "^NSEBANK", "page": "indices/banknifty.html"},
-    {"name": "FIN NIFTY", "symbol": "FINNIFTY", "yfinance_symbol": "^CNXFIN", "page": "indices/finnifty.html"},
-    {"name": "SENSEX", "symbol": "SENSEX", "yfinance_symbol": "^BSESN", "page": "indices/sensex.html"}
+    {
+      "name": "NIFTY 50",
+      "symbol": "NIFTY",
+      "yfinance_symbol": "^NSEI",
+      "page": "indices/nifty.html",
+      "lot_size": 75,
+      "strike_step": 50,
+      "exchange": "NSE"
+    },
+    {
+      "name": "BANK NIFTY",
+      "symbol": "BANKNIFTY",
+      "yfinance_symbol": "^NSEBANK",
+      "page": "indices/banknifty.html",
+      "lot_size": 30,
+      "strike_step": 100,
+      "exchange": "NSE"
+    },
+    {
+      "name": "FIN NIFTY",
+      "symbol": "FINNIFTY",
+      "yfinance_symbol": "^CNXFIN",
+      "page": "indices/finnifty.html",
+      "lot_size": 65,
+      "strike_step": 50,
+      "exchange": "NSE"
+    },
+    {
+      "name": "SENSEX",
+      "symbol": "SENSEX",
+      "yfinance_symbol": "^BSESN",
+      "page": "indices/sensex.html",
+      "lot_size": 20,
+      "strike_step": 100,
+      "exchange": "BSE"
+    }
   ],
   "stocks": [
-    {"name": "Reliance Industries", "symbol": "RELIANCE", "yfinance_symbol": "RELIANCE.NS", "cap": "LARGE", "sector": "ENERGY"},
-    {"name": "HDFC Bank", "symbol": "HDFCBANK", "yfinance_symbol": "HDFCBANK.NS", "cap": "LARGE", "sector": "BANK"},
-    {"name": "ICICI Bank", "symbol": "ICICIBANK", "yfinance_symbol": "ICICIBANK.NS", "cap": "LARGE", "sector": "BANK"},
-    {"name": "State Bank of India", "symbol": "SBIN", "yfinance_symbol": "SBIN.NS", "cap": "LARGE", "sector": "BANK"},
-    {"name": "Infosys", "symbol": "INFY", "yfinance_symbol": "INFY.NS", "cap": "LARGE", "sector": "IT"},
-    {"name": "TCS", "symbol": "TCS", "yfinance_symbol": "TCS.NS", "cap": "LARGE", "sector": "IT"},
-    {"name": "Larsen & Toubro", "symbol": "LT", "yfinance_symbol": "LT.NS", "cap": "LARGE", "sector": "INFRA"},
-    {"name": "Axis Bank", "symbol": "AXISBANK", "yfinance_symbol": "AXISBANK.NS", "cap": "LARGE", "sector": "BANK"},
-    {"name": "Adani Enterprises", "symbol": "ADANIENT", "yfinance_symbol": "ADANIENT.NS", "cap": "LARGE", "sector": "ENERGY"},
-    {"name": "Bharti Airtel", "symbol": "BHARTIARTL", "yfinance_symbol": "BHARTIARTL.NS", "cap": "LARGE", "sector": "TELECOM"},
-    {"name": "Wipro", "symbol": "WIPRO", "yfinance_symbol": "WIPRO.NS", "cap": "LARGE", "sector": "IT"},
-    {"name": "HCL Technologies", "symbol": "HCLTECH", "yfinance_symbol": "HCLTECH.NS", "cap": "LARGE", "sector": "IT"},
-    {"name": "Tech Mahindra", "symbol": "TECHM", "yfinance_symbol": "TECHM.NS", "cap": "LARGE", "sector": "IT"},
-    {"name": "Maruti Suzuki", "symbol": "MARUTI", "yfinance_symbol": "MARUTI.NS", "cap": "LARGE", "sector": "AUTO"},
-    {"name": "ITC", "symbol": "ITC", "yfinance_symbol": "ITC.NS", "cap": "LARGE", "sector": "FMCG"},
-    {"name": "Kotak Mahindra Bank", "symbol": "KOTAKBANK", "yfinance_symbol": "KOTAKBANK.NS", "cap": "LARGE", "sector": "BANK"},
-    {"name": "Bajaj Finance", "symbol": "BAJFINANCE", "yfinance_symbol": "BAJFINANCE.NS", "cap": "LARGE", "sector": "FINANCIAL"},
-    {"name": "Sun Pharma", "symbol": "SUNPHARMA", "yfinance_symbol": "SUNPHARMA.NS", "cap": "LARGE", "sector": "PHARMA"},
-    {"name": "Titan", "symbol": "TITAN", "yfinance_symbol": "TITAN.NS", "cap": "LARGE", "sector": "CONSUMER"},
-    {"name": "UltraTech Cement", "symbol": "ULTRACEMCO", "yfinance_symbol": "ULTRACEMCO.NS", "cap": "LARGE", "sector": "CEMENT"},
-    {"name": "Power Grid", "symbol": "POWERGRID", "yfinance_symbol": "POWERGRID.NS", "cap": "LARGE", "sector": "POWER"},
-    {"name": "NTPC", "symbol": "NTPC", "yfinance_symbol": "NTPC.NS", "cap": "LARGE", "sector": "POWER"},
-    {"name": "ONGC", "symbol": "ONGC", "yfinance_symbol": "ONGC.NS", "cap": "LARGE", "sector": "ENERGY"},
-    {"name": "Coal India", "symbol": "COALINDIA", "yfinance_symbol": "COALINDIA.NS", "cap": "LARGE", "sector": "METAL"},
-    {"name": "Persistent Systems", "symbol": "PERSISTENT", "yfinance_symbol": "PERSISTENT.NS", "cap": "MID", "sector": "IT"},
-    {"name": "Coforge", "symbol": "COFORGE", "yfinance_symbol": "COFORGE.NS", "cap": "MID", "sector": "IT"},
-    {"name": "Mphasis", "symbol": "MPHASIS", "yfinance_symbol": "MPHASIS.NS", "cap": "MID", "sector": "IT"},
-    {"name": "Dixon Technologies", "symbol": "DIXON", "yfinance_symbol": "DIXON.NS", "cap": "MID", "sector": "ELECTRONICS"},
-    {"name": "Cummins India", "symbol": "CUMMINSIND", "yfinance_symbol": "CUMMINSIND.NS", "cap": "MID", "sector": "INDUSTRIAL"},
-    {"name": "Max Healthcare", "symbol": "MAXHEALTH", "yfinance_symbol": "MAXHEALTH.NS", "cap": "MID", "sector": "HEALTHCARE"},
-    {"name": "Lupin", "symbol": "LUPIN", "yfinance_symbol": "LUPIN.NS", "cap": "MID", "sector": "PHARMA"},
-    {"name": "Voltas", "symbol": "VOLTAS", "yfinance_symbol": "VOLTAS.NS", "cap": "MID", "sector": "CONSUMER"},
-    {"name": "Godrej Properties", "symbol": "GODREJPROP", "yfinance_symbol": "GODREJPROP.NS", "cap": "MID", "sector": "REALTY"},
-    {"name": "Astral", "symbol": "ASTRAL", "yfinance_symbol": "ASTRAL.NS", "cap": "MID", "sector": "INDUSTRIAL"},
-    {"name": "KPIT Technologies", "symbol": "KPITTECH", "yfinance_symbol": "KPITTECH.NS", "cap": "SMALL", "sector": "IT"},
-    {"name": "Tanla Platforms", "symbol": "TANLA", "yfinance_symbol": "TANLA.NS", "cap": "SMALL", "sector": "IT"},
-    {"name": "KPR Mill", "symbol": "KPRMILL", "yfinance_symbol": "KPRMILL.NS", "cap": "SMALL", "sector": "TEXTILE"},
-    {"name": "Radico Khaitan", "symbol": "RADICO", "yfinance_symbol": "RADICO.NS", "cap": "SMALL", "sector": "FMCG"},
-    {"name": "CCL Products", "symbol": "CCL", "yfinance_symbol": "CCL.NS", "cap": "SMALL", "sector": "FMCG"}
+    {
+      "name": "Reliance Industries",
+      "symbol": "RELIANCE",
+      "yfinance_symbol": "RELIANCE.NS",
+      "cap": "LARGE",
+      "sector": "ENERGY"
+    },
+    {
+      "name": "HDFC Bank",
+      "symbol": "HDFCBANK",
+      "yfinance_symbol": "HDFCBANK.NS",
+      "cap": "LARGE",
+      "sector": "BANK"
+    },
+    {
+      "name": "ICICI Bank",
+      "symbol": "ICICIBANK",
+      "yfinance_symbol": "ICICIBANK.NS",
+      "cap": "LARGE",
+      "sector": "BANK"
+    },
+    {
+      "name": "State Bank of India",
+      "symbol": "SBIN",
+      "yfinance_symbol": "SBIN.NS",
+      "cap": "LARGE",
+      "sector": "BANK"
+    },
+    {
+      "name": "Infosys",
+      "symbol": "INFY",
+      "yfinance_symbol": "INFY.NS",
+      "cap": "LARGE",
+      "sector": "IT"
+    },
+    {
+      "name": "TCS",
+      "symbol": "TCS",
+      "yfinance_symbol": "TCS.NS",
+      "cap": "LARGE",
+      "sector": "IT"
+    },
+    {
+      "name": "Larsen & Toubro",
+      "symbol": "LT",
+      "yfinance_symbol": "LT.NS",
+      "cap": "LARGE",
+      "sector": "INFRA"
+    },
+    {
+      "name": "Axis Bank",
+      "symbol": "AXISBANK",
+      "yfinance_symbol": "AXISBANK.NS",
+      "cap": "LARGE",
+      "sector": "BANK"
+    },
+    {
+      "name": "Adani Enterprises",
+      "symbol": "ADANIENT",
+      "yfinance_symbol": "ADANIENT.NS",
+      "cap": "LARGE",
+      "sector": "ENERGY"
+    },
+    {
+      "name": "Bharti Airtel",
+      "symbol": "BHARTIARTL",
+      "yfinance_symbol": "BHARTIARTL.NS",
+      "cap": "LARGE",
+      "sector": "TELECOM"
+    },
+    {
+      "name": "Wipro",
+      "symbol": "WIPRO",
+      "yfinance_symbol": "WIPRO.NS",
+      "cap": "LARGE",
+      "sector": "IT"
+    },
+    {
+      "name": "HCL Technologies",
+      "symbol": "HCLTECH",
+      "yfinance_symbol": "HCLTECH.NS",
+      "cap": "LARGE",
+      "sector": "IT"
+    },
+    {
+      "name": "Tech Mahindra",
+      "symbol": "TECHM",
+      "yfinance_symbol": "TECHM.NS",
+      "cap": "LARGE",
+      "sector": "IT"
+    },
+    {
+      "name": "Maruti Suzuki",
+      "symbol": "MARUTI",
+      "yfinance_symbol": "MARUTI.NS",
+      "cap": "LARGE",
+      "sector": "AUTO"
+    },
+    {
+      "name": "ITC",
+      "symbol": "ITC",
+      "yfinance_symbol": "ITC.NS",
+      "cap": "LARGE",
+      "sector": "FMCG"
+    },
+    {
+      "name": "Kotak Mahindra Bank",
+      "symbol": "KOTAKBANK",
+      "yfinance_symbol": "KOTAKBANK.NS",
+      "cap": "LARGE",
+      "sector": "BANK"
+    },
+    {
+      "name": "Bajaj Finance",
+      "symbol": "BAJFINANCE",
+      "yfinance_symbol": "BAJFINANCE.NS",
+      "cap": "LARGE",
+      "sector": "FINANCIAL"
+    },
+    {
+      "name": "Sun Pharma",
+      "symbol": "SUNPHARMA",
+      "yfinance_symbol": "SUNPHARMA.NS",
+      "cap": "LARGE",
+      "sector": "PHARMA"
+    },
+    {
+      "name": "Titan",
+      "symbol": "TITAN",
+      "yfinance_symbol": "TITAN.NS",
+      "cap": "LARGE",
+      "sector": "CONSUMER"
+    },
+    {
+      "name": "UltraTech Cement",
+      "symbol": "ULTRACEMCO",
+      "yfinance_symbol": "ULTRACEMCO.NS",
+      "cap": "LARGE",
+      "sector": "CEMENT"
+    },
+    {
+      "name": "Power Grid",
+      "symbol": "POWERGRID",
+      "yfinance_symbol": "POWERGRID.NS",
+      "cap": "LARGE",
+      "sector": "POWER"
+    },
+    {
+      "name": "NTPC",
+      "symbol": "NTPC",
+      "yfinance_symbol": "NTPC.NS",
+      "cap": "LARGE",
+      "sector": "POWER"
+    },
+    {
+      "name": "ONGC",
+      "symbol": "ONGC",
+      "yfinance_symbol": "ONGC.NS",
+      "cap": "LARGE",
+      "sector": "ENERGY"
+    },
+    {
+      "name": "Coal India",
+      "symbol": "COALINDIA",
+      "yfinance_symbol": "COALINDIA.NS",
+      "cap": "LARGE",
+      "sector": "METAL"
+    },
+    {
+      "name": "Persistent Systems",
+      "symbol": "PERSISTENT",
+      "yfinance_symbol": "PERSISTENT.NS",
+      "cap": "MID",
+      "sector": "IT"
+    },
+    {
+      "name": "Coforge",
+      "symbol": "COFORGE",
+      "yfinance_symbol": "COFORGE.NS",
+      "cap": "MID",
+      "sector": "IT"
+    },
+    {
+      "name": "Mphasis",
+      "symbol": "MPHASIS",
+      "yfinance_symbol": "MPHASIS.NS",
+      "cap": "MID",
+      "sector": "IT"
+    },
+    {
+      "name": "Dixon Technologies",
+      "symbol": "DIXON",
+      "yfinance_symbol": "DIXON.NS",
+      "cap": "MID",
+      "sector": "ELECTRONICS"
+    },
+    {
+      "name": "Cummins India",
+      "symbol": "CUMMINSIND",
+      "yfinance_symbol": "CUMMINSIND.NS",
+      "cap": "MID",
+      "sector": "INDUSTRIAL"
+    },
+    {
+      "name": "Max Healthcare",
+      "symbol": "MAXHEALTH",
+      "yfinance_symbol": "MAXHEALTH.NS",
+      "cap": "MID",
+      "sector": "HEALTHCARE"
+    },
+    {
+      "name": "Lupin",
+      "symbol": "LUPIN",
+      "yfinance_symbol": "LUPIN.NS",
+      "cap": "MID",
+      "sector": "PHARMA"
+    },
+    {
+      "name": "Voltas",
+      "symbol": "VOLTAS",
+      "yfinance_symbol": "VOLTAS.NS",
+      "cap": "MID",
+      "sector": "CONSUMER"
+    },
+    {
+      "name": "Godrej Properties",
+      "symbol": "GODREJPROP",
+      "yfinance_symbol": "GODREJPROP.NS",
+      "cap": "MID",
+      "sector": "REALTY"
+    },
+    {
+      "name": "Astral",
+      "symbol": "ASTRAL",
+      "yfinance_symbol": "ASTRAL.NS",
+      "cap": "MID",
+      "sector": "INDUSTRIAL"
+    },
+    {
+      "name": "KPIT Technologies",
+      "symbol": "KPITTECH",
+      "yfinance_symbol": "KPITTECH.NS",
+      "cap": "SMALL",
+      "sector": "IT"
+    },
+    {
+      "name": "Tanla Platforms",
+      "symbol": "TANLA",
+      "yfinance_symbol": "TANLA.NS",
+      "cap": "SMALL",
+      "sector": "IT"
+    },
+    {
+      "name": "KPR Mill",
+      "symbol": "KPRMILL",
+      "yfinance_symbol": "KPRMILL.NS",
+      "cap": "SMALL",
+      "sector": "TEXTILE"
+    },
+    {
+      "name": "Radico Khaitan",
+      "symbol": "RADICO",
+      "yfinance_symbol": "RADICO.NS",
+      "cap": "SMALL",
+      "sector": "FMCG"
+    },
+    {
+      "name": "CCL Products",
+      "symbol": "CCL",
+      "yfinance_symbol": "CCL.NS",
+      "cap": "SMALL",
+      "sector": "FMCG"
+    }
   ],
   "refresh_intervals": {
     "indices_1m": 60,
@@ -55,7 +321,13 @@
     "fundamentals_hourly": 3600,
     "historical": 86400
   },
-  "ai_schedule": ["09:15", "09:30", "10:15", "11:30", "14:30"],
+  "ai_schedule": [
+    "09:15",
+    "09:30",
+    "10:15",
+    "11:30",
+    "14:30"
+  ],
   "data_retention": {
     "minute_data_hours": 24,
     "five_minute_data_days": 90,
