@@ -91,7 +91,7 @@ async function generate(){
   var lotSize=Math.max(1,parseInt(document.getElementById('b-lotsize').value||String(liveLot),10));
   var qty=lots*lotSize;
   var html='<div class="card"><h3>'+sym+' · '+tpl.replace(/-/g,' ').toUpperCase()+'</h3>'
-    +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(b.atm)+' (step '+step+') | Expiry '+expLabel+' ('+dte+'d) | '+' | Qty '+lots+' lot(s) × '+lotSize+' = '+qty+' | Lot: '+lotSize+' ('+lotSrc+')</div>'
+    +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(b.atm)+' (step '+step+') | Expiry: '+expLabel+' ('+dte+' DTE, '+(exp.tenor||'—')+') | '+' | Qty '+lots+' lot(s) × '+lotSize+' = '+qty+' | Lot: '+lotSize+' ('+lotSrc+')</div>'
     +(assigned&&assigned.strategy?'<div class="status">Today’s AI-assigned: <strong>'+assigned.strategy+'</strong></div>':'')
     +'<div class="status">'+b.note+'</div></div>';
   if(!b.legs.length){html+='<div class="card">No entry per rules.</div>';}

@@ -134,7 +134,7 @@ async function loadBankNifty(){
   var whyEl=document.getElementById('nifty-why');if(whyEl)whyEl.innerHTML=why.join('');
   var oEl=document.getElementById('nifty-outlook');if(oEl)oEl.innerHTML='<p>'+(ao.market_summary||'N/A')+'</p><div class="status">Bias: '+(ao.directional_bias||'N/A')+' | Conf: '+(ao.confidence||'N/A')+'% | Vol: '+(ao.volatility_classification||'N/A')+' | Structure: '+(ao.market_structure||'N/A')+'</div>';
   var exp=data.expiry||{};var atm=Math.round(q.price/STEP)*STEP;
-  var oe=document.getElementById('nifty-opt-exp');if(oe)oe.textContent='Expiry: '+(exp.expiry_label||'—')+' ('+(exp.days_to_expiry!=null?exp.days_to_expiry:'—')+'d'+(exp.tenor?', '+exp.tenor:'')+')';
+  var oe=document.getElementById('nifty-opt-exp');if(oe)oe.textContent='Expiry: '+(exp.expiry_label||'—')+' ('+(exp.days_to_expiry!=null?exp.days_to_expiry+' DTE':'—')+(exp.tenor?', '+exp.tenor:'')+')';
   var oa=document.getElementById('nifty-opt-atm');if(oa)oa.textContent='ATM: '+formatPrice(atm)+' (step '+STEP+')';
   var lv=[['R2',ind.r2],['R1',ind.r1],['SPOT',q.price],['VWAP',ind.vwap],['S1',ind.s1],['S2',ind.s2]];
   var lvEl=document.getElementById('nifty-levels');if(lvEl)lvEl.innerHTML=lv.map(function(l){return '<div><div class="status">'+l[0]+'</div><strong>'+(l[1]!=null?formatPrice(l[1]):'—')+'</strong></div>';}).join('');
