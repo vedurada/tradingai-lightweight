@@ -30,16 +30,21 @@ EVERGREEN = [
 DAILY_GLOBS = ("market/nifty-outlook-*.html", "market/nifty-close-*.html")
 
 
-def collect(repo_root: str = REPO_ROOT) -> list[tuple[str, str, str, str]]:
+def collect(repo_root: str = REPO_ROOT, extra_roots: list[str] | None = None) -> list[tuple[str, str, str, str]]:
     urls = [(path, freq, pri, "") for path, freq, pri in EVERGREEN]
-    for pattern in DAILY_GLOBS:
-        for fp in sorted(glob.glob(os.path.join(repo_root, pattern))):
-            rel = os.path.relpath(fp, repo_root)
-            try:
-                mtime = datetime.fromtimestamp(os.path.getmtime(fp), tz=timezone.utc).strftime("%Y-%m-%d")
-            except Exception:
-                mtime = ""
-            urls.append((rel, "monthly", "0.5", mtime))
+    seen = {u[0] for u in urls}
+    for root in [repo_root] + list(extra_roots or []):
+        for pattern in DAILY_GLOBS:
+            for fp in sorted(glob.glob(os.path.join(root, pattern))):
+                rel = os.path.relpath(fp, root)
+                if rel in seen:
+                    continue
+                seen.add(rel)
+                try:
+                    mtime = datetime.fromtimestamp(os.path.getmtime(fp), tz=timezone.utc).strftime("%Y-%m-%d")
+                except Exception:
+                    mtime = ""
+                urls.append((rel, "monthly", "0.5", mtime))
     return urls
 
 
@@ -56,7 +61,7 @@ def render(urls: list[tuple[str, str, str, str]]) -> str:
 
 def main() -> None:
     webroot = sys.argv[sys.argv.index("--webroot") + 1] if "--webroot" in sys.argv else None
-    xml = render(collect(REPO_ROOT))
+    xml = render(collect(REPO_ROOT, [webroot] if webroot else None))
     with open(os.path.join(REPO_ROOT, "sitemap.xml"), "w") as f:
         f.write(xml)
     print(f"sitemap.xml written ({xml.count('<url>')} urls)")

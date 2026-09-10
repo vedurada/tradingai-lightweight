@@ -7,6 +7,8 @@
 */2 * * * * /usr/bin/curl -sf --max-time 10 http://127.0.0.1:8000/api/health > /dev/null || /usr/bin/sudo /usr/bin/systemctl restart tradingai-api
 30 9 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py lock >> /opt/tradingai/logs/pnl.log 2>&1
 20 15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py close >> /opt/tradingai/logs/pnl.log 2>&1
+35 9 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 daily_page.py morning --webroot /var/www/tradingai.in/html >> /opt/tradingai/logs/daily.log 2>&1
+35 15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 daily_page.py close --webroot /var/www/tradingai.in/html && /usr/bin/python3 sitemap_gen.py --webroot /var/www/tradingai.in/html >> /opt/tradingai/logs/daily.log 2>&1
 0 2 1 * * cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py archive 365 >> /opt/tradingai/logs/pnl.log 2>&1
 # Daily off-site backup to git (data-safe snapshot, verifies push): 6:30 PM IST daily
 30 18 * * * /opt/tradingai/ops/vm-backup.sh >> /opt/tradingai/logs/backup.log 2>&1
