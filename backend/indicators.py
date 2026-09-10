@@ -162,7 +162,7 @@ def calculate_support_resistance(ohlcv: list[dict], window: int = 20) -> dict[st
     for l in set(round(l, 2) for l in lows):
         if sum(1 for x in lows if abs(x - l) < max_high * 0.005) >= 2 and l < avg_close:
             support.append(l)
-    return {"support": sorted(set(resistance))[:3], "resistance": sorted(set(support), reverse=True)[:3], "prev_high": round(max_high, 2), "prev_low": round(min_low, 2)}
+    return {"support": sorted(set(support), reverse=True)[:3], "resistance": sorted(set(resistance))[:3], "prev_high": round(max_high, 2), "prev_low": round(min_low, 2)}
 
 
 def calculate_all_indicators(ohlcv: list[dict], quote: dict) -> dict[str, Any]:

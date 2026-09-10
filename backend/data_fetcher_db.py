@@ -491,17 +491,19 @@ def fetch_all() -> None:
 
 
 def build_breadth(conn: sqlite3.Connection) -> None:
-    """Advance/decline from latest 1m closes vs previous session close."""
+    """Advance/decline from latest 1m closes vs today's open (fallback: price_1d prev close)."""
     rows = conn.execute("""
         SELECT p.symbol, p.close AS last_close,
-               (SELECT close FROM price_1m WHERE symbol=p.symbol AND timestamp < date('now') ORDER BY timestamp DESC LIMIT 1) AS prev_close
+               (SELECT open FROM price_1m WHERE symbol=p.symbol AND date(timestamp)=date(p.timestamp) ORDER BY timestamp ASC LIMIT 1) AS day_open,
+               (SELECT close FROM price_1d WHERE symbol=p.symbol ORDER BY timestamp DESC LIMIT 1) AS daily_prev
         FROM (SELECT symbol, MAX(timestamp) AS ts FROM price_1m GROUP BY symbol) m
         JOIN price_1m p ON p.symbol=m.symbol AND p.timestamp=m.ts
     """).fetchall()
     adv = dec = unch = 0
     for r in rows:
         try:
-            last_c, prev_c = r["last_close"] or 0, r["prev_close"] or 0
+            last_c = r["last_close"] or 0
+            prev_c = r["day_open"] or r["daily_prev"] or 0
             if not prev_c:
                 continue
             chg = (last_c - prev_c) / prev_c * 100
