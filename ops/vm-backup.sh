@@ -32,6 +32,7 @@ fi
 # --- 1. Init backup workdir once ---
 if [ ! -d "$WORK/.git" ]; then
     log "first run: initializing $WORK on branch $BRANCH"
+    sudo mkdir -p "$WORK" && sudo chown -R "$(id -un):$(id -gn)" "$WORK"
     mkdir -p "$WORK"
     git -C "$WORK" init -q
     git -C "$WORK" remote add origin "$REMOTE_URL" 2>/dev/null || git -C "$WORK" remote set-url origin "$REMOTE_URL"
