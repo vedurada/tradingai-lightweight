@@ -23,7 +23,7 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 | VM web root | `/var/www/tradingai.in/html` (nginx serves this, NOT /opt) |
 | DB | `/opt/tradingai/database/tradingai.db` (SQLite, WAL off, single writer) |
 | API | Flask `backend/api_server.py` on `127.0.0.1:8000`, proxied at `/api/` by nginx |
-| Site | https://tradingai.in (HTTPS, letsencrypt; HTTP 301 → HTTPS) |
+| Site | https://tradingai.in (real Let's Encrypt cert since 2026-09-10, auto-renew via certbot timer; HTTP 301 → HTTPS; earlier self-signed cert caused browser warnings) |
 | Market hours | 9:30–15:30 IST, Mon–Fri. Cron uses `9-15` hour field as approximation |
 
 ## 3. Architecture (database-first, layered)
