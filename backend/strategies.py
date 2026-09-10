@@ -11,10 +11,10 @@ class StrategyEngine:
     def is_index(self, symbol: str = "") -> bool:
         return (symbol or "").upper() in self.INDEX_SYMBOLS
 
-    def select(self, regime: str, confidence: float, data_quality: str, vix_price: float = 0, vix_change_pct: float = 0, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None) -> dict[str, Any]:
+    def select(self, regime: str, confidence: float, data_quality: str, vix_price: float = 0, vix_change_pct: float = 0, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None, support: list | None = None, resistance: list | None = None, atr: float | None = None) -> dict[str, Any]:
         # Stocks / ETFs get a simple BUY / HOLD / EXIT outlook, never option spreads.
         if symbol and not self.is_index(symbol):
-            return self.select_stock_outlook(regime, confidence, data_quality, symbol, price, vwap, rsi, adx)
+            return self.select_stock_outlook(regime, confidence, data_quality, symbol, price, vwap, rsi, adx, support, resistance, atr)
         strategies = []
         position_size = self._position_size(confidence, data_quality)
         nd = self._non_directional_intraday(regime, confidence, vix_price, vix_change_pct, symbol)
@@ -42,8 +42,37 @@ class StrategyEngine:
             strategies = [{"strategy": "NO TRADE", "market_condition": "Unclear", "expiry": "N/A", "legs": [], "entry_trigger": "Wait for clear signal", "maximum_profit": "N/A", "maximum_loss": "N/A", "breakeven": "N/A", "stop_loss": "N/A", "adjustment": "N/A", "exit": "N/A", "strategy_environment": "UNKNOWN", "invalidation": "Wait for confirmation", "position_size": "0%"}]
         return {"regime": regime, "confidence": confidence, "data_quality": data_quality, "strategies": strategies, "position_size": position_size, "timestamp": datetime.now(timezone.utc).isoformat()}
 
-    def select_stock_outlook(self, regime: str, confidence: float, data_quality: str, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None) -> dict[str, Any]:
-        """Simple BUY / HOLD / EXIT outlook for cash-market stocks (no options)."""
+    @staticmethod
+    def _inr(x: float) -> str:
+        try:
+            return f"₹{float(x):,.2f}"
+        except Exception:
+            return "N/A"
+
+    def _stock_levels(self, price: float, support: list | None, resistance: list | None, atr: float | None = None) -> dict[str, Any]:
+        """Numeric entry/stop/target levels from support/resistance + ATR fallback."""
+        sup = sorted({float(s) for s in (support or []) if s and float(s) > 0 and float(s) < price}, reverse=True)
+        res = sorted({float(r) for r in (resistance or []) if r and float(r) > 0 and float(r) > price})
+        atr_v = float(atr) if atr else 0
+        stop_gap = max(atr_v * 1.5, price * 0.03) if price else 0
+        stop = sup[0] if sup and (price - sup[0]) / price <= 0.08 else round(price - stop_gap, 2)
+        t1 = res[0] if res and (res[0] - price) / price <= 0.15 else round(price + max(atr_v * 2, price * 0.08), 2)
+        t2 = res[1] if len(res) > 1 and (res[1] - price) / price <= 0.20 else round(price + max(atr_v * 3, price * 0.12), 2)
+        if t2 <= t1:
+            t2 = round(price + max(atr_v * 3, price * 0.12), 2)
+        upside1 = (t1 - price) / price * 100 if price else 0
+        upside2 = (t2 - price) / price * 100 if price else 0
+        risk = (price - stop) / price * 100 if price and stop else 0
+        rr = (upside1 / risk) if risk > 0 else 0
+        return {
+            "support": sup[0] if sup else stop, "resistance": res[0] if res else t1,
+            "stop": round(stop, 2), "t1": round(t1, 2), "t2": round(t2, 2),
+            "upside1": round(upside1, 1), "upside2": round(upside2, 1),
+            "risk": round(risk, 1), "rr": round(rr, 1),
+        }
+
+    def select_stock_outlook(self, regime: str, confidence: float, data_quality: str, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None, support: list | None = None, resistance: list | None = None, atr: float | None = None) -> dict[str, Any]:
+        """BUY / HOLD / EXIT outlook for cash-market stocks (no options), with numeric targets."""
         position_size = self._position_size(confidence, data_quality)
         if data_quality == "STALE":
             outlook = "HOLD"
@@ -84,24 +113,27 @@ class StrategyEngine:
                 outlook = "HOLD"
                 reason = "No clear edge — wait for confirmation"
                 env = "UNKNOWN"
+        lv = self._stock_levels(price, support, resistance, atr)
+        inr = self._inr
         if outlook == "BUY":
-            entry = "Buy in tranches near VWAP / support; confirm with green 15m close"
-            stop = "Below recent swing low / -5% positional stop"
-            target = "Nearest resistance / +8-12% swing target"
-            max_loss = "Defined by stop-loss"
-            max_profit = "Open-ended to resistance"
+            entry = f"Buy {inr(price)} in tranches near {inr(vwap if vwap and vwap < price else lv['support'])}; confirm with green 15m close"
+            stop = f"{inr(lv['stop'])} (-{lv['risk']}%)"
+            target = f"T1 {inr(lv['t1'])} (+{lv['upside1']}%) | T2 {inr(lv['t2'])} (+{lv['upside2']}%)"
+            max_loss = f"-{lv['risk']}% to stop"
+            max_profit = f"+{lv['upside1']}% to T1, +{lv['upside2']}% to T2 (RR {lv['rr']})"
         elif outlook == "EXIT":
+            reentry = lv['resistance'] if lv['resistance'] > price else (vwap if vwap and vwap > price else lv['t1'])
             entry = "Exit longs on bounce; no fresh buying"
             stop = "N/A (risk-off)"
-            target = "Re-enter only above VWAP with momentum"
+            target = f"Re-enter above {inr(reentry)} with momentum"
             max_loss = "Avoid further downside"
             max_profit = "Capital protection"
         else:
-            entry = "Hold existing; fresh entry only on breakout/breakdown with volume"
-            stop = "Below support"
-            target = "Range top"
-            max_loss = "Limited to range"
-            max_profit = "Range move"
+            entry = f"Hold existing; fresh BUY only on breakout above {inr(lv['resistance'])} with volume"
+            stop = f"{inr(lv['stop'])} (-{lv['risk']}%)"
+            target = f"Range top {inr(lv['resistance'])} | Breakout T1 {inr(lv['t1'])} (+{lv['upside1']}%)"
+            max_loss = f"-{lv['risk']}% to stop"
+            max_profit = f"+{lv['upside1']}% on breakout"
         strategy = {
             "strategy": outlook,
             "market_condition": f"Stock outlook | {reason}",

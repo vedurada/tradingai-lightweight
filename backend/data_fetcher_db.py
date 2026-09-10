@@ -340,7 +340,8 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
                 scenarios_d = scenario_engine.generate(regime_info.get("regime","UNKNOWN"), ind.get("support_resistance",{}).get("support",[]) if isinstance(ind.get("support_resistance"),dict) else [], ind.get("support_resistance",{}).get("resistance",[]) if isinstance(ind.get("support_resistance"),dict) else [], quote["price"], adx=indicators.get("adx"), vix_price=vix_now) or {}
                 strategy_engine = StrategyEngine()
                 # Indexes get option spreads; stocks/ETFs get BUY/HOLD/EXIT.
-                strategy = strategy_engine.select(regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "GOOD" if ohlcv else "PARTIAL", vix_price=vix_now, vix_change_pct=0, symbol=symbol, price=quote.get("price",0), vwap=indicators.get("vwap",0), rsi=indicators.get("rsi"), adx=indicators.get("adx")) or {}
+                sr = ind.get("support_resistance", {}) if isinstance(ind.get("support_resistance"), dict) else {}
+                strategy = strategy_engine.select(regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "GOOD" if ohlcv else "PARTIAL", vix_price=vix_now, vix_change_pct=0, symbol=symbol, price=quote.get("price",0), vwap=indicators.get("vwap",0), rsi=indicators.get("rsi"), adx=indicators.get("adx"), support=sr.get("support", []), resistance=sr.get("resistance", []), atr=indicators.get("atr")) or {}
                 ai_engine = AIOutlookEngine()
                 ai_outlook = ai_engine.generate(symbol, {**quote, **ind, "regime": regime_info.get("regime","UNKNOWN"), "options_unavailable": options_analysis.get("data_unavailable", False)}) or {}
         except Exception as e:
