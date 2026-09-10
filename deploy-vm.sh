@@ -22,8 +22,9 @@ rsync -avz --delete \
   --exclude='docker-compose.yml' \
   --exclude='docker-compose.vm.yml' \
   --exclude='docker' \
+  --exclude='database' \
+  --exclude='data' \
   --exclude='frontend' \
-  --exclude='backend' \
   -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" \
   /Users/satya/remove_workspace/tradingai-lightweight/ \
   "$VM_USER@$VM_HOST:$PROJECT_DIR/"
@@ -31,5 +32,7 @@ rsync -avz --delete \
 echo "Files copied successfully"
 
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance 2>&1 | tail -3"
+
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR/backend && SKIP_LLM=1 /usr/bin/python3 generate_data.py && SKIP_LLM=1 /usr/bin/python3 generate_json.py && mkdir -p /var/www/tradingai.in/html/data && cp $PROJECT_DIR/data/*.json /var/www/tradingai.in/html/data/ 2>/dev/null; true"
 
 echo "=== Deployment complete ==="

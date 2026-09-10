@@ -17,6 +17,7 @@ from regime import RegimeEngine
 from scenarios import ScenarioEngine
 from strategies import StrategyEngine
 from expiry import get_current_expiry
+from ai_outlook import AIOutlookEngine
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("tradingai")
@@ -82,23 +83,23 @@ def generate_data() -> None:
         strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL", vix_price=vix["price"] if vix else 0, vix_change_pct=vix["change_pct"] if vix else 0, symbol=symbol)
         ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
 
-data_quality = "STALE" if quote.get("stale") else ("GOOD" if ohlcv else "PARTIAL")
-            expiry_data = get_current_expiry() if symbol in ("NIFTY", "BANKNIFTY") else {}
+        data_quality = "STALE" if quote.get("stale") else ("GOOD" if ohlcv else "PARTIAL")
+        expiry_data = get_current_expiry() if symbol in ("NIFTY", "BANKNIFTY") else {}
 
-            instrument_data = {
-                "quote": quote,
-                "indicators": indicators,
-                "pivot": pivot_data,
-                "cpr": cpr_data,
-                "options": options_analysis,
-                "regime": regime,
-                "scenarios": scenarios,
-                "strategy": strategy,
-                "ai_outlook": ai_outlook,
-                "data_quality": data_quality,
-                "expiry": expiry_data,
-                "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
-            }
+        instrument_data = {
+            "quote": quote,
+            "indicators": indicators,
+            "pivot": pivot_data,
+            "cpr": cpr_data,
+            "options": options_analysis,
+            "regime": regime,
+            "scenarios": scenarios,
+            "strategy": strategy,
+            "ai_outlook": ai_outlook,
+            "data_quality": data_quality,
+            "expiry": expiry_data,
+            "last_updated": datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z'),
+        }
 
         market_data["instruments"][symbol] = instrument_data
 
