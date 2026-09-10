@@ -633,10 +633,30 @@ def fetch_all() -> None:
     mid_caps = [s for s in stocks if s.get("cap") == "MID"]
     small_caps = [s for s in stocks if s.get("cap") == "SMALL"]
 
+    # PRIMARY: NSE live quotes for indexes/VIX (undelayed). yfinance stays as fallback.
+    nse_quotes: dict = {}
+    try:
+        from nse_source import fetch_index_quotes
+        nse_quotes = fetch_index_quotes() or {}
+        if nse_quotes:
+            store_live_quotes(conn, nse_quotes)
+    except Exception as e:
+        logger.warning(f"NSE primary skip: {e}")
+
     for inst in indices:
         symbol, yf_sym = inst["symbol"], inst["yfinance_symbol"]
         logger.info(f"Fetching {symbol} ({yf_sym})")
         _fetch_symbol_minute(conn, symbol, yf_sym, with_regime=True)
+        # Fallback chain for candles: yfinance -> NSE synth (charts never gap).
+        try:
+            has = conn.execute("SELECT COUNT(*) FROM price_1m WHERE symbol=? AND timestamp >= datetime('now', '-30 minutes')", (symbol,)).fetchone()[0]
+            nq = nse_quotes.get(symbol)
+            if not has and nq and nq.get("price"):
+                ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:00")
+                store_price_data(conn, symbol, [synth_candle_from_quote(symbol, nq, ts)], "price_1m")
+                logger.info(f"  {symbol}: yfinance empty, NSE synth candle stored")
+        except Exception as e:
+            logger.warning(f"  {symbol} fallback skip: {e}")
 
     vix_data_1m = fetch_yf_ohlcv(YF_VIX, interval="1m", period="1d")
     if vix_data_1m:
@@ -648,6 +668,15 @@ def fetch_all() -> None:
             "change": last["close"] - prev, "change_pct": (last["close"] - prev) / prev * 100 if prev else 0,
         })
         update_data_status(conn, "VIX", "vix")
+    nvix = nse_quotes.get("VIX")
+    if nvix and nvix.get("price"):
+        # NSE India VIX is fresher than Yahoo ^INDIAVIX: prefer it for vix_data too.
+        store_vix_data(conn, datetime.now(timezone.utc).isoformat(), {
+            "open": nvix.get("open", 0), "high": nvix.get("high", 0), "low": nvix.get("low", 0),
+            "close": nvix.get("price", 0), "change": nvix.get("change", 0), "change_pct": nvix.get("change_pct", 0),
+        })
+        store_price_data(conn, "VIX", [synth_candle_from_quote("VIX", nvix, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:00"))], "price_1m")
+        update_data_status(conn, "VIX", "nse")
 
     for etf_sym, etf_yf in YF_ETFS.items():
         data = fetch_yf_ohlcv(etf_yf, interval="1m", period="1d")
@@ -759,45 +788,66 @@ NSE_INDEX_MAP = {"NIFTY 50": "NIFTY", "NIFTY BANK": "BANKNIFTY", "NIFTY FIN SERV
                  "NIFTY FINANCIAL SERVICES": "FINNIFTY", "INDIA VIX": "VIX"}
 
 
+def store_live_quotes(conn: sqlite3.Connection, quotes: dict) -> int:
+    """Persist NSE-first live quotes (the display path prefers these over 1m candles)."""
+    n = 0
+    for symbol, q in (quotes or {}).items():
+        try:
+            if not q or not q.get("price"):
+                continue
+            conn.execute(
+                """INSERT OR REPLACE INTO live_quotes
+                   (symbol, timestamp, price, open, high, low, previous_close, change, change_pct, volume, source)
+                   VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                (symbol, q.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+                 q.get("price", 0), q.get("open", 0), q.get("high", 0), q.get("low", 0),
+                 q.get("previous_close", 0), q.get("change", 0), q.get("change_pct", 0),
+                 q.get("volume", 0), q.get("source", "NSE")))
+            n += 1
+        except Exception:
+            continue
+    conn.commit()
+    return n
+
+
+def synth_candle_from_quote(symbol: str, q: dict, ts: str) -> dict:
+    """Continuity candle when yfinance returns nothing: flat OHLC at live price."""
+    p = q.get("price", 0) or 0
+    return {"timestamp": ts, "open": p, "high": p, "low": p, "close": p, "volume": 0}
+
+
 def fetch_nse_index_breadth(conn: sqlite3.Connection) -> None:
-    """NSE allIndices: official quotes + advances/declines per index (one light call)."""
+    """NSE allIndices: official quotes + advances/declines per index (one light call).
+
+    Single source for both live_quotes (display) and index_breadth (A/D tape).
+    """
     try:
-        from curl_cffi import requests as cr
-    except Exception:
-        return
-    try:
-        s = cr.Session(impersonate="chrome124")
-        s.get("https://www.nseindia.com", timeout=20)
-        r = s.get("https://www.nseindia.com/api/allIndices", timeout=20,
-                  headers={"Accept": "*/*", "Referer": "https://www.nseindia.com/"})
-        data = r.json().get("data", [])
+        from nse_source import fetch_index_quotes
     except Exception as e:
-        logger.warning(f"NSE index breadth skip: {e}")
+        logger.warning(f"NSE module skip: {e}")
         return
+    quotes = fetch_index_quotes()
+    if not quotes:
+        return
+    nq = store_live_quotes(conn, quotes)
     now = datetime.now(timezone.utc).isoformat()
     n = 0
-    for x in data:
-        # Exact match only: fuzzy matching would map e.g. NIFTY 500 -> NIFTY.
-        name = (x.get("indexSymbol") or x.get("index") or "").strip().upper()
-        sym = NSE_INDEX_MAP.get(name)
-        if not sym:
-            continue
+    for sym, q in quotes.items():
         try:
             conn.execute(
                 """INSERT OR IGNORE INTO index_breadth
                    (index_name, timestamp, last, change_pct, advances, declines, unchanged, open, high, low, prev_close)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (sym, now,
-                 float(x.get("last") or 0), float(x.get("percentChange") or 0),
-                 int(x.get("advances") or 0), int(x.get("declines") or 0), int(x.get("unchanged") or 0),
-                 float(x.get("open") or 0), float(x.get("high") or 0), float(x.get("low") or 0),
-                 float(x.get("previousClose") or 0)))
+                (sym, now, q.get("price", 0), q.get("change_pct", 0),
+                 int(q.get("advances") or 0), int(q.get("declines") or 0), int(q.get("unchanged") or 0),
+                 q.get("open", 0), q.get("high", 0), q.get("low", 0), q.get("previous_close", 0)))
             n += 1
         except Exception:
             continue
     conn.commit()
-    if n:
-        logger.info(f"NSE index breadth: {n} indices")
+    for sym in quotes:
+        update_data_status(conn, sym, "nse")
+    logger.info(f"NSE live quotes stored: {nq}, breadth rows: {n}")
 
 
 def build_breadth(conn: sqlite3.Connection) -> None:

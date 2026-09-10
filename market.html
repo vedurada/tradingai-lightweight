@@ -44,7 +44,8 @@
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
-  <h2>Market Overview</h2>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>Market Overview</h2>
   <div id="market-grid" class="grid"></div>
   <div id="vix-section"></div>
   <footer>
@@ -64,6 +65,20 @@ function startDataRefresh(callback,intervalMs=30000){stopDataRefresh();refreshIn
 function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
 async function loadMarket(){const data=await fetchJSON('market');if(!data){setLastUpdated(null,false);return;}const grid=document.getElementById('market-grid');if(grid){grid.innerHTML='';for(const[symbol,inst]of Object.entries(data.instruments||{})){const card=document.createElement('div');card.className='card';card.innerHTML=`<h3>${symbol}</h3><div class="price">${formatPrice(inst.quote?.price)}</div><div style="color:${inst.quote?.change>=0?'#15803d':'#dc2626'}">${formatChange(inst.quote?.change)} (${formatChange(inst.quote?.change_pct)}%)</div><span class="badge" style="background:${regimeColor(inst.regime?.regime)}20;color:${regimeColor(inst.regime?.regime)}">${inst.regime?.regime||'N/A'}</span><div class="status">VWAP: ${formatPrice(inst.indicators?.vwap)} | RSI: ${inst.indicators?.rsi?.toFixed(1)||'N/A'}</div><div class="status">Support: ${(inst.indicators?.support_resistance?.support||[]).join(', ')||'N/A'}</div><div class="status">Resistance: ${(inst.indicators?.support_resistance?.resistance||[]).join(', ')||'N/A'}</div>`;grid.appendChild(card);}}const vix=await fetchJSON('vix');const vixEl=document.getElementById('vix-section');if(vixEl&&vix){vixEl.innerHTML=`<h3>India VIX</h3><div class="price">${formatPrice(vix.price)}</div><div>${formatChange(vix.change)} (${formatChange(vix.change_pct)}%)</div>`;}setLastUpdated(data.last_updated,true);}
 document.addEventListener('DOMContentLoaded',()=>{loadMarket();startDataRefresh(loadMarket);});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
 </script>
 </body>
 </html>

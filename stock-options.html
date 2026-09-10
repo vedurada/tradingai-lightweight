@@ -44,7 +44,8 @@
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
-  <h2>STOCK OPTIONS <span class="status">positional · monthly expiry · high-liquidity large caps</span></h2>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>STOCK OPTIONS <span class="status">positional · monthly expiry · high-liquidity large caps</span></h2>
   <div class="card" style="margin-bottom:1rem"><div class="status" id="so-exp">Monthly expiry: —</div>
   <div class="status">Stock options in India expire <strong>monthly</strong> (last Tuesday, NSE) and are <strong>physically settled</strong> — never hold shorts into expiry week without a settlement plan. Premiums fill live at your broker; ₹ math below is per strike-width.</div></div>
   <div id="so-grid"><div class="card">Loading liquid stocks…</div></div>
@@ -102,6 +103,20 @@ async function loadStocks(){
   setLastUpdated(ok?new Date().toISOString():null,ok>0);
 }
 document.addEventListener('DOMContentLoaded',function(){loadStocks();setInterval(loadStocks,60000);});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
 </script>
 </body>
 </html>

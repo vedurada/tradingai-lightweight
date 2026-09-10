@@ -176,10 +176,46 @@ def _to_ist_iso(ts):
         return None
 
 
-def _build_quote(symbol, price_row):
-    """price_1m row -> legacy quote shape {price, change, change_pct, ...}."""
-    if not price_row:
+LIVE_QUOTE_MAX_AGE_MIN = 25
+
+
+def _live_quote_row(conn, symbol):
+    """Fresh NSE live quote if present, else None (caller falls back to candles)."""
+    try:
+        row = conn.execute("SELECT * FROM live_quotes WHERE symbol=?", (symbol,)).fetchone()
+    except Exception:
         return None
+    if not row:
+        return None
+    d = row_to_dict(row)
+    try:
+        ts = datetime.fromisoformat(str(d.get("timestamp", "")).replace("Z", "+00:00"))
+        age_min = (datetime.now(timezone.utc) - ts).total_seconds() / 60
+        if age_min > LIVE_QUOTE_MAX_AGE_MIN:
+            return None
+    except Exception:
+        pass
+    return d
+
+
+def _build_quote(symbol, price_row, live_row=None):
+    """Quote with fallback chain: live NSE row -> 1m candle row. Never empty if either exists."""
+    d = dict(live_row) if live_row else (row_to_dict(price_row) if price_row else None)
+    if not d:
+        return None
+    source = (live_row or {}).get("source", "NSE") if live_row else "yfinance"
+    if live_row:
+        price = d.get("price", 0) or 0
+        prev = d.get("previous_close", 0) or 0
+        change = d.get("change", (price - prev) if prev else 0) or 0
+        return {
+            "symbol": symbol, "price": price, "change": round(change, 2),
+            "change_pct": round(d.get("change_pct", (change / prev * 100 if prev else 0)) or 0, 2),
+            "open": d.get("open", 0), "high": d.get("high", 0), "low": d.get("low", 0),
+            "previous_close": prev, "volume": d.get("volume", 0),
+            "timestamp": _to_ist_iso(d.get("timestamp")), "stale": not price,
+            "source": source,
+        }
     d = row_to_dict(price_row)
     close = d.get("close", 0) or 0
     prev = d.get("previous_close", 0) or 0
@@ -199,6 +235,7 @@ def _build_quote(symbol, price_row):
         "open": d.get("open", 0), "high": d.get("high", 0), "low": d.get("low", 0),
         "previous_close": prev, "volume": d.get("volume", 0),
         "timestamp": _to_ist_iso(d.get("timestamp")), "stale": False,
+        "source": source,
     }
 
 
@@ -343,7 +380,7 @@ def _symbol_data(symbol):
     conn = get_db()
     result = {}
     price_row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    quote = _build_quote(symbol, price_row)
+    quote = _build_quote(symbol, price_row, _live_quote_row(conn, symbol))
     if quote:
         result["quote"] = quote
     ind_row = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()

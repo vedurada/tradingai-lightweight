@@ -44,7 +44,8 @@
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span><span id="live-clock"></span></div>
-  <h2 id="t-mode">TODAY'S NIFTY TERMINAL</h2>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2 id="t-mode">TODAY'S NIFTY TERMINAL</h2>
   <div id="t-body"><div class="card">Loading today's session…</div></div>
   <footer>
     <p>TradingAI provides market analysis and decision-support information. Not financial advice. Verify market data before trading.</p>
@@ -94,6 +95,20 @@ async function loadToday(){
   function strategyFallback(){var s=((nifty.strategy||{}).strategies||[])[0];return s?(s.strategy||'N/A'): 'N/A';}
 }
 document.addEventListener('DOMContentLoaded',function(){loadToday();setInterval(loadToday,60000);});
+</script>
+<script>
+(function(){var BASE='..';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
 </script>
 </body>
 </html>

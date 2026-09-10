@@ -44,7 +44,8 @@
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
-  <h2>Index P&amp;L History <span class="status">Entry 9:30 AM → Exit 3:20 PM IST</span></h2>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>Index P&amp;L History <span class="status">Entry 9:30 AM → Exit 3:20 PM IST</span></h2>
   <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem"><div id="history-filters"></div></div>
   <div id="history-grid" class="pnl-full"></div>
   <footer>
@@ -64,6 +65,20 @@ var histFilter='all';
 function setHistFilter(f){histFilter=f;loadHistory();}
 async function loadHistory(){var grid=document.getElementById('history-grid');if(!grid)return;grid.innerHTML='<div class="card">Loading history...</div>';var data=await fetchJSON('history');if(!data){grid.innerHTML='<div class="card">No history data yet</div>';setLastUpdated(null,false);return;}var symbols=Object.keys(data).sort();if(!symbols.length){grid.innerHTML='<div class="card">No history data yet</div>';return;}var fbar=document.getElementById('history-filters');if(fbar){var fh='<button onclick="setHistFilter(\'all\')" class="badge" style="cursor:pointer;border:none;margin-right:0.3rem">All</button>';for(var fi=0;fi<symbols.length;fi++){fh+='<button onclick="setHistFilter(\''+symbols[fi]+'\')" class="badge" style="cursor:pointer;border:none;margin-right:0.3rem">'+symbols[fi]+'</button>';}fbar.innerHTML=fh;}var rows=[];for(var si=0;si<symbols.length;si++){var sym=symbols[si];if(histFilter!=='all'&&sym!==histFilter)continue;var entries=data[sym]||[];for(var ei=0;ei<entries.length;ei++){var e=entries[ei];e._sym=sym;rows.push(e);}}rows.sort(function(a,b){return (b.date||'')<(a.date||'')?-1:1;});var settled=rows.filter(function(e){return e.result==='WIN'||e.result==='LOSS'||e.result==='FLAT';});var wins=0,losses=0,flats=0,totalPoints=0,best=null,worst=null;for(var ri=0;ri<settled.length;ri++){var se=settled[ri];if(se.result==='WIN')wins++;else if(se.result==='LOSS')losses++;else flats++;if(se.points!=null){totalPoints+=se.points;if(best==null||se.points>best)best=se.points;if(worst==null||se.points<worst)worst=se.points;}}var winRate=settled.length>0?((wins/settled.length)*100).toFixed(1):0;var avg=settled.length>0?(totalPoints/settled.length).toFixed(2):0;function numColor(v){return v>0?'#15803d':v<0?'#dc2626':'#64748b';}function numHtml(v,dec){if(v==null||isNaN(v))return '—';var s=(v>=0?'+':'')+Number(v).toFixed(dec==null?2:dec);return '<span style="color:'+numColor(v)+';font-weight:bold">'+s+'</span>';}var html='<div class="card" style="margin-bottom:1rem"><h3>P&amp;L Summary (9:30 entry → 3:20 exit)</h3><div class="status">Settled: '+settled.length+' | Wins: '+wins+' | Losses: '+losses+' | Flats: '+flats+' | Win Rate: '+winRate+'% | Total: '+numHtml(totalPoints)+' pts | Avg: '+numHtml(parseFloat(avg))+' pts | Best: '+(best!=null?numHtml(best):'—')+' | Worst: '+(worst!=null?numHtml(worst):'—')+'</div></div>';html+='<div class="card" style="overflow-x:auto"><table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Date</th><th>Symbol</th><th>Outlook</th><th>Direction</th><th>Entry Time</th><th>Entry Price</th><th>Exit Time</th><th>Exit Price</th><th>Points</th><th>Result</th><th>Strategy</th></tr></thead><tbody>';for(var rj=0;rj<rows.length;rj++){var e2=rows[rj];var res2=e2.result||'OPEN';var rc2=res2==='WIN'?'#15803d':res2==='LOSS'?'#dc2626':'#64748b';var pts2=e2.points!=null?numHtml(e2.points):'—';var bias=(e2.directional_bias||'').toUpperCase();var outlook=bias.indexOf('BULL')!==-1?'BUY':(bias.indexOf('BEAR')!==-1?'SELL':(bias?bias:'—'));var oc=outlook==='BUY'?'#15803d':outlook==='SELL'?'#dc2626':'#a16207';var dir=e2.direction||(outlook==='SELL'?'SHORT':(outlook==='BUY'?'LONG':'—'));var dc=dir==='SHORT'?'#dc2626':dir==='LONG'?'#15803d':'#64748b';html+='<tr><td>'+(e2.date||'—')+'</td><td><strong>'+e2._sym+'</strong></td><td style="color:'+oc+';font-weight:bold">'+outlook+'</td><td style="color:'+dc+';font-weight:bold">'+dir+'</td><td>'+(e2.entry_time||'09:30')+'</td><td>'+(e2.locked_price!=null?formatPrice(e2.locked_price):'—')+'</td><td>'+(e2.exit_time||(e2.closed_price!=null?e2.exit_time:'—')||'—')+'</td><td>'+(e2.closed_price!=null?formatPrice(e2.closed_price):'—')+'</td><td>'+pts2+'</td><td style="color:'+rc2+';font-weight:bold">'+res2+'</td><td>'+(e2.strategy||'N/A')+'</td></tr>';}html+='</tbody></table></div>';grid.innerHTML=html;setLastUpdated(new Date().toISOString(),true);}
 document.addEventListener('DOMContentLoaded',function(){loadHistory();startDataRefresh(loadHistory);});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
 </script>
 </body>
 </html>

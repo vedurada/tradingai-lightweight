@@ -44,7 +44,8 @@
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
-  <h2>Strategy Builder <span class="status">index options only</span></h2>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>Strategy Builder <span class="status">index options only</span></h2>
   <div class="card" style="margin-bottom:1rem">
     <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:end">
       <label>Index<br><select id="b-index">
@@ -129,6 +130,20 @@ async function generate(){
 document.getElementById('b-go').addEventListener('click',generate);
 document.getElementById('b-index').addEventListener('change',function(){document.getElementById('b-lotsize').value=IDX_META[this.value].lot;});
 document.addEventListener('DOMContentLoaded',function(){document.getElementById('b-lotsize').value=IDX_META.NIFTY.lot;});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
 </script>
 </body>
 </html>

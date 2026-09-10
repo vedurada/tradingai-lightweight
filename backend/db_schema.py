@@ -116,6 +116,20 @@ CREATE TABLE IF NOT EXISTS option_chain (
 CREATE INDEX IF NOT EXISTS idx_opt_chain_symbol_expiry ON option_chain(symbol, expiry);
 CREATE INDEX IF NOT EXISTS idx_opt_chain_strike ON option_chain(symbol, strike);
 
+CREATE TABLE IF NOT EXISTS live_quotes (
+    symbol TEXT PRIMARY KEY,
+    timestamp TEXT,
+    price REAL,
+    open REAL,
+    high REAL,
+    low REAL,
+    previous_close REAL,
+    change REAL,
+    change_pct REAL,
+    volume INTEGER,
+    source TEXT
+);
+
 CREATE TABLE IF NOT EXISTS index_breadth (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     index_name TEXT,
