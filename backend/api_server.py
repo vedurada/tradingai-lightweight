@@ -464,6 +464,42 @@ def news():
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+@app.route("/api/news/<symbol>")
+def symbol_news(symbol):
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM news WHERE UPPER(symbol)=UPPER(?) ORDER BY timestamp DESC LIMIT 20", (symbol,)).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+@app.route("/api/actions/<symbol>")
+def symbol_actions():
+    """Dividends + splits stored from Yahoo, newest first."""
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM corporate_actions WHERE UPPER(symbol)=UPPER(?) ORDER BY timestamp DESC LIMIT 20", (symbol,)).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+@app.route("/api/company/<symbol>")
+def company(symbol):
+    """Latest stored company snapshot: info + analyst views + financials keys."""
+    conn = get_db()
+    row = conn.execute("SELECT * FROM fundamentals WHERE UPPER(symbol)=UPPER(?) ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    conn.close()
+    if not row:
+        return jsonify({"error": "no company data"}), 404
+    d = row_to_dict(row)
+    data = _parse_json_field(d.get("data"), {}) or {}
+    return jsonify({
+        "symbol": symbol.upper(), "timestamp": d.get("timestamp"),
+        "analyst_recommendation": data.get("analyst_recommendation", {}),
+        "analyst_price_targets": data.get("analyst_price_targets", {}),
+        "earnings_dates": data.get("earnings_dates", []),
+        "latest_dividend": data.get("latest_dividend", {}),
+        "latest_split": data.get("latest_split", {}),
+        "has_financial_statements": any(k.startswith("financials.") or k.startswith("balance_sheet.") or k.startswith("cashflow.") or k == "financial_statements" for k in data.keys()),
+        "info": {k: v for k, v in data.items() if not isinstance(v, (dict, list))},
+    })
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

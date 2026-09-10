@@ -19,7 +19,9 @@ h2 { color: #22c55e; margin: 1.5rem 0 1rem; }
 .badge-yellow { background: #eab30820; color: #eab308; }
 .badge-blue { background: #3b82f620; color: #3b82f6; }
 footer { margin-top: 2rem; padding: 1rem 0; border-top: 1px solid #1e293b; color: #64748b; font-size: 0.8rem; }
-.history-table { width: 100%; min-width: 980px; border-collapse: collapse; font-size: 0.85rem; }
+.pnl-full { display: block; width: 100%; }
+.pnl-full .card { margin-bottom: 1rem; }
+.history-table { width: 100%; min-width: 1020px; border-collapse: collapse; font-size: 0.85rem; }
 .history-table th { background: #1e293b; color: #22c55e; padding: 0.6rem 0.8rem; text-align: left; font-weight: 600; white-space: nowrap; }
 .history-table td { padding: 0.5rem 0.8rem; border-bottom: 1px solid #1e293b; color: #e2e8f0; white-space: nowrap; }
 .history-table td:nth-child(n+4):nth-child(-n+7) { text-align: right; font-variant-numeric: tabular-nums; }

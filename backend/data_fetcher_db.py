@@ -135,23 +135,145 @@ def fetch_yf_options(yf_symbol: str) -> dict:
 
 
 def fetch_yf_financials(yf_symbol: str) -> dict:
+    """Income statement + balance sheet + cashflow (latest 4 periods each). Cached weekly by caller."""
     try:
+        import math
         import yfinance as yf
         ticker = yf.Ticker(yf_symbol)
-        financials = ticker.financials
-        if financials is not None and not financials.empty:
-            data = {}
-            for col in financials.columns[:4]:
-                for idx in financials.index:
-                    val = financials.loc[idx, col]
-                    if isinstance(val, (int, float)) and not __import__("math").isnan(val):
-                        key = f"{idx}_{col.strftime('%Y-%m-%d') if hasattr(col, 'strftime') else str(col)}"
-                        data[key] = float(val)
-            return data
-        return {}
+        data: dict = {}
+        for stmt_name in ("financials", "balance_sheet", "cashflow"):
+            try:
+                stmt = getattr(ticker, stmt_name, None)
+                if stmt is None or stmt.empty:
+                    continue
+                for col in list(stmt.columns)[:4]:
+                    suffix = col.strftime("%Y-%m-%d") if hasattr(col, "strftime") else str(col)
+                    for idx in stmt.index:
+                        try:
+                            val = stmt.loc[idx, col]
+                        except Exception:
+                            continue
+                        if isinstance(val, (int, float)) and not math.isnan(val):
+                            data[f"{stmt_name}.{idx}.{suffix}"] = float(val)
+            except Exception as e:
+                logger.warning(f"{stmt_name} skip for {yf_symbol}: {e}")
+        return data
     except Exception as e:
         logger.error(f"Financials error for {yf_symbol}: {e}")
         return {}
+
+
+def _safe_float(v, default: float = 0.0) -> float:
+    try:
+        f = float(v)
+        if f != f:  # NaN
+            return default
+        return f
+    except Exception:
+        return default
+
+
+def fetch_yf_extras(yf_symbol: str) -> dict:
+    """Everything else Yahoo exposes per ticker: news, dividends, splits,
+    analyst recommendations / price targets, earnings dates. Light calls only."""
+    out: dict = {"dividends": [], "splits": [], "news": [], "recommendations": {}, "price_targets": {}, "earnings_dates": []}
+    try:
+        import yfinance as yf
+        ticker = yf.Ticker(yf_symbol)
+        try:
+            divs = ticker.dividends
+            if divs is not None and len(divs):
+                out["dividends"] = [{"date": idx.strftime("%Y-%m-%d"), "value": float(val)} for idx, val in divs.tail(8).items()]
+        except Exception:
+            pass
+        try:
+            splits = ticker.splits
+            if splits is not None and len(splits):
+                out["splits"] = [{"date": idx.strftime("%Y-%m-%d"), "value": float(val)} for idx, val in splits.tail(8).items()]
+        except Exception:
+            pass
+        try:
+            recs = ticker.recommendations
+            if recs is not None and len(recs):
+                last = recs.iloc[-1].to_dict()
+                out["recommendations"] = {k: (v.isoformat() if hasattr(v, "isoformat") else v) for k, v in last.items()}
+        except Exception:
+            pass
+        try:
+            tgt = getattr(ticker, "analyst_price_targets", None)
+            if isinstance(tgt, dict) and tgt:
+                out["price_targets"] = {k: _safe_float(v) if isinstance(v, (int, float)) else v for k, v in tgt.items()}
+        except Exception:
+            pass
+        try:
+            ed = ticker.earnings_dates
+            if ed is not None and len(ed):
+                out["earnings_dates"] = [str(idx.date()) if hasattr(idx, "date") else str(idx) for idx in list(ed.index)[:4]]
+        except Exception:
+            pass
+        try:
+            news = ticker.news or []
+            for n in news[:10]:
+                content = n.get("content", n) if isinstance(n, dict) else {}
+                title = content.get("title", "") if isinstance(content, dict) else str(n)
+                if not title:
+                    continue
+                pub = ""
+                try:
+                    pub_ts = (content.get("pubDate") or content.get("providerPublishTime") or "")
+                    pub = str(pub_ts)[:19]
+                except Exception:
+                    pass
+                provider = content.get("provider", {}) if isinstance(content, dict) else {}
+                out["news"].append({
+                    "headline": str(title)[:300],
+                    "publisher": str(provider.get("displayName", "") if isinstance(provider, dict) else "")[:80],
+                    "url": str(content.get("clickThroughUrl", {}).get("url", "") if isinstance(content.get("clickThroughUrl"), dict) else content.get("link", ""))[:500] if isinstance(content, dict) else "",
+                    "published": pub,
+                })
+        except Exception:
+            pass
+    except Exception as e:
+        logger.warning(f"Extras skip for {yf_symbol}: {e}")
+    return out
+
+
+def store_extras(conn: sqlite3.Connection, symbol: str, extras: dict) -> dict:
+    """Persist news + corporate actions; return mergeable fundamentals fragment."""
+    if not extras:
+        return {}
+    now = datetime.now(timezone.utc).isoformat()
+    for d in extras.get("dividends", []) or []:
+        try:
+            conn.execute("INSERT OR IGNORE INTO corporate_actions (symbol, timestamp, action_type, value) VALUES (?, ?, 'DIVIDEND', ?)",
+                         (symbol, d.get("date", now[:10]), _safe_float(d.get("value"))))
+        except Exception:
+            pass
+    for s in extras.get("splits", []) or []:
+        try:
+            conn.execute("INSERT OR IGNORE INTO corporate_actions (symbol, timestamp, action_type, value) VALUES (?, ?, 'SPLIT', ?)",
+                         (symbol, s.get("date", now[:10]), _safe_float(s.get("value"))))
+        except Exception:
+            pass
+    for n in extras.get("news", []) or []:
+        try:
+            if not n.get("headline"):
+                continue
+            conn.execute("INSERT OR IGNORE INTO news (timestamp, symbol, headline, publisher, url) VALUES (?, ?, ?, ?, ?)",
+                         (n.get("published") or now, symbol, n["headline"], n.get("publisher", ""), n.get("url", "")))
+        except Exception:
+            pass
+    try:
+        conn.commit()
+    except Exception:
+        pass
+    return {
+        "analyst_recommendation": extras.get("recommendations", {}) or {},
+        "analyst_price_targets": extras.get("price_targets", {}) or {},
+        "earnings_dates": extras.get("earnings_dates", []) or [],
+        "latest_dividend": (extras.get("dividends", []) or [{}])[-1],
+        "latest_split": (extras.get("splits", []) or [{}])[-1],
+    }
 
 
 def store_price_data(conn: sqlite3.Connection, symbol: str, data: list[dict], interval_table: str) -> None:
@@ -466,14 +588,42 @@ def fetch_all() -> None:
     if minute % 15 == 0:
         for inst in small_caps:
             _fetch_symbol_minute(conn, inst["symbol"], inst["yfinance_symbol"], with_regime=True)
-        for inst in indices + stocks:
+        # Company snapshot: info + news/actions/analyst views merged into fundamentals.
+        for inst in indices + large_caps:
             try:
                 info = fetch_yf_info(inst["yfinance_symbol"])
-                if info:
-                    store_fundamentals(conn, inst["symbol"], info)
+                extra_frag: dict = {}
+                try:
+                    extras = fetch_yf_extras(inst["yfinance_symbol"])
+                    extra_frag = store_extras(conn, inst["symbol"], extras)
+                except Exception as e:
+                    logger.warning(f"Extras skip {inst['symbol']}: {e}")
+                merged = dict(info or {})
+                merged.update({k: v for k, v in extra_frag.items() if v})
+                if merged:
+                    store_fundamentals(conn, inst["symbol"], merged)
             except Exception as e:
                 logger.warning(f"Fundamentals skip {inst['symbol']}: {e}")
         update_data_status(conn, "ALL", "info")
+
+    # Weekly deep pass (Monday): extras for MID/SMALL + financial statements for LARGE.
+    if now.weekday() == 0 and now.hour == 9 and minute < 15:
+        for inst in mid_caps + small_caps:
+            try:
+                extras = fetch_yf_extras(inst["yfinance_symbol"])
+                frag = store_extras(conn, inst["symbol"], extras)
+                if frag:
+                    store_fundamentals(conn, inst["symbol"], frag)
+            except Exception as e:
+                logger.warning(f"Weekly extras skip {inst['symbol']}: {e}")
+        for inst in large_caps:
+            try:
+                stmts = fetch_yf_financials(inst["yfinance_symbol"])
+                if stmts:
+                    store_fundamentals(conn, inst["symbol"], {"financial_statements": stmts})
+            except Exception as e:
+                logger.warning(f"Weekly financials skip {inst['symbol']}: {e}")
+        update_data_status(conn, "WEEKLY", "info")
 
     try:
         build_breadth(conn)
@@ -485,6 +635,7 @@ def fetch_all() -> None:
     conn.execute("DELETE FROM price_1m WHERE timestamp < datetime('now', '-2 day')")
     conn.execute("DELETE FROM option_chain WHERE fetched_at < datetime('now', '-3 days')")
     conn.execute("DELETE FROM fundamentals WHERE timestamp < datetime('now', '-7 days')")
+    conn.execute("DELETE FROM news WHERE timestamp < datetime('now', '-30 days')")
     conn.commit()
     conn.close()
 
