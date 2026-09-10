@@ -277,6 +277,11 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
         conn.commit()
     except Exception as e:
         logger.error(f"Regime/strategy error for {symbol}: {repr(e)}")
+    finally:
+        try:
+            conn.commit()
+        except Exception:
+            pass
 
 
 def update_data_status(conn: sqlite3.Connection, symbol: str, interval_type: str) -> None:
@@ -327,10 +332,6 @@ def fetch_all() -> None:
         info = fetch_yf_info(yf_sym)
         if info:
             store_fundamentals(conn, symbol, info)
-        try:
-            store_regime_and_strategies(conn, symbol, info)
-        except Exception as e:
-            logger.error(f"Regime/strategy error for {symbol}: {repr(e)}")
         update_data_status(conn, symbol, "info")
         logger.info(f"  {symbol}: {len(data)} candles, {len(info)} fundamental fields")
 
@@ -349,6 +350,37 @@ def fetch_all() -> None:
         update_data_status(conn, "VIX", "vix")
         logger.info(f"  VIX: close={vix_data['close']}, change_pct={vix_data['change_pct']:.2f}%")
 
+    for yf_sym, symbol in [("^NSEI", "NIFTY"), ("^NSEBANK", "BANKNIFTY")]:
+        logger.info(f"Fetching options for {symbol}")
+        options_data = fetch_yf_options(yf_sym)
+        if options_data:
+            store_option_chains(conn, symbol, options_data)
+            update_data_status(conn, symbol, "options")
+            call_oi = sum(c["open_interest"] for ch in options_data["chains"] for c in ch["calls"])
+            put_oi = sum(p["open_interest"] for ch in options_data["chains"] for p in ch["puts"])
+            pcr = put_oi / call_oi if call_oi > 0 else 0
+            logger.info(f"  {symbol}: PCR={pcr:.2f}, calls={len(options_data['chains'])}, total OI: CALL={call_oi}, PUT={put_oi}")
+
+    for sym_name, yf_sym in STOCK_SYMBOLS:
+        logger.info(f"Fetching {sym_name} ({yf_sym})")
+        data = fetch_yf_ohlcv(yf_sym, interval="1m", period="1d")
+        if data:
+            store_price_data(conn, sym_name, data, "price_1m")
+            update_data_status(conn, sym_name, "1m")
+        info = fetch_yf_info(yf_sym)
+        if info:
+            store_fundamentals(conn, sym_name, info)
+        update_data_status(conn, sym_name, "info")
+        try:
+            store_regime_and_strategies(conn, sym_name, info)
+        except Exception as e:
+            logger.error(f"Regime/strategy error for {sym_name}: {e}")
+
+    for yf_sym, symbol in [("^NSEI", "NIFTY"), ("^NSEBANK", "BANKNIFTY"), ("^BSESN", "SENSEX")]:
+        try:
+            store_regime_and_strategies(conn, symbol, {})
+        except Exception as e:
+            logger.error(f"Regime/strategy error for {symbol}: {e}")
 
     snapshot = fetch_market_snapshot(conn)
     logger.info(f"Market snapshot: NIFTY={snapshot.get('nifty')}, BANKNIFTY={snapshot.get('banknifty')}, VIX={snapshot.get('vix')}")
