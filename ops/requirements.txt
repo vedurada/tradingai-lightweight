@@ -1,0 +1,8 @@
+# Python deps for TradingAI VM (Ubuntu 22.04, python3.10). Install: pip3 install -r ops/requirements.txt
+# certbot + nginx come from apt (see setup-new-vm.sh), NOT pip.
+yfinance==0.2.66
+Flask==2.3.2
+Flask-Cors==3.0.10
+pandas==2.3.3
+numpy==2.2.6
+requests==2.32.5
