@@ -73,7 +73,7 @@ def fetch_index_quotes() -> dict[str, dict]:
             "source": "NSE",
         }
     if out:
-        logger.info(f"NSE quotes: {', '.join(f'{k}={v['price']}' for k, v in out.items())}")
+        logger.info("NSE quotes: " + ", ".join(f"{k}={v['price']}" for k, v in out.items()))
     return out
 
 
