@@ -257,6 +257,62 @@ def _locked_strategy(conn, symbol):
             "regime": d.get("regime", ""), "timestamp": d.get("created_at")}
 
 
+def _live_expiry(conn, symbol):
+    """Nearest real NSE expiry per index from option_expiries (None if none stored).
+
+    Classifies MONTHLY vs WEEKLY: an expiry on the last exchange-weekday of its
+    month is the monthly contract, otherwise a weekly. NSE=Tuesday, BSE=Thursday.
+    """
+    from datetime import date as _date, timedelta as _td
+    try:
+        today = _ist_today()
+    except Exception:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        rows = conn.execute("SELECT expiry FROM option_expiries WHERE symbol=? AND expiry>=? ORDER BY expiry", (symbol, today)).fetchall()
+    except Exception:
+        return None
+    dates = []
+    for r in rows:
+        try:
+            dates.append(_date.fromisoformat(str(r["expiry"])[:10]))
+        except Exception:
+            continue
+    if not dates:
+        return None
+    weekday = 3 if symbol == "SENSEX" else 1
+    day_label = "Thursday" if symbol == "SENSEX" else "Tuesday"
+    exchange = "BSE" if symbol == "SENSEX" else "NSE"
+
+    def is_monthly(d):
+        m = d.month + 1
+        y = d.year + (1 if m > 12 else 0)
+        m = 1 if m > 12 else m
+        last = _date(y, m, 1) - _td(days=1)
+        while last.weekday() != weekday:
+            last -= _td(days=1)
+        return d == last
+
+    def payload(d, tenor):
+        return {"expiry_date": d.isoformat(), "expiry_label": d.strftime("%d %b %Y"),
+                "expiry_weekday": day_label, "days_to_expiry": (d - _date.fromisoformat(today)).days,
+                "tenor": tenor, "expiry_day": day_label, "source": "NSE",
+                "timestamp": datetime.now(timezone.utc).isoformat()}
+
+    monthlies = [d for d in dates if is_monthly(d)]
+    weekly = next((d for d in dates if d not in monthlies), None)
+    if symbol in ("BANKNIFTY", "FINNIFTY"):
+        weekly = None  # monthly-only contracts
+    first = weekly or (monthlies[0] if monthlies else None)
+    if not first:
+        return None
+    out = payload(first, "WEEKLY" if weekly and first == weekly else "MONTHLY")
+    out.update({"symbol": symbol, "exchange": exchange,
+                "weekly": payload(weekly, "WEEKLY") if weekly else None,
+                "monthly": payload(monthlies[0], "MONTHLY") if monthlies else None})
+    return out
+
+
 def _build_scenarios(scen_row):
     """DB flattened row -> legacy list [{scenario_type, description, target, stop_loss, trigger}]."""
     if not scen_row:
@@ -310,9 +366,19 @@ def _symbol_data(symbol):
     if outlook:
         result["ai_outlook"] = outlook
     try:
-        from expiry import get_current_expiry
-        if symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"):
-            result["expiry"] = get_current_expiry() if callable(get_current_expiry) else {}
+        srow = conn.execute("SELECT lot_size, lot_source, lot_as_of FROM symbols WHERE symbol=?", (symbol,)).fetchone()
+        if srow and srow["lot_size"]:
+            result["lot"] = {"size": srow["lot_size"], "source": srow["lot_source"] or "config", "as_of": srow["lot_as_of"]}
+    except Exception:
+        pass
+    try:
+        exp = _live_expiry(conn, symbol)
+        if not exp:
+            from expiry import get_current_expiry
+            if symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"):
+                exp = get_current_expiry(symbol) if callable(get_current_expiry) else {}
+        if exp:
+            result["expiry"] = exp
     except Exception:
         pass
     # last_updated = MARKET DATA time (quote candle), never computation time.

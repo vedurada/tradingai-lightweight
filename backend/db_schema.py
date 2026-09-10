@@ -421,6 +421,14 @@ def init_database(db_path: str = DB_PATH) -> None:
     c.executescript(SCHEMA)
     # Migrate existing DBs: add columns introduced after initial schema.
     try:
+        c.execute("PRAGMA table_info(symbols)")
+        sym_cols = {row[1] for row in c.fetchall()}
+        if "lot_size" not in sym_cols:
+            c.execute("ALTER TABLE symbols ADD COLUMN lot_size INTEGER")
+        if "lot_source" not in sym_cols:
+            c.execute("ALTER TABLE symbols ADD COLUMN lot_source TEXT")
+        if "lot_as_of" not in sym_cols:
+            c.execute("ALTER TABLE symbols ADD COLUMN lot_as_of TEXT")
         c.execute("PRAGMA table_info(indicators)")
         ind_cols = {row[1] for row in c.fetchall()}
         if "support_resistance" not in ind_cols:

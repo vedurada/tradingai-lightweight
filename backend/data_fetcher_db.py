@@ -296,6 +296,45 @@ def store_vix_data(conn: sqlite3.Connection, timestamp: str, data: dict) -> None
     conn.commit()
 
 
+NSE_FNO_SYMBOLS = {"NIFTY": "NIFTY", "BANKNIFTY": "BANKNIFTY", "FINNIFTY": "FINNIFTY"}
+
+
+def fetch_nse_expiries(nse_symbol: str) -> list:
+    """Authoritative weekly/monthly expiry dates from NSE (contract-info endpoint)."""
+    try:
+        from curl_cffi import requests as cr
+    except Exception:
+        logger.warning("curl_cffi missing, NSE expiries skipped")
+        return []
+    try:
+        s = cr.Session(impersonate="chrome124")
+        s.get("https://www.nseindia.com", timeout=20)
+        r = s.get(f"https://www.nseindia.com/api/option-chain-contract-info?symbol={nse_symbol}", timeout=20,
+                  headers={"Accept": "*/*", "Referer": "https://www.nseindia.com/"})
+        d = r.json()
+        dates = d.get("expiryDates", []) or []
+        logger.info(f"NSE expiries {nse_symbol}: {dates[:4]}")
+        return dates
+    except Exception as e:
+        logger.warning(f"NSE expiries skip {nse_symbol}: {e}")
+        return []
+
+
+def store_nse_expiries(conn: sqlite3.Connection, symbol: str, dates: list) -> int:
+    from datetime import datetime as _dt
+    now = datetime.now(timezone.utc).isoformat()
+    n = 0
+    for ds in dates or []:
+        try:
+            iso = _dt.strptime(str(ds).strip(), "%d-%b-%Y").strftime("%Y-%m-%d")
+        except Exception:
+            continue
+        conn.execute("INSERT OR REPLACE INTO option_expiries (symbol, expiry, fetched_at) VALUES (?, ?, ?)", (symbol, iso, now))
+        n += 1
+    conn.commit()
+    return n
+
+
 def store_option_chains(conn: sqlite3.Connection, symbol: str, options_data: dict) -> None:
     if not options_data or "chains" not in options_data:
         return
@@ -605,6 +644,27 @@ def fetch_all() -> None:
             except Exception as e:
                 logger.warning(f"Fundamentals skip {inst['symbol']}: {e}")
         update_data_status(conn, "ALL", "info")
+
+    # Daily reference-data refresh (first runs of the session, IST): live NSE
+    # lot sizes + authoritative index expiries. Re-checks daily so any NSE
+    # change flows into the DB/website automatically; writes only on change.
+    try:
+        from datetime import timedelta as _td
+        _ist = now + _td(hours=5, minutes=30)
+        if _ist.weekday() < 5 and _ist.hour == 9 and _ist.minute < 3:
+            try:
+                from lot_sizes import refresh_lot_sizes
+                logger.info(f"lots refresh: {refresh_lot_sizes(conn)}")
+            except Exception as e:
+                logger.warning(f"lot refresh skip: {e}")
+            for _nse, _sym in NSE_FNO_SYMBOLS.items():
+                _dates = fetch_nse_expiries(_nse)
+                if _dates:
+                    _k = store_nse_expiries(conn, _sym, _dates)
+                    update_data_status(conn, _sym, "options")
+                    logger.info(f"  {_sym}: { _k} NSE expiries stored")
+    except Exception as e:
+        logger.warning(f"daily reference refresh skip: {e}")
 
     # Weekly deep pass (Monday): extras for MID/SMALL + financial statements for LARGE.
     if now.weekday() == 0 and now.hour == 9 and minute < 15:

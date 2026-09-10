@@ -27,6 +27,7 @@ UA = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like 
 # Fallbacks when the exchange file is unreachable. SENSEX has no stable
 # machine-readable BSE source, so it always stays 'config' until one is found.
 FALLBACK_LOTS: dict[str, int] = {
+    # Verified Sep 2026 (NSE file: 65/30/60; SENSEX per 2026 references — verify with broker).
     "NIFTY": 65,
     "BANKNIFTY": 30,
     "FINNIFTY": 60,
@@ -103,20 +104,21 @@ def refresh_lot_sizes(conn: sqlite3.Connection, symbols: list[dict] | None = Non
         sym = (inst.get("symbol") or "").upper()
         if not sym:
             continue
-        # Map yfinance/stock names to NSE F&O symbols (NSE file uses bare names).
-        nse_key = sym
+        # NSE file uses bare F&O symbols, matching ours for indexes.
         if sym in nse:
             lot, source = nse[sym]["lot"], "NSE"
         elif FALLBACK_LOTS.get(sym):
-            lot, source = FALLBACK_LOTS[sym], ("NSE" if sym in ("NIFTY", "BANKNIFTY", "FINNIFTY") and sym in nse else "config")
-            if sym in nse:
-                lot, source = nse[sym]["lot"], "NSE"
+            lot, source = FALLBACK_LOTS[sym], "config"
             fallback += 1
         else:
             continue
         try:
+            cur = conn.execute("SELECT lot_size, lot_source FROM symbols WHERE symbol=?", (sym,)).fetchone()
+            if cur and cur["lot_size"] == lot and (cur["lot_source"] or "") == source:
+                continue  # unchanged — no write, no churn
             conn.execute("UPDATE symbols SET lot_size=?, lot_source=?, lot_as_of=? WHERE symbol=?", (lot, source, now, sym))
             updated += 1
+            logger.info(f"lot change {sym}: {cur['lot_size'] if cur else None} -> {lot} ({source})")
         except Exception as e:
             logger.warning(f"lot update skip {sym}: {e}")
     try:

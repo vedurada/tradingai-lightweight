@@ -43,7 +43,6 @@
         <option value="iron-condor">Iron Condor (range)</option>
         <option value="straddle">Long Straddle (big move?)</option>
         <option value="strangle">Long Strangle (big move?)</option>
-        <option value="nd-intraday">ND Intraday (VIX-based)</option>
       </select></label>
       <label>Lots<br><input id="b-lots" type="number" min="1" value="1" style="width:4rem"></label>
       <label>Lot size<br><input id="b-lotsize" type="number" min="1" value="75" style="width:5rem"></label>
@@ -58,7 +57,7 @@
 </main>
 <script>
 const API_BASE='';
-var IDX_META={NIFTY:{step:50,lot:75,api:'nifty'},BANKNIFTY:{step:100,lot:30,api:'banknifty'},FINNIFTY:{step:50,lot:65,api:'finnifty'},SENSEX:{step:100,lot:20,api:'sensex'}};
+var IDX_META={NIFTY:{step:50,lot:65,api:'nifty'},BANKNIFTY:{step:100,lot:30,api:'banknifty'},FINNIFTY:{step:50,lot:60,api:'finnifty'},SENSEX:{step:100,lot:20,api:'sensex'}};
 async function fetchJSON(path){try{const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 function inr(n){return n!=null?'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
@@ -74,33 +73,25 @@ function buildTemplate(tpl,spot,step,vix){
   else if(tpl==='iron-condor'){legs=[{action:'SELL',type:'PE',strike:A-step,note:'short put'},{action:'BUY',type:'PE',strike:A-2*step,note:'wing'},{action:'SELL',type:'CE',strike:A+step,note:'short call'},{action:'BUY',type:'CE',strike:A+2*step,note:'wing'}];be=['Lower: '+fmt(A-step)+' − credit','Upper: '+fmt(A+step)+' + credit'];maxP='Total credit';maxL='Width − credit ('+fmt(step)+' pts)';note='Range: '+fmt(A-step)+' – '+fmt(A+step)+'.';}
   else if(tpl==='straddle'){legs=[{action:'BUY',type:'CE',strike:A,note:'ATM'},{action:'BUY',type:'PE',strike:A,note:'ATM'}];be=['Upper: '+fmt(A)+' + premium','Lower: '+fmt(A)+' − premium'];maxP='Unlimited';maxL='Total premium';note='Needs a big move either way.';}
   else if(tpl==='strangle'){legs=[{action:'BUY',type:'PE',strike:A-step,note:'OTM'},{action:'BUY',type:'CE',strike:A+step,note:'OTM'}];be=['Upper: '+fmt(A+step)+' + premium','Lower: '+fmt(A-step)+' − premium'];maxP='Unlimited';maxL='Total premium';note='Cheaper than straddle; needs a bigger move.';}
-  else if(tpl==='nd-intraday'){
-    var v=vix||0,legs2;
-    if(v<12){legs2=[{action:'BUY',type:'CE',strike:A,note:'ATM straddle'},{action:'BUY',type:'PE',strike:A,note:'ATM straddle'}];note='VIX '+v.toFixed(1)+' < 12 → ATM Straddle.';}
-    else if(v<18){legs2=[{action:'BUY',type:'CE',strike:A+step,note:'OTM'},{action:'BUY',type:'PE',strike:A-step,note:'OTM'}];note='VIX '+v.toFixed(1)+' → ATM Strangle.';}
-    else if(v<25){legs2=[{action:'BUY',type:'CE',strike:A+2*step,note:'wide OTM'},{action:'BUY',type:'PE',strike:A-2*step,note:'wide OTM'}];note='VIX '+v.toFixed(1)+' → Wide Strangle.';}
-    else{return {legs:[],be:[],maxP:'',maxL:'',note:'VIX '+v.toFixed(1)+' ≥ 25 — no intraday entry (too hot).',atm:A};}
-    legs=legs2;be=['Exit: VIX +5% intraday, 2% premium stop, or 3:20 PM'];maxP='Unlimited (winning leg)';maxL='Premium paid';note+=' Entry 9:30 AM.';
-  }
   return {legs:legs,be:be,maxP:maxP,maxL:maxL,note:note,atm:A};
 }
 async function generate(){
   var sym=document.getElementById('b-index').value;
   var tpl=document.getElementById('b-template').value;
   var lots=Math.max(1,parseInt(document.getElementById('b-lots').value||'1',10));
-  var lotSize=Math.max(1,parseInt(document.getElementById('b-lotsize').value||String(IDX_META[sym].lot),10));
   var out=document.getElementById('b-out');var spotEl=document.getElementById('b-spot');
   out.innerHTML='<div class="card">Loading live price…</div>';
   var data=await fetchJSON(IDX_META[sym].api);
   if(!data||!data.quote){out.innerHTML='<div class="card">No live data for '+sym+' right now.</div>';return;}
   var spot=data.quote.price,step=IDX_META[sym].step;
   var vix=null;try{var vx=await fetchJSON('vix');if(vx)vix=(vx.price!=null?vx.price:vx.close);}catch(e){}
-  var exp=(data.expiry||{});var expLabel=exp.expiry_label||'—';var dte=(exp.days_to_expiry!=null?exp.days_to_expiry:'—');
+  var exp=(data.expiry||{});var expLabel=exp.expiry_label||'—';var dte=(exp.days_to_expiry!=null?exp.days_to_expiry:'—');var liveLot=(data.lot&&data.lot.size)||IDX_META[sym].lot;var lotSrc=(data.lot&&data.lot.source)||'config';
   var assigned=((data.strategy||{}).strategies||[])[0];
   var b=buildTemplate(tpl,spot,step,vix);
+  var lotSize=Math.max(1,parseInt(document.getElementById('b-lotsize').value||String(liveLot),10));
   var qty=lots*lotSize;
   var html='<div class="card"><h3>'+sym+' · '+tpl.replace(/-/g,' ').toUpperCase()+'</h3>'
-    +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(b.atm)+' (step '+step+') | Expiry '+expLabel+' ('+dte+'d) | '+(tpl==='nd-intraday'?'DAY':'NEXT')+' | Qty '+lots+' lot(s) × '+lotSize+' = '+qty+'</div>'
+    +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(b.atm)+' (step '+step+') | Expiry '+expLabel+' ('+dte+'d) | '+(tpl==='nd-intraday'?'DAY':'NEXT')+' | Qty '+lots+' lot(s) × '+lotSize+' = '+qty+' | Lot: '+lotSize+' ('+lotSrc+')</div>'
     +(assigned&&assigned.strategy?'<div class="status">Today’s AI-assigned: <strong>'+assigned.strategy+'</strong></div>':'')
     +'<div class="status">'+b.note+'</div></div>';
   if(!b.legs.length){html+='<div class="card">No entry per rules.</div>';}
