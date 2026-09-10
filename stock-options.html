@@ -58,7 +58,7 @@ function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFraction
 function inr(n){return n!=null?'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
 var _lastDataTs=null;
 function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
-function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#ef4444';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
+function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
 function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 function niceStep(price){var raw=price*0.01;var steps=[1,2,5,10,20,25,50,100,200,500];var best=steps[0];for(var i=0;i<steps.length;i++){if(Math.abs(steps[i]-raw)<Math.abs(best-raw))best=steps[i];}return best;}
 function biasOf(data){var b=((data.ai_outlook||{}).directional_bias||'').toUpperCase();if(b.indexOf('BULL')!==-1)return'Bullish';if(b.indexOf('BEAR')!==-1)return'Bearish';var o=(((data.strategy||{}).strategies||[])[0]||{}).strategy||'';if(o==='BUY')return'Bullish';if(o==='EXIT')return'Bearish';return'Range';}
@@ -85,7 +85,7 @@ async function loadStocks(){
     var price=data.quote.price,step=niceStep(price),A=Math.round(price/step)*step;
     var lot=(data.lot&&data.lot.size)||'—';var lotSrc=(data.lot&&data.lot.source)||'config';
     var view=biasOf(data);var structs=structures(view,A,step);
-    var chgC=(data.quote.change_pct||0)>=0?'#22c55e':'#ef4444';
+    var chgC=(data.quote.change_pct||0)>=0?'#15803d':'#dc2626';
     html+='<div class="card"><h3>'+sym+'</h3><div class="price">'+fmt(price)+'</div>'
       +'<div style="color:'+chgC+'">'+(data.quote.change>=0?'+':'')+Number(data.quote.change).toFixed(2)+' ('+(data.quote.change_pct>=0?'+':'')+Number(data.quote.change_pct).toFixed(2)+'%)</div>'
       +'<div class="status">View: <strong>'+view+'</strong> | ATM '+fmt(A)+' (step ~'+step+') | Lot '+lot+' ('+lotSrc+')</div>';

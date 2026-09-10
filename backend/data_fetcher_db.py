@@ -553,7 +553,7 @@ def fetch_market_snapshot(conn: sqlite3.Connection) -> dict:
     return snapshot
 
 
-def _fetch_symbol_minute(conn: sqlite3.Connection, symbol: str, yf_symbol: str, with_regime: bool = True) -> None:
+def _fetch_symbol_minute(conn: sqlite3.Connection, symbol: str, yf_symbol: str, with_regime: bool = True, with_investment: bool = False) -> None:
     """Fetch 1m candles + AI-assisted screen for one symbol."""
     data = fetch_yf_ohlcv(yf_symbol, interval="1m", period="1d")
     if data:
@@ -564,6 +564,54 @@ def _fetch_symbol_minute(conn: sqlite3.Connection, symbol: str, yf_symbol: str, 
             store_regime_and_strategies(conn, symbol, {})
         except Exception as e:
             logger.error(f"Regime/strategy error for {symbol}: {repr(e)}")
+    if with_investment:
+        try:
+            store_investment_views(conn, symbol)
+        except Exception as e:
+            logger.error(f"Investment view error for {symbol}: {repr(e)}")
+
+
+def store_investment_views(conn: sqlite3.Connection, symbol: str) -> None:
+    """SHORT (weeks) + LONG (months) investment views from daily candles + fundamentals."""
+    from investment import short_term_view, long_term_view, swing_levels
+    rows = conn.execute("SELECT close FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 250", (symbol,)).fetchall()
+    closes = [r["close"] for r in reversed(rows) if r["close"]]
+    if len(closes) < 20:
+        return
+    qrow = conn.execute("SELECT close FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    price = (qrow["close"] if qrow and qrow["close"] else closes[-1]) or 0
+    if not price:
+        return
+    fundamentals: dict = {}
+    try:
+        frow = conn.execute("SELECT data FROM fundamentals WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        if frow and frow["data"]:
+            fundamentals = json.loads(frow["data"])
+    except Exception:
+        pass
+    from datetime import date as _date
+    try:
+        from zoneinfo import ZoneInfo
+        today = datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
+    except Exception:
+        today = _date.today().isoformat()
+    short = short_term_view(closes, price)
+    long_v = long_term_view(closes, fundamentals, price)
+    lv = swing_levels(closes, price)
+    now = datetime.now(timezone.utc).isoformat()
+    conn.execute(
+        """INSERT INTO investment_views (symbol, date, horizon, rating, target_price, stop_price, fair_value, reason, confidence, score, created_at)
+           VALUES (?, ?, 'SHORT', ?, ?, ?, NULL, ?, ?, ?, ?)
+           ON CONFLICT(symbol, date, horizon) DO UPDATE SET rating=excluded.rating, target_price=excluded.target_price,
+                stop_price=excluded.stop_price, reason=excluded.reason, confidence=excluded.confidence, score=excluded.score, created_at=excluded.created_at""",
+        (symbol, today, short["rating"], lv["target"], lv["stop"], short["reason"], short["confidence"], short["score"], now))
+    conn.execute(
+        """INSERT INTO investment_views (symbol, date, horizon, rating, target_price, stop_price, fair_value, reason, confidence, score, created_at)
+           VALUES (?, ?, 'LONG', ?, NULL, NULL, ?, ?, ?, ?, ?)
+           ON CONFLICT(symbol, date, horizon) DO UPDATE SET rating=excluded.rating, target_price=excluded.target_price,
+                stop_price=excluded.stop_price, fair_value=excluded.fair_value, reason=excluded.reason, confidence=excluded.confidence, score=excluded.score, created_at=excluded.created_at""",
+        (symbol, today, long_v["rating"], None, None, long_v.get("fair_value"), long_v["reason"], long_v["confidence"], long_v["score"], now))
+    conn.commit()
 
 
 def fetch_all() -> None:

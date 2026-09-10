@@ -52,10 +52,10 @@
 const API_BASE='..';
 async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
-function regimeColor(r){if(!r)return'#94a3b8';r=String(r).toUpperCase();if(r.includes('BULLISH')||r==='BUY')return'#22c55e';if(r.includes('BEARISH')||r==='EXIT'||r==='SELL')return'#ef4444';if(r.includes('RANGE')||r==='HOLD')return'#eab308';if(r.includes('VOLATILITY'))return'#f97316';return'#94a3b8';}
+function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.includes('BULLISH')||r==='BUY')return'#15803d';if(r.includes('BEARISH')||r==='EXIT'||r==='SELL')return'#dc2626';if(r.includes('RANGE')||r==='HOLD')return'#a16207';if(r.includes('VOLATILITY'))return'#c2410c';return'#64748b';}
 var _lastDataTs=null;
 function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
-function setLastUpdated(ts,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(ts){_lastDataTs=ts;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#ef4444';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';bar.textContent=show?('Data as of '+show+' IST'):'Last refreshed: —';}
+function setLastUpdated(ts,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(ts){_lastDataTs=ts;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';bar.textContent=show?('Data as of '+show+' IST'):'Last refreshed: —';}
 function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 function istNow(){var n=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));return {day:n.getDay(),mins:n.getHours()*60+n.getMinutes()};}
 function sessionMode(){var t=istNow();if(t.day===0||t.day===6)return'closed';if(t.mins<555)return'preopen';if(t.mins<930)return'live';return'closed';}
@@ -70,7 +70,7 @@ async function loadToday(){
   var badge=mode==='live'?'<span class="badge badge-red">● LIVE MARKET MODE</span>':mode==='preopen'?'<span class="badge badge-yellow">PRE-OPEN</span>':'<span class="badge">MARKET CLOSED</span>';
   var html='<div class="card"><h3>'+badge+'</h3>'
     +'<div class="price">'+fmt(q.price)+'</div>'
-    +'<div style="color:'+(q.change>=0?'#22c55e':'#ef4444')+'">'+(q.change>=0?'+':'')+Number(q.change).toFixed(2)+' ('+(q.change_pct>=0?'+':'')+Number(q.change_pct).toFixed(2)+'%)</div>'
+    +'<div style="color:'+(q.change>=0?'#15803d':'#dc2626')+'">'+(q.change>=0?'+':'')+Number(q.change).toFixed(2)+' ('+(q.change_pct>=0?'+':'')+Number(q.change_pct).toFixed(2)+'%)</div>'
     +'<div class="status">Day High '+fmt(q.high)+' | Day Low '+fmt(q.low)+' | Prev Close '+fmt(q.previous_close)+'</div>'
     +'<div class="status">Regime <span class="badge" style="background:'+regimeColor(reg.regime)+'20;color:'+regimeColor(reg.regime)+'">'+(reg.regime||'N/A')+'</span> ('+(reg.confidence||0)+'%) | VIX '+(vpx!=null?Number(vpx).toFixed(2):'—')+' | VWAP '+fmt(ind.vwap)+'</div></div>';
   if(mode==='preopen'){
@@ -81,7 +81,7 @@ async function loadToday(){
   } else {
     var hd=await fetchJSON('history');var rows=(hd&&hd.NIFTY)||[];var today=rows[0];
     html+='<div class="card"><h3>MARKET CLOSE REPORT</h3>';
-    if(today&&today.points!=null){var tc=today.points>=0?'#22c55e':'#ef4444';html+='<div class="status">9:30 entry '+fmt(today.locked_price)+' → 3:20 exit '+fmt(today.closed_price)+' = <strong style="color:'+tc+'">'+(today.points>=0?'+':'')+today.points+' pts '+today.result+'</strong></div>';}
+    if(today&&today.points!=null){var tc=today.points>=0?'#15803d':'#dc2626';html+='<div class="status">9:30 entry '+fmt(today.locked_price)+' → 3:20 exit '+fmt(today.closed_price)+' = <strong style="color:'+tc+'">'+(today.points>=0?'+':'')+today.points+' pts '+today.result+'</strong></div>';}
     else html+='<div class="status">Close: '+fmt(q.price)+' ('+(q.change>=0?'+':'')+Number(q.change).toFixed(2)+')</div>';
     html+='<div class="status">Tomorrow’s watch: support '+((sr.support||[]).map(fmt).join(', ')||'—')+' | resistance '+((sr.resistance||[]).map(fmt).join(', ')||'—')+'</div>';
     html+='<div class="status"><a href="../indices/nifty.html">Full NIFTY intelligence →</a> <a href="../history.html">P&L history →</a></div></div>';

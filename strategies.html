@@ -116,12 +116,12 @@ var ST={index:'NIFTY',tenor:'W',viewOverride:null,data:null,vix:null};
 async function fetchJSON(path){try{const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 function inr(n){return n!=null?'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
-function regimeColor(r){if(!r)return'#94a3b8';r=String(r).toUpperCase();if(r.includes('BULLISH')||r==='BUY'||r==='BULLISH')return'#22c55e';if(r.includes('BEARISH')||r==='EXIT'||r==='SELL')return'#ef4444';if(r.includes('RANGE')||r==='HOLD'||r==='RANGE')return'#eab308';if(r.includes('VOLATILITY')||r==='VOLATILE')return'#f97316';return'#94a3b8';}
+function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.includes('BULLISH')||r==='BUY'||r==='BULLISH')return'#15803d';if(r.includes('BEARISH')||r==='EXIT'||r==='SELL')return'#dc2626';if(r.includes('RANGE')||r==='HOLD'||r==='RANGE')return'#a16207';if(r.includes('VOLATILITY')||r==='VOLATILE')return'#c2410c';return'#64748b';}
 var _lastDataTs=null;
 function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
-function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#ef4444';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 function vixRegime(v){if(v==null)return'—';if(v<12)return'LOW';if(v<15)return'NORMAL';if(v<20)return'ELEVATED';if(v<25)return'HIGH';return'VERY HIGH';}
-function drawPayoff(id,shape){var c=document.getElementById(id);if(!c)return;var dpr=window.devicePixelRatio||1,W=220,H=80;c.width=W*dpr;c.height=H*dpr;var x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);x.strokeStyle='#475569';x.beginPath();x.moveTo(0,H/2);x.lineTo(W,H/2);x.stroke();x.strokeStyle='#22c55e';x.lineWidth=2;x.beginPath();for(var i=0;i<shape.length;i++){var px=(shape[i][0]+1.2)/2.4*W,py=H/2-shape[i][1]*(H/2-6);if(i===0)x.moveTo(px,py);else x.lineTo(px,py);}x.stroke();}
+function drawPayoff(id,shape){var c=document.getElementById(id);if(!c)return;var dpr=window.devicePixelRatio||1,W=220,H=80;c.width=W*dpr;c.height=H*dpr;var x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);x.strokeStyle='#475569';x.beginPath();x.moveTo(0,H/2);x.lineTo(W,H/2);x.stroke();x.strokeStyle='#15803d';x.lineWidth=2;x.beginPath();for(var i=0;i<shape.length;i++){var px=(shape[i][0]+1.2)/2.4*W,py=H/2-shape[i][1]*(H/2-6);if(i===0)x.moveTo(px,py);else x.lineTo(px,py);}x.stroke();}
 function detectView(reg,conf){if(!reg)return'Unsure';var r=String(reg).toUpperCase();if(r.includes('BULLISH'))return'Bullish';if(r.includes('BEARISH'))return'Bearish';if(r.includes('RANGE'))return'Range';if(r.includes('VOLATILITY'))return'Volatile';return'Unsure';}
 function atmOf(spot,step){return Math.round(spot/step)*step;}
 async function loadEngine(){
@@ -164,9 +164,9 @@ function renderAll(){
   var risk=(vr==='HIGH'||vr==='VERY HIGH')?'High':(reg.confidence>=60?'Moderate':'Elevated');
   var reason='Regime '+ (reg.regime||'unknown') +' ('+(reg.confidence||0)+'%), price '+trend+', VIX '+vr+'; range '+(sup.length?fmt(sup[0]):'—')+'–'+(res.length?fmt(res[0]):'—')+'. Option OI positioning unavailable (no NSE chain feed).';
   var aiHtml='<div class="status">Market regime: <strong>'+(reg.regime||'N/A')+'</strong> | Trend: '+trend+' | India VIX: '+vr+' | Expected range: '+er+'</div>';
-  aiHtml+='<div class="status">Options positioning — PUT SUPPORT / CALL RESISTANCE: <span style="color:#94a3b8">unavailable (no live NSE option-chain feed yet)</span></div>';
+  aiHtml+='<div class="status">Options positioning — PUT SUPPORT / CALL RESISTANCE: <span style="color:#64748b">unavailable (no live NSE option-chain feed yet)</span></div>';
   aiHtml+='<div class="status">Strategy candidates ('+view+'):</div>';
-  for(var ci=0;ci<cands.length;ci++){aiHtml+='<div class="status">'+(cands[ci].ok?'<span style="color:#22c55e">✓</span>':'<span style="color:#94a3b8">—</span>')+' '+cands[ci].name+'</div>';}
+  for(var ci=0;ci<cands.length;ci++){aiHtml+='<div class="status">'+(cands[ci].ok?'<span style="color:#15803d">✓</span>':'<span style="color:#64748b">—</span>')+' '+cands[ci].name+'</div>';}
   aiHtml+='<div class="status">Risk condition: <strong>'+risk+'</strong></div><div class="status">Reason: '+reason+'</div>';
   aiHtml+='<div class="status"><a href="'+meta.page+'">Open '+sym+' Market Intelligence →</a></div>';
   document.getElementById('e-ai').innerHTML=aiHtml;
@@ -179,7 +179,7 @@ function renderAll(){
       var legs=t.legs(A,step);var ok=t.views.indexOf(view)!==-1;
       var legHtml='';for(var li=0;li<legs.length;li++){legHtml+='<div class="status">'+legs[li].a+' '+fmt(legs[li].k)+' '+legs[li].t+'</div>';}
       var be=t.be(A,step);
-      gh+='<div class="card"><h4>'+t.name+' '+(ok?'<span style="color:#22c55e">✓</span>':'<span style="color:#94a3b8">—</span>')+'</h4>'
+      gh+='<div class="card"><h4>'+t.name+' '+(ok?'<span style="color:#15803d">✓</span>':'<span style="color:#64748b">—</span>')+'</h4>'
         +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(A)+' | Expiry: '+(expShow.expiry_label||'—')+' ('+(expShow.days_to_expiry!=null?expShow.days_to_expiry+' DTE':'—')+(expShow.tenor?', '+expShow.tenor:'')+')</div>'
         +legHtml
         +'<div class="status">Width '+fmt(step)+' pts ≈ ₹'+Number(step*lot).toLocaleString('en-IN')+'/lot</div>'
@@ -202,7 +202,7 @@ async function loadPerf(){
   Object.keys(hd).forEach(function(sym){(hd[sym]||[]).forEach(function(e){if(e.points==null||!e.strategy)return;var n=e.strategy;byName[n]=byName[n]||{trades:0,wins:0,gw:0,gl:0,pts:0};var b=byName[n];b.trades++;b.pts+=e.points;if(e.result==='WIN'){b.wins++;gw0(b,e);}else if(e.points<0){b.gl+=Math.abs(e.points);}function gw0(bb,ee){bb.gw+=ee.points;}});});
   var names=Object.keys(byName).sort();if(!names.length){el.textContent='No settled strategy trades yet.';return;}
   var html='<table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Win rate</th><th>Total pts</th><th>Profit factor</th></tr></thead><tbody>';
-  for(var i=0;i<names.length;i++){var b=byName[names[i]];var wr=(b.wins/b.trades*100).toFixed(1);var pf=b.gl>0?(b.gw/b.gl).toFixed(2):'∞';var tc=b.pts>=0?'#22c55e':'#ef4444';html+='<tr><td>'+names[i]+'</td><td>'+b.trades+'</td><td>'+b.wins+'</td><td>'+wr+'%</td><td style="color:'+tc+';font-weight:bold">'+(b.pts>=0?'+':'')+b.pts.toFixed(2)+'</td><td>'+pf+'</td></tr>';}
+  for(var i=0;i<names.length;i++){var b=byName[names[i]];var wr=(b.wins/b.trades*100).toFixed(1);var pf=b.gl>0?(b.gw/b.gl).toFixed(2):'∞';var tc=b.pts>=0?'#15803d':'#dc2626';html+='<tr><td>'+names[i]+'</td><td>'+b.trades+'</td><td>'+b.wins+'</td><td>'+wr+'%</td><td style="color:'+tc+';font-weight:bold">'+(b.pts>=0?'+':'')+b.pts.toFixed(2)+'</td><td>'+pf+'</td></tr>';}
   html+='</tbody></table><div class="status">Paper trades only (9:30 → 3:20 IST). <a href="history.html">View complete history →</a></div>';
   el.innerHTML=html;
 }

@@ -364,6 +364,23 @@ CREATE TABLE IF NOT EXISTS history (
 );
 CREATE INDEX IF NOT EXISTS idx_history_symbol_date ON history(symbol, date DESC);
 
+CREATE TABLE IF NOT EXISTS investment_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    date TEXT,
+    horizon TEXT CHECK(horizon IN ('SHORT', 'LONG')),
+    rating TEXT,
+    target_price REAL,
+    stop_price REAL,
+    fair_value REAL,
+    reason TEXT,
+    confidence REAL,
+    score REAL,
+    created_at TEXT,
+    UNIQUE(symbol, date, horizon)
+);
+CREATE INDEX IF NOT EXISTS idx_invest_symbol_date ON investment_views(symbol, date DESC);
+
 CREATE TABLE IF NOT EXISTS daily_strategy (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,
