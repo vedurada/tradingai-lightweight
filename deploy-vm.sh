@@ -31,12 +31,12 @@ rsync -avz --delete \
 
 echo "Files copied successfully"
 
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance 2>&1 | tail -3"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance flask flask-cors 2>&1 | tail -3"
 
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR/backend && SKIP_LLM=1 /usr/bin/python3 generate_data.py && SKIP_LLM=1 /usr/bin/python3 generate_json.py && mkdir -p /var/www/tradingai.in/html/data && cp $PROJECT_DIR/data/*.json /var/www/tradingai.in/html/data/ 2>/dev/null; true"
-
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR/backend && /usr/bin/python3 db_schema.py && SKIP_LLM=1 /usr/bin/python3 data_fetcher_db.py && mkdir -p /var/www/tradingai.in/html/data && cp $PROJECT_DIR/data/*.json /var/www/tradingai.in/html/data/ 2>/dev/null; true"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "pkill -f api_server.py 2>/dev/null; cd $PROJECT_DIR/backend && /usr/bin/python3 db_schema.py && SKIP_LLM=1 /usr/bin/python3 data_fetcher_db.py && mkdir -p /var/www/tradingai.in/html/data && cp $PROJECT_DIR/data/*.json /var/www/tradingai.in/html/data/ 2>/dev/null; true"
 
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR/backend && nohup /usr/bin/python3 api_server.py > /opt/tradingai/logs/api_server.log 2>&1 &"
+
+sudo systemctl reload nginx 2>/dev/null || true
 
 echo "=== Deployment complete ==="
