@@ -62,6 +62,7 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 | `db_schema.py` | Full SCHEMA + `init_database()` with ALTER migrations (never DROP) |
 | `database.py` | Legacy `Database` class (history CRUD, archive, portfolio) |
 | `fetch_market.py` | `MarketFetcher`: quote/OHLCV/VIX/options with TTL cache |
+| `nse_source.py` | NSE primary quotes (`allIndices`) + market state; `live_quotes` table preferred by API when fresh (<25 min), yfinance fallback, synth candles prevent chart gaps |
 | `indicators.py` | Local indicator math (fixed S/R swap bug Sep 2026) |
 | `regime.py` | TRENDING_BULLISH/BEARISH, RANGE_BOUND, HIGH_VOLATILITY scoring |
 | `scenarios.py` | Returns **dict** `{bullish, bearish, range, breakout, reversal}` (not a list) |
