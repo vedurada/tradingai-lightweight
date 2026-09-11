@@ -48,7 +48,7 @@
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>STOCK OPTIONS <span class="badge badge-yellow">POSITIONAL</span> <span class="status">monthly · high-liquidity large caps</span></h2>
   <div class="card hero-stock" style="margin-bottom:1rem"><div class="status" id="so-exp">Monthly expiry: —</div>
   <div class="status">Stock options in India expire <strong>monthly</strong> (last Tuesday, NSE) and are <strong>physically settled</strong> — never hold shorts into expiry week without a settlement plan. Premiums fill live at your broker; ₹ math below is per strike-width.</div></div>
-  <div id="so-grid"><div class="card">Loading liquid stocks…</div></div>
+  <div class="pnl-full"><div id="so-grid"><div class="card">Loading liquid stocks…</div></div></div>
   <footer>
     <p>TradingAI provides market analysis and decision-support information. Stock options are physically settled and involve substantial risk. No structure guarantees profit.</p>
   </footer>
@@ -81,24 +81,21 @@ async function loadStocks(){
   var mexp=nifty&&nifty.expiry&&nifty.expiry.monthly;
   var expEl=document.getElementById('so-exp');
   if(expEl)expEl.textContent='Monthly expiry: '+(mexp?(mexp.expiry_label+' ('+mexp.days_to_expiry+' DTE)'):'—')+' · last Tuesday, NSE · physically settled';
-  var html='',ok=0;
+  var rows=[],ok=0;
   for(var si=0;si<UNIVERSE.length;si++){
     var sym=UNIVERSE[si];var data=await fetchJSON(sym.toLowerCase());
     if(!data||!data.quote)continue;ok++;
     var price=data.quote.price,step=niceStep(price),A=Math.round(price/step)*step;
     var lot=(data.lot&&data.lot.size)||'—';var lotSrc=(data.lot&&data.lot.source)||'config';
     var view=biasOf(data);var structs=structures(view,A,step);
-    var chgC=(data.quote.change_pct||0)>=0?'#15803d':'#dc2626';
-     html+='<div class="card stock-card"><h3>'+sym+' <span class="badge" style="background:#fef3c7;color:#92400e">LOT '+lot+' ('+lotSrc+')</span></h3><div class="price">'+fmt(price)+'</div>'
-      +'<div style="color:'+chgC+'">'+(data.quote.change>=0?'+':'')+Number(data.quote.change).toFixed(2)+' ('+(data.quote.change_pct>=0?'+':'')+Number(data.quote.change_pct).toFixed(2)+'%)</div>'
-      +'<div class="status">View: <strong>'+view+'</strong> | ATM '+fmt(A)+' (step ~'+step+') | Lot '+lot+' ('+lotSrc+')</div>';
-    for(var i=0;i<structs.length;i++){var st=structs[i];
-      html+='<div class="status" style="margin-top:0.4rem"><strong>'+st.name+'</strong> — width '+fmt(step)+' pts'+(typeof lot==='number'?' ≈ '+inr(step*lot):'')+'</div>';
-      for(var li=0;li<st.legs.length;li++){var l=st.legs[li];html+='<div class="status">• '+l.a+' '+fmt(l.k)+' '+l.t+'</div>';}
-      html+='<div class="status">Breakeven: '+st.be+' | Max profit: '+st.mp+' | Max loss: '+st.ml+'</div>';
-    }
-    html+='</div>';
+    var legsHtml='';for(var i=0;i<structs.length;i++){var st=structs[i];var ls=st.legs.map(function(l){return l.a+' '+fmt(l.k)+' '+l.t;}).join(' + ');legsHtml+=(i?'<br>':'')+'<strong>'+st.name+'</strong> '+ls;}
+    rows.push({sym:sym,price:price,chg:data.quote.change,chgPct:data.quote.change_pct,view:view,A:A,step:step,lot:lot,lotSrc:lotSrc,legs:legsHtml});
   }
+  rows.sort(function(a,b){return (b.chgPct||0)-(a.chgPct||0);});
+  var html='<div class="card" style="overflow-x:auto"><table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>View</th><th>ATM</th><th>Lot (src)</th><th style="min-width:280px">Positional Structures (monthly)</th></tr></thead><tbody>';
+  for(var ri=0;ri<rows.length;ri++){var r=rows[ri];var chgC=r.chgPct>=0?'#15803d':'#dc2626';var vC=r.view==='Bullish'?'#15803d':r.view==='Bearish'?'#dc2626':'#a16207';
+  html+='<tr><td><strong>'+r.sym+'</strong></td><td style="text-align:right">'+fmt(r.price)+'</td><td style="color:'+chgC+';font-weight:bold">'+(r.chg>=0?'+':'')+Number(r.chg).toFixed(2)+' ('+(r.chgPct>=0?'+':'')+Number(r.chgPct).toFixed(2)+'%)</td><td><span class="badge" style="background:'+vC+'20;color:'+vC+'">'+r.view+'</span></td><td style="text-align:right">'+fmt(r.A)+'</td><td><span class="badge" style="background:#fef3c7;color:#92400e">'+r.lot+' ('+r.lotSrc+')</span></td><td>'+r.legs+'</td></tr>';}
+  html+='</tbody></table></div>';
   grid.innerHTML=html||'<div class="card">No stock data right now.</div>';
   setLastUpdated(ok?new Date().toISOString():null,ok>0);
 }
