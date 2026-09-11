@@ -85,4 +85,9 @@
 
   // Manual trigger for code that swaps a price without a DOM-significant mutation.
   window.blinkPrice = function (el, dir) { if (el) flash(el, dir) };
+
+  // Adaptive polling: 5s during IST market hours, 20s otherwise.
+  var FAST = 5000, SLOW = 20000;
+  window.marketRefreshMs = function () { return isMarketOpen() ? FAST : SLOW; };
+  window.isMarketOpen = isMarketOpen;
 })();
