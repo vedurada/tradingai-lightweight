@@ -103,7 +103,7 @@ details summary { cursor: pointer; color: var(--green); font-weight: 600; font-s
 .hero-stock .status { color: #cbd5e1; }
 .hero-stock h3 { color: #f59e0b; border-bottom-color: #334155; }
 .stock-card { border-left: 4px solid #f59e0b; }
-.card.stock-card h3 { color: #0f172a; background: #fef3c7; border-left: 3px solid #f59e0b; border-radius: 0 6px 6px 0; }
+.card.stock-card h3 { color: #0f172a; background: transparent; border-left: 3px solid #f59e0b; border-radius: 0 6px 6px 0; }
 
 .nav-dropdown { position: relative; display: inline-block; }
 .nav-dropdown > a { cursor: pointer; }

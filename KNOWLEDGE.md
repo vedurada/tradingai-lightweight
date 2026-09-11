@@ -140,6 +140,13 @@ Every page shares: **AI-Assisted Market Intelligence Platform** header (single-c
 Expiry readout is uniform everywhere: `Expiry: 15 Sep 2026 (5 DTE, WEEKLY)` (index pages, strategies cards, builder header; live NSE `source: NSE` preferred).
 Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; gains green `#15803d` (light `#86efac` on dark heroes) / losses red `#dc2626` (`#fca5a5` on dark) site-wide, with high-contrast pill badges on dark heroes for `+6.18%` etc.
 
+## 12b. Card heading CSS (2026-09-11)
+
+- `.card h3` → dark green hero gradient (`#052e16 → #15803d`) + light `#d1fae5` text, `border-radius: 8px` (global).
+- `.card.stock-card h3` → warm amber `#fef3c7` + dark `#0f172a` text + `#f59e0b` left accent (overrides hero gradient for stock-name cards only).
+- `market.html` JS dynamic stock grid cards use `card.className='card stock-card'` to get the amber style.
+- **Do NOT touch `index.html`** — frozen, user explicitly said not to modify it.
+
 ## 13. Cron (VM, IST)
 
 ```
