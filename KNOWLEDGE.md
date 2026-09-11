@@ -205,3 +205,11 @@ yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundam
 10. **Expiry holidays:** refresh `HOLIDAYS_IST` each January from NSE/BSE circulars.
 11. **API hardening:** systemd unit done; remaining: gunicorn workers (Flask dev server is single-threaded) + response caching for `/api/market` (currently ~270 queries/page-load).
 12. **Auth/admin:** token-gated `/api/*` write endpoints if journaling/notes are added.
+
+---
+
+## AdSense (2026-09-11)
+- Pub ID `ca-pub-2262405054444130`, auto-ads injected in `<head>` of all pages (after GA tag; learn pages had no GA → after `<meta charset>`).
+- Thin-content fix DONE + deployed: 5 policy pages (`about/contact/privacy/terms/disclaimer.html`) with nav + footer links; unique 250–400-word editorial card ("How to read this page") added before `<footer>` on all 34 content pages via `ops/page_content.py` + `ops/insert_content.py`. All 39 pages ≥200 words. sitemap now 37 URLs (policy pages added to `sitemap_gen.py`).
+- `pcr_history` populated on VM via `fo_fetcher.py daily` (40 18 * * 1-5 cron); `/api/pcr-history` verified live.
+- TODO: user requests AdSense review; Bing Webmaster verification still blocked on user login.
