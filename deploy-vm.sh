@@ -31,7 +31,7 @@ rsync -avz --delete \
 
 echo "Files copied successfully"
 
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance flask flask-cors gunicorn==23.0.0 2>&1 | tail -3"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance flask flask-cors && sudo pip3 install gunicorn==23.0.0 2>&1 | tail -3"
 
 # Sync served web root (nginx serves /var/www, repo lives in /opt/tradingai).
 # NOTE: pages reference assets/css/main.css, whose source is static/css/main.css.
