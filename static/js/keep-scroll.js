@@ -24,16 +24,17 @@
     doScroll();
   }
   window.addEventListener('load', doScroll);
-  window.addEventListener('resize', doScroll);
 
-  var tries = 0;
-  var iv = setInterval(function () {
-    doScroll();
-    if (++tries >= 16) clearInterval(iv);
-  }, 250);
+  var lastH = 0;
+  var ro = new ResizeObserver(function () {
+    var h = document.documentElement.scrollHeight || 0;
+    if (h !== lastH) { lastH = h; doScroll(); }
+  });
+  ro.observe(document.documentElement);
 
   var t = null;
   window.addEventListener('scroll', function () {
+    saved = window.pageYOffset || 0;
     clearTimeout(t);
     t = setTimeout(save, 120);
   }, { passive: true });
