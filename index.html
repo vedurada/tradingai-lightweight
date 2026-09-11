@@ -98,7 +98,8 @@ var m=await fetchJSON('market');
 var tiles=document.getElementById('index-tiles');
 if(tiles&&m&&m.instruments){var order=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];var th='';
 for(var oi=0;oi<order.length;oi++){var inst=m.instruments[order[oi]];if(!inst||!inst.quote)continue;var qq=inst.quote;var up=(qq.change||0)>=0;
-th+='<div class="tile"><div class="t-sym">'+order[oi]+'</div><div class="t-price">'+formatPrice(qq.price)+'</div><div style="color:'+(up?'#15803d':'#dc2626')+';font-weight:bold;font-size:0.85rem">'+(up?'+':'')+Number(qq.change_pct||0).toFixed(2)+'%</div></div>';}
+var href=order[oi]==='NIFTY'?'indices/nifty.html':order[oi]==='BANKNIFTY'?'indices/banknifty.html':order[oi]==='FINNIFTY'?'indices/finnifty.html':'indices/sensex.html';
+th+='<div class="tile" style="cursor:pointer" onclick="location.href=\''+href+'\'"><div class="t-sym">'+order[oi]+'</div><div class="t-price">'+formatPrice(qq.price)+'</div><div style="color:'+(up?'#15803d':'#dc2626')+';font-weight:bold;font-size:0.85rem">'+(up?'+':'')+Number(qq.change_pct||0).toFixed(2)+'%</div></div>';}
 var vv=m.instruments.VIX||m.instruments.vix;if(marketVix(m))th+='<div class="tile"><div class="t-sym">INDIA VIX</div><div class="t-price">'+marketVix(m)+'</div><div style="font-size:0.85rem">&nbsp;</div></div>';
 tiles.innerHTML=th;}
 var br=await fetchJSON('breadth');var bb=document.getElementById('breadth-body');
