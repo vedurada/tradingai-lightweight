@@ -15,7 +15,7 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 
 | Item | Value |
 |---|---|
-| VM | 129.159.224.81, Ubuntu 22.04, 1 CPU / 1 GB RAM, TZ Asia/Kolkata |
+| VM | 129.159.224.81, Ubuntu 22.04, 1 CPU / 956MB RAM + 2GB swap, TZ Asia/Kolkata |
 | SSH | `ssh -i ~/.ssh/oci_key ubuntu@129.159.224.81` |
 | Repo | https://github.com/vedurada/tradingai-lightweight |
 | Local dir | `/Users/satya/remove_workspace/tradingai-lightweight` |
@@ -25,6 +25,7 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 | API | Flask `backend/api_server.py` on `127.0.0.1:8000` as systemd unit `tradingai-api` (`Restart=always`, unit in `ops/systemd/`), proxied at `/api/` by nginx; 2-min curl watchdog restarts on hang |
 | Site | https://tradingai.in (real Let's Encrypt cert since 2026-09-10, auto-renew via certbot timer; HTTP 301 → HTTPS; earlier self-signed cert caused browser warnings) |
 | Market hours | 9:30–15:30 IST, Mon–Fri. Cron uses `9-15` hour field as approximation |
+| LLM | Free provider chain (gemini→groq→deepseek→openrouter→rule-based). `SKIP_LLM=1` removed from cron. No API keys on VM; providers skip fast, rule-based used. Add key via `export GEMINI_API_KEY=...` on VM to enable cloud LLM. Ollama installed but too slow on 956MB RAM/no GPU — removed from chain. |
 
 ## 3. Architecture (database-first, layered)
 
@@ -35,7 +36,7 @@ Raw Market Database (SQLite: price_1m/5m/15m/1d, vix_data, option_chain, fundame
    ↓
 Indicators (computed locally: EMA/SMA/VWAP/RSI/MACD/ADX/ATR/Bollinger/Pivot/CPR/S-R) + Regime + Scenarios
    ↓
-Strategy layer (index option spreads | stock BUY/HOLD/EXIT) + AI outlook (rule-based)
+Strategy layer (index option spreads | stock BUY/HOLD/EXIT) + AI outlook (LLM free-chain or rule-based fallback)
    ↓
 Flask API :8000 → nginx /api/ → static HTML + vanilla JS (20s silent refresh, scroll-preserved, no market-hours gate)
 ```
