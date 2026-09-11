@@ -143,7 +143,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(h.includes('STOCK OPTIONS')||h.includes('POSITIONAL')) url='/stock-options.html';
     if(!url) return;
     c.dataset.clickable='1'; c.style.cursor='pointer';
-    c.addEventListener('click',function(e){ if(e.target.closest('button')||e.target.closest('a'))return; location.href=url; });
+    c.addEventListener('click',function(e){ if(e.target.closest('button')||e.target.closest('a')||e.target.closest('.tile'))return; location.href=url; });
   });
 });
 </script>
