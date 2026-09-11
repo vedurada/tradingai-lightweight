@@ -105,9 +105,4 @@ details summary { cursor: pointer; color: var(--green); font-weight: 600; font-s
 .stock-card { border-left: 4px solid #f59e0b; }
 .card.stock-card h3 { color: #0f172a; background: transparent; border-left: 3px solid #f59e0b; border-radius: 0 6px 6px 0; }
 
-.nav-dropdown { position: relative; display: inline-block; }
-.nav-dropdown > a { cursor: pointer; }
-.dropdown-content { display: none; position: absolute; top: 100%; left: 0; background: #f0fdf4; border: 1px solid #86efac; border-radius: 10px; box-shadow: 0 8px 20px rgba(15,23,42,0.12); padding: 0.4rem; min-width: 160px; z-index: 100; }
-.dropdown-content a { display: block; padding: 0.4rem 0.8rem; border-radius: 6px; font-size: 0.85rem; color: #14532d; font-weight: 600; }
-.dropdown-content a:hover { background: #dcfce7; color: #0f172a; }
-.nav-dropdown:hover .dropdown-content { display: block; }
+
