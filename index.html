@@ -87,7 +87,7 @@ var today=new Date().toLocaleDateString('en-GB',{timeZone:'Asia/Kolkata',day:'nu
 var rc=regimeColor(reg.regime);
 el.innerHTML='<div class="status" style="color:#d1fae5">TODAY\u2019S NIFTY MARKET — '+today+'</div>'
 +'<div class="price">'+formatPrice(q.price)+'</div>'
-+'<div style="color:'+(q.change>=0?'#86efac':'#fca5a5')+';font-weight:bold">'+formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)</div>'
++'<div><span class="badge" style="background:'+(q.change>=0?'#dcfce7':'#fee2e2')+';color:'+(q.change>=0?'#14532d':'#7f1d1d')+';font-weight:800;padding:0.3rem 0.7rem;font-size:0.9rem">'+formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)</span></div>'
 +'<div style="margin:0.5rem 0"><span class="badge" style="background:rgba(255,255,255,.2);color:#fff">'+(reg.regime||'N/A').replace(/_/g,' ')+' '+(reg.confidence||0)+'%</span></div>'
 +'<div class="status">Expected range: '+((sup.length&&res.length)?(formatPrice(sup[0])+' – '+formatPrice(res[0])):'—')+'</div>'
 +'<div class="status">Support: '+(sup.slice(0,2).map(formatPrice).join(' / ')||'—')+' &nbsp;|&nbsp; Resistance: '+(res.slice(0,2).map(formatPrice).join(' / ')||'—')+'</div>'

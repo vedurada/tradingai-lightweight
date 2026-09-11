@@ -152,7 +152,7 @@ async function loadNifty(){
   if(!data||!data.quote){setLastUpdated(null,false);return;}
   var q=data.quote,ind=data.indicators||{},reg=data.regime||{},ao=data.ai_outlook||{};
   var priceEl=document.getElementById('nifty-price');if(priceEl)priceEl.textContent=formatPrice(q.price);
-  var chEl=document.getElementById('nifty-change');if(chEl){chEl.style.color=(q.change>=0?'#15803d':'#dc2626');chEl.textContent=formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)';}
+  var chEl=document.getElementById('nifty-change');if(chEl){chEl.style.color=(q.change>=0?'#15803d':'#dc2626');chEl.innerHTML='<span style="background:'+(q.change>=0?'#dcfce7':'#fee2e2')+';color:'+(q.change>=0?'#14532d':'#7f1d1d')+';padding:0.2rem 0.6rem;border-radius:999px;font-weight:800">'+formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)</span>';}
   var hlEl=document.getElementById('nifty-hl');if(hlEl)hlEl.textContent='High '+formatPrice(q.high)+'  Low '+formatPrice(q.low);
   var vx=await fetchJSON('vix');var vprice=vx?(vx.price!=null?vx.price:vx.close):null;var vchg=vx?(vx.change_pct!=null?vx.change_pct:0):0;
   var vEl=document.getElementById('nifty-vix');if(vEl)vEl.textContent=vprice!=null?Number(vprice).toFixed(2):'—';
