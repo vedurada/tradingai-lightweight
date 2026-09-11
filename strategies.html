@@ -185,7 +185,7 @@ function renderAll(){
       var legs=t.legs(A,step);var ok=t.views.indexOf(view)!==-1;
       var legHtml='';for(var li=0;li<legs.length;li++){legHtml+='<div class="status">'+legs[li].a+' '+fmt(legs[li].k)+' '+legs[li].t+'</div>';}
       var be=t.be(A,step);
-      gh+='<div class="card"><h4>'+t.name+' '+(ok?'<span style="color:#15803d">✓</span>':'<span style="color:#64748b">—</span>')+'</h4>'
+      gh+='<div class="card" style="cursor:pointer" onclick="if(event.target.closest(\'a\'))return;location.href=\'strategy-builder.html?index='+ST.index+'&template='+t.id+'\'"><h4>'+t.name+' '+(ok?'<span style="color:#15803d">✓</span>':'<span style="color:#64748b">—</span>')+'</h4>'
         +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(A)+' | Expiry: '+(expShow.expiry_label||'—')+' ('+(expShow.days_to_expiry!=null?expShow.days_to_expiry+' DTE':'—')+(expShow.tenor?', '+expShow.tenor:'')+')</div>'
         +legHtml
         +'<div class="status">Width '+fmt(step)+' pts ≈ ₹'+Number(step*lot).toLocaleString('en-IN')+'/lot</div>'
