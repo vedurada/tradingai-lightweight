@@ -24,7 +24,9 @@ header nav a:nth-child(9) { background: linear-gradient(135deg, #1e3a5f, #3b82f6
 header nav a:nth-child(10) { background: linear-gradient(135deg, #4f46e5, #818cf8); color: #fff; border-color: #4f46e5; } /* Builder */
 header nav a:nth-child(11) { background: linear-gradient(135deg, #475569, #94a3b8); color: #fff; border-color: #475569; } /* Guide */
 header nav a:nth-child(12) { background: linear-gradient(135deg, #334155, #64748b); color: #fff; border-color: #334155; } /* History */
-header nav a:hover { filter: brightness(1.08); transform: translateY(-1px); box-shadow: 0 4px 10px rgba(15,23,42,0.15); }
+header nav a:hover { filter: brightness(1.1); transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 18px rgba(15,23,42,0.22); }
+header nav a:active { transform: translateY(0) scale(0.97); box-shadow: 0 1px 4px rgba(15,23,42,0.15); filter: brightness(0.96); }
+header nav a:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; }
 .cta-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
 .cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.65rem 1.3rem; border-radius: 999px; font-weight: 800; font-size: 0.92rem; text-decoration: none; box-shadow: 0 3px 10px rgba(15,23,42,0.14); transition: all 0.16s ease; letter-spacing: 0.01em; }
 .cta:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15,23,42,0.18); text-decoration: none; filter: brightness(1.05); }
