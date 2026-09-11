@@ -55,6 +55,14 @@
     <div class="card" id="breadth-card" style="margin-top:1rem"><h3>Market Breadth</h3><div id="breadth-body"><div class="status">Loading breadth…</div></div></div>
     <div class="card" id="pnl-card" style="margin-top:1rem"><h3>Today's Paper P&L <span class="status">9:30 → 3:20</span></h3><div id="pnl-body"><div class="status">Loading P&L…</div></div></div>
   </section>
+  <section id="top-widgets">
+    <h2>Top Lists</h2>
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
+      <div class="card" id="top-large-widget"><h3>Top Large Cap</h3><div id="top-large-body"><div class="status">Loading…</div></div><div class="status"><a href="stocks/top-large-cap.html">View all Large Cap →</a></div></div>
+      <div class="card" id="top-mid-widget"><h3>Top Mid/Small Cap</h3><div id="top-mid-body"><div class="status">Loading…</div></div><div class="status"><a href="stocks/top-mid-small.html">View all Mid/Small →</a></div></div>
+      <div class="card" id="top-etf-widget"><h3>Top ETFs</h3><div id="top-etf-body"><div class="status">Loading…</div></div><div class="status"><a href="etfs/top-etfs.html">View all ETFs →</a></div></div>
+    </div>
+  </section>
   <section id="go">
     <div class="card"><h3>Explore TradingAI</h3><div class="cta-row"><a href="today/" class="cta cta-single">🔴 LIVE TODAY →</a><a href="market.html" class="cta cta-single">📊 Full Market Grid →</a><a href="strategies.html" class="cta cta-single">⚡ Strategy Engine →</a><a href="scanner.html" class="cta cta-single">🔍 Scanner →</a></div></div>
   </section>
@@ -77,6 +85,36 @@ var _lastDataTs=null;function fmtIST(ts){try{if(ts==null||ts==='')return null;va
 function startDataRefresh(callback,intervalMs=20000){stopDataRefresh();refreshInterval=setInterval(()=>{callback();},intervalMs);}
 function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
 
+async function loadTopWidgets(){
+var largeEl=document.getElementById('top-large-body'), midEl=document.getElementById('top-mid-body'), etfEl=document.getElementById('top-etf-body');
+try{
+var syms=await fetchJSON('symbols');
+var larges=(syms||[]).filter(s=>s.type==='stock' && (s.category||'').toUpperCase()==='LARGE').map(s=>s.symbol.toLowerCase()).slice(0,12);
+var mids=(syms||[]).filter(s=>['MID','SMALL'].includes((s.category||'').toUpperCase())).map(s=>s.symbol.toLowerCase()).slice(0,12);
+var etfs=['niftybees','bankbees','juniorbees'];
+async function topTable(symbols, el){
+ if(!el) return;
+ var rows=[];
+ for(var i=0;i<Math.min(symbols.length,6);i++){var d=await fetchJSON(symbols[i]); if(!d||!d.quote)continue; rows.push({sym:symbols[i].toUpperCase(),price:d.quote.price,chg:d.quote.change_pct||0});}
+ rows.sort(function(a,b){return (b.chg||0)-(a.chg||0);});
+ var html='<table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr><th style="text-align:left">Symbol</th><th style="text-align:right">Price</th><th style="text-align:right">Chg%</th></tr></thead><tbody>';
+ for(var ri=0;ri<Math.min(rows.length,5);ri++){var r=rows[ri];var c=r.chg>=0?'#15803d':'#dc2626';html+='<tr style="cursor:pointer" onclick="location.href=\'stock.html?symbol='+r.sym+'\'"><td><strong>'+r.sym+'</strong></td><td style="text-align:right">'+fmt(r.price)+'</td><td style="color:'+c+';font-weight:bold;text-align:right">'+(r.chg>=0?'+':'')+r.chg.toFixed(2)+'%</td></tr>';}
+ html+='</tbody></table>';
+ el.innerHTML=html;
+}
+if(largeEl) await topTable(larges, largeEl);
+if(midEl) await topTable(mids, midEl);
+if(etfEl){
+ var erows=[];
+ for(var ei=0;ei<etfs.length;ei++){var ed=await fetchJSON(etfs[ei]); if(!ed||!ed.quote)continue; erows.push({sym:etfs[ei].toUpperCase(),price:ed.quote.price,chg:ed.quote.change_pct||0});}
+ erows.sort(function(a,b){return (b.chg||0)-(a.chg||0);});
+ var ehtml='<table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr><th>ETF</th><th style="text-align:right">Price</th><th style="text-align:right">Chg%</th></tr></thead><tbody>';
+ for(var ei2=0;ei2<erows.length;ei2++){var r2=erows[ei2];var c2=r2.chg>=0?'#15803d':'#dc2626';ehtml+='<tr style="cursor:pointer" onclick="location.href=\'/etfs/top-etfs.html\'"><td><strong>'+r2.sym+'</strong></td><td style="text-align:right">'+fmt(r2.price)+'</td><td style="color:'+c2+';font-weight:bold">'+(r2.chg>=0?'+':'')+r2.chg.toFixed(2)+'%</td></tr>';}
+ ehtml+='</tbody></table>';
+ etfEl.innerHTML=ehtml;
+}
+}catch(e){}
+}
 async function loadTicker(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=await fetchJSON('market');var ib=await fetchJSON('index-breadth');var items=[];if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+formatPrice(q.price)+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
 async function loadHero(){
 var el=document.getElementById('hero-card');if(!el)return;
@@ -119,7 +157,7 @@ function brandBtn(sym,label){sym=(sym||'').toUpperCase();label=label||sym;var b=
 function detailUrl(sym){sym=(sym||'').toUpperCase();if(['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'].includes(sym))return sym==='NIFTY'?'indices/nifty.html':sym==='BANKNIFTY'?'indices/banknifty.html':sym==='FINNIFTY'?'indices/finnifty.html':'indices/sensex.html';return 'stock.html?symbol='+sym;}
 function detailHref(sym){var u=detailUrl(sym);if(location.pathname.includes('/indices/'))return '../'+u;if(location.pathname.includes('/stocks/'))return '../'+u;return u;}
 async function loadDashboard(){const data=await fetchJSON('market');if(!data||!data.instruments){setLastUpdated(null,false);return;}const grid=document.getElementById('market-grid');if(grid){var _sy=window.scrollY;grid.innerHTML='';for(const[symbol,inst]of Object.entries(data.instruments)){const card=document.createElement('div');card.className='card';card.style.cursor='pointer';card.title='View '+symbol+' outlook';card.onclick=function(e){if(e.target.closest('button')||e.target.closest('a'))return;location.href=detailHref(symbol);};const ao=inst.ai_outlook||{};card.innerHTML=`<h3>${brandBtn(symbol,symbol)}</h3><div class="price">${formatPrice(inst.quote?.price)}</div><div style="color:${inst.quote?.change>=0?'#15803d':'#dc2626'}">${formatChange(inst.quote?.change)} (${formatChange(inst.quote?.change_pct)}%)</div><span class="badge" style="background:${regimeColor(inst.regime?.regime)}20;color:${regimeColor(inst.regime?.regime)}">${inst.regime?.regime||'N/A'}</span><div class="status">Support: ${(inst.indicators?.support_resistance?.support||[]).join(', ')||'N/A'}</div><div class="status">Resistance: ${(inst.indicators?.support_resistance?.resistance||[]).join(', ')||'N/A'}</div><div class="status">Strategy: ${inst.strategy?.strategies?.[0]?.strategy||'N/A'}</div><div class="status">Evidence: ${ao.evidence_strength||'N/A'} | Vol: ${ao.volatility_classification||'N/A'} | Structure: ${ao.market_structure||'N/A'}</div><div class="status">Env: ${ao.strategy_environment||'N/A'} | Invalidation: ${ao.invalidation||'N/A'}</div><div class="status">${inst.data_quality||'N/A'}</div>`;grid.appendChild(card);}}const outlook=document.getElementById('outlook-content');if(outlook&&data.ai_outlook)populateAI(outlook,data.ai_outlook);setLastUpdated(data.last_updated,true);window.scrollTo(0,_sy);}
-document.addEventListener('DOMContentLoaded',()=>{loadHero();loadDashboard();loadTicker();startDataRefresh(function(){loadHero();loadDashboard();});setInterval(loadTicker,60000);});
+document.addEventListener('DOMContentLoaded',()=>{loadHero();loadDashboard();loadTicker();loadTopWidgets();startDataRefresh(function(){loadHero();loadDashboard();loadTopWidgets();});setInterval(loadTicker,60000);});
 </script>
 
 <script>
