@@ -67,7 +67,26 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 | `regime.py` | TRENDING_BULLISH/BEARISH, RANGE_BOUND, HIGH_VOLATILITY scoring |
 | `scenarios.py` | Returns **dict** `{bullish, bearish, range, breakout, reversal}` (not a list) |
 | `strategies.py` | `INDEX_SYMBOLS={NIFTY,BANKNIFTY,SENSEX,FINNIFTY}` → option spreads; everything else → `select_stock_outlook()` BUY/HOLD/EXIT with numeric T1/T2/stop from S/R+ATR |
-| `ai_outlook.py` | Rule-based outlook (LLM providers removed after 401s); full JSON stored in `ai_outlooks.outlook` |
+## AI / LLM Outlook
+
+`backend/ai_outlook.py` — `AIOutlookEngine` generates `ai_outlook` JSON per symbol.
+
+**Providers (tried in order, first success wins):**
+| Provider | Model | Key env var | Endpoint |
+|---|---|---|---|
+| Gemini | gemini-2.0-flash | `GEMINI_API_KEY` | Google generative API |
+| Groq | llama-3.3-70b-versatile | `GROQ_API_KEY` | OpenAI-compatible |
+| DeepSeek | deepseek-chat | `DEEPSEEK_API_KEY` | OpenAI-compatible |
+| OpenRouter | google/gemini-flash-1.5 | `OPENROUTER_API_KEY` | OpenAI-compatible |
+| Ollama | qwen2.5 (local) | none | `http://localhost:11434` |
+
+**Fallback chain:** configured provider → each free provider in order → rule-based `_rule_based_outlook()` (always works, no key needed).
+
+**Config:** `config/settings.json` — `llm_provider` (single) or `llm_providers` (list). Keys read from env vars, never committed.
+
+**Caching:** 300s in-memory per symbol. `data_fetcher_db.py` calls `generate()` during store; results persisted to `ai_outlooks` DB table and `data/<symbol>.json`.
+
+**Free tier limits:** Gemini 15 RPM / 1M tokens/day; Groq 30 RPM; DeepSeek generous; OpenRouter free models limited; Ollama unlimited local.
 | `expiry.py` | Per-index expiry rules (NSE=Tuesday, BSE=Thursday; weeklies only NIFTY/SENSEX) |
 | `pnl_tracker.py` | `lock` (9:30) / `close` (15:20) / `backfill [date]` / `archive [days]` |
 | `bhavcopy.py` | NSE official EOD (`ind_close_all`, incl. index P/E) into `price_1d` — `backfill [days]` / `daily` (18:35 cron) / `holidays` (weekly → `nse_holidays`, auto-used by expiry engine) |
@@ -79,7 +98,7 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 
 Prices: `symbols`, `price_1m`, `price_5m`, `price_15m`, `price_1d`, `vix_data`, `etf_data`.
 Derivatives: `option_expiries`, `option_chain` (usually empty — Yahoo has no NSE options).
-Computed: `indicators` (+`support_resistance` JSON col), `market_regime`, `scenarios`, `strategies` (primary flattened; full list JSON inside `legs`), `ai_outlooks` (full JSON in `outlook`), `signals`, `market_breadth`, `sector_data`, `market_snapshots`.
+Computed: `indicators` (+`support_resistance` JSON col), `market_regime`, `scenarios`, `strategies` (primary flattened; full list JSON inside `legs`), `ai_outlooks` (LLM or rule-based, full JSON in `outlook`), `signals`, `market_breadth`, `sector_data`, `market_snapshots`.
 Company: `fundamentals` (merged info + analyst views + statements JSON), `news`, `corporate_actions` (DIVIDEND/SPLIT), `earnings` via fundamentals.
 P&L: `history` (+`entry_time`/`exit_time`/`direction`), `history_archive`, `portfolio` (schema only, unused).
 Ops: `data_status`, `alerts`.
