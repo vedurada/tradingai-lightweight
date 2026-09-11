@@ -45,8 +45,8 @@
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
 
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>STOCK OPTIONS <span class="status">positional · monthly expiry · high-liquidity large caps</span></h2>
-  <div class="card" style="margin-bottom:1rem"><div class="status" id="so-exp">Monthly expiry: —</div>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>STOCK OPTIONS <span class="badge badge-yellow">POSITIONAL</span> <span class="status">monthly · high-liquidity large caps</span></h2>
+  <div class="card hero-stock" style="margin-bottom:1rem"><div class="status" id="so-exp">Monthly expiry: —</div>
   <div class="status">Stock options in India expire <strong>monthly</strong> (last Tuesday, NSE) and are <strong>physically settled</strong> — never hold shorts into expiry week without a settlement plan. Premiums fill live at your broker; ₹ math below is per strike-width.</div></div>
   <div id="so-grid"><div class="card">Loading liquid stocks…</div></div>
   <footer>
@@ -89,7 +89,7 @@ async function loadStocks(){
     var lot=(data.lot&&data.lot.size)||'—';var lotSrc=(data.lot&&data.lot.source)||'config';
     var view=biasOf(data);var structs=structures(view,A,step);
     var chgC=(data.quote.change_pct||0)>=0?'#15803d':'#dc2626';
-    html+='<div class="card"><h3>'+sym+'</h3><div class="price">'+fmt(price)+'</div>'
+     html+='<div class="card stock-card"><h3>'+sym+' <span class="badge" style="background:#fef3c7;color:#92400e">LOT '+lot+' ('+lotSrc+')</span></h3><div class="price">'+fmt(price)+'</div>'
       +'<div style="color:'+chgC+'">'+(data.quote.change>=0?'+':'')+Number(data.quote.change).toFixed(2)+' ('+(data.quote.change_pct>=0?'+':'')+Number(data.quote.change_pct).toFixed(2)+'%)</div>'
       +'<div class="status">View: <strong>'+view+'</strong> | ATM '+fmt(A)+' (step ~'+step+') | Lot '+lot+' ('+lotSrc+')</div>';
     for(var i=0;i<structs.length;i++){var st=structs[i];

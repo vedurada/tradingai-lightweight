@@ -142,14 +142,14 @@ async function loadIndex(){
   var hlEl=document.getElementById('nifty-hl');if(hlEl)hlEl.textContent='High '+formatPrice(q.high)+'  Low '+formatPrice(q.low);
   var vx=await fetchJSON('vix');var vprice=vx?(vx.price!=null?vx.price:vx.close):null;var vchg=vx?(vx.change_pct!=null?vx.change_pct:0):0;
   var vEl=document.getElementById('nifty-vix');if(vEl)vEl.textContent=vprice!=null?Number(vprice).toFixed(2):'—';
-  var vr=vixRegime(vprice);var vrEl=document.getElementById('nifty-vix-regime');if(vrEl)vrEl.innerHTML='<span class="badge" style="background:'+vr[1]+'20;color:'+vr[1]+'">'+vr[0]+'</span> <span class="status">('+formatChange(vchg)+'%)</span>';
+  var vr=vixRegime(vprice);var vrEl=document.getElementById('nifty-vix-regime');if(vrEl)vrEl.innerHTML='<span class="badge" style="background:'+vr[1]+'20;color:'+vr[1]+'">'+vr[0]+'</span> <span class="status" style="color:'+(vchg>=0?'#15803d':'#dc2626')+'">('+formatChange(vchg)+'%)</span>';
   var bias=ao.directional_bias||ao.market_regime||reg.regime||'—';
   var head=document.getElementById('nifty-outlook-head');if(head){head.textContent=bias.replace(/_/g,' ');head.style.color=regimeColor(bias);}
   var sr=ind.support_resistance||{support:[],resistance:[]};var sup=sr.support||[],res=sr.resistance||[];
   var sEl=document.getElementById('nifty-sup');if(sEl)sEl.textContent=sup.length?sup.map(formatPrice).join(' / '):'—';
   var rEl=document.getElementById('nifty-res');if(rEl)rEl.textContent=res.length?res.map(formatPrice).join(' / '):'—';
   var rgEl=document.getElementById('nifty-range');if(rgEl)rgEl.textContent=(sup.length&&res.length)?('Expected Range: '+formatPrice(sup[0])+' – '+formatPrice(res[0])):'';
-  var why=[];if(ind.vwap)why.push(chip('VWAP '+(q.price>=ind.vwap?'↑':'↓')+' '+formatPrice(ind.vwap),q.price>=ind.vwap));if(ind.rsi!=null)why.push(chip('RSI '+Number(ind.rsi).toFixed(0),ind.rsi>=50&&ind.rsi<=70));if(ind.adx!=null)why.push(chip('ADX '+Number(ind.adx).toFixed(0)+(ind.adx>25?' trend':' range'),ind.adx>25));why.push(chip('VIX '+(vchg>=0?'↑':'↓')+' '+formatChange(vchg)+'%',vchg<0));if(ao.evidence_strength!=null)why.push(chip('Evidence '+ao.evidence_strength,ao.evidence_strength>=0.5));
+  var why=[];if(ind.vwap)why.push(chip('VWAP '+(q.price>=ind.vwap?'↑':'↓')+' '+formatPrice(ind.vwap),q.price>=ind.vwap));if(ind.rsi!=null)why.push(chip('RSI '+Number(ind.rsi).toFixed(0),ind.rsi>=50&&ind.rsi<=70));if(ind.adx!=null)why.push(chip('ADX '+Number(ind.adx).toFixed(0)+(ind.adx>25?' trend':' range'),ind.adx>25));why.push(chip('VIX '+(vchg>=0?'↑':'↓')+' '+formatChange(vchg)+'%',vchg>=0));if(ao.evidence_strength!=null)why.push(chip('Evidence '+ao.evidence_strength,ao.evidence_strength>=0.5));
   var whyEl=document.getElementById('nifty-why');if(whyEl)whyEl.innerHTML=why.join('');
   var oEl=document.getElementById('nifty-outlook');if(oEl)oEl.innerHTML='<p>'+(ao.market_summary||'N/A')+'</p><div class="status">Bias: '+(ao.directional_bias||'N/A')+' | Conf: '+(ao.confidence||'N/A')+'% | Vol: '+(ao.volatility_classification||'N/A')+' | Structure: '+(ao.market_structure||'N/A')+'</div>';
   var exp=data.expiry||{};var atm=Math.round(q.price/STEP)*STEP;

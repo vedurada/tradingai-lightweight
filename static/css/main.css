@@ -71,3 +71,8 @@ details summary { cursor: pointer; color: var(--green); font-weight: 600; font-s
 .ticker-track { display: inline-flex; gap: 2.5rem; white-space: nowrap; padding: 0.5rem 1rem; animation: tickscroll 45s linear infinite; color: #e2e8f0; font-size: 0.85rem; }
 .ticker-wrap:hover .ticker-track { animation-play-state: paused; }
 @keyframes tickscroll { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+.hero-stock { background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); border: none; color: #fff; }
+.hero-stock .status { color: #cbd5e1; }
+.hero-stock h3 { color: #f59e0b; border-bottom-color: #334155; }
+.stock-card { border-left: 4px solid #f59e0b; }
+.stock-card h3 { color: #1e3a5f; border-bottom-color: #fef3c7; }
