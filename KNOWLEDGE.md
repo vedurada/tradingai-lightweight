@@ -1,7 +1,7 @@
 # TradingAI.in — Project Knowledge
 
 > Living document. Update it whenever architecture, rules, or roadmap change.
-> Last updated: 2026-09-10.
+> Last updated: 2026-09-11.
 
 ## 1. What this is
 
@@ -130,8 +130,15 @@ Health, symbols, price[s], vix(+history), indicators, regime(s), strategy/strate
 
 ## 12. Frontend (static HTML + inline JS, 30s refresh, no time gate)
 
-`index.html` (dashboard), `market.html` (grid), `indices/nifty.html`, `indices/banknifty.html`, `scanner.html` (dynamic symbols, cap + Buy/Hold/Exit + regime filters, Target/Stop on stock cards), `strategies.html` (indexes only: nifty/banknifty/finnifty/sensex), `history.html` (P&L table), `stocks/reliance.html` (legacy single-stock page).
-Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; wrapper scrolls.
+Every page shares: AI-Assisted Market Intelligence Platform header (with live IST clock top-right, pill-button nav), scrolling ticker tape (60s loop, price + NSE A/D, pause on hover, on **every** page), favicon `favicon.svg` + `apple-touch-icon.svg` + header brand mark (`header h1 img`, 22×22 rounded), and centered `Data as of ... IST` bar (true IST via `Intl`, data-time from quote candle, red "Update failed" on fetch error).
+
+`index.html` — gradient **TODAY'S NIFTY** hero (price + change light-green/red on dark, regime badge, expected range, S/R, VIX+VWAP, market_summary) + tiles (NIFTY/BANKNIFTY/FINNIFTY/SENSEX + VIX) + breadth bar + P&L glance + eye-catchy CTA row (🔴 LIVE TODAY / Full Market Grid / Strategy Engine / Scanner).
+`market.html` — **MARKET PULSE** gradient hero with 4 tiles (NIFTY/BANKNIFTY/SENSEX/VIX — VIX now shows change red/green like the others) + grid.
+`indices/nifty.html` `banknifty.html` `finnifty.html` `sensex.html` — hero price strip (`card hero`) + 🧠 AI MARKET OUTLOOK (green left border), 📍 KEY LEVELS (amber), 📈 Chart + OPTIONS INTELLIGENCE side-by-side, ⚡ AI INTRADAY STRATEGY (blue), MARKET INTERNALS, WHAT CHANGED timeline, HISTORICAL PERFORMANCE. All four share the card-accent system.
+`scanner.html` / `stock-options.html` / `history.html` — full-width tables (`.pnl-full` / `.scan-table` fixed layout, no horizontal scroll bleed). Scanner: summary hero + sortable table (Symbol/Cap/Price/Chg%/Regime/Signal/Invest/Target/Stop/S-R). Stock-options: **navy `hero-stock` + amber `stock-card`** (positional, monthly last-Tuesday, physical) — visually distinct from index green hero.
+`strategies.html` — strategy engine header now `hero`; `strategies-guide.html` / `strategy-builder.html` / `learn/*` / `tools/position-size.html` follow the same header/ticker/clock shell.
+Expiry readout is uniform everywhere: `Expiry: 15 Sep 2026 (5 DTE, WEEKLY)` (index pages, strategies cards, builder header).
+Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; wrapper scrolls. Gains green `#15803d` (light `#86efac` on dark heroes) / losses red `#dc2626` (`#fca5a5` on dark) site-wide.
 
 ## 13. Cron (VM, IST)
 
@@ -141,6 +148,8 @@ Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; w
 0 */2 9-15 * * 1-5  alert.py
 30 9 * * 1-5        pnl_tracker.py lock       (9:30 entries)
 20 15 * * 1-5       pnl_tracker.py close      (3:20 exits)
+35 9 * * 1-5        daily_page.py morning     (→ market/nifty-outlook-YYYY-MM-DD.html)
+35 15 * * 1-5       daily_page.py close + sitemap_gen.py (close report + sitemap)
 35 18 * * 1-5       bhavcopy.py daily         (NSE EOD backfill)
 30 8 * * 1           bhavcopy.py holidays      (weekly holiday sync)
 0 2 1 * *           pnl_tracker.py archive 365 (monthly)
@@ -150,7 +159,7 @@ Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; w
 
 ## 14. Deploy (`deploy-vm.sh`)
 
-rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync → db_schema → background fetch → install `ops/systemd/tradingai-api.service` + `systemctl restart` → rewrite crontab → `sudo systemctl reload nginx`. Health curl has `|| true` so a slow start can't abort deploy.
+rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (incl. `favicon.svg`/`apple-touch-icon.svg`, `robots.txt`, `sitemap.xml`, `today/`, `learn/`, `tools/`, `market/`, each `indices/*`, `stock-options.html`; missing one from the `cp` list leaves a stale page live) → db_schema → background fetch → install `ops/systemd/tradingai-api.service` + `systemctl restart` → rewrite crontab → `sudo systemctl reload nginx`. Health curl has `|| true` so a slow start can't abort deploy.
 
 ## 15. Bug log (recurring traps)
 
@@ -164,6 +173,8 @@ rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync �
 - `ticker.info` numeric-only dict is NOT a quote (no `price` key) — always build quotes via `fetch_quote` or 1m candles.
 - YF constants were inverted (`YF_ETFS` keys) and VIX was US `^VIX`; correct: `^INDIAVIX`, `^CNXFIN` for FINNIFTY, `*.NS` for ETFs.
 - `nohup ... &` without `setsid` dies with the SSH session. API now runs under systemd; never start it by hand with nohup.
+- Deploy `cp` list is explicit, not wildcard — adding a new top-level page (e.g. `stock-options.html`) without listing it leaves the old version live. Always extend the web-root sync line + `sitemap_gen.py` evergreen list.
+- Ticker without `curl_cffi` session warm-up gets 403 from NSE; breadth silently stays stale.
 
 ## 16. Data sources & persistence policy
 
@@ -173,9 +184,10 @@ yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundam
 ## 17. Analytics, SEO & discoverability
 
 - **GA4:** measurement ID `G-MJ3X88QYEL` (stream "tradingai" → https://tradingai.in), gtag.js snippet first in `<head>` of all 11 pages (verified served). If GA4 says "data collection isn't active", it means zero hits arrived — check with an adblock-free visit + Realtime report (standard reports lag 24–48h); Tag Assistant confirms firing.
-- **SEO foundation:** `robots.txt` (allows all but `/api/`, `/data/`), `sitemap.xml` (10 evergreen URLs) + `backend/sitemap_gen.py` (adds dated `market/*.html` pages; run after publishing + weekly). Deploy syncs both + `today/` to web root (sync once silently skipped them — covered by deploy now).
-- **Meta:** unique OG title/description + canonical + JSON-LD (Organization everywhere; WebSite + BreadcrumbList) on all pages.
-- **`/today/` terminal:** pre-open checklist / live mode / close report, session-aware by IST.
+- **SEO foundation:** `robots.txt` (allows all but `/api/`, `/data/`), `sitemap.xml` (10+ evergreen URLs) + `backend/sitemap_gen.py` (adds dated `market/*.html` pages; run after publishing + weekly). Deploy syncs both + `today/`/`learn/`/`tools/`/`market/` to web root.
+- **Meta & brand:** unique OG title/description + canonical + JSON-LD (Organization everywhere; WebSite + BreadcrumbList) on all pages; SVG favicon + apple-touch-icon + header `<h1><img>` brand mark on every page (added 2026-09-11).
+- **`/today/` terminal:** pre-open checklist / live mode / close report, session-aware by IST, ticker + clock.
+- **GA4:** tag `G-MJ3X88QYEL` on every page (verified 200 for `gtag/js`); owner saw "Data collection isn't active" — means zero hits arrived, not a tag bug (ad-blockers kill gtag, Realtime shows visits in ~30s, standard reports lag 24–48h).
 - **Pending owner actions:** Google Search Console + Bing Webmaster verification, sitemap submit, IndexNow on publish.
 
 ## 18. Future implementations (roadmap)
