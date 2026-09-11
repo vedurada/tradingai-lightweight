@@ -4,7 +4,7 @@
 */5 9-15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 monitor.py >> /opt/tradingai/logs/monitor.log 2>&1
 0 */2 9-15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 alert.py >> /opt/tradingai/logs/alerts.log 2>&1
 # Self-healing: systemd restarts the API on crash/reboot; this catches hangs (process alive but not answering).
-*/2 * * * * /usr/bin/curl -sf --max-time 10 http://127.0.0.1:8000/api/health > /dev/null || /usr/bin/sudo /usr/bin/systemctl restart tradingai-api
+*/2 * * * * /opt/tradingai/ops/self-heal.sh >> /opt/tradingai/logs/self-heal.log 2>&1
 30 9 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py lock >> /opt/tradingai/logs/pnl.log 2>&1
 20 15 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 pnl_tracker.py close >> /opt/tradingai/logs/pnl.log 2>&1
 35 9 * * 1-5 cd /opt/tradingai/backend && /usr/bin/python3 daily_page.py morning --webroot /var/www/tradingai.in/html >> /opt/tradingai/logs/daily.log 2>&1
