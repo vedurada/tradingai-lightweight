@@ -187,7 +187,8 @@ yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundam
 - **Meta & brand:** unique OG title/description + canonical + JSON-LD (Organization everywhere; WebSite + BreadcrumbList) on all pages; SVG favicon + apple-touch-icon + header `<h1><img>` brand mark on every page (added 2026-09-11).
 - **`/today/` terminal:** pre-open checklist / live mode / close report, session-aware by IST, ticker + clock.
 - **GA4:** `G-MJ3X88QYEL` on every page (verified 200 for `gtag/js`); "Data collection isn't active" = zero hits arrived, not a tag bug (ad-blockers kill gtag, Realtime shows visits in ~30s, standard reports lag 24–48h).
-- **Pending owner actions:** Google Search Console + Bing Webmaster verification, sitemap submit, IndexNow on publish.
+- **Google accounts (verified 2026-09-11):** Domain `tradingai.in` bought on GoDaddy with Gmail A; **Search Console is verified with that same Gmail A** (DNS TXT) and sitemap `https://tradingai.in/sitemap.xml` submitted there. AdSense/sitemap Google account is Gmail B — Gmail B added as **Owner** in Search Console (`Settings → Users and permissions → Add user → Owner`) so both see indexing + AdSense linkage. No domain move needed.
+- **Pending owner actions:** Bing Webmaster verification, IndexNow on publish.
 
 ## 18. Future implementations (roadmap)
 
