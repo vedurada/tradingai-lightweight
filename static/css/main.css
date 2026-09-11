@@ -37,7 +37,8 @@ a:hover { text-decoration: underline; }
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1rem; }
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 1.1rem 1.2rem; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.06); transition: box-shadow 0.15s ease, transform 0.15s ease; }
 .card:hover { box-shadow: 0 6px 18px rgba(15, 23, 42, 0.10); }
-.card h3 { font-size: 0.95rem; font-weight: 700; margin: 0 0 0.7rem; padding: 0.5rem 0.75rem; background: linear-gradient(135deg, #052e16 0%, #15803d 100%); color: #d1fae5; border-radius: 8px; }
+.card h3 { font-size: 0.95rem; font-weight: 700; margin: 0 0 0.7rem; padding: 0.5rem 0.75rem; background: #f0fdf4; color: #14532d; border-left: 3px solid #15803d; border-radius: 0 6px 6px 0; }
+.hero h3 { background: linear-gradient(135deg, #052e16 0%, #15803d 100%); color: #d1fae5; border-left: none; border-radius: 8px; }
 .card h4 { color: var(--ink); margin: 0.6rem 0 0.3rem; }
 .price { font-size: 2rem; font-weight: 800; color: var(--ink); font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
 @keyframes blinkUp { 0% { background-color: rgba(34,197,94,0.28); } 100% { background-color: transparent; } }
@@ -103,7 +104,7 @@ details summary { cursor: pointer; color: var(--green); font-weight: 600; font-s
 .hero-stock .status { color: #cbd5e1; }
 .hero-stock h3 { color: #f59e0b; border-bottom-color: #334155; }
 .stock-card { border-left: 4px solid #f59e0b; }
-.stock-card h3 { color: #f59e0b; background: linear-gradient(135deg, #1e3a5f 0%, #0f172a 100%); }
+.stock-card h3 { color: #0f172a; background: #fef3c7; border-left-color: #f59e0b; }
 
 .nav-dropdown { position: relative; display: inline-block; }
 .nav-dropdown > a { cursor: pointer; }
