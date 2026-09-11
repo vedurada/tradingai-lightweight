@@ -4,10 +4,14 @@ import json
 import logging
 import os
 import re
+import requests
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, Optional
 
 logger = logging.getLogger("tradingai.ai")
+
+
+FREE_PROVIDERS = ["gemini", "groq", "deepseek", "openrouter", "ollama"]
 
 
 class AIOutlookEngine:
@@ -86,7 +90,106 @@ Regime: {data.get('regime', 'N/A')}
 Return valid JSON with: asset, date, market_regime, directional_bias, confidence, evidence_strength, volatility_classification, market_structure, market_summary, trend_analysis, momentum_analysis, volatility_analysis, support_levels, resistance_levels, options_analysis, bullish_scenario, bearish_scenario, range_scenario, primary_strategy, alternative_strategies, intraday_plan, no_trade_conditions, strategy_environment, invalidation, risk_warnings, data_quality, generated_at"""
 
     def _call_llm_chain(self, prompt: str, data: dict) -> dict:
+        providers = self._load_providers()
+        for name in providers:
+            try:
+                result = self._call_provider(name, prompt)
+                if result:
+                    logger.info(f"LLM {name} ok for {data.get('symbol', '?')}")
+                    return result
+            except Exception as e:
+                logger.warning(f"LLM {name} failed: {e}")
         return self._rule_based_outlook(data)
+
+    def _load_providers(self) -> list[str]:
+        try:
+            with open("config/settings.json") as f:
+                cfg = json.load(f)
+            p = cfg.get("llm_provider", "")
+            if p:
+                return [p]
+            return cfg.get("llm_providers", FREE_PROVIDERS)
+        except Exception:
+            return FREE_PROVIDERS
+
+    def _call_provider(self, name: str, prompt: str) -> Optional[dict]:
+        handlers = {
+            "gemini": self._call_gemini,
+            "groq": self._call_groq,
+            "deepseek": self._call_deepseek,
+            "openrouter": self._call_openrouter,
+            "ollama": self._call_ollama,
+        }
+        fn = handlers.get(name)
+        if not fn:
+            return None
+        return fn(prompt)
+
+    def _parse_json(self, text: str) -> Optional[dict]:
+        text = re.sub(r"```(?:json)?", "", text)
+        text = text.strip()
+        start = text.find("{")
+        end = text.rfind("}")
+        if start == -1 or end == -1 or end <= start:
+            return None
+        text = text[start:end + 1]
+        try:
+            obj = json.loads(text)
+            return obj if isinstance(obj, dict) else None
+        except json.JSONDecodeError:
+            return None
+
+    def _post(self, url: str, body: dict, headers: dict[str, str], timeout: int = 15) -> Optional[dict]:
+        r = requests.post(url, json=body, headers=headers, timeout=timeout)
+        r.raise_for_status()
+        return r.json()
+
+    def _call_gemini(self, prompt: str) -> Optional[dict]:
+        key = os.environ.get("GEMINI_API_KEY", "")
+        if not key:
+            return None
+        url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key={key}"
+        body = {"contents": [{"role": "user", "parts": [prompt]}]}
+        resp = self._post(url, body, {}, timeout=15)
+        text = resp["candidates"][0]["content"]["parts"][0]["text"]
+        return self._parse_json(text)
+
+    def _call_groq(self, prompt: str) -> Optional[dict]:
+        key = os.environ.get("GROQ_API_KEY", "")
+        if not key:
+            return None
+        url = "https://api.groq.com/openai/v1/chat/completions"
+        body = {"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}
+        resp = self._post(url, body, {"Authorization": f"Bearer {key}"}, timeout=15)
+        text = resp["choices"][0]["message"]["content"]
+        return self._parse_json(text)
+
+    def _call_deepseek(self, prompt: str) -> Optional[dict]:
+        key = os.environ.get("DEEPSEEK_API_KEY", "")
+        if not key:
+            return None
+        url = "https://api.deepseek.com/v1/chat/completions"
+        body = {"model": "deepseek-chat", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}
+        resp = self._post(url, body, {"Authorization": f"Bearer {key}"}, timeout=15)
+        text = resp["choices"][0]["message"]["content"]
+        return self._parse_json(text)
+
+    def _call_openrouter(self, prompt: str) -> Optional[dict]:
+        key = os.environ.get("OPENROUTER_API_KEY", "")
+        if not key:
+            return None
+        url = "https://openrouter.ai/api/v1/chat/completions"
+        body = {"model": "google/gemini-flash-1.5", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}
+        resp = self._post(url, body, {"Authorization": f"Bearer {key}", "HTTP-Referer": "tradingai.in", "X-Title": "TradingAI"}, timeout=15)
+        text = resp["choices"][0]["message"]["content"]
+        return self._parse_json(text)
+
+    def _call_ollama(self, prompt: str) -> Optional[dict]:
+        url = "http://localhost:11434/api/generate"
+        body = {"model": "qwen2.5", "prompt": prompt, "stream": False, "options": {"temperature": 0.1}}
+        resp = self._post(url, body, {}, timeout=30)
+        text = resp["response"]
+        return self._parse_json(text)
 
     def _rule_based_outlook(self, data: dict) -> dict:
         price = data.get("price", 0)
@@ -144,4 +247,3 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
             "data_quality": data.get("data_quality", "PARTIAL"),
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
-
