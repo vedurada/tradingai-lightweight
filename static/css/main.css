@@ -87,7 +87,7 @@ details summary { cursor: pointer; color: var(--green); font-weight: 600; font-s
 .ticker-wrap { overflow: hidden; background: linear-gradient(90deg, #0f172a, #1e293b); border-radius: 10px; margin-bottom: 1rem; box-shadow: 0 2px 8px rgba(15, 23, 42, 0.25); border: 1px solid #1e293b; }
 .hero { background: linear-gradient(135deg, #052e16 0%, #15803d 100%); border: none; color: #fff; }
 .hero .price { color: #fff; }
-.hero .status { color: #d1fae5; }
+.hero .status { color: #fff; }
 .hero h2, .hero h3, .hero label { color: #d1fae5; }
 .hero select, .hero input { background: #fff; color: #0f172a; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; margin-top: 1rem; }
