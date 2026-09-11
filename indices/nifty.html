@@ -51,7 +51,11 @@
     <a href="../news/index.html">News</a>
     <a href="../queries/index.html">Queries</a>
     <a href="../history.html">History</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -135,9 +139,17 @@
     <div id="nifty-perf" class="status">—</div>
   </div>
 
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>This page is the full TradingAI read on the NIFTY 50. Everything on it — the intraday chart, key S/R levels, India VIX, PUT-CALL ratio, max pain, the AI outlook and the recommended strategy — comes from the same automatic pipeline: publicly available NSE data in, structured analysis out. It is the flagship example of how the platform thinks.</p>
+      <p>The sections reinforce one another. The candlestick chart shows where price has actually traded and how far it has drifted from the open. The key levels turn that drift into R1, R2, S1 and S2 levels you can plan around. VIX tells you whether the market is priced for calm or for a shock. And the options box summarises where the big money sits: heavy open interest and the max-pain strike offer a view of what the expiry might 'want' to do. Reading the chart, levels and options together is more informative than any single number.</p>
+      <p>During market hours the page refreshes on a fast cycle, and price, levels and PCR figures are recomputed from the live feed. The strategy line labels the optical trade the model would consider under the current regime — and it will honestly say NO TRADE when signals conflict.</p>
+      <p>This is automated research, not advice, and NIFTY derivatives risk losing the entire premium and more. Max-pain and PCR are end-of-day constructs and should not be read as guarantees. Verify data with your broker and decide for yourself.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';

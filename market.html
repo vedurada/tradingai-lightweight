@@ -50,7 +50,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -59,9 +63,17 @@
   <div class="card hero" id="market-hero" style="margin-bottom:1rem"><div class="status">Loading market pulse…</div></div>
   <h2>Market Overview</h2>
   <div id="market-grid" class="grid"></div>
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The market page is the full breadth-of-market dashboard. Where the home page shows highlights, this page lays out the complete picture: every index we track, real-time price and percent change, the advance/decline ratio across indices, and a granular card for each instrument with support-resistance zones, VWAP, RSI and the current regime.</p>
+      <p>A quick read of the grid tells a story in seconds: how many index cards are green or red, how far prices sit from their VWAP, and whether the day's move is a trending one (strong ADX) or a churn around a mean (weak ADX). The advance/decline strip at the top is an especially useful breadth check — it shows whether an index move is broad-based or narrow, which changes how much weight you should give to the move.</p>
+      <p>The data here is the same feed that powers the individual index pages, so the dashboard is your best 'at a glance' layer before you drill into NIFTY or BANKNIFTY for a structured outlook. During trading hours prices blink on every update so you can watch the day develop without reloading. After hours the page holds the close, and historical context stays available from the stored candles.</p>
+      <p>As with every page on TradingAI, the dashboard is generated from public market data by software and is provided for information and research. It is not advice to buy or sell anything. Use the page to understand the market's structure, then carry that understanding to your own decisions. For definitions of the indicators you see here, visit the Learn hub.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';

@@ -50,7 +50,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -81,9 +85,17 @@
   </div>
   <div class="card" style="margin-bottom:1rem"><div class="status">Before sizing: <a href="tools/position-size.html">Position size calculator</a> · <a href="learn/option-greeks.html">Greeks refresher</a></div></div>
   <div id="b-out"></div>
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The strategy builder is an interactive calculator that shows you the payoff of an options position before you commit to it. You pick a symbol, choose a strategy (or build legs yourself), and the builder computes profit and loss against the index price using the nearest available strike table. It is the sandbox where 'what if this happens?' questions get answered numerically.</p>
+      <p>Playing with the builder is the fastest way to understand options risk. Push the curve: what happens to a bull call spread if the index falls 500 points? Where does an iron condor start losing? How fast does a long straddle decay if nothing happens? Because the payoff lines are drawn from your chosen strikes, the tool makes the abstract math of options tangible.</p>
+      <p>The builder uses live index levels to build the strike table and approximate premiums, which is a planning aid rather than a quote. Real order premiums fill at your broker and depend on bid-ask, volatility and time to expiry, so the rupee values here are directional estimates — always confirm the actual premium when you place the order.</p>
+      <p>No calculator can promise a real-world outcome. Options carry substantial and often uncapped risk, especially short legs, and payoff charts assume no slippage or early assignment. Use the builder to understand the shape of a position's risk; take responsibility for the real trade yourself.</p>
+  </div>
+<footer>
     <p>Strikes are computed live from the latest index price; premiums fill at your broker when you place the order, so ₹ profit/loss depends on the actual net premium. Lot sizes change — verify with your broker. TradingAI provides decision-support, not guaranteed signals.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';

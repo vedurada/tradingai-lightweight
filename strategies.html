@@ -50,7 +50,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -107,7 +111,15 @@
     <div id="e-perf" class="status">Loading…</div>
   </div>
 
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>Strategies is where TradingAI translates a market read into a structured options plan. Based on the computed regime for each index — trending, range-bound or volatile — the page selects an appropriate options structure (for example a vertical spread for a moderate trend, or a defined-risk premium-selling approach when volatility is high), shows the legs, and links each idea to the payoff builder.</p>
+      <p>The logic is deliberately conservative. The system prefers defined-risk structures over naked premium selling, and it refuses to suggest a trade at all when the signals disagree. That is by design: in an automated service, the costliest failure is suggesting a precise trade on top of ambiguous data. When the page says NO TRADE, it is protecting you from an unreliable read, not being shy.</p>
+      <p>Each strategy row links to the guide so you can read the mechanics of the structure and to the builder so you can see the payoff profile at any strike you choose. Studying why a structure fits a regime — and when it breaks — is the fastest way to make these tools your own rather than taking them at face value.</p>
+      <p>Strategies are generated from public end-of-day and intraday data and may be delayed by the feed. They are research illustrations, not recommendations and not personalised advice. Options risk losing the entire premium and more. Verify premiums, margins and lot sizes with your broker before acting.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Options involve substantial risk. No structure guarantees profit. <a href="strategies-guide.html">Strategy definitions →</a> <a href="strategy-builder.html">Custom builder →</a></p>
   </footer>
 </main>

@@ -47,6 +47,11 @@ EVERGREEN = [
     ("learn/cpr.html", "monthly", "0.6"),
     ("learn/option-greeks.html", "monthly", "0.6"),
     ("tools/position-size.html", "monthly", "0.7"),
+    ("about.html", "monthly", "0.3"),
+    ("contact.html", "monthly", "0.3"),
+    ("privacy.html", "monthly", "0.3"),
+    ("terms.html", "monthly", "0.3"),
+    ("disclaimer.html", "monthly", "0.3"),
 ]
 
 DAILY_GLOBS = ("market/nifty-outlook-*.html", "market/nifty-close-*.html")

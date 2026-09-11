@@ -50,7 +50,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -81,9 +85,17 @@
   </div>
   <div id="stock-modal" class="card" style="display:none;position:fixed;inset:10% 5% auto 5%;max-height:75vh;overflow:auto;z-index:100;box-shadow:0 12px 32px rgba(15,23,42,0.25)"><div style="display:flex;justify-content:space-between;align-items:center"><h3 id="modal-sym">—</h3><button onclick="document.getElementById('stock-modal').style.display='none'" style="cursor:pointer">✕</button></div><div id="modal-body"><div class="status">Loading…</div></div></div>
   <div id="scanner-grid" class="full-list"></div>
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The scanner page ranks the stocks TradingAI follows using a consistent, number-based framework rather than opinion. Each row shows the key indicators that drive our read of that stock — trend strength (ADX), momentum (RSI), position versus the day's VWAP, and the computed regime — so you can sweep the whole universe in seconds and shortlist names that fit your style.</p>
+      <p>A good scan session asks specific questions. Are there many names pressing to new intraday highs with rising momentum (a healthy broad tape), or is breadth thin and the strength concentrated in a handful of large-caps? Which stocks are trending cleanly (high ADX) versus chopping sideways where an entry carries more noise? Keeping those questions in mind makes the scanner a triage tool instead of a noise generator.</p>
+      <p>You can filter the list live by regime, sector or signal type. Clicking a symbol takes you to that stock's detailed page with its support and resistance, VWAP and full technical picture, so the scanner is designed as the 'wide net' that feeds deeper single-stock analysis.</p>
+      <p>As always, the output is computed automatically from public market data and is for research, not a recommendation. Scans describe what the data shows right now; they cannot know your risk tolerance or horizon. Verify levels before trading and treat the rows as questions worth investigating, not as instructions.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';

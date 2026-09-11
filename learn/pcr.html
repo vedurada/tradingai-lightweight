@@ -39,7 +39,11 @@
     <a href="../news/index.html">News</a>
     <a href="../queries/index.html">Queries</a>
     <a href="../history.html">History</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
@@ -49,7 +53,15 @@
 <div class="card"><h3>OI vs volume PCR</h3><div class="status">OI-based PCR reflects positioning; volume PCR reflects today's urgency. TradingAI uses OI PCR for bias and volume PCR for confirmation.</div></div>
 <div class="card"><h3>Limits</h3><div class="status">PCR alone never triggers a trade on TradingAI — it is one vote alongside regime, VWAP, breadth and VIX.</div></div>
 <div class="card"><div class="status">Next: <a href="../strategy-builder.html">Practice in the Builder</a> · <a href="../strategies.html">Strategy engine</a> · <a href="../strategies-guide.html">Strategy definitions</a></div></div>
-  <footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The Put-Call Ratio (PCR) lesson explains how derivative positioning can be read from options open interest. A higher PCR means puts are being accumulated relative to calls — often interpreted as caution — while a lower PCR points to call-heavy positioning. TradingAI computes PCR from the end-of-day options bhavcopy and shows it on the PCR page and index dashboards.</p>
+      <p>The article carefully explains the two common uses of PCR — as a contrarian sentiment gauge (extreme readings) and as a technical backdrop (open interest concentration) — and warns against a simple 'never call bottoms' rule. It also explains why the ratio varies by expiry and by instrument and why reading it involves the full option chain, not one number.</p>
+      <p>Combine the lesson with the live PCR page, which shows the ratio, max pain, and top open-interest strikes for NIFTY, BANKNIFTY and FINNIFTY, and with the option-chain lesson to understand the layout of puts and calls at each strike.</p>
+      <p>This is education, not tradeable advice. PCR is measured on close-of-day data, can lag the market, and is one input among many. Learn the concept, watch how it behaves across regimes, and never trade a single indicator.</p>
+  </div>
+<footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();</script>
 <script>

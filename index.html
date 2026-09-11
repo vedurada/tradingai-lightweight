@@ -50,7 +50,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -96,9 +100,17 @@
     </div>
   </section>
   <!-- AI outlook now lives inside the hero card; remove duplicate raw block -->
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>TradingAI is a free, fully automatic market-intelligence service for the Indian stock market. This home page is the control room: from here you can reach the intraday outlook for NIFTY, BANKNIFTY, FINNIFTY and SENSEX, the broad-market dashboard, an equity scanner, options strategies, PCR and max-pain analysis, mutual fund snapshots, and a growing education library.</p>
+      <p>Every number on the site is computed from public Indian market data — index levels, option open interest, breadth, VWAP, RSI, ADX and the India VIX — by a rule-based pipeline. Those raw figures become a 'regime' (trending up, trending down, range-bound or volatile) and that regime drives the strategies you see on the index pages. No editorial opinion is involved: what you see is a reproducible reading of the data at that moment.</p>
+      <p>The portal cards below update through the trading day. During market hours they refresh on a fast cycle so the live prices visibly blink whenever a quote ticks up or down; after the close they settle to the day's final values. Because everything is computed server-side from stored candles, the same page works offline or shows historical context whenever the market feed is delayed.</p>
+      <p>We publish this for free and keep the methodology transparent. If a level, NAV or scanner row looks wrong, tell us via the contact page — data pulls from public feeds are occasionally corrected and we audit them regularly. For context on how we interpret indicators, see the Learn hub; for the legal boundaries of this information, see the disclaimer and terms. Nothing here is investment advice, and every decision to trade remains yours.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';

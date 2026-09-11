@@ -39,7 +39,11 @@
     <a href="../news/index.html">News</a>
     <a href="../queries/index.html">Queries</a>
     <a href="../history.html">History</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
@@ -49,7 +53,15 @@
 <div class="card"><h3>Vega (IV sensitivity)</h3><div class="status">Premium change per 1% IV move. Long straddles are long vega (want IV expansion); short premium structures are short vega.</div></div>
 <div class="card"><h3>Risk management</h3><div class="status">Defined-risk spreads cap loss at width minus premium; size positions so max loss ≤ 1–2% of capital; never hold short stock options into physical settlement without a plan.</div></div>
 <div class="card"><div class="status">Next: <a href="../strategy-builder.html">Practice in the Builder</a> · <a href="../strategies.html">Strategy engine</a> · <a href="../strategies-guide.html">Strategy definitions</a></div></div>
-  <footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The option greeks lesson unpacks the five letters that describe how an option's price responds to the world: delta (move with the underlying), gamma (how fast delta changes), theta (time decay), vega (response to volatility) and rho (response to rates). For anyone trading options on the indices this page is the vocabulary of risk.</p>
+      <p>The article explains each greek intuitively and with small numeric examples: why a deep-in-the-money call has delta near 1, why long options bleed theta daily, and why vega makes options expensive when VIX is high and cheap when it is low. It connects the greeks back to the strategies the site suggests — for example, why time decay plays favour range-bound regimes.</p>
+      <p>If you trade from TradingAI's strategy suggestions, understanding greeks lets you see *why* a structure was chosen and where its risk really lives, and to judge whether that matches your view better or worse than the model's. The strategy builder lets you observe these effects on a real payoff before you trade.</p>
+      <p>This is educational material, not advice. Greeks are model-based estimates that change continuously. Options, especially short or multi-leg positions, carry substantial and often complex risk; learn the mechanics and then trade only what you fully understand.</p>
+  </div>
+<footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();</script>
 <script>

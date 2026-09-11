@@ -49,7 +49,11 @@
     <a href="../news/index.html">News</a>
     <a href="../queries/index.html">Queries</a>
     <a href="../history.html">History</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -59,7 +63,15 @@
     <div class="status">Anualised returns from daily NAV (AMFI + mfapi). Direct Growth plans. Not a buy recommendation.</div>
   </div>
   <div id="mf-grid"><div class="card">Loading mutual funds…</div></div>
-  <footer><p>Returns annualised from NAV history; verify current NAV/expense ratio on AMFI before investing.</p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>TradingAI now covers mutual funds as well as equities — this page shows the best direct-growth scheme in each major category based on the latest NAV returns, alongside the number of schemes collected into our database. We use AMFI's published NAVs and deliberately prefer Direct plans, whose lower expense ratios matter enormously to long-term compounding.</p>
+      <p>Reading fund rankings responsibly means understanding the metric. We rank by recent returns so you can see which categories have momentum, but winners rotate — a top-1Y fund is not automatically a great 3Y or 10Y fund. Category first, scheme second: decide which category fits your horizon and risk, then compare schemes within it on returns, standard deviation, expense ratio and fund-manager consistency.</p>
+      <p>Direct plans and regular plans differ mainly in the distribution commission built into the regular plan's expense ratio. For the same fund, direct NAVs are typically a percentage lower in cost, which compounds into meaningfully higher long-term returns. That is why we surface direct-growth options by default.</p>
+      <p>This page is informational, built from public AMFI data that can lag or contain errors. It is not advice to buy or sell any fund, and past returns never guarantee future performance. Always verify the current NAV, expense ratio and exit loads with the AMC or AMFI before investing.</p>
+  </div>
+<footer><p>Returns annualised from NAV history; verify current NAV/expense ratio on AMFI before investing.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';

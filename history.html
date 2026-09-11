@@ -50,7 +50,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -58,9 +62,17 @@
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>Index P&amp;L History <span class="status">Entry 9:30 AM → Exit 3:20 PM IST</span></h2>
   <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem"><div id="history-filters"></div></div>
   <div id="history-grid" class="pnl-full"></div>
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>This page tracks how the published TradingAI 'signals' have actually performed. For each index, we lock in the outlook at the morning open and measure what happened by the close, recording the points won or lost had you followed the suggested direction. The result is an honest scoreboard: win rate, cumulative points, drawdown and profit factor, with every settled day listed below.</p>
+      <p>Keeping this scoreboard is the heart of the project. Anyone can generate a bullish or bearish call; what separates useful research from noise is whether the calls are measurable. By recording each day's expectation against its outcome — without editing out the losing days — we hold the analysis to a standard: does the regime model add information or does it resemble a coin flip? You can see the answer accumulating in real time.</p>
+      <p>There are several honest limitations to note. The scoreboard settles at the close and does not simulate real fills, slippage, commissions or the exact intraday timing you would face in a live trade. It also measures direction only — it is not the P&L of any specific strategy. Treat it as a transparent audit trail of the outlooks, not as a promise of performance.</p>
+      <p>Past results never guarantee future results, and the market can change character quickly. Use this page to judge whether the model is working for the conditions you trade in, then decide accordingly. If you believe a settlement is mis-recorded, get in touch — the ledger is public precisely so it can be checked.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';

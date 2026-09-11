@@ -33,4 +33,9 @@
   <url><loc>https://tradingai.in/learn/cpr.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://tradingai.in/learn/option-greeks.html</loc><changefreq>monthly</changefreq><priority>0.6</priority></url>
   <url><loc>https://tradingai.in/tools/position-size.html</loc><changefreq>monthly</changefreq><priority>0.7</priority></url>
+  <url><loc>https://tradingai.in/about.html</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://tradingai.in/contact.html</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://tradingai.in/privacy.html</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://tradingai.in/terms.html</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
+  <url><loc>https://tradingai.in/disclaimer.html</loc><changefreq>monthly</changefreq><priority>0.3</priority></url>
 </urlset>

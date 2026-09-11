@@ -49,7 +49,11 @@
     <a href="../news/index.html">News</a>
     <a href="../queries/index.html">Queries</a>
     <a href="../history.html">History</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -59,7 +63,15 @@
     <div class="status">Distance from 52-week extremes across tracked stocks — live from 1 year of daily candles.</div>
   </div>
   <div id="w52-grid"><div class="card">Loading 52-week data…</div></div>
-  <footer><p>52-week range from stored daily candles (backfilled ~1 year via Yahoo). Not financial advice.</p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The 52-week page surfaces which tracked stocks are pressing near their one-year highs or lows — one of the most revealing long-chart relationships a trader can scan. It compares the latest close against the highest high and lowest low of the past year and flags names within a few percent of either extreme.</p>
+      <p>Breakouts toward new highs with increasing volume can confirm institutional interest; stocks hugging their lows may be cheap or may be value traps. Reading both lists together shows you the market's internal momentum — many names near highs on rising tape is healthy, while a broad cluster near lows warrants caution.</p>
+      <p>The page is computed from a year of stored daily candles per stock, so the extremes are exact up to your data's depth. Every row links to the stock's research page, to the scanner for momentum checks, and the Learn hub explains how support and resistance form on long time frames.</p>
+      <p>This is automatically generated research from public market data, not a tip list. 'Near the 52-week high' is information, not a buy signal — trend-following works less well in range-bound regimes. Always verify levels and do your own diligence before trading.</p>
+  </div>
+<footer><p>52-week range from stored daily candles (backfilled ~1 year via Yahoo). Not financial advice.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';

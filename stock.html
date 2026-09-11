@@ -49,7 +49,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -109,9 +113,17 @@
     <div id="stock-timeline" class="status">—</div>
   </div>
 
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>This is the single-stock research page. It pulls together the live quote, the computed technical indicators (VWAP, RSI, ADX, support and resistance), the prevailing regime, and a plain-language outlook for the symbol you asked for. It is the same engine that powers the scanner and index pages, focused on one name.</p>
+      <p>The support and resistance zones are derived from recent price action and are intended as decision aids, not guaranteed levels. VWAP shows where the day's institutional average price sits — companies often respect it intraday. RSI tells you whether a stock is stretched after a move, and ADX tells you whether the move has genuine directional strength or is just oscillation. Reading these together gives a structured way to assess a stock instead of reacting to the last tick.</p>
+      <p>Every stock page also links to the broader tools: the scanner to find names, the strategies page for the approach, and trading history to judge whether the published views are working. The education hub explains each indicator in plain language if you want to go deeper.</p>
+      <p>The page is generated automatically from public market data. It is research context, not personalised advice and not a recommendation. Prices flicker through trading hours and settle at the close. Always verify current data with your broker and make your own risk decisions.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Not investment advice.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';

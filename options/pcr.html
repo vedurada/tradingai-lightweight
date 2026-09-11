@@ -36,7 +36,11 @@
     <a href="../strategies.html">Strategies</a>
     <a href="../strategy-builder.html">Builder</a>
     <a href="../queries/index.html">Queries</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -52,7 +56,15 @@
   </div>
   <div id="top-oi-section"><div class="card"><h3>Top OI Strikes</h3><div id="top-oi-body"><div class="status">Loading…</div></div></div></div>
   <div id="chain-section" style="margin-top:1rem"><div class="card"><h3>Option Chain — NIFTY nearest expiry</h3><div id="chain-body"><div class="status">Loading…</div></div></div></div>
-  <footer><p>OI and PCR from NSE EOD bhavcopy. Not trading advice.</p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The PCR page is TradingAI's options-sentiment workbench. It computes the Put-Call Ratio, max-pain strike, and the highest open-interest strikes for NIFTY, BANKNIFTY and FINNIFTY from the official end-of-day options bhavcopy, and lets you drill into any expiry with an interactive chain view. It is the deepest derivative view on the site.</p>
+      <p>Three figures matter here. The PCR tells you whether puts or calls dominate positioning for that expiry. Max pain is the strike at which the most option premium would expire worthless — the level the market is often 'pushed' towards near settlement. And the top-OI strikes show where the biggest option walls sit, which frequently act as magnets or barriers around these levels.</p>
+      <p>Because the data is end-of-day, this is context for the close and the upcoming expiry, not an intraday feed. The page's expiry selector defaults to the current contract and any of several expiries can be examined — which is valuable because max-pain behaves differently for weekly versus monthly expiries. Pair it with the index pages to see price action against the levels it reveals.</p>
+      <p>PCR and max pain come from public data and are probabilities, not certainties; heavy positions can unwind unexpectedly near expiry. Nothing on this page recommends a trade. Use it to understand positioning, then decide within your own risk limits.</p>
+  </div>
+<footer><p>OI and PCR from NSE EOD bhavcopy. Not trading advice.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';

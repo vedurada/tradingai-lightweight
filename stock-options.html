@@ -50,7 +50,11 @@
     <a href="news/index.html">News</a>
     <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
-  </nav>
+      <a href="about.html">About</a>
+    <a href="contact.html">Contact</a>
+    <a href="privacy.html">Privacy</a>
+    <a href="terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -59,9 +63,17 @@
   <div class="card hero-stock" style="margin-bottom:1rem"><div class="status" id="so-exp">Monthly expiry: —</div>
   <div class="status">Stock options in India expire <strong>monthly</strong> (last Tuesday, NSE) and are <strong>physically settled</strong> — never hold shorts into expiry week without a settlement plan. Premiums fill live at your broker; ₹ math below is per strike-width.</div></div>
   <div class="pnl-full"><div id="so-grid"><div class="card">Loading liquid stocks…</div></div></div>
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>Stock options on Indian equities are physically settled and behave differently from index options — this page is built around those differences. It shows the optionable stocks TradingAI tracks, their expiry calendars and the current quote, so you can plan around the realities of stock options: monthly expiries, broader strike spacing and mandatory delivery on assignment.</p>
+      <p>Understanding physical settlement matters before you trade a single contract. If an exercised option is not covered, you could face delivery obligations or margin implications far beyond what index options imply. That is why this page links every symbol back to its detailed research page and to the strategy builder, and why the education library explains the mechanics of exercise and assignment rather than only the payoff diagrams.</p>
+      <p>For traders who understand physical settlement, stock options open strategies that index options cannot — pairs, covered writes and expiry-based plays on single names. The page is a starting point to screen which stocks have active option chains and enough liquidity to make a strategy viable, then to size the position in the calculator below.</p>
+      <p>Options are high-risk instruments and stock options add delivery risk on top. This page and the site in general provide research and education only; they are not recommendations to buy or sell any option. Confirm margins, lot sizes and settlement rules with your broker before placing any order.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Stock options are physically settled and involve substantial risk. No structure guarantees profit.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';

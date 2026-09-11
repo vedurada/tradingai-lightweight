@@ -39,7 +39,11 @@
     <a href="../news/index.html">News</a>
     <a href="../queries/index.html">Queries</a>
     <a href="../history.html">History</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
@@ -49,7 +53,15 @@
 <div class="card"><h3>How TradingAI uses it</h3><div class="status">Price-vs-VWAP is a core regime input and appears as a Why-chip on every index page. Strategies key entries off it (e.g. Bull Put Spread needs price above VWAP).</div></div>
 <div class="card"><h3>Limits</h3><div class="status">VWAP resets daily (useless for positional views) and whipsaws on range days — pair it with ADX and support/resistance.</div></div>
 <div class="card"><div class="status">Next: <a href="../strategy-builder.html">Practice in the Builder</a> · <a href="../strategies.html">Strategy engine</a> · <a href="../strategies-guide.html">Strategy definitions</a></div></div>
-  <footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The VWAP lesson explains Volume-Weighted Average Price — the average price at which an instrument has traded that day, weighted by volume. Institutions and algorithmic desks use VWAP as a benchmark, which makes it one of the most respected intraday reference levels for Indian traders.</p>
+      <p>You will learn how VWAP is constructed, why the day's first trades carry heavy weight, how to read price relative to VWAP (above is often considered 'bought', below 'sold' relative to the session's average cost), and how authorities and desks flock to it during ranging sessions. The article contrasts VWAP with simple day-pivots and CPR to show when each is useful.</p>
+      <p>See VWAP in action on any stock or index page — it is shown against support and resistance and used in the 'why' chips that explain each outlook. Pair the lesson with the CPR page to build a complete picture of the day's frame.</p>
+      <p>This is education, not advice. VWAP is a reference the market often respects but never obeys, and it resets daily. Learn it, watch it, and keep it as one input among several in your own decision process.</p>
+  </div>
+<footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();</script>
 <script>

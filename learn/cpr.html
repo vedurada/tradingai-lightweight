@@ -39,7 +39,11 @@
     <a href="../news/index.html">News</a>
     <a href="../queries/index.html">Queries</a>
     <a href="../history.html">History</a>
-  </nav>
+      <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
 </header>
 <main>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
@@ -49,7 +53,15 @@
 <div class="card"><h3>How to trade it</h3><div class="status">Above a narrow CPR with volume = trend-day long bias; inside a wide CPR = mean-reversion between TC and BC with stops outside.</div></div>
 <div class="card"><h3>Limits</h3><div class="status">CPR is a map, not a signal — TradingAI combines it with VWAP, OI and momentum before assigning any strategy.</div></div>
 <div class="card"><div class="status">Next: <a href="../strategy-builder.html">Practice in the Builder</a> · <a href="../strategies.html">Strategy engine</a> · <a href="../strategies-guide.html">Strategy definitions</a></div></div>
-  <footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The Central Pivot Range (CPR) lesson explains a straightforward but powerful frame for the trading day: the pivot, the top central (TC) and bottom central (BC) lines that many institutional and algorithmic desks watch. When price sits inside the CPR, the market is often still deciding; breaking out of it tends to signal intent.</p>
+      <p>This article covers how the three CPR levels are calculated from the previous day's high, low and close, how to read 'narrow' versus 'wide' CPR days, and why a narrow range frequently precedes a larger move. It also shows how TradingAI uses CPR in context with VWAP and yesterday's levels rather than as a standalone oracle.</p>
+      <p>Pair the lesson with the index pages to see CPR applied to today's real data, and with the VWAP lesson for the complementary concept of the institutional average price. Together they describe a day in terms most discretionary intraday traders use naturally.</p>
+      <p>This is educational material. CPR levels are probabilities, not promises — breakouts fail, and fakeouts are common. Understand the concept, watch it in live markets, and always manage risk as if the level will be tested twice.</p>
+  </div>
+<footer><p>Educational content, not financial advice. <a href="index.html">Back to Learn hub →</a></p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();</script>
 <script>
