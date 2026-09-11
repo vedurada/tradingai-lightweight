@@ -368,6 +368,18 @@ CREATE TABLE IF NOT EXISTS etf_data (
 );
 CREATE INDEX IF NOT EXISTS idx_etf_symbol_ts ON etf_data(symbol, timestamp DESC);
 
+CREATE TABLE IF NOT EXISTS oi_top_strikes (
+    symbol TEXT,
+    expiry TEXT,
+    side TEXT CHECK(side IN ('CE','PE')),
+    rank INTEGER,
+    strike REAL,
+    open_interest INTEGER,
+    fetched_at TEXT,
+    PRIMARY KEY (symbol, expiry, side, rank)
+);
+CREATE INDEX IF NOT EXISTS idx_oi_symbol_expiry ON oi_top_strikes(symbol, expiry);
+
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,
