@@ -186,8 +186,8 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
 
     def _call_ollama(self, prompt: str) -> Optional[dict]:
         url = "http://localhost:11434/api/generate"
-        body = {"model": "qwen2.5", "prompt": prompt, "stream": False, "options": {"temperature": 0.1}}
-        resp = self._post(url, body, {}, timeout=30)
+        body = {"model": "qwen2.5:0.5b", "prompt": prompt, "stream": False, "options": {"temperature": 0.1}}
+        resp = self._post(url, body, {}, timeout=60)
         text = resp["response"]
         return self._parse_json(text)
 
