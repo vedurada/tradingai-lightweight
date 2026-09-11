@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Options - Positional Structures - TradingAI</title>
+<meta name="description" content="Positional option structures for liquid large-cap stocks with live strikes, monthly expiry and defined risk.">
+<link rel="canonical" href="https://tradingai.in/stock-options.html">
+<meta property="og:title" content="Stock Options - Positional Structures - TradingAI">
+<meta property="og:description" content="Positional option structures for liquid large-cap stocks with live strikes and monthly expiry.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/stock-options.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Stock Options","item":"https://tradingai.in/stock-options.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="market.html">Market</a>
+    <a href="indices/nifty.html">NIFTY</a>
+    <a href="indices/banknifty.html">Bank NIFTY</a>
+    <a href="indices/finnifty.html">FINNIFTY</a>
+    <a href="indices/sensex.html">SENSEX</a>
+    <a href="scanner.html">Scanner</a>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="stocks/top-large-cap.html">Large Cap</a><a href="stocks/top-mid-small.html">Mid/Small</a><a href="etfs/top-etfs.html">ETFs</a></div></div>
+    <a href="strategies.html">Strategies</a>
+    <a href="stock-options.html">Stock Options</a>
+    <a href="strategy-builder.html">Builder</a>
+    <a href="strategies-guide.html">Guide</a>
+    <a href="queries/index.html">Queries</a>
+    <a href="history.html">History</a>
+  </nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>STOCK OPTIONS <span class="badge badge-yellow">POSITIONAL</span> <span class="status">monthly · high-liquidity large caps</span></h2>
+  <div class="card hero-stock" style="margin-bottom:1rem"><div class="status" id="so-exp">Monthly expiry: —</div>
+  <div class="status">Stock options in India expire <strong>monthly</strong> (last Tuesday, NSE) and are <strong>physically settled</strong> — never hold shorts into expiry week without a settlement plan. Premiums fill live at your broker; ₹ math below is per strike-width.</div></div>
+  <div class="pnl-full"><div id="so-grid"><div class="card">Loading liquid stocks…</div></div></div>
+  <footer>
+    <p>TradingAI provides market analysis and decision-support information. Stock options are physically settled and involve substantial risk. No structure guarantees profit.</p>
+  </footer>
+</main>
+<script>
+const API_BASE='';
+var UNIVERSE=['RELIANCE','HDFCBANK','ICICIBANK','INFY','TCS','AXISBANK','SBIN','ITC','KOTAKBANK','BAJFINANCE','TITAN','SUNPHARMA','LT','BHARTIARTL','MARUTI'];
+async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function inr(n){return n!=null?'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
+var _lastDataTs=null;
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
+function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function niceStep(price){var raw=price*0.01;var steps=[1,2,5,10,20,25,50,100,200,500];var best=steps[0];for(var i=0;i<steps.length;i++){if(Math.abs(steps[i]-raw)<Math.abs(best-raw))best=steps[i];}return best;}
+function biasOf(data){var b=((data.ai_outlook||{}).directional_bias||'').toUpperCase();if(b.indexOf('BULL')!==-1)return'Bullish';if(b.indexOf('BEAR')!==-1)return'Bearish';var o=(((data.strategy||{}).strategies||[])[0]||{}).strategy||'';if(o==='BUY')return'Bullish';if(o==='EXIT')return'Bearish';return'Range';}
+function structures(view,A,S){
+  if(view==='Bullish')return[
+    {name:'Bull Call Spread',legs:[{a:'BUY',t:'CE',k:A},{a:'SELL',t:'CE',k:A+S}],be:'Breakeven = '+fmt(A)+' + net premium',mp:'Width − premium',ml:'Premium paid'},
+    {name:'Bull Put Spread',legs:[{a:'SELL',t:'PE',k:A},{a:'BUY',t:'PE',k:A-S}],be:'Breakeven = '+fmt(A)+' − net credit',mp:'Net credit',ml:'Width − credit'}];
+  if(view==='Bearish')return[
+    {name:'Bear Put Spread',legs:[{a:'BUY',t:'PE',k:A},{a:'SELL',t:'PE',k:A-S}],be:'Breakeven = '+fmt(A)+' − net premium',mp:'Width − premium',ml:'Premium paid'},
+    {name:'Bear Call Spread',legs:[{a:'SELL',t:'CE',k:A},{a:'BUY',t:'CE',k:A+S}],be:'Breakeven = '+fmt(A)+' + net credit',mp:'Net credit',ml:'Width − credit'}];
+  return[
+    {name:'Iron Condor',legs:[{a:'SELL',t:'PE',k:A-S},{a:'BUY',t:'PE',k:A-2*S},{a:'SELL',t:'CE',k:A+S},{a:'BUY',t:'CE',k:A+2*S}],be:'Range '+fmt(A-S)+' – '+fmt(A+S)+' ± credit',mp:'Total credit',ml:'Width − credit'}];
+}
+
+
+const BRAND={RELIANCE:{c:'#0B4F6C',d:'ril.com'},HDFCBANK:{c:'#004178',d:'hdfcbank.com'},ICICIBANK:{c:'#C41230',d:'icicibank.com'},SBIN:{c:'#22409A',d:'sbi.co.in'},INFY:{c:'#007CC3',d:'infosys.com'},TCS:{c:'#3A55A0',d:'tcs.com'},LT:{c:'#FFCC00',d:'larsentoubro.com'},AXISBANK:{c:'#861F41',d:'axisbank.com'},ADANIENT:{c:'#00A651',d:'adani.com'},BHARTIARTL:{c:'#E4001C',d:'airtel.in'},WIPRO:{c:'#341C75',d:'wipro.com'},HCLTECH:{c:'#0066B3',d:'hcltech.com'},TECHM:{c:'#D71921',d:'techmahindra.com'},MARUTI:{c:'#002A5C',d:'marutisuzuki.com'},ITC:{c:'#2D7D46',d:'itcportal.com'},KOTAKBANK:{c:'#ED1C24',d:'kotak.com'},BAJFINANCE:{c:'#003366',d:'bajajfinserv.in'},SUNPHARMA:{c:'#D50032',d:'sunpharma.com'},TITAN:{c:'#000000',d:'titancompany.in'},ULTRACEMCO:{c:'#FF6600',d:'ultratechcement.com'},POWERGRID:{c:'#007A33',d:'powergrid.in'},NTPC:{c:'#FF0000',d:'ntpc.co.in'},ONGC:{c:'#8B0000',d:'ongcindia.com'},COALINDIA:{c:'#333333',d:'coalindia.in'},PERSISTENT:{c:'#00AEEF',d:'persistent.com'},COFORGE:{c:'#E30613',d:'coforge.com'},MPHASIS:{c:'#002B5C',d:'mphasis.com'},DIXON:{c:'#E30613',d:'dixoninfo.com'},CUMMINSIND:{c:'#000000',d:'cumminsindia.com'},MAXHEALTH:{c:'#0066CC',d:'maxhealthcare.in'},LUPIN:{c:'#00693E',d:'lupin.com'},VOLTAS:{c:'#0072BC',d:'voltas.com'},GODREJPROP:{c:'#E31837',d:'godrejproperties.com'},ASTRAL:{c:'#0066A1',d:'astralpipes.com'},KPITTECH:{c:'#009639',d:'kpit.com'},TANLA:{c:'#FF6F00',d:'tanla.com'},KPRMILL:{c:'#8B4513',d:'kprmilllimited.com'},RADICO:{c:'#800000',d:'radicokhaitan.com'},CCL:{c:'#A52A2A',d:'cclproducts.com'},NIFTY:{c:'#15803d',d:'nseindia.com'},BANKNIFTY:{c:'#1d4ed8',d:'nseindia.com'},FINNIFTY:{c:'#7c3aed',d:'nseindia.com'},SENSEX:{c:'#c2410c',d:'bseindia.com'}};
+function brandBtn(sym,label){sym=(sym||'').toUpperCase();label=label||sym;var b=BRAND[sym]||{c:'#64748b',d:''};var col=b.c;return '<button onclick="location.href=\''+detailHref(sym)+'\'" style="cursor:pointer;font-weight:700;border:1px solid '+col+';background:'+col+'15;color:'+col+';border-radius:999px;padding:0.2rem 0.6rem;display:inline-flex;align-items:center;gap:0.3rem;transition:all 0.15s ease" onmouseover="this.style.transform=\'translateY(-1px) scale(1.02)\'" onmouseout="this.style.transform=\'none\'"><img src="https://www.google.com/s2/favicons?domain='+b.d+'&sz=32" width="14" height="14" style="border-radius:2px" onerror="this.style.display=\'none\'">'+label+'</button>';}
+function detailUrl(sym){sym=(sym||'').toUpperCase();if(['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'].includes(sym))return sym==='NIFTY'?'indices/nifty.html':sym==='BANKNIFTY'?'indices/banknifty.html':sym==='FINNIFTY'?'indices/finnifty.html':'indices/sensex.html';return 'stock.html?symbol='+sym;}
+function detailHref(sym){var u=detailUrl(sym);if(location.pathname.includes('/indices/'))return '../'+u;if(location.pathname.includes('/stocks/'))return '../'+u;return u;}
+async function loadStocks(){
+  var grid=document.getElementById('so-grid');if(!grid)return;
+  var nifty=await fetchJSON('nifty');
+  var mexp=nifty&&nifty.expiry&&nifty.expiry.monthly;
+  var expEl=document.getElementById('so-exp');
+  if(expEl)expEl.textContent='Monthly expiry: '+(mexp?(mexp.expiry_label+' ('+mexp.days_to_expiry+' DTE)'):'—')+' · last Tuesday, NSE · physically settled';
+  var rows=[],ok=0;
+  for(var si=0;si<UNIVERSE.length;si++){
+    var sym=UNIVERSE[si];var data=await fetchJSON(sym.toLowerCase());
+    if(!data||!data.quote)continue;ok++;
+    var price=data.quote.price,step=niceStep(price),A=Math.round(price/step)*step;
+    var lot=(data.lot&&data.lot.size)||'—';var lotSrc=(data.lot&&data.lot.source)||'config';
+    var view=biasOf(data);var structs=structures(view,A,step);
+    var strat0=((data.strategy||{}).strategies||[])[0]||{};var exitCond=strat0.exit||strat0.target||'On EXIT signal / stop-loss or monthly expiry';
+    var legsHtml='';for(var i=0;i<structs.length;i++){var st=structs[i];var ls=st.legs.map(function(l){return l.a+' '+fmt(l.k)+' '+l.t;}).join(' + ');legsHtml+=(i?'<br>':'')+'<strong>'+st.name+'</strong> '+ls;}
+    rows.push({sym:sym,price:price,chg:data.quote.change,chgPct:data.quote.change_pct,view:view,A:A,step:step,lot:lot,lotSrc:lotSrc,legs:legsHtml,exit:exitCond});
+  }
+  rows.sort(function(a,b){return (b.chgPct||0)-(a.chgPct||0);});
+  var html='<div class="card"><table class="scan-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>View</th><th>ATM</th><th>Lot</th><th>Positional Structures (monthly)</th><th>Exit</th></tr></thead><tbody>';
+  for(var ri=0;ri<rows.length;ri++){var r=rows[ri];var chgC=r.chgPct>=0?'#15803d':'#dc2626';var vC=r.view==='Bullish'?'#15803d':r.view==='Bearish'?'#dc2626':'#a16207';
+  html+='<tr style="cursor:pointer" onclick="if(!event.target.closest(\'button\'))location.href=detailHref(r.sym)"><td>'+brandBtn(r.sym)+'</td><td style="text-align:right">'+fmt(r.price)+'</td><td style="color:'+chgC+';font-weight:bold">'+(r.chg>=0?'+':'')+Number(r.chg).toFixed(2)+' ('+(r.chgPct>=0?'+':'')+Number(r.chgPct).toFixed(2)+'%)</td><td><span class="badge" style="background:'+vC+'20;color:'+vC+'">'+r.view+'</span></td><td style="text-align:right">'+fmt(r.A)+'</td><td><span class="badge" style="background:#fef3c7;color:#92400e">'+r.lot+' ('+r.lotSrc+')</span></td><td>'+r.legs+'</td><td style="font-size:0.8rem;color:#475569">'+r.exit+'</td></tr>';}
+  html+='</tbody></table></div>';
+  grid.innerHTML=html||'<div class="card">No stock data right now.</div>';
+  setLastUpdated(ok?new Date().toISOString():null,ok>0);
+}
+document.addEventListener('DOMContentLoaded',function(){loadStocks();setInterval(loadStocks,60000);});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.card').forEach(function(c){
+    if(c.dataset.clickable==='1' || c.onclick) return;
+    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
+    var url=null;
+    if(h.includes('AI MARKET OUTLOOK')) url='/strategies.html';
+    else if(h.includes('AI INTRADAY STRATEGY')) url='/strategies.html';
+    else if(h.includes('NIFTY VS INDIA VIX')) url='/history.html';
+    else if(h.includes('KEY LEVELS')) url='/scanner.html';
+    else if(h.includes('OPTIONS INTELLIGENCE')) url='/strategy-builder.html';
+    else if(h.includes('MARKET INTERNALS')||h.includes('BREADTH')||h.includes('WHAT CHANGED')||h.includes('HISTORICAL STRATEGY')) url='/history.html';
+    else if(h.includes('TODAY')||h.includes('MARKET PULSE')) url='/market.html';
+    else if(h.includes('STOCK OPTIONS')||h.includes('POSITIONAL')) url='/stock-options.html';
+    if(!url) return;
+    c.dataset.clickable='1'; c.style.cursor='pointer';
+    c.addEventListener('click',function(e){ if(e.target.closest('button')||e.target.closest('a')||e.target.closest('.tile'))return; location.href=url; });
+  });
+});
+</script>
+
+</body>
+</html>

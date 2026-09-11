@@ -176,10 +176,46 @@ def _to_ist_iso(ts):
         return None
 
 
-def _build_quote(symbol, price_row):
-    """price_1m row -> legacy quote shape {price, change, change_pct, ...}."""
-    if not price_row:
+LIVE_QUOTE_MAX_AGE_MIN = 25
+
+
+def _live_quote_row(conn, symbol):
+    """Fresh NSE live quote if present, else None (caller falls back to candles)."""
+    try:
+        row = conn.execute("SELECT * FROM live_quotes WHERE symbol=?", (symbol,)).fetchone()
+    except Exception:
         return None
+    if not row:
+        return None
+    d = row_to_dict(row)
+    try:
+        ts = datetime.fromisoformat(str(d.get("timestamp", "")).replace("Z", "+00:00"))
+        age_min = (datetime.now(timezone.utc) - ts).total_seconds() / 60
+        if age_min > LIVE_QUOTE_MAX_AGE_MIN:
+            return None
+    except Exception:
+        pass
+    return d
+
+
+def _build_quote(symbol, price_row, live_row=None):
+    """Quote with fallback chain: live NSE row -> 1m candle row. Never empty if either exists."""
+    d = dict(live_row) if live_row else (row_to_dict(price_row) if price_row else None)
+    if not d:
+        return None
+    source = (live_row or {}).get("source", "NSE") if live_row else "yfinance"
+    if live_row:
+        price = d.get("price", 0) or 0
+        prev = d.get("previous_close", 0) or 0
+        change = d.get("change", (price - prev) if prev else 0) or 0
+        return {
+            "symbol": symbol, "price": price, "change": round(change, 2),
+            "change_pct": round(d.get("change_pct", (change / prev * 100 if prev else 0)) or 0, 2),
+            "open": d.get("open", 0), "high": d.get("high", 0), "low": d.get("low", 0),
+            "previous_close": prev, "volume": d.get("volume", 0),
+            "timestamp": _to_ist_iso(d.get("timestamp")), "stale": not price,
+            "source": source,
+        }
     d = row_to_dict(price_row)
     close = d.get("close", 0) or 0
     prev = d.get("previous_close", 0) or 0
@@ -199,6 +235,7 @@ def _build_quote(symbol, price_row):
         "open": d.get("open", 0), "high": d.get("high", 0), "low": d.get("low", 0),
         "previous_close": prev, "volume": d.get("volume", 0),
         "timestamp": _to_ist_iso(d.get("timestamp")), "stale": False,
+        "source": source,
     }
 
 
@@ -228,6 +265,89 @@ def _build_strategy(strat_row):
     single = {k: d.get(k) for k in ("strategy", "market_condition", "expiry", "entry_trigger", "maximum_profit", "maximum_loss", "breakeven", "stop_loss", "target", "adjustment", "exit", "strategy_environment", "invalidation", "position_size")}
     single["legs"] = legs_parsed if isinstance(legs_parsed, list) else []
     return {"strategies": [single], "timestamp": d.get("timestamp")}
+
+
+def _ist_today():
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
+    except Exception:
+        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+
+
+def _locked_strategy(conn, symbol):
+    """Today's 9:30 AM locked strategy (indexes), if the lock cron has run."""
+    try:
+        row = conn.execute("SELECT * FROM daily_strategy WHERE symbol=? AND date=?", (symbol, _ist_today())).fetchone()
+    except Exception:
+        return None
+    if not row:
+        return None
+    d = row_to_dict(row)
+    try:
+        strategies = json.loads(d.get("strategy_json") or "[]")
+    except Exception:
+        strategies = []
+    if not strategies:
+        return None
+    return {"strategies": strategies, "locked": True, "locked_at": d.get("locked_at", "09:30"),
+            "regime": d.get("regime", ""), "timestamp": d.get("created_at")}
+
+
+def _live_expiry(conn, symbol):
+    """Nearest real NSE expiry per index from option_expiries (None if none stored).
+
+    Classifies MONTHLY vs WEEKLY: an expiry on the last exchange-weekday of its
+    month is the monthly contract, otherwise a weekly. NSE=Tuesday, BSE=Thursday.
+    """
+    from datetime import date as _date, timedelta as _td
+    try:
+        today = _ist_today()
+    except Exception:
+        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        rows = conn.execute("SELECT expiry FROM option_expiries WHERE symbol=? AND expiry>=? ORDER BY expiry", (symbol, today)).fetchall()
+    except Exception:
+        return None
+    dates = []
+    for r in rows:
+        try:
+            dates.append(_date.fromisoformat(str(r["expiry"])[:10]))
+        except Exception:
+            continue
+    if not dates:
+        return None
+    weekday = 3 if symbol == "SENSEX" else 1
+    day_label = "Thursday" if symbol == "SENSEX" else "Tuesday"
+    exchange = "BSE" if symbol == "SENSEX" else "NSE"
+
+    def is_monthly(d):
+        m = d.month + 1
+        y = d.year + (1 if m > 12 else 0)
+        m = 1 if m > 12 else m
+        last = _date(y, m, 1) - _td(days=1)
+        while last.weekday() != weekday:
+            last -= _td(days=1)
+        return d == last
+
+    def payload(d, tenor):
+        return {"expiry_date": d.isoformat(), "expiry_label": d.strftime("%d %b %Y"),
+                "expiry_weekday": day_label, "days_to_expiry": (d - _date.fromisoformat(today)).days,
+                "tenor": tenor, "expiry_day": day_label, "source": "NSE",
+                "timestamp": datetime.now(timezone.utc).isoformat()}
+
+    monthlies = [d for d in dates if is_monthly(d)]
+    weekly = next((d for d in dates if d not in monthlies), None)
+    if symbol in ("BANKNIFTY", "FINNIFTY"):
+        weekly = None  # monthly-only contracts
+    first = weekly or (monthlies[0] if monthlies else None)
+    if not first:
+        return None
+    out = payload(first, "WEEKLY" if weekly and first == weekly else "MONTHLY")
+    out.update({"symbol": symbol, "exchange": exchange,
+                "weekly": payload(weekly, "WEEKLY") if weekly else None,
+                "monthly": payload(monthlies[0], "MONTHLY") if monthlies else None})
+    return out
 
 
 def _build_scenarios(scen_row):
@@ -260,7 +380,7 @@ def _symbol_data(symbol):
     conn = get_db()
     result = {}
     price_row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    quote = _build_quote(symbol, price_row)
+    quote = _build_quote(symbol, price_row, _live_quote_row(conn, symbol))
     if quote:
         result["quote"] = quote
     ind_row = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
@@ -270,8 +390,10 @@ def _symbol_data(symbol):
     regime_row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
     if regime_row:
         result["regime"] = row_to_dict(regime_row)
-    strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    strat = _build_strategy(strat_row)
+    strat = _locked_strategy(conn, symbol)
+    if not strat:
+        strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        strat = _build_strategy(strat_row)
     if strat:
         result["strategy"] = strat
     scen_row = conn.execute("SELECT * FROM scenarios WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
@@ -281,9 +403,31 @@ def _symbol_data(symbol):
     if outlook:
         result["ai_outlook"] = outlook
     try:
-        from expiry import get_current_expiry
-        if symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"):
-            result["expiry"] = get_current_expiry() if callable(get_current_expiry) else {}
+        stype = conn.execute("SELECT type FROM symbols WHERE symbol=?", (symbol,)).fetchone()
+        if stype and stype["type"] == "stock":
+            inv = {}
+            for r in conn.execute("SELECT * FROM investment_views WHERE symbol=? ORDER BY date DESC, horizon", (symbol,)).fetchall():
+                d = row_to_dict(r)
+                if d.get("horizon") not in inv:
+                    inv[d.get("horizon")] = d
+            if inv:
+                result["investment"] = inv
+    except Exception:
+        pass
+    try:
+        srow = conn.execute("SELECT lot_size, lot_source, lot_as_of FROM symbols WHERE symbol=?", (symbol,)).fetchone()
+        if srow and srow["lot_size"]:
+            result["lot"] = {"size": srow["lot_size"], "source": srow["lot_source"] or "config", "as_of": srow["lot_as_of"]}
+    except Exception:
+        pass
+    try:
+        exp = _live_expiry(conn, symbol)
+        if not exp:
+            from expiry import get_current_expiry
+            if symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"):
+                exp = get_current_expiry(symbol) if callable(get_current_expiry) else {}
+        if exp:
+            result["expiry"] = exp
     except Exception:
         pass
     # last_updated = MARKET DATA time (quote candle), never computation time.
@@ -378,6 +522,19 @@ def breadth():
         return jsonify(row_to_dict(row))
     return jsonify({"error": "no breadth"}), 404
 
+@app.route("/api/index-breadth")
+def index_breadth():
+    """Latest official NSE advances/declines per index."""
+    conn = get_db()
+    rows = conn.execute("""
+        SELECT b.* FROM index_breadth b
+        JOIN (SELECT index_name, MAX(timestamp) AS ts FROM index_breadth GROUP BY index_name) m
+          ON m.index_name=b.index_name AND m.ts=b.timestamp
+        ORDER BY b.index_name""").fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+
 @app.route("/api/breadth/history")
 def breadth_history():
     limit = request.args.get("limit", 100, type=int)
@@ -449,6 +606,57 @@ def market():
     nifty_ai = (instruments.get("NIFTY") or {}).get("ai_outlook", {})
     return jsonify({"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments})
 
+GLOBAL_SYMBOLS = {
+    "^NSEI": {"name": "NIFTY 50 (India)"},
+    "^DJI": {"name": "Dow Jones"},
+    "^GSPC": {"name": "S&P 500"},
+    "^IXIC": {"name": "Nasdaq Composite"},
+    "GC=F": {"name": "Gold"},
+    "CL=F": {"name": "Crude Oil (WTI)"},
+    "DX-Y.NYB": {"name": "US Dollar Index"},
+    "INR=X": {"name": "USD/INR"},
+    "^TNX": {"name": "US 10Y Yield"},
+    "^VIX": {"name": "CBOE Volatility Index"},
+}
+
+_GLOBAL_CACHE = {"at": 0.0, "data": None}
+
+
+@app.route("/api/global")
+def global_markets():
+    """Live global markets via Yahoo (single batch download), cached 90s."""
+    import math as _math
+    import time as _time
+    now = _time.time()
+    if _GLOBAL_CACHE["data"] and now - _GLOBAL_CACHE["at"] < 90:
+        return jsonify(_GLOBAL_CACHE["data"])
+    out = {}
+    try:
+        import yfinance as yf
+        syms = list(GLOBAL_SYMBOLS.keys())
+        df = yf.download(syms, period="2d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=True)
+        for s in syms:
+            try:
+                sub = df[s].dropna(how="all") if hasattr(df[s], "dropna") else df[s]
+                closes = [float(v) for v in sub["Close"].tolist() if v is not None and not _math.isnan(v)]
+                if not closes:
+                    continue
+                price = closes[-1]
+                prev = closes[-2] if len(closes) > 1 else price
+                change = price - prev
+                chg_pct = (change / prev * 100) if prev else 0
+                out[s] = {
+                    "name": GLOBAL_SYMBOLS[s]["name"], "price": round(price, 2),
+                    "change": round(change, 2), "change_pct": round(chg_pct, 2),
+                    "yf": s, "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            except Exception:
+                continue
+    except Exception as e:
+        app.logger.warning(f"Global fetch failed: {e}")
+    _GLOBAL_CACHE.update({"at": now, "data": out})
+    return jsonify(out)
+
 @app.route("/api/history")
 def history():
     """Grouped {SYM: [...]} shape; covers history + monthly archive (1-year retention)."""
@@ -476,6 +684,20 @@ def history():
     for sym in grouped:
         grouped[sym].sort(key=lambda e: e.get("date", ""), reverse=True)
     return jsonify(grouped)
+
+@app.route("/api/investment/<symbol>")
+def investment(symbol):
+    """SHORT (weeks) + LONG (months) investment views for stocks."""
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM investment_views WHERE UPPER(symbol)=UPPER(?) ORDER BY date DESC, horizon", (symbol,)).fetchall()
+    conn.close()
+    out = {}
+    for r in rows:
+        d = row_to_dict(r)
+        if d.get("horizon") not in out:
+            out[d.get("horizon")] = d
+    return jsonify(out if out else {"error": "no investment views"}), 200 if out else 404
+
 
 @app.route("/api/news")
 def news():

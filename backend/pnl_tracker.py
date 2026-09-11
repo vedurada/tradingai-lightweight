@@ -153,8 +153,47 @@ def lock(date_str: str | None = None, entry_label: str = ENTRY_LABEL) -> None:
             (symbol, date_str, round(float(price), 2), entry_label, direction, snap["strategy"], snap["regime"], snap["bias"], snap["confidence"], snap["summary"]),
         )
         print(f"lock {symbol} {date_str} {entry_label}: {direction} entry={round(float(price), 2)} ({snap['strategy'] or snap['regime']})")
+        lock_strategy(conn, symbol, date_str)
     conn.commit()
     conn.close()
+
+
+def lock_strategy(conn: sqlite3.Connection, symbol: str, date_str: str | None = None) -> None:
+    """Freeze the day's strategy from the 9:30 AM outlook (indexes only)."""
+    from zoneinfo import ZoneInfo as _ZI
+    date_str = date_str or datetime.now(_ZI("Asia/Kolkata")).strftime("%Y-%m-%d")
+    strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    regime_row = conn.execute("SELECT regime, confidence FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    outlook_row = conn.execute("SELECT outlook FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    if not strat_row:
+        print(f"lock-strategy {symbol} {date_str}: no strategy row, skipped")
+        return
+    try:
+        legs = json.loads(dict(strat_row).get("legs") or "{}")
+        strategies = legs.get("all_strategies", []) if isinstance(legs, dict) else []
+    except Exception:
+        strategies = []
+    if not strategies:
+        s = dict(strat_row).get("strategy", "")
+        strategies = [{"strategy": s}] if s else []
+    bias = ""
+    try:
+        o = json.loads(dict(outlook_row)["outlook"]) if outlook_row and dict(outlook_row).get("outlook") else {}
+        bias = o.get("directional_bias", "") if isinstance(o, dict) else ""
+    except Exception:
+        pass
+    conn.execute(
+        """INSERT INTO daily_strategy (symbol, date, strategy_json, regime, confidence, bias, locked_at, created_at)
+           VALUES (?, ?, ?, ?, ?, ?, '09:30', datetime('now'))
+           ON CONFLICT(symbol, date) DO UPDATE SET
+                strategy_json=excluded.strategy_json, regime=excluded.regime,
+                confidence=excluded.confidence, bias=excluded.bias""",
+        (symbol, date_str, json.dumps(strategies),
+         (dict(regime_row).get("regime", "") if regime_row else ""),
+         (dict(regime_row).get("confidence", 0) if regime_row else 0), bias),
+    )
+    conn.commit()
+    print(f"lock-strategy {symbol} {date_str}: {(strategies[0].get('strategy') if strategies else 'none')}")
 
 
 def close(date_str: str | None = None, exit_label: str = EXIT_LABEL) -> None:

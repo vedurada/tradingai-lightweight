@@ -5,7 +5,7 @@
       "symbol": "NIFTY",
       "yfinance_symbol": "^NSEI",
       "page": "indices/nifty.html",
-      "lot_size": 75,
+      "lot_size": 65,
       "strike_step": 50,
       "exchange": "NSE"
     },
@@ -23,7 +23,7 @@
       "symbol": "FINNIFTY",
       "yfinance_symbol": "^CNXFIN",
       "page": "indices/finnifty.html",
-      "lot_size": 65,
+      "lot_size": 60,
       "strike_step": 50,
       "exchange": "NSE"
     },

@@ -1,27 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>RELIANCE - TradingAI</title>
 <meta name="description" content="RELIANCE Industries technical analysis and market outlook">
 <link rel="canonical" href="https://tradingai.in/stocks/reliance.html">
+<meta property="og:title" content="Reliance Stock Outlook - TradingAI">
+<meta property="og:description" content="Reliance Industries investment outlook: trend, targets and levels.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/stocks/reliance.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Reliance Stock Outlook","item":"https://tradingai.in/stocks/reliance.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="../assets/css/main.css">
 </head>
 <body>
 <header>
-  <h1>TradingAI</h1>
+  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
   <nav>
     <a href="../index.html">Home</a>
     <a href="../market.html">Market</a>
     <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../indices/finnifty.html">FINNIFTY</a>
+    <a href="../indices/sensex.html">SENSEX</a>
     <a href="../scanner.html">Scanner</a>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="top-large-cap.html">Large Cap</a><a href="top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a></div></div>
     <a href="../strategies.html">Strategies</a>
+    <a href="../stock-options.html">Stock Options</a>
     <a href="../strategy-builder.html">Builder</a>
     <a href="../strategies-guide.html">Guide</a>
   </nav>
 </header>
 <main>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
   <div id="last-updated-bar" class="updated-bar"></div>
   <h2>RELIANCE Industries Outlook</h2>
   <div id="stock-price" class="price">-</div>
@@ -37,5 +62,41 @@
 </main>
 <script src="../assets/js/api.js"></script>
 <script src="../assets/js/market.js"></script>
+<script>
+(function(){var BASE='..';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.card').forEach(function(c){
+    if(c.dataset.clickable==='1' || c.onclick) return;
+    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
+    var url=null;
+    if(h.includes('AI MARKET OUTLOOK')) url='/strategies.html';
+    else if(h.includes('AI INTRADAY STRATEGY')) url='/strategies.html';
+    else if(h.includes('NIFTY VS INDIA VIX')) url='/history.html';
+    else if(h.includes('KEY LEVELS')) url='/scanner.html';
+    else if(h.includes('OPTIONS INTELLIGENCE')) url='/strategy-builder.html';
+    else if(h.includes('MARKET INTERNALS')||h.includes('BREADTH')||h.includes('WHAT CHANGED')||h.includes('HISTORICAL STRATEGY')) url='/history.html';
+    else if(h.includes('TODAY')||h.includes('MARKET PULSE')) url='/market.html';
+    else if(h.includes('STOCK OPTIONS')||h.includes('POSITIONAL')) url='/stock-options.html';
+    if(!url) return;
+    c.dataset.clickable='1'; c.style.cursor='pointer';
+    c.addEventListener('click',function(e){ if(e.target.closest('button')||e.target.closest('a'))return; location.href=url; });
+  });
+});
+</script>
+
 </body>
 </html>

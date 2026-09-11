@@ -1,31 +1,56 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Strategy Builder - TradingAI</title>
 <meta name="description" content="Build index option strategies with live strikes from TradingAI">
 <link rel="canonical" href="https://tradingai.in/strategy-builder.html">
+<meta property="og:title" content="Strategy Builder - TradingAI">
+<meta property="og:description" content="Build NIFTY/BANKNIFTY option strategies with live strikes and payoff math.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/strategy-builder.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Strategy Builder","item":"https://tradingai.in/strategy-builder.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="assets/css/main.css">
 </head>
 <body>
 <header>
-  <h1>TradingAI</h1>
+  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
   <nav>
     <a href="index.html">Home</a>
     <a href="market.html">Market</a>
     <a href="indices/nifty.html">NIFTY</a>
     <a href="indices/banknifty.html">Bank NIFTY</a>
+    <a href="indices/finnifty.html">FINNIFTY</a>
+    <a href="indices/sensex.html">SENSEX</a>
     <a href="scanner.html">Scanner</a>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="stocks/top-large-cap.html">Large Cap</a><a href="stocks/top-mid-small.html">Mid/Small</a><a href="etfs/top-etfs.html">ETFs</a></div></div>
     <a href="strategies.html">Strategies</a>
+    <a href="stock-options.html">Stock Options</a>
     <a href="strategy-builder.html">Builder</a>
     <a href="strategies-guide.html">Guide</a>
+    <a href="queries/index.html">Queries</a>
     <a href="history.html">History</a>
   </nav>
 </header>
 <main>
-  <div id="last-updated-bar" class="updated-bar"></div>
-  <h2>Strategy Builder <span class="status">index options only</span></h2>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>Strategy Builder <span class="status">index options only</span></h2>
   <div class="card" style="margin-bottom:1rem">
     <div style="display:flex;flex-wrap:wrap;gap:0.6rem;align-items:end">
       <label>Index<br><select id="b-index">
@@ -42,7 +67,6 @@
         <option value="iron-condor">Iron Condor (range)</option>
         <option value="straddle">Long Straddle (big move?)</option>
         <option value="strangle">Long Strangle (big move?)</option>
-        <option value="nd-intraday">ND Intraday (VIX-based)</option>
       </select></label>
       <label>Lots<br><input id="b-lots" type="number" min="1" value="1" style="width:4rem"></label>
       <label>Lot size<br><input id="b-lotsize" type="number" min="1" value="75" style="width:5rem"></label>
@@ -50,6 +74,7 @@
     </div>
     <div class="status" id="b-spot" style="margin-top:0.5rem">Pick an index and template, then Generate.</div>
   </div>
+  <div class="card" style="margin-bottom:1rem"><div class="status">Before sizing: <a href="tools/position-size.html">Position size calculator</a> · <a href="learn/option-greeks.html">Greeks refresher</a></div></div>
   <div id="b-out"></div>
   <footer>
     <p>Strikes are computed live from the latest index price; premiums fill at your broker when you place the order, so ₹ profit/loss depends on the actual net premium. Lot sizes change — verify with your broker. TradingAI provides decision-support, not guaranteed signals.</p>
@@ -57,11 +82,11 @@
 </main>
 <script>
 const API_BASE='';
-var IDX_META={NIFTY:{step:50,lot:75,api:'nifty'},BANKNIFTY:{step:100,lot:30,api:'banknifty'},FINNIFTY:{step:50,lot:65,api:'finnifty'},SENSEX:{step:100,lot:20,api:'sensex'}};
+var IDX_META={NIFTY:{step:50,lot:65,api:'nifty'},BANKNIFTY:{step:100,lot:30,api:'banknifty'},FINNIFTY:{step:50,lot:60,api:'finnifty'},SENSEX:{step:100,lot:20,api:'sensex'}};
 async function fetchJSON(path){try{const res=await fetch(API_BASE+'/api/'+path);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 function inr(n){return n!=null?'₹'+Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
-function setBar(t){var b=document.getElementById('last-updated-bar');if(b)b.textContent=t||'';}
+function setBar(t){var b=document.getElementById('last-updated-bar');if(b)b.textContent=t||'';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 function atm(price,step){return Math.round(price/step)*step;}
 function legRow(i,l){return '<tr><td>'+(i+1)+'</td><td>'+l.action+'</td><td>'+l.type+'</td><td>'+fmt(l.strike)+'</td><td>'+(l.note||'')+'</td></tr>';}
 function buildTemplate(tpl,spot,step,vix){
@@ -73,33 +98,25 @@ function buildTemplate(tpl,spot,step,vix){
   else if(tpl==='iron-condor'){legs=[{action:'SELL',type:'PE',strike:A-step,note:'short put'},{action:'BUY',type:'PE',strike:A-2*step,note:'wing'},{action:'SELL',type:'CE',strike:A+step,note:'short call'},{action:'BUY',type:'CE',strike:A+2*step,note:'wing'}];be=['Lower: '+fmt(A-step)+' − credit','Upper: '+fmt(A+step)+' + credit'];maxP='Total credit';maxL='Width − credit ('+fmt(step)+' pts)';note='Range: '+fmt(A-step)+' – '+fmt(A+step)+'.';}
   else if(tpl==='straddle'){legs=[{action:'BUY',type:'CE',strike:A,note:'ATM'},{action:'BUY',type:'PE',strike:A,note:'ATM'}];be=['Upper: '+fmt(A)+' + premium','Lower: '+fmt(A)+' − premium'];maxP='Unlimited';maxL='Total premium';note='Needs a big move either way.';}
   else if(tpl==='strangle'){legs=[{action:'BUY',type:'PE',strike:A-step,note:'OTM'},{action:'BUY',type:'CE',strike:A+step,note:'OTM'}];be=['Upper: '+fmt(A+step)+' + premium','Lower: '+fmt(A-step)+' − premium'];maxP='Unlimited';maxL='Total premium';note='Cheaper than straddle; needs a bigger move.';}
-  else if(tpl==='nd-intraday'){
-    var v=vix||0,legs2;
-    if(v<12){legs2=[{action:'BUY',type:'CE',strike:A,note:'ATM straddle'},{action:'BUY',type:'PE',strike:A,note:'ATM straddle'}];note='VIX '+v.toFixed(1)+' < 12 → ATM Straddle.';}
-    else if(v<18){legs2=[{action:'BUY',type:'CE',strike:A+step,note:'OTM'},{action:'BUY',type:'PE',strike:A-step,note:'OTM'}];note='VIX '+v.toFixed(1)+' → ATM Strangle.';}
-    else if(v<25){legs2=[{action:'BUY',type:'CE',strike:A+2*step,note:'wide OTM'},{action:'BUY',type:'PE',strike:A-2*step,note:'wide OTM'}];note='VIX '+v.toFixed(1)+' → Wide Strangle.';}
-    else{return {legs:[],be:[],maxP:'',maxL:'',note:'VIX '+v.toFixed(1)+' ≥ 25 — no intraday entry (too hot).',atm:A};}
-    legs=legs2;be=['Exit: VIX +5% intraday, 2% premium stop, or 3:20 PM'];maxP='Unlimited (winning leg)';maxL='Premium paid';note+=' Entry 9:30 AM.';
-  }
   return {legs:legs,be:be,maxP:maxP,maxL:maxL,note:note,atm:A};
 }
 async function generate(){
   var sym=document.getElementById('b-index').value;
   var tpl=document.getElementById('b-template').value;
   var lots=Math.max(1,parseInt(document.getElementById('b-lots').value||'1',10));
-  var lotSize=Math.max(1,parseInt(document.getElementById('b-lotsize').value||String(IDX_META[sym].lot),10));
   var out=document.getElementById('b-out');var spotEl=document.getElementById('b-spot');
   out.innerHTML='<div class="card">Loading live price…</div>';
   var data=await fetchJSON(IDX_META[sym].api);
   if(!data||!data.quote){out.innerHTML='<div class="card">No live data for '+sym+' right now.</div>';return;}
   var spot=data.quote.price,step=IDX_META[sym].step;
   var vix=null;try{var vx=await fetchJSON('vix');if(vx)vix=(vx.price!=null?vx.price:vx.close);}catch(e){}
-  var exp=(data.expiry||{});var expLabel=exp.expiry_label||'—';var dte=(exp.days_to_expiry!=null?exp.days_to_expiry:'—');
+  var exp=(data.expiry||{});var expLabel=exp.expiry_label||'—';var dte=(exp.days_to_expiry!=null?exp.days_to_expiry:'—');var liveLot=(data.lot&&data.lot.size)||IDX_META[sym].lot;var lotSrc=(data.lot&&data.lot.source)||'config';
   var assigned=((data.strategy||{}).strategies||[])[0];
   var b=buildTemplate(tpl,spot,step,vix);
+  var lotSize=Math.max(1,parseInt(document.getElementById('b-lotsize').value||String(liveLot),10));
   var qty=lots*lotSize;
   var html='<div class="card"><h3>'+sym+' · '+tpl.replace(/-/g,' ').toUpperCase()+'</h3>'
-    +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(b.atm)+' (step '+step+') | Expiry '+expLabel+' ('+dte+'d) | '+(tpl==='nd-intraday'?'DAY':'NEXT')+' | Qty '+lots+' lot(s) × '+lotSize+' = '+qty+'</div>'
+    +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(b.atm)+' (step '+step+') | Expiry: '+expLabel+' ('+dte+' DTE, '+(exp.tenor||'—')+') | '+' | Qty '+lots+' lot(s) × '+lotSize+' = '+qty+' | Lot: '+lotSize+' ('+lotSrc+')</div>'
     +(assigned&&assigned.strategy?'<div class="status">Today’s AI-assigned: <strong>'+assigned.strategy+'</strong></div>':'')
     +'<div class="status">'+b.note+'</div></div>';
   if(!b.legs.length){html+='<div class="card">No entry per rules.</div>';}
@@ -118,6 +135,20 @@ async function generate(){
 document.getElementById('b-go').addEventListener('click',generate);
 document.getElementById('b-index').addEventListener('change',function(){document.getElementById('b-lotsize').value=IDX_META[this.value].lot;});
 document.addEventListener('DOMContentLoaded',function(){document.getElementById('b-lotsize').value=IDX_META.NIFTY.lot;});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null,ib=null;
+try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}
+var items=[];
+if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}
+if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}
+if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
 </script>
 </body>
 </html>

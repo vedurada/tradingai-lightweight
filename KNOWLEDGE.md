@@ -1,7 +1,7 @@
 # TradingAI.in — Project Knowledge
 
 > Living document. Update it whenever architecture, rules, or roadmap change.
-> Last updated: 2026-09-10.
+> Last updated: 2026-09-11.
 
 ## 1. What this is
 
@@ -22,7 +22,7 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 | VM app dir | `/opt/tradingai` (repo rsync target) |
 | VM web root | `/var/www/tradingai.in/html` (nginx serves this, NOT /opt) |
 | DB | `/opt/tradingai/database/tradingai.db` (SQLite, WAL off, single writer) |
-| API | Flask `backend/api_server.py` on `127.0.0.1:8000`, proxied at `/api/` by nginx |
+| API | Flask `backend/api_server.py` on `127.0.0.1:8000` as systemd unit `tradingai-api` (`Restart=always`, unit in `ops/systemd/`), proxied at `/api/` by nginx; 2-min curl watchdog restarts on hang |
 | Site | https://tradingai.in (real Let's Encrypt cert since 2026-09-10, auto-renew via certbot timer; HTTP 301 → HTTPS; earlier self-signed cert caused browser warnings) |
 | Market hours | 9:30–15:30 IST, Mon–Fri. Cron uses `9-15` hour field as approximation |
 
@@ -37,7 +37,7 @@ Indicators (computed locally: EMA/SMA/VWAP/RSI/MACD/ADX/ATR/Bollinger/Pivot/CPR/
    ↓
 Strategy layer (index option spreads | stock BUY/HOLD/EXIT) + AI outlook (rule-based)
    ↓
-Flask API :8000 → nginx /api/ → static HTML + vanilla JS (30s auto-refresh, no market-hours gate)
+Flask API :8000 → nginx /api/ → static HTML + vanilla JS (20s silent refresh, scroll-preserved, no market-hours gate)
 ```
 
 Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) is **deprecated but still deployed**; no cron calls it. Frontend reads **only** `/api/*`.
@@ -62,6 +62,7 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 | `db_schema.py` | Full SCHEMA + `init_database()` with ALTER migrations (never DROP) |
 | `database.py` | Legacy `Database` class (history CRUD, archive, portfolio) |
 | `fetch_market.py` | `MarketFetcher`: quote/OHLCV/VIX/options with TTL cache |
+| `nse_source.py` | NSE primary quotes (`allIndices`) + market state; `live_quotes` table preferred by API when fresh (<25 min), yfinance fallback, synth candles prevent chart gaps |
 | `indicators.py` | Local indicator math (fixed S/R swap bug Sep 2026) |
 | `regime.py` | TRENDING_BULLISH/BEARISH, RANGE_BOUND, HIGH_VOLATILITY scoring |
 | `scenarios.py` | Returns **dict** `{bullish, bearish, range, breakout, reversal}` (not a list) |
@@ -69,6 +70,7 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 | `ai_outlook.py` | Rule-based outlook (LLM providers removed after 401s); full JSON stored in `ai_outlooks.outlook` |
 | `expiry.py` | Per-index expiry rules (NSE=Tuesday, BSE=Thursday; weeklies only NIFTY/SENSEX) |
 | `pnl_tracker.py` | `lock` (9:30) / `close` (15:20) / `backfill [date]` / `archive [days]` |
+| `bhavcopy.py` | NSE official EOD (`ind_close_all`, incl. index P/E) into `price_1d` — `backfill [days]` / `daily` (18:35 cron) / `holidays` (weekly → `nse_holidays`, auto-used by expiry engine) |
 | `monitor.py` / `alert.py` | Health checks / alerts via cron |
 | `generate_data.py` / `generate_json.py` | LEGACY JSON pipeline (deprecated; weekly archive inside it disabled) |
 | `history_logger.py`, `backtest.py`, `options.py` | Legacy/helpers; backtest not wired to UI |
@@ -97,6 +99,10 @@ Ops: `data_status`, `alerts`.
 - **Stocks/ETFs:** BUY/HOLD/EXIT via `select_stock_outlook()` — regime first, VWAP+RSI fallback. Numeric levels from `_stock_levels()`: T1 = nearest resistance (else +8%/2×ATR), T2 (+12%/3×ATR), stop = support (else −5%/1.5×ATR), with upside/risk/RR percentages embedded in text fields.
 - `strategies.legs` holds `{"legs": [...], "all_strategies": [...]}`; API rebuilds legacy `{strategies: [...]}`.
 
+## 8b. Stock investment views (`backend/investment.py`, table `investment_views`)
+
+Stocks are investments, not intraday signals: SHORT horizon (weeks: SMA20/50 + RSI + 20d return → BUY/HOLD/EXIT with swing target/stop) and LONG horizon (months: SMA200 + 52w position + P/E + analyst upside + dividend → ACCUMULATE/HOLD/AVOID + fair value). Computed from `price_1d` + stored fundamentals (zero extra Yahoo calls), stored per (symbol, date, horizon). API: `/api/investment/<sym>` + `investment` block in symbol payloads; scanner shows long-term badge.
+
 ## 9. P&L tracker (`pnl_tracker.py`)
 
 - `lock` 9:30 IST (cron `30 9 * * 1-5`): 09:30-candle entry + strategy/regime/bias snapshot. Direction from bias: BEARISH→SHORT else LONG.
@@ -105,6 +111,10 @@ Ops: `data_status`, `alerts`.
 - `archive [days]` (default 365): monthly cron `0 2 1 * *` moves settled rows older than a year to `history_archive`.
 - Retention: 1 year live. `/api/history` merges both tables, default 365 days, grouped `{SYM: [...]}`.
 - History page columns: Date | Symbol | Outlook(BUY/SELL) | Direction(LONG/SHORT) | Entry Time/Price | Exit Time/Price | Points(±, green/red) | Result | Strategy + summary bar + symbol filters.
+
+
+- Live NSE data (verified 2026-09-10): `option-chain-contract-info` gives authoritative expiry dates per symbol, stored in `option_expiries` by the 9 AM daily refresh; API prefers these over weekday math (payload `source: NSE`).
+- Live NSE lot sizes from `fo_mktlots.csv` into `symbols.lot_size` (NIFTY 65 / BANKNIFTY 30 / FINNIFTY 60, source=NSE; SENSEX 20 source=config until a BSE file is found). Refresh writes only on change; Builder reads live lots from the API.
 
 ## 10. Expiry rules (`expiry.py`)
 
@@ -118,10 +128,17 @@ Ops: `data_status`, `alerts`.
 
 Health, symbols, price[s], vix(+history), indicators, regime(s), strategy/strategies, scenarios, outlook(s), options(+expiries), breadth(+history), snapshot(s), fundamentals, company (analyst views/financial flags), news(+per-symbol), actions (dividends/splits), market (legacy `{instruments:{...}}`), history (grouped, 365d), etf, data_status. Generic `/api/<symbol>` (case-insensitive) serves any symbol page incl. scanner stocks.
 
-## 12. Frontend (static HTML + inline JS, 30s refresh, no time gate)
+## 12. Frontend (static HTML + inline JS, 20s silent refresh, no time gate)
 
-`index.html` (dashboard), `market.html` (grid), `indices/nifty.html`, `indices/banknifty.html`, `scanner.html` (dynamic symbols, cap + Buy/Hold/Exit + regime filters, Target/Stop on stock cards), `strategies.html` (indexes only: nifty/banknifty/finnifty/sensex), `history.html` (P&L table), `stocks/reliance.html` (legacy single-stock page).
-Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; wrapper scrolls.
+Every page shares: **AI-Assisted Market Intelligence Platform** header (single-color pill nav `#f0fdf4`, live IST clock top-right in header brand-row, favicon `favicon.svg` + `apple-touch-icon.svg` + header brand mark `header h1 img` 22×22 rounded), scrolling ticker tape (60s loop, price + NSE A/D, pause on hover, on **every** page), and centered `Data as of ... IST` bar (true IST via `Intl`, data-time from quote candle, red "Update failed" on fetch error). All cards/rows site-wide are `cursor:pointer` → `detailHref(symbol)` (market grid, scanner rows, stock-options rows, history rows, strategy cards, index hero tiles).
+
+`index.html` — gradient **TODAY'S NIFTY** hero (price + change as high-contrast pill `bg #dcfce7/#fee2e2`, regime pill, expected range, S/R, VIX pill + VWAP, market_summary) + tiles (NIFTY/BANKNIFTY/FINNIFTY/SENSEX + VIX, each tile clickable to its index page) + breadth bar + P&L glance + eye-catchy CTA row (single-color `cta-single` `#f0fdf4` pills: LIVE TODAY / Full Market Grid / Strategy Engine / Scanner) + `stock.html?symbol=` detail pages for every stock (broad outlook like indices).
+`market.html` — **MARKET PULSE** gradient hero with 4 clickable tiles (NIFTY/BANKNIFTY/SENSEX/VIX — VIX now shows change as pill, grid-aligned) + grid of brand-tinted `brandBtn` cards (favicon + color per symbol, whole card clickable).
+`indices/nifty.html` `banknifty.html` `finnifty.html` `sensex.html` — hero price strip (`card hero`, all four enabled) + 🧠 AI MARKET OUTLOOK (green left border), 📍 KEY LEVELS (amber), 📈 Chart + OPTIONS INTELLIGENCE side-by-side, **NIFTY vs INDIA VIX — Intraday** dual-% chart (`nifty-vix-chart`), ⚡ AI INTRADAY STRATEGY (blue, 9:30 `daily_strategy` lock), MARKET INTERNALS, WHAT CHANGED timeline, HISTORICAL PERFORMANCE. All four share the card-accent system.
+`scanner.html` / `stock-options.html` / `history.html` — full-width tables (`.pnl-full` / `.scan-table` fixed layout, no horizontal scroll bleed). Scanner: hero + sortable table (Symbol/Cap/Price/Chg%/Regime/Signal/**Invest**/Target/Stop/S-R, rows clickable). Stock-options: **navy `hero-stock` + amber `stock-card`** **positional table** (no scroll, header Lot simplified) — visually distinct from index green hero, Exit column is dynamic positional (from live strategy, not 15:20).
+`strategies.html` — strategy engine header now `hero`; strategy template cards → Builder with `?index=&template=`; `strategies-guide.html` / `strategy-builder.html` / `learn/*` / `tools/position-size.html` follow the same header/ticker/clock shell.
+Expiry readout is uniform everywhere: `Expiry: 15 Sep 2026 (5 DTE, WEEKLY)` (index pages, strategies cards, builder header; live NSE `source: NSE` preferred).
+Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; gains green `#15803d` (light `#86efac` on dark heroes) / losses red `#dc2626` (`#fca5a5` on dark) site-wide, with high-contrast pill badges on dark heroes for `+6.18%` etc.
 
 ## 13. Cron (VM, IST)
 
@@ -131,19 +148,23 @@ Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; w
 0 */2 9-15 * * 1-5  alert.py
 30 9 * * 1-5        pnl_tracker.py lock       (9:30 entries)
 20 15 * * 1-5       pnl_tracker.py close      (3:20 exits)
+35 9 * * 1-5        daily_page.py morning     (→ market/nifty-outlook-YYYY-MM-DD.html)
+35 15 * * 1-5       daily_page.py close + sitemap_gen.py (close report + sitemap)
+35 18 * * 1-5       bhavcopy.py daily         (NSE EOD backfill)
+30 8 * * 1           bhavcopy.py holidays      (weekly holiday sync)
 0 2 1 * *           pnl_tracker.py archive 365 (monthly)
-*/5 * * * *         API watchdog (bracket-pattern pgrep — plain pattern self-matches!)
+*/2 * * * *         API health watchdog (curl /api/health → systemctl restart; catches hangs too)
 @reboot              API start
 ```
 
 ## 14. Deploy (`deploy-vm.sh`)
 
-rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (`static/*`→`html/static/`, `static/css/main.css`→`html/assets/css/` — pages reference `assets/`, the stale-copy trap) → db_schema → background fetch → restart API (setsid+append; health curl has `|| true` so a slow start can't abort deploy) → rewrite crontab → `sudo systemctl reload nginx`. Deploy kills API first; watchdog covers failures.
+rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (incl. `favicon.svg`/`apple-touch-icon.svg`, `robots.txt`, `sitemap.xml`, `today/`, `learn/`, `tools/`, `market/`, each `indices/*`, `stock-options.html`; missing one from the `cp` list leaves a stale page live) → db_schema → background fetch → install `ops/systemd/tradingai-api.service` + `systemctl restart` → rewrite crontab → `sudo systemctl reload nginx`. Health curl has `|| true` so a slow start can't abort deploy.
 
 ## 15. Bug log (recurring traps)
 
 - `display:block` on `<table>` destroys column layout (history looked "shrunk").
-- `pgrep -f api_server.py` matches its own cron shell → watchdog never fires. Always use `pgrep -f '[p]ython3 api_server'`.
+- `pgrep -f <pattern>` matches its own cron shell → pgrep watchdogs never fire. Use a `curl /api/health` check instead (also catches hangs, not just dead processes).
 - `init_database()` must NEVER DROP tables (once wiped a day of screens).
 - `ScenarioEngine.generate()` returns a **dict**, not a list (`scenarios[0]` → KeyError(0)).
 - `calculate_all_indicators()["macd"]` is a **dict** `{macd,signal,histogram}` — extract before REAL columns.
@@ -151,14 +172,25 @@ rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (
 - `Database.save_history` overwrites the preserved side (close wiped entry with 0) — `pnl_tracker.py` uses raw SQL instead.
 - `ticker.info` numeric-only dict is NOT a quote (no `price` key) — always build quotes via `fetch_quote` or 1m candles.
 - YF constants were inverted (`YF_ETFS` keys) and VIX was US `^VIX`; correct: `^INDIAVIX`, `^CNXFIN` for FINNIFTY, `*.NS` for ETFs.
-- `nohup ... &` without `setsid` dies with the SSH session.
+- `nohup ... &` without `setsid` dies with the SSH session. API now runs under systemd; never start it by hand with nohup.
+- Deploy `cp` list is explicit, not wildcard — adding a new top-level page (e.g. `stock-options.html`) without listing it leaves the old version live. Always extend the web-root sync line + `sitemap_gen.py` evergreen list.
+- Ticker without `curl_cffi` session warm-up gets 403 from NSE; breadth silently stays stale.
 
 ## 16. Data sources & persistence policy
 
 **Every byte fetched externally must land in SQLite** (nothing lives only in memory/JSON):
 yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundamentals, dividends/splits→corporate_actions, news→news, statements→fundamentals (weekly), options→option_chain(+expiries). Computed data (indicators/regime/scenarios/strategies/outlooks/breadth/snapshots) derived locally and stored. API exposes all of it; pages never call Yahoo directly.
 
-## 17. Future implementations (roadmap)
+## 17. Analytics, SEO & discoverability
+
+- **SEO foundation:** `robots.txt` (allows all but `/api/`, `/data/`), `sitemap.xml` (20 evergreen URLs) + `backend/sitemap_gen.py` (adds dated `market/*.html` pages; run after publishing + weekly). Deploy syncs both + `today/`/`learn/`/`tools/`/`market/` to web root.
+- **Meta & brand:** unique OG title/description + canonical + JSON-LD (Organization everywhere; WebSite + BreadcrumbList) on all pages; SVG favicon + apple-touch-icon + header `<h1><img>` brand mark on every page (added 2026-09-11).
+- **`/today/` terminal:** pre-open checklist / live mode / close report, session-aware by IST, ticker + clock.
+- **GA4:** `G-MJ3X88QYEL` on every page (verified 200 for `gtag/js`); "Data collection isn't active" = zero hits arrived, not a tag bug (ad-blockers kill gtag, Realtime shows visits in ~30s, standard reports lag 24–48h).
+- **Google accounts (verified 2026-09-11):** Domain `tradingai.in` bought on GoDaddy with Gmail A; **Search Console is verified with that same Gmail A** (DNS TXT) and sitemap `https://tradingai.in/sitemap.xml` submitted there. AdSense/sitemap Google account is Gmail B — Gmail B added as **Owner** in Search Console (`Settings → Users and permissions → Add user → Owner`) so both see indexing + AdSense linkage. No domain move needed.
+- **Pending owner actions:** Bing Webmaster verification, IndexNow on publish.
+
+## 18. Future implementations (roadmap)
 
 1. **Second live source (critical):** Yahoo has no NSE options chain and 15-min-delayed indices — add NSEindia API or a broker WebSocket (Zerodha/Angel/Dhan) for live options + true tick data; keep Yahoo as fallback/archive.
 2. **Intraday aggregation use:** `price_5m`/`price_15m` tables exist but are never populated — aggregate from `price_1m` in-fetcher; base regime screens on 15m, not daily.
@@ -170,5 +202,5 @@ yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundam
 8. **Backtesting:** `backtest.py` exists unwired — backtest regime/strategy rules on `price_1d` history.
 9. **Alerts:** `alert.py` + PCR/OI-breakout rules (PCR from option chains when available).
 10. **Expiry holidays:** refresh `HOLIDAYS_IST` each January from NSE/BSE circulars.
-11. **API hardening:** replace Flask dev server with gunicorn + systemd unit (current nohup+watchdog is fragile); add response caching for `/api/market` (currently ~270 queries/page-load).
+11. **API hardening:** systemd unit done; remaining: gunicorn workers (Flask dev server is single-threaded) + response caching for `/api/market` (currently ~270 queries/page-load).
 12. **Auth/admin:** token-gated `/api/*` write endpoints if journaling/notes are added.

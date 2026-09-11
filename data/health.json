@@ -1,6 +1,13 @@
 {
-  "status": "healthy",
+  "status": "degraded",
   "stale_instruments": [],
-  "total_instruments": 17,
-  "last_updated": "2026-09-10T11:50:15.822Z"
+  "total_instruments": 13,
+  "last_updated": "2026-09-11T05:50:18.413719+00:00",
+  "checks": {
+    "health_file": "PASS",
+    "database": "PASS",
+    "disk": "PASS",
+    "cron": "FAIL",
+    "freshness": "FAIL"
+  }
 }

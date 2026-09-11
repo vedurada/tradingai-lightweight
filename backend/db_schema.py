@@ -14,7 +14,10 @@ CREATE TABLE IF NOT EXISTS symbols (
     type TEXT CHECK(type IN ('index', 'stock', 'etf', 'vix')),
     category TEXT,
     active INTEGER DEFAULT 1,
-    created_at TEXT
+    created_at TEXT,
+    lot_size INTEGER,
+    lot_source TEXT,
+    lot_as_of TEXT
 );
 
 CREATE TABLE IF NOT EXISTS price_1m (
@@ -112,6 +115,37 @@ CREATE TABLE IF NOT EXISTS option_chain (
 );
 CREATE INDEX IF NOT EXISTS idx_opt_chain_symbol_expiry ON option_chain(symbol, expiry);
 CREATE INDEX IF NOT EXISTS idx_opt_chain_strike ON option_chain(symbol, strike);
+
+CREATE TABLE IF NOT EXISTS live_quotes (
+    symbol TEXT PRIMARY KEY,
+    timestamp TEXT,
+    price REAL,
+    open REAL,
+    high REAL,
+    low REAL,
+    previous_close REAL,
+    change REAL,
+    change_pct REAL,
+    volume INTEGER,
+    source TEXT
+);
+
+CREATE TABLE IF NOT EXISTS index_breadth (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    index_name TEXT,
+    timestamp TEXT,
+    last REAL,
+    change_pct REAL,
+    advances INTEGER,
+    declines INTEGER,
+    unchanged INTEGER,
+    open REAL,
+    high REAL,
+    low REAL,
+    prev_close REAL,
+    UNIQUE(index_name, timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_idxbreadth_name_ts ON index_breadth(index_name, timestamp DESC);
 
 CREATE TABLE IF NOT EXISTS market_breadth (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -334,6 +368,18 @@ CREATE TABLE IF NOT EXISTS etf_data (
 );
 CREATE INDEX IF NOT EXISTS idx_etf_symbol_ts ON etf_data(symbol, timestamp DESC);
 
+CREATE TABLE IF NOT EXISTS oi_top_strikes (
+    symbol TEXT,
+    expiry TEXT,
+    side TEXT CHECK(side IN ('CE','PE')),
+    rank INTEGER,
+    strike REAL,
+    open_interest INTEGER,
+    fetched_at TEXT,
+    PRIMARY KEY (symbol, expiry, side, rank)
+);
+CREATE INDEX IF NOT EXISTS idx_oi_symbol_expiry ON oi_top_strikes(symbol, expiry);
+
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,
@@ -360,6 +406,37 @@ CREATE TABLE IF NOT EXISTS history (
     UNIQUE(symbol, date)
 );
 CREATE INDEX IF NOT EXISTS idx_history_symbol_date ON history(symbol, date DESC);
+
+CREATE TABLE IF NOT EXISTS investment_views (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    date TEXT,
+    horizon TEXT CHECK(horizon IN ('SHORT', 'LONG')),
+    rating TEXT,
+    target_price REAL,
+    stop_price REAL,
+    fair_value REAL,
+    reason TEXT,
+    confidence REAL,
+    score REAL,
+    created_at TEXT,
+    UNIQUE(symbol, date, horizon)
+);
+CREATE INDEX IF NOT EXISTS idx_invest_symbol_date ON investment_views(symbol, date DESC);
+
+CREATE TABLE IF NOT EXISTS daily_strategy (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    date TEXT,
+    strategy_json TEXT,
+    regime TEXT,
+    confidence REAL,
+    bias TEXT,
+    locked_at TEXT DEFAULT '09:30',
+    created_at TEXT,
+    UNIQUE(symbol, date)
+);
+CREATE INDEX IF NOT EXISTS idx_dailystrat_symbol_date ON daily_strategy(symbol, date DESC);
 
 CREATE TABLE IF NOT EXISTS history_archive (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -404,6 +481,14 @@ def init_database(db_path: str = DB_PATH) -> None:
     c.executescript(SCHEMA)
     # Migrate existing DBs: add columns introduced after initial schema.
     try:
+        c.execute("PRAGMA table_info(symbols)")
+        sym_cols = {row[1] for row in c.fetchall()}
+        if "lot_size" not in sym_cols:
+            c.execute("ALTER TABLE symbols ADD COLUMN lot_size INTEGER")
+        if "lot_source" not in sym_cols:
+            c.execute("ALTER TABLE symbols ADD COLUMN lot_source TEXT")
+        if "lot_as_of" not in sym_cols:
+            c.execute("ALTER TABLE symbols ADD COLUMN lot_as_of TEXT")
         c.execute("PRAGMA table_info(indicators)")
         ind_cols = {row[1] for row in c.fetchall()}
         if "support_resistance" not in ind_cols:

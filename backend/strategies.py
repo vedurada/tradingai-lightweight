@@ -17,9 +17,6 @@ class StrategyEngine:
             return self.select_stock_outlook(regime, confidence, data_quality, symbol, price, vwap, rsi, adx, support, resistance, atr)
         strategies = []
         position_size = self._position_size(confidence, data_quality)
-        nd = self._non_directional_intraday(regime, confidence, vix_price, vix_change_pct, symbol)
-        if nd:
-            strategies.append(nd)
         if regime == "TRENDING_BULLISH":
             strategies += [
                 {"strategy": "Bull Call Spread", "market_condition": "Bullish trend", "expiry": "NEXT_WEEKLY", "legs": ["BUY ATM CALL", "SELL 1-2 OTM CALL"], "entry_trigger": "Price above VWAP, RSI < 70", "maximum_profit": "Strike width - premium", "maximum_loss": "Premium + costs", "breakeven": "Lower strike + premium", "stop_loss": "Below lower strike", "adjustment": "Roll up both legs", "exit": "At expiry or target", "strategy_environment": "TRENDING_BULLISH", "invalidation": "Price below VWAP or RSI > 75", "position_size": position_size},
@@ -153,40 +150,6 @@ class StrategyEngine:
             "is_stock_outlook": True,
         }
         return {"regime": regime, "confidence": confidence, "data_quality": data_quality, "strategies": [strategy], "position_size": position_size, "timestamp": datetime.now(timezone.utc).isoformat()}
-
-    def _non_directional_intraday(self, regime: str, confidence: float, vix_price: float, vix_change_pct: float, symbol: str = "") -> dict[str, Any] | None:
-        if symbol.upper() not in ("NIFTY", "BANKNIFTY"):
-            return None
-        from datetime import datetime as dt
-        now = dt.now(timezone.utc)
-        ist_hour = (now.hour + 5) % 24
-        ist_minute = now.minute
-        ist_time = ist_hour * 60 + ist_minute
-        entry_time = 9 * 60 + 30
-        exit_time = 15 * 60 + 20
-        is_entry_time = ist_time >= entry_time and ist_time < entry_time + 1
-        is_market_open = ist_time >= entry_time and ist_time < exit_time
-        if vix_price < 12:
-            strike_type = "ATM Straddle"
-            legs = ["BUY ATM CALL", "BUY ATM PUT"]
-        elif vix_price < 18:
-            strike_type = "ATM Strangle"
-            legs = ["BUY 1-strike OTM CALL", "BUY 1-strike OTM PUT"]
-        elif vix_price < 25:
-            strike_type = "Wide OTM Strangle"
-            legs = ["BUY 2-strikes OTM CALL", "BUY 2-strikes OTM PUT"]
-        else:
-            return None
-        if is_entry_time:
-            entry_trigger = "9:30 AM IST | VIX < 5% intraday up | VIX-based strikes"
-            exit_cond = "VIX crosses 5% intraday up | 2% loss | 3:20 PM IST"
-        elif is_market_open:
-            entry_trigger = "ENTRY PASSED 9:30 AM — monitor exit"
-            exit_cond = "VIX crosses 5% intraday up | 2% loss | 3:20 PM IST"
-        else:
-            entry_trigger = "Market closed — no new entry"
-            exit_cond = "N/A"
-        return {"strategy": f"ND Intraday {strike_type}", "market_condition": "Non-directional intraday | NIFTY options", "expiry": "DAY", "legs": legs, "entry_trigger": entry_trigger, "maximum_profit": "Unlimited (both legs)", "maximum_loss": "Premium paid", "breakeven": "ATM ± premium", "stop_loss": "2% of premium paid", "adjustment": "Roll strikes wider", "exit": exit_cond, "strategy_environment": regime, "invalidation": "VIX > 5% intraday up | Stop loss hit", "position_size": "25%", "is_intraday": True}
 
     def _position_size(self, confidence: float, data_quality: str) -> str:
         if data_quality == "STALE":
