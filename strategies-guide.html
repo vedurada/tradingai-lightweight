@@ -81,5 +81,5 @@ grid.innerHTML=html;
 })();
 function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 </script>
-</body>
+<script src="assets/js/keep-scroll.js"></script></body>
 </html>
