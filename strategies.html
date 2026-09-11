@@ -3,6 +3,7 @@
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -25,27 +26,12 @@
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="assets/css/main.css">
-</head>
+<script src="assets/js/keep-scroll.js" defer></script>
+<script src="assets/js/live-blink.js" defer></script></head>
 <body>
 <header>
-  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="market.html">Market</a>
-    <a href="indices/nifty.html">NIFTY</a>
-    <a href="indices/banknifty.html">Bank NIFTY</a>
-    <a href="indices/finnifty.html">FINNIFTY</a>
-    <a href="indices/sensex.html">SENSEX</a>
-    <a href="scanner.html">Scanner</a>
-    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="stocks/top-large-cap.html">Large Cap</a><a href="stocks/top-mid-small.html">Mid/Small</a><a href="etfs/top-etfs.html">ETFs</a></div></div>
-    <a href="strategies.html">Strategies</a>
-    <a href="stock-options.html">Stock Options</a>
-    <a href="strategy-builder.html">Builder</a>
-    <a href="strategies-guide.html">Guide</a>
-    <a href="queries/index.html">Queries</a>
-    <a href="history.html">History</a>
-  </nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -102,7 +88,15 @@
     <div id="e-perf" class="status">Loading…</div>
   </div>
 
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>Strategies is where TradingAI translates a market read into a structured options plan. Based on the computed regime for each index — trending, range-bound or volatile — the page selects an appropriate options structure (for example a vertical spread for a moderate trend, or a defined-risk premium-selling approach when volatility is high), shows the legs, and links each idea to the payoff builder.</p>
+      <p>The logic is deliberately conservative. The system prefers defined-risk structures over naked premium selling, and it refuses to suggest a trade at all when the signals disagree. That is by design: in an automated service, the costliest failure is suggesting a precise trade on top of ambiguous data. When the page says NO TRADE, it is protecting you from an unreliable read, not being shy.</p>
+      <p>Each strategy row links to the guide so you can read the mechanics of the structure and to the builder so you can see the payoff profile at any strike you choose. Studying why a structure fits a regime — and when it breaks — is the fastest way to make these tools your own rather than taking them at face value.</p>
+      <p>Strategies are generated from public end-of-day and intraday data and may be delayed by the feed. They are research illustrations, not recommendations and not personalised advice. Options risk losing the entire premium and more. Verify premiums, margins and lot sizes with your broker before acting.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Options involve substantial risk. No structure guarantees profit. <a href="strategies-guide.html">Strategy definitions →</a> <a href="strategy-builder.html">Custom builder →</a></p>
   </footer>
 </main>

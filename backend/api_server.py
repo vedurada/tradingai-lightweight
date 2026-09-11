@@ -4,6 +4,8 @@ import json
 import os
 import sys
 import sqlite3
+import threading
+import time as _time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -95,6 +97,18 @@ def vix_history():
     rows = conn.execute("SELECT * FROM vix_data ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
     conn.close()
     return jsonify([row_to_dict(r) for r in reversed(rows)])
+
+@app.route("/api/vix/daily")
+def vix_daily():
+    days = request.args.get("days", 60, type=int)
+    conn = get_db()
+    rows = conn.execute("SELECT DATE(timestamp) as d, close, change, change_pct FROM vix_data WHERE timestamp >= date('now', '-' || ? || ' days') ORDER BY d", (days,)).fetchall()
+    conn.close()
+    # Keep last entry per date
+    seen = {}
+    for r in rows:
+        seen[r['d']] = {'date': r['d'], 'close': r['close'], 'change': r['change'], 'change_pct': r['change_pct']}
+    return jsonify(list(seen.values()))
 
 @app.route("/api/indicators/<symbol>")
 def indicators(symbol):
@@ -513,6 +527,172 @@ def option_expiries(symbol):
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+@app.route("/api/pcr")
+def pcr():
+    """Put-Call Ratio per index symbol per expiry, from EOD OI data."""
+    symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
+    conn = get_db()
+    out = {}
+    for sym in symbols:
+        sym = sym.strip().upper()
+        expiries = conn.execute(
+            "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (sym,)
+        ).fetchall()
+        sym_data = []
+        for e in expiries:
+            expiry = e["expiry"]
+            pe = conn.execute("SELECT SUM(open_interest) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='PE'", (sym, expiry)).fetchone()["s"] or 0
+            ce = conn.execute("SELECT SUM(open_interest) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='CE'", (sym, expiry)).fetchone()["s"] or 0
+            pcr_val = round(pe / ce, 3) if ce > 0 else None
+            sym_data.append({"expiry": expiry, "pcr": pcr_val, "pe_oi": pe, "ce_oi": ce})
+        out[sym] = sym_data
+    conn.close()
+    return jsonify(out)
+
+@app.route("/api/maxpain")
+def max_pain():
+    """Max-pain strike per index symbol per expiry."""
+    symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
+    conn = get_db()
+    out = {}
+    for sym in symbols:
+        sym = sym.strip().upper()
+        expiries = conn.execute(
+            "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (sym,)
+        ).fetchall()
+        sym_data = []
+        for e in expiries:
+            expiry = e["expiry"]
+            chain = conn.execute(
+                "SELECT strike, option_type, open_interest FROM option_chain WHERE symbol=? AND expiry=?",
+                (sym, expiry)
+            ).fetchall()
+            strike_oi = {}
+            for r in chain:
+                strike_oi[r["strike"]] = strike_oi.get(r["strike"], 0) + r["open_interest"]
+            max_pain_strike = min(strike_oi, key=strike_oi.get) if strike_oi else None
+            total_oi = sum(strike_oi.values())
+            sym_data.append({"expiry": expiry, "max_pain": max_pain_strike, "total_oi": total_oi, "strikes": len(strike_oi)})
+        out[sym] = sym_data
+    conn.close()
+    return jsonify(out)
+
+@app.route("/api/pcr-history")
+def pcr_history():
+    """Daily PCR/max-pain trend per index symbol (for the small multi-day chart)."""
+    symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
+    days = request.args.get("days", 7, type=int)
+    conn = get_db()
+    out = {}
+    for sym in symbols:
+        sym = sym.strip().upper()
+        rows = conn.execute(
+            "SELECT * FROM pcr_history WHERE symbol=? ORDER BY date DESC LIMIT ?", (sym, days)
+        ).fetchall()
+        out[sym] = [row_to_dict(r) for r in reversed(rows)]
+    conn.close()
+    return jsonify(out)
+
+@app.route("/api/oi-top")
+def oi_top():
+    """Top OI strikes per symbol/expiry/side."""
+    symbol = request.args.get("symbol", "NIFTY")
+    expiry = request.args.get("expiry", "")
+    conn = get_db()
+    if expiry:
+        rows = conn.execute("SELECT * FROM oi_top_strikes WHERE symbol=? AND expiry=? ORDER BY side, rank", (symbol, expiry)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM oi_top_strikes WHERE symbol=? ORDER BY side, rank LIMIT 40", (symbol,)).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+@app.route("/api/portfolio", methods=["GET"])
+def portfolio_list():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM portfolio ORDER BY created_at DESC").fetchall()
+    conn.close()
+    items = [row_to_dict(r) for r in rows]
+    try:
+        quotes = market()  # reuse cached market payload for live LTPs
+        instr = (quotes.get_json() if hasattr(quotes, "get_json") else {}).get("instruments", {})
+    except Exception:
+        instr = {}
+    for it in items:
+        q = instr.get(it["symbol"], {})
+        price = q.get("price") or q.get("last_price")
+        if it.get("exit_price"):
+            price = it["exit_price"]
+        if price:
+            it["live_price"] = price
+            it["market_value"] = round(price * (it.get("quantity") or 0), 2)
+            if it.get("entry_price"):
+                it["pnl_pct"] = round(((price - it["entry_price"]) / it["entry_price"]) * 100 * (1 if it.get("direction") != "SHORT" else -1), 2)
+    return jsonify(items)
+
+@app.route("/api/portfolio", methods=["POST"])
+def portfolio_add():
+    body = request.get_json(silent=True) or {}
+    sym = (body.get("symbol") or "").strip().upper()
+    if not sym:
+        return jsonify({"error": "symbol required"}), 400
+    direction = (body.get("direction") or "LONG").upper()
+    if direction not in ("LONG", "SHORT"):
+        direction = "LONG"
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO portfolio (symbol, strategy, entry_price, quantity, direction, entry_date,"
+        " exit_price, exit_date, points, result, created_at)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        (sym, body.get("strategy", ""), body.get("entry_price"), body.get("quantity"),
+         direction, body.get("entry_date") or datetime.now(timezone.utc).date().isoformat(),
+         body.get("exit_price"), body.get("exit_date"), body.get("points"),
+         (body.get("result") or "").upper(), datetime.now(timezone.utc).isoformat()))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/portfolio/<int:pid>", methods=["DELETE"])
+def portfolio_delete(pid):
+    conn = get_db()
+    conn.execute("DELETE FROM portfolio WHERE id=?", (pid,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/backtest")
+def backtest():
+    symbol = request.args.get("symbol", "NIFTY").strip().upper()
+    days = request.args.get("days", 30, type=int)
+    from backtest import BacktestEngine
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+    engine = BacktestEngine(db_path)
+    result = engine.run(symbol, days)
+    return jsonify(result)
+
+@app.route("/api/alerts")
+def alerts():
+    limit = request.args.get("limit", 50, type=int)
+    symbol = request.args.get("symbol", "").strip().upper()
+    conn = get_db()
+    if symbol:
+        rows = conn.execute("SELECT * FROM alerts WHERE symbol=? ORDER BY timestamp DESC LIMIT ?", (symbol, limit)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM alerts ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+@app.route("/api/etf-holdings")
+def etf_holdings():
+    symbol = request.args.get("symbol", "").strip().upper()
+    conn = get_db()
+    if symbol:
+        rows = conn.execute("SELECT * FROM etf_holdings WHERE symbol=? ORDER BY pct DESC", (symbol,)).fetchall()
+    else:
+        rows = conn.execute("SELECT symbol, holding_symbol, holding_name, pct, MAX(fetch_date) AS fetch_date"
+                            " FROM etf_holdings GROUP BY symbol, holding_symbol ORDER BY symbol, pct DESC").fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
 @app.route("/api/breadth")
 def breadth():
     conn = get_db()
@@ -585,7 +765,44 @@ def etf():
 
 @app.route("/api/market")
 def market():
-    """Legacy shape: {instruments: {SYM: symbol_payload}, ai_outlook, last_updated, data_quality}."""
+    """Legacy shape: {instruments: {SYM: symbol_payload}, ai_outlook, last_updated, data_quality}.
+    Single-flight rebuild cached TTL; concurrent requests / stale serves from cache so the
+    site-wide ticker and dashboard never block on the ~20s full recompute."""
+    c = _MARKET
+    now = _time.time()
+    if (c["data"] is None or now - c["at"] > _MARKET_TTL) and not c["building"]:
+        c["building"] = True
+        data = None
+        try:
+            data = _build_market()
+            c["data"] = data
+            c["at"] = _time.time()
+        except Exception as e:
+            app.logger.warning(f"market rebuild failed: {e}")
+        finally:
+            c["building"] = False
+        if data is not None:
+            return jsonify(data)
+    if c["data"] is not None:
+        return jsonify(c["data"])
+    deadline = _time.time() + _MARKET_TTL + 15
+    while c["data"] is None and _time.time() < deadline:
+        _time.sleep(0.5)
+        if not c["building"]:
+            c["building"] = True
+            try:
+                data = _build_market()
+                c["data"] = data
+                c["at"] = _time.time()
+            except Exception:
+                pass
+            finally:
+                c["building"] = False
+            break
+    return jsonify(c["data"] or {})
+
+
+def _build_market():
     conn = get_db()
     sym_rows = conn.execute("SELECT symbol FROM symbols WHERE active=1 ORDER BY type, symbol").fetchall()
     symbols = [r["symbol"] for r in sym_rows] or ["NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"]
@@ -604,7 +821,7 @@ def market():
             if ts and (not latest_ts or ts > latest_ts):
                 latest_ts = ts
     nifty_ai = (instruments.get("NIFTY") or {}).get("ai_outlook", {})
-    return jsonify({"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments})
+    return {"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments}
 
 GLOBAL_SYMBOLS = {
     "^NSEI": {"name": "NIFTY 50 (India)"},
@@ -620,6 +837,9 @@ GLOBAL_SYMBOLS = {
 }
 
 _GLOBAL_CACHE = {"at": 0.0, "data": None}
+
+_MARKET_TTL = 20
+_MARKET = {"data": None, "at": 0.0, "building": False}
 
 
 @app.route("/api/global")
@@ -710,6 +930,34 @@ def news():
 def symbol_news(symbol):
     conn = get_db()
     rows = conn.execute("SELECT * FROM news WHERE UPPER(symbol)=UPPER(?) ORDER BY timestamp DESC LIMIT 20", (symbol,)).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+MF_CATEGORY_ORDER = ["Large Cap", "Flexi Cap", "Mid Cap", "Small Cap", "Multi Cap", "ELSS", "Index", "Value", "Balanced Advantage", "Liquid"]
+
+@app.route("/api/mf")
+def mutual_funds():
+    """Ranked mutual fund buckets: watchlist funds with NAV + annualized 1Y/3Y/5Y returns."""
+    conn = get_db()
+    total = conn.execute("SELECT COUNT(*) c FROM mf_schemes").fetchone()["c"]
+    counts = {r["category"]: r["c"] for r in conn.execute("SELECT category, COUNT(*) c FROM mf_schemes GROUP BY category")}
+    buckets = []
+    for cat in MF_CATEGORY_ORDER:
+        rows = conn.execute(
+            "SELECT scheme_code, scheme_name, fund_house, nav, nav_date, ret_1y, ret_3y, ret_5y, computed_at"
+            " FROM mf_returns WHERE category LIKE ? ORDER BY ret_1y IS NULL, ret_1y DESC LIMIT 12",
+            (f"%{cat}%",),
+        ).fetchall()
+        funds = [row_to_dict(r) for r in rows]
+        buckets.append({"category": cat, "funds": funds, "schemes_tracked": counts.get(cat, 0)})
+    conn.close()
+    return jsonify({"total_schemes": total, "last_updated": datetime.now(timezone.utc).isoformat(), "buckets": buckets})
+
+@app.route("/api/actions")
+def all_actions():
+    """Latest corporate actions across symbols (dividends, splits, buybacks)."""
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM corporate_actions ORDER BY timestamp DESC LIMIT 25").fetchall()
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 

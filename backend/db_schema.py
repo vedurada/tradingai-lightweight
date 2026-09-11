@@ -380,6 +380,19 @@ CREATE TABLE IF NOT EXISTS oi_top_strikes (
 );
 CREATE INDEX IF NOT EXISTS idx_oi_symbol_expiry ON oi_top_strikes(symbol, expiry);
 
+CREATE TABLE IF NOT EXISTS pcr_history (
+    symbol TEXT,
+    date TEXT,
+    expiry TEXT,
+    pcr REAL,
+    max_pain REAL,
+    pe_oi INTEGER,
+    ce_oi INTEGER,
+    total_oi INTEGER,
+    PRIMARY KEY (symbol, date)
+);
+CREATE INDEX IF NOT EXISTS idx_pcr_hist_sym_date ON pcr_history(symbol, date);
+
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,
@@ -472,6 +485,47 @@ CREATE TABLE IF NOT EXISTS portfolio (
     result TEXT,
     created_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS mf_schemes (
+    scheme_code TEXT PRIMARY KEY,
+    scheme_name TEXT,
+    fund_house TEXT,
+    scheme_type TEXT,
+    scheme_setting TEXT,
+    is_direct INTEGER DEFAULT 0,
+    category TEXT,
+    amfi_category TEXT,
+    nav REAL,
+    nav_date TEXT,
+    imported_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_mf_schemes_category ON mf_schemes(category, is_direct);
+
+CREATE TABLE IF NOT EXISTS mf_returns (
+    scheme_code TEXT PRIMARY KEY,
+    scheme_name TEXT,
+    fund_house TEXT,
+    category TEXT,
+    nav REAL,
+    nav_date TEXT,
+    ret_1y REAL,
+    ret_3y REAL,
+    ret_5y REAL,
+    ret_days_1y INTEGER,
+    expected_from TEXT,
+    computed_at TEXT
+);
+
+CREATE TABLE IF NOT EXISTS etf_holdings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    holding_symbol TEXT,
+    holding_name TEXT,
+    pct REAL,
+    fetch_date TEXT,
+    UNIQUE(symbol, holding_symbol)
+);
+CREATE INDEX IF NOT EXISTS idx_etf_holdings_symbol ON etf_holdings(symbol, pct DESC);
 """
 
 def init_database(db_path: str = DB_PATH) -> None:

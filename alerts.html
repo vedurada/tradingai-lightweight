@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Market Alerts — PCR & OI Signals — TradingAI</title>
+<meta name="description" content="Automatic market alerts from TradingAI: put-call ratio extremes and option open-interest signals on NIFTY, BankNIFTY and FINNIFTY, plus regime-change flags.">
+<link rel="canonical" href="https://tradingai.in/alerts.html">
+<meta property="og:title" content="Market Alerts — TradingAI">
+<meta property="og:description" content="PCR extremes, OI signals and regime-change alerts on the major NSE indices.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/alerts.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"WebPage","name":"Market Alerts","url":"https://tradingai.in/alerts.html"}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="assets/css/main.css">
+<script src="assets/js/keep-scroll.js" defer></script></head>
+<body>
+<header>
+  <h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span><span id="live-clock"></span></div>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+  <h2>MARKET ALERTS</h2>
+
+  <div class="card">
+    <h3>What the alert engine watches</h3>
+    <p>Every index option snapshot the system ingests is screened automatically:</p>
+    <ul class="status" style="line-height:1.9">
+      <li><strong>PCR ≤ 0.65</strong> — put-heavy positioning (hedging spike, potential support zone)</li>
+      <li><strong>PCR ≥ 1.30</strong> — call-heavy positioning (complacency, potential resistance zone)</li>
+      <li><strong>Regime / bias changes</strong> — the strategy engine switched its market view</li>
+    </ul>
+    <p class="status">Alerts are deduplicated to one row per rule per day and logged automatically.</p>
+  </div>
+
+  <div id="alerts-body"><div class="card">Loading alerts…</div></div>
+
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+    <p>The Alerts page is the site's early-warning strip. Instead of making you watch indicators all day, the system screens every options and strategy snapshot it ingests and flags the moments that classic option market studies care about.</p>
+    <p>PCR is the put-call ratio of open interest. When the market drops and PCR falls toward 0.6, options traders have loaded up on protection — that heavy put build-up often marks a support level worth watching. When PCR climbs above 1.3 through a rally, the same hedging argument flips to warning territory. Neither reading is predictive by itself; treat them as context against price action and the strategy engine's regime tags.</p>
+    <p>Regime-change alerts appear when the automated engine moves NIFTY from one market phase to another (for example range to bullish). Those are the signals most worth reading the same day, because the engine's trading strategy changes with them.</p>
+    <p>Alerts run on daily data with a one-row-per-day dedupe, so the page stays readable. They are information and research, not buy/sell advice.</p>
+  </div>
+<footer>
+    <p>TradingAI provides market analysis and decision-support information. Not financial advice. Verify market data before trading.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
+</main>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
+function esc(s){return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);}catch(e){return null;}}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function typeLabel(t){t=String(t||'');if(t.includes('regime'))return 'Regime change';if(t.includes('bias'))return 'Bias change';if(t.includes('pcr_put'))return 'Put-heavy PCR';if(t.includes('pcr_call'))return 'Call-heavy PCR';return t;}
+async function loadAlerts(){
+  var body=document.getElementById('alerts-body');
+  var rows=await fetchJSON('alerts?limit=100');
+  if(rows===null){body.innerHTML='<div class="card">Could not reach the API.</div>';return;}
+  if(!rows.length){body.innerHTML='<div class="card">No alerts logged yet. They appear automatically when PCR extremes or regime changes are detected.</div>';document.getElementById('last-updated-bar').textContent='Waiting for alert engine';return;}
+  var cards=rows.map(function(a){
+    var col=(String(a.alert_type).includes('pcr_put')||String(a.alert_type).includes('bear'))?'#c2410c':'#15803d';
+    return '<div class="card"><h3><span class="badge" style="background:'+col+'20;color:'+col+'">'+esc(typeLabel(a.alert_type))+'</span> '+esc(a.symbol)+'</h3>'
+      +'<p>'+esc(a.message)+'</p><div class="status">'+fmtIST(a.timestamp)+' IST</div></div>';
+  }).join('');
+  body.innerHTML=cards;
+  document.getElementById('last-updated-bar').textContent='Latest '+rows.length+' alerts';
+}
+document.addEventListener('DOMContentLoaded',function(){loadAlerts();setInterval(loadAlerts,120000);});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+if(m&&m.instruments){var items=[];for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}
+if(items.length)el.innerHTML=items.join('')+items.join('');}}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+</body>
+</html>

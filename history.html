@@ -3,6 +3,7 @@
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -25,27 +26,12 @@
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="assets/css/main.css">
-</head>
+<script src="assets/js/keep-scroll.js" defer></script>
+<script src="assets/js/live-blink.js" defer></script></head>
 <body>
 <header>
-  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="market.html">Market</a>
-    <a href="indices/nifty.html">NIFTY</a>
-    <a href="indices/banknifty.html">Bank NIFTY</a>
-    <a href="indices/finnifty.html">FINNIFTY</a>
-    <a href="indices/sensex.html">SENSEX</a>
-    <a href="scanner.html">Scanner</a>
-    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="stocks/top-large-cap.html">Large Cap</a><a href="stocks/top-mid-small.html">Mid/Small</a><a href="etfs/top-etfs.html">ETFs</a></div></div>
-    <a href="strategies.html">Strategies</a>
-    <a href="stock-options.html">Stock Options</a>
-    <a href="strategy-builder.html">Builder</a>
-    <a href="strategies-guide.html">Guide</a>
-    <a href="queries/index.html">Queries</a>
-    <a href="history.html">History</a>
-  </nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -53,9 +39,17 @@
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>Index P&amp;L History <span class="status">Entry 9:30 AM → Exit 3:20 PM IST</span></h2>
   <div style="margin-bottom:1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:0.5rem"><div id="history-filters"></div></div>
   <div id="history-grid" class="pnl-full"></div>
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>This page tracks how the published TradingAI 'signals' have actually performed. For each index, we lock in the outlook at the morning open and measure what happened by the close, recording the points won or lost had you followed the suggested direction. The result is an honest scoreboard: win rate, cumulative points, drawdown and profit factor, with every settled day listed below.</p>
+      <p>Keeping this scoreboard is the heart of the project. Anyone can generate a bullish or bearish call; what separates useful research from noise is whether the calls are measurable. By recording each day's expectation against its outcome — without editing out the losing days — we hold the analysis to a standard: does the regime model add information or does it resemble a coin flip? You can see the answer accumulating in real time.</p>
+      <p>There are several honest limitations to note. The scoreboard settles at the close and does not simulate real fills, slippage, commissions or the exact intraday timing you would face in a live trade. It also measures direction only — it is not the P&L of any specific strategy. Treat it as a transparent audit trail of the outlooks, not as a promise of performance.</p>
+      <p>Past results never guarantee future results, and the market can change character quickly. Use this page to judge whether the model is working for the conditions you trade in, then decide accordingly. If you believe a settlement is mis-recorded, get in touch — the ledger is public precisely so it can be checked.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';
@@ -64,7 +58,7 @@ function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFraction
 var _lastDataTs=null;function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed \u2014 retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: \u2014';return;}bar.textContent='Data as of '+show+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 let refreshInterval=null;
 function isMarketHours(){const now=new Date();const ist=new Date(now.toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));const day=ist.getDay();if(day===0||day===6)return false;const h=ist.getHours();const m=ist.getMinutes();const mins=h*60+m;return mins>=570&&mins<990;}
-function startDataRefresh(callback,intervalMs){intervalMs=intervalMs||20000;stopDataRefresh();refreshInterval=setInterval(function(){callback();},intervalMs);}
+function startDataRefresh(cb,ms){stopDataRefresh();var tick=function(){cb();refreshInterval=setTimeout(tick,ms||(window.marketRefreshMs?window.marketRefreshMs():20000));};tick();}
 function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
 var histFilter='all';
 function setHistFilter(f){histFilter=f;loadHistory();}

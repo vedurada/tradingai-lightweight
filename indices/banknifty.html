@@ -3,6 +3,7 @@
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -25,27 +26,13 @@
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="../assets/css/main.css">
-</head>
+<script src="../assets/js/index-charts.js" defer></script>
+<script src="../assets/js/keep-scroll.js" defer></script>
+<script src="../assets/js/live-blink.js" defer></script></head>
 <body>
 <header>
-  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
-  <nav>
-    <a href="../index.html">Home</a>
-    <a href="../market.html">Market</a>
-    <a href="nifty.html">NIFTY</a>
-    <a href="banknifty.html">Bank NIFTY</a>
-    <a href="finnifty.html">FINNIFTY</a>
-    <a href="sensex.html">SENSEX</a>
-    <a href="../scanner.html">Scanner</a>
-    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="../stocks/top-large-cap.html">Large Cap</a><a href="../stocks/top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a></div></div>
-    <a href="../strategies.html">Strategies</a>
-    <a href="../stock-options.html">Stock Options</a>
-    <a href="../strategy-builder.html">Builder</a>
-    <a href="../strategies-guide.html">Guide</a>
-    <a href="../queries/index.html">Queries</a>
-    <a href="../history.html">History</a>
-  </nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -84,14 +71,18 @@
       <canvas id="nifty-chart" style="width:100%;height:180px"></canvas>
     </div>
     <div class="card">
-      <h3>OPTIONS INTELLIGENCE</h3>
+      <h3>OPTIONS INTELLIGENCE <span class="badge" style="background:#15803d20;color:#15803d">EOD</span></h3>
       <div class="status" id="nifty-opt-exp">Expiry: —</div>
       <div class="status" id="nifty-opt-atm">ATM: —</div>
-      <div class="status">PCR: — <span style="color:#64748b">(no NSE chain on Yahoo)</span></div>
-      <div class="status">Max Pain: — <span style="color:#64748b">(no NSE chain on Yahoo)</span></div>
-      <div class="status">Call OI / Put OI: —</div>
+      <div id="options-box" class="status">Loading…</div>
       <div class="status"><a href="../strategy-builder.html">Build this expiry in the Builder →</a></div>
     </div>
+  </div>
+
+  <div class="card">
+    <h3>CS PCR TREND <span class="status">last 6 sessions · EOD</span></h3>
+    <canvas id="pcr-chart" data-h="120" style="width:100%;height:120px"></canvas>
+    <div class="status" style="margin-top:0.4rem"><span style="color:#15803d">● PCR = puts/calls OI</span> · dashed line = 1.0 (neutral)</div>
   </div>
 
   <div class="card card-accent-amber">
@@ -119,13 +110,24 @@
     <div id="nifty-perf" class="status">—</div>
   </div>
 
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>Bank NIFTY is the market's favourite indicator of sentiment in the banking and financial sector, and this page applies the full TradingAI engine to it: intraday candles, pivot levels, VIX context, options intelligence and a structured outlook. Because banking stocks dominate index moves, Bank NIFTY often moves faster and with wider ranges than NIFTY itself.</p>
+      <p>The concepts are the same ones you see on the NIFTY page — support and resistance from price action, VWAP as the institutional average, RSI and ADX for momentum and trend, PCR and max pain from open interest — but they answer a different question: is the financial sector the source of the day's strength or weakness? When Bank NIFTY diverges from NIFTY, the divergence itself is information about where capital is rotating.</p>
+      <p>Because Bank NIFTY strikes are spaced wider (100 points) and your lot size differs, the strategies shown here can need higher margins than the equivalent NIFTY trade. The strategy builder lets you price the exact position before you place it, and the indicator definitions live in the Learn hub.</p>
+      <p>Bank NIFTY options are highly volatile and can lose the entire premium quickly. The analysis is generated automatically from public data for research; it is not a recommendation, and option spread, slippage and gap risk can change outcomes materially from the paper model.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';
 const SYM='BANKNIFTY', API='banknifty', STEP=100, LOT=30;
+var _maxPain={value:null},_pxData=null;
+function drawIndexChart(){if(window.TAIcharts&&_pxData&&_pxData.length)window.TAIcharts.drawCandles('nifty-chart',_pxData,_maxPain.value!=null?[_maxPain.value]:null);}
+function loadOptionsIntel(){if(!window.TAIcharts)return;window.TAIcharts.loadOptionsBox({symbol:SYM,boxId:'options-box',pcrCanvasId:'pcr-chart',maxPainRef:_maxPain}).then(function(){drawIndexChart();});}
 async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
 function formatPrice(p){return p!=null?Number(p).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 function formatChange(p){if(p==null)return'—';return(p>=0?'+':'')+Number(p).toFixed(2);}
@@ -134,7 +136,7 @@ var _lastDataTs=null;
 function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
 function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
 let refreshInterval=null;
-function startDataRefresh(cb,ms){ms=ms||20000;stopDataRefresh();refreshInterval=setInterval(function(){cb();},ms);}
+function startDataRefresh(cb,ms){stopDataRefresh();var tick=function(){cb();refreshInterval=setTimeout(tick,ms||(window.marketRefreshMs?window.marketRefreshMs():20000));};tick();}
 function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
 function vixRegime(v){if(v==null)return['—','#64748b'];if(v<12)return['LOW','#15803d'];if(v<15)return['NORMAL','#15803d'];if(v<20)return['ELEVATED','#a16207'];if(v<25)return['HIGH','#c2410c'];return['VERY HIGH','#dc2626'];}
 function chip(t,good){return '<span class="badge" style="background:'+(good?'#15803d':'#dc2626')+'20;color:'+(good?'#15803d':'#dc2626')+'">'+t+'</span>';}
@@ -145,11 +147,11 @@ async function loadBankNifty(){
   if(!data||!data.quote){setLastUpdated(null,false);return;}
   var q=data.quote,ind=data.indicators||{},reg=data.regime||{},ao=data.ai_outlook||{};
   var priceEl=document.getElementById('nifty-price');if(priceEl)priceEl.textContent=formatPrice(q.price);
-  var chEl=document.getElementById('nifty-change');if(chEl){chEl.style.color=(q.change>=0?'#15803d':'#dc2626');chEl.innerHTML='<span style="background:'+(q.change>=0?'#dcfce7':'#fee2e2')+';color:'+(q.change>=0?'#14532d':'#7f1d1d')+';padding:0.2rem 0.6rem;border-radius:999px;font-weight:800">'+formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)</span>';}
+  var chEl=document.getElementById('nifty-change');if(chEl){chEl.style.color=(q.change>=0?'#15803d':'#dc2626');chEl.innerHTML='<span style="background:'+(q.change>=0?'#22c55e':'#ef4444')+';color:#fff;padding:0.2rem 0.6rem;border-radius:999px;font-weight:800">'+formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)</span>';}
   var hlEl=document.getElementById('nifty-hl');if(hlEl)hlEl.textContent='High '+formatPrice(q.high)+'  Low '+formatPrice(q.low);
   var vx=await fetchJSON('vix');var vprice=vx?(vx.price!=null?vx.price:vx.close):null;var vchg=vx?(vx.change_pct!=null?vx.change_pct:0):0;
   var vEl=document.getElementById('nifty-vix');if(vEl)vEl.textContent=vprice!=null?Number(vprice).toFixed(2):'—';
-  var vr=vixRegime(vprice);var vrEl=document.getElementById('nifty-vix-regime');if(vrEl)vrEl.innerHTML='<span class="badge" style="background:'+vr[1]+'20;color:'+vr[1]+'">'+vr[0]+'</span> <span class="badge" style="background:'+(vchg>=0?'#dcfce7':'#fee2e2')+';color:'+(vchg>=0?'#14532d':'#7f1d1d')+';padding:0.2rem 0.5rem">('+formatChange(vchg)+'%)</span>';
+  var vr=vixRegime(vprice);var vrEl=document.getElementById('nifty-vix-regime');if(vrEl)vrEl.innerHTML='<span class="badge" style="background:'+vr[1]+'20;color:#fff">'+vr[0]+'</span> <span class="badge" style="background:'+(vchg>=0?'#22c55e':'#ef4444')+';color:#fff;padding:0.2rem 0.5rem">('+formatChange(vchg)+'%)</span>';
   var bias=ao.directional_bias||ao.market_regime||reg.regime||'—';
   var head=document.getElementById('nifty-outlook-head');if(head){var c=regimeColor(bias);head.innerHTML='<span class="badge" style="background:'+c+'20;color:'+c+';padding:0.35rem 0.9rem;font-size:1.05rem;font-weight:800">'+bias.replace(/_/g,' ')+'</span>';}
   var sr=ind.support_resistance||{support:[],resistance:[]};var sup=sr.support||[],res=sr.resistance||[];
@@ -172,7 +174,7 @@ async function loadBankNifty(){
   var px=await fetchJSON('prices/'+API+'?interval=1m&limit=400');
   var tlEl=document.getElementById('nifty-timeline');
   if(tlEl){
-    if(px&&px.length){var closes=px.map(function(r){return r.close;});drawChart('nifty-chart',closes);
+    if(px&&px.length){var closes=px.map(function(r){return r.close;});_pxData=px;drawIndexChart();
       var marks=['09:15','10:00','11:00','12:00','13:00','14:00','15:00'];var day=px[px.length-1].timestamp.slice(0,10);var base=px[0].close;var items=[];
       for(var mi=0;mi<marks.length;mi++){var cand=null;for(var ci=0;ci<px.length;ci++){if(px[ci].timestamp.slice(11,16)<=marks[mi])cand=px[ci];else break;}if(cand){var ch=(cand.close-base)/base*100;items.push(marks[mi]+' '+formatPrice(cand.close)+' ('+(ch>=0?'+':'')+ch.toFixed(2)+'%)');}}
       var lastC=px[px.length-1];var lc=(lastC.close-base)/base*100;items.push('NOW '+formatPrice(lastC.close)+' ('+(lc>=0?'+':'')+lc.toFixed(2)+'%)');
@@ -183,7 +185,7 @@ async function loadBankNifty(){
   if(pfEl){var hd=await fetchJSON('history');var rows=(hd&&hd[SYM])||[];var settled=rows.filter(function(e){return e.result==='WIN'||e.result==='LOSS'||e.result==='FLAT';});if(!settled.length){pfEl.textContent='No settled trades yet.';}else{var w=0,gw=0,gl=0,tot=0,peak=0,dd=0,eq=0;for(var pi=0;pi<settled.length;pi++){var p=settled[pi].points||0;tot+=p;if(settled[pi].result==='WIN'){w++;gw+=p;}else gl+=Math.abs(p);eq+=p;if(eq>peak)peak=eq;if(peak-eq>dd)dd=peak-eq;}var wr=(w/settled.length*100).toFixed(1);var pf=gl>0?(gw/gl).toFixed(2):'∞';var tc=tot>=0?'#15803d':'#dc2626';pfEl.innerHTML='Win Rate <strong>'+wr+'%</strong> | P&L <strong style="color:'+tc+'">'+(tot>=0?'+':'')+tot.toFixed(2)+'</strong> | Drawdown '+dd.toFixed(2)+' | Profit Factor '+pf+' | Trades '+settled.length;}}
   loadTicker();setLastUpdated(data.last_updated,true);
 }
-document.addEventListener('DOMContentLoaded',function(){loadBankNifty();startDataRefresh(loadBankNifty);});
+document.addEventListener('DOMContentLoaded',function(){loadBankNifty();loadOptionsIntel();startDataRefresh(loadBankNifty);});
 </script>
 
 <script>

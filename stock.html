@@ -3,6 +3,7 @@
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -24,27 +25,12 @@
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="assets/css/main.css">
-</head>
+<script src="assets/js/keep-scroll.js" defer></script>
+<script src="assets/js/live-blink.js" defer></script></head>
 <body>
 <header>
-  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
-  <nav>
-    <a href="index.html">Home</a>
-    <a href="market.html">Market</a>
-    <a href="indices/nifty.html">NIFTY</a>
-    <a href="indices/banknifty.html">Bank NIFTY</a>
-    <a href="indices/finnifty.html">FINNIFTY</a>
-    <a href="indices/sensex.html">SENSEX</a>
-    <a href="scanner.html">Scanner</a>
-    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="stocks/top-large-cap.html">Large Cap</a><a href="stocks/top-mid-small.html">Mid/Small</a><a href="etfs/top-etfs.html">ETFs</a></div></div>
-    <a href="strategies.html">Strategies</a>
-    <a href="stock-options.html">Stock Options</a>
-    <a href="strategy-builder.html">Builder</a>
-    <a href="strategies-guide.html">Guide</a>
-    <a href="queries/index.html">Queries</a>
-    <a href="history.html">History</a>
-  </nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -104,9 +90,17 @@
     <div id="stock-timeline" class="status">—</div>
   </div>
 
-  <footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>This is the single-stock research page. It pulls together the live quote, the computed technical indicators (VWAP, RSI, ADX, support and resistance), the prevailing regime, and a plain-language outlook for the symbol you asked for. It is the same engine that powers the scanner and index pages, focused on one name.</p>
+      <p>The support and resistance zones are derived from recent price action and are intended as decision aids, not guaranteed levels. VWAP shows where the day's institutional average price sits — companies often respect it intraday. RSI tells you whether a stock is stretched after a move, and ADX tells you whether the move has genuine directional strength or is just oscillation. Reading these together gives a structured way to assess a stock instead of reacting to the last tick.</p>
+      <p>Every stock page also links to the broader tools: the scanner to find names, the strategies page for the approach, and trading history to judge whether the published views are working. The education hub explains each indicator in plain language if you want to go deeper.</p>
+      <p>The page is generated automatically from public market data. It is research context, not personalised advice and not a recommendation. Prices flicker through trading hours and settle at the close. Always verify current data with your broker and make your own risk decisions.</p>
+  </div>
+<footer>
     <p>TradingAI provides market analysis and decision-support information. Not investment advice.</p>
-  </footer>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='';
@@ -120,7 +114,7 @@ function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.inc
 var _lastDataTs=null;
 function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
 function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
-let refreshInterval=null;function startDataRefresh(cb,ms){ms=ms||20000;stopDataRefresh();refreshInterval=setInterval(function(){cb();},ms);}function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+let refreshInterval=null;function startDataRefresh(cb,ms){stopDataRefresh();var tick=function(){cb();refreshInterval=setTimeout(tick,ms||(window.marketRefreshMs?window.marketRefreshMs():20000));};tick();}function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
 function chip(t,good){return '<span class="badge" style="background:'+(good?'#15803d':'#dc2626')+'20;color:'+(good?'#15803d':'#dc2626')+'">'+t+'</span>';}
 function drawChart(id,closes){var c=document.getElementById(id);if(!c||!closes.length)return;var dpr=window.devicePixelRatio||1;var W=c.clientWidth||600,H=180;c.width=W*dpr;c.height=H*dpr;var x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);var mn=Math.min.apply(null,closes),mx=Math.max.apply(null,closes);if(mx===mn){mx+=1;mn-=1;}var up=closes[closes.length-1]>=closes[0];x.strokeStyle=up?'#15803d':'#dc2626';x.lineWidth=2;x.beginPath();for(var i=0;i<closes.length;i++){var px=i/(closes.length-1)*W,py=H-((closes[i]-mn)/(mx-mn))*(H-10)-5;if(i===0)x.moveTo(px,py);else x.lineTo(px,py);}x.stroke();var last=closes[closes.length-1];x.fillStyle='#0f172a';x.font='12px sans-serif';x.fillText(formatPrice(last),W-70,14);}
 async function loadTicker(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=await fetchJSON('market');var ib=await fetchJSON('index-breadth');var items=[];if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+formatPrice(q.price)+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}

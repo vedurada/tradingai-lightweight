@@ -3,6 +3,7 @@
 <head>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
@@ -24,27 +25,12 @@
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="../assets/css/main.css">
-</head>
+<script src="../assets/js/keep-scroll.js" defer></script>
+<script src="../assets/js/live-blink.js" defer></script></head>
 <body>
 <header>
-  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
-  <nav>
-    <a href="../index.html">Home</a>
-    <a href="../market.html">Market</a>
-    <a href="../indices/nifty.html">NIFTY</a>
-    <a href="../indices/banknifty.html">Bank NIFTY</a>
-    <a href="../indices/finnifty.html">FINNIFTY</a>
-    <a href="../indices/sensex.html">SENSEX</a>
-    <a href="../scanner.html">Scanner</a>
-    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="top-large-cap.html">Large Cap</a><a href="top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a><a href="../sectors/top.html">Sectors</a><a href="52-week.html">52-Week</a></div></div>
-    <a href="../strategies.html">Strategies</a>
-    <a href="../stock-options.html">Stock Options</a>
-    <a href="../strategy-builder.html">Builder</a>
-    <a href="../strategies-guide.html">Guide</a>
-    <a href="../queries/index.html">Queries</a>
-    <a href="../history.html">History</a>
-  </nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
@@ -54,7 +40,15 @@
     <div class="status">Distance from 52-week extremes across tracked stocks — live from 1 year of daily candles.</div>
   </div>
   <div id="w52-grid"><div class="card">Loading 52-week data…</div></div>
-  <footer><p>52-week range from stored daily candles (backfilled ~1 year via Yahoo). Not financial advice.</p></footer>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>The 52-week page surfaces which tracked stocks are pressing near their one-year highs or lows — one of the most revealing long-chart relationships a trader can scan. It compares the latest close against the highest high and lowest low of the past year and flags names within a few percent of either extreme.</p>
+      <p>Breakouts toward new highs with increasing volume can confirm institutional interest; stocks hugging their lows may be cheap or may be value traps. Reading both lists together shows you the market's internal momentum — many names near highs on rising tape is healthy, while a broad cluster near lows warrants caution.</p>
+      <p>The page is computed from a year of stored daily candles per stock, so the extremes are exact up to your data's depth. Every row links to the stock's research page, to the scanner for momentum checks, and the Learn hub explains how support and resistance form on long time frames.</p>
+      <p>This is automatically generated research from public market data, not a tip list. 'Near the 52-week high' is information, not a buy signal — trend-following works less well in range-bound regimes. Always verify levels and do your own diligence before trading.</p>
+  </div>
+<footer><p>52-week range from stored daily candles (backfilled ~1 year via Yahoo). Not financial advice.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';

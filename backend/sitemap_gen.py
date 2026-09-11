@@ -34,6 +34,9 @@ EVERGREEN = [
     ("sectors/top.html", "daily", "0.8"),
     ("queries/", "daily", "0.8"),
     ("global/markets.html", "daily", "0.7"),
+    ("mutual-funds/", "daily", "0.8"),
+    ("news/", "daily", "0.7"),
+    ("options/pcr.html", "daily", "0.7"),
     ("indices/finnifty.html", "daily", "0.9"),
     ("indices/sensex.html", "daily", "0.9"),
     ("stock-options.html", "daily", "0.8"),
@@ -44,6 +47,15 @@ EVERGREEN = [
     ("learn/cpr.html", "monthly", "0.6"),
     ("learn/option-greeks.html", "monthly", "0.6"),
     ("tools/position-size.html", "monthly", "0.7"),
+    ("about.html", "monthly", "0.3"),
+    ("contact.html", "monthly", "0.3"),
+    ("privacy.html", "monthly", "0.3"),
+    ("terms.html", "monthly", "0.3"),
+    ("disclaimer.html", "monthly", "0.3"),
+    ("portfolio.html", "weekly", "0.6"),
+    ("alerts.html", "weekly", "0.5"),
+    ("tools/backtest.html", "weekly", "0.5"),
+    ("etfs/holdings.html", "weekly", "0.5"),
 ]
 
 DAILY_GLOBS = ("market/nifty-outlook-*.html", "market/nifty-close-*.html")

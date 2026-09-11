@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Portfolio Tracker — TradingAI</title>
+<meta name="description" content="Track your NSE positions: log entries and exits, see live price, market value and P&L for every symbol in your portfolio.">
+<link rel="canonical" href="https://tradingai.in/portfolio.html">
+<meta property="og:title" content="Portfolio Tracker — TradingAI">
+<meta property="og:description" content="Log your NSE positions and watch live P&L against current market prices.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/portfolio.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"WebApplication","name":"Portfolio Tracker","url":"https://tradingai.in/portfolio.html"}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="assets/css/main.css">
+<script src="assets/js/keep-scroll.js" defer></script></head>
+<body>
+<header>
+  <h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span><span id="live-clock"></span></div>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+  <h2>PORTFOLIO TRACKER</h2>
+
+  <div class="card">
+    <h3>Add a position</h3>
+    <form id="pf-form" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:0.6rem;align-items:end">
+      <label>Symbol<input id="f-symbol" placeholder="NIFTY / RELIANCE" required></label>
+      <label>Direction<select id="f-direction"><option>LONG</option><option>SHORT</option></select></label>
+      <label>Qty<input id="f-qty" type="number" min="1" step="1" placeholder="1"></label>
+      <label>Entry price<input id="f-entry" type="number" step="any" placeholder="e.g. 22700"></label>
+      <label>Strategy<input id="f-strategy" placeholder="e.g. OI breakout"></label>
+      <label>Entry date<input id="f-date" type="date"></label>
+      <button type="submit" class="btn">Add</button>
+    </form>
+  </div>
+
+  <div id="pf-body"><div class="card">Loading portfolio…</div></div>
+
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+    <p>The Portfolio page is a personal journal for your NSE trades: every position you log here gets a live comparison against the current market price, so you can see unrealised gain or loss without opening your brokerage app.</p>
+    <p>For a LONG position your P&L is positive when the live price is above your entry price; for a SHORT position the opposite holds. The tracker uses the same delayed market feed as the rest of the site, so treat the figures as estimates for research and planning, not as a replacement for your broker statement.</p>
+    <p>Log the strategy name for each trade — after a few weeks the tracker doubles as a mini performance diary, letting you see which approach (OI breakout, breakouts, options spreads) actually earns. Empty rows can be removed with the delete button.</p>
+    <p>This tool is for record-keeping and research. Nothing on the page is advice. Always verify prices with your broker before acting.</p>
+  </div>
+<footer>
+    <p>TradingAI provides market analysis and decision-support information. Not financial advice. Verify market data before trading.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
+</main>
+<script>
+const API_BASE='';
+async function fetchJSON(path,opts){try{const res=await fetch(`${API_BASE}/api/${path}`,opts);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:false});return f.format(d);}catch(e){return null;}}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function pnlColor(v){return v==null?'':v>=0?'#15803d':'#dc2626';}
+function today(){var d=new Date();var m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0');return d.getFullYear()+'-'+m+'-'+dd;}
+async function loadPortfolio(){
+  var body=document.getElementById('pf-body');
+  var items=await fetchJSON('portfolio');
+  if(items===null){body.innerHTML='<div class="card">Could not reach the API.</div>';return;}
+  if(!items.length){body.innerHTML='<div class="card">No positions logged yet. Use the form above to add your first trade.</div>';document.getElementById('last-updated-bar').textContent='';return;}
+  var tot_val=0,tot_pnl=0;
+  var rows=items.map(function(p){
+    var live=p.live_price,val=p.market_value,pnl=p.pnl_pct;
+    if(val!=null)tot_val+=val;
+    var status=p.result||'OPEN';
+    return '<tr><td><strong>'+p.symbol+'</strong>'+(p.strategy?'<br><span class="status">'+esc(p.strategy)+'</span>':'')+'</td>'
+      +'<td>'+p.direction+'</td><td>'+p.quantity+'</td><td>'+fmt(p.entry_price)+'</td>'
+      +'<td>'+(p.entry_date||'—')+'</td>'
+      +'<td>'+fmt(p.exit_price)+'</td>'
+      +'<td style="color:'+pnlColor(p.pnl_pct)+'">'+((live!=null)?'<strong>'+fmt(live)+'</strong>':'—')+'</td>'
+      +'<td style="color:'+pnlColor(p.pnl_pct)+'">'+(val!=null?fmt(val):'—')+'</td>'
+      +'<td style="color:'+pnlColor(p.pnl_pct)+'">'+(p.pnl_pct!=null?(p.pnl_pct>=0?'+':'')+p.pnl_pct+'%':'—')+'</td>'
+      +'<td><button class="btn" data-rm="'+p.id+'">Remove</button></td></tr>';
+  }).join('');
+  var netColor=tot_pnl>0?'#15803d':'#dc2626';
+  body.innerHTML='<div class="card"><h3>Positions ('+items.length+')</h3>'
+    +'<div class="price">Market value '+fmt(tot_val)+'</div>'
+    +'<div class="table-wrap"><table><thead><tr><th>Symbol</th><th>Side</th><th>Qty</th><th>Entry</th><th>Entry date</th><th>Exit</th><th>Live</th><th>Value</th><th>P&L</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div></div>';
+  body.querySelectorAll('[data-rm]').forEach(function(b){
+    b.onclick=async function(){await fetchJSON('portfolio/'+b.dataset.rm,{method:'DELETE'});loadPortfolio();};
+  });
+  document.getElementById('last-updated-bar').textContent='Live prices from market feed';
+}
+function esc(s){return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('f-date').value=today();
+  document.getElementById('pf-form').addEventListener('submit',async function(e){
+    e.preventDefault();
+    var body={symbol:document.getElementById('f-symbol').value,direction:document.getElementById('f-direction').value,
+      quantity:document.getElementById('f-qty').value,entry_price:document.getElementById('f-entry').value,
+      strategy:document.getElementById('f-strategy').value,entry_date:document.getElementById('f-date').value};
+    var r=await fetchJSON('portfolio',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    if(r&&r.ok){e.target.reset();document.getElementById('f-date').value=today();loadPortfolio();}
+  });
+  loadPortfolio();setInterval(loadPortfolio,60000);
+});
+</script>
+<script>
+(function(){var BASE='';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+if(m&&m.instruments){var items=[];for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}
+if(items.length)el.innerHTML=items.join('')+items.join('');}}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+</body>
+</html>
