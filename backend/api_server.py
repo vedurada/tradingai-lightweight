@@ -4,6 +4,8 @@ import json
 import os
 import sys
 import sqlite3
+import threading
+import time as _time
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -664,7 +666,44 @@ def etf():
 
 @app.route("/api/market")
 def market():
-    """Legacy shape: {instruments: {SYM: symbol_payload}, ai_outlook, last_updated, data_quality}."""
+    """Legacy shape: {instruments: {SYM: symbol_payload}, ai_outlook, last_updated, data_quality}.
+    Single-flight rebuild cached TTL; concurrent requests / stale serves from cache so the
+    site-wide ticker and dashboard never block on the ~20s full recompute."""
+    c = _MARKET
+    now = _time.time()
+    if (c["data"] is None or now - c["at"] > _MARKET_TTL) and not c["building"]:
+        c["building"] = True
+        data = None
+        try:
+            data = _build_market()
+            c["data"] = data
+            c["at"] = _time.time()
+        except Exception as e:
+            app.logger.warning(f"market rebuild failed: {e}")
+        finally:
+            c["building"] = False
+        if data is not None:
+            return jsonify(data)
+    if c["data"] is not None:
+        return jsonify(c["data"])
+    deadline = _time.time() + _MARKET_TTL + 15
+    while c["data"] is None and _time.time() < deadline:
+        _time.sleep(0.5)
+        if not c["building"]:
+            c["building"] = True
+            try:
+                data = _build_market()
+                c["data"] = data
+                c["at"] = _time.time()
+            except Exception:
+                pass
+            finally:
+                c["building"] = False
+            break
+    return jsonify(c["data"] or {})
+
+
+def _build_market():
     conn = get_db()
     sym_rows = conn.execute("SELECT symbol FROM symbols WHERE active=1 ORDER BY type, symbol").fetchall()
     symbols = [r["symbol"] for r in sym_rows] or ["NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"]
@@ -683,7 +722,7 @@ def market():
             if ts and (not latest_ts or ts > latest_ts):
                 latest_ts = ts
     nifty_ai = (instruments.get("NIFTY") or {}).get("ai_outlook", {})
-    return jsonify({"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments})
+    return {"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments}
 
 GLOBAL_SYMBOLS = {
     "^NSEI": {"name": "NIFTY 50 (India)"},
@@ -699,6 +738,9 @@ GLOBAL_SYMBOLS = {
 }
 
 _GLOBAL_CACHE = {"at": 0.0, "data": None}
+
+_MARKET_TTL = 20
+_MARKET = {"data": None, "at": 0.0, "building": False}
 
 
 @app.route("/api/global")
