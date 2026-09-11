@@ -472,6 +472,36 @@ CREATE TABLE IF NOT EXISTS portfolio (
     result TEXT,
     created_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS mf_schemes (
+    scheme_code TEXT PRIMARY KEY,
+    scheme_name TEXT,
+    fund_house TEXT,
+    scheme_type TEXT,
+    scheme_setting TEXT,
+    is_direct INTEGER DEFAULT 0,
+    category TEXT,
+    amfi_category TEXT,
+    nav REAL,
+    nav_date TEXT,
+    imported_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_mf_schemes_category ON mf_schemes(category, is_direct);
+
+CREATE TABLE IF NOT EXISTS mf_returns (
+    scheme_code TEXT PRIMARY KEY,
+    scheme_name TEXT,
+    fund_house TEXT,
+    category TEXT,
+    nav REAL,
+    nav_date TEXT,
+    ret_1y REAL,
+    ret_3y REAL,
+    ret_5y REAL,
+    ret_days_1y INTEGER,
+    expected_from TEXT,
+    computed_at TEXT
+);
 """
 
 def init_database(db_path: str = DB_PATH) -> None:

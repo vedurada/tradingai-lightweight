@@ -11,15 +11,15 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sector Performance Today - TradingAI</title>
-<meta name="description" content="Live Indian sector performance by equal-weight proxy basket of tracked stocks — banking, IT, pharma, energy, consumer and more.">
-<link rel="canonical" href="https://tradingai.in/sectors/top.html">
-<meta property="og:title" content="Sector Performance Today - TradingAI">
-<meta property="og:description" content="Live sector moves: banking, IT, pharma, energy, consumer.">
+<title>Stock Market News Today - TradingAI</title>
+<meta name="description" content="Today's Indian stock market news and stocks in news — headlines tracked per symbol across major publishers.">
+<link rel="canonical" href="https://tradingai.in/news/">
+<meta property="og:title" content="Stock Market News Today - TradingAI">
+<meta property="og:description" content="Stocks in news today — tracked headlines.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://tradingai.in/sectors/top.html">
+<meta property="og:url" content="https://tradingai.in/news/">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Sectors","item":"https://tradingai.in/sectors/top.html"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Market News","item":"https://tradingai.in/news/"}]}]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
@@ -37,7 +37,7 @@
     <a href="../indices/finnifty.html">FINNIFTY</a>
     <a href="../indices/sensex.html">SENSEX</a>
     <a href="../scanner.html">Scanner</a>
-    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="../stocks/top-large-cap.html">Large Cap</a><a href="../stocks/top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a><a href="top.html">Sectors</a><a href="../stocks/52-week.html">52-Week</a></div></div>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="../stocks/top-large-cap.html">Large Cap</a><a href="../stocks/top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a><a href="../sectors/top.html">Sectors</a><a href="../stocks/52-week.html">52-Week</a></div></div>
     <a href="../strategies.html">Strategies</a>
     <a href="../stock-options.html">Stock Options</a>
     <a href="../strategy-builder.html">Builder</a>
@@ -52,23 +52,19 @@
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
   <div class="card hero" style="margin-bottom:1rem">
-    <h2 style="margin:0">SECTOR PERFORMANCE TODAY</h2>
-    <div class="status">Equal-weight proxy basket of tracked stocks — live change%.</div>
+    <h2 style="margin:0">STOCKS &amp; MARKET NEWS</h2>
+    <div class="status">Headlines tracked for TradingAI symbols — latest 50, and corporate actions on file.</div>
   </div>
-  <div id="sector-grid"><div class="card">Loading sectors…</div></div>
-  <footer><p>Proxy baskets use the stocks TradingAI tracks. Not financial advice.</p></footer>
+  <div class="card" style="margin-bottom:1rem">
+    <h3>Filter by symbol</h3>
+    <div id="news-syms" class="status">Loading symbols…</div>
+  </div>
+  <div id="news-list"><div class="card">Loading news…</div></div>
+  <div class="card"><h3>Corporate actions on file</h3><div id="corp-list"><div class="status">Loading…</div></div></div>
+  <footer><p>Headline source links open externally. Not financial advice.</p></footer>
 </main>
 <script>
 const API_BASE='..';
-const SECTORS=[
- {name:'Banking & Finance',sym:['AXISBANK','ICICIBANK','HDFCBANK','SBIN','KOTAKBANK','BAJFINANCE']},
- {name:'IT & Tech',sym:['INFY','TCS','HCLTECH','TECHM','WIPRO','MPHASIS','PERSISTENT','COFORGE','TANLA','KPITTECH']},
- {name:'Pharma & Healthcare',sym:['SUNPHARMA','LUPIN','MAXHEALTH']},
- {name:'Auto & Industrials',sym:['MARUTI','CUMMINSIND','VOLTAS','DIXON','ASTRAL','CCL']},
- {name:'Energy & Utilities',sym:['RELIANCE','NTPC','ONGC','COALINDIA','POWERGRID']},
- {name:'Consumer & Durables',sym:['ITC','TITAN','RADICO','KPRMILL']},
- {name:'Infra & Realty',sym:['LT','ULTRACEMCO','GODREJPROP']}
-];
 const BRAND={RELIANCE:{c:'#0B4F6C',d:'ril.com'},HDFCBANK:{c:'#004178',d:'hdfcbank.com'},ICICIBANK:{c:'#C41230',d:'icicibank.com'},SBIN:{c:'#22409A',d:'sbi.co.in'},INFY:{c:'#007CC3',d:'infosys.com'},TCS:{c:'#3A55A0',d:'tcs.com'},LT:{c:'#FFCC00',d:'larsentoubro.com'},AXISBANK:{c:'#861F41',d:'axisbank.com'},ADANIENT:{c:'#00A651',d:'adani.com'},BHARTIARTL:{c:'#E4001C',d:'airtel.in'},WIPRO:{c:'#341C75',d:'wipro.com'},HCLTECH:{c:'#0066B3',d:'hcltech.com'},TECHM:{c:'#D71921',d:'techmahindra.com'},MARUTI:{c:'#002A5C',d:'marutisuzuki.com'},ITC:{c:'#2D7D46',d:'itcportal.com'},KOTAKBANK:{c:'#ED1C24',d:'kotak.com'},BAJFINANCE:{c:'#003366',d:'bajajfinserv.in'},SUNPHARMA:{c:'#D50032',d:'sunpharma.com'},TITAN:{c:'#000000',d:'titancompany.in'},ULTRACEMCO:{c:'#FF6600',d:'ultratechcement.com'},POWERGRID:{c:'#007A33',d:'powergrid.in'},NTPC:{c:'#FF0000',d:'ntpc.co.in'},ONGC:{c:'#8B0000',d:'ongcindia.com'},COALINDIA:{c:'#333333',d:'coalindia.in'},PERSISTENT:{c:'#00AEEF',d:'persistent.com'},COFORGE:{c:'#E30613',d:'coforge.com'},MPHASIS:{c:'#002B5C',d:'mphasis.com'},DIXON:{c:'#E30613',d:'dixoninfo.com'},CUMMINSIND:{c:'#000000',d:'cumminsindia.com'},MAXHEALTH:{c:'#0066CC',d:'maxhealthcare.in'},LUPIN:{c:'#00693E',d:'lupin.com'},VOLTAS:{c:'#0072BC',d:'voltas.com'},GODREJPROP:{c:'#E31837',d:'godrejproperties.com'},ASTRAL:{c:'#0066A1',d:'astralpipes.com'},KPITTECH:{c:'#009639',d:'kpit.com'},TANLA:{c:'#FF6F00',d:'tanla.com'},KPRMILL:{c:'#8B4513',d:'kprmilllimited.com'},RADICO:{c:'#800000',d:'radicokhaitan.com'},CCL:{c:'#A52A2A',d:'cclproducts.com'}};
 async function fetchJSON(p){try{const r=await fetch(API_BASE+'/api/'+p);if(!r.ok)throw 0;return await r.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
@@ -76,21 +72,28 @@ function brandBtn(sym){sym=(sym||'').toUpperCase();var b=BRAND[sym]||{c:'#64748b
 var _last=null;function fmtIST(t){try{if(!t)return null;var d=new Date(t);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
 function setBar(t,ok){var b=document.getElementById('last-updated-bar');if(!b)return;if(t)_last=t;var s=fmtIST(_last);if(ok===false){b.style.color='#dc2626';b.textContent='Update failed — retrying'+(s?(' | Data as of '+s+' IST'):'');return;}b.style.color='';b.textContent=s?('Data as of '+s+' IST'):'Last refreshed: —';}
 function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
-async function loadSectors(){var grid=document.getElementById('sector-grid');if(!grid)return;
-var quotes={};
-for(var si=0;si<SECTORS.length;si++){var members=SECTORS[si].sym;for(var mi=0;mi<members.length;mi++){var d=await fetchJSON(members[mi].toLowerCase());if(d&&d.quote&&!quotes[members[mi]])quotes[members[mi]]=d.quote;}}
-var out=[];
-for(var i=0;i<SECTORS.length;i++){var s=SECTORS[i];var parts=[];for(var j=0;j<s.sym.length;j++){var q=quotes[s.sym[j]];if(q&&q.change_pct!=null)parts.push({sym:s.sym[j],chg:q.change_pct});}
-if(!parts.length)continue;
-var avg=parts.reduce(function(t,p){return t+p.chg;},0)/parts.length;
-var best=parts.reduce(function(a,b){return b.chg>a.chg?b:a;});
-var worst=parts.reduce(function(a,b){return b.chg<a.chg?b:a;});
-out.push({name:s.name,avg:avg,n:parts.length,best:best,worst:worst});}
-out.sort(function(a,b){return b.avg-a.avg;});
-var html='<div class="grid">';
-for(var k=0;k<out.length;k++){var sec=out[k];var c=sec.avg>=0?'#15803d':'#dc2626';html+='<div class="card"><h3>'+sec.name+'</h3><div class="price" style="color:'+c+'">'+(sec.avg>=0?'+':'')+sec.avg.toFixed(2)+'%</div><div class="status">'+sec.n+' stocks • Leader '+brandBtn(sec.best.sym)+' '+(sec.best.chg>=0?'+':'')+sec.best.chg.toFixed(1)+'%</div><div class="status">Lagging '+brandBtn(sec.worst.sym)+' '+(sec.worst.chg>=0?'+':'')+sec.worst.chg.toFixed(1)+'%</div></div>';}
-html+='</div><p class="status">Computed live from TradingAI tracked stocks (equal-weight).</p>';grid.innerHTML=html;setBar(new Date().toISOString(),true);}
-document.addEventListener('DOMContentLoaded',function(){loadSectors();setInterval(loadSectors,60000);});
+var ALLNEWS=[];var ACTIVE='all';
+function fmtDay(ts){try{var d=new Date(ts.replace(' ','T')+'Z'.replace('Z','') + (ts.includes('T')?'':'T00:00:00'));if(isNaN(d))d=new Date(ts);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric'});return f.format(d);}catch(e){return ts?String(ts).slice(0,10):'—';}}
+async function loadNews(){var list=document.getElementById('news-list');if(!list)return;var data=await fetchJSON('news');if(!data||!data.length){list.innerHTML='<div class="card">No headlines yet today.</div>';setBar(null,false);return;}
+ALLNEWS=data;
+var syms=[];var seen={};
+for(var i=0;i<data.length;i++){var s=data[i].symbol;if(!seen[s]){seen[s]=1;syms.push(s);}}
+var symWrap=document.getElementById('news-syms');if(symWrap){symWrap.innerHTML='<button onclick="filterNews(\'all\')" class="badge badge-green" style="cursor:pointer;border:none;margin:0.2rem">All</button>'+syms.map(function(s){return '<button onclick="filterNews(\''+s+'\')" class="badge badge-blue" style="cursor:pointer;border:none;margin:0.2rem">'+s+'</button>';}).join('');}
+renderNews();setBar(new Date().toISOString(),true);}
+function filterNews(sym){ACTIVE=sym;document.querySelectorAll('#news-syms button').forEach(function(b){b.style.boxShadow=b.textContent===sym||(sym==='all'&&b.textContent==='All')?'0 0 0 2px currentColor':'none';});renderNews();}
+function renderNews(){var list=document.getElementById('news-list');if(!list)return;var rows=ALLNEWS.filter(function(n){return ACTIVE==='all'||n.symbol===ACTIVE;});
+var html='';var lastDay=null;
+for(var i=0;i<rows.length;i++){var it=rows[i];var day=fmtDay(it.timestamp);
+if(day!==lastDay){html+=lastDay?'</div></div>':'';html+='<div class="card" style="margin-bottom:1rem"><h3>'+day+'</h3><div>';lastDay=day;}
+var url=it.url||('https://www.google.com/search?q='+encodeURIComponent(it.headline));
+html+='<div style="padding:0.35rem 0;border-bottom:1px solid #eef2f7"><div style="font-size:0.95rem"><a href="'+url+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+brandBtn(it.symbol)+' <span style="font-weight:600">'+it.headline+'</span></a></div><div class="status">'+ (it.publisher||'')+' • '+String(it.timestamp).slice(0,16).replace('T',' ')+' IST</div></div>';}
+html+=lastDay?'</div></div>':'';
+list.innerHTML=html||'<div class="card">No headlines for this filter.</div>';}
+async function loadCorp(){var el=document.getElementById('corp-list');if(!el)return;var d=await fetchJSON('actions');if(!d||!d.length){el.innerHTML='<div class="status">No corporate actions on file.</div>';return;}
+var html='<div class="status">'+d.length+' actions tracked (dividends, splits, buybacks).</div>';
+for(var i=0;i<Math.min(d.length,20);i++){var a=d[i];html+='<div style="padding:0.3rem 0;border-bottom:1px solid #eef2f7">'+brandBtn(a.symbol)+' <span class="badge" style="background:#dbeafe20;color:#2563eb">'+(a.action_type||'—')+'</span> <span>'+fmt(a.value)+'</span> <span class="status">'+String(a.timestamp).slice(0,10)+'</span></div>';}
+el.innerHTML=html;}
+document.addEventListener('DOMContentLoaded',function(){loadNews();loadCorp();setInterval(loadNews,300000);});
 </script>
 <script>
 (function(){var BASE='..';

@@ -34,6 +34,8 @@ EVERGREEN = [
     ("sectors/top.html", "daily", "0.8"),
     ("queries/", "daily", "0.8"),
     ("global/markets.html", "daily", "0.7"),
+    ("mutual-funds/", "daily", "0.8"),
+    ("news/", "daily", "0.7"),
     ("indices/finnifty.html", "daily", "0.9"),
     ("indices/sensex.html", "daily", "0.9"),
     ("stock-options.html", "daily", "0.8"),

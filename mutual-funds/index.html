@@ -11,15 +11,15 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Top ETFs in India Today - NSE - TradingAI</title>
-<meta name="description" content="Top ETFs in India today by live price and change — NIFTYBEES, BANKBEES and more.">
-<link rel="canonical" href="https://tradingai.in/etfs/top-etfs.html">
-<meta property="og:title" content="Top ETFs in India Today - NSE - TradingAI">
-<meta property="og:description" content="Top ETFs in India today by live price and change — NIFTYBEES, BANKBEES and more.">
+<title>Best Mutual Funds in India - Ranked by Returns - TradingAI</title>
+<meta name="description" content="Top Indian mutual funds by 1Y/3Y/5Y returns across large cap, flexi cap, mid cap, small cap, ELSS, index, value and liquid — from daily NAV data.">
+<link rel="canonical" href="https://tradingai.in/mutual-funds/">
+<meta property="og:title" content="Best Mutual Funds in India - TradingAI">
+<meta property="og:description" content="Ranked mutual funds by 1Y/3Y/5Y returns across categories.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://tradingai.in/etfs/top-etfs.html">
+<meta property="og:url" content="https://tradingai.in/mutual-funds/">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Top ETFs","item":"https://tradingai.in/etfs/top-etfs.html"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Mutual Funds","item":"https://tradingai.in/mutual-funds/"}]}]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
@@ -30,52 +30,54 @@
   <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
   <nav>
-    <a href="/index.html">Home</a>
-    <a href="/market.html">Market</a>
-    <a href="/indices/nifty.html">NIFTY</a>
-    <a href="/indices/banknifty.html">Bank NIFTY</a>
-    <a href="/indices/finnifty.html">FINNIFTY</a>
-    <a href="/indices/sensex.html">SENSEX</a>
-    <a href="/scanner.html">Scanner</a>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../indices/finnifty.html">FINNIFTY</a>
+    <a href="../indices/sensex.html">SENSEX</a>
+    <a href="../scanner.html">Scanner</a>
     <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="../stocks/top-large-cap.html">Large Cap</a><a href="../stocks/top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a><a href="../sectors/top.html">Sectors</a><a href="../stocks/52-week.html">52-Week</a></div></div>
-    <a href="/strategies.html">Strategies</a>
-    <a href="/stock-options.html">Stock Options</a>
-    <a href="/strategy-builder.html">Builder</a>
-    <a href="/strategies-guide.html">Guide</a>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../stock-options.html">Stock Options</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../strategies-guide.html">Guide</a>
     <a href="../mutual-funds/index.html">Mutual Funds</a>
     <a href="../news/index.html">News</a>
-    <a href="/queries/index.html">Queries</a>
-    <a href="/history.html">History</a>
+    <a href="../queries/index.html">Queries</a>
+    <a href="../history.html">History</a>
   </nav>
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
   <div class="card hero" style="margin-bottom:1rem">
-    <h2 style="margin:0">TOP ETFs IN INDIA TODAY</h2>
-    <div class="status">Live ETF prices — NSE's most liquid ETFs ranked by intraday change.</div>
+    <h2 style="margin:0">BEST MUTUAL FUNDS IN INDIA</h2>
+    <div class="status">Anualised returns from daily NAV (AMFI + mfapi). Direct Growth plans. Not a buy recommendation.</div>
   </div>
-  <div id="top-grid"><div class="card">Loading top list…</div></div>
-  <footer><p>TradingAI provides market analysis and decision-support information. Not financial advice.</p></footer>
+  <div id="mf-grid"><div class="card">Loading mutual funds…</div></div>
+  <footer><p>Returns annualised from NAV history; verify current NAV/expense ratio on AMFI before investing.</p></footer>
 </main>
 <script>
-
-const API_BASE='';
+const API_BASE='..';
 async function fetchJSON(p){try{const r=await fetch(API_BASE+'/api/'+p);if(!r.ok)throw 0;return await r.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function pct(n,dec){dec=dec||2;return n!=null?((n>0?'+':'')+Number(n).toFixed(dec)+'%'):'—';}
+function cptr(n){return n>=0?'#15803d':'#dc2626';}
 var _last=null;function fmtIST(t){try{if(!t)return null;var d=new Date(t);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
 function setBar(t,ok){var b=document.getElementById('last-updated-bar');if(!b)return;if(t)_last=t;var s=fmtIST(_last);if(ok===false){b.style.color='#dc2626';b.textContent='Update failed — retrying'+(s?(' | Data as of '+s+' IST'):'');return;}b.style.color='';b.textContent=s?('Data as of '+s+' IST'):'Last refreshed: —';}
 function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
-async function loadTop(){var grid=document.getElementById('top-grid');if(!grid)return;var etfs=['niftybees','bankbees','juniorbees'];var rows=[];for(var i=0;i<etfs.length;i++){var d=await fetchJSON(etfs[i]);if(!d||!d.quote)continue;rows.push({sym:etfs[i].toUpperCase(),price:d.quote.price,chg:d.quote.change_pct||0});}
-rows.sort(function(a,b){return (b.chg||0)-(a.chg||0);});
-var html='<div class="card" style="overflow-x:auto"><table class="scan-table" style="width:100%;border-collapse:collapse"><thead><tr><th>#</th><th>ETF</th><th>Price</th><th>Chg%</th></tr></thead><tbody>';
-for(var ri=0;ri<rows.length;ri++){var r=rows[ri];var c=r.chg>=0?'#15803d':'#dc2626';html+='<tr><td>'+(ri+1)+'</td><td><strong>'+r.sym+'</strong></td><td style="text-align:right">'+fmt(r.price)+'</td><td style="color:'+c+';font-weight:bold">'+(r.chg>=0?'+':'')+r.chg.toFixed(2)+'%</td></tr>';}
-html+='</tbody></table></div>';grid.innerHTML=html;setBar(new Date().toISOString(),true);}
-document.addEventListener('DOMContentLoaded',function(){loadTop();setInterval(loadTop,60000);});
-
+async function loadMF(){var grid=document.getElementById('mf-grid');if(!grid)return;var d=await fetchJSON('mf');if(!d||!d.buckets){grid.innerHTML='<div class="card">Mutual fund data unavailable yet — nightly AMFI snapshot may still be running.</div>';setBar(null,false);return;}
+var html='<div class="status" style="margin-bottom:1rem">'+d.total_schemes.toLocaleString('en-IN')+' schemes in AMFI daily snapshot • Direct Growth plans ranked by annualised returns</div>';
+for(var bi=0;bi<d.buckets.length;bi++){var b=d.buckets[bi];html+='<div class="card" style="margin-bottom:1rem"><h3>'+b.category+' <span class="badge" style="background:#dbeafe20;color:#2563eb">'+b.schemes_tracked+' schemes</span></h3>';if(!b.funds||!b.funds.length){html+='<div class="status">Returns pending (weekly refresh).</div>';html+='</div>';continue;}
+html+='<table class="scan-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Fund</th><th>AMC</th><th style="text-align:right">NAV</th><th style="text-align:right">1Y</th><th style="text-align:right">3Y</th><th style="text-align:right">5Y</th></tr></thead><tbody>';
+for(var fi=0;fi<b.funds.length;fi++){var f=b.funds[fi];html+='<tr><td><a href="https://www.google.com/search?q='+encodeURIComponent(f.scheme_name)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" title="Search this fund">'+f.scheme_name.replace(/\s*-\s*Direct Plan - Growth/i,'')+'</a></td><td style="color:#64748b">'+(f.fund_house||'—')+'</td><td style="text-align:right">'+fmt(f.nav)+'</td><td style="text-align:right;color:'+cptr(f.ret_1y||0)+';font-weight:bold">'+pct(f.ret_1y)+'</td><td style="text-align:right;color:'+cptr(f.ret_3y||0)+'">'+pct(f.ret_3y)+'</td><td style="text-align:right;color:'+cptr(f.ret_5y||0)+'">'+pct(f.ret_5y)+'</td></tr>';}
+html+='</tbody></table></div>';}
+grid.innerHTML=html;setBar(new Date().toISOString(),true);}
+document.addEventListener('DOMContentLoaded',function(){loadMF();setInterval(loadMF,600000);});
 </script>
 <script>
-(function(){var BASE='';
+(function(){var BASE='..';
 async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
 var m=null,ib=null;
 try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}

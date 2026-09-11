@@ -713,6 +713,34 @@ def symbol_news(symbol):
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+MF_CATEGORY_ORDER = ["Large Cap", "Flexi Cap", "Mid Cap", "Small Cap", "Multi Cap", "ELSS", "Index", "Value", "Balanced Advantage", "Liquid"]
+
+@app.route("/api/mf")
+def mutual_funds():
+    """Ranked mutual fund buckets: watchlist funds with NAV + annualized 1Y/3Y/5Y returns."""
+    conn = get_db()
+    total = conn.execute("SELECT COUNT(*) c FROM mf_schemes").fetchone()["c"]
+    counts = {r["category"]: r["c"] for r in conn.execute("SELECT category, COUNT(*) c FROM mf_schemes GROUP BY category")}
+    buckets = []
+    for cat in MF_CATEGORY_ORDER:
+        rows = conn.execute(
+            "SELECT scheme_code, scheme_name, fund_house, nav, nav_date, ret_1y, ret_3y, ret_5y, computed_at"
+            " FROM mf_returns WHERE category LIKE ? ORDER BY ret_1y IS NULL, ret_1y DESC LIMIT 12",
+            (f"%{cat}%",),
+        ).fetchall()
+        funds = [row_to_dict(r) for r in rows]
+        buckets.append({"category": cat, "funds": funds, "schemes_tracked": counts.get(cat, 0)})
+    conn.close()
+    return jsonify({"total_schemes": total, "last_updated": datetime.now(timezone.utc).isoformat(), "buckets": buckets})
+
+@app.route("/api/actions")
+def all_actions():
+    """Latest corporate actions across symbols (dividends, splits, buybacks)."""
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM corporate_actions ORDER BY timestamp DESC LIMIT 25").fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
 @app.route("/api/actions/<symbol>")
 def symbol_actions():
     """Dividends + splits stored from Yahoo, newest first."""
