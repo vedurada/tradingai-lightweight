@@ -172,9 +172,21 @@ def compute_pcr_maxpain(conn: sqlite3.Connection) -> dict:
     return out
 
 
+def prune_expired(conn: sqlite3.Connection, today: date) -> int:
+    """Remove rows whose expiry has already passed (settled contracts)."""
+    n = conn.execute(
+        "DELETE FROM option_chain WHERE expiry < ?", (today.isoformat(),)
+    ).rowcount
+    if n:
+        conn.commit()
+        log.info("pruned %d expired option rows", n)
+    return n
+
+
 def daily() -> None:
     conn = _conn()
     today = datetime.now(timezone.utc).date()
+    prune_expired(conn, today)
     for back in range(5):
         day = today - timedelta(days=back)
         if day.weekday() >= 5:
@@ -197,6 +209,7 @@ def daily() -> None:
 def backfill(days: int = 5) -> None:
     conn = _conn()
     today = datetime.now(timezone.utc).date()
+    prune_expired(conn, today)
     done = 0
     for i in range(days):
         day = today - timedelta(days=i)

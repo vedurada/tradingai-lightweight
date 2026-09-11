@@ -69,47 +69,66 @@ function gaugeHTML(label,pcr,pe,ce,expiry,mp){
     +(expiry?'<div class="status" style="margin-top:0.5rem">Expiry: '+expiry+'</div>':'')
     +(mp?'<div class="status">Max Pain: <strong>'+fmt(mp)+'</strong></div>':'');
 }
+function istDateStr(){var p={};new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).forEach(function(x){p[x.type]=x.value;});return p.year+'-'+p.month+'-'+p.day;}
+var SYN={NIFTY:'pcr-nifty',BANKNIFTY:'pcr-banknifty',FINNIFTY:'pcr-finnifty'};
+var STATE={pcr:null,mp:null,chain:null,sel:null};
+var CHAIN_SYM='NIFTY';
+function currentExpiry(exps){var t=istDateStr();for(var i=0;i<exps.length;i++){if(exps[i].expiry>=t)return exps[i];}return exps[exps.length-1];}
 async function loadPCR(){
   var data=await fetchJSON('pcr');
-  if(!data){['nifty','banknifty','finnifty'].forEach(function(s){var el=document.getElementById('pcr-'+s);if(el)el.innerHTML='<div class="status">Data unavailable.</div>';});setBar(null,false);return;}
-  var map={NIFTY:'pcr-nifty',BANKNIFTY:'pcr-banknifty',FINNIFTY:'pcr-finnifty'};
+  if(!data){for(var k in SYN){var el=document.getElementById(SYN[k]);if(el)el.innerHTML='<div class="status">Data unavailable.</div>';}setBar(null,false);return;}
+  STATE.pcr=data;
   var mp=await fetchJSON('maxpain');
-  for(var sym in map){
-    var el=document.getElementById(map[sym]);if(!el)continue;
+  STATE.mp=mp||{};
+  for(var sym in SYN){
+    var el=document.getElementById(SYN[sym]);if(!el)continue;
     var exps=data[sym]||[];
     if(!exps.length){el.innerHTML='<div class="status">No options data.</div>';continue;}
-    var nearest=exps[0];
-    var mpExp=(mp&&mp[sym])?mp[sym]:[];
-    var mpNearest=mpExp.length?mpExp[0].max_pain:null;
-    el.innerHTML='<h3>'+sym+'</h3>'+gaugeHTML(sym,nearest.pcr,nearest.pe_oi,nearest.ce_oi,nearest.expiry,mpNearest);
+    var cur=currentExpiry(exps);
+    if(!STATE.sel)STATE.sel={};
+    if(!STATE.sel[sym])STATE.sel[sym]=cur.expiry;
+    var opts=exps.map(function(e){return '<option value="'+e.expiry+'"'+(e.expiry===(STATE.sel[sym]||'')?' selected':'')+'>'+e.expiry+(e.expiry===cur.expiry?' (current)':'')+(e.expiry<istDateStr()?' (expired)':'')+'</option>';}).join('');
+    el.innerHTML='<h3>'+sym+'</h3>'
+      +'<div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem"><label class="status" style="margin:0;white-space:nowrap">Expiry</label><select id="sel-'+SYN[sym]+'" data-sym="'+sym+'" style="flex:1;min-width:0">'+opts+'</select>'
+      +'<span class="badge" style="background:#15803d20;color:#15803d">'+(cur.expiry>=istDateStr()?'current':'last')+'</span></div>'
+      +'<div id="gauge-'+SYN[sym]+'" style="margin-top:0.5rem"></div>';
+    renderGauge(sym,cur);
+    var sel=document.getElementById('sel-'+SYN[sym]);
+    if(sel)sel.addEventListener('change',function(){var sm=this.dataset.sym;if(!sm)return;STATE.sel[sm]=this.value;renderGauge(sm,this.value);if(sm===CHAIN_SYM)syncChainTopOI();});
   }
   setBar(new Date().toISOString(),true);
 }
-async function loadTopOI(){
-  var el=document.getElementById('top-oi-body');if(!el)return;
-  var data=await fetchJSON('oi-top?symbol=NIFTY');
-  if(!data||!data.length){el.innerHTML='<div class="status">No OI data.</div>';return;}
-  var html='<table class="scan-table" style="width:100%"><thead><tr><th>Side</th><th>Rank</th><th style="text-align:right">Strike</th><th style="text-align:right">OI</th></tr></thead><tbody>';
-  for(var i=0;i<data.length;i++){var r=data[i];var c=r.side==='PE'?'#dc2626':'#15803d';html+='<tr><td><span class="badge" style="background:'+c+'20;color:'+c+'">'+r.side+'</span></td><td>'+r.rank+'</td><td style="text-align:right">'+fmt(r.strike)+'</td><td style="text-align:right;font-weight:bold">'+fmt(r.open_interest)+'</td></tr>';}
-  html+='</tbody></table>';
-  el.innerHTML=html;
+function renderGauge(symKey,expiry){
+  var key=(typeof expiry==='object')?expiry.expiry:expiry;
+  var gh=document.getElementById('gauge-'+SYN[symKey]);if(!gh)return;
+  var exps=STATE.pcr[symKey]||[];var cur=currentExpiry(exps);
+  var pick=exps.filter(function(e){return e.expiry===key;})[0]||exps[0];
+  var mpExp=(STATE.mp[symKey]||[]).filter(function(e){return e.expiry===key;})[0];
+  gh.innerHTML=gaugeHTML(symKey,pick.pcr,pick.pe_oi,pick.ce_oi,pick.expiry,mpExp?mpExp.max_pain:null);
 }
+function expiryOptions(sym){var exps=(STATE.pcr[sym]||[]);var t=istDateStr();return exps.filter(function(e){return e.expiry>=t||(STATE.sel&&STATE.sel[sym]===e.expiry);});}
 async function loadChain(){
   var el=document.getElementById('chain-body');if(!el)return;
-  var data=await fetchJSON('options/NIFTY');
-  if(!data||!data.length){el.innerHTML='<div class="status">No chain data.</div>';return;}
-  var nearestExpiry=data[0]&&data[0].expiry;
-  var chain=data.filter(function(r){return r.expiry===nearestExpiry;});
+  var exps=expiryOptions(CHAIN_SYM);
+  var selExp=STATE.sel[CHAIN_SYM]||(exps.length?exps[0].expiry:null);
+  if(!selExp){el.innerHTML='<div class="status">No chain data.</div>';return;}
+  var data=await fetchJSON('options/'+CHAIN_SYM+'?expiry='+selExp);
+  if(!data||!data.length){el.innerHTML='<div class="status">No chain data for '+selExp+'.</div>';return;}
+  STATE.chain=data;
+  renderChain(data,selExp);
+}
+function renderChain(chain,expiry){
+  var el=document.getElementById('chain-body');if(!el)return;
   var strikes={};
   for(var i=0;i<chain.length;i++){var r=chain[i];var s=String(r.strike);if(!strikes[s])strikes[s]={};strikes[s][r.option_type]=r;}
   var sorted=Object.keys(strikes).map(Number).sort(function(a,b){return a-b;});
   var peRows='',ceRows='';
   for(var j=0;j<sorted.length;j++){
     var st=sorted[j];var pe=strikes[st]['PE']||{};var ce=strikes[st]['CE']||{};
-    peRows+='<tr><td style="text-align:right;font-weight:bold;color:#dc2626">'+fmt(pe.open_interest||0)+'</td><td style="text-align:right">'+fmt(pe.last_price||0)+'</td><td style="text-align:right;color:#64748b">'+fmt(pe.volume||0)+'</td></tr>';
+    peRows+='<tr><td style="text-align:right;font-weight:bold;color:#dc2626">'+fmt(pe.open_interest||0)+'</td><td style="text-align:right">'+fmt(pe.last_price||0)+'</td><td style="text-align:right">'+fmt(pe.volume||0)+'</td></tr>';
     ceRows+='<tr><td style="text-align:right">'+fmt(ce.volume||0)+'</td><td style="text-align:right">'+fmt(ce.last_price||0)+'</td><td style="text-align:right;font-weight:bold;color:#15803d">'+fmt(ce.open_interest||0)+'</td></tr>';
   }
-  var html='<div class="status">Expiry: '+nearestExpiry+' · '+sorted.length+' strikes</div>';
+  var html='<div class="status">Expiry: '+expiry+' · '+sorted.length+' strikes · '+CHAIN_SYM+'</div>';
   html+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0;font-size:0.85rem">';
   html+='<div><h4 style="color:#dc2626;text-align:center;margin:0">PE (Puts)</h4><table style="width:100%"><thead><tr><th style="text-align:right">OI</th><th style="text-align:right">LTP</th><th style="text-align:right">Vol</th></tr></thead><tbody>'+peRows+'</tbody></table></div>';
   html+='<div style="padding:0 0.5rem;text-align:center;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb"><h4 style="margin:0">Strike</h4>';
@@ -119,7 +138,26 @@ async function loadChain(){
   html+='</div>';
   el.innerHTML=html;
 }
-document.addEventListener('DOMContentLoaded',function(){loadPCR();loadTopOI();loadChain();setInterval(loadPCR,600000);});
+async function loadTopOI(){
+  var el=document.getElementById('top-oi-body');if(!el)return;
+  var excl=document.getElementById('top-oi-expiry');
+  var exps=expiryOptions(CHAIN_SYM);
+  var t=istDateStr();
+  var opthtml=exps.map(function(e){return '<option value="'+e.expiry+'"'+(e.expiry===(STATE.sel[CHAIN_SYM]||'')?' selected':'')+'>'+e.expiry+(e.expiry>=t?' (current)':' (expired)')+'</option>';}).join('');
+  var data=await fetchJSON('oi-top?symbol='+CHAIN_SYM+(STATE.sel[CHAIN_SYM]?'&expiry='+STATE.sel[CHAIN_SYM]:''));
+  if(!data||!data.length){el.innerHTML='<div class="status">No OI data.</div>';return;}
+  var html=(opthtml?'<label class="status" style="margin-right:0.5rem">Expiry</label><select id="top-oi-expiry" style="margin-bottom:0.75rem">'+opthtml+'</select><br>':'');
+  html+='<table class="scan-table" style="width:100%"><thead><tr><th>Side</th><th>Rank</th><th style="text-align:right">Strike</th><th style="text-align:right">OI</th></tr></thead><tbody>';
+  for(var i=0;i<data.length;i++){var r=data[i];var c=r.side==='PE'?'#dc2626':'#15803d';html+='<tr><td><span class="badge" style="background:'+c+'20;color:'+c+'">'+r.side+'</span></td><td>'+r.rank+'</td><td style="text-align:right">'+fmt(r.strike)+'</td><td style="text-align:right;font-weight:bold">'+fmt(r.open_interest)+'</td></tr>';}
+  html+='</tbody></table>';
+  el.innerHTML=html;
+  var tsel=document.getElementById('top-oi-expiry');
+  if(tsel)tsel.addEventListener('change',function(){STATE.sel[CHAIN_SYM]=this.value;var g=document.getElementById('gauge-pcr-nifty');if(g)renderGauge('NIFTY',this.value);syncChainTopOI();});
+}
+async function syncChainTopOI(){
+  loadChain();loadTopOI();
+}
+document.addEventListener('DOMContentLoaded',function(){loadPCR().then(function(){loadTopOI();loadChain();});setInterval(function(){loadPCR();},600000);});
 </script>
 <script>
 (function(){var BASE='..';
