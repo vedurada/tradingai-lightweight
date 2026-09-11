@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}gtag('js',new Date());gtag('config','G-MJ3X88QYEL');</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Options PCR & Max Pain - NIFTY BANKNIFTY - TradingAI</title>
+<meta name="description" content="Live Put-Call Ratio, max pain strike, and open interest analysis for NIFTY, BANKNIFTY and FINNIFTY options.">
+<link rel="canonical" href="https://tradingai.in/options/pcr.html">
+<meta property="og:title" content="Options PCR & Max Pain - TradingAI">
+<meta property="og:description" content="Put-Call Ratio, max pain, top OI strikes for NIFTY/BANKNIFTY/FINNIFTY.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/options/pcr.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Options PCR","item":"https://tradingai.in/options/pcr.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../scanner.html">Scanner</a>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../queries/index.html">Queries</a>
+  </nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading…</span></div></div>
+  <div class="card hero" style="margin-bottom:1rem">
+    <h2 style="margin:0">OPTIONS PCR &amp; MAX PAIN</h2>
+    <div class="status">Put-Call Ratio, max pain strike, and top OI strikes from EOD FO bhavcopy (NSE).</div>
+  </div>
+  <div id="pcr-grid" class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-bottom:1rem">
+    <div class="card" id="pcr-nifty"><h3>NIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card" id="pcr-banknifty"><h3>BANKNIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card" id="pcr-finnifty"><h3>FINNIFTY</h3><div class="status">Loading…</div></div>
+  </div>
+  <div id="top-oi-section"><div class="card"><h3>Top OI Strikes</h3><div id="top-oi-body"><div class="status">Loading…</div></div></div></div>
+  <div id="chain-section" style="margin-top:1rem"><div class="card"><h3>Option Chain — NIFTY nearest expiry</h3><div id="chain-body"><div class="status">Loading…</div></div></div></div>
+  <footer><p>OI and PCR from NSE EOD bhavcopy. Not trading advice.</p></footer>
+</main>
+<script>
+const API_BASE='..';
+async function fetchJSON(p){try{var r=await fetch(API_BASE+'/api/'+p);if(!r.ok)throw 0;return await r.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN'):'';}
+var _last=null;function fmtIST(t){try{if(!t)return null;var d=new Date(t);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
+function setBar(t,ok){var b=document.getElementById('last-updated-bar');if(!b)return;if(t)_last=t;var s=fmtIST(_last);if(ok===false){b.style.color='#dc2626';b.textContent='Update failed — retrying'+(s?(' | '+s+' IST'):'');return;}b.style.color='';b.textContent=s?(s+' IST'):'Last refreshed: —';}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function pcrColor(v){if(v==null)return'#64748b';if(v>=1.2)return'#15803d';if(v<=0.8)return'#dc2626';return'#a16207';}
+function pcrLabel(v){if(v==null)return'N/A';if(v>=1.5)return'Strong Bullish';if(v>=1.2)return'Bullish';if(v>=1.0)return'Neutral Bullish';if(v>=0.8)return'Neutral Bearish';if(v>=0.5)return'Bearish';return'Strong Bearish';}
+function gaugeHTML(label,pcr,pe,ce,expiry,mp){
+  var c=pcrColor(pcr);var v=pcr!=null?pcr.toFixed(3):'—';var lbl=pcrLabel(pcr);
+  var pct=Math.min(100,Math.max(0,(pcr||0)/2*100));
+  return '<div style="text-align:center;margin-bottom:0.5rem"><div style="font-size:2.5rem;font-weight:800;color:'+c+'">'+v+'</div><div class="badge" style="background:'+c+'20;color:'+c+';font-size:0.9rem">'+lbl+'</div></div>'
+    +'<div style="background:#e5e7eb;border-radius:999px;height:8px;margin:0.5rem 0;overflow:hidden"><div style="background:'+c+';height:100%;width:'+pct+'%;border-radius:999px"></div></div>'
+    +'<div style="display:flex;justify-content:space-between;font-size:0.8rem;color:#64748b"><span>PE OI: '+fmt(pe)+'</span><span>CE OI: '+fmt(ce)+'</span></div>'
+    +(expiry?'<div class="status" style="margin-top:0.5rem">Expiry: '+expiry+'</div>':'')
+    +(mp?'<div class="status">Max Pain: <strong>'+fmt(mp)+'</strong></div>':'');
+}
+async function loadPCR(){
+  var data=await fetchJSON('pcr');
+  if(!data){['nifty','banknifty','finnifty'].forEach(function(s){var el=document.getElementById('pcr-'+s);if(el)el.innerHTML='<div class="status">Data unavailable.</div>';});setBar(null,false);return;}
+  var map={NIFTY:'pcr-nifty',BANKNIFTY:'pcr-banknifty',FINNIFTY:'pcr-finnifty'};
+  var mp=await fetchJSON('maxpain');
+  for(var sym in map){
+    var el=document.getElementById(map[sym]);if(!el)continue;
+    var exps=data[sym]||[];
+    if(!exps.length){el.innerHTML='<div class="status">No options data.</div>';continue;}
+    var nearest=exps[0];
+    var mpExp=(mp&&mp[sym])?mp[sym]:[];
+    var mpNearest=mpExp.length?mpExp[0].max_pain:null;
+    el.innerHTML='<h3>'+sym+'</h3>'+gaugeHTML(sym,nearest.pcr,nearest.pe_oi,nearest.ce_oi,nearest.expiry,mpNearest);
+  }
+  setBar(new Date().toISOString(),true);
+}
+async function loadTopOI(){
+  var el=document.getElementById('top-oi-body');if(!el)return;
+  var data=await fetchJSON('oi-top?symbol=NIFTY');
+  if(!data||!data.length){el.innerHTML='<div class="status">No OI data.</div>';return;}
+  var html='<table class="scan-table" style="width:100%"><thead><tr><th>Side</th><th>Rank</th><th style="text-align:right">Strike</th><th style="text-align:right">OI</th></tr></thead><tbody>';
+  for(var i=0;i<data.length;i++){var r=data[i];var c=r.side==='PE'?'#dc2626':'#15803d';html+='<tr><td><span class="badge" style="background:'+c+'20;color:'+c+'">'+r.side+'</span></td><td>'+r.rank+'</td><td style="text-align:right">'+fmt(r.strike)+'</td><td style="text-align:right;font-weight:bold">'+fmt(r.open_interest)+'</td></tr>';}
+  html+='</tbody></table>';
+  el.innerHTML=html;
+}
+async function loadChain(){
+  var el=document.getElementById('chain-body');if(!el)return;
+  var data=await fetchJSON('options/NIFTY');
+  if(!data||!data.length){el.innerHTML='<div class="status">No chain data.</div>';return;}
+  var nearestExpiry=data[0]&&data[0].expiry;
+  var chain=data.filter(function(r){return r.expiry===nearestExpiry;});
+  var strikes={};
+  for(var i=0;i<chain.length;i++){var r=chain[i];var s=String(r.strike);if(!strikes[s])strikes[s]={};strikes[s][r.option_type]=r;}
+  var sorted=Object.keys(strikes).map(Number).sort(function(a,b){return a-b;});
+  var peRows='',ceRows='';
+  for(var j=0;j<sorted.length;j++){
+    var st=sorted[j];var pe=strikes[st]['PE']||{};var ce=strikes[st]['CE']||{};
+    peRows+='<tr><td style="text-align:right;font-weight:bold;color:#dc2626">'+fmt(pe.open_interest||0)+'</td><td style="text-align:right">'+fmt(pe.last_price||0)+'</td><td style="text-align:right;color:#64748b">'+fmt(pe.volume||0)+'</td></tr>';
+    ceRows+='<tr><td style="text-align:right">'+fmt(ce.volume||0)+'</td><td style="text-align:right">'+fmt(ce.last_price||0)+'</td><td style="text-align:right;font-weight:bold;color:#15803d">'+fmt(ce.open_interest||0)+'</td></tr>';
+  }
+  var html='<div class="status">Expiry: '+nearestExpiry+' · '+sorted.length+' strikes</div>';
+  html+='<div style="display:grid;grid-template-columns:1fr auto 1fr;gap:0;font-size:0.85rem">';
+  html+='<div><h4 style="color:#dc2626;text-align:center;margin:0">PE (Puts)</h4><table style="width:100%"><thead><tr><th style="text-align:right">OI</th><th style="text-align:right">LTP</th><th style="text-align:right">Vol</th></tr></thead><tbody>'+peRows+'</tbody></table></div>';
+  html+='<div style="padding:0 0.5rem;text-align:center;border-left:1px solid #e5e7eb;border-right:1px solid #e5e7eb"><h4 style="margin:0">Strike</h4>';
+  for(var k=0;k<sorted.length;k++){html+='<div style="padding:0.3rem 0;border-bottom:1px solid #f1f5f9;font-weight:bold">'+fmt(sorted[k])+'</div>';}
+  html+='</div>';
+  html+='<div><h4 style="color:#15803d;text-align:center;margin:0">CE (Calls)</h4><table style="width:100%"><thead><tr><th style="text-align:right">Vol</th><th style="text-align:right">LTP</th><th style="text-align:right">OI</th></tr></thead><tbody>'+ceRows+'</tbody></table></div>';
+  html+='</div>';
+  el.innerHTML=html;
+}
+document.addEventListener('DOMContentLoaded',function(){loadPCR();loadTopOI();loadChain();setInterval(loadPCR,600000);});
+</script>
+<script>
+(function(){var BASE='..';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=await fetch(BASE+'/api/market');if(!m.ok)return;var d=await m.json();var items=[];if(d&&d.instruments){for(const [s,inst] of Object.entries(d.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+</body>
+</html>

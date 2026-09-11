@@ -513,6 +513,69 @@ def option_expiries(symbol):
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+@app.route("/api/pcr")
+def pcr():
+    """Put-Call Ratio per index symbol per expiry, from EOD OI data."""
+    symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
+    conn = get_db()
+    out = {}
+    for sym in symbols:
+        sym = sym.strip().upper()
+        expiries = conn.execute(
+            "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (sym,)
+        ).fetchall()
+        sym_data = []
+        for e in expiries:
+            expiry = e["expiry"]
+            pe = conn.execute("SELECT SUM(open_interest) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='PE'", (sym, expiry)).fetchone()["s"] or 0
+            ce = conn.execute("SELECT SUM(open_interest) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='CE'", (sym, expiry)).fetchone()["s"] or 0
+            pcr_val = round(pe / ce, 3) if ce > 0 else None
+            sym_data.append({"expiry": expiry, "pcr": pcr_val, "pe_oi": pe, "ce_oi": ce})
+        out[sym] = sym_data
+    conn.close()
+    return jsonify(out)
+
+@app.route("/api/maxpain")
+def max_pain():
+    """Max-pain strike per index symbol per expiry."""
+    symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
+    conn = get_db()
+    out = {}
+    for sym in symbols:
+        sym = sym.strip().upper()
+        expiries = conn.execute(
+            "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (sym,)
+        ).fetchall()
+        sym_data = []
+        for e in expiries:
+            expiry = e["expiry"]
+            chain = conn.execute(
+                "SELECT strike, option_type, open_interest FROM option_chain WHERE symbol=? AND expiry=?",
+                (sym, expiry)
+            ).fetchall()
+            strike_oi = {}
+            for r in chain:
+                strike_oi[r["strike"]] = strike_oi.get(r["strike"], 0) + r["open_interest"]
+            max_pain_strike = min(strike_oi, key=strike_oi.get) if strike_oi else None
+            total_oi = sum(strike_oi.values())
+            sym_data.append({"expiry": expiry, "max_pain": max_pain_strike, "total_oi": total_oi, "strikes": len(strike_oi)})
+        out[sym] = sym_data
+    conn.close()
+    return jsonify(out)
+
+@app.route("/api/oi-top")
+def oi_top():
+    """Top OI strikes per symbol/expiry/side."""
+    symbol = request.args.get("symbol", "NIFTY")
+    expiry = request.args.get("expiry", "")
+    conn = get_db()
+    if expiry:
+        rows = conn.execute("SELECT * FROM oi_top_strikes WHERE symbol=? AND expiry=? ORDER BY side, rank", (symbol, expiry)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM oi_top_strikes WHERE symbol=? ORDER BY side, rank LIMIT 40", (symbol,)).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
 @app.route("/api/breadth")
 def breadth():
     conn = get_db()
