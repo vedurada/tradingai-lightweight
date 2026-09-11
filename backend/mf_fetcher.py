@@ -78,45 +78,60 @@ def fund_house(name: str) -> str:
     return name.split(" ")[0] if name else ""
 
 
-def classify(amfi_type: str, name: str) -> str:
-    t = amfi_type or ""
-    if "ELSS" in t:
+def classify(header: str) -> str:
+    """Map AMFI group header (e.g. 'Equity Scheme - Large Cap Fund') to a canonical bucket."""
+    h = header or ""
+    if "ELSS" in h:
         return "ELSS"
-    if "Flexi Cap" in t:
+    if "Flexi Cap" in h:
         return "Flexi Cap"
-    if "Large Cap" in t:
+    if "Large Cap Fund" in h or "Large Cap)" in h:
         return "Large Cap"
-    if "Mid Cap" in t:
+    if "Mid Cap Fund" in h or "Mid Cap)" in h:
         return "Mid Cap"
-    if "Small Cap" in t:
+    if "Small Cap Fund" in h or "Small Cap)" in h:
         return "Small Cap"
-    if "Multi Cap" in t:
+    if "Multi Cap Fund" in h or "Multi Cap)" in h:
         return "Multi Cap"
-    if "Value" in t:
+    if "Value Fund" in h or "Value)" in h:
         return "Value"
-    if "Balanced Advantage" in t:
+    if "Balanced Advantage" in h:
         return "Balanced Advantage"
-    if "Index" in t:
+    if "Index Funds" in h:
         return "Index"
-    if "Liquid" in t:
+    if any(k in h for k in ("Liquid Fund", "Overnight Fund", "Money Market")):
         return "Liquid"
-    return t.split(":")[-1].strip().replace(" Fund", "") if t else "Other"
+    return "Other"
 
 
 def fetch_amfi() -> list[dict]:
+    """AMFI NAVAll.txt (revised format, 8 fields): code;ISIN;ISIN;name;plan;option;nav;date.
+    Group headers give scheme type + AMC."""
     text = _get(AMFI_URL).decode("utf-8", errors="replace")
     out = []
+    cur_header = ""
+    cur_amc = ""
     for line in text.splitlines():
         line = line.strip()
-        if not line or ";" not in line:
+        if not line:
+            continue
+        if ";" not in line:
+            low = line.lower()
+            if "schemes(" in low or "fund(" in low:
+                cur_header = line
+                if "mutual fund" in low:
+                    cur_amc = line.replace("(IDF)", "").strip()
             continue
         p = [x.strip() for x in line.split(";")]
-        if len(p) < 9 or not (p[0] or "").isdigit():
+        if len(p) < 8 or not (p[0] or "").isdigit():
             continue
-        nav = _to_float(p[5])
-        if nav is None:
+        nav = _to_float(p[6])
+        date_raw = p[7] or ""
+        if nav is None or not date_raw:
             continue
-        out.append({"code": p[0], "name": p[4], "nav": nav, "nav_date": p[6], "setting": p[7], "amfi_type": p[8]})
+        out.append({"code": p[0], "name": p[3], "plan": p[4], "option": p[5], "nav": nav,
+                    "nav_date": date_raw, "header": cur_header,
+                    "amc": cur_amc, "scheme_type": "Open" if "Open Ended" in cur_header else ("Close" if "Close Ended" in cur_header else "Interval")})
     return out
 
 
@@ -125,12 +140,14 @@ def import_amfi(conn: sqlite3.Connection, rows: list[dict]) -> int:
     n = 0
     for r in rows:
         name = r["name"]
-        direct = 1 if ("direct" in name.lower()) else 0
-        cat = classify(r["amfi_type"], name)
+        plan = r["plan"]
+        direct = 1 if ("direct" in (plan or "").lower()) else 0
+        cat = classify(r["header"])
+        setting = f"{plan} - {r['option']}" if plan and r["option"] else (plan or r["option"] or "")
         conn.execute(
             "INSERT OR REPLACE INTO mf_schemes (scheme_code, scheme_name, fund_house, scheme_type, scheme_setting,"
             " is_direct, category, amfi_category, nav, nav_date, imported_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-            (r["code"], name, fund_house(name), r["amfi_type"], r["setting"], direct, cat, r["amfi_type"],
+            (r["code"], name, r["amc"] or fund_house(name), r["scheme_type"], setting, direct, cat, r["header"],
              r["nav"], r["nav_date"], now),
         )
         n += 1
