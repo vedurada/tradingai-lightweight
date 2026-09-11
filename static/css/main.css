@@ -14,11 +14,13 @@ header nav { margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 header nav a { display: inline-block; color: #334155; text-decoration: none; font-size: 0.85rem; font-weight: 600; padding: 0.32rem 0.8rem; border: 1px solid #cbd5e1; border-radius: 999px; background: #fff; margin-right: 0; transition: all 0.15s ease; }
 header nav a:hover { color: var(--green); border-color: var(--green); background: #f0fdf4; transform: translateY(-1px); }
 .cta-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 0.8rem; }
-.cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.6rem 1.2rem; border-radius: 999px; font-weight: 700; font-size: 0.9rem; text-decoration: none; box-shadow: 0 2px 6px rgba(15,23,42,0.12); transition: all 0.15s ease; }
-.cta:hover { transform: translateY(-2px); box-shadow: 0 6px 14px rgba(15,23,42,0.15); text-decoration: none; }
-.cta-primary { background: linear-gradient(135deg, #15803d 0%, #22c55e 100%); color: #fff; border: 1px solid #15803d; }
-.cta-dark { background: #0f172a; color: #fff; border: 1px solid #0f172a; }
-.cta-light { background: #fff; color: #0f172a; border: 1px solid #e2e8f0; }
+.cta { display: inline-flex; align-items: center; gap: 0.4rem; padding: 0.65rem 1.3rem; border-radius: 999px; font-weight: 800; font-size: 0.92rem; text-decoration: none; box-shadow: 0 3px 10px rgba(15,23,42,0.14); transition: all 0.16s ease; letter-spacing: 0.01em; }
+.cta:hover { transform: translateY(-2px); box-shadow: 0 8px 18px rgba(15,23,42,0.18); text-decoration: none; filter: brightness(1.05); }
+.cta-primary { background: linear-gradient(135deg, #dc2626 0%, #ef4444 50%, #f59e0b 100%); color: #fff; border: 1px solid #dc2626; }
+.cta-dark { background: linear-gradient(135deg, #0f172a 0%, #334155 100%); color: #fff; border: 1px solid #1e293b; }
+.cta-light { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; border: 1px solid #cbd5e1; }
+.cta-blue { background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); color: #fff; border: 1px solid #1d4ed8; }
+.cta-amber { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); color: #fff; border: 1px solid #d97706; }
 .card-accent { border-left: 4px solid var(--green); }
 .card-accent-blue { border-left: 4px solid #0ea5e9; }
 .card-accent-amber { border-left: 4px solid #f59e0b; }
