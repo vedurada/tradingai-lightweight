@@ -60,5 +60,27 @@ if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e)
 document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
 })();
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.card').forEach(function(c){
+    if(c.dataset.clickable==='1' || c.onclick) return;
+    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
+    var url=null;
+    if(h.includes('AI MARKET OUTLOOK')) url='/strategies.html';
+    else if(h.includes('AI INTRADAY STRATEGY')) url='/strategies.html';
+    else if(h.includes('NIFTY VS INDIA VIX')) url='/history.html';
+    else if(h.includes('KEY LEVELS')) url='/scanner.html';
+    else if(h.includes('OPTIONS INTELLIGENCE')) url='/strategy-builder.html';
+    else if(h.includes('MARKET INTERNALS')||h.includes('BREADTH')||h.includes('WHAT CHANGED')||h.includes('HISTORICAL STRATEGY')) url='/history.html';
+    else if(h.includes('TODAY')||h.includes('MARKET PULSE')) url='/market.html';
+    else if(h.includes('STOCK OPTIONS')||h.includes('POSITIONAL')) url='/stock-options.html';
+    if(!url) return;
+    c.dataset.clickable='1'; c.style.cursor='pointer';
+    c.addEventListener('click',function(e){ if(e.target.closest('button')||e.target.closest('a'))return; location.href=url; });
+  });
+});
+</script>
+
 </body>
 </html>

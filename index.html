@@ -119,5 +119,27 @@ function detailHref(sym){var u=detailUrl(sym);if(location.pathname.includes('/in
 async function loadDashboard(){const data=await fetchJSON('market');if(!data||!data.instruments){setLastUpdated(null,false);return;}const grid=document.getElementById('market-grid');if(grid){var _sy=window.scrollY;grid.innerHTML='';for(const[symbol,inst]of Object.entries(data.instruments)){const card=document.createElement('div');card.className='card';card.style.cursor='pointer';card.title='View '+symbol+' outlook';card.onclick=function(e){if(e.target.closest('button')||e.target.closest('a'))return;location.href=detailHref(symbol);};const ao=inst.ai_outlook||{};card.innerHTML=`<h3>${brandBtn(symbol,symbol)}</h3><div class="price">${formatPrice(inst.quote?.price)}</div><div style="color:${inst.quote?.change>=0?'#15803d':'#dc2626'}">${formatChange(inst.quote?.change)} (${formatChange(inst.quote?.change_pct)}%)</div><span class="badge" style="background:${regimeColor(inst.regime?.regime)}20;color:${regimeColor(inst.regime?.regime)}">${inst.regime?.regime||'N/A'}</span><div class="status">Support: ${(inst.indicators?.support_resistance?.support||[]).join(', ')||'N/A'}</div><div class="status">Resistance: ${(inst.indicators?.support_resistance?.resistance||[]).join(', ')||'N/A'}</div><div class="status">Strategy: ${inst.strategy?.strategies?.[0]?.strategy||'N/A'}</div><div class="status">Evidence: ${ao.evidence_strength||'N/A'} | Vol: ${ao.volatility_classification||'N/A'} | Structure: ${ao.market_structure||'N/A'}</div><div class="status">Env: ${ao.strategy_environment||'N/A'} | Invalidation: ${ao.invalidation||'N/A'}</div><div class="status">${inst.data_quality||'N/A'}</div>`;grid.appendChild(card);}}const outlook=document.getElementById('outlook-content');if(outlook&&data.ai_outlook)populateAI(outlook,data.ai_outlook);setLastUpdated(data.last_updated,true);window.scrollTo(0,_sy);}
 document.addEventListener('DOMContentLoaded',()=>{loadHero();loadDashboard();loadTicker();startDataRefresh(function(){loadHero();loadDashboard();});setInterval(loadTicker,60000);});
 </script>
+
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.card').forEach(function(c){
+    if(c.dataset.clickable==='1' || c.onclick) return;
+    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
+    var url=null;
+    if(h.includes('AI MARKET OUTLOOK')) url='/strategies.html';
+    else if(h.includes('AI INTRADAY STRATEGY')) url='/strategies.html';
+    else if(h.includes('NIFTY VS INDIA VIX')) url='/history.html';
+    else if(h.includes('KEY LEVELS')) url='/scanner.html';
+    else if(h.includes('OPTIONS INTELLIGENCE')) url='/strategy-builder.html';
+    else if(h.includes('MARKET INTERNALS')||h.includes('BREADTH')||h.includes('WHAT CHANGED')||h.includes('HISTORICAL STRATEGY')) url='/history.html';
+    else if(h.includes('TODAY')||h.includes('MARKET PULSE')) url='/market.html';
+    else if(h.includes('STOCK OPTIONS')||h.includes('POSITIONAL')) url='/stock-options.html';
+    if(!url) return;
+    c.dataset.clickable='1'; c.style.cursor='pointer';
+    c.addEventListener('click',function(e){ if(e.target.closest('button')||e.target.closest('a'))return; location.href=url; });
+  });
+});
+</script>
+
 </body>
 </html>
