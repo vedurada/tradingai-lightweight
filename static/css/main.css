@@ -35,6 +35,8 @@ header nav a:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; }
 .cta-light { background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%); color: #0f172a; border: 1px solid #cbd5e1; }
 .cta-blue { background: linear-gradient(135deg, #1d4ed8 0%, #3b82f6 100%); color: #fff; border: 1px solid #1d4ed8; }
 .cta-amber { background: linear-gradient(135deg, #d97706 0%, #f59e0b 100%); color: #fff; border: 1px solid #d97706; }
+.cta-single { background: #f0fdf4; color: #14532d; border: 1px solid #86efac; }
+.cta-single:hover { background: #dcfce7; border-color: #15803d; color: #14532d; }
 .card-accent { border-left: 4px solid var(--green); }
 .card-accent-blue { border-left: 4px solid #0ea5e9; }
 .card-accent-amber { border-left: 4px solid #f59e0b; }
