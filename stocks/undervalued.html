@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Undervalued Stocks - High ROE, Low PE - TradingAI</title>
+<meta name="description" content="Undervalued stocks by low PE, high ROE/ROCE and strong fundamentals — live from market data.">
+<link rel="canonical" href="https://tradingai.in/stocks/undervalued.html">
+<meta property="og:title" content="Undervalued Stocks - TradingAI">
+<meta property="og:description" content="Low PE, high ROE stocks with strong fundamentals.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/stocks/undervalued.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Undervalued","item":"https://tradingai.in/stocks/undervalued.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../indices/finnifty.html">FINNIFTY</a>
+    <a href="../indices/sensex.html">SENSEX</a>
+    <a href="../scanner.html">Scanner</a>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="top-large-cap.html">Large Cap</a><a href="top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a></div></div>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../stock-options.html">Stock Options</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../strategies-guide.html">Guide</a>
+    <a href="../queries/index.html">Queries</a>
+    <a href="../history.html">History</a>
+  </nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+  <div class="card hero" style="margin-bottom:1rem">
+    <h2 style="margin:0">UNDERVALUED STOCKS</h2>
+    <div class="status">Low PE, high ROE/ROCE and strong cash flow — live fundamentals.</div>
+  </div>
+  <div id="top-grid"><div class="card">Loading undervalued screens…</div></div>
+  <footer><p>Not financial advice. Verify before trading.</p></footer>
+</main>
+<script>
+const API_BASE='..';
+async function fetchJSON(p){try{const r=await fetch(API_BASE+'/api/'+p);if(!r.ok)throw 0;return await r.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+var _last=null;function fmtIST(t){try{if(!t)return null;var d=new Date(t);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
+function setBar(t,ok){var b=document.getElementById('last-updated-bar');if(!b)return;if(t)_last=t;var s=fmtIST(_last);if(ok===false){b.style.color='#dc2626';b.textContent='Update failed — retrying'+(s?(' | Data as of '+s+' IST'):'');return;}b.style.color='';b.textContent=s?('Data as of '+s+' IST'):'Last refreshed: —';}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+const BRAND={RELIANCE:{c:'#0B4F6C',d:'ril.com'},HDFCBANK:{c:'#004178',d:'hdfcbank.com'},ICICIBANK:{c:'#C41230',d:'icicibank.com'},SBIN:{c:'#22409A',d:'sbi.co.in'},INFY:{c:'#007CC3',d:'infosys.com'},TCS:{c:'#3A55A0',d:'tcs.com'},LT:{c:'#FFCC00',d:'larsentoubro.com'},AXISBANK:{c:'#861F41',d:'axisbank.com'},ADANIENT:{c:'#00A651',d:'adani.com'},BHARTIARTL:{c:'#E4001C',d:'airtel.in'},WIPRO:{c:'#341C75',d:'wipro.com'},HCLTECH:{c:'#0066B3',d:'hcltech.com'},TECHM:{c:'#D71921',d:'techmahindra.com'},MARUTI:{c:'#002A5C',d:'marutisuzuki.com'}};
+function brandBtn(sym){sym=(sym||'').toUpperCase();var b=BRAND[sym]||{c:'#64748b',d:''};return '<button onclick="location.href=\'/stock.html?symbol='+sym+'\'" style="cursor:pointer;font-weight:700;border:1px solid '+b.c+';background:'+b.c+'15;color:'+b.c+';border-radius:999px;padding:0.2rem 0.6rem;display:inline-flex;align-items:center;gap:0.3rem"><img src="https://www.google.com/s2/favicons?domain='+b.d+'&sz=32" width="14" height="14" style="border-radius:2px" onerror="this.style.display=\'none\'">'+sym+'</button>';}
+async function loadTop(){var grid=document.getElementById('top-grid');if(!grid)return;var syms=await fetchJSON('symbols');var stocks=(syms||[]).filter(s=>s.type==='stock').map(s=>s.symbol.toLowerCase());var rows=[];for(var i=0;i<stocks.length;i++){var d=await fetchJSON(stocks[i]);if(!d||!d.quote)continue;var fd=await fetchJSON('fundamentals/'+stocks[i]);var pe=(fd&&fd.data&&JSON.parse(fd.data||'{}').trailingPE)||null; if(pe==null){var inv=(d.investment||{}).LONG||{}; pe=inv.pe||null;} rows.push({sym:stocks[i].toUpperCase(),price:d.quote.price,pe:pe,roe:(fd&&fd.data?JSON.parse(fd.data||'{}').returnOnEquity:null)});}
+rows=rows.filter(r=>r.pe!=null).sort(function(a,b){return (a.pe||999)-(b.pe||999);});
+var html='<div class="card" style="overflow-x:auto"><table class="scan-table" style="width:100%;border-collapse:collapse"><thead><tr><th>#</th><th>Symbol</th><th>Price</th><th>PE</th><th>ROE</th></tr></thead><tbody>';
+for(var ri=0;ri<Math.min(rows.length,15);ri++){var r=rows[ri];html+='<tr style="cursor:pointer" onclick="location.href=\'/stock.html?symbol='+r.sym+'\'"><td>'+(ri+1)+'</td><td>'+brandBtn(r.sym)+'</td><td style="text-align:right">'+fmt(r.price)+'</td><td style="text-align:right">'+(r.pe!=null?r.pe.toFixed(1):'—')+'</td><td>'+(r.roe!=null?(r.roe*100).toFixed(1)+'%':'—')+'</td></tr>';}
+html+='</tbody></table></div>';grid.innerHTML=html;setBar(new Date().toISOString(),true);}
+document.addEventListener('DOMContentLoaded',function(){loadTop();setInterval(loadTop,300000);});
+</script>
+<script>
+(function(){var BASE='..';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+</body>
+</html>

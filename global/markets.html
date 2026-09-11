@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Global Markets Today - TradingAI</title>
+<meta name="description" content="Global markets today: Dow Jones, S&P 500, Nasdaq, GIFT Nifty, Gold, Crude and Dollar vs INR — live.">
+<link rel="canonical" href="https://tradingai.in/global/markets.html">
+<meta property="og:title" content="Global Markets Today - TradingAI">
+<meta property="og:description" content="Dow, S&P, Nasdaq, GIFT Nifty, Gold, Crude and Dollar live.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/global/markets.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Global Markets","item":"https://tradingai.in/global/markets.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="../assets/css/main.css">
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../indices/finnifty.html">FINNIFTY</a>
+    <a href="../indices/sensex.html">SENSEX</a>
+    <a href="../scanner.html">Scanner</a>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="../stocks/top-large-cap.html">Large Cap</a><a href="../stocks/top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a></div></div>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../stock-options.html">Stock Options</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../strategies-guide.html">Guide</a>
+    <a href="../queries/index.html">Queries</a>
+    <a href="../history.html">History</a>
+  </nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+  <div class="card hero" style="margin-bottom:1rem">
+    <h2 style="margin:0">GLOBAL MARKETS TODAY</h2>
+    <div class="status">US, Asian, European markets, GIFT Nifty, commodities and Dollar — live.</div>
+  </div>
+  <div id="global-grid"><div class="card">Loading global markets…</div></div>
+  <footer><p>Global data delayed ~15 min via Yahoo. Not financial advice.</p></footer>
+</main>
+<script>
+const API_BASE='..';
+async function fetchJSON(p){try{const r=await fetch(API_BASE+'/api/'+p);if(!r.ok)throw 0;return await r.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+var _last=null;function fmtIST(t){try{if(!t)return null;var d=new Date(t);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
+function setBar(t,ok){var b=document.getElementById('last-updated-bar');if(!b)return;if(t)_last=t;var s=fmtIST(_last);if(ok===false){b.style.color='#dc2626';b.textContent='Update failed — retrying'+(s?(' | Data as of '+s+' IST'):'');return;}b.style.color='';b.textContent=s?('Data as of '+s+' IST'):'Last refreshed: —';}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+async function loadGlobal(){var grid=document.getElementById('global-grid');if(!grid)return;var data=await fetchJSON('global');if(!data){grid.innerHTML='<div class="card">Global data unavailable right now.</div>';setBar(null,false);return;}
+var html='<div class="grid">';
+for(const [sym, q] of Object.entries(data)){var up=(q.change||0)>=0;var c=up?'#15803d':'#dc2626';html+='<div class="card" style="cursor:pointer" onclick="window.open(\'https://finance.yahoo.com/quote/'+(q.yf||sym)+'\',\'_blank\')"><h3>'+sym+'</h3><div class="price">'+fmt(q.price)+'</div><div style="color:'+c+';font-weight:bold">'+(q.change>=0?'+':'')+Number(q.change||0).toFixed(2)+' ('+(q.change_pct>=0?'+':'')+Number(q.change_pct||0).toFixed(2)+'%)</div><div class="status">'+(q.name||'')+'</div></div>';}
+html+='</div>';grid.innerHTML=html;setBar(new Date().toISOString(),true);}
+document.addEventListener('DOMContentLoaded',function(){loadGlobal();setInterval(loadGlobal,120000);});
+</script>
+<script>
+(function(){var BASE='..';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+</body>
+</html>

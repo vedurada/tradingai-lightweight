@@ -606,6 +606,57 @@ def market():
     nifty_ai = (instruments.get("NIFTY") or {}).get("ai_outlook", {})
     return jsonify({"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments})
 
+GLOBAL_SYMBOLS = {
+    "^NSEI": {"name": "NIFTY 50 (India)"},
+    "^DJI": {"name": "Dow Jones"},
+    "^GSPC": {"name": "S&P 500"},
+    "^IXIC": {"name": "Nasdaq Composite"},
+    "GC=F": {"name": "Gold"},
+    "CL=F": {"name": "Crude Oil (WTI)"},
+    "DX-Y.NYB": {"name": "US Dollar Index"},
+    "INR=X": {"name": "USD/INR"},
+    "^TNX": {"name": "US 10Y Yield"},
+    "^VIX": {"name": "CBOE Volatility Index"},
+}
+
+_GLOBAL_CACHE = {"at": 0.0, "data": None}
+
+
+@app.route("/api/global")
+def global_markets():
+    """Live global markets via Yahoo (single batch download), cached 90s."""
+    import math as _math
+    import time as _time
+    now = _time.time()
+    if _GLOBAL_CACHE["data"] and now - _GLOBAL_CACHE["at"] < 90:
+        return jsonify(_GLOBAL_CACHE["data"])
+    out = {}
+    try:
+        import yfinance as yf
+        syms = list(GLOBAL_SYMBOLS.keys())
+        df = yf.download(syms, period="2d", interval="1d", group_by="ticker", auto_adjust=False, progress=False, threads=True)
+        for s in syms:
+            try:
+                sub = df[s].dropna(how="all") if hasattr(df[s], "dropna") else df[s]
+                closes = [float(v) for v in sub["Close"].tolist() if v is not None and not _math.isnan(v)]
+                if not closes:
+                    continue
+                price = closes[-1]
+                prev = closes[-2] if len(closes) > 1 else price
+                change = price - prev
+                chg_pct = (change / prev * 100) if prev else 0
+                out[s] = {
+                    "name": GLOBAL_SYMBOLS[s]["name"], "price": round(price, 2),
+                    "change": round(change, 2), "change_pct": round(chg_pct, 2),
+                    "yf": s, "timestamp": datetime.now(timezone.utc).isoformat(),
+                }
+            except Exception:
+                continue
+    except Exception as e:
+        app.logger.warning(f"Global fetch failed: {e}")
+    _GLOBAL_CACHE.update({"at": now, "data": out})
+    return jsonify(out)
+
 @app.route("/api/history")
 def history():
     """Grouped {SYM: [...]} shape; covers history + monthly archive (1-year retention)."""
