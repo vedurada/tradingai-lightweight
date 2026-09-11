@@ -380,6 +380,19 @@ CREATE TABLE IF NOT EXISTS oi_top_strikes (
 );
 CREATE INDEX IF NOT EXISTS idx_oi_symbol_expiry ON oi_top_strikes(symbol, expiry);
 
+CREATE TABLE IF NOT EXISTS pcr_history (
+    symbol TEXT,
+    date TEXT,
+    expiry TEXT,
+    pcr REAL,
+    max_pain REAL,
+    pe_oi INTEGER,
+    ce_oi INTEGER,
+    total_oi INTEGER,
+    PRIMARY KEY (symbol, date)
+);
+CREATE INDEX IF NOT EXISTS idx_pcr_hist_sym_date ON pcr_history(symbol, date);
+
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,

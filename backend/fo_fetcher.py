@@ -172,6 +172,24 @@ def compute_pcr_maxpain(conn: sqlite3.Connection) -> dict:
     return out
 
 
+def store_pcr_history(conn: sqlite3.Connection, day: date) -> None:
+    """Snapshot current-expiry PCR + max-pain per index symbol for the day."""
+    today = datetime.now(timezone.utc).date()
+    pcr = compute_pcr_maxpain(conn)
+    for sym, exps in pcr.items():
+        if not exps:
+            continue
+        cur = next((e for e in exps if e["expiry"] >= today.isoformat()), exps[-1])
+        conn.execute(
+            "INSERT OR REPLACE INTO pcr_history (symbol, date, expiry, pcr, max_pain, pe_oi, ce_oi, total_oi)"
+            " VALUES (?,?,?,?,?,?,?,?)",
+            (sym, day.isoformat(), cur["expiry"], cur["pcr"], cur["max_pain"],
+             cur["pe_oi"], cur["ce_oi"], cur["total_oi"]))
+    conn.commit()
+    n = conn.execute("SELECT COUNT(*) FROM pcr_history WHERE date=?", (day.isoformat(),)).fetchone()[0]
+    log.info("pcr_history %s: %d symbols", day, n)
+
+
 def prune_expired(conn: sqlite3.Connection, today: date) -> int:
     """Remove rows whose expiry has already passed (settled contracts)."""
     n = conn.execute(
@@ -195,6 +213,7 @@ def daily() -> None:
         if rows:
             n = store_option_chain(conn, day, rows)
             oi_n = compute_oi_top_strikes(conn)
+            store_pcr_history(conn, day)
             pcr = compute_pcr_maxpain(conn)
             log.info("daily fo %s: %d chain rows, %d top-strikes", day, n, oi_n)
             for sym, exps in pcr.items():
@@ -225,6 +244,7 @@ def backfill(days: int = 5) -> None:
         if not rows:
             continue
         n = store_option_chain(conn, day, rows)
+        store_pcr_history(conn, day)
         done += n
         log.info("backfill %s: %d rows", day, n)
     compute_oi_top_strikes(conn)

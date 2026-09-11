@@ -563,6 +563,22 @@ def max_pain():
     conn.close()
     return jsonify(out)
 
+@app.route("/api/pcr-history")
+def pcr_history():
+    """Daily PCR/max-pain trend per index symbol (for the small multi-day chart)."""
+    symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
+    days = request.args.get("days", 7, type=int)
+    conn = get_db()
+    out = {}
+    for sym in symbols:
+        sym = sym.strip().upper()
+        rows = conn.execute(
+            "SELECT * FROM pcr_history WHERE symbol=? ORDER BY date DESC LIMIT ?", (sym, days)
+        ).fetchall()
+        out[sym] = [row_to_dict(r) for r in reversed(rows)]
+    conn.close()
+    return jsonify(out)
+
 @app.route("/api/oi-top")
 def oi_top():
     """Top OI strikes per symbol/expiry/side."""

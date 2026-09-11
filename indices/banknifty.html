@@ -25,6 +25,7 @@
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="../assets/css/main.css">
+<script src="../assets/js/index-charts.js" defer></script>
 <script src="../assets/js/keep-scroll.js" defer></script></head>
 <body>
 <header>
@@ -87,14 +88,18 @@
       <canvas id="nifty-chart" style="width:100%;height:180px"></canvas>
     </div>
     <div class="card">
-      <h3>OPTIONS INTELLIGENCE</h3>
+      <h3>OPTIONS INTELLIGENCE <span class="badge" style="background:#15803d20;color:#15803d">EOD</span></h3>
       <div class="status" id="nifty-opt-exp">Expiry: —</div>
       <div class="status" id="nifty-opt-atm">ATM: —</div>
-      <div class="status">PCR: — <span style="color:#64748b">(no NSE chain on Yahoo)</span></div>
-      <div class="status">Max Pain: — <span style="color:#64748b">(no NSE chain on Yahoo)</span></div>
-      <div class="status">Call OI / Put OI: —</div>
+      <div id="options-box" class="status">Loading…</div>
       <div class="status"><a href="../strategy-builder.html">Build this expiry in the Builder →</a></div>
     </div>
+  </div>
+
+  <div class="card">
+    <h3>CS PCR TREND <span class="status">last 6 sessions · EOD</span></h3>
+    <canvas id="pcr-chart" data-h="120" style="width:100%;height:120px"></canvas>
+    <div class="status" style="margin-top:0.4rem"><span style="color:#15803d">● PCR = puts/calls OI</span> · dashed line = 1.0 (neutral)</div>
   </div>
 
   <div class="card card-accent-amber">
@@ -129,6 +134,9 @@
 <script>
 const API_BASE='..';
 const SYM='BANKNIFTY', API='banknifty', STEP=100, LOT=30;
+var _maxPain={value:null},_pxData=null;
+function drawIndexChart(){if(window.TAIcharts&&_pxData&&_pxData.length)window.TAIcharts.drawCandles('nifty-chart',_pxData,_maxPain.value!=null?[_maxPain.value]:null);}
+function loadOptionsIntel(){if(!window.TAIcharts)return;window.TAIcharts.loadOptionsBox({symbol:SYM,boxId:'options-box',pcrCanvasId:'pcr-chart',maxPainRef:_maxPain}).then(function(){drawIndexChart();});}
 async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
 function formatPrice(p){return p!=null?Number(p).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 function formatChange(p){if(p==null)return'—';return(p>=0?'+':'')+Number(p).toFixed(2);}
@@ -175,7 +183,7 @@ async function loadBankNifty(){
   var px=await fetchJSON('prices/'+API+'?interval=1m&limit=400');
   var tlEl=document.getElementById('nifty-timeline');
   if(tlEl){
-    if(px&&px.length){var closes=px.map(function(r){return r.close;});drawChart('nifty-chart',closes);
+    if(px&&px.length){var closes=px.map(function(r){return r.close;});_pxData=px;drawIndexChart();
       var marks=['09:15','10:00','11:00','12:00','13:00','14:00','15:00'];var day=px[px.length-1].timestamp.slice(0,10);var base=px[0].close;var items=[];
       for(var mi=0;mi<marks.length;mi++){var cand=null;for(var ci=0;ci<px.length;ci++){if(px[ci].timestamp.slice(11,16)<=marks[mi])cand=px[ci];else break;}if(cand){var ch=(cand.close-base)/base*100;items.push(marks[mi]+' '+formatPrice(cand.close)+' ('+(ch>=0?'+':'')+ch.toFixed(2)+'%)');}}
       var lastC=px[px.length-1];var lc=(lastC.close-base)/base*100;items.push('NOW '+formatPrice(lastC.close)+' ('+(lc>=0?'+':'')+lc.toFixed(2)+'%)');
@@ -186,7 +194,7 @@ async function loadBankNifty(){
   if(pfEl){var hd=await fetchJSON('history');var rows=(hd&&hd[SYM])||[];var settled=rows.filter(function(e){return e.result==='WIN'||e.result==='LOSS'||e.result==='FLAT';});if(!settled.length){pfEl.textContent='No settled trades yet.';}else{var w=0,gw=0,gl=0,tot=0,peak=0,dd=0,eq=0;for(var pi=0;pi<settled.length;pi++){var p=settled[pi].points||0;tot+=p;if(settled[pi].result==='WIN'){w++;gw+=p;}else gl+=Math.abs(p);eq+=p;if(eq>peak)peak=eq;if(peak-eq>dd)dd=peak-eq;}var wr=(w/settled.length*100).toFixed(1);var pf=gl>0?(gw/gl).toFixed(2):'∞';var tc=tot>=0?'#15803d':'#dc2626';pfEl.innerHTML='Win Rate <strong>'+wr+'%</strong> | P&L <strong style="color:'+tc+'">'+(tot>=0?'+':'')+tot.toFixed(2)+'</strong> | Drawdown '+dd.toFixed(2)+' | Profit Factor '+pf+' | Trades '+settled.length;}}
   loadTicker();setLastUpdated(data.last_updated,true);
 }
-document.addEventListener('DOMContentLoaded',function(){loadBankNifty();startDataRefresh(loadBankNifty);});
+document.addEventListener('DOMContentLoaded',function(){loadBankNifty();loadOptionsIntel();startDataRefresh(loadBankNifty);});
 </script>
 
 <script>
