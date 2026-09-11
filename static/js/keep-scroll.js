@@ -34,7 +34,10 @@
 
   var t = null;
   window.addEventListener('scroll', function () {
-    saved = window.pageYOffset || 0;
+    var y = window.pageYOffset || 0;
+    var h = document.documentElement.scrollHeight || 0;
+    if (h < (saved || Infinity) && y < (saved || Infinity)) return;
+    saved = y;
     clearTimeout(t);
     t = setTimeout(save, 120);
   }, { passive: true });
