@@ -78,6 +78,9 @@ function structures(view,A,S){
   return[
     {name:'Iron Condor',legs:[{a:'SELL',t:'PE',k:A-S},{a:'BUY',t:'PE',k:A-2*S},{a:'SELL',t:'CE',k:A+S},{a:'BUY',t:'CE',k:A+2*S}],be:'Range '+fmt(A-S)+' – '+fmt(A+S)+' ± credit',mp:'Total credit',ml:'Width − credit'}];
 }
+
+function detailUrl(sym){sym=(sym||'').toUpperCase();if(['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'].includes(sym))return sym==='NIFTY'?'indices/nifty.html':sym==='BANKNIFTY'?'indices/banknifty.html':sym==='FINNIFTY'?'indices/finnifty.html':'indices/sensex.html';return 'stock.html?symbol='+sym;}
+function detailHref(sym){var u=detailUrl(sym);if(location.pathname.includes('/indices/'))return '../'+u;if(location.pathname.includes('/stocks/'))return '../'+u;return u;}
 async function loadStocks(){
   var grid=document.getElementById('so-grid');if(!grid)return;
   var nifty=await fetchJSON('nifty');
@@ -98,7 +101,7 @@ async function loadStocks(){
   rows.sort(function(a,b){return (b.chgPct||0)-(a.chgPct||0);});
   var html='<div class="card"><table class="scan-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>View</th><th>ATM</th><th>Lot</th><th>Positional Structures (monthly)</th><th>Exit</th></tr></thead><tbody>';
   for(var ri=0;ri<rows.length;ri++){var r=rows[ri];var chgC=r.chgPct>=0?'#15803d':'#dc2626';var vC=r.view==='Bullish'?'#15803d':r.view==='Bearish'?'#dc2626':'#a16207';
-  html+='<tr><td><strong>'+r.sym+'</strong></td><td style="text-align:right">'+fmt(r.price)+'</td><td style="color:'+chgC+';font-weight:bold">'+(r.chg>=0?'+':'')+Number(r.chg).toFixed(2)+' ('+(r.chgPct>=0?'+':'')+Number(r.chgPct).toFixed(2)+'%)</td><td><span class="badge" style="background:'+vC+'20;color:'+vC+'">'+r.view+'</span></td><td style="text-align:right">'+fmt(r.A)+'</td><td><span class="badge" style="background:#fef3c7;color:#92400e">'+r.lot+' ('+r.lotSrc+')</span></td><td>'+r.legs+'</td><td style="font-size:0.8rem;color:#475569">'+r.exit+'</td></tr>';}
+  html+='<tr><td><button onclick="location.href=detailHref(r.sym)" style="cursor:pointer;font-weight:700;border:1px solid #cbd5e1;background:#fff;border-radius:999px;padding:0.15rem 0.5rem">'+r.sym+'</button></td><td style="text-align:right">'+fmt(r.price)+'</td><td style="color:'+chgC+';font-weight:bold">'+(r.chg>=0?'+':'')+Number(r.chg).toFixed(2)+' ('+(r.chgPct>=0?'+':'')+Number(r.chgPct).toFixed(2)+'%)</td><td><span class="badge" style="background:'+vC+'20;color:'+vC+'">'+r.view+'</span></td><td style="text-align:right">'+fmt(r.A)+'</td><td><span class="badge" style="background:#fef3c7;color:#92400e">'+r.lot+' ('+r.lotSrc+')</span></td><td>'+r.legs+'</td><td style="font-size:0.8rem;color:#475569">'+r.exit+'</td></tr>';}
   html+='</tbody></table></div>';
   grid.innerHTML=html||'<div class="card">No stock data right now.</div>';
   setLastUpdated(ok?new Date().toISOString():null,ok>0);
