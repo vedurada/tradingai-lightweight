@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Stock Outlook - TradingAI</title>
+<meta name="description" content="Stock broad outlook with investment views, levels and strategy">
+<link rel="canonical" href="https://tradingai.in/stock.html">
+<meta property="og:title" content="Stock Outlook - TradingAI">
+<meta property="og:description" content="Stock broad outlook with investment views, levels and strategy.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/stock.html">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav>
+    <a href="index.html">Home</a>
+    <a href="market.html">Market</a>
+    <a href="indices/nifty.html">NIFTY</a>
+    <a href="indices/banknifty.html">Bank NIFTY</a>
+    <a href="indices/finnifty.html">FINNIFTY</a>
+    <a href="indices/sensex.html">SENSEX</a>
+    <a href="scanner.html">Scanner</a>
+    <a href="strategies.html">Strategies</a>
+    <a href="stock-options.html">Stock Options</a>
+    <a href="strategy-builder.html">Builder</a>
+    <a href="strategies-guide.html">Guide</a>
+    <a href="history.html">History</a>
+  </nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+
+  <div class="card hero" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:1rem">
+    <div>
+      <h2 style="margin:0" id="stock-title">—</h2>
+      <div class="price" id="stock-price">—</div>
+      <div id="stock-change">—</div>
+      <div class="status" id="stock-hl">High — Low —</div>
+    </div>
+    <div style="text-align:right;min-width:160px">
+      <h3 style="margin:0">Stock Outlook</h3>
+      <div id="stock-outlook-badge">—</div>
+      <div class="status" id="stock-invest">—</div>
+    </div>
+  </div>
+
+  <div class="card card-accent">
+    <h3 style="text-align:center">🧠 BROAD OUTLOOK</h3>
+    <h2 id="stock-outlook-head" style="text-align:center">—</h2>
+    <div style="display:flex;justify-content:space-around;flex-wrap:wrap;gap:0.5rem;margin:0.5rem 0">
+      <div>Support<br><strong id="stock-sup">—</strong></div>
+      <div>Resistance<br><strong id="stock-res">—</strong></div>
+    </div>
+    <div class="status" id="stock-range" style="text-align:center"></div>
+    <div id="stock-why" style="display:flex;gap:0.4rem;flex-wrap:wrap;justify-content:center;margin-top:0.5rem"></div>
+    <div class="status" id="stock-outlook-text"></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:2fr 1fr;gap:1rem">
+    <div class="card card-accent">
+      <h3>📈 Intraday Chart</h3>
+      <canvas id="stock-chart" style="width:100%;height:180px"></canvas>
+    </div>
+    <div class="card">
+      <h3>INVESTMENT VIEW</h3>
+      <div class="status" id="stock-invest-short">SHORT: —</div>
+      <div class="status" id="stock-invest-long">LONG: —</div>
+      <div class="status" id="stock-target">Target / Stop: —</div>
+    </div>
+  </div>
+
+  <div class="card card-accent-amber">
+    <h3>📍 KEY LEVELS</h3>
+    <div id="stock-levels" style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:0.5rem;text-align:center"></div>
+  </div>
+
+  <div class="card card-accent-blue">
+    <h3>⚡ POSITIONAL OUTLOOK <span class="status" id="stock-strat-lock"></span></h3>
+    <div id="stock-strategy">—</div>
+  </div>
+
+  <div class="card">
+    <h3>WHAT CHANGED?</h3>
+    <div id="stock-timeline" class="status">—</div>
+  </div>
+
+  <footer>
+    <p>TradingAI provides market analysis and decision-support information. Not investment advice.</p>
+  </footer>
+</main>
+<script>
+const API_BASE='';
+function getSym(){const p=new URLSearchParams(location.search);return (p.get('symbol')||p.get('s')||'RELIANCE').toUpperCase();}
+const SYM=getSym();
+document.title=SYM+' — Stock Outlook - TradingAI';
+async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
+function formatPrice(p){return p!=null?Number(p).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function formatChange(p){if(p==null)return'—';return(p>=0?'+':'')+Number(p).toFixed(2);}
+function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.includes('BULLISH')||r==='BUY')return'#15803d';if(r.includes('BEARISH')||r==='EXIT'||r==='SELL')return'#dc2626';if(r.includes('RANGE')||r==='HOLD')return'#a16207';if(r.includes('VOLATILITY'))return'#c2410c';return'#64748b';}
+var _lastDataTs=null;
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
+function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+let refreshInterval=null;function startDataRefresh(cb,ms){ms=ms||30000;stopDataRefresh();refreshInterval=setInterval(function(){cb();},ms);}function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+function chip(t,good){return '<span class="badge" style="background:'+(good?'#15803d':'#dc2626')+'20;color:'+(good?'#15803d':'#dc2626')+'">'+t+'</span>';}
+function drawChart(id,closes){var c=document.getElementById(id);if(!c||!closes.length)return;var dpr=window.devicePixelRatio||1;var W=c.clientWidth||600,H=180;c.width=W*dpr;c.height=H*dpr;var x=c.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);var mn=Math.min.apply(null,closes),mx=Math.max.apply(null,closes);if(mx===mn){mx+=1;mn-=1;}var up=closes[closes.length-1]>=closes[0];x.strokeStyle=up?'#15803d':'#dc2626';x.lineWidth=2;x.beginPath();for(var i=0;i<closes.length;i++){var px=i/(closes.length-1)*W,py=H-((closes[i]-mn)/(mx-mn))*(H-10)-5;if(i===0)x.moveTo(px,py);else x.lineTo(px,py);}x.stroke();var last=closes[closes.length-1];x.fillStyle='#0f172a';x.font='12px sans-serif';x.fillText(formatPrice(last),W-70,14);}
+async function loadTicker(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=await fetchJSON('market');var ib=await fetchJSON('index-breadth');var items=[];if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+formatPrice(q.price)+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
+async function loadStock(){
+  var data=await fetchJSON(SYM.toLowerCase());
+  if(!data||!data.quote){setLastUpdated(null,false);return;}
+  var q=data.quote,ind=data.indicators||{},reg=data.regime||{},ao=data.ai_outlook||{},inv=data.investment||{};
+  document.getElementById('stock-title').textContent=SYM;
+  var priceEl=document.getElementById('stock-price');if(priceEl)priceEl.textContent=formatPrice(q.price);
+  var chEl=document.getElementById('stock-change');if(chEl){chEl.style.color=(q.change>=0?'#15803d':'#dc2626');chEl.textContent=formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)';}
+  var hlEl=document.getElementById('stock-hl');if(hlEl)hlEl.textContent='High '+formatPrice(q.high)+'  Low '+formatPrice(q.low);
+  var strat=(data.strategy?.strategies||[])[0]||{};var outlook=strat.strategy||reg.regime||'—';
+  var badge=document.getElementById('stock-outlook-badge');if(badge)badge.innerHTML='<span class="badge" style="background:'+regimeColor(outlook)+'20;color:'+regimeColor(outlook)+'">'+outlook+'</span>';
+  var invEl=document.getElementById('stock-invest');if(invEl){
+    var sH=inv.SHORT||{}, lH=inv.LONG||{};
+    invEl.innerHTML='SHORT: '+(sH.rating||'—')+' → '+fmt(sH.target_price)+' / SL '+fmt(sH.stop_price)+' &nbsp;|&nbsp; LONG: '+(lH.rating||'—')+' → Fair '+fmt(lH.fair_value);
+  }
+  function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+  var head=document.getElementById('stock-outlook-head');if(head){head.textContent=(ao.directional_bias||outlook).replace(/_/g,' ');head.style.color=regimeColor(ao.directional_bias||outlook);}
+  var sr=ind.support_resistance||{support:[],resistance:[]};var sup=sr.support||[],res=sr.resistance||[];
+  var sEl=document.getElementById('stock-sup');if(sEl)sEl.textContent=sup.length?sup.map(formatPrice).join(' / '):'—';
+  var rEl=document.getElementById('stock-res');if(rEl)rEl.textContent=res.length?res.map(formatPrice).join(' / '):'—';
+  var rgEl=document.getElementById('stock-range');if(rgEl)rgEl.textContent=(sup.length&&res.length)?('Expected Range: '+formatPrice(sup[0])+' – '+formatPrice(res[0])):'';
+  var why=[];if(ind.vwap)why.push(chip('VWAP '+(q.price>=ind.vwap?'↑':'↓')+' '+formatPrice(ind.vwap),q.price>=ind.vwap));if(ind.rsi!=null)why.push(chip('RSI '+Number(ind.rsi).toFixed(0),ind.rsi>=50&&ind.rsi<=70));if(ind.adx!=null)why.push(chip('ADX '+Number(ind.adx).toFixed(0)+(ind.adx>25?' trend':' range'),ind.adx>25));if(ao.evidence_strength!=null)why.push(chip('Evidence '+ao.evidence_strength,ao.evidence_strength>=0.5));
+  var whyEl=document.getElementById('stock-why');if(whyEl)whyEl.innerHTML=why.join('');
+  var oEl=document.getElementById('stock-outlook-text');if(oEl)oEl.innerHTML='<p>'+(ao.market_summary||'N/A')+'</p><div class="status">Bias: '+(ao.directional_bias||'N/A')+' | Conf: '+(ao.confidence||'N/A')+'% | Vol: '+(ao.volatility_classification||'N/A')+'</div>';
+  var shortEl=document.getElementById('stock-invest-short');if(shortEl){var sh=inv.SHORT||{};shortEl.textContent='SHORT: '+(sh.rating||'—')+' ('+(sh.reason||'')+') → Target '+fmt(sh.target_price)+' Stop '+fmt(sh.stop_price);}
+  var longEl=document.getElementById('stock-invest-long');if(longEl){var lh=inv.LONG||{};longEl.textContent='LONG: '+(lh.rating||'—')+' ('+(lh.reason||'')+') → Fair '+fmt(lh.fair_value);}
+  var tgtEl=document.getElementById('stock-target');if(tgtEl)tgtEl.textContent='Target / Stop: '+fmt((inv.SHORT||{}).target_price)+' / '+fmt((inv.SHORT||{}).stop_price);
+  var lv=[['R2',ind.r2],['R1',ind.r1],['SPOT',q.price],['VWAP',ind.vwap],['S1',ind.s1],['S2',ind.s2]];
+  var lvEl=document.getElementById('stock-levels');if(lvEl)lvEl.innerHTML=lv.map(function(l){return '<div><div class="status">'+l[0]+'</div><strong>'+(l[1]!=null?formatPrice(l[1]):'—')+'</strong></div>';}).join('');
+  var stEl=document.getElementById('stock-strategy');if(stEl){var s0=strat;if(s0&&s0.strategy){stEl.innerHTML='<div class="status"><strong>'+(s0.strategy||'N/A')+'</strong> | '+(s0.market_condition||'')+'</div><div class="status">Entry: '+(s0.entry_trigger||'N/A')+'</div><div class="status">Target: '+(s0.target||'N/A')+' | SL: '+(s0.stop_loss||'N/A')+'</div>';}else stEl.textContent='—';}
+  var px=await fetchJSON('prices/'+SYM.toLowerCase()+'?interval=1m&limit=400');
+  if(px&&px.length)drawChart('stock-chart',px.map(function(r){return r.close;}));
+  setLastUpdated(data.last_updated,true);
+}
+document.addEventListener('DOMContentLoaded',function(){loadStock();loadTicker();startDataRefresh(loadStock);});
+</script>
+</body>
+</html>
