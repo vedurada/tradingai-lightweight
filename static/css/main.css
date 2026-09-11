@@ -69,7 +69,8 @@ details summary { cursor: pointer; color: var(--green); font-weight: 600; font-s
 .hero { background: linear-gradient(135deg, #052e16 0%, #15803d 100%); border: none; color: #fff; }
 .hero .price { color: #fff; }
 .hero .status { color: #d1fae5; }
-.hero h2 { color: #fff; }
+.hero h2, .hero h3, .hero label { color: #d1fae5; }
+.hero select, .hero input { background: #fff; color: #0f172a; }
 .tiles { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 0.7rem; margin-top: 1rem; }
 .tile { background: #ffffff; border: 1px solid var(--line); border-radius: 10px; padding: 0.6rem 0.8rem; box-shadow: 0 1px 2px rgba(15, 23, 42, 0.05); }
 .tile .t-sym { font-size: 0.72rem; font-weight: 700; color: #64748b; letter-spacing: 0.05em; }
