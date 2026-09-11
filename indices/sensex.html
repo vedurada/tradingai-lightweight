@@ -147,7 +147,7 @@ async function loadIndex(){
   var vEl=document.getElementById('nifty-vix');if(vEl)vEl.textContent=vprice!=null?Number(vprice).toFixed(2):'—';
   var vr=vixRegime(vprice);var vrEl=document.getElementById('nifty-vix-regime');if(vrEl)vrEl.innerHTML='<span class="badge" style="background:'+vr[1]+'20;color:'+vr[1]+'">'+vr[0]+'</span> <span class="badge" style="background:'+(vchg>=0?'#dcfce7':'#fee2e2')+';color:'+(vchg>=0?'#14532d':'#7f1d1d')+';padding:0.2rem 0.5rem">('+formatChange(vchg)+'%)</span>';
   var bias=ao.directional_bias||ao.market_regime||reg.regime||'—';
-  var head=document.getElementById('nifty-outlook-head');if(head){head.textContent=bias.replace(/_/g,' ');head.style.color=regimeColor(bias);}
+  var head=document.getElementById('nifty-outlook-head');if(head){var c=regimeColor(bias);head.innerHTML='<span class="badge" style="background:'+c+'20;color:'+c+';padding:0.35rem 0.9rem;font-size:1.05rem;font-weight:800">'+bias.replace(/_/g,' ')+'</span>';}
   var sr=ind.support_resistance||{support:[],resistance:[]};var sup=sr.support||[],res=sr.resistance||[];
   var sEl=document.getElementById('nifty-sup');if(sEl)sEl.textContent=sup.length?sup.map(formatPrice).join(' / '):'—';
   var rEl=document.getElementById('nifty-res');if(rEl)rEl.textContent=res.length?res.map(formatPrice).join(' / '):'—';
