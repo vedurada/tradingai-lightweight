@@ -12,18 +12,7 @@ header h1 { color: var(--green); font-size: 1.5rem; margin-bottom: 0; letter-spa
 header #live-clock { white-space: nowrap; color: var(--ink); font-weight: 700; font-size: 1.05rem; font-variant-numeric: tabular-nums; background: var(--wash); border: 1px solid var(--line); padding: 0.15rem 0.7rem; border-radius: 999px; }
 header nav { margin-top: 0.5rem; display: flex; flex-wrap: wrap; gap: 0.4rem; }
 header nav a { display: inline-block; text-decoration: none; font-size: 0.85rem; font-weight: 700; padding: 0.35rem 0.85rem; border-radius: 999px; margin-right: 0; transition: all 0.15s ease; border: 1px solid transparent; box-shadow: 0 1px 3px rgba(15,23,42,0.08); }
-header nav a:nth-child(1) { background: linear-gradient(135deg, #dcfce7, #bbf7d0); color: #14532d; border-color: #86efac; } /* Home */
-header nav a:nth-child(2) { background: linear-gradient(135deg, #0f172a, #334155); color: #fff; border-color: #1e293b; } /* Market */
-header nav a:nth-child(3) { background: linear-gradient(135deg, #15803d, #22c55e); color: #fff; border-color: #15803d; } /* NIFTY */
-header nav a:nth-child(4) { background: linear-gradient(135deg, #1d4ed8, #3b82f6); color: #fff; border-color: #1d4ed8; } /* Bank NIFTY */
-header nav a:nth-child(5) { background: linear-gradient(135deg, #7c3aed, #a78bfa); color: #fff; border-color: #7c3aed; } /* FINNIFTY */
-header nav a:nth-child(6) { background: linear-gradient(135deg, #c2410c, #fb923c); color: #fff; border-color: #c2410c; } /* SENSEX */
-header nav a:nth-child(7) { background: linear-gradient(135deg, #0891b2, #22d3ee); color: #fff; border-color: #0891b2; } /* Scanner */
-header nav a:nth-child(8) { background: linear-gradient(135deg, #d97706, #fbbf24); color: #fff; border-color: #d97706; } /* Strategies */
-header nav a:nth-child(9) { background: linear-gradient(135deg, #1e3a5f, #3b82f6); color: #fff; border-color: #1e3a5f; } /* Stock Options */
-header nav a:nth-child(10) { background: linear-gradient(135deg, #4f46e5, #818cf8); color: #fff; border-color: #4f46e5; } /* Builder */
-header nav a:nth-child(11) { background: linear-gradient(135deg, #475569, #94a3b8); color: #fff; border-color: #475569; } /* Guide */
-header nav a:nth-child(12) { background: linear-gradient(135deg, #334155, #64748b); color: #fff; border-color: #334155; } /* History */
+header nav a { background: #f0fdf4; color: #14532d; border-color: #86efac; }
 header nav a:hover { filter: brightness(1.1); transform: translateY(-2px) scale(1.03); box-shadow: 0 8px 18px rgba(15,23,42,0.22); }
 header nav a:active { transform: translateY(0) scale(0.97); box-shadow: 0 1px 4px rgba(15,23,42,0.15); filter: brightness(0.96); }
 header nav a:focus-visible { outline: 2px solid #22c55e; outline-offset: 2px; }
