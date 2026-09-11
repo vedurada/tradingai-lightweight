@@ -56,9 +56,16 @@ a:hover { text-decoration: underline; }
 .badge-red { background: #fee2e2; color: #b91c1c; }
 .badge-yellow { background: #fef9c3; color: #a16207; }
 .badge-blue { background: #dbeafe; color: #1d4ed8; }
-button.badge { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08); }
-button.badge:hover { filter: brightness(0.96); transform: translateY(-1px); }
-button.badge:active { transform: translateY(0); }
+button.badge { box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08); transition: all 0.15s ease; }
+button.badge:hover { filter: brightness(1.06); transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 14px rgba(15, 23, 42, 0.14); }
+button.badge:active { transform: translateY(0) scale(0.97); }
+button { transition: all 0.15s ease; }
+#scanner-grid button:hover, #so-grid button:hover, .history-table button:hover, #market-grid button:hover, .scan-table button:hover {
+  filter: brightness(1.06); transform: translateY(-2px) scale(1.03); box-shadow: 0 6px 14px rgba(15, 23, 42,0.18);
+}
+#scanner-grid button:active, #so-grid button:active, .history-table button:active, #market-grid button:active, .scan-table button:active {
+  transform: translateY(0) scale(0.97); box-shadow: 0 1px 4px rgba(15, 23, 42,0.12);
+}
 footer { margin-top: 2rem; padding: 1.2rem 0; border-top: 1px solid var(--line); color: var(--faint); font-size: 0.8rem; }
 .pnl-full { display: block; width: 100%; }
 .pnl-full .card { margin-bottom: 1rem; }
