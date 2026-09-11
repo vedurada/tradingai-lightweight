@@ -25,6 +25,7 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 | API | Flask `backend/api_server.py` on `127.0.0.1:8000` as systemd unit `tradingai-api` (`Restart=always`, unit in `ops/systemd/`), proxied at `/api/` by nginx; 2-min curl watchdog restarts on hang |
 | Site | https://tradingai.in (real Let's Encrypt cert since 2026-09-10, auto-renew via certbot timer; HTTP 301 → HTTPS; earlier self-signed cert caused browser warnings) |
 | Market hours | 9:30–15:30 IST, Mon–Fri. Cron uses `9-15` hour field as approximation |
+| Cleanup | Removed ollama, docker, containerd, snapd, snap packages, multipathd/iscsid, unnecessary pip (ipython/jupyter/matplotlib/scipy/scikit/pandas/numpy). RAM: 602→173MB used, free: 65→306MB, disk: 29→25GB. |
 | LLM | Free cloud chain (gemini→groq→deepseek→openrouter→rule-based). Ollama on VM too slow (60s+ timeouts, 956MB RAM) — removed from chain. No API keys on VM; providers skip fast, rule-based used. Add key via `export GEMINI_API_KEY=...` on VM to enable. |
 
 ## 3. Architecture (database-first, layered)
