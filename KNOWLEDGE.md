@@ -25,7 +25,7 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 | API | Flask `backend/api_server.py` on `127.0.0.1:8000` as systemd unit `tradingai-api` (`Restart=always`, unit in `ops/systemd/`), proxied at `/api/` by nginx; 2-min curl watchdog restarts on hang |
 | Site | https://tradingai.in (real Let's Encrypt cert since 2026-09-10, auto-renew via certbot timer; HTTP 301 → HTTPS; earlier self-signed cert caused browser warnings) |
 | Market hours | 9:30–15:30 IST, Mon–Fri. Cron uses `9-15` hour field as approximation |
-| LLM | Free provider chain (gemini→groq→deepseek→openrouter→rule-based). `SKIP_LLM=1` removed from cron. No API keys on VM; providers skip fast, rule-based used. Add key via `export GEMINI_API_KEY=...` on VM to enable cloud LLM. Ollama installed but too slow on 956MB RAM/no GPU — removed from chain. |
+| LLM | Free cloud chain (gemini→groq→deepseek→openrouter→rule-based). Ollama on VM too slow (60s+ timeouts, 956MB RAM) — removed from chain. No API keys on VM; providers skip fast, rule-based used. Add key via `export GEMINI_API_KEY=...` on VM to enable. |
 
 ## 3. Architecture (database-first, layered)
 
@@ -73,13 +73,13 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 `backend/ai_outlook.py` — `AIOutlookEngine` generates `ai_outlook` JSON per symbol.
 
 **Providers (tried in order, first success wins):**
-| Provider | Model | Key env var | Endpoint |
-|---|---|---|---|
-| Gemini | gemini-2.0-flash | `GEMINI_API_KEY` | Google generative API |
-| Groq | llama-3.3-70b-versatile | `GROQ_API_KEY` | OpenAI-compatible |
-| DeepSeek | deepseek-chat | `DEEPSEEK_API_KEY` | OpenAI-compatible |
-| OpenRouter | google/gemini-flash-1.5 | `OPENROUTER_API_KEY` | OpenAI-compatible |
-| Ollama | qwen2.5 (local) | none | `http://localhost:11434` |
+| Provider | Model | Key env var | Endpoint | Status |
+|---|---|---|---|---|
+| Gemini | gemini-2.0-flash | `GEMINI_API_KEY` | Google generative API | Ready |
+| Groq | llama-3.3-70b-versatile | `GROQ_API_KEY` | OpenAI-compatible | Ready |
+| DeepSeek | deepseek-chat | `DEEPSEEK_API_KEY` | OpenAI-compatible | Ready |
+| OpenRouter | google/gemini-flash-1.5 | `OPENROUTER_API_KEY` | OpenAI-compatible | Ready |
+| Ollama | qwen2.5:0.5b (local) | none | `http://localhost:11434` | On VM but too slow (60s+), removed from chain |
 
 **Fallback chain:** configured provider → each free provider in order → rule-based `_rule_based_outlook()` (always works, no key needed).
 
