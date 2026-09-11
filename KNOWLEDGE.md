@@ -37,7 +37,7 @@ Indicators (computed locally: EMA/SMA/VWAP/RSI/MACD/ADX/ATR/Bollinger/Pivot/CPR/
    ↓
 Strategy layer (index option spreads | stock BUY/HOLD/EXIT) + AI outlook (rule-based)
    ↓
-Flask API :8000 → nginx /api/ → static HTML + vanilla JS (30s auto-refresh, no market-hours gate)
+Flask API :8000 → nginx /api/ → static HTML + vanilla JS (20s silent refresh, scroll-preserved, no market-hours gate)
 ```
 
 Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) is **deprecated but still deployed**; no cron calls it. Frontend reads **only** `/api/*`.
@@ -128,17 +128,17 @@ Stocks are investments, not intraday signals: SHORT horizon (weeks: SMA20/50 + R
 
 Health, symbols, price[s], vix(+history), indicators, regime(s), strategy/strategies, scenarios, outlook(s), options(+expiries), breadth(+history), snapshot(s), fundamentals, company (analyst views/financial flags), news(+per-symbol), actions (dividends/splits), market (legacy `{instruments:{...}}`), history (grouped, 365d), etf, data_status. Generic `/api/<symbol>` (case-insensitive) serves any symbol page incl. scanner stocks.
 
-## 12. Frontend (static HTML + inline JS, 30s refresh, no time gate)
+## 12. Frontend (static HTML + inline JS, 20s silent refresh, no time gate)
 
-Every page shares: AI-Assisted Market Intelligence Platform header (with live IST clock top-right, pill-button nav), scrolling ticker tape (60s loop, price + NSE A/D, pause on hover, on **every** page), favicon `favicon.svg` + `apple-touch-icon.svg` + header brand mark (`header h1 img`, 22×22 rounded), and centered `Data as of ... IST` bar (true IST via `Intl`, data-time from quote candle, red "Update failed" on fetch error).
+Every page shares: **AI-Assisted Market Intelligence Platform** header (single-color pill nav `#f0fdf4`, live IST clock top-right in header brand-row, favicon `favicon.svg` + `apple-touch-icon.svg` + header brand mark `header h1 img` 22×22 rounded), scrolling ticker tape (60s loop, price + NSE A/D, pause on hover, on **every** page), and centered `Data as of ... IST` bar (true IST via `Intl`, data-time from quote candle, red "Update failed" on fetch error). All cards/rows site-wide are `cursor:pointer` → `detailHref(symbol)` (market grid, scanner rows, stock-options rows, history rows, strategy cards, index hero tiles).
 
-`index.html` — gradient **TODAY'S NIFTY** hero (price + change light-green/red on dark, regime badge, expected range, S/R, VIX+VWAP, market_summary) + tiles (NIFTY/BANKNIFTY/FINNIFTY/SENSEX + VIX) + breadth bar + P&L glance + eye-catchy CTA row (🔴 LIVE TODAY / Full Market Grid / Strategy Engine / Scanner).
-`market.html` — **MARKET PULSE** gradient hero with 4 tiles (NIFTY/BANKNIFTY/SENSEX/VIX — VIX now shows change red/green like the others) + grid.
-`indices/nifty.html` `banknifty.html` `finnifty.html` `sensex.html` — hero price strip (`card hero`) + 🧠 AI MARKET OUTLOOK (green left border), 📍 KEY LEVELS (amber), 📈 Chart + OPTIONS INTELLIGENCE side-by-side, ⚡ AI INTRADAY STRATEGY (blue), MARKET INTERNALS, WHAT CHANGED timeline, HISTORICAL PERFORMANCE. All four share the card-accent system.
-`scanner.html` / `stock-options.html` / `history.html` — full-width tables (`.pnl-full` / `.scan-table` fixed layout, no horizontal scroll bleed). Scanner: summary hero + sortable table (Symbol/Cap/Price/Chg%/Regime/Signal/Invest/Target/Stop/S-R). Stock-options: **navy `hero-stock` + amber `stock-card`** (positional, monthly last-Tuesday, physical) — visually distinct from index green hero.
-`strategies.html` — strategy engine header now `hero`; `strategies-guide.html` / `strategy-builder.html` / `learn/*` / `tools/position-size.html` follow the same header/ticker/clock shell.
-Expiry readout is uniform everywhere: `Expiry: 15 Sep 2026 (5 DTE, WEEKLY)` (index pages, strategies cards, builder header).
-Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; wrapper scrolls. Gains green `#15803d` (light `#86efac` on dark heroes) / losses red `#dc2626` (`#fca5a5` on dark) site-wide.
+`index.html` — gradient **TODAY'S NIFTY** hero (price + change as high-contrast pill `bg #dcfce7/#fee2e2`, regime pill, expected range, S/R, VIX pill + VWAP, market_summary) + tiles (NIFTY/BANKNIFTY/FINNIFTY/SENSEX + VIX, each tile clickable to its index page) + breadth bar + P&L glance + eye-catchy CTA row (single-color `cta-single` `#f0fdf4` pills: LIVE TODAY / Full Market Grid / Strategy Engine / Scanner) + `stock.html?symbol=` detail pages for every stock (broad outlook like indices).
+`market.html` — **MARKET PULSE** gradient hero with 4 clickable tiles (NIFTY/BANKNIFTY/SENSEX/VIX — VIX now shows change as pill, grid-aligned) + grid of brand-tinted `brandBtn` cards (favicon + color per symbol, whole card clickable).
+`indices/nifty.html` `banknifty.html` `finnifty.html` `sensex.html` — hero price strip (`card hero`, all four enabled) + 🧠 AI MARKET OUTLOOK (green left border), 📍 KEY LEVELS (amber), 📈 Chart + OPTIONS INTELLIGENCE side-by-side, **NIFTY vs INDIA VIX — Intraday** dual-% chart (`nifty-vix-chart`), ⚡ AI INTRADAY STRATEGY (blue, 9:30 `daily_strategy` lock), MARKET INTERNALS, WHAT CHANGED timeline, HISTORICAL PERFORMANCE. All four share the card-accent system.
+`scanner.html` / `stock-options.html` / `history.html` — full-width tables (`.pnl-full` / `.scan-table` fixed layout, no horizontal scroll bleed). Scanner: hero + sortable table (Symbol/Cap/Price/Chg%/Regime/Signal/**Invest**/Target/Stop/S-R, rows clickable). Stock-options: **navy `hero-stock` + amber `stock-card`** **positional table** (no scroll, header Lot simplified) — visually distinct from index green hero, Exit column is dynamic positional (from live strategy, not 15:20).
+`strategies.html` — strategy engine header now `hero`; strategy template cards → Builder with `?index=&template=`; `strategies-guide.html` / `strategy-builder.html` / `learn/*` / `tools/position-size.html` follow the same header/ticker/clock shell.
+Expiry readout is uniform everywhere: `Expiry: 15 Sep 2026 (5 DTE, WEEKLY)` (index pages, strategies cards, builder header; live NSE `source: NSE` preferred).
+Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; gains green `#15803d` (light `#86efac` on dark heroes) / losses red `#dc2626` (`#fca5a5` on dark) site-wide, with high-contrast pill badges on dark heroes for `+6.18%` etc.
 
 ## 13. Cron (VM, IST)
 
@@ -183,11 +183,10 @@ yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundam
 
 ## 17. Analytics, SEO & discoverability
 
-- **GA4:** measurement ID `G-MJ3X88QYEL` (stream "tradingai" → https://tradingai.in), gtag.js snippet first in `<head>` of all 11 pages (verified served). If GA4 says "data collection isn't active", it means zero hits arrived — check with an adblock-free visit + Realtime report (standard reports lag 24–48h); Tag Assistant confirms firing.
-- **SEO foundation:** `robots.txt` (allows all but `/api/`, `/data/`), `sitemap.xml` (10+ evergreen URLs) + `backend/sitemap_gen.py` (adds dated `market/*.html` pages; run after publishing + weekly). Deploy syncs both + `today/`/`learn/`/`tools/`/`market/` to web root.
+- **SEO foundation:** `robots.txt` (allows all but `/api/`, `/data/`), `sitemap.xml` (20 evergreen URLs) + `backend/sitemap_gen.py` (adds dated `market/*.html` pages; run after publishing + weekly). Deploy syncs both + `today/`/`learn/`/`tools/`/`market/` to web root.
 - **Meta & brand:** unique OG title/description + canonical + JSON-LD (Organization everywhere; WebSite + BreadcrumbList) on all pages; SVG favicon + apple-touch-icon + header `<h1><img>` brand mark on every page (added 2026-09-11).
 - **`/today/` terminal:** pre-open checklist / live mode / close report, session-aware by IST, ticker + clock.
-- **GA4:** tag `G-MJ3X88QYEL` on every page (verified 200 for `gtag/js`); owner saw "Data collection isn't active" — means zero hits arrived, not a tag bug (ad-blockers kill gtag, Realtime shows visits in ~30s, standard reports lag 24–48h).
+- **GA4:** `G-MJ3X88QYEL` on every page (verified 200 for `gtag/js`); "Data collection isn't active" = zero hits arrived, not a tag bug (ad-blockers kill gtag, Realtime shows visits in ~30s, standard reports lag 24–48h).
 - **Pending owner actions:** Google Search Console + Bing Webmaster verification, sitemap submit, IndexNow on publish.
 
 ## 18. Future implementations (roadmap)
