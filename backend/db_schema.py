@@ -515,6 +515,17 @@ CREATE TABLE IF NOT EXISTS mf_returns (
     expected_from TEXT,
     computed_at TEXT
 );
+
+CREATE TABLE IF NOT EXISTS etf_holdings (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT,
+    holding_symbol TEXT,
+    holding_name TEXT,
+    pct REAL,
+    fetch_date TEXT,
+    UNIQUE(symbol, holding_symbol)
+);
+CREATE INDEX IF NOT EXISTS idx_etf_holdings_symbol ON etf_holdings(symbol, pct DESC);
 """
 
 def init_database(db_path: str = DB_PATH) -> None:

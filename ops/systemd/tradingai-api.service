@@ -1,5 +1,5 @@
 [Unit]
-Description=TradingAI Flask API (port 8000)
+Description=TradingAI Flask API (gunicorn, port 8000)
 After=network.target
 StartLimitIntervalSec=60
 StartLimitBurst=10
@@ -8,15 +8,16 @@ StartLimitBurst=10
 Type=simple
 User=ubuntu
 WorkingDirectory=/opt/tradingai/backend
-ExecStart=/usr/bin/python3 api_server.py
+Environment=API_PORT=8000
+Environment=PATH=/usr/bin:/usr/local/bin
+ExecStart=/usr/bin/gunicorn -w 2 -b 127.0.0.1:8000 --timeout 90 --graceful-timeout 15 --access-logfile /opt/tradingai/logs/gunicorn-access.log --error-logfile /opt/tradingai/logs/gunicorn-error.log api_server:app
 Restart=always
 RestartSec=10
-TimeoutStartSec=30
-TimeoutStopSec=10
+TimeoutStartSec=60
+TimeoutStopSec=60
 KillMode=mixed
-StandardOutput=append:/opt/tradingai/logs/api_server.log
-StandardError=append:/opt/tradingai/logs/api_server.log
-Environment=API_PORT=8000
+StandardOutput=append:/opt/tradingai/logs/gunicorn-out.log
+StandardError=append:/opt/tradingai/logs/gunicorn-err.log
 # 1GB VM: let OOM killer prefer other processes, not the API
 OOMScoreAdjust=-200
 

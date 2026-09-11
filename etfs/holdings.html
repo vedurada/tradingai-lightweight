@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ETF Holdings Explorer — What ETFs Own — TradingAI</title>
+<meta name="description" content="See exactly what India's most popular ETFs own: per-stock weightings for NIFTYBEES, BANKBEES, JUNIORBEES and GOLDBEES, with the top-name concentration computed.">
+<link rel="canonical" href="https://tradingai.in/etfs/holdings.html">
+<meta property="og:title" content="ETF Holdings Explorer — TradingAI">
+<meta property="og:description" content="Top-holdings breakdown for NIFTYBEES, BANKBEES, JUNIORBEES and GOLDBEES with concentration analysis.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/etfs/holdings.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"WebPage","name":"ETF Holdings Explorer","url":"https://tradingai.in/etfs/holdings.html"}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="../assets/css/main.css">
+<script src="../assets/js/keep-scroll.js" defer></script></head>
+<body>
+<header>
+  <h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../indices/finnifty.html">FINNIFTY</a>
+    <a href="../indices/sensex.html">SENSEX</a>
+    <a href="../scanner.html">Scanner</a>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="../stocks/top-large-cap.html">Large Cap</a><a href="../stocks/top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a><a href="../sectors/top.html">Sectors</a><a href="../stocks/52-week.html">52-Week</a></div></div>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../options/pcr.html">PCR</a>
+    <a href="../stock-options.html">Stock Options</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../strategies-guide.html">Guide</a>
+    <a href="../mutual-funds/index.html">Mutual Funds</a>
+    <a href="../news/index.html">News</a>
+    <a href="../queries/index.html">Queries</a>
+    <a href="../history.html">History</a>
+    <a href="../alerts.html">Alerts</a>
+    <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span><span id="live-clock"></span></div>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+  <h2>ETF HOLDINGS EXPLORER</h2>
+
+  <div class="card" style="margin-bottom:1rem">
+    <label>ETF
+      <select id="eh-symbol" style="min-width:180px">
+        <option value="NIFTYBEES">NIFTYBEES (NIFTY 50)</option>
+        <option value="BANKBEES">BANKBEES (Bank NIFTY)</option>
+        <option value="JUNIORBEES">JUNIORBEES (NIFTY Next 50)</option>
+        <option value="GOLDBEES">GOLDBEES (Gold)</option>
+      </select>
+    </label>
+    <button class="btn" id="eh-load">Load holdings</button>
+    <a class="btn" href="top-etfs.html" style="text-decoration:none">ETF prices →</a>
+  </div>
+
+  <div id="eh-body"><div class="card">Choose an ETF to see its top holdings and weights.</div></div>
+
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+    <p>The Holdings Explorer drills into what an index ETF actually owns. Knowing the constituent weights matters because an ETF is only as diversified as its biggest names: a handful of stocks often represent a third or more of a broad index fund's value.</p>
+    <p>The table lists each holding's symbol, name and percentage of the fund, ordered by weight. The bigger the top name, the more the ETF's price tracks that single stock — a fact that matters when you are using the ETF as a "low-risk core" position. GOLDBEES is different: its holdings are bullion-backed and its price is driven by the international gold rate, not by equities, so compare it against gold charts rather than the NIFTY.</p>
+    <p>Holdings are refreshed weekly from the fund's public disclosures, so the breakdown is a recent snapshot rather than a real-time view. Fund managers rebalance, and exact percentages shift between disclosure dates.</p>
+    <p>This information is for research. It is not a recommendation to buy or sell any ETF, and past weightings do not predict future performance.</p>
+  </div>
+<footer>
+    <p>TradingAI provides market analysis and decision-support information. Not financial advice. Verify market data before trading.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
+</main>
+<script>
+const API_BASE='..';
+async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function esc(s){return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+async function loadHoldings(){
+  var sym=document.getElementById('eh-symbol').value;
+  var body=document.getElementById('eh-body');
+  body.innerHTML='<div class="card">Loading '+esc(sym)+' holdings…</div>';
+  var rows=await fetchJSON('etf-holdings?symbol='+encodeURIComponent(sym));
+  if(rows===null||!rows.length){body.innerHTML='<div class="card">No holdings data for '+esc(sym)+' yet. The weekly refresh runs automatically — check back after next Sunday.</div>';return;}
+  var top=rows.slice(0,5);
+  var total=rows.reduce(function(a,r){return a+(r.pct||0);},0);
+  var rowHtml=rows.map(function(r,i){
+    var pct=r.pct||0;
+    return '<tr><td>'+(i+1)+'</td><td><strong>'+esc(r.holding_symbol)+'</strong></td><td>'+esc(r.holding_name)+'</td>'
+      +'<td>'+fmt(pct)+'%</td><td class="status">'+esc((r.fetch_date||'').slice(0,10))+'</td></tr>';
+  }).join('');
+  var topNames=top.map(function(r){return esc(r.holding_name?r.holding_name:r.holding_symbol);}).join(', ');
+  body.innerHTML='<div class="card"><h3>'+esc(sym)+' — top holdings</h3>'
+    +'<p class="status">Top 5: '+topNames+'</p>'
+    +'<p>Share of fund tracked: <strong>'+fmt(total)+'%</strong> across '+rows.length+' disclosed holdings (or pooled checks).</p>'
+    +'<div class="table-wrap"><table><thead><tr><th>#</th><th>Symbol</th><th>Name</th><th>Weight</th><th>Disclosure</th></tr></thead><tbody>'+rowHtml+'</tbody></table></div>'
+    +'<p class="status">Weights are % of fund value as of the disclosure date. Not investment advice.</p></div>';
+  document.getElementById('last-updated-bar').textContent='Holdings snapshot';
+}
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('eh-load').addEventListener('click',loadHoldings);
+  loadHoldings();
+});
+</script>
+<script>
+(function(){var BASE='..';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+if(m&&m.instruments){var items=[];for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}
+if(items.length)el.innerHTML=items.join('')+items.join('');}}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+</body>
+</html>

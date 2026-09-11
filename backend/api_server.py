@@ -594,6 +594,93 @@ def oi_top():
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+@app.route("/api/portfolio", methods=["GET"])
+def portfolio_list():
+    conn = get_db()
+    rows = conn.execute("SELECT * FROM portfolio ORDER BY created_at DESC").fetchall()
+    conn.close()
+    items = [row_to_dict(r) for r in rows]
+    try:
+        quotes = market()  # reuse cached market payload for live LTPs
+        instr = (quotes.get_json() if hasattr(quotes, "get_json") else {}).get("instruments", {})
+    except Exception:
+        instr = {}
+    for it in items:
+        q = instr.get(it["symbol"], {})
+        price = q.get("price") or q.get("last_price")
+        if it.get("exit_price"):
+            price = it["exit_price"]
+        if price:
+            it["live_price"] = price
+            it["market_value"] = round(price * (it.get("quantity") or 0), 2)
+            if it.get("entry_price"):
+                it["pnl_pct"] = round(((price - it["entry_price"]) / it["entry_price"]) * 100 * (1 if it.get("direction") != "SHORT" else -1), 2)
+    return jsonify(items)
+
+@app.route("/api/portfolio", methods=["POST"])
+def portfolio_add():
+    body = request.get_json(silent=True) or {}
+    sym = (body.get("symbol") or "").strip().upper()
+    if not sym:
+        return jsonify({"error": "symbol required"}), 400
+    direction = (body.get("direction") or "LONG").upper()
+    if direction not in ("LONG", "SHORT"):
+        direction = "LONG"
+    conn = get_db()
+    conn.execute(
+        "INSERT INTO portfolio (symbol, strategy, entry_price, quantity, direction, entry_date,"
+        " exit_price, exit_date, points, result, created_at)"
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
+        (sym, body.get("strategy", ""), body.get("entry_price"), body.get("quantity"),
+         direction, body.get("entry_date") or datetime.now(timezone.utc).date().isoformat(),
+         body.get("exit_price"), body.get("exit_date"), body.get("points"),
+         (body.get("result") or "").upper(), datetime.now(timezone.utc).isoformat()))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/portfolio/<int:pid>", methods=["DELETE"])
+def portfolio_delete(pid):
+    conn = get_db()
+    conn.execute("DELETE FROM portfolio WHERE id=?", (pid,))
+    conn.commit()
+    conn.close()
+    return jsonify({"ok": True})
+
+@app.route("/api/backtest")
+def backtest():
+    symbol = request.args.get("symbol", "NIFTY").strip().upper()
+    days = request.args.get("days", 30, type=int)
+    from backtest import BacktestEngine
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+    engine = BacktestEngine(db_path)
+    result = engine.run(symbol, days)
+    return jsonify(result)
+
+@app.route("/api/alerts")
+def alerts():
+    limit = request.args.get("limit", 50, type=int)
+    symbol = request.args.get("symbol", "").strip().upper()
+    conn = get_db()
+    if symbol:
+        rows = conn.execute("SELECT * FROM alerts WHERE symbol=? ORDER BY timestamp DESC LIMIT ?", (symbol, limit)).fetchall()
+    else:
+        rows = conn.execute("SELECT * FROM alerts ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
+@app.route("/api/etf-holdings")
+def etf_holdings():
+    symbol = request.args.get("symbol", "").strip().upper()
+    conn = get_db()
+    if symbol:
+        rows = conn.execute("SELECT * FROM etf_holdings WHERE symbol=? ORDER BY pct DESC", (symbol,)).fetchall()
+    else:
+        rows = conn.execute("SELECT symbol, holding_symbol, holding_name, pct, MAX(fetch_date) AS fetch_date"
+                            " FROM etf_holdings GROUP BY symbol, holding_symbol ORDER BY symbol, pct DESC").fetchall()
+    conn.close()
+    return jsonify([row_to_dict(r) for r in rows])
+
 @app.route("/api/breadth")
 def breadth():
     conn = get_db()

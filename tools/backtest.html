@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtest — Strategy Performance — TradingAI</title>
+<meta name="description" content="Backtest TradingAI's logged trades: win rate, profit factor, max drawdown, consecutive win/loss streaks and per-strategy breakdown, straight from the strategy engine's history.">
+<link rel="canonical" href="https://tradingai.in/tools/backtest.html">
+<meta property="og:title" content="Backtest — Strategy Performance — TradingAI">
+<meta property="og:description" content="Performance statistics over the strategy engine's logged trades: win rate, profit factor, drawdown and degeneracy by strategy.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/tools/backtest.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"WebApplication","name":"Backtest","url":"https://tradingai.in/tools/backtest.html"}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="../assets/css/main.css">
+<script src="../assets/js/keep-scroll.js" defer></script></head>
+<body>
+<header>
+  <h1><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p>
+  <nav>
+    <a href="../index.html">Home</a>
+    <a href="../market.html">Market</a>
+    <a href="../indices/nifty.html">NIFTY</a>
+    <a href="../indices/banknifty.html">Bank NIFTY</a>
+    <a href="../indices/finnifty.html">FINNIFTY</a>
+    <a href="../indices/sensex.html">SENSEX</a>
+    <a href="../scanner.html">Scanner</a>
+    <div class="nav-dropdown"><a href="#">Top ▾</a><div class="dropdown-content"><a href="../stocks/top-large-cap.html">Large Cap</a><a href="../stocks/top-mid-small.html">Mid/Small</a><a href="../etfs/top-etfs.html">ETFs</a></div></div>
+    <a href="../strategies.html">Strategies</a>
+    <a href="../options/pcr.html">PCR</a>
+    <a href="../stock-options.html">Stock Options</a>
+    <a href="../strategy-builder.html">Builder</a>
+    <a href="../strategies-guide.html">Guide</a>
+    <a href="../mutual-funds/index.html">Mutual Funds</a>
+    <a href="../news/index.html">News</a>
+    <a href="../queries/index.html">Queries</a>
+    <a href="../history.html">History</a>
+    <a href="../alerts.html">Alerts</a>
+    <a href="../about.html">About</a>
+    <a href="../contact.html">Contact</a>
+    <a href="../privacy.html">Privacy</a>
+    <a href="../terms.html">Terms</a>
+</nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span><span id="live-clock"></span></div>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+  <h2>BACKTEST &amp; PERFORMANCE</h2>
+
+  <div class="card" style="margin-bottom:1rem">
+    <label>Symbol
+      <select id="bt-symbol" style="min-width:180px">
+        <option>NIFTY</option><option>BANKNIFTY</option><option>FINNIFTY</option><option>SENSEX</option>
+      </select>
+    </label>
+    <label>Days
+      <select id="bt-days">
+        <option value="30">30 days</option><option value="90">90 days</option><option value="180">180 days</option><option value="365">1 year</option>
+      </select>
+    </label>
+    <button class="btn" id="bt-run">Run backtest</button>
+  </div>
+
+  <div id="bt-body"><div class="card">Choose a symbol and period, then run a backtest over the strategy engine's logged trades.</div></div>
+
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+    <p>The Backtest tool runs straight over the trades the strategy engine has logged in the history ledger — the same ledger that drives the P&amp;L history page. Each day's session is a single trade with an entry, an exit and a WIN/LOSS/FLAT result in points.</p>
+    <p>The headline numbers are the classics of performance analysis. Win rate tells you how often the engine is right; profit factor (total winning points divided by total losing points) tells you whether the size of the winners covers the losers. A profit factor above 1.0 is profitable, but below 1.5 most traders would call it noisy. Max drawdown is the largest fall from a peak in cumulative points — your true worst stretch, and the number to size positions around.</p>
+    <p>Consecutive win and loss streaks answer the practical question nobody asks about reported strategies: how bad can a bad patch get? Knowing the worst recorded runway is useful when you size a single trade. The per-strategy breakdown shows which named plays (OI breakout, gap-fade and so on) are earning their keep and which ones to demote.</p>
+    <p>The backtest reflects logged strategy history on a live index, past performance is not a guarantee of future results, and the sample is short. Use the insight to size, not to gamble.</p>
+  </div>
+<footer>
+    <p>TradingAI provides market analysis and decision-support information. Not financial advice. Verify market data before trading.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
+</main>
+<script>
+const API_BASE='..';
+async function fetchJSON(path){try{const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('nf');return await res.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function esc(s){return String(s||'').replace(/[<>&"]/g,function(c){return{'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c];});}
+function pnlColor(v){return v==null?'':v>0?'#15803d':v<0?'#dc2626':'';}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function stat(label,val,unit,color){
+  var s=document.createElement('style');if(!s.dataset.injected){s.dataset.injected='1';s.innerHTML='.bt-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.7rem;margin:0.9rem 0}.bt-cell{background:var(--bg,#0f172a);border:1px solid var(--border,#1e293b);border-radius:10px;padding:0.7rem;text-align:center}.bt-cell .v{font-size:1.25rem;font-weight:700}.bt-cell .l{font-size:0.75rem;opacity:0.7;margin-top:0.25rem}';document.head.appendChild(s);}
+  var c=color?(color+'1a'):'';
+  return '<div class="bt-cell"><div class="v" style="color:'+(color||'')+';background:'+c+';border-radius:6px;padding:0.15rem 0">'+fmt(val)+(unit?(' <span style="font-size:0.75rem;font-weight:400">'+unit+'</span>'):'')+'</div><div class="l">'+label+'</div></div>';
+}
+async function runBT(){
+  var body=document.getElementById('bt-body');
+  body.innerHTML='<div class="card">Running backtest…</div>';
+  var sym=document.getElementById('bt-symbol').value,days=document.getElementById('bt-days').value;
+  var r=await fetchJSON('backtest?symbol='+encodeURIComponent(sym)+'&days='+days);
+  if(r===null){body.innerHTML='<div class="card">Backtest failed — API unreachable.</div>';return;}
+  if(r.total_trades===0){body.innerHTML='<div class="card">No closed trades found for '+esc(sym)+' in the last '+days+' days. The strategy engine has to log sessions first.</div>';return;}
+  var grid=stat('Win rate',r.win_rate,'%','#15803d')
+    +stat('Total trades',r.total_trades,'',null)
+    +stat('Net points',r.total_points,'',pnlColor(r.total_points))
+    +stat('Profit factor',r.profit_factor,'',null)
+    +stat('Max drawdown',-Math.abs(r.max_drawdown),'pts','#dc2626')
+    +stat('Avg win',r.avg_win,'pts','#15803d')
+    +stat('Avg loss',r.avg_loss,'pts','#dc2626')
+    +stat('Max win',r.max_win,'pts','#15803d')
+    +stat('Max loss',r.max_loss,'pts','#dc2626')
+    +stat('Best streak',r.max_consecutive_wins,'W','#15803d')
+    +stat('Worst streak',r.max_consecutive_losses,'L','#dc2626');
+  var sb=Object.keys(r.strategy_breakdown||{}).map(function(k){
+    var s=r.strategy_breakdown[k];
+    return '<tr><td>'+esc(k)+'</td><td>'+s.trades+'</td><td>'+s.wins+'</td><td>'+s.losses+'</td><td style="color:'+pnlColor(s.total_points)+'">'+(s.total_points>=0?'+':'')+fmt(s.total_points)+'</td></tr>';
+  }).join('');
+  var trades=r.trades||[];
+  var tradeRows=trades.slice(0,100).reverse().map(function(t){
+    var c=pnlColor(t.points);
+    return '<tr><td>'+(t.created_at||'').slice(0,10)+'</td><td>'+esc(t.result)+'</td><td style="color:'+c+'">'+(t.points>=0?'+':'')+fmt(t.points)+'</td><td>'+esc(t.regime||'')+'</td><td>'+esc(t.strategy||'')+'</td></tr>';
+  }).join('');
+  body.innerHTML='<div class="card"><h3>'+esc(sym)+' — last '+days+' days</h3><div class="bt-grid">'+grid+'</div>'
+    +(sb?'<h3>By strategy</h3><div class="table-wrap"><table><thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Points</th></tr></thead><tbody>'+sb+'</tbody></table></div>':'')
+    +(tradeRows?'<h3>Recent trades</h3><div class="table-wrap"><table><thead><tr><th>Date</th><th>Result</th><th>Points</th><th>Regime</th><th>Strategy</th></tr></thead><tbody>'+tradeRows+'</tbody></table></div>':'')
+    +'<div class="status">Generated '+new Date(r.generated_at).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST. Past performance is not a guarantee of future results.</div></div>';
+}
+document.addEventListener('DOMContentLoaded',function(){
+  document.getElementById('bt-run').addEventListener('click',runBT);
+  runBT();
+});
+</script>
+<script>
+(function(){var BASE='..';
+async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
+var m=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}
+if(m&&m.instruments){var items=[];for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
+items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}
+if(items.length)el.innerHTML=items.join('')+items.join('');}}catch(e){}}
+document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
+})();
+</script>
+</body>
+</html>
