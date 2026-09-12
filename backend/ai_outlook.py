@@ -64,12 +64,16 @@ class AIOutlookEngine:
                 return self._cache[key]
         return None
 
-    def generate(self, symbol: str, data: dict) -> dict:
+    def generate(self, symbol: str, data: dict, use_llm: bool = True) -> dict:
         cached = self._cached(f"ai:{symbol}")
         if cached:
             return cached
         prompt = self._build_prompt(symbol, data)
-        outlook = self._call_llm_chain(prompt, data)
+        if use_llm:
+            outlook = self._call_llm_chain(prompt, data)
+            outlook = self._normalize_llm_outlook(symbol, outlook, data)
+        else:
+            outlook = self._rule_based_outlook(data)
         logger.info(f"AI outlook for {symbol}: {outlook.get('market_regime', '?')} bias={outlook.get('directional_bias', '?')} conf={outlook.get('confidence', '?')}")
         self._cache[f"ai:{symbol}"] = outlook
         return outlook
@@ -125,6 +129,67 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
             return None
         return fn(prompt)
 
+    def _normalize_llm_outlook(self, symbol: str, outlook: dict, data: dict) -> dict:
+        """Coerce LLM output into the schema the site renders (rule-based shape).
+
+        The LLM may return confidence as a 0-1 fraction (site shows %), bias/regime in
+        mixed case, and drop required keys. Normalize + backfill so pages like dashboard.js
+        and nifty.js never break."""
+        out = dict(outlook)
+        # confidence -> 0..100 (handle fraction, absolute %, and word forms)
+        c = out.get("confidence")
+        if isinstance(c, (int, float)):
+            if 0 < c <= 1:
+                out["confidence"] = round(c * 100)
+            else:
+                out["confidence"] = max(0, min(100, int(c)))
+        elif isinstance(c, str):
+            u = c.upper().strip()
+            out["confidence"] = 70 if "HIGH" in u else 35 if "LOW" in u else 50
+        elif c is None:
+            out["confidence"] = 50
+        # regime / bias casing
+        if out.get("market_regime"):
+            out["market_regime"] = str(out["market_regime"]).upper().replace(" ", "_")
+        if out.get("directional_bias"):
+            out["directional_bias"] = str(out["directional_bias"]).upper()
+        # volatility classification -> HIGH/MEDIUM/LOW
+        v = str(out.get("volatility_classification") or "").upper()
+        out["volatility_classification"] = "HIGH" if "HIGH" in v else "LOW" if "LOW" in v else "MEDIUM"
+        # evidence_strength -> 0..1 (handle word forms like "Weak", "Moderate-Strong")
+        e = out.get("evidence_strength")
+        if isinstance(e, (int, float)):
+            out["evidence_strength"] = max(0.0, min(1.0, float(e)))
+        elif isinstance(e, str):
+            s = e.upper()
+            ev = 0.5
+            if "VERY STRONG" in s or "EXTREMELY STRONG" in s:
+                ev = 0.9
+            elif "STRONG" in s:
+                ev = 0.75
+            elif "WEAK" in s:
+                ev = 0.3
+            elif "MODERATE" in s:
+                ev = 0.55
+            out["evidence_strength"] = ev
+        # primary_strategy dict may use `name` instead of site's `strategy` key
+        ps = out.get("primary_strategy")
+        if isinstance(ps, dict) and not ps.get("strategy") and ps.get("name"):
+            ps2 = dict(ps)
+            ps2["strategy"] = ps["name"]
+            out["primary_strategy"] = ps2
+        # required keys absent in LLM output -> backfill from rule-based defaults
+        rule = self._rule_based_outlook(data)
+        for k in ("asset", "date", "market_structure", "market_summary", "trend_analysis",
+                  "momentum_analysis", "volatility_analysis", "support_levels", "resistance_levels",
+                  "options_analysis", "bullish_scenario", "bearish_scenario", "range_scenario",
+                  "primary_strategy", "alternative_strategies", "intraday_plan", "no_trade_conditions",
+                  "strategy_environment", "invalidation", "risk_warnings", "data_quality", "generated_at"):
+            if not out.get(k):
+                out[k] = rule.get(k)
+        out["asset"] = symbol
+        return out
+
     def _parse_json(self, text: str) -> Optional[dict]:
         text = re.sub(r"```(?:json)?", "", text)
         text = text.strip()
@@ -159,7 +224,7 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
         if not key:
             return None
         url = "https://api.groq.com/openai/v1/chat/completions"
-        body = {"model": "llama-3.3-70b-versatile", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}
+        body = {"model": "openai/gpt-oss-120b", "messages": [{"role": "user", "content": prompt}], "temperature": 0.1}
         resp = self._post(url, body, {"Authorization": f"Bearer {key}"}, timeout=15)
         text = resp["choices"][0]["message"]["content"]
         return self._parse_json(text)

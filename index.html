@@ -8,16 +8,15 @@
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-
   gtag('config', 'G-MJ3X88QYEL');
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradingAI - Indian Market Intelligence</title>
-<meta name="description" content="AI-powered market-condition intelligence for Indian markets">
+<title>AI Market Outlook - NIFTY, BANKNIFTY, FINNIFTY, SENSEX - TradingAI</title>
+<meta name="description" content="TradingAI AI Market Outlook for Indian indices: regime analysis, probability bars, 8-factor scoring, options intelligence, key levels and AI verdict for NIFTY, BANKNIFTY, FINNIFTY and SENSEX.">
 <link rel="canonical" href="https://tradingai.in/">
-<meta property="og:title" content="TradingAI - Indian Market Outlook">
-<meta property="og:description" content="AI-assisted NIFTY intraday intelligence: live regime, levels, VIX and defined-risk option strategies.">
+<meta property="og:title" content="AI Market Outlook - TradingAI">
+<meta property="og:description" content="Real-time AI Market Outlook for NIFTY, BANKNIFTY, FINNIFTY and SENSEX: regime, bias, strategies, key levels and verdict.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tradingai.in/">
 <meta name="twitter:card" content="summary">
@@ -26,8 +25,8 @@
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="assets/css/main.css">
-<script src="assets/js/index-charts.js" defer></script>
-<script src="assets/js/live-blink.js" defer></script></head>
+<script src="assets/js/live-blink.js" defer></script>
+</head>
 <body>
 <header>
   <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
@@ -35,210 +34,76 @@
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
-  <section id="today-hero">
-    <div class="card hero" id="hero-card"><div class="status">Loading today's NIFTY answer…</div></div>
-    <div class="card" id="strategy-card" style="margin-top:1rem;border-left:4px solid #15803d"><h3 style="margin:0 0 0.4rem;color:#fff">🎯 Strategy</h3><span id="strategy-dte" style="display:none">7</span><div class="status">Loading strategy…</div></div>
-    <div class="tiles" id="index-tiles"></div>
-    <div class="card" id="breadth-card" style="margin-top:1rem"><h3>Market Breadth</h3><div id="breadth-body"><div class="status">Loading breadth…</div></div></div>
-    <div class="card" id="pnl-card" style="margin-top:1rem"><h3>Today's Paper P&L <span class="status">9:30 → 3:20</span></h3><div id="pnl-body"><div class="status">Loading P&L…</div></div></div>
-  </section>
-  <section id="top-widgets">
-    <h2>Top Lists</h2>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr))">
-      <div class="card" id="top-large-widget"><h3>Top Large Cap</h3><div id="top-large-body"><div class="status">Loading…</div></div><div class="status"><a href="stocks/top-large-cap.html">View all Large Cap →</a></div></div>
-      <div class="card" id="top-mid-widget"><h3>Top Mid/Small Cap</h3><div id="top-mid-body"><div class="status">Loading…</div></div><div class="status"><a href="stocks/top-mid-small.html">View all Mid/Small →</a></div></div>
-      <div class="card" id="top-etf-widget"><h3>Top ETFs</h3><div id="top-etf-body"><div class="status">Loading…</div></div><div class="status"><a href="etfs/top-etfs.html">View all ETFs →</a></div></div>
-    </div>
-  </section>
-  <section id="portal">
-    <h2>Explore Every Page</h2>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-      <div class="card portal-card" data-href="indices/nifty.html"><h3>🎯 NIFTY 50</h3><div id="pn-nifty"><div class="status">Loading…</div></div><div class="status">Intraday regime, levels, options map →</div></div>
-      <div class="card portal-card" data-href="indices/banknifty.html"><h3>🏦 Bank NIFTY</h3><div id="pn-banknifty"><div class="status">Loading…</div></div><div class="status">Banking index outlook →</div></div>
-      <div class="card portal-card" data-href="indices/finnifty.html"><h3>🪙 FINNIFTY</h3><div id="pn-finnifty"><div class="status">Loading…</div></div><div class="status">Financial services index →</div></div>
-      <div class="card portal-card" data-href="indices/sensex.html"><h3>🧭 SENSEX</h3><div id="pn-sensex"><div class="status">Loading…</div></div><div class="status">BSE flagship index →</div></div>
-      <div class="card portal-card" data-href="market.html"><h3>📊 Market Grid</h3><div id="pn-market"><div class="status">Loading…</div></div><div class="status">Full stock grid with VWAP/RSI/levels →</div></div>
-      <div class="card portal-card" data-href="scanner.html"><h3>🔍 Scanner</h3><div class="status">RSI &lt;30 / &gt;70 · 50 &amp; 200 DMA · MACD bull · Golden cross — one-click presets.</div><div class="status">Screen all 46 tracked stocks →</div></div>
-      <div class="card portal-card" data-href="stocks/top-large-cap.html"><h3>📈 Top Large Cap</h3><div class="status">Largest-cap movers by change % today.</div><div class="status">See the table →</div></div>
-      <div class="card portal-card" data-href="stocks/top-mid-small.html"><h3>📈 Top Mid/Small</h3><div class="status">Mid &amp; small caps ranked by today's move.</div><div class="status">See the table →</div></div>
-      <div class="card portal-card" data-href="etfs/top-etfs.html"><h3>📊 ETFs</h3><div class="status">NIFTYBEES, BANKBEES, JUNIORBEES &amp; more with NAV gap.</div><div class="status">Top ETFs →</div></div>
-      <div class="card portal-card" data-href="sectors/top.html"><h3>🏭 Sectors</h3><div class="status">Bank, IT, Pharma, Auto, Energy, Consumer baskets — today's mover.</div><div class="status">Sector watch →</div></div>
-      <div class="card portal-card" data-href="stocks/52-week.html"><h3>🗓 52-Week</h3><div class="status">52-week highs &amp; lows with NEAR-HIGH/LOW badges (±5%).</div><div class="status">52-week board →</div></div>
-      <div class="card portal-card" data-href="mutual-funds/"><h3>💰 Mutual Funds</h3><div id="pn-mf"><div class="status">Loading…</div></div><div class="status">Best funds by 1Y/3Y/5Y returns →</div></div>
-      <div class="card portal-card" data-href="news/"><h3>📰 Stock News</h3><div id="pn-news"><div class="status">Loading…</div></div><div class="status">Headlines &amp; corporate actions by symbol →</div></div>
-      <div class="card portal-card" data-href="global/markets.html"><h3>🌎 Global Markets</h3><div id="pn-global"><div class="status">Loading…</div></div><div class="status">Dow · Nasdaq · Gold · Crude · USDINR →</div></div>
-      <div class="card portal-card" data-href="strategies.html"><h3>⚡ Strategies</h3><div class="status">Recommended option strategy for today's NIFTY regime.</div><div class="status">Strategy engine →</div></div>
-      <div class="card portal-card" data-href="stock-options.html"><h3>🧠 Stock Options</h3><div class="status">Options intelligence on 40+ tracked stocks — expected move, PCR, OI.</div><div class="status">Stock options →</div></div>
-      <div class="card portal-card" data-href="strategy-builder.html"><h3>🛠 Strategy Builder</h3><div class="status">Build payoff diagrams: define legs, view max profit/risk.</div><div class="status">Open builder →</div></div>
-      <div class="card portal-card" data-href="strategies-guide.html"><h3>📖 Strategies Guide</h3><div class="status">Learn directional, neutral and iron-condor setups step-by-step.</div><div class="status">Read the guide →</div></div>
-      <div class="card portal-card" data-href="queries/index.html"><h3>📚 Query Library</h3><div class="status">Top performers · Undervalued · Global today · Funds · News.</div><div class="status">Browse queries →</div></div>
-      <div class="card portal-card" data-href="history.html"><h3>🏆 Paper P&amp;L</h3><div id="pn-history"><div class="status">Loading…</div></div><div class="status">Settled trade log &amp; win rate →</div></div>
-      <div class="card portal-card" data-href="today/"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow and today's sentiment in one place.</div><div class="status">Live today →</div></div>
-      <div class="card portal-card" data-href="tools/backtest.html"><h3>📐 Backtest</h3><div class="status">Win rate, profit factor, drawdown &amp; per-strategy stats over the paper ledger.</div><div class="status">Run backtest →</div></div>
-      <div class="card portal-card" data-href="portfolio.html"><h3>💼 Portfolio</h3><div class="status">Log your NSE positions and see live P&amp;L against current market prices.</div><div class="status">Open tracker →</div></div>
-      <div class="card portal-card" data-href="alerts.html"><h3>🚨 Alerts</h3><div class="status">PCR extremes, OI signals and regime-change flags, deduplicated daily.</div><div class="status">See alerts →</div></div>
-<div class="card portal-card" data-href="etfs/holdings.html"><h3>🗂 ETF Holdings</h3><div class="status">What NIFTYBEES, BANKBEES, JUNIORBEES &amp; GOLDBEES actually own.</div><div class="status">Explorer →</div></div>
-      <div class="card portal-card" data-href="learn/index.html"><h3>📚 Learn Hub</h3><div class="status">CPR · VWAP · Option Chain · Option Greeks · PCR explained.</div><div class="status">Education library →</div></div>
-      <div class="card portal-card" data-href="stock.html"><h3>📈 Stock Research</h3><div class="status">Deep dive on any tracked stock — regime, strategy, AI outlook.</div><div class="status">Open stock →</div></div>
-      <div class="card portal-card" data-href="stocks/top-performers.html"><h3>🚀 Top Performers</h3><div class="status">Highest gainers today ranked by percent change.</div><div class="status">See leaders →</div></div>
-      <div class="card portal-card" data-href="stocks/undervalued.html"><h3>💎 Undervalued</h3><div class="status">Stocks with low P/E, strong ROE and healthy fundamentals.</div><div class="status">Screen →</div></div>
-      <div class="card portal-card" data-href="stocks/reliance.html"><h3>🏢 Reliance</h3><div class="status">Latest outlook, strategy, support/resistance levels.</div><div class="status">View →</div></div>
-<div class="card portal-card" data-href="tools/position-size.html"><h3>📐 Position Size</h3><div class="status">Calculate lot size, risk per trade and stop-loss distance.</div><div class="status">Open tool →</div></div>
-      <div class="card portal-card" data-href="learn/cpr.html"><h3>📊 CPR</h3><div class="status">Central Pivot Range — support, resistance, trading zones.</div><div class="status">Learn CPR →</div></div>
-      <div class="card portal-card" data-href="learn/vwap.html"><h3>📉 VWAP</h3><div class="status">Volume Weighted Average Price — intraday trend confirmation.</div><div class="status">Learn VWAP →</div></div>
-      <div class="card portal-card" data-href="learn/option-chain.html"><h3>📋 Option Chain</h3><div class="status">OI, PCR, IV, strike analysis for NIFTY & Bank NIFTY.</div><div class="status">Explore →</div></div>
-      <div class="card portal-card" data-href="learn/option-greeks.html"><h3>∂ Greeks</h3><div class="status">Delta, Gamma, Theta, Vega — what drives option prices.</div><div class="status">Learn Greeks →</div></div>
-<div class="card portal-card" data-href="learn/pcr.html"><h3>📊 PCR</h3><div class="status">Put-Call Ratio — sentiment indicator for NIFTY & Bank NIFTY.</div><div class="status">Learn PCR →</div></div>
-      <div class="card portal-card" data-href="today/index.html"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow and today's sentiment in one place.</div><div class="status">Live today →</div></div>
-    </div>
-  </section>
-  <!-- AI outlook now lives inside the hero card; remove duplicate raw block -->
-  
+  <div id="dashboard"></div>
+
+  <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="market.html">Open →</a></div></div>
+    <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="scanner.html">Open →</a></div></div>
+    <div class="card"><h3>🏆 Paper P&amp;L</h3><div class="status">Settled trade log, win rate &amp; backtest.</div><div class="cta-row"><a class="cta cta-single" href="history.html">Open →</a></div></div>
+    <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow &amp; sentiment.</div><div class="cta-row"><a class="cta cta-single" href="today/index.html">Open →</a></div></div>
+  </div>
+
   <div class="card content-card" style="margin-top:1.5rem">
     <h3>How to read this page</h3>
-      <p>TradingAI is a free, fully automatic market-intelligence service for the Indian stock market. This home page is the control room: from here you can reach the intraday outlook for NIFTY, BANKNIFTY, FINNIFTY and SENSEX, the broad-market dashboard, an equity scanner, options strategies, PCR and max-pain analysis, mutual fund snapshots, and a growing education library.</p>
-      <p>Every number on the site is computed from public Indian market data — index levels, option open interest, breadth, VWAP, RSI, ADX and the India VIX — by a rule-based pipeline. Those raw figures become a 'regime' (trending up, trending down, range-bound or volatile) and that regime drives the strategies you see on the index pages. No editorial opinion is involved: what you see is a reproducible reading of the data at that moment.</p>
-      <p>The portal cards below update through the trading day. During market hours they refresh on a fast cycle so the live prices visibly blink whenever a quote ticks up or down; after the close they settle to the day's final values. Because everything is computed server-side from stored candles, the same page works offline or shows historical context whenever the market feed is delayed.</p>
-      <p>We publish this for free and keep the methodology transparent. If a level, NAV or scanner row looks wrong, tell us via the contact page — data pulls from public feeds are occasionally corrected and we audit them regularly. For context on how we interpret indicators, see the Learn hub; for the legal boundaries of this information, see the disclaimer and terms. Nothing here is investment advice, and every decision to trade remains yours.</p>
+    <p>TradingAI is a free, fully automatic market-intelligence service for the Indian stock market. This home page is the AI Market Outlook: a live dashboard for NIFTY, BANKNIFTY, FINNIFTY and SENSEX. Use the tabs above to switch index. Every section — the market regime, probability bars, 8-factor scoring grid, options intelligence, strategies, key levels and AI decision — comes from the same automatic pipeline: publicly available NSE data in, structured analysis out.</p>
+    <p>The sections reinforce one another. The regime tells you the macro posture. The probability bars quantify directional bias. The 8-factor grid breaks down why the AI holds that view — from trend and momentum to VIX and breadth. And the options intelligence summarises where the big money sits. Reading these together is more informative than any single number.</p>
+    <p>During market hours the page refreshes on a fast cycle, and price, levels and PCR figures are recomputed from the live feed. The AI Decision box labels the trade or no-trade verdict the model would take under the current regime — and it will honestly say WAIT when signals conflict.</p>
+    <p>We publish this for free and keep the methodology transparent. Every number is computed server-side from stored candles, so the same page works offline or shows historical context whenever the market feed is delayed. Nothing here is investment advice, and every decision to trade remains yours.</p>
   </div>
 <footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
   <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
 </main>
+<script src="assets/js/ai-outlook.js"></script>
 <script>
-const API_BASE='';
-async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
-function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
-function formatChange(p){if(p==null)return'-';return(p>=0?'+':'')+p.toFixed(2);}
-function regimeColor(regime){if(!regime)return'#64748b';const r=regime.toUpperCase();if(r.includes('BULLISH'))return'#15803d';if(r.includes('BEARISH'))return'#dc2626';if(r.includes('RANGE'))return'#a16207';if(r.includes('VOLATILITY'))return'#c2410c';return'#64748b';}
+(function(){
+  var _lastDataTs=null;
+  function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
+  function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
+  function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
+  setInterval(tickClock,1000);tickClock();
+  setLastUpdated(new Date().toISOString(),true);
 
+  var SYMBOLS = {
+    NIFTY:     { symbol:'NIFTY',     api:'nifty',     displayName:'NIFTY 50',  step:50,  lot:75 },
+    BANKNIFTY: { symbol:'BANKNIFTY', api:'banknifty', displayName:'BANK NIFTY',step:100, lot:30 },
+    FINNIFTY:  { symbol:'FINNIFTY',  api:'finnifty',  displayName:'FIN NIFTY', step:25,  lot:40 },
+    SENSEX:    { symbol:'SENSEX',    api:'sensex',    displayName:'SENSEX',    step:100, lot:20 }
+  };
+  var current = 'NIFTY';
+  var refreshTimer = null;
 
-let refreshInterval=null;
+  function buildConfig(sym){
+    var s = SYMBOLS[sym] || SYMBOLS.NIFTY;
+    return {
+      symbol: s.symbol, api: s.api, displayName: s.displayName,
+      step: s.step, lot: s.lot, apiBase: '', tabBase: 'indices/',
+      onTab: switchTab
+    };
+  }
 
-var _lastDataTs=null;function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed \u2014 retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: \u2014';return;}bar.textContent='Data as of '+show+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
-function startDataRefresh(callback,intervalMs){stopDataRefresh();var tick=function(){callback();refreshInterval=setTimeout(tick,intervalMs||(window.marketRefreshMs?window.marketRefreshMs():20000));};tick();}
-function stopDataRefresh(){if(refreshInterval){clearInterval(refreshInterval);refreshInterval=null;}}
+  function render(){
+    renderOutlookDashboard('dashboard', buildConfig(current));
+  }
 
-async function loadTopWidgets(){
-var largeEl=document.getElementById('top-large-body'), midEl=document.getElementById('top-mid-body'), etfEl=document.getElementById('top-etf-body');
-try{
-var syms=await fetchJSON('symbols');
-var larges=(syms||[]).filter(s=>s.type==='stock' && (s.category||'').toUpperCase()==='LARGE').map(s=>s.symbol.toLowerCase()).slice(0,12);
-var mids=(syms||[]).filter(s=>['MID','SMALL'].includes((s.category||'').toUpperCase())).map(s=>s.symbol.toLowerCase()).slice(0,12);
-var etfs=['niftybees','bankbees','juniorbees'];
-async function topTable(symbols, el){
- if(!el) return;
- var rows=[];
- for(var i=0;i<Math.min(symbols.length,6);i++){var d=await fetchJSON(symbols[i]); if(!d||!d.quote)continue; rows.push({sym:symbols[i].toUpperCase(),price:d.quote.price,chg:d.quote.change_pct||0});}
- rows.sort(function(a,b){return (b.chg||0)-(a.chg||0);});
- var html='<table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr><th style="text-align:left">Symbol</th><th style="text-align:right">Price</th><th style="text-align:right">Chg%</th></tr></thead><tbody>';
- for(var ri=0;ri<Math.min(rows.length,5);ri++){var r=rows[ri];var c=r.chg>=0?'#15803d':'#dc2626';html+='<tr style="cursor:pointer" onclick="location.href=\'stock.html?symbol='+r.sym+'\'"><td><strong>'+r.sym+'</strong></td><td style="text-align:right">'+fmt(r.price)+'</td><td style="color:'+c+';font-weight:bold;text-align:right">'+(r.chg>=0?'+':'')+r.chg.toFixed(2)+'%</td></tr>';}
- html+='</tbody></table>';
- el.innerHTML=html;
-}
-if(largeEl) await topTable(larges, largeEl);
-if(midEl) await topTable(mids, midEl);
-if(etfEl){
- var erows=[];
- for(var ei=0;ei<etfs.length;ei++){var ed=await fetchJSON(etfs[ei]); if(!ed||!ed.quote)continue; erows.push({sym:etfs[ei].toUpperCase(),price:ed.quote.price,chg:ed.quote.change_pct||0});}
- erows.sort(function(a,b){return (b.chg||0)-(a.chg||0);});
- var ehtml='<table style="width:100%;font-size:0.85rem;border-collapse:collapse"><thead><tr><th>ETF</th><th style="text-align:right">Price</th><th style="text-align:right">Chg%</th></tr></thead><tbody>';
- for(var ei2=0;ei2<erows.length;ei2++){var r2=erows[ei2];var c2=r2.chg>=0?'#15803d':'#dc2626';ehtml+='<tr style="cursor:pointer" onclick="location.href=\'/etfs/top-etfs.html\'"><td><strong>'+r2.sym+'</strong></td><td style="text-align:right">'+fmt(r2.price)+'</td><td style="color:'+c2+';font-weight:bold">'+(r2.chg>=0?'+':'')+r2.chg.toFixed(2)+'%</td></tr>';}
- ehtml+='</tbody></table>';
- etfEl.innerHTML=ehtml;
-}
-}catch(e){}
-}
-async function loadTicker(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=await fetchJSON('market');var ib=await fetchJSON('index-breadth');var items=[];if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+formatPrice(q.price)+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;var html=items.join('');el.innerHTML=html+html;}catch(e){}}
-function portalIdxHtml(q){if(!q||q.price==null)return'<div class="status">—</div>';var c=q.change_pct>=0?'#15803d':'#dc2626';return'<div class="price" style="font-size:1.15rem">'+fmt(q.price)+'</div><div style="color:'+c+';font-weight:bold">'+(q.change>=0?'+':'')+fmt(q.change)+' ('+(q.change_pct>=0?'+':'')+q.change_pct.toFixed(2)+'%)</div>';}
-async function loadPortal(){
-document.querySelectorAll('#portal [data-href]').forEach(function(c){if(c.dataset.linked)return;c.dataset.linked='1';c.style.cursor='pointer';c.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('button'))return;location.href=c.dataset.href;});});
-try{
-var m=await fetchJSON('market');
-if(m&&m.instruments){
-var idx={NIFTY:'pn-nifty',BANKNIFTY:'pn-banknifty',FINNIFTY:'pn-finnifty',SENSEX:'pn-sensex'};
-for(var k in idx){var el=document.getElementById(idx[k]);if(el&&m.instruments[k])el.innerHTML=portalIdxHtml(m.instruments[k].quote);}
-var pm=document.getElementById('pn-market');var nstocks=Object.keys(m.instruments).filter(function(s){return !['NIFTY','BANKNIFTY','FINNIFTY','SENSEX','VIX'].includes(s.toUpperCase());}).length;
-if(pm)pm.innerHTML='<div class="price" style="font-size:1.15rem">'+nstocks+' stocks</div><div class="status">live grid · tap card to open</div>';
-}
-}catch(e){}
-var mf=await fetchJSON('mf');
-if(mf&&mf.buckets){var best=null;for(var bi=0;bi<mf.buckets.length;bi++){for(var fj=0;fj<mf.buckets[bi].funds.length;fj++){var f=mf.buckets[bi].funds[fj];if(f.ret_1y!=null&&(!best||f.ret_1y>best.ret_1y))best=Object.assign({cat:mf.buckets[bi].category},f);}}
-var me=document.getElementById('pn-mf');if(me){me.innerHTML=best?('<div class="status"><strong>Best 1Y ('+best.cat+')</strong></div><div style="font-weight:bold">'+(best.scheme_name||'').replace(/\\s*-\\s*Direct Plan - Growth Opt(ion)?/i,'').replace(/ - Direct Plan - Growth/i,'')+'</div><div style="color:'+(best.ret_1y>=0?'#15803d':'#dc2626')+';font-weight:bold">'+(best.ret_1y>=0?'+':'')+best.ret_1y.toFixed(2)+'%</div>'):'<div class="status">Awaiting nightly snapshot…</div>';}}
-var nw=await fetchJSON('news');
-var ne=document.getElementById('pn-news');if(ne){ne.innerHTML='<div class="price" style="font-size:1.15rem">'+(nw&&nw.length?nw.length:0)+' headlines</div><div class="status">latest '+((nw&&nw[0]&&nw[0].timestamp)||'').slice(0,10)+'</div>';}
-var gl=await fetchJSON('global');
-var ge=document.getElementById('pn-global');if(ge&&gl){var items=[];var keys=Object.keys(gl).slice(0,4);for(var gi=0;gi<keys.length;gi++){var g=gl[keys[gi]];var gq=g.quote||g;if(gq&&gq.price!=null){var gc=gq.change_pct>=0?'#15803d':'#dc2626';items.push('<span class="badge" style="background:'+gc+'20;color:'+gc+'">'+(keys[gi]==='^NSEI'?'NIFTY':keys[gi])+' '+(gq.change_pct>=0?'+':'')+Number(gq.change_pct).toFixed(2)+'%</span>');}}
-if(items.length)ge.innerHTML=items.join(' ');else ge.innerHTML='<div class="status">Loading…</div>';}
-var hd=await fetchJSON('history');
-var he=document.getElementById('pn-history');if(he){var t=0,n=0,wn=0;Object.keys(hd||{}).forEach(function(s){(hd[s]||[]).forEach(function(e2){if(e2.points!=null&&['WIN','LOSS','FLAT'].includes(e2.result)){t+=e2.points;n++;if(e2.result==='WIN')wn++;}});});
-he.innerHTML=n?('<div class="status">'+n+' settled · '+(n?Math.round(wn/n*100)+'% wins':'—')+'</div><div style="color:'+(t>=0?'#15803d':'#dc2626')+';font-weight:bold">'+(t>=0?'+':'')+t.toFixed(1)+' pts</div>'):'<div class="status">No settled trades today.</div>';}
-}
-async function loadHero(){
-var el=document.getElementById('hero-card');if(!el)return;
-var d=await fetchJSON('nifty');if(!d||!d.quote){el.innerHTML='<div class="status">Market data unavailable right now.</div>';return;}
-var q=d.quote,reg=d.regime||{},ind=d.indicators||{},ao=d.ai_outlook||{};
-var sr=ind.support_resistance||{support:[],resistance:[]};var sup=sr.support||[],res=sr.resistance||[];
-var vx=await fetchJSON('vix');var vpx=vx?(vx.price!=null?vx.price:vx.close):null;var vchg=vx?(vx.change!=null?vx.change:0):0;var vchgPct=vx?(vx.change_pct!=null?vx.change_pct:(vx.price>0?vx.change/vx.price*100:0)):0;var vchgColor=vchgPct>0?'#22c55e':vchgPct<0?'#ef4444':'#64748b';
-var today=new Date().toLocaleDateString('en-GB',{timeZone:'Asia/Kolkata',day:'numeric',month:'long',year:'numeric'});
-var rc=regimeColor(reg.regime);
-el.innerHTML='<div class="status" style="color:#d1fae5">TODAY\u2019S NIFTY MARKET — '+today+'</div>'
-+'<div class="price">'+formatPrice(q.price)+'</div>'
-+'<div><span class="badge" style="background:'+(q.change>=0?'#22c55e':'#ef4444')+';color:#fff;font-weight:800;padding:0.3rem 0.7rem;font-size:0.9rem">'+formatChange(q.change)+' ('+formatChange(q.change_pct)+'%)</span></div>'
-+'<div style="margin:0.5rem 0"><span class="badge" style="background:rgba(255,255,255,.2);color:#fff">'+(reg.regime||'N/A').replace(/_/g,' ')+' '+(reg.confidence||0)+'%</span></div>'
-+'<div class="status">Expected range: '+((sup.length&&res.length)?(formatPrice(sup[0])+' – '+formatPrice(res[0])):'—')+'</div>'
-+'<div class="status">Support: '+(sup.slice(0,2).map(formatPrice).join(' / ')||'—')+' &nbsp;|&nbsp; Resistance: '+(res.slice(0,2).map(formatPrice).join(' / ')||'—')+'</div>'
-+'<div class="status">India VIX: '+(vpx!=null?Number(vpx).toFixed(1):'—')+' <span style="background:'+vchgColor+';color:#fff;padding:0.15rem 0.5rem;border-radius:999px;font-weight:bold">'+formatChange(vchgPct)+'%</span> &nbsp;|&nbsp; VWAP: '+formatPrice(ind.vwap)+'</div>'
-+'<div class="status">'+(ao.market_summary||'')+'</div>'
-+'<div class="status">🔴 <a style="color:#fff" href="today/"><strong>LIVE TODAY</strong></a> · <a style="color:#fff" href="indices/nifty.html">NIFTY intelligence</a> · <a style="color:#fff" href="strategies.html">Strategy engine</a></div>';
-var m=await fetchJSON('market');
-var tiles=document.getElementById('index-tiles');
-if(tiles&&m&&m.instruments){var order=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];var th='';
-for(var oi=0;oi<order.length;oi++){var inst=m.instruments[order[oi]];if(!inst||!inst.quote)continue;var qq=inst.quote;var up=(qq.change||0)>=0;
-var href=order[oi]==='NIFTY'?'indices/nifty.html':order[oi]==='BANKNIFTY'?'indices/banknifty.html':order[oi]==='FINNIFTY'?'indices/finnifty.html':'indices/sensex.html';
-th+='<div class="tile" style="cursor:pointer" onclick="location.href=\''+href+'\'"><div class="t-sym">'+order[oi]+'</div><div class="t-price">'+formatPrice(qq.price)+'</div><div style="color:'+(up?'#15803d':'#dc2626')+';font-weight:bold;font-size:0.85rem">'+(up?'+':'')+Number(qq.change_pct||0).toFixed(2)+'%</div></div>';}
-var vv=m.instruments.VIX||m.instruments.vix;if(marketVix(m))th+='<div class="tile"><div class="t-sym">INDIA VIX</div><div class="t-price">'+marketVix(m)+'</div><div style="font-size:0.85rem">&nbsp;</div></div>';
-tiles.innerHTML=th;}
-var br=await fetchJSON('breadth');var bb=document.getElementById('breadth-body');
-if(bb){if(br){var t=(br.advances||0)+(br.declines||0)+(br.unchanged||0);var pa=t?br.advances/t*100:0,pd=t?br.declines/t*100:0;
-bb.innerHTML='<div class="bbar"><div class="b-adv" style="width:'+pa+'%"></div><div class="b-dec" style="width:'+pd+'%"></div></div><div class="status">Advances <strong style="color:#15803d">'+br.advances+'</strong> · Declines <strong style="color:#dc2626">'+br.declines+'</strong> · Unchanged '+br.unchanged+' · A/D '+br.advance_decline_ratio+'</div>';}else bb.innerHTML='<div class="status">Breadth unavailable.</div>';}
-var hd=await fetchJSON('history');var pb=document.getElementById('pnl-body');
-if(pb){var tot=0,n=0,wn=0;Object.keys(hd||{}).forEach(function(sym){(hd[sym]||[]).forEach(function(e){if(e.points!=null&&(e.result==='WIN'||e.result==='LOSS'||e.result==='FLAT')){tot+=e.points;n++;if(e.result==='WIN')wn++;}});});
-if(!n)pb.innerHTML='<div class="status">No settled trades yet today.</div>';
-else{var tc=tot>=0?'#15803d':'#dc2626';pb.innerHTML='<div class="status">Settled <strong>'+n+'</strong> · Wins <strong style="color:#15803d">'+wn+'</strong> · Total <strong style="color:'+tc+'">'+(tot>=0?'+':'')+tot.toFixed(2)+' pts</strong> · <a href="history.html">Full P&L →</a></div>';}}
-}
-function marketVix(m){try{var v=(m.instruments.VIX&&m.instruments.VIX.close!=null)?m.instruments.VIX.close:(m.instruments.VIX&&m.instruments.VIX.price);return v!=null?Number(v).toFixed(2):null;}catch(e){return null;}}
+  function switchTab(sym){
+    if (!SYMBOLS[sym] || sym === current) return;
+    current = sym;
+    if (window.history && window.history.replaceState) {
+      window.history.replaceState(null, '', sym === 'NIFTY' ? '/' : '/indices/' + sym.toLowerCase() + '.html');
+    }
+    document.title = SYMBOLS[sym].displayName + ' - AI Market Outlook - TradingAI';
+    render();
+  }
 
-
-const BRAND={RELIANCE:{c:'#0B4F6C',d:'ril.com'},HDFCBANK:{c:'#004178',d:'hdfcbank.com'},ICICIBANK:{c:'#C41230',d:'icicibank.com'},SBIN:{c:'#22409A',d:'sbi.co.in'},INFY:{c:'#007CC3',d:'infosys.com'},TCS:{c:'#3A55A0',d:'tcs.com'},LT:{c:'#FFCC00',d:'larsentoubro.com'},AXISBANK:{c:'#861F41',d:'axisbank.com'},ADANIENT:{c:'#00A651',d:'adani.com'},BHARTIARTL:{c:'#E4001C',d:'airtel.in'},WIPRO:{c:'#341C75',d:'wipro.com'},HCLTECH:{c:'#0066B3',d:'hcltech.com'},TECHM:{c:'#D71921',d:'techmahindra.com'},MARUTI:{c:'#002A5C',d:'marutisuzuki.com'},ITC:{c:'#2D7D46',d:'itcportal.com'},KOTAKBANK:{c:'#ED1C24',d:'kotak.com'},BAJFINANCE:{c:'#003366',d:'bajajfinserv.in'},SUNPHARMA:{c:'#D50032',d:'sunpharma.com'},TITAN:{c:'#000000',d:'titancompany.in'},ULTRACEMCO:{c:'#FF6600',d:'ultratechcement.com'},POWERGRID:{c:'#007A33',d:'powergrid.in'},NTPC:{c:'#FF0000',d:'ntpc.co.in'},ONGC:{c:'#8B0000',d:'ongcindia.com'},COALINDIA:{c:'#333333',d:'coalindia.in'},PERSISTENT:{c:'#00AEEF',d:'persistent.com'},COFORGE:{c:'#E30613',d:'coforge.com'},MPHASIS:{c:'#002B5C',d:'mphasis.com'},DIXON:{c:'#E30613',d:'dixoninfo.com'},CUMMINSIND:{c:'#000000',d:'cumminsindia.com'},MAXHEALTH:{c:'#0066CC',d:'maxhealthcare.in'},LUPIN:{c:'#00693E',d:'lupin.com'},VOLTAS:{c:'#0072BC',d:'voltas.com'},GODREJPROP:{c:'#E31837',d:'godrejproperties.com'},ASTRAL:{c:'#0066A1',d:'astralpipes.com'},KPITTECH:{c:'#009639',d:'kpit.com'},TANLA:{c:'#FF6F00',d:'tanla.com'},KPRMILL:{c:'#8B4513',d:'kprmilllimited.com'},RADICO:{c:'#800000',d:'radicokhaitan.com'},CCL:{c:'#A52A2A',d:'cclproducts.com'},NIFTY:{c:'#15803d',d:'nseindia.com'},BANKNIFTY:{c:'#1d4ed8',d:'nseindia.com'},FINNIFTY:{c:'#7c3aed',d:'nseindia.com'},SENSEX:{c:'#c2410c',d:'bseindia.com'}};
-function brandBtn(sym,label){sym=(sym||'').toUpperCase();label=label||sym;var b=BRAND[sym]||{c:'#64748b',d:''};var col=b.c;return '<button onclick="location.href=\''+detailHref(sym)+'\'" style="cursor:pointer;font-weight:700;border:1px solid '+col+';background:'+col+'15;color:'+col+';border-radius:999px;padding:0.2rem 0.6rem;display:inline-flex;align-items:center;gap:0.3rem;transition:all 0.15s ease" onmouseover="this.style.transform=\'translateY(-1px) scale(1.02)\'" onmouseout="this.style.transform=\'none\'"><img src="https://www.google.com/s2/favicons?domain='+b.d+'&sz=32" width="14" height="14" style="border-radius:2px" onerror="this.style.display=\'none\'">'+label+'</button>';}
-function detailUrl(sym){sym=(sym||'').toUpperCase();if(['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'].includes(sym))return sym==='NIFTY'?'indices/nifty.html':sym==='BANKNIFTY'?'indices/banknifty.html':sym==='FINNIFTY'?'indices/finnifty.html':'indices/sensex.html';return 'stock.html?symbol='+sym;}
-function detailHref(sym){var u=detailUrl(sym);if(location.pathname.includes('/indices/'))return '../'+u;if(location.pathname.includes('/stocks/'))return '../'+u;return u;}
-async function loadDashboard(){const data=await fetchJSON('market');if(!data||!data.instruments){setLastUpdated(null,false);return;}const grid=document.getElementById('market-grid');if(grid){var _sy=window.scrollY;grid.innerHTML='';for(const[symbol,inst]of Object.entries(data.instruments)){const card=document.createElement('div');card.className='card';card.style.cursor='pointer';card.title='View '+symbol+' outlook';card.onclick=function(e){if(e.target.closest('button')||e.target.closest('a'))return;location.href=detailHref(symbol);};const ao=inst.ai_outlook||{};card.innerHTML=`<h3>${brandBtn(symbol,symbol)}</h3><div class="price">${formatPrice(inst.quote?.price)}</div><div style="color:${inst.quote?.change>=0?'#15803d':'#dc2626'}">${formatChange(inst.quote?.change)} (${formatChange(inst.quote?.change_pct)}%)</div><span class="badge" style="background:${regimeColor(inst.regime?.regime)}20;color:${regimeColor(inst.regime?.regime)}">${inst.regime?.regime||'N/A'}</span><div class="status">Support: ${(inst.indicators?.support_resistance?.support||[]).join(', ')||'N/A'}</div><div class="status">Resistance: ${(inst.indicators?.support_resistance?.resistance||[]).join(', ')||'N/A'}</div><div class="status">Strategy: ${inst.strategy?.strategies?.[0]?.strategy||'N/A'}</div><div class="status">Evidence: ${ao.evidence_strength||'N/A'} | Vol: ${ao.volatility_classification||'N/A'} | Structure: ${ao.market_structure||'N/A'}</div><div class="status">Env: ${ao.strategy_environment||'N/A'} | Invalidation: ${ao.invalidation||'N/A'}</div><div class="status">${inst.data_quality||'N/A'}</div>`;grid.appendChild(card);}}const outlook=document.getElementById('outlook-content');if(outlook&&data.ai_outlook)populateAI(outlook,data.ai_outlook);setLastUpdated(data.last_updated,true);if(grid)window.scrollTo(0,_sy);}
-document.addEventListener('DOMContentLoaded',()=>{loadHero();loadDashboard();loadTicker();loadTopWidgets();loadPortal();loadStrategy();startDataRefresh(function(){loadHero();loadDashboard();loadTopWidgets();loadPortal();});setInterval(loadTicker,60000);});
-</script>
-
-<script>
-document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('.card').forEach(function(c){
-    if(c.dataset.clickable==='1' || c.onclick || c.dataset.href) return;
-    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
-    var url=null;
-    if(h.includes('AI MARKET OUTLOOK')) url='/strategies.html';
-    else if(h.includes('AI INTRADAY STRATEGY')) url='/strategies.html';
-    else if(h.includes('NIFTY VS INDIA VIX')) url='/history.html';
-    else if(h.includes('KEY LEVELS')) url='/scanner.html';
-    else if(h.includes('OPTIONS INTELLIGENCE')) url='/strategy-builder.html';
-    else if(h.includes('MARKET INTERNALS')||h.includes('BREADTH')||h.includes('WHAT CHANGED')||h.includes('HISTORICAL STRATEGY')) url='/history.html';
-    else if(h.includes('TODAY')||h.includes('MARKET PULSE')) url='/market.html';
-    else if(h.includes('STOCK OPTIONS')||h.includes('POSITIONAL')) url='/stock-options.html';
-    if(!url) return;
-    c.dataset.clickable='1'; c.style.cursor='pointer';
-    c.addEventListener('click',function(e){ if(e.target.closest('button')||e.target.closest('a')||e.target.closest('.tile'))return; location.href=url; });
+  document.addEventListener('DOMContentLoaded', function(){
+    // Restore selected symbol from URL path if present
+    var m = window.location.pathname.match(/\/(nifty|banknifty|finnifty|sensex)\.html/);
+    if (m) current = m[1].toUpperCase();
+    render();
+    refreshTimer = setInterval(render, 30000);
   });
-});
+})();
 </script>
-
 </body>
 </html>

@@ -21,6 +21,7 @@ function vixStrategy(v, vc){
   else{r.range='VERY HIGH';r.risk='Extreme';r.strategy='NO TRADE';r.edge='Avoid | Exit all';r.pos='0%';r.color='#dc2626';r.strikeDist=0;r.hedgeDist=0;
     r.entry='WAIT — volatility too high';r.exit='Exit all positions';r.T=0;r.sigma=0;r.netCredit=0;}
   if(vc!=null&&vc>5)r.exitFlag=true; else r.exitFlag=false;
+  if(r.netCredit>0){r.maxProfit=r.netCredit;r.maxLoss=(r.hedgeDist-r.strikeDist)-r.netCredit;}
   return r;
 }
 function drawPayoff(id,str,atm){
@@ -28,44 +29,103 @@ function drawPayoff(id,str,atm){
   var dpr=window.devicePixelRatio||1,W=cv.clientWidth||600,H=220;
   cv.width=W*dpr;cv.height=H*dpr;
   var x=cv.getContext('2d');x.scale(dpr,dpr);x.clearRect(0,0,W,H);
-  var padL=40,padR=20,padT=20,padB=30;
+  atm=Math.round(atm/50)*50;
+  var padL=40,padR=18,padT=20,padB=30;
   var pw=W-padL-padR,ph=H-padT-padB;
   var d=str.strikeDist||100;
-  var steps=200;var minS=atm-600,maxS=atm+600;
+  var hd=str.hedgeDist||d*2;
+  var credit=str.netCredit||0;
+  var half=hd+80;
+  var minS=atm-half,maxS=atm+half;
+  var steps=300;
   function X(s){return padL+((s-minS)/(maxS-minS))*pw;}
-  var r=0.06;var T=str.T||7/365;var sigma=str.sigma||0.15;
-  var profit=[];var hl=[];
+  var maxV=credit,minV=credit-(hd-d);
+  var rng=(maxV-minV)||1;
+  function Y(p){return padT+ph-((p-minV)/rng)*ph;}
+  var profit=[];
   for(var i=0;i<=steps;i++){
-    var s=minS+(maxS-minS)*i/steps;var p=0;
-    if(str.strategy.indexOf('Iron Condor')===0){var cu=bsPrice('call',s,atm+d,T,r,sigma);var cd=bsPrice('put',s,atm-d,T,r,sigma);var bu=bsPrice('call',s,atm+d*2,T,r,sigma);var bd=bsPrice('put',s,atm-d*2,T,r,sigma);p=(cu+cd)-(bu+bd)+str.netCredit;}
-    else p=0;
-    profit.push(p);hl.push(p<-20?-20:null);
+    var s=minS+(maxS-minS)*i/steps;
+    var loss=Math.max(0,s-(atm+d))+Math.max(0,(atm-d)-s)-Math.max(0,s-(atm+hd))-Math.max(0,(atm-hd)-s);
+    profit.push(credit-loss);
   }
-  var mxP=Math.max.apply(null,profit),mnP=Math.min.apply(null,profit);
-  var rng=mxP-mnP||1;
-  function Y(p){return padT+ph-((p-mnP)/rng)*ph;}
-  x.strokeStyle='#e2e8f0';x.lineWidth=1;x.beginPath();x.moveTo(0,Y(0));x.lineTo(W,Y(0));x.stroke();
-  x.fillStyle='#64748b';x.font='9px sans-serif';x.fillText('0',X(atm)-8,Y(0)-4);
-  x.strokeStyle=str.color||'#15803d';x.lineWidth=2;x.beginPath();
+  x.strokeStyle='#e2e8f0';x.lineWidth=1;
+  for(var g=0;g<4;g++){var gy=padT+ph*g/3;x.beginPath();x.moveTo(padL,gy);x.lineTo(W-padR,gy);x.stroke();}
+  // Shade profit zone (above zero) and loss zone (below zero) along the payoff curve
+  function shadeZone(zoneAbove,color){
+    var pts=[];var active=false;
+    function flush(){
+      if(pts.length>=6){
+        x.fillStyle=color;
+        x.beginPath();
+        x.moveTo(pts[0],pts[1]);
+        for(var i=2;i<pts.length;i+=2)x.lineTo(pts[i],pts[i+1]);
+        x.closePath();x.fill();
+      }
+      pts=[];
+    }
+    for(var i=0;i<=steps;i++){
+      var s=minS+(maxS-minS)*i/steps;
+      var p=profit[i];
+      var inZone=(p>=0)===zoneAbove;
+      if(inZone){
+        if(pts.length===0){pts.push(X(s),Y(0),X(s),Y(p));}
+        else{pts.push(X(s),Y(p));}
+        active=true;
+      }else if(active){
+        if(i>0){
+          var p0=profit[i-1];
+          if((p0>=0)===zoneAbove){
+            var s0=minS+(maxS-minS)*(i-1)/steps;
+            var t0=p0/(p0-p);
+            var sx=s0*(1-t0)+s*t0;
+            pts.push(X(sx),Y(0));
+          }
+        }
+        pts.push(X(s),Y(0));
+        flush();
+        active=false;
+      }
+    }
+    if(active)flush();
+  }
+  shadeZone(true,'rgba(22,163,74,0.16)');
+  shadeZone(false,'rgba(220,38,38,0.16)');
+  x.strokeStyle='#94a3b8';x.setLineDash([4,3]);x.beginPath();x.moveTo(padL,Y(0));x.lineTo(W-padR,Y(0));x.stroke();x.setLineDash([]);
+  x.fillStyle='#64748b';x.font='9px sans-serif';x.fillText('0',padL+2,Y(0)-3);
+  x.strokeStyle='rgba(22,163,74,0.35)';x.setLineDash([4,3]);x.beginPath();x.moveTo(padL,Y(maxV));x.lineTo(W-padR,Y(maxV));x.stroke();x.setLineDash([]);
+  x.fillStyle='#15803d';x.font='9px sans-serif';x.fillText('Max +'+credit+' pts',padL+2,Y(maxV)-3);
+  var markers=[atm-hd,atm-d,atm+d,atm+hd];
+  for(var k=0;k<markers.length;k++){
+    var st=markers[k];if(st<minS||st>maxS)continue;
+    var sx=X(st),isShort=(st===atm-d||st===atm+d);
+    var isCall=(st-atm)>0;
+    x.strokeStyle=isShort?'rgba(220,38,38,0.55)':'rgba(59,130,246,0.45)';
+    x.setLineDash([3,3]);x.beginPath();x.moveTo(sx,padT);x.lineTo(sx,padT+ph);x.stroke();x.setLineDash([]);
+    x.fillStyle=isShort?'#dc2626':'#2563eb';x.font='8px sans-serif';
+    var mtxt=(isShort?'S·':'B·')+(isCall?'CE ':'PE ')+Math.round(st).toLocaleString('en-IN');
+    x.fillText(mtxt,sx-Math.round(x.measureText(mtxt).width/2),padT+ph+12);
+  }
+  x.strokeStyle=str.color||'#15803d';x.lineWidth=2.2;x.beginPath();
   for(var i=0;i<=steps;i++){var px=X(minS+(maxS-minS)*i/steps),py=Y(profit[i]);if(i===0)x.moveTo(px,py);else x.lineTo(px,py);}
   x.stroke();
-  for(var i=0;i<=steps;i++){if(hl[i]!=null){var px=X(minS+(maxS-minS)*i/steps);x.strokeStyle='rgba(220,38,38,0.3)';x.lineWidth=3;x.beginPath();x.moveTo(px,Y(-20));x.lineTo(px,Y(hl[i]));x.stroke();}}
-  x.fillStyle='#0f172a';x.font='bold 10px sans-serif';
-  x.fillText(minS,X(minS),H-8);x.fillText(maxS,X(maxS)-20,H-8);
-  x.fillText('P&L',2,padT+4);
-  x.fillText('Strike',W/2-20,H-8);
+  x.fillStyle='#0f172a';x.font='10px sans-serif';x.fillText('ATM '+Math.round(atm),padL+2,H-8);
   x.fillStyle=str.color;x.font='bold 11px sans-serif';
-  x.fillText(str.range+' VIX | '+str.strategy,padL,padT-4);
-  x.fillStyle='#64748b';x.font='9px sans-serif';
-  x.fillText('BS premiums | Short ±'+d+' | Max profit: '+str.maxProfit+' | Max loss: '+str.maxLoss,padL,padT+10);
+  x.fillText(str.range+' VIX | '+str.strategy,padL,padT-6);
+  x.fillStyle='#64748b';x.font='8px sans-serif';
+  var f=function(n){return Math.round(n).toLocaleString('en-IN');};
+  var info='SELL CE '+f(atm+d)+' · SELL PE '+f(atm-d)+'  |  BUY CE '+f(atm+hd)+' · BUY PE '+f(atm-hd);
+  x.fillText(info,W-padR-x.measureText(info).width,H-8);
 }
-/* Intraday Iron Condor backtest: enter at 9:30 AM if VIX change <5% positive, exit at 3:20 PM or on VIX spike / 2k loss.
- * Uses intrinsic-value P&L (what actually matters for intraday short strangle/Iron Condor). */
+/* Session-based Iron Condor backtest: enter at 9:30 AM if VIX change <5% positive, exit at 3:20 PM or on VIX spike / 2k loss.
+ * Runs over the last N TRADING SESSIONS (prices are per-session; VIX is fetched for ~1.5x days so every session has VIX data).
+ * P&L model: intrinsic value + partial time decay - collects the full net credit, then subtracts only the theta
+ * that decays during the ~6.5h hold (6.5h / 7 days of the weekly option) plus any intrinsic loss if spot crosses
+ * the short strikes before EOD. Middle ground between intrinsic-only (over-optimistic) and full BS (over-pessimistic). */
 function backtestVix(days){
   days=days||60;
   return Promise.all([
-    fetchJSON('prices/NIFTY?interval=1d&limit='+days),
-    fetchJSON('vix/daily?days='+days)
+    fetchJSON('prices/NIFTY?interval=1d&limit='+(days+20)),
+    fetchJSON('vix/daily?days='+Math.ceil(days*1.5))
   ]).then(function(res){
     var prices=res[0]||[];
     var vixData=res[1]||[];
@@ -82,7 +142,8 @@ function backtestVix(days){
     });
     var trades=[];
     var totalPnl=0, wins=0, losses=0, maxDrawdown=0, peak=0;
-    var sortedDates=Object.keys(priceMap).sort();
+    var sortedDates=Object.keys(priceMap).filter(function(d){return vixMap[d]!=null;}).sort().slice(-days);
+    var lotSize=65;
     for(var i=0;i<sortedDates.length;i++){
       var d=sortedDates[i];
       var vix=vixMap[d];
@@ -94,27 +155,30 @@ function backtestVix(days){
       if(i>0){var prevD=sortedDates[i-1];prevVix=vixMap[prevD];}
       var vc=null;
       if(prevVix!=null&&prevVix>0)vc=((vix-prevVix)/prevVix)*100;
-      // Entry condition: VIX change <5% positive (stable VIX)
+      // Entry condition: VIX change <5% positive
       if(vc!=null&&vc>5)continue;
       var str=vixStrategy(vix,vc);
       if(!str||str.range==='VERY HIGH')continue;
       var sd=str.strikeDist;
       var hd=str.hedgeDist;
-      // Intrinsic-value Iron Condor P&L (what matters for intraday)
-      function icvIntrinsic(spot,atm,s,h){
-        if(spot>=atm+h)return s-h;
-        if(spot>=atm+s)return atm+s-spot;
-        if(spot>=atm-s)return 0;
-        if(spot>=atm-h)return spot-atm+s;
-        return s-h;
+      // NIFTY strikes are multiples of 50: anchor the iron condor to the nearest 50 strike from entry spot
+      var atm=Math.round(entrySpot/50)*50;
+      // Intrinsic cost of the Iron Condor at a given spot (strikes anchored at rounded ATM)
+      function icIntrinsic(spot){
+        return Math.max(0,spot-(atm+sd))+Math.max(0,(atm-sd)-spot)-Math.max(0,spot-(atm+hd))-Math.max(0,(atm-hd)-spot);
       }
-      var entryVal=icvIntrinsic(entrySpot,entrySpot,sd,hd);
-      var exitVal=icvIntrinsic(exitSpot,entrySpot,sd,hd);
-      var pnl=entryVal-exitVal+str.netCredit;
+      // Day-varying credit: scale the band's base credit by today's VIX vs its band midpoint (real IV movement per day)
+      var bandMid={LOW:11,NORMAL:13.5,ELEVATED:17.5,HIGH:22.5}[str.range];
+      var credit=str.netCredit*(vix/bandMid);
+      // Partial time decay: theta for ~6.5h hold out of the 7-day weekly option life
+      var thetaLost=credit*(6.5/24)*(1/7);
+      var entryInt=icIntrinsic(entrySpot);
+      var exitInt=icIntrinsic(exitSpot);
+      var pnl=Math.round((credit-thetaLost-(exitInt-entryInt))*lotSize);
       // Exit conditions: VIX spike >5%, 2k loss, EOD 3:20 PM
       var exited=false,exitReason='';
-      if(vc!=null&&vc>5){exited=true;exitReason='VIX spike';pnl=-2000;}
-      else if(pnl<-2000){exited=true;exitReason='2k loss';pnl=-2000;}
+      if(vc!=null&&vc>5){exited=true;exitReason='VIX spike';pnl=-2000*lotSize;}
+      else if(pnl<-2000*lotSize){exited=true;exitReason='2k loss';pnl=-2000*lotSize;}
       else if(i>=sortedDates.length-1){exited=true;exitReason='EOD 3:20 PM';}
       totalPnl+=pnl;
       if(pnl>0)wins++;else if(pnl<0)losses++;
@@ -130,32 +194,61 @@ function backtestVix(days){
 function displayBacktest(){
   var el=document.getElementById('strategy-card');
   if(!el)return;
-  el.innerHTML='<h3 style="margin:0 0 0.4rem;color:#fff">🎯 Backtest (60d)</h3><div class="status">Running...</div>';
+  el.innerHTML='<h3 style="margin:0 0 0.4rem">AI Suggested Iron Condor</h3><div class="status">Running…</div>';
   backtestVix(60).then(function(r){
-    if(!r||!r.trades.length){if(el)el.innerHTML='<h3 style="margin:0 0 0.4rem;color:#fff">🎯 Backtest</h3><div class="status">Insufficient data</div>';return;}
+    if(!r||!r.trades.length){if(el)el.innerHTML='<h3 style="margin:0 0 0.4rem">AI Suggested Iron Condor</h3><div class="status">Insufficient data</div>';return;}
+    r.trades.sort(function(a,b){return b.date<a.date?-1:b.date>a.date?1:0;});
     var pnlColor=r.totalPnl>=0?'#15803d':'#dc2626';
-    var html='<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin-bottom:0.5rem">'
-      +'<span class="badge" style="background:#15803d20;color:#15803d">Total: ₹'+r.totalPnl.toFixed(0)+'</span>'
-      +'<span class="badge" style="background:#1d4ed820;color:#1d4ed8">Win Rate: '+r.winRate.toFixed(1)+'%</span>'
-      +'<span class="badge" style="background:#a1620720;color:#a16207">Trades: '+r.totalTrades+'</span>'
-      +'<span class="badge" style="background:#c2410c20;color:#c2410c">Max DD: ₹'+r.maxDrawdown.toFixed(0)+'</span>'
-      +'</div><div style="max-height:200px;overflow-y:auto;font-size:0.75rem">'
-      +'<table style="width:100%;border-collapse:collapse">'
-      +'<tr style="color:#94a3b8"><th style="text-align:left;padding:2px 4px">Date</th><th>VIX</th><th>Entry</th><th>Exit</th><th>Range</th><th style="text-align:right">P&L</th><th>Exit</th></tr>';
-    r.trades.forEach(function(t){
+    var opts=r.trades.map(function(t,i){return '<option value="'+i+'">'+t.date.slice(5)+' · '+t.str+' · ±'+t.strikeDist+' (entry '+Math.round(t.entrySpot)+')</option>';}).join('');
+    var rows=r.trades.map(function(t,i){
       var pc=t.pnl>=0?'#15803d':'#dc2626';
-      html+='<tr style="border-top:1px solid #1e293b">'
-        +'<td style="padding:1px 4px">'+t.date.slice(5)+'</td>'
+      var sign=t.pnl>0?'+':'';
+      return '<tr class="bt-row" data-idx="'+i+'" onclick="window.__btSel&&window.__btSel('+i+')">'
+        +'<td>'+t.date.slice(5)+'</td>'
         +'<td>'+t.vix.toFixed(1)+'</td>'
         +'<td>'+Math.round(t.entrySpot)+'</td>'
         +'<td>'+Math.round(t.exitSpot)+'</td>'
         +'<td>'+t.str+'</td>'
-        +'<td style="text-align:right;color:'+pc+'">'+t.pnl.toFixed(0)+'</td>'
-        +'<td>'+(t.exited?'<span style="color:#f59e0b">'+t.exitReason+'</span>':'—')+'</td>'
+        +'<td style="text-align:right;color:'+pc+';font-weight:700;font-variant-numeric:tabular-nums">'+sign+(t.pnl).toLocaleString('en-IN')+'</td>'
+        +'<td>'+(t.exited?'<span class="bt-exit" style="color:#b45309">'+t.exitReason+'</span>':'—')+'</td>'
         +'</tr>';
-    });
-    html+='</table></div>';
-    el.innerHTML='<h3 style="margin:0 0 0.4rem;color:#fff">🎯 Backtest (60d)</h3>'+html;
+    }).join('');
+    el.innerHTML='<h3 style="margin:0 0 0.4rem">AI Suggested Iron Condor</h3>'
+      +'<div class="bt-styles"><style>'
+      +'#strategy-card .bt-table{width:100%;border-collapse:collapse;font-size:0.73rem}'
+      +'#strategy-card .bt-table thead th{position:sticky;top:0;background:#0f172a;color:#e2e8f0;font-weight:600;text-align:right;padding:5px 8px;white-space:nowrap;z-index:2}'
+      +'#strategy-card .bt-table thead th:first-child{text-align:left}'
+      +'#strategy-card .bt-table td{padding:4px 8px;border-top:1px solid #e2e8f0;white-space:nowrap;font-variant-numeric:tabular-nums}'
+      +'#strategy-card .bt-table td:first-child{text-align:left}'
+      +'#strategy-card .bt-table td:nth-child(5){text-align:center}'
+      +'#strategy-card .bt-table td:last-child{text-align:left}'
+      +'#strategy-card .bt-table tbody tr:nth-child(even){background:#f8fafc}'
+      +'#strategy-card .bt-table tbody tr:hover,.bt-sel{background:#eff6ff !important;cursor:pointer}'
+      +'</style></div>'
+      +'<div style="display:flex;gap:0.5rem;flex-wrap:wrap;margin:0.4rem 0">'
+      +'<span class="badge" style="background:#0ea5e920;color:#0ea5e9">Entry 9:30 → Exit 15:20 IST</span>'
+      +'<span class="badge" style="background:#15803d20;color:#15803d">Total: ₹'+r.totalPnl.toLocaleString('en-IN')+'</span>'
+      +'<span class="badge" style="background:#1d4ed820;color:#1d4ed8">Win Rate: '+r.winRate.toFixed(1)+'%</span>'
+      +'<span class="badge" style="background:#a1620720;color:#a16207">Trades: '+r.totalTrades+'</span>'
+      +'<span class="badge" style="background:#c2410c20;color:#c2410c">Max DD: ₹'+r.maxDrawdown.toLocaleString('en-IN')+'</span>'
+      +'</div>'
+      +'<div style="display:flex;align-items:center;gap:0.5rem;margin:0.4rem 0 0.2rem;font-size:0.75rem;color:#475569">'
+      +'<span style="white-space:nowrap">Payoff:</span><select id="bt-select" style="flex:1;min-width:0;padding:4px 6px;font-size:0.75rem;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#0f172a">'+opts+'</select></div>'
+      +'<canvas id="bt-payoff" style="width:100%;height:220px;display:block;margin-bottom:0.3rem"></canvas>'
+      +'<div style="max-height:240px;overflow-y:auto;border:1px solid #e2e8f0;border-radius:8px;margin-top:0.2rem">'
+      +'<table class="bt-table"><thead><tr><th>Date</th><th>VIX</th><th>Entry·9:30</th><th>Exit·15:20</th><th>Range</th><th>P&L (₹)</th><th>Exit</th></tr></thead>'
+      +'<tbody>'+rows+'</tbody></table></div>'
+      +'<div style="margin-top:0.4rem;font-size:0.7rem;color:#64748b">Entry 9:30 IST · Exit 15:20 IST · last 60 sessions · intrinsic + partial theta · lot 65 · credit scaled by daily VIX</div>';
+    var sel=document.getElementById('bt-select');
+    function renderSel(i){
+      var t=r.trades[i];
+      drawPayoff('bt-payoff',vixStrategy(t.vix),t.entrySpot);
+      var rows=el.querySelectorAll('.bt-row');
+      for(var j=0;j<rows.length;j++)rows[j].classList.toggle('bt-sel',j===i);
+    }
+    sel.addEventListener('change',function(){renderSel(+sel.value);});
+    window.__btSel=function(i){sel.value=i;renderSel(i);};
+    renderSel(0);
   });
 }
 function loadStrategy(){displayBacktest();}

@@ -183,6 +183,7 @@ class Database:
                 no_trade_conditions TEXT,
                 strategy_environment TEXT,
                 invalidation TEXT,
+                entry_outlook TEXT,
                 created_at TEXT,
                 UNIQUE(symbol, date)
             )
@@ -207,6 +208,7 @@ class Database:
                 no_trade_conditions TEXT,
                 strategy_environment TEXT,
                 invalidation TEXT,
+                entry_outlook TEXT,
                 created_at TEXT,
                 archived_at TEXT
             )
@@ -228,6 +230,7 @@ class Database:
                 ("no_trade_conditions", "TEXT"),
                 ("strategy_environment", "TEXT"),
                 ("invalidation", "TEXT"),
+                ("entry_outlook", "TEXT"),
             ]
             for col_name, col_type in additions:
                 if col_name not in cols:
@@ -383,11 +386,11 @@ class Database:
                 INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
                     strategy, market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
-                    no_trade_conditions, strategy_environment, invalidation, created_at, archived_at)
+                    no_trade_conditions, strategy_environment, invalidation, entry_outlook, created_at, archived_at)
                 SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
                     market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
-                    no_trade_conditions, strategy_environment, invalidation, created_at, datetime('now')
+                    no_trade_conditions, strategy_environment, invalidation, entry_outlook, created_at, datetime('now')
                 FROM history WHERE closed_price IS NOT NULL AND date <= date('now', '-7 days')
             """)
             archived += c.rowcount
@@ -397,11 +400,11 @@ class Database:
                 INSERT INTO history_archive (symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result,
                     strategy, market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
-                    no_trade_conditions, strategy_environment, invalidation, created_at, archived_at)
+                    no_trade_conditions, strategy_environment, invalidation, entry_outlook, created_at, archived_at)
                 SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
                     market_regime, directional_bias, confidence, market_summary,
                     evidence_strength, volatility_classification, market_structure,
-                    no_trade_conditions, strategy_environment, invalidation, created_at, datetime('now')
+                    no_trade_conditions, strategy_environment, invalidation, entry_outlook, created_at, datetime('now')
                 FROM history WHERE closed_price IS NOT NULL AND date <= date('now', '-30 days')
             """)
             archived += c.rowcount

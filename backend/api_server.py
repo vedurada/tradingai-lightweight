@@ -169,10 +169,11 @@ def _parse_json_field(value, default=None):
 
 
 def _to_ist_iso(ts):
-    """Normalize DB timestamps to ISO with IST offset.
+    """Normalize DB timestamps to ISO with offset.
 
-    price_1m candles are stored naive ('YYYY-MM-DD HH:MM:SS') in exchange-local
-    (IST) time; other tables store UTC ISO. Returns ISO-8601 with offset, or None.
+    price_1m candles are stored naive ('YYYY-MM-DD HH:MM:SS') in UTC wall-clock
+    (both yfinance candles and the NSE synthetic fallback write datetime.now(utc));
+    other tables store UTC ISO. Returns ISO-8601 with offset, or None.
     """
     if not ts:
         return None
@@ -184,8 +185,8 @@ def _to_ist_iso(ts):
             if "+" in s[10:] or s[10:].count("-") > 2:
                 return s
             return s + "+00:00"
-        # Naive 'YYYY-MM-DD HH:MM:SS' -> IST.
-        return s.replace(" ", "T") + "+05:30"
+        # Naive 'YYYY-MM-DD HH:MM:SS' -> UTC (all writers store UTC wall-clock).
+        return s.replace(" ", "T") + "+00:00"
     except Exception:
         return None
 
@@ -606,6 +607,67 @@ def oi_top():
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+def _build_outlook_on_demand(conn, symbol):
+    """Build a full outlook payload on the fly for any tracked symbol (index or stock)."""
+    try:
+        if not conn.execute("SELECT 1 FROM indicators WHERE symbol=? LIMIT 1", (symbol,)).fetchone():
+            return None
+        from zoneinfo import ZoneInfo
+        from outlook import build_outlook
+        ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+        payload = build_outlook(conn, symbol, ist.strftime("%Y-%m-%d"))
+        payload["created_at"] = ist.strftime("%Y-%m-%d %H:%M:%S IST")
+        payload["on_demand"] = True
+        return payload
+    except Exception:
+        return None
+
+
+@app.route("/api/market-outlook")
+def market_outlook_latest():
+    """Latest daily market outlook record (framework payload), LLM-primary."""
+    symbol = request.args.get("symbol", "NIFTY").upper()
+    try:
+        from outlook import merge_llm_into_payload
+    except Exception:
+        merge_llm_into_payload = None
+    conn = get_db()
+    row = conn.execute("SELECT payload, created_at FROM market_outlooks WHERE symbol=? ORDER BY date DESC, id DESC LIMIT 1", (symbol,)).fetchone()
+    if row is None:
+        data = _build_outlook_on_demand(conn, symbol)
+        if data is not None and merge_llm_into_payload is not None:
+            data = merge_llm_into_payload(conn, symbol, data)
+        conn.close()
+        if data is None:
+            return jsonify({"error": f"no outlook yet for {symbol}"}), 404
+        return jsonify(data)
+    data = _parse_json_field(row["payload"])
+    if merge_llm_into_payload is not None:
+        data = merge_llm_into_payload(conn, symbol, data)
+    conn.close()
+    data["created_at"] = row["created_at"]
+    return jsonify(data)
+
+@app.route("/api/market-outlook/<date>")
+def market_outlook_by_date(date):
+    """Market outlook for a specific date (YYYY-MM-DD)."""
+    symbol = request.args.get("symbol", "NIFTY").upper()
+    try:
+        from outlook import merge_llm_into_payload
+    except Exception:
+        merge_llm_into_payload = None
+    conn = get_db()
+    row = conn.execute("SELECT payload, created_at FROM market_outlooks WHERE date=? AND symbol=? ORDER BY id DESC LIMIT 1", (date, symbol)).fetchone()
+    if row is None:
+        conn.close()
+        return jsonify({"error": f"no outlook for {symbol} on " + date}), 404
+    data = _parse_json_field(row["payload"])
+    if merge_llm_into_payload is not None:
+        data = merge_llm_into_payload(conn, symbol, data)
+    conn.close()
+    data["created_at"] = row["created_at"]
+    return jsonify(data)
+
 @app.route("/api/portfolio", methods=["GET"])
 def portfolio_list():
     conn = get_db()
@@ -903,7 +965,37 @@ def history():
         grouped.setdefault(d.get("symbol", "UNKNOWN"), []).append(d)
     for sym in grouped:
         grouped[sym].sort(key=lambda e: e.get("date", ""), reverse=True)
+
+    # Live marked-to-market for any OPEN (in-session) paper trades.
+    _mark_open_trades(grouped)
     return jsonify(grouped)
+
+def _mark_open_trades(grouped) -> None:
+    """Attach live_price / live_points to OPEN paper trades so history.html can
+    show a floating P&L during the session (settles at the 15:20 close)."""
+    open_rows = [e for entries in grouped.values() for e in entries if e.get("result") == "OPEN" and e.get("locked_price") is not None]
+    if not open_rows:
+        return
+    quotes = {}
+    try:
+        data = _MARKET.get("data") if _MARKET else None
+        # Only read the cached quote snapshot; never trigger a 20s rebuild here.
+        if data is None:
+            return
+        instr = (data or {}).get("instruments", {})
+        for sym, p in instr.items():
+            q = (p or {}).get("quote") or {}
+            if q.get("price") is not None:
+                quotes[sym.upper()] = float(q["price"])
+    except Exception:
+        quotes = {}
+    for e in open_rows:
+        price = quotes.get(str(e.get("symbol", "")).upper())
+        if price is None:
+            continue
+        e["live_price"] = price
+        sign = -1 if str(e.get("direction", "")).upper() == "SHORT" else 1
+        e["live_points"] = round((price - float(e["locked_price"])) * sign, 2)
 
 @app.route("/api/investment/<symbol>")
 def investment(symbol):

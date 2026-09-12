@@ -1,7 +1,7 @@
 # TradingAI.in — Project Knowledge
 
 > Living document. Update it whenever architecture, rules, or roadmap change.
-> Last updated: 2026-09-11 (2nd pass).
+> Last updated: 2026-09-12 (4th pass — AI-gated trade-record no-log behavior, intraday 09:30 outlook cron, `entry_outlook` capture, market-timing LIVE badge, live floating P&L on history.html).
 
 ## 1. What this is
 
@@ -9,7 +9,7 @@
 Pipeline: market data → indicators → regime engine → AI outlook → human trader decides.
 - **Indexes (NIFTY, BANKNIFTY, FINNIFTY, SENSEX):** option strategies (spreads, condors, intraday).
 - **Stocks (all caps):** simple **BUY / HOLD / EXIT** outlook with numeric targets — never option spreads.
-- **P&L:** daily index paper trades, entry 9:30 AM IST, exit 3:20 PM IST, direction-aware.
+- **P&L:** daily index paper trades, entry 9:30 AM IST, exit 3:20 PM IST, direction-aware. **AI-gated:** no trade row is logged unless the AI outlook says `TRADE`; WAIT/AVOID sessions are never written to `history`. Each trade row also stores the intraday outlook active at entry-time (`entry_outlook` column) for future reference.
 
 ## 2. Environment
 
@@ -102,7 +102,7 @@ Prices: `symbols`, `price_1m`, `price_5m`, `price_15m`, `price_1d`, `vix_data`, 
 Derivatives: `option_expiries`, `option_chain` (usually empty — Yahoo has no NSE options).
 Computed: `indicators` (+`support_resistance` JSON col), `market_regime`, `scenarios`, `strategies` (primary flattened; full list JSON inside `legs`), `ai_outlooks` (LLM or rule-based, full JSON in `outlook`), `signals`, `market_breadth`, `sector_data`, `market_snapshots`.
 Company: `fundamentals` (merged info + analyst views + statements JSON), `news`, `corporate_actions` (DIVIDEND/SPLIT), `earnings` via fundamentals.
-P&L: `history` (+`entry_time`/`exit_time`/`direction`), `history_archive`, `portfolio` (schema only, unused).
+P&L: `history` (+`entry_time`/`exit_time`/`direction`/`entry_outlook`), `history_archive` (same cols incl. `entry_outlook`), `portfolio` (schema only, unused).
 Ops: `data_status`, `alerts`.
 
 ## 7. Fetcher tiers (`data_fetcher_db.py::fetch_all`, cron `* 9-15 * * 1-5`)
@@ -128,11 +128,14 @@ Stocks are investments, not intraday signals: SHORT horizon (weeks: SMA20/50 + R
 
 - `lock` 9:30 IST (cron `30 9 * * 1-5`): 09:30-candle entry + strategy/regime/bias snapshot. Direction from bias: BEARISH→SHORT else LONG.
 - `close` 15:20 IST (cron `20 15 * * 1-5`): strict 15:20-candle exit (fallback: last candle). **SHORT: points = entry − exit**; LONG: exit − entry. WIN/LOSS/FLAT.
+- **AI gate (2026-09-12):** `evaluate`/`lock`/`backfill` write a row ONLY when the gating outlook verdict is `TRADE`. NO row is written for WAIT/AVOID/NO_TRADE sessions (`_upsert_no_trade` removed). `close()` still guards legacy `no_trade_conditions` rows defensively. This keeps `history` = real trades only (currently NO_TRADE rows = 0).
+- **`entry_outlook` column (2026-09-12):** every entry (`_upsert_entry`, `backfill`, `close` fallback) captures the latest stored `market_outlooks` payload (date ≤ trade date) as a compact JSON snapshot — verdict/regime/bias/confidence/expected_range/strategies — via `_entry_outlook_snapshot()`. Exposed through `outlook.py _trades()` as `trades[].entry_outlook`; the AI-GATED TRADE RECORD renders it under the strategy cell (e.g. `09-11 · AI: TRADE · Range-Bound · 72%`). Also added to `history_archive` + all archive INSERTs so it survives archiving.
 - `backfill [date]`: rebuild any day from stored 1m candles.
 - `archive [days]` (default 365): monthly cron `0 2 1 * *` moves settled rows older than a year to `history_archive`.
 - Retention: 1 year live. `/api/history` merges both tables, default 365 days, grouped `{SYM: [...]}`.
 - History page columns: Date | Symbol | Outlook(BUY/SELL) | Direction(LONG/SHORT) | Entry Time/Price | Exit Time/Price | Points(±, green/red) | Result | Strategy + summary bar + symbol filters.
 
+**Live floating P&L (2026-09-12, history.html):** `/api/history` attaches `live_price`/`live_points` to any `result=OPEN` row using the **cached** `/api/market` snapshot only (never triggers the ~20s rebuild — helper `_mark_open_trades` returns early when cache is empty). Points are direction-aware (SHORT sign flips). history.html renders an OPEN trade showing `●LIVE` amber badge, live price in the Exit column, floating points, result `OPEN · LIVE`, and a `Live(OPEN): +N pts` segment in the P&L summary. Refreshes via existing `startDataRefresh` (20s during market hours); settles to the final result at the 15:20 close.
 
 - Live NSE data (verified 2026-09-10): `option-chain-contract-info` gives authoritative expiry dates per symbol, stored in `option_expiries` by the 9 AM daily refresh; API prefers these over weekday math (payload `source: NSE`).
 - Live NSE lot sizes from `fo_mktlots.csv` into `symbols.lot_size` (NIFTY 65 / BANKNIFTY 30 / FINNIFTY 60, source=NSE; SENSEX 20 source=config until a BSE file is found). Refresh writes only on change; Builder reads live lots from the API.
@@ -160,6 +163,9 @@ Every page shares: **AI-Assisted Market Intelligence Platform** header (single-c
 `strategies.html` — strategy engine header now `hero`; strategy template cards → Builder with `?index=&template=`; `strategies-guide.html` / `strategy-builder.html` / `learn/*` / `tools/position-size.html` follow the same header/ticker/clock shell.
 Expiry readout is uniform everywhere: `Expiry: 15 Sep 2026 (5 DTE, WEEKLY)` (index pages, strategies cards, builder header; live NSE `source: NSE` preferred).
 Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; gains green `#15803d` (light `#86efac` on dark heroes) / losses red `#dc2626` (`#fca5a5` on dark) site-wide, with high-contrast pill badges on dark heroes for `+6.18%` etc.
+
+**LIVE badge (2026-09-12):** the AI MARKET OUTLOOK header badge is now market-timing-aware (`ai-outlook.js marketStatusBadge()`): green dot + **LIVE** Mon–Fri 09:15–15:30 IST, amber dot + **CLOSED** otherwise (weekends/nights). Computed client-side via `Intl.DateTimeFormat` with `Asia/Kolkata`. Purely informational — it does not reflect data freshness.
+**Data as of bar (2026-09-12):** `#last-updated-bar` de-dupes the date — when `as_of_ist` begins with `outlook.date`, only the time portion is shown (e.g. `Data as of 2026-09-11 · 23:15 IST` instead of repeating the date).
 
 ## 12b. Card heading CSS (2026-09-11)
 
@@ -191,7 +197,9 @@ Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; g
 */5 9-15 * * 1-5    monitor.py
 0 */2 9-15 * * 1-5  alert.py
 30 9 * * 1-5        pnl_tracker.py lock       (9:30 entries)
+30 9 * * 1-5        outlook.py --symbol ×4     (pre-market intraday outlook refresh: merges prior-day data + live open, gates TOMORROW's session — overrides today's market_outlooks row)
 20 15 * * 1-5       pnl_tracker.py close      (3:20 exits)
+0 19 * * 1-5        outlook.py --symbol ×4 + sitemap_gen.py (final daily outlook + sitemap)
 35 9 * * 1-5        daily_page.py morning     (→ market/nifty-outlook-YYYY-MM-DD.html)
 35 15 * * 1-5       daily_page.py close + sitemap_gen.py (close report + sitemap)
 35 18 * * 1-5       bhavcopy.py daily         (NSE EOD backfill)
@@ -204,6 +212,8 @@ Table CSS: `.history-table{min-width:980px}` + nowrap + right-aligned numbers; g
 ## 14. Deploy (`deploy-vm.sh`)
 
 rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (incl. `favicon.svg`/`apple-touch-icon.svg`, `robots.txt`, `sitemap.xml`, `today/`, `learn/`, `tools/`, `market/`, each `indices/*`, `stock-options.html`; missing one from the `cp` list leaves a stale page live) → db_schema → background fetch → install `ops/systemd/tradingai-api.service` + `systemctl restart` → rewrite crontab → `sudo systemctl reload nginx`. Health curl has `|| true` so a slow start can't abort deploy.
+
+**Crontab dedupe (2026-09-12):** when rewriting crontab, deploy filters existing lines with `grep -v` for the entries it manages (`outlook.py|sitemap_gen.py|bhavcopy.py|backfill_yearly.py|fo_fetcher.py|daily_page.py|monitor.py|alert.py|pnl_tracker.py|data_fetcher_db.py|nse_live_chain.py|mf_fetcher.py|etf_fetcher.py|aggregate.py`) so repeated deploys never accumulate duplicate cron lines.
 
 ## 15. Bug log (recurring traps)
 
@@ -219,6 +229,7 @@ rsync repo→/opt (excl. database/data/logs) → pip install → web-root sync (
 - `nohup ... &` without `setsid` dies with the SSH session. API now runs under systemd; never start it by hand with nohup.
 - Deploy `cp` list is explicit, not wildcard — adding a new top-level page (e.g. `stock-options.html`) without listing it leaves the old version live. Always extend the web-root sync line + `sitemap_gen.py` evergreen list.
 - Ticker without `curl_cffi` session warm-up gets 403 from NSE; breadth silently stays stale.
+- Adding a column to `history` must also be mirrored in: `db_schema.py` CREATE + ALTER migration, `database.py` CREATE + `_migrate()` additions, `pnl_tracker.py` INSERTs (entry/close/backfill/archive), `history_archive` in both schema files, and any `INSERT INTO history_archive` SELECT list (3 of them in `database.py`). (entry_outlook is the blueprint for this — 2026-09-12.)
 
 ## 16. Data sources & persistence policy
 
@@ -249,6 +260,38 @@ yfinance per ticker → price_1m/1d (OHLCV), info+targets+recs+earnings→fundam
 10. **Expiry holidays:** refresh `HOLIDAYS_IST` each January from NSE/BSE circulars.
 11. **API hardening:** systemd unit done; remaining: gunicorn workers (Flask dev server is single-threaded) + response caching for `/api/market` (currently ~270 queries/page-load).
 12. **Auth/admin:** token-gated `/api/*` write endpoints if journaling/notes are added.
+
+---
+
+## 20. Intraday Market Outlook Framework (2026-09-11) — MUST follow for any market outlook
+
+**Role:** Expert Indian derivatives analyst (NIFTY/BANKNIFTY/SENSEX intraday options). Generate a **data-driven** outlook. NEVER invent data/prices/news/OI/probabilities. Goal is to determine the ENVIRONMENT (regime, bias, volatility, suitable strategies, and TRADE / WAIT / AVOID) — NOT to force a trade.
+
+**Inputs considered:** MARKET (spot, prev close, day change %, high/low, gap %, VWAP, SMA20/50, EMA, RSI, ATR, momentum, volume, breadth, sectors) · INDIA VIX (value, prev, change %, intraday H/L, percentile, trend) · OPTIONS (call/put OI, OI change, volume, PCR, strike OI + OI-change, ATM IV, call/put IV, IV percentile, greeks, expected move) · FUTURES (price, premium/discount, OI, OI change) · GLOBAL/MACRO (GIFT NIFTY, Asia/US/EU, USDINR, crude, gold, economic events) · NEWS (India/global/sector, RBI/Fed, elections/geopolitical, earnings) · TIME (IST, day of week, time to close, expiry).
+
+**Process (13 steps):**
+1. **Data quality check** — flag missing/contradictory/stale data; lower confidence; do NOT guess. If critical data missing → state "Insufficient data for high-confidence outlook."
+2. **Market regime** — ONE of: STRONG BULLISH TREND / BULLISH / BULLISH RANGE / NEUTRAL / RANGE / VOLATILE RANGE / BEARISH RANGE / BEARISH / STRONG BEARISH TREND / EVENT·ABNORMAL VOLATILITY. Never from a single indicator (use price vs VWAP, vs SMA20, SMA slope, momentum, ATR, breadth, OI, PCR, VIX, futures, expected move, time of day, news risk).
+3. **Directional bias** — Bullish / Mildly Bullish / Neutral / Mildly Bearish / Bearish, with Bullish/Neutral/Bearish percentages **totalling exactly 100%** (analytical, not guaranteed). Confidence reflects data quality + agreement.
+4. **Volatility regime** — VERY LOW / LOW / NORMAL / ELEVATED / HIGH / EXTREME, from India VIX, VIX change, IV, IV percentile, ATR, expected move, actual intraday movement. State whether it favours buying / premium selling / defined-risk / waiting. Never recommend naked selling merely because IV is high.
+5. **Options positioning** — call OI concentration, put OI concentration, OI add/unwind, PCR, ATM/OTM IV, IV skew, futures OI → identify support zones, resistance zones, probable breakout zone, probable breakdown zone. High OI alone ≠ absolute S/R; combine with price action.
+6. **Expected move** — expected range from expected move/IV/ATR; compare vs actual intraday move (if much already consumed, reduce attractiveness of fresh trades). Upside/downside level, expected range, invalidation level.
+7. **Time of day** — opening price discovery is volatile; midday rangey/low momentum; afternoon trend/ reversal; expiry sessions differ; late-day gamma rises fast. Never use one strategy for the whole day.
+8. **Event risk** — LOW/MODERATE/HIGH/EXTREME. If HIGH/EXTREME → prioritise capital protection + defined-risk.
+9. **Tradeability score 0–100** — 0–20 AVOID · 21–40 VERY LOW · 41–55 LOW · 56–70 MODERATE · 71–85 GOOD · 86–100 VERY GOOD. Reflects directional clarity, trend quality, vol suitability, OI clarity, liquidity, expected move, event risk, time of day, signal agreement. High score ≠ prediction.
+10. **Strategy selection** — score each of {Long Call, Long Put, Bull Call Spread, Bear Put Spread, Bull Put Spread, Bear Call Spread, Iron Condor, Short Strangle, Short Straddle, Calendar Spread, No Trade} 0–100 considering regime/bias/VIX/IV/expected move/OI/time remaining/event risk/RR. Pick BEST, SECOND-BEST, STRATEGY TO AVOID. If no edge → BEST = NO TRADE.
+11. **Entry conditions** — conditional, never unconditional: entry trigger + confirmation + invalidation + stop + profit-target + time-based exit.
+12. **Risk** — LOW/MODERATE/HIGH/EXTREME; name primary risk (directional/gamma/IV-expansion/gap/event/liquidity/time-decay/whipsaw). High risk reduces attractiveness.
+13. **No-trade engine** — explicitly decide NO TRADE if insufficient edge, conflicting signals, abnormal vol, poor RR, or significant event risk; explain why. NO TRADE is a valid, preferred outcome.
+
+**FINAL OUTPUT (exact skeleton):** `## TODAY'S MARKET OUTLOOK` {Market Regime; Directional Bias; Direction Probability (Bullish/Neutral/Bearish = 100%); Confidence X/100; India VIX [value] — [regime]; Tradeability X/100 — [band]; Expected Range [upper]–[lower]; Key Levels: Support 1,2 / Resistance 1,2 / Breakout trigger / Breakdown trigger} → `## OPTIONS MARKET INTELLIGENCE` {PCR + interpretation; Call OI; Put OI; OI Signal (BULLISH/BEARISH/NEUTRAL/MIXED); IV Environment} → `## BEST STRATEGIES` {#1 name, Fit X/100, Why (≥3 reasons), Entry condition, Risk, Exit; #2 name, Fit; Strategy to Avoid + reason} → `## AI DECISION` {# TRADE / WAIT / NO TRADE; Primary view (2–4 sentences); Bullish invalidation level; Bearish invalidation level} → `## IMPORTANT WARNING` (not a guarantee; positional risk).
+
+**Hard rules:** never fabricate data; never guarantee profits; never claim certainty; never force a trade; prefer defined-risk when uncertain; NO TRADE is valid; never rely on PCR/OI/VIX/indicators alone; resolve conflicts explicitly; always explain WHY; always give invalidation levels; probabilities = exactly 100%; distinguish market prediction from strategy suitability; best strategy = most compatible with CURRENT regime (not highest theoretical payoff); lower confidence on poor data; no naked selling just because range-bound; respect gamma (esp. near expiry), time of day, and event risk; always prioritise capital preservation over generating a trade.
+
+**Outlook generation + trade-record wiring (2026-09-12):**
+- `outlook.py build_outlook()` sets `trades = _trades(conn, date, symbol) if verdict == "TRADE" else []` — a WAIT/AVOID verdict always yields `trades: []` so the AI-GATED TRADE RECORD section never renders for a session the AI did not confirm (JS returns `''` when empty). A historical trade on that date still exists in `history` for reference but is not shown under a wait/avoid verdict.
+- `outlook.py` stores the payload to `market_outlooks` with `ON CONFLICT(date, symbol) DO UPDATE`; the 09:30 intraday run overwrites the same-day row, so the API always serves the newest build. `pnl_tracker._latest_gate` reads `date < date_str` (prior-day outlook gates today), so the 09:30 refresh only affects the NEXT session's gate, never today's.
+- `outlook.py` CLI: `--date`, `--symbol`, `--webroot`; adds dated pages `market/outlook-{sym}-{date}.html` (static, render via JS from `/api/market-outlook/{date}`).
 
 ---
 

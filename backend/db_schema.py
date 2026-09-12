@@ -393,6 +393,16 @@ CREATE TABLE IF NOT EXISTS pcr_history (
 );
 CREATE INDEX IF NOT EXISTS idx_pcr_hist_sym_date ON pcr_history(symbol, date);
 
+CREATE TABLE IF NOT EXISTS market_outlooks (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    date TEXT,
+    symbol TEXT DEFAULT 'NIFTY',
+    payload TEXT NOT NULL,
+    created_at TEXT,
+    UNIQUE(date, symbol)
+);
+CREATE INDEX IF NOT EXISTS idx_market_outlooks_date ON market_outlooks(date DESC);
+
 CREATE TABLE IF NOT EXISTS history (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,
@@ -415,6 +425,7 @@ CREATE TABLE IF NOT EXISTS history (
     no_trade_conditions TEXT,
     strategy_environment TEXT,
     invalidation TEXT,
+    entry_outlook TEXT,
     created_at TEXT,
     UNIQUE(symbol, date)
 );
@@ -467,6 +478,7 @@ CREATE TABLE IF NOT EXISTS history_archive (
     directional_bias TEXT,
     confidence REAL,
     market_summary TEXT,
+    entry_outlook TEXT,
     created_at TEXT,
     archived_at TEXT
 );
@@ -555,6 +567,8 @@ def init_database(db_path: str = DB_PATH) -> None:
             c.execute("ALTER TABLE history ADD COLUMN exit_time TEXT DEFAULT '15:20'")
         if "direction" not in hist_cols:
             c.execute("ALTER TABLE history ADD COLUMN direction TEXT DEFAULT 'LONG'")
+        if "entry_outlook" not in hist_cols:
+            c.execute("ALTER TABLE history ADD COLUMN entry_outlook TEXT")
         c.execute("PRAGMA table_info(history_archive)")
         arch_cols = {row[1] for row in c.fetchall()}
         if "entry_time" not in arch_cols:
@@ -563,6 +577,8 @@ def init_database(db_path: str = DB_PATH) -> None:
             c.execute("ALTER TABLE history_archive ADD COLUMN exit_time TEXT DEFAULT '15:20'")
         if "direction" not in arch_cols:
             c.execute("ALTER TABLE history_archive ADD COLUMN direction TEXT DEFAULT 'LONG'")
+        if "entry_outlook" not in arch_cols:
+            c.execute("ALTER TABLE history_archive ADD COLUMN entry_outlook TEXT")
     except Exception:
         pass
     conn.commit()
