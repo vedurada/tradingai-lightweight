@@ -224,7 +224,7 @@
   <script>
   (async function(){
     try {
-      const resp = await fetch('api/options-intelligence?symbol=NIFTY');
+      const resp = await fetch('api/options-intelligence/NIFTY');
       const data = await resp.json();
       if (data.error) throw new Error(data.error);
 
