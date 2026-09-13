@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
-Regression tests for Max Pain calculation.
-Tests the corrected Max Pain algorithm against known expected values.
+Regression tests for Options Intelligence.
+Tests Max Pain correction and OI concentration calculations.
 """
 import sys
 import os
@@ -180,9 +180,220 @@ def test_multiple_expiries():
     pass  # These are integration tests requiring DB
 
 
+def test_oi_concentration_basic():
+    """OI concentration with known expected values."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "change_in_oi": 500},
+        {"strike": 105, "option_type": "CE", "open_interest": 3000, "change_in_oi": 300},
+        {"strike": 110, "option_type": "CE", "open_interest": 2000, "change_in_oi": 200},
+        {"strike": 100, "option_type": "PE", "open_interest": 4000, "change_in_oi": -100},
+        {"strike": 105, "option_type": "PE", "open_interest": 6000, "change_in_oi": 400},
+        {"strike": 110, "option_type": "PE", "open_interest": 1000, "change_in_oi": 50},
+    ]
+    engine = OptionsEngine()
+    result = engine.compute_oi_concentration(contracts)
+
+    assert result["call_oi"] == 10000, f"Expected call_oi 10000, got {result['call_oi']}"
+    assert result["put_oi"] == 11000, f"Expected put_oi 11000, got {result['put_oi']}"
+    assert result["total_oi"] == 21000, f"Expected total_oi 21000, got {result['total_oi']}"
+
+    # Highest Call OI: strike 100 with 5000 (50% of call OI)
+    assert result["highest_call_oi"]["strike"] == 100
+    assert result["highest_call_oi"]["oi"] == 5000
+    assert result["highest_call_oi"]["pct_of_call_oi"] == 50.0
+
+    # Highest Put OI: strike 105 with 6000 (54.55% of put OI)
+    assert result["highest_put_oi"]["strike"] == 105
+    assert result["highest_put_oi"]["oi"] == 6000
+
+    # OI change available (some change_in_oi > 0)
+    assert result["oi_change_available"] == True
+    # Sum of positive CE changes: 500+300+200=1000
+    assert result["call_oi_change"] == 1000, f"Expected 1000, got {result['call_oi_change']}"
+    # Sum of positive PE changes: 400+50=450
+    assert result["put_oi_change"] == 450, f"Expected 450, got {result['put_oi_change']}"
+
+    print("✓ test_oi_concentration_basic passed")
+
+
+def test_oi_concentration_no_change_available():
+    """All change_in_oi = 0 → DATA TEMPORARILY UNAVAILABLE."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "change_in_oi": 0},
+        {"strike": 105, "option_type": "CE", "open_interest": 3000, "change_in_oi": 0},
+        {"strike": 100, "option_type": "PE", "open_interest": 4000, "change_in_oi": 0},
+        {"strike": 105, "option_type": "PE", "open_interest": 6000, "change_in_oi": 0},
+    ]
+    engine = OptionsEngine()
+    result = engine.compute_oi_concentration(contracts)
+
+    assert result["oi_change_available"] == False
+    assert result["call_oi_change"] == "DATA TEMPORARILY UNAVAILABLE"
+    assert result["put_oi_change"] == "DATA TEMPORARILY UNAVAILABLE"
+    print("✓ test_oi_concentration_no_change_available passed")
+
+
+def test_oi_concentration_major_zones():
+    """Major Call/Put zones are strikes with >= 10% of total OI."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "change_in_oi": 0},
+        {"strike": 105, "option_type": "CE", "open_interest": 2000, "change_in_oi": 0},
+        {"strike": 110, "option_type": "CE", "open_interest": 500, "change_in_oi": 0},
+        {"strike": 100, "option_type": "PE", "open_interest": 6000, "change_in_oi": 0},
+        {"strike": 105, "option_type": "PE", "open_interest": 2000, "change_in_oi": 0},
+        {"strike": 110, "option_type": "PE", "open_interest": 500, "change_in_oi": 0},
+    ]
+    engine = OptionsEngine()
+    result = engine.compute_oi_concentration(contracts)
+
+    # Call OI: 100=5000(66.67%), 105=2000(26.67%), 110=500(6.67%)
+    # Major call zones: 100 (66.67% >= 10%), 105 (26.67% >= 10%)
+    assert len(result["major_call_zones"]) == 2
+    assert result["major_call_zones"][0]["strike"] == 100
+    assert abs(result["major_call_zones"][0]["pct"] - 66.67) < 0.1
+    assert result["major_call_zones"][1]["strike"] == 105
+    assert abs(result["major_call_zones"][1]["pct"] - 26.67) < 0.1
+
+    # Put OI: 100=6000(60%), 105=2000(20%), 110=500(5%)
+    assert len(result["major_put_zones"]) == 2
+    assert result["major_put_zones"][0]["strike"] == 100
+
+    print("✓ test_oi_concentration_major_zones passed")
+
+
+def test_oi_concentration_mixed_change():
+    """Some strikes have positive change, some have 0 within a real-data expiry."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "change_in_oi": 500},
+        {"strike": 105, "option_type": "CE", "open_interest": 3000, "change_in_oi": 0},  # NSE didn't report
+        {"strike": 100, "option_type": "PE", "open_interest": 4000, "change_in_oi": 0},  # NSE didn't report
+        {"strike": 105, "option_type": "PE", "open_interest": 6000, "change_in_oi": -200},  # negative = reduction
+    ]
+    engine = OptionsEngine()
+    result = engine.compute_oi_concentration(contracts)
+
+    # Some positive changes exist → available
+    assert result["oi_change_available"] == True
+    # Only positive CE change: 500 (0 is excluded from positive sum)
+    assert result["call_oi_change"] == 500
+    # PE changes: 0 and -200, both not positive → 0
+    assert result["put_oi_change"] == 0
+
+    print("✓ test_oi_concentration_mixed_change passed")
+
+
+def test_oi_concentration_single_strike():
+    """Single strike concentration."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 1000, "change_in_oi": 100},
+        {"strike": 100, "option_type": "PE", "open_interest": 500, "change_in_oi": 50},
+    ]
+    engine = OptionsEngine()
+    result = engine.compute_oi_concentration(contracts)
+
+    assert result["call_oi"] == 1000
+    assert result["put_oi"] == 500
+    assert result["highest_call_oi"]["pct_of_call_oi"] == 100.0
+    assert result["highest_put_oi"]["pct_of_put_oi"] == 100.0
+
+    print("✓ test_oi_concentration_single_strike passed")
+
+
+def test_api_oi_concentration_endpoint():
+    """Test /api/oi-concentration endpoint with temporary DB data."""
+    import tempfile
+    import shutil
+
+    from backend.api_server import app, DB_PATH
+
+    tmpdir = tempfile.mkdtemp()
+    tmpdb = os.path.join(tmpdir, "test.db")
+
+    # Create temp DB with schema
+    conn = sqlite3.connect(tmpdb)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS option_chain (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            symbol TEXT, expiry TEXT, strike REAL, option_type TEXT,
+            open_interest INTEGER, change_in_oi INTEGER, fetched_at TEXT,
+            UNIQUE(symbol, expiry, strike, option_type)
+        )
+    """)
+    conn.execute("""
+        CREATE TABLE IF NOT EXISTS live_quotes (
+            symbol TEXT PRIMARY KEY, price REAL, timestamp TEXT
+        )
+    """)
+
+    # Insert NIFTY spot price
+    conn.execute("INSERT INTO live_quotes VALUES ('NIFTY', 23400.0, '2026-09-13T10:00:00')")
+
+    # Insert option chain data: 3 strikes, CE and PE
+    chain_data = [
+        ("NIFTY", "2026-09-25", 100, "CE", 5000, 500, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-09-25", 105, "CE", 3000, 300, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-09-25", 110, "CE", 2000, 200, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-09-25", 100, "PE", 4000, -100, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-09-25", 105, "PE", 6000, 400, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-09-25", 110, "PE", 1000, 50, "2026-09-13T10:00:00"),
+        # Second expiry - all change_in_oi = 0 (yfinance/unavailable)
+        ("NIFTY", "2026-12-25", 100, "CE", 5000, 0, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-12-25", 105, "CE", 3000, 0, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-12-25", 100, "PE", 4000, 0, "2026-09-13T10:00:00"),
+        ("NIFTY", "2026-12-25", 105, "PE", 6000, 0, "2026-09-13T10:00:00"),
+    ]
+    for row in chain_data:
+        conn.execute(
+            "INSERT OR REPLACE INTO option_chain (symbol, expiry, strike, option_type, open_interest, change_in_oi, fetched_at) VALUES (?,?,?,?,?,?,?)",
+            row
+        )
+    conn.commit()
+    conn.close()
+
+    # Temporarily redirect DB path
+    original_db = DB_PATH
+    try:
+        # Monkey-patch DB_PATH in api_server module
+        import backend.api_server as api_mod
+        api_mod.DB_PATH = tmpdb
+
+        with app.test_client() as c:
+            resp = c.get('/api/oi-concentration/NIFTY')
+            assert resp.status_code == 200
+            data = resp.get_json()
+
+        assert data["symbol"] == "NIFTY"
+        assert data["spot"] == 23400.0
+
+        # First expiry: real change data
+        exp1 = data["2026-09-25"]
+        assert exp1["call_oi"] == 10000
+        assert exp1["put_oi"] == 11000
+        assert exp1["oi_change_available"] == True
+        assert exp1["call_oi_change"] == 1000  # 500+300+200 positive
+        assert exp1["put_oi_change"] == 450   # 400+50 positive
+        assert exp1["highest_call_oi"]["strike"] == 100
+        assert exp1["highest_call_oi"]["pct_of_call_oi"] == 50.0
+        assert exp1["highest_put_oi"]["strike"] == 105
+        assert exp1["highest_put_oi"]["pct_of_put_oi"] == round(6000/11000*100, 2)
+
+        # Second expiry: all change_in_oi = 0
+        exp2 = data["2026-12-25"]
+        assert exp2["call_oi"] == 8000
+        assert exp2["put_oi"] == 10000
+        assert exp2["oi_change_available"] == False
+        assert exp2["call_oi_change"] == "DATA TEMPORARILY UNAVAILABLE"
+        assert exp2["put_oi_change"] == "DATA TEMPORARILY UNAVAILABLE"
+
+        print("✓ test_api_oi_concentration_endpoint passed")
+    finally:
+        api_mod.DB_PATH = original_db
+        shutil.rmtree(tmpdir)
+
+
 def run_all_tests():
-    """Run all Max Pain regression tests."""
-    print("Running Max Pain regression tests...\n")
+    """Run all Options Intelligence regression tests."""
+    print("Running Options Intelligence regression tests...\n")
 
     test_known_max_pain()
     test_oi_ranking_different_from_max_pain()
@@ -192,9 +403,14 @@ def run_all_tests():
     test_zero_oi_excluded()
     test_empty_contracts()
     test_invalid_contracts()
-    # test_multiple_expiries - needs DB integration
+    test_oi_concentration_basic()
+    test_oi_concentration_no_change_available()
+    test_oi_concentration_major_zones()
+    test_oi_concentration_mixed_change()
+    test_oi_concentration_single_strike()
+    test_api_oi_concentration_endpoint()
 
-    print("\n✅ All Max Pain regression tests passed!")
+    print("\n✅ All Options Intelligence regression tests passed!")
 
 
 if __name__ == "__main__":

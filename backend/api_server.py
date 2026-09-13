@@ -682,6 +682,44 @@ def oi_top():
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+@app.route("/api/oi-concentration/<symbol>")
+def oi_concentration(symbol):
+    """OI concentration per expiry with source-aware OI change."""
+    symbol = symbol.upper()
+    conn = get_db()
+
+    spot = None
+    qr = conn.execute("SELECT price FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    if qr:
+        spot = qr["price"]
+
+    expiries = conn.execute(
+        "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (symbol,)
+    ).fetchall()
+
+    out = {"symbol": symbol, "spot": spot}
+    for e in expiries:
+        expiry = e["expiry"]
+        rows = conn.execute(
+            "SELECT strike, option_type, open_interest, change_in_oi FROM option_chain WHERE symbol=? AND expiry=?",
+            (symbol, expiry)
+        ).fetchall()
+
+        contracts = [dict(r) for r in rows]
+        from backend.options import OptionsEngine
+        engine = OptionsEngine()
+        concentration = engine.compute_oi_concentration(contracts)
+
+        # Add strike distance from spot
+        if spot and spot > 0:
+            for sd in concentration["strikes"]:
+                sd["distance_from_spot_pct"] = round((sd["strike"] - spot) / spot * 100, 2)
+
+        out[expiry] = concentration
+
+    conn.close()
+    return jsonify(out)
+
 def _build_outlook_on_demand(conn, symbol):
     """Build a full outlook payload on the fly for any tracked symbol (index or stock)."""
     try:
