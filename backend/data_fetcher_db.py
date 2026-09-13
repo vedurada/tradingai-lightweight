@@ -502,20 +502,58 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
         options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
         timestamp = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
-        regime_info = {"regime": "UNKNOWN", "confidence": 0, "trend": "", "momentum": "", "volatility": ""}
+        closes_ohlcv = [row.get("close", 0) for row in ohlcv]
+        sma20 = round(sum(closes_ohlcv[-20:]) / 20, 2) if len(closes_ohlcv) >= 20 else None
+        sma50 = round(sum(closes_ohlcv[-50:]) / 50, 2) if len(closes_ohlcv) >= 50 else None
+
+        vix_row = conn.execute("SELECT close, change_pct FROM vix_data ORDER BY timestamp DESC LIMIT 1").fetchone()
+        vix_close = vix_row["close"] if vix_row else None
+        vix_change_pct = vix_row["change_pct"] if vix_row else None
+
+        breadth_row = conn.execute("SELECT advances, declines, advance_decline_ratio FROM market_breadth ORDER BY timestamp DESC LIMIT 1").fetchone()
+        adv = breadth_row["advances"] if breadth_row else None
+        dec = breadth_row["declines"] if breadth_row else None
+        adr = breadth_row["advance_decline_ratio"] if breadth_row else None
+
+        market = {
+            "symbol": symbol,
+            "price": quote["price"],
+            "sma20": sma20,
+            "sma50": sma50,
+            "prev_close": quote.get("previous_close") or indicators.get("prev_day_close"),
+            "rsi": indicators.get("rsi"),
+            "macd": indicators.get("macd"),
+            "adx": indicators.get("adx"),
+            "vix_close": vix_close,
+            "vix_change_pct": vix_change_pct,
+            "advances": adv,
+            "declines": dec,
+            "advance_decline_ratio": adr,
+        }
+        pcr_val = None if options_analysis.get("data_unavailable", True) else options_analysis.get("pcr")
+        options_input = {"pcr": pcr_val}
+
+        regime_info = {"regime": "UNKNOWN", "confidence": 0, "trend": "", "momentum": "", "volatility": "", "breadth": "", "vix_regime": ""}
         try:
             regime_engine = RegimeEngine()
-            regime_info = regime_engine.evaluate(
-                price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"],
-                rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"),
-                vix_price=0, bollinger=indicators.get("bollinger_bands"), pivot=pivot_data,
-                support_resistance=indicators.get("support_resistance"), pcr=options_analysis.get("pcr"),
-                volume=quote.get("volume"), avg_volume=indicators.get("avg_volume"),
-            )
+            result = regime_engine.evaluate(market, options_input)
+            regime_info = {
+                "regime": result["regime"],
+                "confidence": result["confidence"],
+                "trend": result["components"]["trend"],
+                "momentum": result["components"]["momentum"],
+                "volatility": result["components"]["vix"],
+                "breadth": result["components"]["breadth"],
+                "vix_regime": result["components"]["vix"],
+                "reasons": result["reasons"],
+            }
         except Exception:
             pass
 
-        conn.execute("INSERT OR REPLACE INTO market_regime (symbol, timestamp, regime, confidence, evidence, trend, momentum, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "", regime_info.get("trend",""), regime_info.get("momentum",""), regime_info.get("volatility","")))
+        conn.execute(
+            "INSERT OR REPLACE INTO market_regime (symbol, timestamp, regime, confidence, evidence, trend, momentum, volatility, breadth, vix_regime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (symbol, timestamp, regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "", regime_info.get("trend",""), regime_info.get("momentum",""), regime_info.get("volatility",""), regime_info.get("breadth",""), regime_info.get("vix_regime","")),
+        )
 
         ind = indicators if indicators else {}
         bb = ind.get("bollinger_bands", {}) if isinstance(ind.get("bollinger_bands"), dict) else {}
