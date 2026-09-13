@@ -70,19 +70,29 @@
     });
     $("#ta-chat-save").addEventListener("click", saveUser);
     $("#ta-chat-user").addEventListener("keydown", e=>{ if(e.key==="Enter"){ e.preventDefault(); saveUser(); }});
+    $("#ta-chat-user").addEventListener("input", syncSaveBtn);
     $("#ta-chat-form").addEventListener("submit", send);
-    updateWho();
+    updateWho(); syncSaveBtn();
   }
 
   function esc(s){ return String(s).replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;","&gt;":"&gt;"}[c])); }
   function escAttr(s){ return esc(s).replace(/"/g,"&quot;"); }
   function fmtTime(iso){ try{ const d=new Date(iso); return d.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'}); }catch(e){ return ""; } }
 
+  function syncSaveBtn(){
+    const inp=$("#ta-chat-user"), btn=$("#ta-chat-save");
+    if(!inp||!btn) return;
+    const cur=(inp.value||"").trim();
+    const shouldShow = cur && cur!==username;
+    btn.style.display = shouldShow ? "" : "none";
+  }
   function updateWho(){ const el=$("#ta-chat-who"); if(el) el.textContent = "You: "+username; const b=$("#ta-chat-badge"); if(b){ b.style.display=unread>0?"inline-block":"none"; b.textContent=unread>99?"99+":unread; } }
 
   function saveUser(){
     const v = ($("#ta-chat-user").value||"").trim().slice(0,20);
-    if(v) { username=v; localStorage.setItem(CH_KEY, v); updateWho(); toast("Saved as "+v); }
+    if(!v) { toast("Enter a name"); return; }
+    if(v===username) { toast("Already saved"); syncSaveBtn(); return; }
+    username=v; localStorage.setItem(CH_KEY, v); updateWho(); syncSaveBtn(); toast("Saved as "+v);
   }
 
   function toggle(force){
