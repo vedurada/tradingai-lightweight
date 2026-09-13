@@ -2,12 +2,12 @@
 <html lang="en">
 <head>
 <!-- Google tag (gtag.js) -->
+<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
+  function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
   gtag('config', 'G-MJ3X88QYEL');
 </script>
 <meta charset="UTF-8">
@@ -32,18 +32,77 @@
   <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
 </header>
-<main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <!-- SEBI Educational Purpose Disclaimer -->
+  <div class="card" style="margin:1.5rem 0 1rem 0;border-left:4px solid #dc2626">
+    <h3 style="margin:0.2rem 0 0.4rem;color:#dc2626">📌 SEBI Educational Purpose Disclaimer</h3>
+    <p style="margin:0; font-size:.9rem; line-height:1.5; color:#64748b">
+      <strong>Educational Purpose Only:</strong> TradingAI provides automated market analysis and tools for informational and educational purposes only. Nothing on this website — including index outlooks, options strategies, PCR, max-pain figures, backtest results, or any other content — constitutes investment, financial, legal, or tax advice, nor a recommendation, offer, or solicitation to buy, sell, or hold any security or derivative. All analysis is generated from publicly available NSE data and rule-based algorithms. Trading involves substantial risk, including loss of capital. Users must verify all data with their broker and make their own decisions. Past performance, whether backtested or live, does not guarantee future results. SEBI does not endorse or review any content on this site.
+    </p>
+  </div>
+
+  <!-- MARKET SNAPSHOT -->
+  <div class="grid" style="margin:1rem 0; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem">
+    <div class="card" style="min-height:120px">
+      <h3>NIFTY 50</h3>
+      <div class="price" id="s-nifty-price">—</div>
+      <div class="badge" style="background:#15803d20;color:#15803d">N/A</div>
+      <div class="status">Trend: <span id="s-nifty-trend">—</span></div>
+      <div class="status">VIX: <span id="s-nifty-vix">—</span></div>
+    </div>
+    <div class="card" style="min-height:120px">
+      <h3>BANKNIFTY</h3>
+      <div class="price" id="s-banknifty-price">—</div>
+      <div class="badge" style="background:#dc262620;color:#dc2626">N/A</div>
+      <div class="status">Trend: <span id="s-banknifty-trend">—</span></div>
+      <div class="status">VIX: <span id="s-banknifty-vix">—</span></div>
+    </div>
+    <div class="card" style="min-height:120px">
+      <h3>SENSEX</h3>
+      <div class="price" id="s-sensex-price">—</div>
+      <div class="badge" style="background:#f59e0b20;color:#f59e0b">N/A</div>
+      <div class="status">Trend: <span id="s-sensex-trend">—</span></div>
+      <div class="status">VIX: <span id="s-sensex-vix">—</span></div>
+    </div>
+    <div class="card" style="min-height:120px">
+      <h3>INDIA VIX</h3>
+      <div class="price" id="s-vix-price">—</div>
+      <div class="status">Change: <span id="s-vix-change">—</span></div>
+    </div>
+  </div>
+
+  <!-- AI MARKET OUTLOOK CENTERPIECE -->
+  <div class="card" style="margin:1rem 0; min-height:320px">
+    <div style="display:flex;align-items;flex-direction:column;gap:0.5rem;padding:0.8rem">
+      <h2 style="margin:0;font-size:1.1rem;">AI MARKET OUTLOOK</h2>
+      <div style="display:flex;align-items:center;gap:0.5rem;margin-bottom:0.8rem">
+        <span id="outlook-regime" style="padding:0.2rem 0.6rem;border-radius:4px;font-weight:700;background:#15803d15;color:#15803d">—</span>
+        <span id="outlook-bias" style="padding:0.2rem 0.6rem;border-radius:4px;font-weight:700;background:#dc262615;color:#dc2626">—</span>
+        <span style="font-size:0.8rem;color:#64748b">—</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:1rem;border-top:1px solid var(--line);padding-top:0.6rem">
+        <div>
+          <div style="font-weight:700;color:#15803d" id="outlook-confidence">—</div>/100
+          <div style="font-size:0.75rem;color:#64748b">Confidence</div>
+        </div>
+        <div>
+          <div style="width:40px;height:40px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-weight:700" id="outlook-score">—</div>
+        </div>
+      </div>
+      <div style="margin:0.6rem 0; min-height:50px; display:flex;align-items:center;gap:0.5rem;flex-wrap:wrap">
+        <div style="flex:1;min-width:100px"><div style="font-size:0.75rem;color:#64748b">Expected Range</div><div style="font-weight:700;color:#15803d" id="outlook-range">—</div></div>
+        <div style="flex:1;min-width:100px"><div style="font-size:0.75rem;color:#dc2626" id="outlook-invalidation">—</div></div>
+      </div>
+      <div style="margin-top:0.6rem">
+        <div style="font-size:0.75rem;color:#64748b">Today's Strategy</div>
+        <div style="font-weight:700;color:#15803d" id="outlook-strategy">—</div>
+      </div>
+    </div>
+  </div>
+
   <div id="dashboard"></div>
 
   <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
-    <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
-    <div class="card"><h3>📈 Backtest</h3><div class="status">AI-gated vs Fixed, win rate &amp; payoff &amp; 10y equity.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
-    <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow &amp; sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
-  </div>
-
-  <div class="card" id="home-backtest" style="margin-top:1.5rem"><h3>📈 Backtest — 1 month (NIFTY)</h3><div class="status" id="home-bt-status">Loading 22 trading 1M backtest…</div><div class="grid" style="grid-template-columns:repeat(4,1fr);gap:0;margin-top:.8rem;border-top:1px solid var(--line)" id="home-bt-grid"></div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open full backtest →</a></div></div>
   <script>(async function(){try{const r=await (await fetch('api/backtest?symbol=NIFTY&days=30')).json();const g=r.ai_stats?.gated||r;const el=document.getElementById('home-bt-grid');const s=document.getElementById('home-bt-status');if(!r||!g){s.textContent='No backtest data';return;}s.textContent=`AI ${g.trades} trades · WR ${g.win_rate}% · PF ${g.profit_factor} · ${(g.total_points>=0?'+':'')+g.total_points} pts`;el.innerHTML=`<div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Win Rate</div><div style="font-weight:800;color:${g.win_rate>=55?'#15803d':'#dc2626'}">${g.win_rate}%</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Profit Factor</div><div style="font-weight:800">${g.profit_factor}</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Net</div><div style="font-weight:800;color:${g.total_points>=0?'#15803d':'#dc2626'}">${g.total_points>=0?'+':''}${g.total_points} pts</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Max DD</div><div style="font-weight:800;color:#dc2626">${g.max_drawdown} pts</div></div>`;}catch(e){const s=document.getElementById('home-bt-status');if(s)s.textContent='Backtest preview unavailable';}})();</script>
   <div class="card content-card" style="margin-top:1.5rem">
     <h3>How to read this page</h3>
@@ -106,6 +165,8 @@
     refreshTimer = setInterval(render, 30000);
   });
 })();
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 </script>
 <link rel="stylesheet" href="/assets/css/chat.css?v=2"><script src="/assets/js/chat.js?v=2" defer></script></body>
 </html>

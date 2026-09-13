@@ -7,15 +7,26 @@ async function loadOptions() {
   for (const f of files) {
     const data = await fetchJSON(f);
     if (!data) continue;
+
+    const pcrRes = await fetchJSON(`pcr?symbols=${f}`);
+    const pcr = pcrRes && pcrRes[f] && pcrRes[f].length > 0 ? pcrRes[f][0].pcr : null;
+
+    const mpRes = await fetchJSON(`maxpain?symbols=${f}`);
+    const maxPain = mpRes && mpRes[f] && mpRes[f].length > 0 ? mpRes[f][0].max_pain : null;
+
+    const ivAvg = (data.indicators && data.indicators.get('avg_iv'))
+      ? data.indicators.avg_iv
+      : null;
+
     const card = document.createElement('div');
     card.className = 'card';
     card.innerHTML = `
       <h3>${f.toUpperCase()}</h3>
       <div class="price">${formatPrice(data.quote?.price)}</div>
       <span class="badge" style="background:${regimeColor(data.regime?.regime)}20;color:${regimeColor(data.regime?.regime)}">${data.regime?.regime || 'N/A'}</span>
-      <div class="status">PCR: ${data.options?.pcr?.toFixed(3) || 'N/A'}</div>
-      <div class="status">Max Pain: ${formatPrice(data.options?.max_pain?.max_pain)}</div>
-      <div class="status">IV Avg: ${data.options?.iv_stats?.avg_iv || 'N/A'}</div>
+      <div class="status">PCR: ${pcr !== null ? pcr.toFixed(3) : 'N/A'}</div>
+      <div class="status">Max Pain: ${formatPrice(maxPain)}</div>
+      <div class="status">IV Avg: ${ivAvg !== null ? ivAvg.toFixed(2) : 'N/A'}</div>
       <div class="status">Strategy: ${data.strategy?.strategies?.[0]?.strategy || 'N/A'}</div>
       <div class="status">${data.data_quality || 'N/A'}</div>
     `;

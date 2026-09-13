@@ -82,7 +82,7 @@ def _head(title: str, desc: str, url: str) -> str:
           "headline": title, "description": desc,
           "author": {"@type": "Organization", "name": "TradingAI"},
           "publisher": {"@type": "Organization", "name": "TradingAI"}}
-     return f"""<!DOCTYPE html>
+    return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
