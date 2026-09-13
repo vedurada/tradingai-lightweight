@@ -12,6 +12,7 @@ from typing import Any
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Database
+from regime_utils import normalize_regime
 
 logger = logging.getLogger("tradingai.alert")
 
@@ -65,8 +66,8 @@ def check_regime_changes(symbol: str, db: Database) -> list[dict]:
     for i in range(1, len(history)):
         prev = history[i]
         curr = history[i - 1]
-        prev_regime = prev.get("market_regime", "")
-        curr_regime = curr.get("market_regime", "")
+        prev_regime = normalize_regime(prev.get("market_regime", ""))
+        curr_regime = normalize_regime(curr.get("market_regime", ""))
         if prev_regime and curr_regime and prev_regime != curr_regime:
             message = f"Regime change: {prev_regime} -> {curr_regime} | Confidence: {curr.get('confidence', 'N/A')}% | Strategy: {curr.get('strategy', 'N/A')}"
             _log_alert(symbol, message)

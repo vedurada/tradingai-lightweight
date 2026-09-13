@@ -3,6 +3,8 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Any
 
+from regime_utils import normalize_regime
+
 
 class StrategyEngine:
     # Option strategies (spreads/condors) are only for tradable index derivatives.
@@ -12,24 +14,25 @@ class StrategyEngine:
         return (symbol or "").upper() in self.INDEX_SYMBOLS
 
     def select(self, regime: str, confidence: float, data_quality: str, vix_price: float = 0, vix_change_pct: float = 0, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None, support: list | None = None, resistance: list | None = None, atr: float | None = None) -> dict[str, Any]:
+        regime = normalize_regime(regime)
         # Stocks / ETFs get a simple BUY / HOLD / EXIT outlook, never option spreads.
         if symbol and not self.is_index(symbol):
             return self.select_stock_outlook(regime, confidence, data_quality, symbol, price, vwap, rsi, adx, support, resistance, atr)
         strategies = []
         position_size = self._position_size(confidence, data_quality)
-        if regime == "TRENDING_BULLISH":
+        if regime == "BULLISH":
             strategies += [
-                {"strategy": "Bull Call Spread", "market_condition": "Bullish trend", "expiry": "NEXT_WEEKLY", "legs": ["BUY ATM CALL", "SELL 1-2 OTM CALL"], "entry_trigger": "Price above VWAP, RSI < 70", "maximum_profit": "Strike width - premium", "maximum_loss": "Premium + costs", "breakeven": "Lower strike + premium", "stop_loss": "Below lower strike", "adjustment": "Roll up both legs", "exit": "At expiry or target", "strategy_environment": "TRENDING_BULLISH", "invalidation": "Price below VWAP or RSI > 75", "position_size": position_size},
-                {"strategy": "Bull Put Spread", "market_condition": "Bullish trend", "expiry": "NEXT_WEEKLY", "legs": ["SELL OTM PUT", "BUY further OTM PUT"], "entry_trigger": "Price above VWAP, RSI < 70", "maximum_profit": "Premium received", "maximum_loss": "Strike width - premium", "breakeven": "Higher strike - premium", "stop_loss": "Below lower strike", "adjustment": "Roll down both legs", "exit": "At expiry or target", "strategy_environment": "TRENDING_BULLISH", "invalidation": "Price below lower put strike", "position_size": position_size},
+                {"strategy": "Bull Call Spread", "market_condition": "Bullish trend", "expiry": "NEXT_WEEKLY", "legs": ["BUY ATM CALL", "SELL 1-2 OTM CALL"], "entry_trigger": "Price above VWAP, RSI < 70", "maximum_profit": "Strike width - premium", "maximum_loss": "Premium + costs", "breakeven": "Lower strike + premium", "stop_loss": "Below lower strike", "adjustment": "Roll up both legs", "exit": "At expiry or target", "strategy_environment": "BULLISH", "invalidation": "Price below VWAP or RSI > 75", "position_size": position_size},
+                {"strategy": "Bull Put Spread", "market_condition": "Bullish trend", "expiry": "NEXT_WEEKLY", "legs": ["SELL OTM PUT", "BUY further OTM PUT"], "entry_trigger": "Price above VWAP, RSI < 70", "maximum_profit": "Premium received", "maximum_loss": "Strike width - premium", "breakeven": "Higher strike - premium", "stop_loss": "Below lower strike", "adjustment": "Roll down both legs", "exit": "At expiry or target", "strategy_environment": "BULLISH", "invalidation": "Price below lower put strike", "position_size": position_size},
             ]
-        elif regime == "TRENDING_BEARISH":
+        elif regime == "BEARISH":
             strategies += [
-                {"strategy": "Bear Put Spread", "market_condition": "Bearish trend", "expiry": "NEXT_WEEKLY", "legs": ["BUY ATM PUT", "SELL 1-2 OTM PUT"], "entry_trigger": "Price below VWAP, RSI > 30", "maximum_profit": "Strike width - premium", "maximum_loss": "Premium + costs", "breakeven": "Higher strike - premium", "stop_loss": "Above higher strike", "adjustment": "Roll down both legs", "exit": "At expiry or target", "strategy_environment": "TRENDING_BEARISH", "invalidation": "Price above VWAP or RSI < 25", "position_size": position_size},
-                {"strategy": "Bear Call Spread", "market_condition": "Bearish trend", "expiry": "NEXT_WEEKLY", "legs": ["SELL OTM CALL", "BUY further OTM CALL"], "entry_trigger": "Price below VWAP, RSI > 30", "maximum_profit": "Premium received", "maximum_loss": "Strike width - premium", "breakeven": "Lower strike + premium", "stop_loss": "Above higher strike", "adjustment": "Roll up both legs", "exit": "At expiry or target", "strategy_environment": "TRENDING_BEARISH", "invalidation": "Price above higher call strike", "position_size": position_size},
+                {"strategy": "Bear Put Spread", "market_condition": "Bearish trend", "expiry": "NEXT_WEEKLY", "legs": ["BUY ATM PUT", "SELL 1-2 OTM PUT"], "entry_trigger": "Price below VWAP, RSI > 30", "maximum_profit": "Strike width - premium", "maximum_loss": "Premium + costs", "breakeven": "Higher strike - premium", "stop_loss": "Above higher strike", "adjustment": "Roll down both legs", "exit": "At expiry or target", "strategy_environment": "BEARISH", "invalidation": "Price above VWAP or RSI < 25", "position_size": position_size},
+                {"strategy": "Bear Call Spread", "market_condition": "Bearish trend", "expiry": "NEXT_WEEKLY", "legs": ["SELL OTM CALL", "BUY further OTM CALL"], "entry_trigger": "Price below VWAP, RSI > 30", "maximum_profit": "Premium received", "maximum_loss": "Strike width - premium", "breakeven": "Lower strike + premium", "stop_loss": "Above higher strike", "adjustment": "Roll up both legs", "exit": "At expiry or target", "strategy_environment": "BEARISH", "invalidation": "Price above higher call strike", "position_size": position_size},
             ]
-        elif regime == "RANGE_BOUND":
+        elif regime == "SIDEWAYS":
             strategies += [
-                {"strategy": "Iron Condor", "market_condition": "Range-bound", "expiry": "NEXT_WEEKLY", "legs": ["SELL OTM CALL", "BUY OTM CALL", "SELL OTM PUT", "BUY OTM PUT"], "entry_trigger": "Price between support and resistance", "maximum_profit": "Premium received", "maximum_loss": "Strike width - premium", "breakeven": "Wings ± premium", "stop_loss": "Breakout/breakdown", "adjustment": "Roll both sides", "exit": "At expiry", "strategy_environment": "RANGE_BOUND", "invalidation": "Breakout above resistance or breakdown below support", "position_size": position_size},
+                {"strategy": "Iron Condor", "market_condition": "Range-bound", "expiry": "NEXT_WEEKLY", "legs": ["SELL OTM CALL", "BUY OTM CALL", "SELL OTM PUT", "BUY OTM PUT"], "entry_trigger": "Price between support and resistance", "maximum_profit": "Premium received", "maximum_loss": "Strike width - premium", "breakeven": "Wings ± premium", "stop_loss": "Breakout/breakdown", "adjustment": "Roll both sides", "exit": "At expiry", "strategy_environment": "SIDEWAYS", "invalidation": "Breakout above resistance or breakdown below support", "position_size": position_size},
             ]
         elif regime == "HIGH_VOLATILITY":
             strategies += [
@@ -71,26 +74,27 @@ class StrategyEngine:
     def select_stock_outlook(self, regime: str, confidence: float, data_quality: str, symbol: str = "", price: float = 0, vwap: float = 0, rsi: float | None = None, adx: float | None = None, support: list | None = None, resistance: list | None = None, atr: float | None = None) -> dict[str, Any]:
         """BUY / HOLD / EXIT outlook for cash-market stocks (no options), with numeric targets."""
         position_size = self._position_size(confidence, data_quality)
+        regime = normalize_regime(regime)
         if data_quality == "STALE":
             outlook = "HOLD"
             reason = "Stale data — wait for fresh prices"
             env = "UNKNOWN"
-        elif regime == "TRENDING_BULLISH" and confidence >= 50:
+        elif regime == "BULLISH" and confidence >= 50:
             outlook = "BUY"
             reason = "Uptrend with strength"
-            env = "TRENDING_BULLISH"
-        elif regime == "TRENDING_BEARISH":
+            env = "BULLISH"
+        elif regime == "BEARISH":
             outlook = "EXIT"
             reason = "Downtrend — exit longs / avoid fresh buying"
-            env = "TRENDING_BEARISH"
+            env = "BEARISH"
         elif regime == "HIGH_VOLATILITY":
             outlook = "HOLD"
             reason = "High volatility — reduce risk, wait for clarity"
             env = "HIGH_VOLATILITY"
-        elif regime == "RANGE_BOUND":
+        elif regime == "SIDEWAYS":
             outlook = "HOLD"
             reason = "Range-bound — buy near support, book near resistance"
-            env = "RANGE_BOUND"
+            env = "SIDEWAYS"
         else:
             # Fallback on price vs VWAP + RSI when regime is unclear.
             above_vwap = price > vwap > 0
