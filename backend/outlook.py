@@ -333,6 +333,13 @@ def _trades(conn, date: str, symbol: str | None = None) -> list:
     ]
 
 
+def resolve_verdict(payload: dict) -> str:
+    return (payload.get("decision", {}).get("verdict")
+            or payload.get("verdict")
+            or payload.get("outlook", {}).get("verdict")
+            or payload.get("trade_decision") or "").strip().upper()
+
+
 def build_outlook(conn, symbol: str, date: str) -> dict:
     # date-aware: for historical replay (2016) use the latest row *as of* that date, not the latest overall
     ind = conn.execute("SELECT * FROM indicators WHERE symbol=? AND date(timestamp) <= date(?) ORDER BY timestamp DESC LIMIT 1", (symbol, date)).fetchone()
@@ -824,7 +831,7 @@ def main() -> None:
     conn.commit()
     # ── fire-and-forget chat alert (no VM load: 1 local DB insert, clients poll 15s via nginx cache) ──
     try:
-        verdict = (payload.get("verdict") or payload.get("outlook", {}).get("verdict") or payload.get("trade_decision") or "").strip().upper()
+        verdict = resolve_verdict(payload)
         # payload verdict is TRADE/WAIT/AVOID — only TRADE triggers actionable alert
         if verdict == "TRADE":
             strat = payload.get("strategy") or payload.get("primary_strategy") or payload.get("outlook", {}).get("primary_strategy") or ""
