@@ -82,7 +82,7 @@ def _head(title: str, desc: str, url: str) -> str:
           "headline": title, "description": desc,
           "author": {"@type": "Organization", "name": "TradingAI"},
           "publisher": {"@type": "Organization", "name": "TradingAI"}}
-    return f"""<!DOCTYPE html>
+     return f"""<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -97,6 +97,7 @@ def _head(title: str, desc: str, url: str) -> str:
 <meta name="twitter:card" content="summary">
 <script type="application/ld+json">{json.dumps(ld)}</script>
 <link rel="stylesheet" href="../assets/css/main.css">
+<link rel="stylesheet" href="../assets/css/chat.css">
 </head>"""
 
 
@@ -125,6 +126,7 @@ def _foot() -> str:
     <p>AI-generated market analysis based on current market data. Defined-risk strategy analysis. Not financial advice — markets can move unexpectedly; users are responsible for their trading decisions.</p>
   </footer>
 </main>
+<link rel="stylesheet" href="../assets/css/chat.css"><script src="../assets/js/chat.js" defer></script>
 </body>
 </html>"""
 

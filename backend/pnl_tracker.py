@@ -356,6 +356,13 @@ def close(date_str: str | None = None, exit_label: str = EXIT_LABEL) -> None:
                 (exit_price, exit_label, direction, points, result, symbol, date_str),
             )
             print(f"close {symbol} {date_str} {exit_label}: {direction} entry={entry_price} exit={exit_price} points={points:+} {result}")
+            # chat alert: settle result (TRADE only)
+            try:
+                ts_alert = datetime.now(timezone.utc).isoformat()
+                alert_txt = f"📊 CLOSE {symbol} {result} {points:+.1f} pts • {entry_price:.0f}→{exit_price:.0f} • {date_str}"
+                conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", ("alerts", "AI", alert_txt[:300], "alert", ts_alert))
+            except Exception:
+                pass
         else:
             outlook_snap = _entry_outlook_snapshot(conn, symbol, date_str)
             conn.execute(

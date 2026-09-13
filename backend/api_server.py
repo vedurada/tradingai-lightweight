@@ -1127,6 +1127,102 @@ def company(symbol):
         "info": {k: v for k, v in data.items() if not isinstance(v, (dict, list))},
     })
 
+# ── Chat: lightweight, VM-friendly (nginx 10s cache, rate-limited) ──
+_CHAT_RATE = {}  # ip -> [timestamps]
+_CHAT_MAX_PER_MIN = 8
+_CHAT_MAX_LEN = 300
+
+def _chat_rate_ok(ip: str) -> bool:
+    now = _time.time()
+    lst = _CHAT_RATE.get(ip, [])
+    lst = [t for t in lst if now - t < 60]
+    ok = len(lst) < _CHAT_MAX_PER_MIN
+    if ok:
+        lst.append(now)
+    _CHAT_RATE[ip] = lst
+    # prune map every ~200 keys
+    if len(_CHAT_RATE) > 400:
+        for k in list(_CHAT_RATE.keys())[:200]:
+            if not _CHAT_RATE[k] or now - _CHAT_RATE[k][-1] > 300:
+                _CHAT_RATE.pop(k, None)
+    return ok
+
+@app.route("/api/chat/messages", methods=["GET", "POST"])
+def chat_messages():
+    channel = (request.args.get("channel") or request.args.get("c") or "global").strip()[:20].lower() or "global"
+    if request.method == "GET":
+        try:
+            limit = min(int(request.args.get("limit", "50")), 100)
+            since = request.args.get("since", "0")
+            since_id = int(since) if str(since).isdigit() else 0
+        except Exception:
+            limit, since_id = 50, 0
+        conn = get_db()
+        if since_id:
+            rows = conn.execute("SELECT id, channel, username, text, kind, created_at FROM chat_messages WHERE channel=? AND id>? ORDER BY id ASC LIMIT ?", (channel, since_id, limit)).fetchall()
+        else:
+            rows = conn.execute("SELECT id, channel, username, text, kind, created_at FROM chat_messages WHERE channel=? ORDER BY id DESC LIMIT ? ", (channel, limit)).fetchall()
+            rows = list(reversed(rows))
+        # include latest system alerts inline so chat window shows TRADE without extra call
+        conn.close()
+        return jsonify([dict(r) for r in rows])
+    # POST
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr or "0.0.0.0").split(",")[0].strip()
+    if not _chat_rate_ok(ip):
+        return jsonify({"error": "rate limited: 8/min"}), 429
+    data = request.get_json(silent=True) or {}
+    username = str(data.get("username") or request.args.get("username") or "Anonymous").strip()[:20] or "Anonymous"
+    text = str(data.get("text") or data.get("message") or "").strip()
+    kind = str(data.get("kind") or "user").strip()[:10]
+    if kind not in ("user", "system", "alert"):
+        kind = "user"
+    if not text:
+        return jsonify({"error": "empty"}), 400
+    if len(text) > _CHAT_MAX_LEN:
+        text = text[:_CHAT_MAX_LEN]
+    # basic sanitize: strip control chars
+    text = "".join(c for c in text if c == "\n" or ord(c) >= 32)
+    username = "".join(c for c in username if ord(c) >= 32)[:20]
+    ch = str(data.get("channel") or channel).strip()[:20].lower() or "global"
+    ts = datetime.now(timezone.utc).isoformat()
+    conn = get_db()
+    cur = conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", (ch, username, text, kind, ts))
+    conn.commit()
+    nid = cur.lastrowid
+    # retention: keep only last 500 per channel, 2000 global total
+    try:
+        conn.execute("DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM chat_messages WHERE channel=? ORDER BY id DESC LIMIT 500) AND channel=?", (ch, ch))
+        conn.execute("DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM chat_messages ORDER BY id DESC LIMIT 2000)")
+        conn.commit()
+    except Exception:
+        pass
+    conn.close()
+    return jsonify({"id": nid, "channel": ch, "username": username, "text": text, "kind": kind, "created_at": ts})
+
+@app.route("/api/chat/alerts")
+def chat_alerts():
+    """Latest system alerts (TRADE/CLOSE/news) for chat window — nginx cache 10s makes polling cheap."""
+    try:
+        limit = min(int(request.args.get("limit", "20")), 50)
+    except Exception:
+        limit = 20
+    conn = get_db()
+    rows = conn.execute("SELECT id, channel, username, text, kind, created_at FROM chat_messages WHERE kind='alert' ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
+    conn.close()
+    return jsonify([dict(r) for r in reversed(rows)])
+
+def _push_chat_alert(channel: str, text: str, username: str = "AI"):
+    """Fire-and-forget system alert into chat_messages (used by outlook.py / pnl_tracker)."""
+    try:
+        conn = get_db()
+        ts = datetime.now(timezone.utc).isoformat()
+        conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", (channel.strip()[:20].lower() or "alerts", username[:20], text[:500], "alert", ts))
+        conn.execute("DELETE FROM chat_messages WHERE kind='alert' AND id NOT IN (SELECT id FROM chat_messages WHERE kind='alert' ORDER BY id DESC LIMIT 200)")
+        conn.commit()
+        conn.close()
+    except Exception:
+        pass
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

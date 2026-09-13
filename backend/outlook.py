@@ -820,6 +820,7 @@ def render_html(p: dict, date: str) -> str:
   }});
 }})();
 </script>
+<link rel="stylesheet" href="../assets/css/chat.css"><script src="../assets/js/chat.js" defer></script>
 </body>
 </html>"""
 
@@ -849,6 +850,24 @@ def main() -> None:
         (date_str, symbol, json.dumps(payload, ensure_ascii=False), datetime.now(IST).strftime("%Y-%m-%d %H:%M:%S")),
     )
     conn.commit()
+    # ── fire-and-forget chat alert (no VM load: 1 local DB insert, clients poll 15s via nginx cache) ──
+    try:
+        verdict = (payload.get("verdict") or payload.get("outlook", {}).get("verdict") or payload.get("trade_decision") or "").strip().upper()
+        # payload verdict is TRADE/WAIT/AVOID — only TRADE triggers actionable alert
+        if verdict == "TRADE":
+            strat = payload.get("strategy") or payload.get("primary_strategy") or payload.get("outlook", {}).get("primary_strategy") or ""
+            bias = payload.get("directional_bias") or payload.get("bias") or ""
+            strat_txt = f"{symbol} {verdict} — {strat} {('('+bias+')') if bias else ''}".strip()
+            # keep alert text short (<300) so toast fits
+            alert_text = f"🚀 NEW TRADE {strat_txt} • {date_str} • details in Today/Outlook"
+            # insert directly into chat_messages as kind=alert (VM-light, no external service)
+            ts_alert = datetime.now(timezone.utc).isoformat()
+            conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", ("alerts", "AI", alert_text[:300], "alert", ts_alert))
+            conn.execute("DELETE FROM chat_messages WHERE kind='alert' AND id NOT IN (SELECT id FROM chat_messages WHERE kind='alert' ORDER BY id DESC LIMIT 200)")
+            conn.commit()
+            print(f"  chat alert queued: {alert_text[:80]}")
+    except Exception as e:
+        print(f"  chat alert skipped: {e}")
     conn.close()
     html = render_html(payload, date_str)
     outdir = os.path.join(webroot, "market") if webroot else os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "market")
