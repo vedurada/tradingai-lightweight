@@ -36,7 +36,53 @@ def serialize_val(v):
 
 @app.route("/api/health")
 def health():
-    return jsonify({"status": "ok", "timestamp": datetime.now(timezone.utc).isoformat()})
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    now = datetime.now(timezone.utc)
+    status = "ok"
+    warnings = []
+    freshness = {}
+    try:
+        def _age_minutes(ts):
+            if not ts: return None
+            for fmt in ("%Y-%m-%dT%H:%M:%S+00:00", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
+                try:
+                    dt = datetime.strptime(ts[:19], fmt)
+                    return (now - dt.replace(tzinfo=timezone.utc)).total_seconds() / 60
+                except: pass
+            try:
+                dt = datetime.fromisoformat(ts)
+                if dt.tzinfo is None: dt = dt.replace(tzinfo=timezone.utc)
+                return (now - dt).total_seconds() / 60
+            except: return None
+        rp = conn.execute("SELECT MAX(timestamp) as ts FROM price_1m WHERE symbol='NIFTY'").fetchone()
+        if rp and rp["ts"]:
+            age = _age_minutes(rp["ts"])
+            if age is not None:
+                freshness["nifty_price_minutes_ago"] = round(age, 1)
+                if age > 30:
+                    status = "degraded"
+                    warnings.append(f"NIFTY price data {age:.0f}m stale")
+        rv = conn.execute("SELECT MAX(timestamp) as ts FROM vix_data").fetchone()
+        if rv and rv["ts"]:
+            age = _age_minutes(rv["ts"])
+            if age is not None:
+                freshness["vix_minutes_ago"] = round(age, 1)
+                if age > 60:
+                    status = "degraded"
+                    warnings.append(f"VIX data {age:.0f}m stale")
+        ro = conn.execute("SELECT MAX(date) as ds FROM market_outlooks WHERE symbol='NIFTY'").fetchone()
+        if ro and ro["ds"]:
+            try:
+                age_days = (now.date() - datetime.strptime(ro["ds"], "%Y-%m-%d").date()).days
+                freshness["outlook_days_old"] = age_days
+                if age_days > 1:
+                    warnings.append(f"Outlook {age_days}d old")
+            except: pass
+    except Exception as e:
+        app.logger.warning(f"health freshness check failed: {e}")
+    conn.close()
+    return jsonify({"status": status, "timestamp": now.isoformat(), "warnings": warnings, "data_freshness": freshness})
 
 @app.route("/api/symbols")
 def symbols():
