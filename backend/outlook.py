@@ -655,10 +655,16 @@ def build_outlook(conn, symbol: str, date: str) -> dict:
 
 
 def merge_llm_into_payload(conn, symbol: str, payload: dict) -> dict:
-    """Overlay the most recent genuine LLM outlook onto the rule-based framework.
+    """Overlay the most recent genuine LLM outlook as explanation only.
 
-    LLM is primary for regime/bias/confidence/narrative; the rule engine remains
-    the structural backbone (expected range, gap, options, tradeability, trades).
+    LLM is EXPLANATION ONLY. It cannot modify any authoritative quantitative
+    decision (regime, bias, confidence, key levels, verdict, strategy).
+    Those fields come from RegimeEngine → build_outlook() and are immutable here.
+
+    What the LLM CAN contribute:
+    - primary_view: narrative summary (replaces rule-based narrative only)
+    - llm_explanation: all descriptive fields from the LLM output stored separately
+
     A rule-based ai_outlooks row (market_summary marked '<SYM> analysis - <REGIME>')
     or absence of any LLM row leaves the framework untouched (rule-based fallback).
     """
@@ -681,42 +687,24 @@ def merge_llm_into_payload(conn, symbol: str, payload: dict) -> dict:
     if not summary or "analysis - " in summary:
         return payload  # rule-based fallback row, not a genuine LLM narrative
 
-    regime = str(llm.get("market_regime") or "").upper().replace(" ", "_")
-    bias = str(llm.get("directional_bias") or "").upper()
-    conf = llm.get("confidence")
-    try:
-        conf = max(0.0, min(100.0, float(conf)))
-    except (TypeError, ValueError):
-        conf = None
-
     decision = payload.setdefault("decision", {})
     if summary:
         decision["primary_view"] = summary
-    if regime:
-        decision.setdefault("regime_override", {})["engine"] = regime
-    if bias:
-        decision.setdefault("regime_override", {})["bias"] = bias
-    if conf is not None:
-        decision.setdefault("regime_override", {})["confidence"] = round(conf)
 
-    if regime:
-        p_regime = payload.setdefault("regime", {})
-        p_regime["engine"] = regime
-        mapped = REGIME_MAP.get(regime, regime)
-        p_regime["primary"] = mapped
-    if bias:
-        payload.setdefault("bias", {})["label"] = bias
-    if conf is not None:
-        payload["confidence"] = round(conf)
-
-    sup = [n for n in (llm.get("support_levels") or []) if isinstance(n, (int, float))]
-    res = [n for n in (llm.get("resistance_levels") or []) if isinstance(n, (int, float))]
-    if sup or res:
-        kl = payload.setdefault("key_levels", {})
-        if sup:
-            kl["supports"] = [_num(n) for n in sup]
-        if res:
-            kl["resistances"] = [_num(n) for n in res]
+    explanation_fields = [
+        "trend_analysis", "momentum_analysis", "volatility_analysis",
+        "bullish_scenario", "bearish_scenario", "range_scenario",
+        "alternative_strategies", "intraday_plan", "no_trade_conditions",
+        "risk_warnings", "market_structure", "evidence_strength",
+        "volatility_classification", "data_quality", "generated_at",
+        "market_regime", "directional_bias", "confidence",
+    ]
+    llm_explanation = {}
+    for k in explanation_fields:
+        if llm.get(k) is not None:
+            llm_explanation[k] = llm[k]
+    if llm_explanation:
+        payload["llm_explanation"] = llm_explanation
 
     payload["ai_source"] = "LLM"
     payload["llm_generated_at"] = row["timestamp"]
