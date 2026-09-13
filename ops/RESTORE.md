@@ -11,6 +11,7 @@ Goal: from a dead/lost VM to a fully working tradingai.in with **zero data loss*
   **`vm-backup` branch** of this same repo (code `main` stays clean) and the push is verified.
 - Check health any time: `tail /opt/tradingai/logs/backup.log` on the VM — every run ends
   with either `backup pushed OK` or `FATAL` with the exact fix.
+- **GitHub 100MB limit:** DB is gzip-compressed to `database/tradingai.db.gz` (`128M → ~16M`) so every backup stays under the limit. Restore auto-handles both `.db.gz` and legacy `.db`.
 
 ## One-time setup (backup push auth)
 

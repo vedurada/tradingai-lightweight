@@ -1,8 +1,10 @@
 # TradingAI — never commit secrets / live data / ephemeral
+# DB deliberately ignored on main; live DB is shipped via vm-backup branch as database/tradingai.db.gz (gzip keeps <100MB)
 *.db
 *.sqlite
 *.sqlite3
 database/
+!database/.gitkeep
 data/*.json
 !data/.gitkeep
 logs/
