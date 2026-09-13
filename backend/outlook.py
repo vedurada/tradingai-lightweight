@@ -820,7 +820,7 @@ def render_html(p: dict, date: str) -> str:
   }});
 }})();
 </script>
-<link rel="stylesheet" href="../assets/css/chat.css"><script src="../assets/js/chat.js" defer></script>
+<link rel="stylesheet" href="../assets/css/chat.css?v=2"><script src="../assets/js/chat.js" defer></script>
 </body>
 </html>"""
 

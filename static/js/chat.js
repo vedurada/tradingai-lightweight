@@ -18,7 +18,7 @@
   function ensureUI(){
     if($("#ta-chat-bubble")) return;
     const link = document.createElement("link");
-    link.rel = "stylesheet"; link.href = "/assets/css/chat.css";
+    link.rel = "stylesheet"; link.href = "/assets/css/chat.css?v=2";
     document.head.appendChild(link);
     const bubble = document.createElement("div");
     bubble.id = "ta-chat-bubble";
