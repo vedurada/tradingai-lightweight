@@ -58,7 +58,7 @@ EVERGREEN = [
     ("etfs/holdings.html", "weekly", "0.5"),
 ]
 
-DAILY_GLOBS = ("market/nifty-outlook-*.html", "market/nifty-close-*.html")
+DAILY_GLOBS = ("market/nifty-outlook-*.html", "market/nifty-close-*.html", "market/outlook-*.html")
 
 
 def collect(repo_root: str = REPO_ROOT, extra_roots: list[str] | None = None) -> list[tuple[str, str, str, str]]:

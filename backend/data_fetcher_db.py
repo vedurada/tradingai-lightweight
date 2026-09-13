@@ -68,8 +68,16 @@ def fetch_yf_ohlcv(yf_symbol: str, interval: str = "1m", period: str = "2d") -> 
             return []
         data = []
         for idx, row in hist.iterrows():
+            ts = idx
+            try:
+                # Normalize exchange-local (IST) index to UTC wall-clock so the
+                # naive timestamp matches other writers and sqlite datetime('now').
+                if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
+                    ts = ts.astimezone(timezone.utc)
+            except Exception:
+                pass
             data.append({
-                "timestamp": idx.strftime("%Y-%m-%d %H:%M:%S"),
+                "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S"),
                 "open": float(row["Open"]),
                 "high": float(row["High"]),
                 "low": float(row["Low"]),
@@ -428,6 +436,39 @@ def _quote_from_latest_1m(conn: sqlite3.Connection, symbol: str) -> Optional[dic
         return None
 
 
+AI_OUTLOOK_REUSE_TTL = 12 * 3600  # reuse stored LLM outlook for a symbol for 12h (1 LLM gen/day/symbol)
+
+
+
+def _latest_ai_outlook(conn: sqlite3.Connection, symbol: str, max_age_s: int = AI_OUTLOOK_REUSE_TTL):
+    """Return (outlook_dict, fresh) from the newest stored ai_outlooks row for this symbol.
+    fresh=True when a non-empty outlook exists and is younger than max_age_s, so the
+    LLM result can be reused instead of calling the API on every market-hours poll."""
+    try:
+        row = conn.execute(
+            "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",
+            (symbol,),
+        ).fetchone()
+    except Exception:
+        row = None
+    if not row or not row["outlook"]:
+        return {}, False
+    try:
+        ts = row["timestamp"]
+        if isinstance(ts, str):
+            ts = ts.replace("Z", "+00:00")
+        age = (datetime.now(timezone.utc) - datetime.fromisoformat(ts)).total_seconds()
+    except Exception:
+        age = max_age_s + 1
+    try:
+        parsed = json.loads(row["outlook"])
+        if not isinstance(parsed, dict):
+            parsed = {}
+    except Exception:
+        parsed = {}
+    return parsed, bool(parsed) and age < max_age_s
+
+
 def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dict) -> None:
     try:
         from fetch_market import MarketFetcher
@@ -495,6 +536,7 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
                 vix_now = vrow["close"] or 0
         except Exception:
             pass
+        cached_outlook, outlook_fresh = _latest_ai_outlook(conn, symbol)
         try:
             if ohlcv and indicators.get("rsi") is not None and indicators.get("adx") is not None:
                 scenario_engine = ScenarioEngine()
@@ -504,7 +546,15 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
                 sr = ind.get("support_resistance", {}) if isinstance(ind.get("support_resistance"), dict) else {}
                 strategy = strategy_engine.select(regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "GOOD" if ohlcv else "PARTIAL", vix_price=vix_now, vix_change_pct=0, symbol=symbol, price=quote.get("price",0), vwap=indicators.get("vwap",0), rsi=indicators.get("rsi"), adx=indicators.get("adx"), support=sr.get("support", []), resistance=sr.get("resistance", []), atr=indicators.get("atr")) or {}
                 ai_engine = AIOutlookEngine()
-                ai_outlook = ai_engine.generate(symbol, {**quote, **ind, "regime": regime_info.get("regime","UNKNOWN"), "options_unavailable": options_analysis.get("data_unavailable", False)}) or {}
+                # Poller NEVER calls the LLM (that happens twice daily in outlook.py).
+                # Reuse a stored outlook when it is an LLM (non-template) result or fresh;
+                # only regenerate rule-based when the newest stored row is a stale template.
+                tpl_marker = (cached_outlook.get("market_summary") or "") if isinstance(cached_outlook, dict) else ""
+                is_llm = bool(cached_outlook) and bool(tpl_marker) and "analysis - " not in tpl_marker
+                if is_llm or (cached_outlook and outlook_fresh):
+                    ai_outlook = cached_outlook
+                else:
+                    ai_outlook = ai_engine.generate(symbol, {**quote, **ind, "regime": regime_info.get("regime","UNKNOWN"), "options_unavailable": options_analysis.get("data_unavailable", False)}, use_llm=False) or {}
         except Exception as e:
             logger.warning(f"Scenario/strategy build skipped for {symbol}: {e}")
 

@@ -34,6 +34,31 @@ FALLBACK_LOTS: dict[str, int] = {
     "SENSEX": 20,
 }
 
+# Historically accurate lots 2016-2026 (circulars FAOP47854, 56233, 64625, 67372; tradingqna).
+HISTORICAL_LOTS: dict[str, list[tuple[str, int]]] = {
+    "NIFTY": [("2016-01-01", 75), ("2021-07-01", 50), ("2025-01-02", 75), ("2025-12-30", 65)],
+    "BANKNIFTY": [("2016-01-01", 40), ("2018-10-26", 20), ("2020-05-04", 25), ("2023-07-01", 15), ("2024-11-20", 30), ("2025-06-30", 35), ("2025-12-31", 30)],
+    "FINNIFTY": [("2021-01-11", 40), ("2024-11-20", 65), ("2025-12-31", 60)],
+    "SENSEX": [("2016-01-01", 10), ("2024-11-20", 20)],
+}
+
+
+def get_historical_lot(symbol: str, trade_date: str | None = None) -> int:
+    """Lot size for symbol on trade_date (YYYY-MM-DD), else current FALLBACK."""
+    sym = (symbol or "NIFTY").upper()
+    if not trade_date:
+        return FALLBACK_LOTS.get(sym, 50)
+    hist = HISTORICAL_LOTS.get(sym)
+    if not hist:
+        return FALLBACK_LOTS.get(sym, 50)
+    lot = hist[0][1]
+    for cutoff, sz in sorted(hist):
+        if trade_date >= cutoff:
+            lot = sz
+        else:
+            break
+    return lot
+
 
 def _http_get(url: str, timeout: int = 25) -> Optional[bytes]:
     try:

@@ -39,11 +39,11 @@
   <p class="status">Browse TradingAI the way traders search — by <strong>Market → Asset → Strategy → Timeframe → Ranking</strong>. Every link below is a live, ranked view from today's market data.</p>
   <div class="grid">
     <div class="card"><h3>📈 Stocks</h3><div class="status"><a href="../stocks/top-large-cap.html">Top large cap</a> · <a href="../stocks/top-mid-small.html">Top mid/small</a> · <a href="../stocks/top-performers.html">Top performers</a> · <a href="../stocks/undervalued.html">Undervalued</a> · <a href="../stocks/52-week.html">52-week</a></div><div class="status">Discovery, performance & fundamental screens</div></div>
-    <div class="card"><h3>📊 ETFs</h3><div class="status"><a href="../etfs/top-etfs.html">Top ETFs</a> · <a href="../scanner.html">All ETFs</a></div><div class="status">Liquidity, discount to NAV, AUM</div></div>
+    <div class="card"><h3>📊 ETFs</h3><div class="status"><a href="../etfs/top-etfs.html">Top ETFs</a> · <a href="/scanner.html">All ETFs</a></div><div class="status">Liquidity, discount to NAV, AUM</div></div>
     <div class="card"><h3>💰 Mutual Funds</h3><div class="status"><a href="../mutual-funds/">Best funds by returns</a> · <a href="../mutual-funds/">Large/Flexi/Mid/Small Cap</a> · <a href="../mutual-funds/">ELSS · Index · Value · Liquid</a></div><div class="status">1Y/3Y/5Y annualised returns from daily NAV</div></div>
-    <div class="card"><h3>🏭 Sectors</h3><div class="status"><a href="../sectors/top.html">Sector performance today</a> · <a href="../market.html">Market breadth</a></div><div class="status">Bank, IT, Pharma, Auto, Energy, Consumer</div></div>
+    <div class="card"><h3>🏭 Sectors</h3><div class="status"><a href="../sectors/top.html">Sector performance today</a> · <a href="/market.html">Market breadth</a></div><div class="status">Bank, IT, Pharma, Auto, Energy, Consumer</div></div>
     <div class="card"><h3>📉 Technical</h3><div class="status"><a href="../scanner.html?filter=rsi_oversold">RSI &lt;30</a> · <a href="../scanner.html?filter=above_50dma">Above 50DMA</a> · <a href="../scanner.html?filter=above_200dma">Above 200DMA</a> · <a href="../scanner.html?filter=macd_bullish">MACD bullish</a> · <a href="../scanner.html?filter=golden_cross">Bull alignment</a></div><div class="status">RSI overbought, golden/death cross, breakouts</div></div>
-    <div class="card"><h3>⚡ Intraday</h3><div class="status"><a href="../scanner.html">High volume</a> · <a href="../market.html">VWAP breaks</a></div><div class="status">Unusual volume, volatility, gap ups/downs, F&O high OI</div></div>
+    <div class="card"><h3>⚡ Intraday</h3><div class="status"><a href="/scanner.html">High volume</a> · <a href="/market.html">VWAP breaks</a></div><div class="status">Unusual volume, volatility, gap ups/downs, F&O high OI</div></div>
     <div class="card"><h3>🧠 Options</h3><div class="status"><a href="../strategies.html">Strategy engine</a> · <a href="../strategy-builder.html">Payoff builder</a> · <a href="../stock-options.html">Stock options</a></div><div class="status">PCR, OI, max pain, IV, expected move</div></div>
     <div class="card"><h3>🌎 Global</h3><div class="status"><a href="../global/markets.html">Global markets today</a> · GIFT Nifty · Dow · Nasdaq · Gold · Crude</div></div>
     <div class="card"><h3>📰 News</h3><div class="status"><a href="../news/">Stocks in news today</a> · Corporate actions</div><div class="status">Earnings, dividends, buybacks, splits by symbol</div></div>
@@ -57,6 +57,13 @@
       <p>Each query card links back to the scanner and to individual stock pages, so a good answer becomes the start of deeper research rather than the end of it. Queries also complement the news page: unusual volume often precedes an announcement, and the two layers together frame the day.</p>
       <p>Queries are computed automatically from public feeds and can be delayed; a ranking is a moment-in-time snapshot, never a forecast. They are tools for research, not reasons to trade. Verify any name you act on with current data and your own analysis.</p>
   </div>
+  <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
+    <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
+    <div class="card"><h3>📈 Backtest</h3><div class="status">AI-gated vs Fixed, win rate & payoff & 10y equity.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
+    <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
+  </div>
+
 <footer><p>Every ranking is computed live from today's market data — not a static list.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>

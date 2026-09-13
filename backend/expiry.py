@@ -30,7 +30,16 @@ HOLIDAYS_IST = frozenset({
     "2026-12-24",  # Christmas Eve observed (Thu)
 })
 
-# symbol -> (exchange, weekday, has_weekly). weekday: Mon=0..Sun=6.
+# Historical weekly expiry weekdays (NSE/BSE changes over 2016-2026).
+# NIFTY: Thu → Tue (1 Sep 2025, NSE/FAOP/68747), BANKNIFTY: Thu → Tue (same), FINNIFTY: Tue from launch 2021-01-11.
+HISTORICAL_WEEKDAY: dict[str, list[tuple[str, int]]] = {
+    "NIFTY": [("2016-01-01", 3), ("2025-09-01", 1)],  # Thu until Aug 2025, Tue from Sep 2025
+    "BANKNIFTY": [("2016-01-01", 3), ("2025-09-01", 1)],
+    "FINNIFTY": [("2021-01-11", 1)],
+    "SENSEX": [("2016-01-01", 4), ("2023-05-12", 4), ("2024-11-20", 1), ("2025-09-01", 3)],  # BSE Fri → Tue → Thu
+}
+
+# symbol -> (exchange, weekday, has_weekly). weekday: Mon=0..Sun=6. Current rules (post Sep 2025).
 INDEX_EXPIRY_RULES: dict[str, dict] = {
     "NIFTY": {"exchange": "NSE", "weekday": 1, "weekly": True, "label": "Tuesday"},
     "BANKNIFTY": {"exchange": "NSE", "weekday": 1, "weekly": False, "label": "Tuesday"},
@@ -95,6 +104,22 @@ def _adjust_for_holiday(d: date) -> date:
     return d
 
 
+def _historical_weekday(symbol: str, on_date: date) -> int | None:
+    """Weekday for symbol on a historical date, or None if no weekly then."""
+    sym = (symbol or "NIFTY").upper()
+    hist = HISTORICAL_WEEKDAY.get(sym)
+    if not hist:
+        return INDEX_EXPIRY_RULES.get(sym, {}).get("weekday")
+    # find latest cutoff <= on_date
+    wd = None
+    for cutoff_str, w in sorted(hist):
+        cutoff = date.fromisoformat(cutoff_str)
+        if on_date >= cutoff:
+            wd = w
+        else:
+            break
+    return wd
+
 def _next_weekday(from_date: date, weekday: int, include_today: bool = True) -> date:
     days_ahead = (weekday - from_date.weekday()) % 7
     if days_ahead == 0 and not include_today:
@@ -126,18 +151,41 @@ def _payload(expiry_date: date, today: date, tenor: str, weekday_label: str, now
 
 
 def get_weekly_expiry(symbol: str = "NIFTY", today: Optional[date] = None, now: Optional[datetime] = None) -> Optional[dict]:
-    """Next weekly expiry for symbols that have weeklies, else None."""
+    """Next weekly expiry for symbols that have weeklies, else None. Uses historical weekday."""
     symbol = (symbol or "NIFTY").upper()
     rule = INDEX_EXPIRY_RULES.get(symbol)
     if not rule or not rule["weekly"]:
         return None
     now = now or _now_ist()
     today = today or now.date()
+    # historical weekday for backtest, else current
+    wd = _historical_weekday(symbol, today)
+    if wd is None:
+        return None
+    label = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"][wd]
     ist_mins = now.hour * 60 + now.minute
-    include_today = not (today.weekday() == rule["weekday"] and ist_mins >= EXPIRY_CUTOFF_MINUTES)
-    expiry = _next_weekday(today, rule["weekday"], include_today=include_today)
-    # If this week's expiry IS the monthly expiry, weekly tenor still lists it.
-    return _payload(expiry, today, "WEEKLY", rule["label"], now)
+    include_today = not (today.weekday() == wd and ist_mins >= EXPIRY_CUTOFF_MINUTES)
+    expiry = _next_weekday(today, wd, include_today=include_today)
+    return _payload(expiry, today, "WEEKLY", label, now)
+
+def get_historical_weekly_expiry(symbol: str, trade_date: str | date) -> tuple[str, int] | None:
+    """For backtest: next expiry date and DTE for trade_date using historical calendar. Returns (YYYY-MM-DD, DTE) or None if no weekly."""
+    try:
+        d = date.fromisoformat(trade_date) if isinstance(trade_date, str) else trade_date
+    except:
+        return None
+    wd = _historical_weekday(symbol, d)
+    if wd is None:
+        return None
+    # weekly may not have existed yet (e.g., FINNIFTY before 2021-01-11)
+    hist = HISTORICAL_WEEKDAY.get(symbol.upper(), [])
+    if hist:
+        first = date.fromisoformat(hist[0][0])
+        if d < first:
+            return None
+    exp = _next_weekday(d, wd, include_today=True)
+    dte = (exp - d).days
+    return exp.isoformat(), dte
 
 
 def get_monthly_expiry(symbol: str = "NIFTY", today: Optional[date] = None, now: Optional[datetime] = None) -> Optional[dict]:

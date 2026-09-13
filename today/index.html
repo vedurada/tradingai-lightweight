@@ -39,6 +39,8 @@
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2 id="t-mode">TODAY'S NIFTY TERMINAL</h2>
   <div id="t-body"><div class="card">Loading today's session…</div></div>
   
+<div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"><div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div><div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div><div class="card"><h3>📈 Backtest</h3><div class="status">AI-gated vs Fixed, win rate & payoff & 10y equity.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div><div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div></div>
+
   <div class="card content-card" style="margin-top:1.5rem">
     <h3>How to read this page</h3>
       <p>The Today page is a fast summary of where the market sits right now: the closing snapshot of the major indices, today's key events, and links into the deeper research layers of the site. It is built to answer one question quickly — 'what happened today, and what should I look at next?'</p>
@@ -86,11 +88,113 @@ async function loadToday(){
     if(today&&today.points!=null){var tc=today.points>=0?'#15803d':'#dc2626';html+='<div class="status">9:30 entry '+fmt(today.locked_price)+' → 3:20 exit '+fmt(today.closed_price)+' = <strong style="color:'+tc+'">'+(today.points>=0?'+':'')+today.points+' pts '+today.result+'</strong></div>';}
     else html+='<div class="status">Close: '+fmt(q.price)+' ('+(q.change>=0?'+':'')+Number(q.change).toFixed(2)+')</div>';
     html+='<div class="status">Tomorrow’s watch: support '+((sr.support||[]).map(fmt).join(', ')||'—')+' | resistance '+((sr.resistance||[]).map(fmt).join(', ')||'—')+'</div>';
-    html+='<div class="status"><a href="../indices/nifty.html">Full NIFTY intelligence →</a> <a href="../history.html">P&L history →</a></div></div>';
+    html+='<div class="status"><a href="../indices/nifty.html">Full NIFTY intelligence →</a> <a href="/tools/backtest.html">P&L history →</a></div></div>';
   }
   html+='<div class="card"><div class="status">🔴 <a href="../indices/nifty.html"><strong>LIVE NIFTY TODAY</strong></a> · <a href="../strategies.html">Strategy engine</a> · <a href="../strategy-builder.html">Payoff calculator</a></div></div>';
+  // AI verdict based strategy + live payoff
+  var stratList=((nifty.strategy||{}).strategies||[]);
+  var prim = stratList[0]||null;
+  var stratName = prim? prim.strategy : (ao.primary_strategy? ao.primary_strategy.name : strategyFallback());
+  var verdict = (ao.confidence||0)>=60 && prim ? 'TRADE' : 'WAIT';
+  if(ao.directional_bias && ao.directional_bias.includes('BEAR')) verdict = prim? 'TRADE':'WAIT';
+  if(!prim) verdict='WAIT';
+  // reset after close: only show live payoff during LIVE when TRADE
+  var showLiveStrat = (mode==='live' && verdict==='TRADE' && prim);
+  var atm = Math.round(q.price/50)*50;
+  var shortStrike=null, longStrike=null, credit=28, lot=65;
+  var isBear = /bear/i.test(stratName);
+  var isBull = /bull/i.test(stratName);
+  if(isBear && /call/i.test(stratName)){ shortStrike=atm+50; longStrike=atm+100; credit=28; }
+  else if(isBull && /put/i.test(stratName)){ shortStrike=atm-50; longStrike=atm-100; credit=28; }
+  else if(/strangle/i.test(stratName)){ shortStrike=atm; longStrike=null; credit=35; }
+  else if(isBear){ shortStrike=atm+50; longStrike=atm+100; credit=28; }
+  else if(isBull){ shortStrike=atm-50; longStrike=atm-100; credit=28; }
+  // live P&L vs spot
+  var spot=q.price;
+  var livePts=0;
+  if(shortStrike!=null){
+    if(isBear) livePts = spot < shortStrike ? credit : credit - (spot-shortStrike)*0.8;
+    else if(isBull) livePts = spot > shortStrike ? credit : credit - (shortStrike-spot)*0.8;
+    else livePts = Math.abs(spot-atm) < 50 ? credit : credit - (Math.abs(spot-atm)-50)*0.9;
+    if(livePts<-50) livePts=-50; if(livePts>credit) livePts=credit;
+  } else {
+    livePts = (q.change||0);
+  }
+  var liveRs = Math.round(livePts*lot);
+  var modeLabel = mode==='live' ? '● LIVE' : mode==='preopen' ? 'PRE-OPEN' : 'CLOSED';
+  var expStr = prim? (prim.expiry||'NEXT_WEEKLY') : 'NEXT_TUE';
+  if(showLiveStrat){
+    html+='<div class="card" style="border:2px solid #15803d"><div class="status" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.5rem .7rem;margin-bottom:.6rem;display:flex;justify-content:space-between;flex-wrap:wrap;gap:.4rem"><span>Spot now <strong>'+fmt(spot)+'</strong></span><span>Live P&L <strong style="color:'+(livePts>=0?'#15803d':'#dc2626')+'">'+(livePts>=0?'+':'')+livePts.toFixed(2)+' pts · ₹'+(liveRs>=0?'+':'')+liveRs.toLocaleString('en-IN')+'</strong> — updating every 60s</span><span style="color:#15803d">● LIVE</span></div><h3>AI VERDICT — TRADE · '+stratName+' <span style="font-weight:400;font-size:.8rem">(LIVE)</span></h3>'
+      +'<div class="status">Regime '+(reg.regime||'—')+' ('+(reg.confidence||0)+'%) · Bias '+(ao.directional_bias||'—')+' · ATM '+atm+' · Short '+shortStrike+' · Long '+longStrike+' · Credit '+credit+' pts · Lot '+lot+' · Expiry '+expStr+'</div>'
+      +'<div id="today-payoff-chart" style="margin-top:.6rem"></div>'
+      +'<div id="today-payoff-info" class="status" style="margin-top:.4rem"></div>'
+      +'<div class="status">Invalidation: '+(ao.invalidation||prim?.invalidation||'—')+'</div></div>';
+  } else {
+    html+='<div class="card" style="border:1px dashed #cbd5e1;background:#f8fafc"><h3>AI VERDICT — '+verdict+' · '+(verdict==='TRADE'? stratName : 'No live strategy')+' <span style="font-weight:400;font-size:.8rem">('+modeLabel+')</span></h3><div class="status">'+(mode!=='live' ? 'Live strategy resets after 15:30 — next at 9:15 IST when AI outlook generates TRADE.' : 'WAIT — no trade: AI outlook did not generate TRADE for this session.')+'</div></div>';
+  }
   body.innerHTML=html;
   setLastUpdated(nifty.last_updated,true);
+  // draw payoff chart live
+  setTimeout(function(){
+    // same payoff as backtest.html:640x190 green profit / red loss
+    var chart=document.getElementById('today-payoff-chart'), info=document.getElementById('today-payoff-info');
+    if(!chart||shortStrike==null) return;
+    var isBear=/bear/i.test(stratName), isBull=/bull/i.test(stratName), isStrangle=/strangle/i.test(stratName);
+    var credit2 = isStrangle?35:28;
+    var t={atm:atm, short_strike:shortStrike, long_strike:longStrike, points:livePts, strategy:stratName, expiry:expStr, dte:prim? (prim.dte||7):7, lot:lot, rupees:liveRs, vix:(vpx!=null?vpx:'-'), locked_price:atm, closed_price:Math.round(spot), date:new Date().toISOString().slice(0,10), strike_desc:(shortStrike+'/'+(longStrike||'-'))};
+    var atm2=t.atm, credit=credit2;
+    var callStrike=isStrangle? t.short_strike : null, putStrike=isStrangle? t.long_strike : null;
+    var beUpper=isStrangle? (callStrike+credit):null, beLower=isStrangle? (putStrike-credit):null;
+    var breakeven=isStrangle? beLower+' / '+beUpper : (isBear? t.short_strike+credit : t.short_strike-credit);
+    var ptsArr=[];
+    for(var i=-250;i<=250;i+=25){ var spt=atm2+i, p=0;
+      if(isBear) p = spt < t.short_strike ? credit : credit - (spt - t.short_strike)*0.8;
+      else if(isBull) p = spt > t.short_strike ? credit : credit - (t.short_strike - spt)*0.8;
+      else if(isStrangle) p = Math.abs(spt-atm2) < 50 ? credit : credit - (Math.abs(spt-atm2)-50)*0.9;
+      if(p<-90) p=-90; if(p>50) p=50; ptsArr.push({spot:spt, payoff:p});
+    }
+    var minP=Math.min.apply(null, ptsArr.map(function(p){return p.payoff}).concat([-50])), maxP=Math.max.apply(null, ptsArr.map(function(p){return p.payoff}).concat([40]));
+    var yZero = 150 - (0-minP)/(maxP-minP||1)*110;
+    var xShortCalc = 50 + ((t.short_strike-(atm2-250))/500)*540;
+    var html2='<svg width="640" height="190" viewBox="0 0 640 190" style="max-width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:10px"><defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#86efac" stop-opacity="0.35"/><stop offset="100%" stop-color="#86efac" stop-opacity="0.05"/></linearGradient><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fca5a5" stop-opacity="0.05"/><stop offset="100%" stop-color="#fca5a5" stop-opacity="0.35"/></linearGradient></defs>';
+    if(isStrangle){
+      var xPut = 50 + ((t.long_strike-(atm2-250))/500)*540, xCall = 50 + ((t.short_strike-(atm2-250))/500)*540;
+      var xl=Math.min(xPut,xCall), xr=Math.max(xPut,xCall);
+      html2+='<rect x="50" y="15" width="'+(xl-50)+'" height="135" fill="#fecaca" opacity="0.32"/><rect x="'+xl+'" y="15" width="'+(xr-xl)+'" height="135" fill="#86efac" opacity="0.32"/><rect x="'+xr+'" y="15" width="'+(590-xr)+'" height="135" fill="#fecaca" opacity="0.32"/>';
+    } else if(isBear){
+      html2+='<rect x="50" y="15" width="'+(xShortCalc-50)+'" height="135" fill="#86efac" opacity="0.32"/><rect x="'+xShortCalc+'" y="15" width="'+(590-xShortCalc)+'" height="135" fill="#fecaca" opacity="0.32"/>';
+    } else if(isBull){
+      html2+='<rect x="50" y="15" width="'+(xShortCalc-50)+'" height="135" fill="#fecaca" opacity="0.32"/><rect x="'+xShortCalc+'" y="15" width="'+(590-xShortCalc)+'" height="135" fill="#86efac" opacity="0.32"/>';
+    } else {
+      html2+='<rect x="50" y="15" width="540" height="'+Math.max(0,yZero-15)+'" fill="url(#pg)"/><rect x="50" y="'+yZero+'" width="540" height="'+(150-yZero)+'" fill="url(#lg)"/>';
+    }
+    for(var y=15;y<=150;y+=22) html2+='<line x1="50" x2="590" y1="'+y+'" y2="'+y+'" stroke="#f1f5f9" stroke-width="1"/>';
+    for(var x=50;x<=590;x+=54) html2+='<line x1="'+x+'" x2="'+x+'" y1="15" y2="150" stroke="#f1f5f9" stroke-width="1"/>';
+    html2+='<line x1="50" x2="590" y1="'+yZero+'" y2="'+yZero+'" stroke="#334155" stroke-width="1.2" stroke-dasharray="6 3"/><text x="555" y="'+(yZero-4)+'" text-anchor="end" font-size="9" fill="#334155" font-weight="700">0 pts</text>';
+    html2+='<polyline fill="none" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" points="';
+    ptsArr.forEach(function(p){ var x=50 + (p.spot-(atm2-250))/500*540, y=150 - (p.payoff-minP)/(maxP-minP||1)*110; html2+= x+','+y+' ';});
+    html2+='"/>';
+    var xAtm=50 + 250/500*540;
+    html2+='<line x1="'+xAtm+'" x2="'+xAtm+'" y1="15" y2="150" stroke="#eab308" stroke-width="2" stroke-dasharray="4 4"/><text x="'+xAtm+'" y="12" text-anchor="middle" font-size="9" fill="#a16207" font-weight="700">ATM '+atm2+'</text>';
+    if(isStrangle){
+      var xCall=50 + ((callStrike-(atm2-250))/500)*540, xPut=50 + ((putStrike-(atm2-250))/500)*540, xBeC=50 + ((beUpper-(atm2-250))/500)*540, xBeP=50 + ((beLower-(atm2-250))/500)*540;
+      html2+='<line x1="'+xCall+'" x2="'+xCall+'" y1="15" y2="150" stroke="#0ea5e9" stroke-width="2"/><text x="'+xCall+'" y="168" text-anchor="middle" font-size="9" fill="#0ea5e9" font-weight="700">Call '+callStrike+'</text>';
+      html2+='<line x1="'+xPut+'" x2="'+xPut+'" y1="15" y2="150" stroke="#38bdf8" stroke-width="2"/><text x="'+xPut+'" y="168" text-anchor="middle" font-size="9" fill="#0284c7" font-weight="700">Put '+putStrike+'</text>';
+      html2+='<line x1="'+xBeC+'" x2="'+xBeC+'" y1="15" y2="150" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="2 2"/><text x="'+xBeC+'" y="12" text-anchor="middle" font-size="8" fill="#8b5cf6" font-weight="700">BE '+beUpper+'</text>';
+      html2+='<line x1="'+xBeP+'" x2="'+xBeP+'" y1="15" y2="150" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="2 2"/><text x="'+xBeP+'" y="12" text-anchor="middle" font-size="8" fill="#8b5cf6" font-weight="700">BE '+beLower+'</text>';
+    } else {
+      var xShort=50 + ((t.short_strike-(atm2-250))/500)*540, xBe=50 + ((breakeven-(atm2-250))/500)*540, xLong=t.long_strike? 50 + ((t.long_strike-(atm2-250))/500)*540 : null;
+      html2+='<line x1="'+xShort+'" x2="'+xShort+'" y1="15" y2="150" stroke="#0ea5e9" stroke-width="2"/><text x="'+xShort+'" y="168" text-anchor="middle" font-size="9" fill="#0ea5e9" font-weight="700">Short '+t.short_strike+'</text>';
+      if(xLong) html2+='<line x1="'+xLong+'" x2="'+xLong+'" y1="15" y2="150" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4"/><text x="'+xLong+'" y="180" text-anchor="middle" font-size="8" fill="#0284c7">Long '+t.long_strike+'</text>';
+      html2+='<line x1="'+xBe+'" x2="'+xBe+'" y1="15" y2="150" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="2 2"/><text x="'+xBe+'" y="12" text-anchor="middle" font-size="9" fill="#8b5cf6" font-weight="700">BE '+breakeven+'</text>';
+    }
+    var xNow=50 + ((spot-(atm2-250))/500)*540, yNow=150 - (livePts-minP)/(maxP-minP||1)*110;
+    if(xNow>=50 && xNow<=590) html2+='<circle cx="'+xNow+'" cy="'+yNow+'" r="6" fill="'+(livePts>=0?'#15803d':'#dc2626')+'" stroke="#fff" stroke-width="2"/><text x="'+xNow+'" y="'+(yNow-10)+'" text-anchor="middle" font-size="10" fill="'+(livePts>=0?'#15803d':'#dc2626')+'" font-weight="800">'+(livePts>=0?'+':'')+livePts.toFixed(1)+' @'+Math.round(spot)+'</text>';
+    html2+='<text x="50" y="188" font-size="9" fill="#64748b">'+(atm2-250)+'</text><text x="590" y="188" text-anchor="end" font-size="9" fill="#64748b">'+(atm2+250)+'</text><text x="320" y="188" text-anchor="middle" font-size="9" fill="#334155" font-weight="700">Nifty Spot at Expiry →</text><text x="15" y="80" text-anchor="middle" font-size="9" fill="#334155" font-weight="700" transform="rotate(-90 15 80)">P&L (pts)</text></svg>';
+    html2+='<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;font-size:.78rem;color:#475569"><span style="background:#dcfce7;color:#065f46;padding:.2rem .5rem;border-radius:999px">● Profit zone green</span><span style="background:#fee2e2;color:#7f1d1d;padding:.2rem .5rem;border-radius:999px">● Loss zone red</span> — hold to expiry, close intraday 15:20 shown</div>';
+    chart.innerHTML=html2;
+    if(info) info.innerHTML = isStrangle? '<span style="color:#15803d">● Green '+putStrike+'–'+callStrike+' = profit</span> · <span style="color:#dc2626">● Red <'+beLower+' / >'+beUpper+' = loss</span> — Short Strangle net 35 pts · 100 pts width · Lot '+lot+' ₹'+liveRs+' · VIX '+(vpx!=null?vpx:'-') : '<span style="color:#15803d">● Green '+(isBear?'below short':'above short')+' = profit</span> · <span style="color:#dc2626">● Red beyond = loss</span> — Net credit '+credit+' pts · Lot '+lot+' ₹'+liveRs+' · VIX '+(vpx!=null?vpx:'-');
+  },50);
   function strategyFallback(){var s=((nifty.strategy||{}).strategies||[])[0];return s?(s.strategy||'N/A'): 'N/A';}
 }
 document.addEventListener('DOMContentLoaded',function(){loadToday();setInterval(loadToday,60000);});
