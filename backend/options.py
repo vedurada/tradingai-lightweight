@@ -467,6 +467,196 @@ class OptionsEngine:
             "strikes": strike_data,
         }
 
+    def compute_confirmation(self, market_bias: str, market_confidence: int,
+                             options_bias: str, options_confidence: int,
+                             pcr_value: float = None, max_pain_strike: float = None,
+                             spot: float = None, expected_move_points: float = None,
+                             oi_concentration: dict = None) -> dict[str, Any]:
+        reasons = []
+        data_quality = "LIVE"
+
+        if market_bias is None and options_bias is None:
+            return {
+                "confirmation": {
+                    "status": "UNAVAILABLE",
+                    "market_bias": market_bias,
+                    "options_bias": options_bias,
+                    "market_confidence": market_confidence,
+                    "options_confidence": options_confidence,
+                    "reasons": ["Both market and options data unavailable"],
+                    "data_quality": "UNAVAILABLE",
+                }
+            }
+
+        directional_market = market_bias in ("BULLISH", "BEARISH") if market_bias else False
+        directional_options = options_bias in ("BULLISH", "BEARISH") if options_bias else False
+
+        if not directional_market and not directional_options:
+            return {
+                "confirmation": {
+                    "status": "NEUTRAL",
+                    "market_bias": market_bias,
+                    "options_bias": options_bias,
+                    "market_confidence": market_confidence,
+                    "options_confidence": options_confidence,
+                    "reasons": ["Neither market nor options side has sufficient directional evidence"],
+                    "data_quality": data_quality,
+                }
+            }
+
+        if not directional_options:
+            return {
+                "confirmation": {
+                    "status": "UNAVAILABLE" if options_bias is None else "PARTIAL CONFIRMATION",
+                    "market_bias": market_bias,
+                    "options_bias": options_bias,
+                    "market_confidence": market_confidence,
+                    "options_confidence": options_confidence,
+                    "reasons": (["Options data unavailable, cannot confirm market view"]
+                                if options_bias is None
+                                else ["Options view is NEUTRAL, market view directional but not confirmed"]),
+                    "data_quality": data_quality,
+                }
+            }
+
+        if not directional_market:
+            return {
+                "confirmation": {
+                    "status": "PARTIAL CONFIRMATION",
+                    "market_bias": market_bias,
+                    "options_bias": options_bias,
+                    "market_confidence": market_confidence,
+                    "options_confidence": options_confidence,
+                    "reasons": ["Market view is NEUTRAL, options view directional but not confirmed"],
+                    "data_quality": data_quality,
+                }
+            }
+
+        mkt = market_bias.upper()
+        opt = options_bias.upper()
+
+        if mkt == opt:
+            agreement_strength = min(market_confidence, options_confidence) / 100
+            status = "CONFIRMED" if agreement_strength >= 0.6 else "PARTIAL CONFIRMATION"
+            if status == "CONFIRMED":
+                reasons.append(f"Market {mkt} (confidence {market_confidence}/100) aligns with options {opt} (confidence {options_confidence}/100)")
+            else:
+                reasons.append(f"Market {mkt} and options {opt} agree but confidence is moderate ({market_confidence}/{options_confidence})")
+        else:
+            status = "DIVERGENCE"
+            reasons.append(f"Market {mkt} (confidence {market_confidence}/100) diverges from options {opt} (confidence {options_confidence}/100)")
+
+        if pcr_value is not None and pcr_value > 0:
+            if pcr_value > 1.5:
+                reasons.append(f"PCR {pcr_value:.2f} indicates put-dominated positioning")
+            elif pcr_value < 0.7:
+                reasons.append(f"PCR {pcr_value:.2f} indicates call-dominated positioning")
+            else:
+                reasons.append(f"PCR {pcr_value:.2f} indicates balanced positioning")
+
+        if max_pain_strike is not None and spot and spot > 0:
+            distance = (max_pain_strike - spot) / spot * 100
+            if abs(distance) < 1:
+                reasons.append(f"Max Pain {max_pain_strike} near spot {spot:.2f} (within 1%)")
+            elif distance > 0:
+                reasons.append(f"Max Pain {max_pain_strike} is {distance:.1f}% above spot {spot:.2f}")
+            else:
+                reasons.append(f"Max Pain {max_pain_strike} is {abs(distance):.1f}% below spot {spot:.2f}")
+
+        if expected_move_points is not None and isinstance(expected_move_points, (int, float)) and expected_move_points > 0:
+            reasons.append(f"Options implied expected move ±{expected_move_points:.0f} points")
+
+        if oi_concentration:
+            top_call = oi_concentration.get("highest_call_oi")
+            top_put = oi_concentration.get("highest_put_oi")
+            if top_call and top_call.get("pct_of_call_oi", 0) >= 30:
+                reasons.append(f"Call OI concentrated at strike {top_call['strike']} ({top_call['pct_of_call_oi']:.1f}% of total)")
+            if top_put and top_put.get("pct_of_put_oi", 0) >= 30:
+                reasons.append(f"Put OI concentrated at strike {top_put['strike']} ({top_put['pct_of_put_oi']:.1f}% of total)")
+
+        return {
+            "confirmation": {
+                "status": status,
+                "market_bias": market_bias,
+                "options_bias": options_bias,
+                "market_confidence": market_confidence,
+                "options_confidence": options_confidence,
+                "reasons": reasons,
+                "data_quality": data_quality,
+            }
+        }
+
+    def derive_options_bias(self, max_pain_strike: float, spot: float, pcr_value: float = None,
+                            oi_concentration: dict = None) -> dict[str, Any]:
+        if max_pain_strike is None or spot is None or spot <= 0:
+            return {
+                "options_bias": None,
+                "options_confidence": 0,
+                "data_quality": "DATA TEMPORARILY UNAVAILABLE",
+                "reasons": ["Max Pain or spot unavailable, cannot derive options bias"],
+            }
+
+        score = 0.0
+        reasons = []
+        signals = 0
+
+        distance_pct = (max_pain_strike - spot) / spot * 100
+        signals += 1
+        if abs(distance_pct) < 1:
+            score += 0
+            reasons.append(f"Max Pain {max_pain_strike} near spot {spot:.0f} — neutral positioning")
+        elif distance_pct > 0:
+            score -= min(distance_pct / 5, 1)
+            reasons.append(f"Max Pain {max_pain_strike} {distance_pct:.1f}% above spot → bearish lean")
+        else:
+            score += min(abs(distance_pct) / 5, 1)
+            reasons.append(f"Max Pain {max_pain_strike} {abs(distance_pct):.1f}% below spot → bullish lean")
+
+        if pcr_value is not None and pcr_value > 0:
+            signals += 1
+            if pcr_value > 1.5:
+                score -= 0.5
+                reasons.append(f"PCR {pcr_value:.2f} put-dominated → bearish")
+            elif pcr_value < 0.7:
+                score += 0.5
+                reasons.append(f"PCR {pcr_value:.2f} call-dominated → bullish")
+            else:
+                reasons.append(f"PCR {pcr_value:.2f} balanced")
+
+        if oi_concentration:
+            top_call = oi_concentration.get("highest_call_oi")
+            top_put = oi_concentration.get("highest_put_oi")
+            if top_call and top_put:
+                signals += 1
+                call_pct = top_call.get("pct_of_call_oi", 0)
+                put_pct = top_put.get("pct_of_put_oi", 0)
+                if call_pct >= put_pct * 1.5:
+                    score += 0.5
+                    reasons.append(f"Call concentration ({call_pct:.1f}%) exceeds put ({put_pct:.1f}%) → bullish")
+                elif put_pct >= call_pct * 1.5:
+                    score -= 0.5
+                    reasons.append(f"Put concentration ({put_pct:.1f}%) exceeds call ({call_pct:.1f}%) → bearish")
+
+        if score > 0.5:
+            bias = "BULLISH"
+        elif score < -0.5:
+            bias = "BEARISH"
+        else:
+            bias = "NEUTRAL"
+
+        if signals == 0:
+            confidence = 0
+        else:
+            confidence = round(abs(score) / signals * 100 + 30, 0)
+            confidence = max(10, min(100, confidence))
+
+        return {
+            "options_bias": bias,
+            "options_confidence": int(confidence),
+            "data_quality": "LIVE",
+            "reasons": reasons,
+        }
+
     def analyze_options(self, chain: Optional[dict], underlying_price: float) -> dict[str, Any]:
         if not chain:
             return {"data_unavailable": True, "message": "Options data unavailable"}

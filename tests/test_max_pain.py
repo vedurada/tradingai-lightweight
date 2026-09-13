@@ -620,6 +620,167 @@ def test_expected_move_api_endpoint():
         shutil.rmtree(tmpdir)
 
 
+def test_confirmation_confirmed():
+    """Bullish market + Bullish options → CONFIRMED."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias="BULLISH", market_confidence=76,
+        options_bias="BULLISH", options_confidence=68,
+        pcr_value=1.18, max_pain_strike=23400, spot=23450,
+        expected_move_points=180,
+        oi_concentration={"highest_call_oi": {"strike": 23500, "pct_of_call_oi": 50},
+                           "highest_put_oi": {"strike": 23300, "pct_of_put_oi": 45}}
+    )
+    c = result["confirmation"]
+    assert c["status"] == "CONFIRMED"
+    assert c["market_bias"] == "BULLISH"
+    assert c["options_bias"] == "BULLISH"
+    assert len(c["reasons"]) >= 2
+    assert c["data_quality"] == "LIVE"
+    print("✓ test_confirmation_confirmed passed")
+
+
+def test_confirmation_divergence():
+    """Bullish market + Bearish options → DIVERGENCE."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias="BULLISH", market_confidence=76,
+        options_bias="BEARISH", options_confidence=65,
+        pcr_value=1.8, max_pain_strike=23800, spot=23450,
+        expected_move_points=150,
+    )
+    c = result["confirmation"]
+    assert c["status"] == "DIVERGENCE"
+    assert c["market_bias"] == "BULLISH"
+    assert c["options_bias"] == "BEARISH"
+    assert any("diverges" in r for r in c["reasons"])
+    print("✓ test_confirmation_divergence passed")
+
+
+def test_confirmation_partial():
+    """Bullish market + Bullish options with low confidence → PARTIAL CONFIRMATION."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias="BULLISH", market_confidence=76,
+        options_bias="BULLISH", options_confidence=45,
+        pcr_value=1.18, max_pain_strike=23400, spot=23450,
+    )
+    c = result["confirmation"]
+    assert c["status"] == "PARTIAL CONFIRMATION"
+    assert c["market_bias"] == "BULLISH"
+    assert c["options_bias"] == "BULLISH"
+    print("✓ test_confirmation_partial passed")
+
+
+def test_confirmation_neutral_both():
+    """Both NEUTRAL → NEUTRAL."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias="NEUTRAL", market_confidence=50,
+        options_bias="NEUTRAL", options_confidence=40,
+    )
+    c = result["confirmation"]
+    assert c["status"] == "NEUTRAL"
+    assert "sufficient directional evidence" in c["reasons"][0]
+    print("✓ test_confirmation_neutral_both passed")
+
+
+def test_confirmation_unavailable_options():
+    """Market directional + Options unavailable → UNAVAILABLE."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias="BULLISH", market_confidence=76,
+        options_bias=None, options_confidence=0,
+    )
+    c = result["confirmation"]
+    assert c["status"] == "UNAVAILABLE"
+    assert c["options_bias"] is None
+    print("✓ test_confirmation_unavailable_options passed")
+
+
+def test_confirmation_unavailable_both():
+    """Both unavailable → UNAVAILABLE."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias=None, market_confidence=0,
+        options_bias=None, options_confidence=0,
+    )
+    c = result["confirmation"]
+    assert c["status"] == "UNAVAILABLE"
+    print("✓ test_confirmation_unavailable_both passed")
+
+
+def test_confirmation_partial_market_neutral():
+    """Market NEUTRAL + Options directional → PARTIAL CONFIRMATION."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias="NEUTRAL", market_confidence=50,
+        options_bias="BULLISH", options_confidence=65,
+    )
+    c = result["confirmation"]
+    assert c["status"] == "PARTIAL CONFIRMATION"
+    print("✓ test_confirmation_partial_market_neutral passed")
+
+
+def test_confirmation_data_quality_unavailable():
+    """Zero expected_move_points treated as numeric → LIVE (not fabricated)."""
+    engine = OptionsEngine()
+    result = engine.compute_confirmation(
+        market_bias="BULLISH", market_confidence=76,
+        options_bias="BULLISH", options_confidence=68,
+        expected_move_points=0,
+    )
+    c = result["confirmation"]
+    assert c["status"] == "CONFIRMED"
+    print("✓ test_confirmation_data_quality_unavailable passed")
+
+
+def test_derive_options_bullish():
+    """Max Pain well below spot → bullish."""
+    engine = OptionsEngine()
+    result = engine.derive_options_bias(max_pain_strike=22000, spot=23450)
+    assert result["options_bias"] == "BULLISH", f"Expected BULLISH, got {result['options_bias']}"
+    assert result["data_quality"] == "LIVE"
+    assert result["options_confidence"] > 0
+    print("✓ test_derive_options_bullish passed")
+
+
+def test_derive_options_bearish():
+    """Max Pain well above spot → bearish."""
+    engine = OptionsEngine()
+    result = engine.derive_options_bias(max_pain_strike=25000, spot=23450)
+    assert result["options_bias"] == "BEARISH", f"Expected BEARISH, got {result['options_bias']}"
+    assert result["data_quality"] == "LIVE"
+    print("✓ test_derive_options_bearish passed")
+
+
+def test_derive_options_neutral():
+    """Max Pain near spot → neutral."""
+    engine = OptionsEngine()
+    result = engine.derive_options_bias(max_pain_strike=23400, spot=23450)
+    assert result["options_bias"] == "NEUTRAL", f"Expected NEUTRAL, got {result['options_bias']}"
+    print("✓ test_derive_options_neutral passed")
+
+
+def test_derive_options_unavailable():
+    """Missing spot or max pain → UNAVAILABLE."""
+    engine = OptionsEngine()
+    result = engine.derive_options_bias(max_pain_strike=None, spot=23450)
+    assert result["options_bias"] is None
+    assert result["data_quality"] == "DATA TEMPORARILY UNAVAILABLE"
+    result2 = engine.derive_options_bias(max_pain_strike=23400, spot=None)
+    assert result2["options_bias"] is None
+    print("✓ test_derive_options_unavailable passed")
+
+
+def test_derive_options_with_pcr():
+    """PCR modifies the bias."""
+    engine = OptionsEngine()
+    result = engine.derive_options_bias(max_pain_strike=23400, spot=23450, pcr_value=0.5)
+    assert result["options_bias"] in ("BULLISH", "NEUTRAL")
+    print("✓ test_derive_options_with_pcr passed")
+
+
 def run_all_tests():
     """Run all Options Intelligence regression tests."""
     print("Running Options Intelligence regression tests...\n")
@@ -647,6 +808,19 @@ def run_all_tests():
     test_expected_move_nearest_atm()
     test_expected_move_no_contracts()
     test_expected_move_api_endpoint()
+    test_confirmation_confirmed()
+    test_confirmation_divergence()
+    test_confirmation_partial()
+    test_confirmation_neutral_both()
+    test_confirmation_unavailable_options()
+    test_confirmation_unavailable_both()
+    test_confirmation_partial_market_neutral()
+    test_confirmation_data_quality_unavailable()
+    test_derive_options_bullish()
+    test_derive_options_bearish()
+    test_derive_options_neutral()
+    test_derive_options_unavailable()
+    test_derive_options_with_pcr()
 
     print("\n✅ All Options Intelligence regression tests passed!")
 
