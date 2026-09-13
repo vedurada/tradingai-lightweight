@@ -391,6 +391,235 @@ def test_api_oi_concentration_endpoint():
         shutil.rmtree(tmpdir)
 
 
+def test_expected_move_valid():
+    """Valid ATM CE + PE with known spot and expiry."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "change_in_oi": 500, "implied_volatility": 20.0},
+        {"strike": 105, "option_type": "CE", "open_interest": 3000, "change_in_oi": 300, "implied_volatility": 22.0},
+        {"strike": 100, "option_type": "PE", "open_interest": 4000, "change_in_oi": -100, "implied_volatility": 18.0},
+        {"strike": 105, "option_type": "PE", "open_interest": 6000, "change_in_oi": 400, "implied_volatility": 21.0},
+    ]
+    engine = OptionsEngine()
+    from datetime import datetime, timezone
+    from datetime import date as date_cls
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    result = engine.compute_expected_move(contracts, 100.0, expiry)
+    em = result["expected_move"]
+
+    assert em["type"] == "options_implied"
+    assert em["atm_strike"] == 100, f"Expected ATM 100, got {em['atm_strike']}"
+    assert em["data_quality"] == "LIVE"
+
+    # Manual verification
+    dte = (future - today).days
+    expected_iv = (20.0 + 18.0) / 2  # avg of CE ATM 20.0 and PE ATM 18.0
+    expected_points = expected_iv / 100 * (dte / 365) ** 0.5 * 100.0
+    expected_points = round(expected_points, 2)
+    assert em["points"] == expected_points, f"Expected {expected_points} points, got {em['points']}"
+    assert em["lower"] == round(100.0 - expected_points, 2)
+    assert em["upper"] == round(100.0 + expected_points, 2)
+    assert "IV" in em["methodology"]
+    assert "sqrt" in em["methodology"] or "DTE" in em["methodology"]
+    assert expiry in em["expiry"] or em["expiry"] == expiry
+    print("✓ test_expected_move_valid passed")
+
+
+def test_expected_move_missing_ce():
+    """Only PE available."""
+    contracts = [
+        {"strike": 100, "option_type": "PE", "open_interest": 4000, "implied_volatility": 18.0},
+        {"strike": 105, "option_type": "PE", "open_interest": 6000, "implied_volatility": 21.0},
+    ]
+    engine = OptionsEngine()
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    result = engine.compute_expected_move(contracts, 102.0, expiry)
+    em = result["expected_move"]
+    assert em["atm_strike"] == 100, f"Nearest PE to 102 is 100, got {em['atm_strike']}"
+    assert em["data_quality"] == "LIVE"
+    assert em["type"] == "options_implied"
+    print("✓ test_expected_move_missing_ce passed")
+
+
+def test_expected_move_missing_pe():
+    """Only CE available."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "implied_volatility": 20.0},
+        {"strike": 105, "option_type": "CE", "open_interest": 3000, "implied_volatility": 22.0},
+    ]
+    engine = OptionsEngine()
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    result = engine.compute_expected_move(contracts, 103.0, expiry)
+    em = result["expected_move"]
+    assert em["atm_strike"] == 105, f"Nearest CE to 103 is 105, got {em['atm_strike']}"
+    assert em["data_quality"] == "LIVE"
+    print("✓ test_expected_move_missing_pe passed")
+
+
+def test_expected_move_missing_iv():
+    """No IV available."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "implied_volatility": 0},
+        {"strike": 100, "option_type": "PE", "open_interest": 4000, "implied_volatility": None},
+    ]
+    engine = OptionsEngine()
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    result = engine.compute_expected_move(contracts, 100.0, expiry)
+    em = result["expected_move"]
+    assert em["points"] == "DATA TEMPORARILY UNAVAILABLE"
+    assert em["data_quality"] == "DATA TEMPORARILY UNAVAILABLE"
+    assert em["atm_strike"] == 100
+    print("✓ test_expected_move_missing_iv passed")
+
+
+def test_expected_move_invalid_iv():
+    """Negative IV."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "implied_volatility": -5.0},
+        {"strike": 100, "option_type": "PE", "open_interest": 4000, "implied_volatility": -2.0},
+    ]
+    engine = OptionsEngine()
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    result = engine.compute_expected_move(contracts, 100.0, expiry)
+    em = result["expected_move"]
+    assert em["points"] == "DATA TEMPORARILY UNAVAILABLE"
+    assert em["data_quality"] == "DATA TEMPORARILY UNAVAILABLE"
+    print("✓ test_expected_move_invalid_iv passed")
+
+
+def test_expected_move_zero_spot():
+    """Zero spot price."""
+    contracts = [
+        {"strike": 100, "option_type": "CE", "open_interest": 5000, "implied_volatility": 20.0},
+    ]
+    engine = OptionsEngine()
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    result = engine.compute_expected_move(contracts, 0, expiry)
+    em = result["expected_move"]
+    assert em["points"] == "DATA TEMPORARILY UNAVAILABLE"
+    assert em["data_quality"] == "DATA TEMPORARILY UNAVAILABLE"
+    print("✓ test_expected_move_zero_spot passed")
+
+
+def test_expected_move_nearest_atm():
+    """ATM strike selection picks nearest strike to spot."""
+    contracts = [
+        {"strike": 90, "option_type": "CE", "open_interest": 1000, "implied_volatility": 15.0},
+        {"strike": 95, "option_type": "CE", "open_interest": 2000, "implied_volatility": 16.0},
+        {"strike": 100, "option_type": "CE", "open_interest": 3000, "implied_volatility": 18.0},
+        {"strike": 105, "option_type": "CE", "open_interest": 2500, "implied_volatility": 17.0},
+        {"strike": 110, "option_type": "CE", "open_interest": 1500, "implied_volatility": 19.0},
+    ]
+    engine = OptionsEngine()
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    result = engine.compute_expected_move(contracts, 98.0, expiry)
+    em = result["expected_move"]
+    # Nearest to 98 is 95 (dist 3) vs 100 (dist 2) → 100 is nearest
+    assert em["atm_strike"] == 100, f"Expected 100, got {em['atm_strike']}"
+    print("✓ test_expected_move_nearest_atm passed")
+
+
+def test_expected_move_no_contracts():
+    """Empty contracts list."""
+    engine = OptionsEngine()
+    result = engine.compute_expected_move([], 100.0, "2026-12-25")
+    em = result["expected_move"]
+    assert em["points"] == "DATA TEMPORARILY UNAVAILABLE"
+    assert em["data_quality"] == "DATA TEMPORARILY UNAVAILABLE"
+    print("✓ test_expected_move_no_contracts passed")
+
+
+def test_expected_move_api_endpoint():
+    """Test /api/expected-move endpoint with temporary DB."""
+    import tempfile, shutil
+    from backend.api_server import app, DB_PATH as _db_path
+
+    tmpdir = tempfile.mkdtemp()
+    tmpdb = os.path.join(tmpdir, "test.db")
+
+    conn = sqlite3.connect(tmpdb)
+    conn.execute("""CREATE TABLE IF NOT EXISTS option_chain (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT, expiry TEXT, strike REAL,
+        option_type TEXT, open_interest INTEGER, change_in_oi INTEGER,
+        implied_volatility REAL, bid REAL, ask REAL, last_price REAL,
+        bid_size INTEGER, ask_size INTEGER, fetched_at TEXT,
+        UNIQUE(symbol, expiry, strike, option_type))""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS live_quotes (
+        symbol TEXT PRIMARY KEY, price REAL, timestamp TEXT)""")
+    conn.execute("INSERT INTO live_quotes VALUES ('NIFTY', 23400.0, '2026-09-13T10:00:00')")
+
+    from datetime import datetime, timezone
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    chain_data = [
+        ("NIFTY", expiry, 23300, "CE", 5000, 500, 14.0),
+        ("NIFTY", expiry, 23400, "CE", 8000, 800, 15.0),
+        ("NIFTY", expiry, 23500, "CE", 6000, 600, 16.0),
+        ("NIFTY", expiry, 23300, "PE", 4000, -100, 13.0),
+        ("NIFTY", expiry, 23400, "PE", 7000, 700, 14.5),
+        ("NIFTY", expiry, 23500, "PE", 5000, 500, 15.5),
+    ]
+    for row in chain_data:
+        conn.execute(
+            "INSERT OR REPLACE INTO option_chain (symbol, expiry, strike, option_type, open_interest, change_in_oi, implied_volatility, fetched_at) VALUES (?,?,?,?,?,?,?,?)",
+            (*row, "2026-09-13T10:00:00"))
+    conn.commit()
+    conn.close()
+
+    import backend.api_server as api_mod
+    orig = api_mod.DB_PATH
+    try:
+        api_mod.DB_PATH = tmpdb
+        with app.test_client() as c:
+            resp = c.get('/api/expected-move/NIFTY')
+            assert resp.status_code == 200
+            data = resp.get_json()
+
+        assert data["symbol"] == "NIFTY"
+        assert data["spot"] == 23400.0
+        assert expiry in data["expected_moves"]
+        em = data["expected_moves"][expiry]
+        assert em["type"] == "options_implied"
+        assert em["data_quality"] == "LIVE"
+        # ATM strike should be 23400 (nearest to 23400)
+        assert em["atm_strike"] == 23400, f"Expected 23400, got {em['atm_strike']}"
+        assert em["points"] > 0, f"Expected positive points, got {em['points']}"
+        assert em["lower"] < 23400, f"Expected lower < 23400, got {em['lower']}"
+        assert em["upper"] > 23400, f"Expected upper > 23400, got {em['upper']}"
+        print("✓ test_expected_move_api_endpoint passed")
+    finally:
+        api_mod.DB_PATH = orig
+        shutil.rmtree(tmpdir)
+
+
 def run_all_tests():
     """Run all Options Intelligence regression tests."""
     print("Running Options Intelligence regression tests...\n")
@@ -409,6 +638,15 @@ def run_all_tests():
     test_oi_concentration_mixed_change()
     test_oi_concentration_single_strike()
     test_api_oi_concentration_endpoint()
+    test_expected_move_valid()
+    test_expected_move_missing_ce()
+    test_expected_move_missing_pe()
+    test_expected_move_missing_iv()
+    test_expected_move_invalid_iv()
+    test_expected_move_zero_spot()
+    test_expected_move_nearest_atm()
+    test_expected_move_no_contracts()
+    test_expected_move_api_endpoint()
 
     print("\n✅ All Options Intelligence regression tests passed!")
 

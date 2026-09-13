@@ -98,6 +98,247 @@ class OptionsEngine:
         avg_iv = sum(ivs) / len(ivs)
         return {"avg_iv": round(avg_iv, 2), "min_iv": round(min(ivs), 2), "max_iv": round(max(ivs), 2), "iv_rank": round(((avg_iv - min(ivs)) / (max(ivs) - min(ivs)) * 100) if max(ivs) > min(ivs) else 50, 1)}
 
+    def compute_expected_move(self, contracts: list[dict], underlying_price: float, expiry: str) -> dict[str, Any]:
+        if not contracts or underlying_price <= 0 or not expiry:
+            return {
+                "expected_move": {
+                    "type": None,
+                    "points": "DATA TEMPORARILY UNAVAILABLE",
+                    "lower": "DATA TEMPORARILY UNAVAILABLE",
+                    "upper": "DATA TEMPORARILY UNAVAILABLE",
+                    "methodology": None,
+                    "expiry": expiry,
+                    "atm_strike": None,
+                    "data_quality": "DATA TEMPORARILY UNAVAILABLE",
+                }
+            }
+
+        ce_atm_iv = None
+        pe_atm_iv = None
+        atm_strike = None
+
+        ce_contracts = [c for c in contracts if c.get("option_type") == "CE" and c.get("strike", 0) > 0]
+        pe_contracts = [c for c in contracts if c.get("option_type") == "PE" and c.get("strike", 0) > 0]
+
+        if ce_contracts:
+            atm_ce = min(ce_contracts, key=lambda c: abs(c["strike"] - underlying_price))
+            atm_strike = atm_ce["strike"]
+            ce_atm_iv = atm_ce.get("implied_volatility")
+            if ce_atm_iv is not None and ce_atm_iv <= 0:
+                ce_atm_iv = None
+
+        if pe_contracts:
+            atm_pe = min(pe_contracts, key=lambda c: abs(c["strike"] - underlying_price))
+            if atm_strike is None or abs(atm_pe["strike"] - underlying_price) < abs(atm_strike - underlying_price):
+                atm_strike = atm_pe["strike"]
+            pe_atm_iv = atm_pe.get("implied_volatility")
+            if pe_atm_iv is not None and pe_atm_iv <= 0:
+                pe_atm_iv = None
+
+        if atm_strike is None:
+            return {
+                "expected_move": {
+                    "type": "options_implied",
+                    "points": "DATA TEMPORARILY UNAVAILABLE",
+                    "lower": "DATA TEMPORARILY UNAVAILABLE",
+                    "upper": "DATA TEMPORARILY UNAVAILABLE",
+                    "methodology": "ATF strike could not be determined from available option chain",
+                    "expiry": expiry,
+                    "atm_strike": None,
+                    "data_quality": "DATA TEMPORARILY UNAVAILABLE",
+                }
+            }
+
+        atm_iv = None
+        if ce_atm_iv is not None and pe_atm_iv is not None:
+            atm_iv = (ce_atm_iv + pe_atm_iv) / 2
+        elif ce_atm_iv is not None:
+            atm_iv = ce_atm_iv
+        elif pe_atm_iv is not None:
+            atm_iv = pe_atm_iv
+
+        if atm_iv is None or atm_iv <= 0:
+            return {
+                "expected_move": {
+                    "type": "options_implied",
+                    "points": "DATA TEMPORARILY UNAVAILABLE",
+                    "lower": "DATA TEMPORARILY UNAVAILABLE",
+                    "upper": "DATA TEMPORARILY UNAVAILABLE",
+                    "methodology": "ATM implied volatility unavailable for expected move calculation",
+                    "expiry": expiry,
+                    "atm_strike": atm_strike,
+                    "data_quality": "DATA TEMPORARILY UNAVAILABLE",
+                }
+            }
+
+        from datetime import datetime as _dt, timezone as _tz
+        try:
+            expiry_date = _dt.strptime(str(expiry), "%Y-%m-%d")
+        except Exception:
+            expiry_date = _dt.strptime(str(expiry), "%d-%b-%Y")
+        today = _dt.now(_tz.utc).date()
+        if isinstance(expiry_date, datetime):
+            expiry_date = expiry_date.date()
+        dte = (expiry_date - today).days
+
+        if dte <= 0:
+            return {
+                "expected_move": {
+                    "type": "options_implied",
+                    "points": "DATA TEMPORARILY UNAVAILABLE",
+                    "lower": "DATA TEMPORARILY UNAVAILABLE",
+                    "upper": "DATA TEMPORARILY UNAVAILABLE",
+                    "methodology": "Expiry date is today or in the past; cannot compute time decay",
+                    "expiry": expiry,
+                    "atm_strike": atm_strike,
+                    "data_quality": "DATA TEMPORARILY UNAVAILABLE",
+                }
+            }
+
+        expected_points = atm_iv / 100 * (dte / 365) ** 0.5 * underlying_price
+        expected_points = round(expected_points, 2)
+        lower = round(underlying_price - expected_points, 2)
+        upper = round(underlying_price + expected_points, 2)
+
+        return {
+            "expected_move": {
+                "type": "options_implied",
+                "points": expected_points,
+                "lower": lower,
+                "upper": upper,
+                "methodology": "ATM IV × sqrt(DTE/365) × Spot Price (1 standard deviation expected move)",
+                "expiry": expiry,
+                "atm_strike": atm_strike,
+                "data_quality": "LIVE",
+            }
+        }
+        if not contracts:
+            return {
+                "call_oi": 0, "put_oi": 0, "total_oi": 0,
+                "call_oi_change": "DATA TEMPORARILY UNAVAILABLE",
+                "put_oi_change": "DATA TEMPORARILY UNAVAILABLE",
+                "oi_change_available": False,
+                "highest_call_oi": None,
+                "highest_put_oi": None,
+                "oi_concentration": {},
+                "major_call_zones": [],
+                "major_put_zones": [],
+                "strikes": [],
+            }
+
+        call_oi_by_strike = {}
+        put_oi_by_strike = {}
+        call_oi_change_by_strike = {}
+        put_oi_change_by_strike = {}
+        for c in contracts:
+            strike = c.get("strike", 0)
+            oi = c.get("open_interest", 0)
+            opt_type = c.get("option_type", "")
+            coi = c.get("change_in_oi", 0)
+            if strike <= 0:
+                continue
+            if opt_type == "CE":
+                call_oi_by_strike[strike] = call_oi_by_strike.get(strike, 0) + oi
+                call_oi_change_by_strike[strike] = call_oi_change_by_strike.get(strike, 0) + coi
+            elif opt_type == "PE":
+                put_oi_by_strike[strike] = put_oi_by_strike.get(strike, 0) + oi
+                put_oi_change_by_strike[strike] = put_oi_change_by_strike.get(strike, 0) + coi
+
+        call_oi = sum(call_oi_by_strike.values())
+        put_oi = sum(put_oi_by_strike.values())
+        total_oi = call_oi + put_oi
+
+        all_strikes = sorted(set(list(call_oi_by_strike.keys()) + list(put_oi_by_strike.keys())))
+
+        all_change = list(call_oi_change_by_strike.values()) + list(put_oi_change_by_strike.values())
+        oi_change_available = any(c > 0 for c in all_change) if all_change else False
+
+        call_oi_change = "DATA TEMPORARILY UNAVAILABLE"
+        put_oi_change = "DATA TEMPORARILY UNAVAILABLE"
+        if oi_change_available:
+            call_oi_change = sum(v for v in call_oi_change_by_strike.values() if v > 0) or 0
+            put_oi_change = sum(v for v in put_oi_change_by_strike.values() if v > 0) or 0
+
+        highest_call = None
+        if call_oi_by_strike:
+            top_strike = max(call_oi_by_strike, key=call_oi_by_strike.get)
+            highest_call = {
+                "strike": top_strike,
+                "oi": call_oi_by_strike[top_strike],
+                "pct_of_call_oi": round(call_oi_by_strike[top_strike] / call_oi * 100, 2) if call_oi else 0,
+            }
+
+        highest_put = None
+        if put_oi_by_strike:
+            top_strike = max(put_oi_by_strike, key=put_oi_by_strike.get)
+            highest_put = {
+                "strike": top_strike,
+                "oi": put_oi_by_strike[top_strike],
+                "pct_of_put_oi": round(put_oi_by_strike[top_strike] / put_oi * 100, 2) if put_oi else 0,
+            }
+
+        top_call_pct = round(max(call_oi_by_strike.values()) / call_oi * 100, 2) if call_oi else 0
+        top_put_pct = round(max(put_oi_by_strike.values()) / put_oi * 100, 2) if put_oi else 0
+
+        top3_call_strikes = sorted(call_oi_by_strike, key=call_oi_by_strike.get, reverse=True)[:3]
+        top3_call_total = sum(call_oi_by_strike[s] for s in top3_call_strikes)
+        top3_call_pct = round(top3_call_total / call_oi * 100, 2) if call_oi else 0
+
+        top3_put_strikes = sorted(put_oi_by_strike, key=put_oi_by_strike.get, reverse=True)[:3]
+        top3_put_total = sum(put_oi_by_strike[s] for s in top3_put_strikes)
+        top3_put_pct = round(top3_put_total / put_oi * 100, 2) if put_oi else 0
+
+        major_call_zones = []
+        if call_oi > 0:
+            for strike in sorted(call_oi_by_strike, key=call_oi_by_strike.get, reverse=True):
+                pct = call_oi_by_strike[strike] / call_oi * 100
+                if pct >= 10:
+                    major_call_zones.append({"strike": strike, "oi": call_oi_by_strike[strike], "pct": round(pct, 2)})
+                else:
+                    break
+
+        major_put_zones = []
+        if put_oi > 0:
+            for strike in sorted(put_oi_by_strike, key=put_oi_by_strike.get, reverse=True):
+                pct = put_oi_by_strike[strike] / put_oi * 100
+                if pct >= 10:
+                    major_put_zones.append({"strike": strike, "oi": put_oi_by_strike[strike], "pct": round(pct, 2)})
+                else:
+                    break
+
+        strike_data = []
+        for strike in all_strikes:
+            co = call_oi_by_strike.get(strike, 0)
+            po = put_oi_by_strike.get(strike, 0)
+            strike_data.append({
+                "strike": strike,
+                "call_oi": co,
+                "put_oi": po,
+                "total_oi": co + po,
+                "call_pct": round(co / call_oi * 100, 2) if call_oi else 0,
+                "put_pct": round(po / put_oi * 100, 2) if put_oi else 0,
+            })
+
+        return {
+            "call_oi": call_oi,
+            "put_oi": put_oi,
+            "total_oi": total_oi,
+            "call_oi_change": call_oi_change,
+            "put_oi_change": put_oi_change,
+            "oi_change_available": oi_change_available,
+            "highest_call_oi": highest_call,
+            "highest_put_oi": highest_put,
+            "oi_concentration": {
+                "top_call_strike_pct": top_call_pct,
+                "top_put_strike_pct": top_put_pct,
+                "top3_call_pct": top3_call_pct,
+                "top3_put_pct": top3_put_pct,
+            },
+            "major_call_zones": major_call_zones,
+            "major_put_zones": major_put_zones,
+            "strikes": strike_data,
+        }
+
     def compute_oi_concentration(self, contracts: list[dict]) -> dict[str, Any]:
         if not contracts:
             return {

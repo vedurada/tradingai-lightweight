@@ -720,6 +720,37 @@ def oi_concentration(symbol):
     conn.close()
     return jsonify(out)
 
+@app.route("/api/expected-move/<symbol>")
+def expected_move(symbol):
+    """Options-implied expected move using ATM IV and time to expiry."""
+    symbol = symbol.upper()
+    conn = get_db()
+
+    spot = None
+    qr = conn.execute("SELECT price FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    if qr:
+        spot = qr["price"]
+
+    expiries = conn.execute(
+        "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (symbol,)
+    ).fetchall()
+
+    out = {"symbol": symbol, "spot": spot, "expected_moves": {}}
+    for e in expiries:
+        expiry = e["expiry"]
+        rows = conn.execute(
+            "SELECT strike, option_type, open_interest, implied_volatility FROM option_chain WHERE symbol=? AND expiry=?",
+            (symbol, expiry)
+        ).fetchall()
+        contracts = [dict(r) for r in rows]
+        from backend.options import OptionsEngine
+        engine = OptionsEngine()
+        result = engine.compute_expected_move(contracts, spot or 0, expiry)
+        out["expected_moves"][expiry] = result["expected_move"]
+
+    conn.close()
+    return jsonify(out)
+
 def _build_outlook_on_demand(conn, symbol):
     """Build a full outlook payload on the fly for any tracked symbol (index or stock)."""
     try:
