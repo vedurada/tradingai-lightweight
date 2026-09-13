@@ -41,4 +41,10 @@ class ScenarioEngine:
             breakout_scenario["probability"] += 0.1
         if vix_price > 25:
             breakout_scenario["probability"] += 0.05
-        return {"bullish": bullish, "bearish": bearish, "range": range_scenario, "breakout": breakout_scenario, "reversal": reversal_scenario}
+        # Normalize probabilities to sum to 1.0 (mutually exclusive distribution)
+        _scenarios = {"bullish": bullish, "bearish": bearish, "range": range_scenario, "breakout": breakout_scenario, "reversal": reversal_scenario}
+        _total = sum(v["probability"] for v in _scenarios.values())
+        if _total > 0:
+            for v in _scenarios.values():
+                v["probability"] = round(v["probability"] / _total, 4)
+        return _scenarios

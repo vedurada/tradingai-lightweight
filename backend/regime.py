@@ -238,6 +238,9 @@ class RegimeEngine:
         return "SIDEWAYS"
 
     def _confidence(self, components: dict[str, str], regime: str, market: dict[str, Any]) -> int:
+        # Confidence in regime CLASSIFICATION: how well data components align with the classified regime.
+        # This is stored in market_regime.confidence and represents regime-level certainty.
+        # Do not confuse with build_outlook() _confidence() which measures outlook-level certainty.
         confidence = 50
         for key in ("trend", "momentum", "options"):
             if components.get(key) == regime:

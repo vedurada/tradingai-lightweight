@@ -7,6 +7,19 @@ from regime_utils import normalize_regime
 
 
 class StrategyEngine:
+    """Canonical strategy-selection engine for TradingAI.in.
+
+    This is the single authoritative source for strategy decisions.
+    Regime → Strategy mapping:
+        BULLISH          → Bull Call Spread + Bull Put Spread
+        BEARISH          → Bear Put Spread + Bear Call Spread
+        SIDEWAYS         → Iron Condor
+        HIGH_VOLATILITY  → Defined-risk premium selling
+        UNKNOWN          → NO TRADE
+
+    Other strategy producers (build_outlook()._strategies(), AIOutlookEngine)
+    are complementary/presentation layers, not independent strategy authorities.
+    """
     # Option strategies (spreads/condors) are only for tradable index derivatives.
     INDEX_SYMBOLS = {"NIFTY", "BANKNIFTY", "SENSEX", "FINNIFTY"}
 

@@ -145,47 +145,47 @@ def _make_scenario_input(**overrides):
 def test_scenario_bullish_adjusts_probabilities():
     engine = ScenarioEngine()
     result = engine.generate("BULLISH", **_make_scenario_input())
-    assert result["bullish"]["probability"] == 0.5, f"Expected 0.5, got {result['bullish']['probability']}"
-    assert result["bearish"]["probability"] == 0.2, f"Expected 0.2, got {result['bearish']['probability']}"
-    assert result["range"]["probability"] == 0.2, f"Expected 0.2, got {result['range']['probability']}"
+    assert abs(result["bullish"]["probability"] - 0.4545) < 0.001, f"Expected ~0.4545, got {result['bullish']['probability']}"
+    assert abs(result["bearish"]["probability"] - 0.1818) < 0.001, f"Expected ~0.1818, got {result['bearish']['probability']}"
+    assert abs(result["range"]["probability"] - 0.1818) < 0.001, f"Expected ~0.1818, got {result['range']['probability']}"
     assert result["bullish"]["strategy_environment"] == "BULLISH"
 
 
 def test_scenario_bearish_adjusts_probabilities():
     engine = ScenarioEngine()
     result = engine.generate("BEARISH", **_make_scenario_input())
-    assert result["bearish"]["probability"] == 0.5, f"Expected 0.5, got {result['bearish']['probability']}"
-    assert result["bullish"]["probability"] == 0.2, f"Expected 0.2, got {result['bullish']['probability']}"
-    assert result["range"]["probability"] == 0.2, f"Expected 0.2, got {result['range']['probability']}"
+    assert abs(result["bearish"]["probability"] - 0.4545) < 0.001, f"Expected ~0.4545, got {result['bearish']['probability']}"
+    assert abs(result["bullish"]["probability"] - 0.1818) < 0.001, f"Expected ~0.1818, got {result['bullish']['probability']}"
+    assert abs(result["range"]["probability"] - 0.1818) < 0.001, f"Expected ~0.1818, got {result['range']['probability']}"
     assert result["bearish"]["strategy_environment"] == "BEARISH"
 
 
 def test_scenario_sideways_adjusts_probabilities():
     engine = ScenarioEngine()
     result = engine.generate("SIDEWAYS", **_make_scenario_input())
-    assert result["range"]["probability"] == 0.4, f"Expected 0.4, got {result['range']['probability']}"
-    assert result["breakout"]["probability"] == 0.35, f"Expected 0.35, got {result['breakout']['probability']}"
-    assert result["bullish"]["probability"] == 0.15, f"Expected 0.15, got {result['bullish']['probability']}"
-    assert result["bearish"]["probability"] == 0.1, f"Expected 0.1, got {result['bearish']['probability']}"
+    assert abs(result["range"]["probability"] - 0.381) < 0.001, f"Expected ~0.381, got {result['range']['probability']}"
+    assert abs(result["breakout"]["probability"] - 0.3333) < 0.001, f"Expected ~0.3333, got {result['breakout']['probability']}"
+    assert abs(result["bullish"]["probability"] - 0.1429) < 0.001, f"Expected ~0.1429, got {result['bullish']['probability']}"
+    assert abs(result["bearish"]["probability"] - 0.0952) < 0.001, f"Expected ~0.0952, got {result['bearish']['probability']}"
     assert result["range"]["strategy_environment"] == "Iron Condor / Butterfly"
 
 
 def test_scenario_high_volatility_adjusts_probabilities():
     engine = ScenarioEngine()
     result = engine.generate("HIGH_VOLATILITY", **_make_scenario_input())
-    assert result["breakout"]["probability"] == 0.4, f"Expected 0.4, got {result['breakout']['probability']}"
-    assert result["range"]["probability"] == 0.1, f"Expected 0.1, got {result['range']['probability']}"
-    assert result["bullish"]["probability"] == 0.25, f"Expected 0.25, got {result['bullish']['probability']}"
-    assert result["bearish"]["probability"] == 0.25, f"Expected 0.25, got {result['bearish']['probability']}"
+    assert abs(result["breakout"]["probability"] - 0.381) < 0.001, f"Expected ~0.381, got {result['breakout']['probability']}"
+    assert abs(result["range"]["probability"] - 0.0952) < 0.001, f"Expected ~0.0952, got {result['range']['probability']}"
+    assert abs(result["bullish"]["probability"] - 0.2381) < 0.001, f"Expected ~0.2381, got {result['bullish']['probability']}"
+    assert abs(result["bearish"]["probability"] - 0.2381) < 0.001, f"Expected ~0.2381, got {result['bearish']['probability']}"
 
 
 def test_scenario_unknown_uses_defaults():
     engine = ScenarioEngine()
     result = engine.generate("UNKNOWN", **_make_scenario_input())
-    assert result["bullish"]["probability"] == 0.3, f"Expected default 0.3, got {result['bullish']['probability']}"
-    assert result["bearish"]["probability"] == 0.3, f"Expected default 0.3, got {result['bearish']['probability']}"
-    assert result["range"]["probability"] == 0.2, f"Expected default 0.2, got {result['range']['probability']}"
-    assert result["breakout"]["probability"] == 0.15, f"Expected default 0.15, got {result['breakout']['probability']}"
+    assert result["bullish"]["probability"] == 0.3, f"Expected 0.3, got {result['bullish']['probability']}"
+    assert result["bearish"]["probability"] == 0.3, f"Expected 0.3, got {result['bearish']['probability']}"
+    assert result["range"]["probability"] == 0.2, f"Expected 0.2, got {result['range']['probability']}"
+    assert result["breakout"]["probability"] == 0.15, f"Expected 0.15, got {result['breakout']['probability']}"
     assert result["reversal"]["probability"] == 0.05
 
 

@@ -202,6 +202,10 @@ def _tradeability(adx, rsi, vix_reg, gap, missing_oi) -> tuple:
 
 
 def _confidence(adx, rsi, vix_reg, missing_oi, gap) -> int:
+    # Authoritative final outlook confidence: how confident the complete trading outlook is.
+    # This is the user-facing confidence displayed as "AI Outlook Confidence".
+    # RegimeEngine._confidence() is separate (regime-classification confidence in market_regime.confidence).
+    # They measure different things and should NOT be forced to match.
     conf = 62
     if adx is not None and adx > 40:
         conf += 8
@@ -618,7 +622,10 @@ def build_outlook(conn, symbol: str, date: str) -> dict:
     )
 
     trades = _trades(conn, date, symbol) if verdict == "TRADE" else []
-
+    # Confidence semantics:
+    #   payload["regime"]["confidence"] = RegimeEngine regime-classification confidence (market_regime.confidence)
+    #   payload["confidence"]           = authoritative final outlook confidence (_confidence above)
+    # These measure different things and are intentionally different. UI displays payload["confidence"].
     payload = {
         "date": date,
         "symbol": symbol,
