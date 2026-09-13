@@ -538,6 +538,17 @@ CREATE TABLE IF NOT EXISTS etf_holdings (
     UNIQUE(symbol, holding_symbol)
 );
 CREATE INDEX IF NOT EXISTS idx_etf_holdings_symbol ON etf_holdings(symbol, pct DESC);
+
+CREATE TABLE IF NOT EXISTS chat_messages (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    channel TEXT DEFAULT 'global',
+    username TEXT NOT NULL,
+    text TEXT NOT NULL,
+    kind TEXT DEFAULT 'user' CHECK(kind IN ('user','system','alert')),
+    created_at TEXT NOT NULL
+);
+CREATE INDEX IF NOT EXISTS idx_chat_channel_created ON chat_messages(channel, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at DESC);
 """
 
 def init_database(db_path: str = DB_PATH) -> None:
