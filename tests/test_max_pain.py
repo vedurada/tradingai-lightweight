@@ -620,6 +620,140 @@ def test_expected_move_api_endpoint():
         shutil.rmtree(tmpdir)
 
 
+def test_options_intelligence_endpoint():
+    """Test /api/options-intelligence endpoint with temporary DB."""
+    import tempfile, shutil
+    from datetime import datetime, timezone
+    from backend.api_server import app, DB_PATH as _db_path
+
+    tmpdir = tempfile.mkdtemp()
+    tmpdb = os.path.join(tmpdir, "test.db")
+
+    conn = sqlite3.connect(tmpdb)
+    conn.execute("""CREATE TABLE IF NOT EXISTS option_chain (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT, expiry TEXT, strike REAL,
+        option_type TEXT, open_interest INTEGER, change_in_oi INTEGER,
+        implied_volatility REAL, bid REAL, ask REAL, last_price REAL,
+        bid_size INTEGER, ask_size INTEGER, fetched_at TEXT,
+        UNIQUE(symbol, expiry, strike, option_type))""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS live_quotes (
+        symbol TEXT PRIMARY KEY, price REAL, timestamp TEXT)""")
+    conn.execute("INSERT INTO live_quotes VALUES ('NIFTY', 23400.0, '2026-09-13T10:00:00')")
+
+    today = datetime.now(timezone.utc).date()
+    future = today.replace(year=today.year + 1)
+    expiry = future.isoformat()
+
+    chain_data = [
+        ("NIFTY", expiry, 23300, "CE", 5000, 500, 14.0),
+        ("NIFTY", expiry, 23400, "CE", 8000, 800, 15.0),
+        ("NIFTY", expiry, 23500, "CE", 6000, 600, 16.0),
+        ("NIFTY", expiry, 23300, "PE", 4000, -100, 13.0),
+        ("NIFTY", expiry, 23400, "PE", 7000, 700, 14.5),
+        ("NIFTY", expiry, 23500, "PE", 5000, 500, 15.5),
+    ]
+    for row in chain_data:
+        conn.execute(
+            "INSERT OR REPLACE INTO option_chain (symbol, expiry, strike, option_type, open_interest, change_in_oi, implied_volatility, fetched_at) VALUES (?,?,?,?,?,?,?,?)",
+            (*row, "2026-09-13T10:00:00"))
+    conn.commit()
+    conn.close()
+
+    import backend.api_server as api_mod
+    orig = api_mod.DB_PATH
+    try:
+        api_mod.DB_PATH = tmpdb
+        with app.test_client() as c:
+            resp = c.get('/api/options-intelligence/NIFTY')
+            assert resp.status_code == 200, f"Got {resp.status_code}"
+            data = resp.get_json()
+
+        assert data["symbol"] == "NIFTY"
+        assert data["spot"] == 23400.0
+        assert data["data_quality"] == "LIVE"
+
+        # PCR
+        assert data["pcr"] is not None
+        assert data["pcr"]["value"] > 0
+        assert data["pcr"]["ce_oi"] == 19000
+        assert data["pcr"]["pe_oi"] == 16000
+
+        # OI
+        assert data["oi"] is not None
+        assert data["oi"]["call_total"] == 19000
+        assert data["oi"]["put_total"] == 16000
+
+        # Max Pain
+        assert data["max_pain"] is not None
+        assert isinstance(data["max_pain"]["strike"], (int, float))
+
+        # Expected Move
+        assert data["expected_move"] is not None
+        assert data["expected_move"]["type"] == "options_implied"
+
+        # IV
+        assert data["iv"] is not None
+        assert data["iv"]["atm"] is not None
+
+        # Options View
+        assert data["options_view"] is not None
+        assert data["options_view"]["bias"] in ("BULLISH", "BEARISH", "NEUTRAL")
+        assert isinstance(data["options_view"]["confidence"], (int, float))
+
+        # Confirmation
+        assert data["confirmation"] is not None
+        assert data["confirmation"]["status"] in ("CONFIRMED", "PARTIAL CONFIRMATION", "DIVERGENCE", "NEUTRAL")
+
+        print("✓ test_options_intelligence_endpoint passed")
+    finally:
+        api_mod.DB_PATH = orig
+        shutil.rmtree(tmpdir)
+
+
+def test_options_intelligence_endpoint_no_data():
+    """Test /api/options-intelligence returns proper structure with empty DB."""
+    import tempfile, shutil
+    from backend.api_server import app
+
+    tmpdir = tempfile.mkdtemp()
+    tmpdb = os.path.join(tmpdir, "test.db")
+
+    conn = sqlite3.connect(tmpdb)
+    conn.execute("""CREATE TABLE IF NOT EXISTS option_chain (
+        id INTEGER PRIMARY KEY AUTOINCREMENT, symbol TEXT, expiry TEXT, strike REAL,
+        option_type TEXT, open_interest INTEGER, change_in_oi INTEGER,
+        implied_volatility REAL, bid REAL, ask REAL, last_price REAL,
+        bid_size INTEGER, ask_size INTEGER, fetched_at TEXT,
+        UNIQUE(symbol, expiry, strike, option_type))""")
+    conn.execute("""CREATE TABLE IF NOT EXISTS live_quotes (
+        symbol TEXT PRIMARY KEY, price REAL, timestamp TEXT)""")
+    conn.commit()
+    conn.close()
+
+    import backend.api_server as api_mod
+    orig = api_mod.DB_PATH
+    try:
+        api_mod.DB_PATH = tmpdb
+        with app.test_client() as c:
+            resp = c.get('/api/options-intelligence/NIFTY')
+            assert resp.status_code == 200
+            data = resp.get_json()
+
+        assert data["symbol"] == "NIFTY"
+        assert data["spot"] is None
+        assert data["pcr"] is None
+        assert data["oi"] is None
+        assert data["max_pain"] is None
+        assert data["expected_move"] is None
+        assert data["confirmation"] is None
+        assert data["options_view"] is None
+
+        print("✓ test_options_intelligence_endpoint_no_data passed")
+    finally:
+        api_mod.DB_PATH = orig
+        shutil.rmtree(tmpdir)
+
+
 def test_confirmation_confirmed():
     """Bullish market + Bullish options → CONFIRMED."""
     engine = OptionsEngine()
@@ -808,6 +942,8 @@ def run_all_tests():
     test_expected_move_nearest_atm()
     test_expected_move_no_contracts()
     test_expected_move_api_endpoint()
+    test_options_intelligence_endpoint()
+    test_options_intelligence_endpoint_no_data()
     test_confirmation_confirmed()
     test_confirmation_divergence()
     test_confirmation_partial()

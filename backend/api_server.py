@@ -751,6 +751,134 @@ def expected_move(symbol):
     conn.close()
     return jsonify(out)
 
+@app.route("/api/options-intelligence/<symbol>")
+def options_intelligence(symbol):
+    """Consolidated Options Intelligence: PCR, OI, Max Pain, IV, Expected Move, Options View, Confirmation."""
+    symbol = symbol.upper()
+    conn = get_db()
+    from backend.options import OptionsEngine
+    engine = OptionsEngine()
+
+    spot = None
+    qr = conn.execute("SELECT price FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    if qr and qr["price"]:
+        spot = qr["price"]
+
+    expiries = conn.execute(
+        "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (symbol,)
+    ).fetchall()
+
+    result = {
+        "symbol": symbol,
+        "spot": spot,
+        "data_quality": "LIVE",
+        "as_of": datetime.now(timezone.utc).isoformat(),
+        "pcr": None,
+        "oi": None,
+        "max_pain": None,
+        "iv": None,
+        "expected_move": None,
+        "options_view": None,
+        "confirmation": None,
+    }
+
+    for e in expiries:
+        expiry = e["expiry"]
+        rows = conn.execute(
+            "SELECT strike, option_type, open_interest, change_in_oi, implied_volatility FROM option_chain WHERE symbol=? AND expiry=?",
+            (symbol, expiry)
+        ).fetchall()
+        contracts = [dict(r) for r in rows]
+
+        if contracts:
+            concentration = engine.compute_oi_concentration(contracts)
+            result["oi"] = {
+                "call_total": concentration["call_oi"],
+                "put_total": concentration["put_oi"],
+                "total_oi": concentration["total_oi"],
+                "call_oi_change": concentration["call_oi_change"],
+                "put_oi_change": concentration["put_oi_change"],
+                "change_available": concentration["oi_change_available"],
+                "highest_call_oi": concentration["highest_call_oi"],
+                "highest_put_oi": concentration["highest_put_oi"],
+                "oi_concentration": concentration["oi_concentration"],
+                "major_call_zones": concentration["major_call_zones"],
+                "major_put_zones": concentration["major_put_zones"],
+            }
+
+        total_ce_oi = sum(c["open_interest"] for c in contracts if c["option_type"] == "CE")
+        total_pe_oi = sum(c["open_interest"] for c in contracts if c["option_type"] == "PE")
+        if total_ce_oi + total_pe_oi > 0:
+            result["pcr"] = {
+                "value": round(total_pe_oi / total_ce_oi, 3) if total_ce_oi > 0 else None,
+                "pe_oi": total_pe_oi,
+                "ce_oi": total_ce_oi,
+            }
+
+        if spot and spot > 0 and contracts:
+            em = engine.compute_expected_move(contracts, spot, expiry)
+            result["expected_move"] = em["expected_move"]
+
+            if contracts:
+                atm_iv = engine.calculate_iv_stats(contracts)
+                result["iv"] = {
+                    "atm": atm_iv.get("avg_iv"),
+                    "min": atm_iv.get("min_iv"),
+                    "max": atm_iv.get("max_iv"),
+                }
+
+            if contracts:
+                mp = engine.calculate_max_pain(contracts)
+                mp_strike = mp.get("max_pain") if isinstance(mp, dict) else None
+                if mp_strike is not None:
+                    result["max_pain"] = {"strike": mp_strike}
+
+        break
+
+    conn.close()
+
+    pcr_val = result["pcr"]["value"] if result.get("pcr") and result["pcr"].get("value") is not None else None
+    mp_strike = result["max_pain"]["strike"] if result.get("max_pain") and result["max_pain"].get("strike") is not None else None
+    em_result = result.get("expected_move") or {}
+    em_points = em_result.get("points") if isinstance(em_result.get("points"), (int, float)) else None
+
+    exp_bias = None
+    exp_conf = 0
+    derived = engine.derive_options_bias(mp_strike, spot, pcr_val, result.get("oi"))
+    exp_bias = derived.get("options_bias")
+    exp_conf = derived.get("options_confidence", 0)
+
+    mkt_bias = "BULLISH"
+    mkt_conf = 76
+    try:
+        from outlook import build_outlook
+        from zoneinfo import ZoneInfo
+        ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+        outlook = build_outlook(conn, symbol, ist.strftime("%Y-%m-%d"))
+        if outlook and outlook.get("bias"):
+            mkt_bias = outlook["bias"].get("label", "BULLISH")
+        if outlook and outlook.get("confidence"):
+            mkt_conf = outlook["confidence"]
+    except Exception:
+        pass
+
+    if result["oi"] or result["pcr"] or em_points is not None:
+        conf = engine.compute_confirmation(
+            market_bias=mkt_bias, market_confidence=mkt_conf,
+            options_bias=exp_bias, options_confidence=exp_conf,
+            pcr_value=pcr_val, max_pain_strike=mp_strike, spot=spot,
+            expected_move_points=em_points, oi_concentration=result.get("oi"),
+        )
+        result["confirmation"] = conf["confirmation"]
+        result["options_view"] = {
+            "bias": exp_bias if exp_bias else "NEUTRAL",
+            "confidence": exp_conf,
+            "reasons": conf["confirmation"].get("reasons", []),
+        }
+
+    conn.close()
+    return jsonify(result)
+
 def _build_outlook_on_demand(conn, symbol):
     """Build a full outlook payload on the fly for any tracked symbol (index or stock)."""
     try:
