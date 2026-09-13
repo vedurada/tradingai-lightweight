@@ -173,13 +173,6 @@ def test_invalid_contracts():
     print("✓ test_invalid_contracts passed")
 
 
-def test_multiple_expiries():
-    """Verify per-expiry calculation works independently."""
-    # This tests the logic used by api_server.py and fo_fetcher.py
-    # by calling the internal method that they now use
-    pass  # These are integration tests requiring DB
-
-
 def test_oi_concentration_basic():
     """OI concentration with known expected values."""
     contracts = [

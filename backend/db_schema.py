@@ -161,17 +161,6 @@ CREATE TABLE IF NOT EXISTS market_breadth (
 );
 CREATE INDEX IF NOT EXISTS idx_breadth_ts ON market_breadth(timestamp DESC);
 
-CREATE TABLE IF NOT EXISTS sector_data (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    sector TEXT,
-    symbol TEXT,
-    change_pct REAL,
-    volume INTEGER,
-    UNIQUE(timestamp, sector)
-);
-CREATE INDEX IF NOT EXISTS idx_sector_ts ON sector_data(timestamp DESC);
-
 CREATE TABLE IF NOT EXISTS market_snapshots (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT,
@@ -227,17 +216,6 @@ CREATE TABLE IF NOT EXISTS indicators (
     UNIQUE(symbol, timestamp)
 );
 CREATE INDEX IF NOT EXISTS idx_ind_symbol_ts ON indicators(symbol, timestamp DESC);
-
-CREATE TABLE IF NOT EXISTS signals (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    symbol TEXT,
-    timestamp TEXT,
-    signal_type TEXT,
-    signal_value TEXT,
-    confidence REAL,
-    UNIQUE(symbol, timestamp, signal_type)
-);
-CREATE INDEX IF NOT EXISTS idx_sig_symbol_ts ON signals(symbol, timestamp DESC);
 
 CREATE TABLE IF NOT EXISTS scenarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,

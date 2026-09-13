@@ -19,8 +19,6 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from daily_page import _foot, _head, _nav
-
 IST = ZoneInfo("Asia/Kolkata")
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
 SYMBOL = "NIFTY"
@@ -227,8 +225,8 @@ def _pcr_info(conn, symbol: str) -> dict:
         expiry = e["expiry"]
         pe = conn.execute("SELECT COALESCE(SUM(open_interest),0) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='PE'", (symbol, expiry)).fetchone()["s"]
         ce = conn.execute("SELECT COALESCE(SUM(open_interest),0) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='CE'", (symbol, expiry)).fetchone()["s"]
-        pcr = round(pe / ce, 2) if ce > 0 else None
-        out.append({"expiry": expiry, "pe_oi": pe, "ce_oi": ce, "pcr": pcr, "pcr_txt": f"{pcr:.2f}" if pcr is not None else None})
+        pcr = round(pe / ce, 3) if ce > 0 else None
+        out.append({"expiry": expiry, "pe_oi": pe, "ce_oi": ce, "pcr": pcr, "pcr_txt": f"{pcr:.3f}" if pcr is not None else None})
     return {"expiries": out, "available": bool(out)}
 
 
@@ -269,18 +267,6 @@ def _prev_day_top_strikes(conn, symbol: str, date: str, n: int = 3) -> dict:
         except:
             pass
     return {"available": bool(ce or pe), "date": prev_date, "ce": ce, "pe": pe, "max_ce_strike": ce[0]["strike"] if ce else None, "max_pe_strike": pe[0]["strike"] if pe else None}
-
-
-def _pcr_read(pcr) -> str:
-    if pcr is None:
-        return "unavailable"
-    if pcr < 0.7:
-        return "bearish (Call OI dominates — put protection thin)"
-    if pcr < 1.0:
-        return "leaning bearish"
-    if pcr < 1.25:
-        return "balanced / neutral"
-    return "bullish (Put OI dominates)"
 
 
 def _strategies(bias_label, probs, reg, vix_reg, vix_trend, adx, rsi, pcr_info, ce_wall, gap) -> dict:
@@ -589,8 +575,6 @@ def build_outlook(conn, symbol: str, date: str) -> dict:
     week_pcr = pcr["expiries"][0]["pcr"] if pcr["expiries"] else None
     put_oi = (f"Put protection thin vs calls (weekly PE {pe_oi_week:,.0f} vs CE {ce_oi_week:,.0f}) — weak support beyond {sup0}."
               if pe_oi_week else "Put OI detail unavailable (missing EOD chain).")
-    if week_pcr is not None and week_pcr < 0.95:
-        oi_signal = "MIXED"
     oi_signal = "BEARISH" if (week_pcr is not None and week_pcr < 0.7) else "MIXED" if pcr["available"] else "NEUTRAL"
     iv_env = (f"{vix_reg} VIX ({vix.get('close')} ) — {vix_trend}. Environment favours defined-risk premium selling; not naked selling, not late option buying."
               if vix.get("close") is not None else "IV data unavailable.")
