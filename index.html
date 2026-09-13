@@ -97,8 +97,72 @@
         <div style="font-size:0.75rem;color:#64748b">Today's Strategy</div>
         <div style="font-weight:700;color:#15803d" id="outlook-strategy">—</div>
       </div>
+      <div style="margin-top:0.4rem; font-size:0.75rem;color:#64748b;min-height:1.2rem" id="outlook-last-updated">—</div>
     </div>
   </div>
+
+  <script>
+  (async function(){
+    try {
+      const resp = await fetch('api/market-outlook?symbol=NIFTY');
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+
+      // Regime
+      const regime = (data.regime && data.regime.primary) || '—';
+      document.getElementById('outlook-regime').textContent = regime;
+
+      // Bias
+      const bias = (data.bias && data.bias.label) || '—';
+      document.getElementById('outlook-bias').textContent = bias;
+
+      // Confidence score /100
+      const conf = data.confidence !== undefined ? data.confidence : '—';
+      const confEl = document.getElementById('outlook-confidence');
+      confEl.textContent = conf;
+
+      // Tradeability score /100
+      const score = (data.tradeability && data.tradeability.score !== undefined) ? data.tradeability.score : '—';
+      document.getElementById('outlook-score').textContent = score;
+
+      // Expected Range
+      const er = data.expected_range || {};
+      const rangeUpper = er.upper !== undefined ? er.upper : '—';
+      const rangeLower = er.lower !== undefined ? er.lower : '—';
+      document.getElementById('outlook-range').textContent = `${rangeLower} — ${rangeUpper}`;
+
+      // Invalidation
+      const di = data.decision && data.decision.bull_invalidation ? data.decision.bull_invalidation :
+                 data.decision && data.decision.bear_invalidation ? data.decision.bear_invalidation : '—';
+      document.getElementById('outlook-invalidation').textContent = di;
+
+      // Today's Strategy
+      const strategies = data.strategies || [];
+      let strategy = '—';
+      if (strategies && strategies.length > 0) {
+        strategy = strategies[0].name || '—';
+      } else if (data.strategy_to_avoid) {
+        strategy = data.strategy_to_avoid;
+      }
+      document.getElementById('outlook-strategy').textContent = strategy;
+
+      // Last updated indicator
+      const lastUpdated = data.as_of_ist || data.created_at || '—';
+      const outlookLastEl = document.getElementById('outlook-last-updated');
+      if (lastUpdated && lastUpdated !== '—') {
+        outlookLastEl.textContent = `Last updated ${lastUpdated}`;
+      } else {
+        outlookLastEl.textContent = 'Data unavailable';
+      }
+    } catch (e) {
+      console.error('Failed to fetch market outlook:', e);
+      // Keep placeholders — don't convert missing values into false signals
+      const elIds = ['outlook-regime','outlook-bias','outlook-confidence','outlook-score','outlook-range','outlook-invalidation','outlook-strategy','outlook-last-updated'];
+      elIds.forEach(id => document.getElementById(id).textContent = '—');
+      document.getElementById('outlook-last-updated').textContent = 'Data unavailable';
+    }
+  })();
+  </script>
 
   <div id="dashboard"></div>
 
