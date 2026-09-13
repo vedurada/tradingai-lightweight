@@ -29,30 +29,67 @@ class OptionsEngine:
             return 0.0
         return round(put_oi / call_oi, 3)
 
-    def calculate_max_pain(self, contracts: list[dict]) -> dict[str, Any]:
-        pain_map = defaultdict(float)
+    def _max_pain_aggregate_payout(self, contracts: list[dict]) -> dict[str, Any]:
+        """
+        Calculate Max Pain strike: the strike that minimizes the aggregate
+        intrinsic payout of all options at expiration.
+
+        For each candidate settlement strike K:
+        - Calls: max(K - strike, 0) × Call OI
+        - Puts: max(strike - K, 0) × Put OI
+        Max Pain = K producing the minimum aggregate payout.
+        """
+        if not contracts:
+            return {"max_pain": None, "pain_details": {}, "min_payout": None}
+
+        # Group open interest by strike and option type
+        calls_by_strike = {}
+        puts_by_strike = {}
         for c in contracts:
             strike = c.get("strike", 0)
             oi = c.get("open_interest", 0)
-            if strike > 0 and oi > 0:
-                pain_map[strike] += oi
-        if not pain_map:
-            return {"max_pain": 0, "call_max_oi_strike": 0, "put_max_oi_strike": 0}
-        max_pain_strike = max(pain_map, key=pain_map.get)
-        call_oi_by_strike = defaultdict(float)
-        put_oi_by_strike = defaultdict(float)
-        for c in contracts:
-            strike = c.get("strike", 0)
-            oi = c.get("open_interest", 0)
-            if c.get("option_type") == "CE":
-                call_oi_by_strike[strike] += oi
-            else:
-                put_oi_by_strike[strike] += oi
+            opt_type = c.get("option_type", "")
+            if strike <= 0 or oi <= 0:
+                continue
+            if opt_type == "CE":
+                calls_by_strike[strike] = calls_by_strike.get(strike, 0) + oi
+            elif opt_type == "PE":
+                puts_by_strike[strike] = puts_by_strike.get(strike, 0) + oi
+
+        # Get all unique strikes
+        all_strikes = sorted(list(set(list(calls_by_strike.keys()) + list(puts_by_strike.keys()))))
+
+        # Calculate aggregate payout for each candidate settlement strike
+        pain_details = {}
+        for settlement in all_strikes:
+            total_payout = 0.0
+            # Call payouts: max(settlement - strike, 0) × Call OI
+            for strike, call_oi in calls_by_strike.items():
+                total_payout += max(settlement - strike, 0) * call_oi
+            # Put payouts: max(strike - settlement, 0) × Put OI
+            for strike, put_oi in puts_by_strike.items():
+                total_payout += max(strike - settlement, 0) * put_oi
+            pain_details[settlement] = total_payout
+
+        if not pain_details:
+            return {"max_pain": None, "pain_details": {}, "min_payout": None}
+
+        # Max Pain = strike with minimum aggregate payout
+        max_pain_strike = min(pain_details, key=pain_details.get)
         return {
             "max_pain": max_pain_strike,
-            "call_max_oi_strike": max(call_oi_by_strike, key=call_oi_by_strike.get) if call_oi_by_strike else 0,
-            "put_max_oi_strike": max(put_oi_by_strike, key=put_oi_by_strike.get) if put_oi_by_strike else 0,
+            "pain_details": pain_details,
+            "min_payout": pain_details[max_pain_strike],
         }
+
+    def calculate_max_pain(self, contracts: list[dict]) -> dict[str, Any]:
+        """
+        Public API: calculate Max Pain strike from options contracts.
+        Returns the strike producing the minimum aggregate option-holder payout.
+        """
+        result = self._max_pain_aggregate_payout(contracts)
+        # Return a simple dict for backward compatibility with existing callers
+        return {"max_pain": result["max_pain"]}
 
     def calculate_iv_stats(self, contracts: list[dict]) -> dict[str, Any]:
         ivs = [c.get("implied_volatility", 0) for c in contracts if c.get("implied_volatility")]

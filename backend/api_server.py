@@ -593,12 +593,62 @@ def max_pain():
                 "SELECT strike, option_type, open_interest FROM option_chain WHERE symbol=? AND expiry=?",
                 (sym, expiry)
             ).fetchall()
+            # Calculate Max Pain: strike minimizing aggregate intrinsic payout
+            # Calls: max(settlement - strike, 0) × Call OI
+            # Puts: max(strike - settlement, 0) × Put OI
+            strike_payouts = {}
+            for r in chain:
+                strike = r["strike"]
+                opt_type = r["option_type"]
+                oi = r["open_interest"]
+                if strike <= 0 or oi <= 0:
+                    continue
+                if opt_type == "CE":
+                    strike_payouts.setdefault(strike, 0.0)
+                    # This strike's call contribution will be added below
+                elif opt_type == "PE":
+                    strike_payouts.setdefault(strike, 0.0)
+            # Aggregate by strike
             strike_oi = {}
             for r in chain:
-                strike_oi[r["strike"]] = strike_oi.get(r["strike"], 0) + r["open_interest"]
-            max_pain_strike = min(strike_oi, key=strike_oi.get) if strike_oi else None
+                strike = r["strike"]
+                opt_type = r["option_type"]
+                oi = r["open_interest"]
+                if strike <= 0 or oi <= 0:
+                    continue
+                strike_oi[strike] = strike_oi.get(strike, 0) + oi
+
+            # Calculate aggregate payout for each strike
+            strike_pain = {}
+            for strike in strike_oi:
+                total = 0.0
+                # Re-fetch calls and puts for this strike calculation
+                call_oi_by_strike = {}
+                put_oi_by_strike = {}
+                for r2 in chain:
+                    s = r2["strike"]
+                    t = r2["option_type"]
+                    o = r2["open_interest"]
+                    if s <= 0 or o <= 0:
+                        continue
+                    if t == "CE":
+                        call_oi_by_strike[s] = call_oi_by_strike.get(s, 0) + o
+                    elif t == "PE":
+                        put_oi_by_strike[s] = put_oi_by_strike.get(s, 0) + o
+                # Calculate payout at this strike as settlement
+                for s, co in call_oi_by_strike.items():
+                    total += max(strike - s, 0) * co
+                for s, po in put_oi_by_strike.items():
+                    total += max(s - strike, 0) * po
+                strike_pain[strike] = total
+
+            if strike_pain:
+                mp_strike = min(strike_pain, key=strike_pain.get)
+            else:
+                mp_strike = None
+
             total_oi = sum(strike_oi.values())
-            sym_data.append({"expiry": expiry, "max_pain": max_pain_strike, "total_oi": total_oi, "strikes": len(strike_oi)})
+            sym_data.append({"expiry": expiry, "max_pain": mp_strike, "total_oi": total_oi, "strikes": len(strike_oi)})
         out[sym] = sym_data
     conn.close()
     return jsonify(out)
