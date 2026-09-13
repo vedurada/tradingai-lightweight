@@ -84,6 +84,15 @@ case "$VERIFY" in
     *) log "FATAL: snapshot failed verification — aborting, source untouched"; exit 1 ;;
 esac
 
+# --- 3b. Compress for GitHub 100MB limit (128M -> ~16M gzip, stays under limit) ---
+log "compressing snapshot (gzip for 100MB GitHub limit)..."
+gzip -c "$SNAP_DIR/tradingai.db" > "$SNAP_DIR/tradingai.db.gz"
+rm -f "$SNAP_DIR/tradingai.db"
+# verify gzip round-trip before commit
+if ! gzip -t "$SNAP_DIR/tradingai.db.gz" 2>/dev/null; then
+    log "FATAL: gzip verify failed"; exit 1
+fi
+
 # --- 4. Mirror code/data/config into workdir (delete only inside mirror) ---
 log "syncing files into backup workdir..."
 mkdir -p "$WORK/data" "$WORK/config" "$WORK/backend" "$WORK/ops" "$WORK/indices" "$WORK/stocks" "$WORK/static"
@@ -103,7 +112,13 @@ find "$WORK" -name '*.pyc' -delete 2>/dev/null || true
 {
     echo "backup_utc=$(date -u '+%FT%TZ')"
     echo "backup_ist=$(TZ=Asia/Kolkata date '+%FT%T%Z')"
-    du -sh "$SNAP_DIR/tradingai.db" | awk '{print "db_size="$1}'
+    # gzipped size stays <100MB; also show raw for ops visibility
+    if [ -f "$SNAP_DIR/tradingai.db.gz" ]; then
+        du -sh "$SNAP_DIR/tradingai.db.gz" | awk '{print "db_gz_size="$1}'
+        gzip -l "$SNAP_DIR/tradingai.db.gz" | awk 'NR==2{print "db_size="$2" (compressed "$1")"}'
+    else
+        du -sh "$SNAP_DIR/tradingai.db" | awk '{print "db_size="$1}'
+    fi
     echo "$VERIFY" | tr ' ' '\n' | grep -E '^(prices|history|symbols)='
     echo "files=$(find "$WORK" -type f -not -path '*/.git/*' | wc -l)"
 } > "$WORK/backup-info.txt"
@@ -132,4 +147,8 @@ if [ "$LOCAL_REV" != "$REMOTE_REV" ]; then
     log "FATAL: push verification failed (remote $REMOTE_REV != local $LOCAL_REV)"
     exit 1
 fi
-log "backup pushed OK: $LOCAL_REV ($(du -sh "$SNAP_DIR/tradingai.db" | awk '{print $1}')) DB"
+if [ -f "$SNAP_DIR/tradingai.db.gz" ]; then
+    log "backup pushed OK: $LOCAL_REV ($(du -sh "$SNAP_DIR/tradingai.db.gz" | awk '{print $1}') gz)"
+else
+    log "backup pushed OK: $LOCAL_REV ($(du -sh "$SNAP_DIR/tradingai.db" | awk '{print $1}')) DB"
+fi

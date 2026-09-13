@@ -47,11 +47,25 @@ def symbols():
 
 @app.route("/api/price/<symbol>")
 def latest_price(symbol):
+    """Single genuine price: same source as /api/<symbol> quote (live_quotes -> price_1m -> price_1d)."""
+    s = (symbol or "").upper()
     conn = get_db()
-    row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    price_row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (s,)).fetchone()
+    live_row = _live_quote_row(conn, s)
+    # fallback to price_1d if both empty (weekend / stale)
+    if not price_row and not live_row:
+        price_row = conn.execute("SELECT * FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (s,)).fetchone()
+        if price_row:
+            # map price_1d row shape to price_row dict with close
+            conn.close()
+            d = row_to_dict(price_row)
+            # expose as quote for consistency
+            pq = _build_quote(s, price_row, None)
+            return jsonify(pq or d)
+    quote = _build_quote(s, price_row, live_row)
     conn.close()
-    if row:
-        return jsonify(row_to_dict(row))
+    if quote:
+        return jsonify(quote)
     return jsonify({"error": "no data"}), 404
 
 @app.route("/api/prices/<symbol>")
@@ -61,6 +75,7 @@ def prices(symbol):
     table = f"price_{interval}" if interval in ("1m", "5m", "15m", "1d") else "price_1m"
     conn = get_db()
     rows = conn.execute(f"SELECT * FROM {table} WHERE symbol=? ORDER BY timestamp DESC LIMIT ?", (symbol, limit)).fetchall()
+    # keep history as candles, but last_updated/quote remains single-source via /api/price and /api/<symbol>
     conn.close()
     return jsonify([row_to_dict(r) for r in reversed(rows)])
 
@@ -234,13 +249,23 @@ def _build_quote(symbol, price_row, live_row=None):
     d = row_to_dict(price_row)
     close = d.get("close", 0) or 0
     prev = d.get("previous_close", 0) or 0
+    # Single source for previous_close: live NSE previous_close preferred, else price_1d EOD prev close,
+    # never 1m-prev (intraday minute jitter). Falls back to price_1d daily close.
     if not prev:
         try:
             conn = get_db()
-            prow = conn.execute("SELECT close FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 2", (symbol,)).fetchall()
-            conn.close()
-            if len(prow) > 1:
+            # prefer official daily prev close (bhavcopy/price_1d)
+            prow = conn.execute("SELECT close FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 2", (symbol,)).fetchall()
+            if len(prow) == 2:
                 prev = prow[1]["close"] or 0
+            elif len(prow) == 1 and prow[0]["close"] != close:
+                prev = prow[0]["close"] or 0
+            # last resort: previous 1m close only if daily unavailable
+            if not prev:
+                prow2 = conn.execute("SELECT close FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 2", (symbol,)).fetchall()
+                if len(prow2) > 1:
+                    prev = prow2[1]["close"] or 0
+            conn.close()
         except Exception:
             pass
     change = (close - prev) if prev else 0
@@ -729,6 +754,26 @@ def backtest():
     db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
     engine = BacktestEngine(db_path)
     result = engine.run(symbol, days)
+    return jsonify(result)
+
+@app.route("/api/backtest/vix-strangle")
+def backtest_vix_strangle():
+    symbol = request.args.get("symbol", "NIFTY").strip().upper()
+    days = request.args.get("days", 3650, type=int)
+    from backtest import BacktestEngine
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+    engine = BacktestEngine(db_path)
+    result = engine.run_vix_strangle(symbol, days)
+    return jsonify(result)
+
+@app.route("/api/backtest/5m-real")
+def backtest_5m_real():
+    symbol = request.args.get("symbol", "NIFTY").strip().upper()
+    days = request.args.get("days", 60, type=int)
+    from backtest import BacktestEngine
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+    engine = BacktestEngine(db_path)
+    result = engine.run_5m_real(symbol, days)
     return jsonify(result)
 
 @app.route("/api/alerts")

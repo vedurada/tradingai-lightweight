@@ -350,7 +350,7 @@ class Database:
             SELECT symbol, date, locked_price, closed_price, entry_time, exit_time, direction, points, result, strategy,
                    market_regime, directional_bias, confidence, market_summary,
                    evidence_strength, volatility_classification, market_structure,
-                   no_trade_conditions, strategy_environment, invalidation, created_at
+                   no_trade_conditions, strategy_environment, invalidation, entry_outlook, created_at
             FROM history WHERE symbol = ? AND date >= date('now', '-' || ? || ' days')
             ORDER BY date DESC
         """, (symbol, days))

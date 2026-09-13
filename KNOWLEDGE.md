@@ -1,7 +1,7 @@
 # TradingAI.in — Project Knowledge
 
 > Living document. Update it whenever architecture, rules, or roadmap change.
-> Last updated: 2026-09-12 (4th pass — AI-gated trade-record no-log behavior, intraday 09:30 outlook cron, `entry_outlook` capture, market-timing LIVE badge, live floating P&L on history.html).
+> Last updated: 2026-09-13 (8th pass — today LIVE reset after close / Spot+Live P&L top bar, 640×190 backtest payoff on today, gunicorn 3×2 gthread + nginx 10s api_cache, docker purged, 40 grids unified 240px).
 
 ## 1. What this is
 
@@ -22,10 +22,10 @@ Pipeline: market data → indicators → regime engine → AI outlook → human 
 | VM app dir | `/opt/tradingai` (repo rsync target) |
 | VM web root | `/var/www/tradingai.in/html` (nginx serves this, NOT /opt) |
 | DB | `/opt/tradingai/database/tradingai.db` (SQLite, WAL off, single writer) |
-| API | Flask `backend/api_server.py` on `127.0.0.1:8000` as systemd unit `tradingai-api` (`Restart=always`, unit in `ops/systemd/`), proxied at `/api/` by nginx; 2-min curl watchdog restarts on hang |
+| API | Flask `backend/api_server.py` on `127.0.0.1:8000` as gunicorn `gthread -w 3 --threads 2 --keep-alive 5 --max-requests 1000` systemd `tradingai-api` (`Restart=always`, `ops/systemd/tradingai-api.service`), proxied at `/api/` by nginx with `proxy_cache_path api_cache:10m 10s` + static `1h` + `gzip_vary`; 2-min curl watchdog restarts on hang. Safe concurrency 50-100 active polling / 150-200 casual (was 15-25). |
 | Site | https://tradingai.in (real Let's Encrypt cert since 2026-09-10, auto-renew via certbot timer; HTTP 301 → HTTPS; earlier self-signed cert caused browser warnings) |
 | Market hours | 9:30–15:30 IST, Mon–Fri. Cron uses `9-15` hour field as approximation |
-| Cleanup | Removed ollama, docker, containerd, snapd, snap packages, multipathd/iscsid, unnecessary pip (ipython/jupyter/matplotlib/scipy/scikit/pandas/numpy). RAM: 602→173MB used, free: 65→306MB, disk: 29→25GB. |
+| Cleanup | Removed ollama, docker (`docker-ce docker-ce-cli buildx compose containerd.io` + `/var/lib/docker` ~153 MB + 68 MB), snapd/snap, multipathd/iscsid, pip (ipython/jupyter/matplotlib/scipy/scikit/pandas/numpy). RAM: 602→173→198MB used, free: 65→306→612 MB (2026-09-13), disk: 29→25GB → 45G 14G 30%. |
 | LLM | Free cloud chain (gemini→groq→deepseek→openrouter→rule-based). Ollama on VM too slow (60s+ timeouts, 956MB RAM) — removed from chain. No API keys on VM; providers skip fast, rule-based used. Add key via `export GEMINI_API_KEY=...` on VM to enable. |
 
 ## 3. Architecture (database-first, layered)
@@ -89,12 +89,14 @@ Legacy JSON pipeline (`generate_data.py`, `generate_json.py` → `data/*.json`) 
 **Caching:** 300s in-memory per symbol. `data_fetcher_db.py` calls `generate()` during store; results persisted to `ai_outlooks` DB table and `data/<symbol>.json`.
 
 **Free tier limits:** Gemini 15 RPM / 1M tokens/day; Groq 30 RPM; DeepSeek generous; OpenRouter free models limited; Ollama unlimited local.
-| `expiry.py` | Per-index expiry rules (NSE=Tuesday, BSE=Thursday; weeklies only NIFTY/SENSEX) |
+| `expiry.py` | Historical expiry 2016-2026: NIFTY/BANKNIFTY Thu→Tue 2025-09-01, FINNIFTY Tue from 2021-01-11, SENSEX Fri→Thu (Holidays shift to prev trading day) — `HISTORICAL_WEEKDAY`, `get_historical_weekly_expiry()` for backtest |
+| `lot_sizes.py` | Historical lots 2016-2026: NIFTY 75→50→75→65, BANKNIFTY 40→20→25→15→30→35, FINNIFTY 40→65→60, SENSEX 10→20 (`HISTORICAL_LOTS`, `get_historical_lot()`), used by `backtest.py lot/rupees` |
 | `pnl_tracker.py` | `lock` (9:30) / `close` (15:20) / `backfill [date]` / `archive [days]` |
 | `bhavcopy.py` | NSE official EOD (`ind_close_all`, incl. index P/E) into `price_1d` — `backfill [days]` / `daily` (18:35 cron) / `holidays` (weekly → `nse_holidays`, auto-used by expiry engine) |
 | `monitor.py` / `alert.py` | Health checks / alerts via cron |
 | `generate_data.py` / `generate_json.py` | LEGACY JSON pipeline (deprecated; weekly archive inside it disabled) |
-| `history_logger.py`, `backtest.py`, `options.py` | Legacy/helpers; backtest not wired to UI |
+| `history_logger.py`, `options.py` | Legacy/helpers |
+| `backtest.py` | Full 10y backtest: `BacktestEngine` — `Fixed Short Strangle (o-c)` vs `AI Dynamic` (BULL `c-o`, BEAR `o-c`, NEUTRAL `Short Strangle 50pt` credit spreads `short 50pts ATM` `long 50% prem` `28/35 pts` with theta small-loss→profit), `HISTORICAL_WEEKDAY`+`HISTORICAL_LOTS` (`lot`/`rupees` per trade), `2466` trading days `2016-09-12→2026-09-11`, strikes `short/long/atm` + `strike_desc`, payoff via `expiry.get_historical_weekly_expiry`, `NEUTRAL Credit Spread (Flat)`→`Short Strangle`, clickable `↳ strategy` filters `DAY-BY-DAY` + `Export CSV` |
 
 ## 6. Database tables (SQLite)
 
@@ -113,6 +115,7 @@ Ops: `data_status`, `alerts`.
 - **Weekly (Mon 9:xx):** MID/SMALL extras + LARGE financial statements.
 - Daily candles cached in `price_1d` (DB-first, not re-fetched per symbol).
 - Retention cleanup per run: price_1m 2d, options 3d, fundamentals 7d, news 30d.
+- **STORED-TIME CONVENTION (2026-09-12):** `price_1m` timestamps are naive **UTC wall-clock** — yfinance's IST-aware index is converted to UTC on write, and the NSE synthetic fallback writes `datetime.now(timezone.utc)`. All other intraday tables (`vix_data`, `indicators`, `live_quotes`, `data_status`) store UTC ISO. `_to_ist_iso` (api_server) tags naive `YYYY-MM-DD HH:MM:SS` as `+00:00` (UTC); only `price_1d` keeps `+05:30`. Do NOT tag naive 1m stamps as IST — that produces a stale-looking "Data as of ~5.5h behind". Frontends locale-convert (`Intl`/`toLocaleString('en-IN', Asia/Kolkata)` / browser-local `.getHours()`).
 
 ## 8. Strategy doctrine
 
@@ -142,13 +145,27 @@ Stocks are investments, not intraday signals: SHORT horizon (weeks: SMA20/50 + R
 
 ## 10. Expiry rules (`expiry.py`)
 
-- NSE=Tuesday, BSE=Thursday (SEBI 1-Sep-2025; NSE circular FAOP/68747).
-- NIFTY: weekly every Tue + monthly last Tue. SENSEX: weekly every Thu + monthly last Thu.
-- BANKNIFTY/FINNIFTY: **monthly-only**, last Tuesday (weeklies discontinued Nov 2024).
-- Post-15:30 IST on expiry day rolls to next; holidays in `HOLIDAYS_IST` shift to previous trading day (extend every January from NSE/BSE circulars).
+- NSE=Tuesday, BSE=Thursday (SEBI 1-Sep-2025; NSE circular FAOP/68747). **Historical 2016-2026:** `HISTORICAL_WEEKDAY` — NIFTY/BANKNIFTY Thu until 2025-08-31 → Tue from 2025-09-01, FINNIFTY Tue from 2021-01-11, SENSEX Fri (2016) → Tue (2024-11) → Thu (2025-09). `get_historical_weekly_expiry(symbol, date)` used by backtest for correct `expiry (DTE)` per year.
+- NIFTY: weekly every Tue (current) + monthly last Tue. SENSEX: weekly every Thu + monthly last Thu.
+- BANKNIFTY/FINNIFTY: **monthly-only** post 2025, last Tuesday (weeklies discontinued Nov 2024) — but historical weeklies existed Thu before.
+- Post-15:30 IST on expiry day rolls to next; holidays in `HOLIDAYS_IST` + `nse_holidays` table shift to previous trading day (extend every January from NSE/BSE circulars).
 - API `_symbol_data[].expiry` = `{..., tenor, weekly:{...}|None, monthly:{...}}`; index pages show both.
+- Backtest `10y 2466 trading days 2016-09-12→2026-09-11` matches `price_1d DISTINCT 2467` ( `0.04%` diff, 1 holiday).
+- Lots `lot_sizes.py:HISTORICAL_LOTS` — NIFTY 75→50 (2021-07)→75 (2025-01)→65 (2025-12-30), BANKNIFTY 40→20→25→15→30→35, FINNIFTY 40→65→60, SENSEX 10→20 — `get_historical_lot()` gives `lot`/`rupees` per backtest trade (not `pts*75`).
+
+## 10b. Backtest engine (`backend/backtest.py` + `tools/backtest.html`)
+
+- `Fixed Short Strangle (o-c)` baseline vs `AI Dynamic` market-condition adaptive: `BULLISH` (`Long Call/Bull Call` → `c-o`, `Bull Put Spread` → BS `short PUT ATM-50 long where prem≈50% short` net `BS prem_s-prem_l` `≈28`), `BEARISH` (`Bear Call` `ATM+50` similarly, else `o-c`), `NEUTRAL` `Short Strangle` `BS call ATM+50 + put ATM-50` `BS net` `≈35` (`move<50` win else `35-(move-50)*0.9` `-80`). **Black-Scholes proxy** `backend/backtest.py:26 _bs_price(S,K,T,VIX/100,r6%,DTE)` for realistic premiums (not fixed 28/35), with fallback to `28/35` breakeven when `|pts|<5`.
+- Credit spreads `short 50 pts from ATM, long at premium 50% of short` (search `+50/+100/+150/+200` via BS) as requested.
+- Features: `outlook.py` VIX `cover_prob` (`GAP DOWN v<14 & |gap|<1%→75% else 25%`), past `3d/5d` trend + `call/put OI buildup` confirmation (`feature_engine.past_confirmation`), `ADX/RSI/EMA` etc. — hierarchical `prev_day → market_open → regime→direction→probs`.
+- `10y 2466` rows every trading day `AI TRADE 2305 (93.5%)` + `FLAT 161 WAIT`, `1 month ≈21-23` trading days (calendar `*0.72`), last trading day `2026-09-11` always included via `DESC LIMIT` not `date('now','-days')`. NSE `2467 DISTINCT` `2016-09-12→2026-09-11` matches within 1.
+- `tools/backtest.html` — default `1 month` `30cal→22 trading` `ceil(days*5/7)` auto-load `22 (AI)` (`10y 2461` still via dropdown), `FIXED vs AI` table, `AI DIRECTION` `BULL/BEAR/NEUTRAL` + `Market Condition/Year/Month/Week/WIN RATE/PF/AI EDGE` all `clickable-row` → filters `DAY-BY-DAY`, `8 cols` `Date·Expiry(DTE)·Verdict·Strategy·Strikes·Result·Points·Payoff view` single-click `view` delegated `data-date` → `drawPayoffFor`. **Payoff chart** `640×190` per trade `drawPayoffFor` — `between-strikes green #86efac (profit) / beyond red #fca5a5 (loss)` vertical zones, `ATM #eab308` `Short #0ea5e9` `Long #38bdf8` `BE #8b5cf6` (Strangle dual `24365/24535` width `100`) `current spot dot`, header `Max Profit ₹`/`Max Loss ₹` (`pts×lot` historical `50→65`), `Breakeven`, `Spot Now`, X `Spot expiry` Y `P&L pts`, legend. Aggregated strategy payoff also shown on filter. Grid `std_single auto-fit 240px` inside `</main>`.
+- `₹` uses historical lot `NIFTY 75→50→75→65` etc. (`total_rupees`), not `pts*75`.
+- `today/index.html` — **LIVE reset after close**: `showLiveStrat = mode==='live' && verdict==='TRADE' && prim`; `LIVE 9:15-15:30 + TRADE` → green `AI VERDICT — TRADE` top bar `Spot now | Live P&L (+pts · ₹, color #15803d/#dc2626) | ● LIVE` `background #f8fafc` above `<h3>`, then `Regime/Bias/ATM/Short/Long/Credit/Lot/Expiry` + same `640×190` `drawPayoffFor` backtest payoff `60s poll` `live spot dot`; otherwise dashed `AI VERDICT — WAIT · No live strategy (modeLabel)` `Live strategy resets after 15:30 — next at 9:15 IST when AI outlook generates TRADE.` — payoff cleared. Spot/Live P&L always **top of strategy name**.
 
 ## 11. API (`/api/*`, Flask :8000)
+
+**Single genuine price source (2026-09-13):** every live price is `quote {price,change,change_pct,previous_close,timestamp,source}` built by `backend/api_server.py:_build_quote` → `live_quotes (NSE allIndices, <25 min fresh, source NSE)` → fallback `price_1m latest close (yfinance/synth, source yfinance)` → fallback `price_1d EOD` (weekend). `previous_close` is NSE `previous_close` when live, else `price_1d` EOD prev close (never 1m-prev). All three live endpoints return the **same** quote: `GET /api/price/<SYM>` + `GET /api/<SYM> {quote}` + `GET /api/market {instruments.<SYM>.quote}` are byte-identical (`diff price==quote.price` verified). Frontend single source is `quote.price` — never `price_1m.close` or hard-coded. History candles `GET /api/prices/<SYM>?interval=1m|1d` remain OHLC history only.
 
 Health, symbols, price[s], vix(+history), indicators, regime(s), strategy/strategies, scenarios, outlook(s), options(+expiries), breadth(+history), snapshot(s), fundamentals, company (analyst views/financial flags), news(+per-symbol), actions (dividends/splits), market (legacy `{instruments:{...}}`), history (grouped, 365d), etf, data_status. Generic `/api/<symbol>` (case-insensitive) serves any symbol page incl. scanner stocks.
 
@@ -156,7 +173,7 @@ Health, symbols, price[s], vix(+history), indicators, regime(s), strategy/strate
 
 Every page shares: **AI-Assisted Market Intelligence Platform** header (single-color pill nav `#f0fdf4`, live IST clock top-right in header brand-row, favicon `favicon.svg` + `apple-touch-icon.svg` + header brand mark `header h1 img` 22×22 rounded), scrolling ticker tape (60s loop, price + NSE A/D, pause on hover, on **every** page), and centered `Data as of ... IST` bar (true IST via `Intl`, data-time from quote candle, red "Update failed" on fetch error). All cards/rows site-wide are `cursor:pointer` → `detailHref(symbol)` (market grid, scanner rows, stock-options rows, history rows, strategy cards, index hero tiles).
 
-`index.html` — gradient **TODAY'S NIFTY** hero (price + change as high-contrast pill, regime pill, expected range, S/R, VIX pill + VWAP, market_summary) + **🎯 Strategy card** (VIX-range engine with entry/exit rules + payoff canvas graph) + tiles (NIFTY/BANKNIFTY/FINNIFTY/SENSEX + VIX) + breadth bar + P&L glance + CTA row + `stock.html?symbol=` detail pages.
+`index.html` — gradient **TODAY'S NIFTY** hero + **🎯 Strategy card** + tiles + breadth bar + CTA grid `Market Grid / Scanner / 📈 Backtest (→ tools/backtest.html, AI-gated vs Fixed) / Today LIVE` `std_single auto-fit 240px` `cta cta-single` (Paper P&L card removed) + live `Backtest — 1 month (NIFTY)` preview `fetch api/backtest?days=30` `WR/PF/Net/DD` grid + `stock.html?symbol=` detail pages. All 40 html grids unified `minmax(240px,1fr) margin-top:1.5rem` inside `<main>` (rsync `/var/www/tradingai.in/html`).
 `market.html` — **MARKET PULSE** gradient hero with 4 clickable tiles (NIFTY/BANKNIFTY/SENSEX/VIX — VIX now shows change as pill, grid-aligned) + grid of brand-tinted `brandBtn` cards (favicon + color per symbol, whole card clickable). Hero tiles use `border:1px solid transparent` (not `border:none`) so hover green border is visible on dark background.
 `indices/nifty.html` `banknifty.html` `finnifty.html` `sensex.html` — hero price strip (`card hero`, all four enabled) + 🧠 AI MARKET OUTLOOK (green left border), 📍 KEY LEVELS (amber), 📈 Chart + OPTIONS INTELLIGENCE side-by-side, **NIFTY vs INDIA VIX — Intraday** dual-% chart (`nifty-vix-chart`), ⚡ AI INTRADAY STRATEGY (blue, 9:30 `daily_strategy` lock), MARKET INTERNALS, WHAT CHANGED timeline, HISTORICAL PERFORMANCE. All four share the card-accent system. Hero right-side "India VIX" heading uses `.hero h3 { color:#fff; background:transparent }` (was `#d1fae5` on `#f1f5f9` — invisible). All `.card` and `.tile` elements have hover lift + shadow + green border.
 `scanner.html` / `stock-options.html` / `history.html` — full-width tables (`.pnl-full` / `.scan-table` fixed layout, no horizontal scroll bleed). Scanner: hero + sortable table (Symbol/Cap/Price/Chg%/Regime/Signal/**Invest**/Target/Stop/S-R, rows clickable). Stock-options: **navy `hero-stock` + amber `stock-card`** **positional table** (no scroll, header Lot simplified) — visually distinct from index green hero, Exit column is dynamic positional (from live strategy, not 15:20).
