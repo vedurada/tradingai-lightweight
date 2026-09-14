@@ -874,26 +874,10 @@ def refresh_ai_outlook(conn, symbol: str) -> None:
     Feeds the per-symbol `ai_outlook` narrative block shown on /api/<symbol>,
     market grid, scanner, strategies and stock-options pages. LLM is restricted to
     the 4 core indices (INDEX_SYMBOLS); any other symbol falls back to rule-based.
-    The intraday poller reuses/stores the latest so it never calls the LLM itself.
-
-    Event-driven: LLM regeneration only on material market change (via
-    market_change.should_regenerate_ai) or when outlook is >120 min stale.
-    """
+    The intraday poller reuses/stores the latest so it never calls the LLM itself."""
     try:
-        if symbol in INDEX_SYMBOLS:
-            try:
-                import market_change
-                decision = market_change.should_regenerate_ai(symbol, max_age_minutes=120)
-                if not decision["regenerate"]:
-                    print(f"  LLM skipped (no material change, fresh): {symbol} reason={decision['reason']}")
-                    return
-                if decision.get("material_changes"):
-                    print(f"  LLM regenerate (material change): {symbol} changes={decision['material_changes']}")
-                elif decision.get("reason") == "max_age_exceeded":
-                    print(f"  LLM regenerate (max age exceeded): {symbol}")
-            except Exception as exc:
-                print(f"  LLM check skipped ({exc}): {symbol}")
-        else:
+        from ai_outlook import AIOutlookEngine
+        if symbol not in INDEX_SYMBOLS:
             print(f"  LLM skipped (indices only): {symbol} -> rule-based fallback")
             return
         ind = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
