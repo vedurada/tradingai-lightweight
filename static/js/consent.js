@@ -31,7 +31,16 @@
   function choose(state) {
     write(state);
     if (state === 'denied') { applyDenied(); }
+    else { applyGranted(); }
     hide();
+  }
+  function applyGranted() {
+    try {
+      if (typeof window.gtag === 'function') {
+        window.gtag('consent', 'update',
+          { ad_storage: 'granted', analytics_storage: 'granted' });
+      }
+    } catch (e) { /* gtag absent: nothing to configure */ }
   }
   function hide() {
     var el = document.getElementById('tai-consent');

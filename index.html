@@ -4,6 +4,19 @@
 <!-- Google tag (gtag.js) -->
 <link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
 <link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+<script>
+/* Track B: consent defaults precede gtag config. Deny until visitor accepts. */
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
 <script>
   window.dataLayer = window.dataLayer || [];

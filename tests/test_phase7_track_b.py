@@ -125,6 +125,30 @@ class TestOwnership:
         assert "Last reviewed:" in t and "info@tradingai.in" in t
 
 
+class TestGoogleTag:
+    LEARN_PAGES = ["learn/index.html", "learn/cpr.html",
+                   "learn/option-chain.html", "learn/option-greeks.html",
+                   "learn/pcr.html", "learn/vwap.html"]
+
+    def test_learn_pages_have_ga_tag(self):
+        for rel in self.LEARN_PAGES:
+            assert "G-MJ3X88QYEL" in read(rel), rel
+
+    def test_consent_defaults_precede_gtag_load_everywhere(self):
+        bad = []
+        for f in html_pages():
+            t = open(f, encoding="utf-8", errors="ignore").read()
+            i_load = t.find("gtag/js?id=G-MJ3X88QYEL")
+            i_def = t.find("consent', 'default'")
+            if i_load < 0 or i_def < 0 or i_def > i_load:
+                bad.append(os.path.basename(f))
+        assert bad == []
+
+    def test_accept_grants_via_consent_js(self):
+        js = read("static/js/consent.js")
+        assert "consent', 'update'" in js and "granted" in js
+
+
 class TestFrozenBoundary:
     def test_outlook_py_byte_identical_to_freeze(self):
         cur = hashlib.sha256(read("backend/outlook.py").encode()).hexdigest()
