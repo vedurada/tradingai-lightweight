@@ -60,6 +60,7 @@ def prerender(root: str, api_base: str, dry_run: bool = False) -> str:
     path = root.rstrip("/") + "/index.html"
     with open(path, encoding="utf-8", errors="ignore") as fh:
         html = fh.read()
+    original_html = html
     data = fetch_market(api_base)
     inst = data.get("instruments") or {}
     vix = inst.get("VIX", {})
@@ -80,6 +81,8 @@ def prerender(root: str, api_base: str, dry_run: bool = False) -> str:
     html = patch_span(html, "s-vix-price", vix_price)
     html = patch_span(html, "s-vix-change", vix_chg_s)
 
+    if html == original_html:
+        return "no-data"
     stamp = datetime.datetime.now(
         datetime.timezone(datetime.timedelta(hours=5, minutes=30))
     ).strftime("%d %b %Y, %H:%M IST")
