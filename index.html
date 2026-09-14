@@ -46,6 +46,10 @@ try {
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
 </header>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <!-- AI MARKET OUTLOOK rendered entirely by ai-outlook.js -->
+  <div id="dashboard"></div>
+
   <!-- SEBI Educational Purpose Disclaimer -->
   <div class="card" style="margin:1.5rem 0 1rem 0;border-left:4px solid #dc2626">
     <h3 style="margin:0.2rem 0 0.4rem;color:#dc2626">📌 SEBI Educational Purpose Disclaimer</h3>
@@ -91,8 +95,6 @@ try {
     </div>
   </div>
 
-  <!-- AI MARKET OUTLOOK rendered entirely by ai-outlook.js -->
-
   <!-- Understanding Options Intelligence (educational) -->
   <div class="card card-accent-amber" style="margin-top:1.5rem">
     <h3>Understanding Options Intelligence</h3>
@@ -116,8 +118,6 @@ try {
       All figures are computed server-side from NSE data. Values show "—" when data is temporarily unavailable. Educational purposes only — not investment advice.
     </p>
   </div>
-
-  <div id="dashboard"></div>
 
   <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
   <script>(async function(){try{const r=await (await fetch('api/backtest?symbol=NIFTY&days=30')).json();const g=r.ai_stats?.gated||r;const el=document.getElementById('home-bt-grid');const s=document.getElementById('home-bt-status');if(!r||!g){s.textContent='No backtest data';return;}s.textContent=`AI ${g.trades} trades · WR ${g.win_rate}% · PF ${g.profit_factor} · ${(g.total_points>=0?'+':'')+g.total_points} pts`;el.innerHTML=`<div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Win Rate</div><div style="font-weight:800;color:${g.win_rate>=55?'#15803d':'#dc2626'}">${g.win_rate}%</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Profit Factor</div><div style="font-weight:800">${g.profit_factor}</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Net</div><div style="font-weight:800;color:${g.total_points>=0?'#15803d':'#dc2626'}">${g.total_points>=0?'+':''}${g.total_points} pts</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Max DD</div><div style="font-weight:800;color:#dc2626">${g.max_drawdown} pts</div></div>`;}catch(e){const s=document.getElementById('home-bt-status');if(s)s.textContent='Backtest preview unavailable';}})();</script>
