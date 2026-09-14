@@ -111,11 +111,28 @@ Normal → Failure → User-visible state → Recovery → Normal
 
 ## 8. Verdict
 
-- **FREEZE**: All gates pass, model layer isolated, spec compliant, state transitions verified
+- **FREEZE APPROVED**: All gates pass, model layer isolated, spec compliant, state transitions verified
 
 **Reviewer**: User (independent decision)
 **Date**: 2026-09-14
-**Notes**: 385/385 tests passing. 13 findings implemented. 0 model files modified.
+**Notes**: 385/385 tests passing. 13 findings implemented. 0 model files modified. B.3 FROZEN at 6596cc7.
+
+## 9. Freeze Record
+
+| Item | Value |
+|---|---|
+| Implementation commit | `6596cc7` |
+| Independent review commit | `e4f7f6d` |
+| Tests | 385/385 passing |
+| Model files modified | 0/8 |
+| Scope | B.3 Failure Recovery (13 findings, 35 tests) |
+| Regression | 350 + 35 B.3 = 385 |
+
+**STOP boundary: 6596cc7**
+
+B.4 is a separate scope/spec/authorization cycle — not authorized.
+
+**PHASE 6B-3 B.3: FROZEN 🔒**
 
 ## 9. Freeze Record
 
