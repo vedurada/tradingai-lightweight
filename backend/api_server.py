@@ -2040,6 +2040,7 @@ def etf():
     return jsonify([row_to_dict(r) for r in rows])
 
 _MARKET_BG_RUNNING = False
+_LAST_MARKET_CHANGE = {"data": None, "at": 0.0}
 
 
 def _refresh_market_background():
@@ -2049,17 +2050,21 @@ def _refresh_market_background():
         _time.sleep(15)
         try:
             data = _build_market()
+            mc_data = None
             try:
                 import market_change
                 mc = market_change.analyze("NIFTY")
                 if mc.get("material"):
                     app.logger.info(f"Material market change detected: {mc['changes']}")
+                mc_data = mc
             except Exception as exc:
                 app.logger.debug(f"market_change check skipped: {exc}")
             with _MARKET["lock"] if "lock" in _MARKET else _MARKET:
                 _MARKET["data"] = data
                 _MARKET["at"] = _time.time()
                 _MARKET["building"] = False
+            global _LAST_MARKET_CHANGE
+            _LAST_MARKET_CHANGE = {"data": mc_data, "at": _time.time()}
         except Exception as e:
             app.logger.error(f"Market refresh failed: {e}")
             with _MARKET["lock"] if "lock" in _MARKET else _MARKET:
@@ -2141,6 +2146,24 @@ def market():
                 data["data_quality"] = DATA_QUALITY_STALE
                 data["data_freshness"] = {"age_minutes": round(age), "stale": True}
     return jsonify(c["data"])
+
+
+@app.route("/api/market-change")
+def market_change_endpoint():
+    """Material change status from market_change engine.
+
+    Returns the latest material change analysis: whether a material change
+    was detected, what changed, and the change details for display.
+    Stale after 15 minutes (background refresh interval)."""
+    now = _time.time()
+    d = _LAST_MARKET_CHANGE
+    if d["data"] is not None and (now - d["at"]) < 900:
+        return jsonify(d["data"])
+    if d["data"] is not None:
+        stale = dict(d["data"])
+        stale["stale"] = True
+        return jsonify(stale)
+    return jsonify({"material": False, "reason": "no_data", "changes": []}), 200
 
 
 def _build_market():
