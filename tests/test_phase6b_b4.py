@@ -75,6 +75,29 @@ class TestConnectionPooling:
             r = c.get("/api/health")
             assert r.status_code in (200, 503)
 
+    def test_db_unavailability_returns_503(self):
+        import backend.api_server as mod
+        original_path = mod.DB_PATH
+        try:
+            with mod._pool_lock:
+                mod.db_pool.close_all()
+                mod.db_pool = ConnectionPool(lambda: original_path, max_connections=10)
+                mod._pool_db_path = original_path
+            mod.DB_PATH = "/nonexistent/path/to/db.sqlite"
+            with app.test_client() as c:
+                r = c.get("/api/price/NIFTY")
+                assert r.status_code == 503
+                data = r.get_json()
+                assert data is not None
+                assert data.get("error", {}).get("code") == "SERVICE_DEGRADED"
+                assert "Database temporarily unavailable" in data.get("error", {}).get("message", "")
+        finally:
+            with mod._pool_lock:
+                mod.db_pool.close_all()
+                mod.db_pool = ConnectionPool(lambda: original_path, max_connections=10)
+                mod._pool_db_path = original_path
+            mod.DB_PATH = original_path
+
     def test_connection_creation_reduced(self):
         start = time.monotonic()
         conn = db_pool.get()
