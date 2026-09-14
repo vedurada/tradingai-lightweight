@@ -263,7 +263,21 @@ Same rules as 6B-2, PLUS:
 
 ---
 
-## 8. CSRF Dependency (8.6)
+## 8. Chat Authentication Boundary (Explicitly Resolved)
+
+### Decision: Chat POST authentication is DEFERRED from B.2
+
+The B.2 scope review listed Chat GET/POST as TBD. This ambiguity is now explicitly resolved:
+
+**Chat remains unchanged in B.2.** No authentication is added to any chat endpoint. Chat functionality (GET/POST) behaves exactly as it does in the frozen baseline `3ec9473`.
+
+**Chat authentication** is deferred to a future phase with its own scope review and authorization.
+
+**Rationale**: Chat is not user-specific financial data. Adding auth to chat is a product decision (public forum vs. authenticated space) that requires separate scope definition. The B.2 security scope focuses on portfolio auth and immediate security fixes only.
+
+---
+
+## 9. CSRF Dependency (8.6)
 
 ### Status: PHASED — After auth design
 
@@ -271,11 +285,11 @@ Same rules as 6B-2, PLUS:
 
 **Dependency**: 8.1 Portfolio Auth must be implemented first.
 
-**Future spec**: Define CSRF approach after B.2 auth is frozen and B.2 implementation begins.
+**Future spec**: Define CSRF approach after B.2 auth is frozen and B.2 implementation begins. Chat CSRF is not in scope (chat auth deferred).
 
 ---
 
-## 9. Rate-Limit Interaction with Auth
+## 10. Rate-Limit Interaction with Auth
 
 | Parameter | Value | Notes |
 |---|---|---|
@@ -433,14 +447,66 @@ def test_isolation_two_users_cannot_access_each_other():
 - ❌ User management API
 - ❌ Role-based access control
 - ❌ Admin dashboard
-- ❌ VM-level secrets management
+- ❌ VM-level secrets management (8.4)
+- ❌ Chat authentication (deferred — chat unchanged in B.2)
 - ❌ Audit logging platform
 - ❌ Any changes to analytical/model layer
 - ❌ Any changes to confidence, regime, strategy logic
 - ❌ Historical data or indicator population
 - ❌ Predictive integrity work
 
-## 18. Dependencies
+---
+
+## 18. Three Safeguards for Implementation
+
+These are non-negotiable. Must be verified during implementation and review.
+
+### Safeguard 1: API-Key Hashing Implementation
+
+SHA-256 + salt is appropriate for randomly generated high-entropy API keys (`secrets.token_urlsafe(32)`), NOT human-chosen passwords. Implementation must ensure:
+
+| Requirement | Enforcement |
+|---|---|
+| Raw key shown ONLY at generation | Return plaintext in single API response, nowhere else |
+| Only salted hash persisted | Database stores `key_hash` + `key_salt`, never raw key |
+| Comparison performed safely | Constant-time comparison (`hmac.compare_digest`) |
+| Keys never in logs | Sanitize Authorization header, log key_prefix only |
+| Keys never in exceptions | Catch and redact before logging |
+| Keys never in URLs | Use Authorization header only, never query params |
+| Keys never in database dumps | Dumps contain only hashes |
+
+### Safeguard 2: Portfolio Isolation — Highest Priority Security Invariant
+
+Portfolio isolation is THE security invariant of B.2. Every implementation detail must serve this.
+
+| Test | Method | Expected Result |
+|---|---|---|
+| User A creates entry, User B GET A's ID | Different API keys | 403 |
+| User A creates entry, User B GET /api/portfolio | Different API keys | 200, empty array |
+| User A creates entry, User A GET /api/portfolio | Same API key | 200, contains entry |
+| User B DELETE User A's entry | Different API keys | 403 |
+| Unauthenticated GET /api/portfolio | No key | 401 |
+| Unauthenticated POST /api/portfolio | No key | 401 |
+| Unauthenticated DELETE /api/portfolio/<id> | No key | 401 |
+
+All 7 test cases must pass before B.2 freeze is considered.
+
+### Safeguard 3: Existing Data Migration Determinism
+
+Migration assigns existing portfolio entries to a default user. Implementation must ensure:
+
+| Requirement | Enforcement |
+|---|---|
+| Assignment is deterministic | Default user ID is fixed (first user or explicit `user_id=1`) |
+| Default user credentials not exposed | Default user is not a login credential — API key generated separately |
+| Default user is not universal credential | Each real user gets their own key; default key is for migration only |
+| Migration tested | Explicit migration test: all entries get user_id, no data loss |
+| Migration reversible | Rollback handles column removal and user_id reset |
+| Migration fails safe | If migration fails, auth is NOT enforced; system continues without isolation |
+
+---
+
+## 19. Dependencies
 
 | Finding | Depends On |
 |---|---|
@@ -473,9 +539,18 @@ STOP ⏳
 
 ## 20. Authorization Request
 
-**Specification review**: Ready for independent review.
-**Implementation**: Not authorized until specification review passes and explicit authorization given.
+**Specification review**: ✅ APPROVED
+**Implementation**: ✅ AUTHORIZED
 
-**Next action**: Independent specification review.
+**Implementation scope**: B.2 specification at this commit ONLY.
 
-🔒 STOP boundary remains at `3ec9473` (B.1 frozen). No implementation authorized.
+**Three safeguards** must be verified during implementation:
+1. API-key hashing: raw key shown only at generation, hash persisted, constant-time comparison, never logged
+2. Portfolio isolation: all 7 isolation tests pass, GET/POST/DELETE tested for cross-user access
+3. Migration determinism: all entries get user_id, no data loss, default user is not universal credential, fails safe
+
+**Chat POST remains unchanged** — no auth added in B.2.
+
+**Next action**: Begin implementation.
+
+🔒 STOP boundary remains at `3ec9473` (B.1 frozen). B.2 implementation authorized per this specification.
