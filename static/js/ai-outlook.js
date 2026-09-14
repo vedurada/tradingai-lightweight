@@ -484,7 +484,20 @@
     var vixData = results[2];
     var breadthData = results[3];
 
-    if (!outlook || outlook.error) {
+    // S3 (Track C): empty payloads ("{}", "", {}) are truthy but carry no
+    // intelligence — treat them as missing, never render empty sections.
+    function isEmptyOutlook(o) {
+      if (!o || o.error) return true;
+      if (typeof o === 'string') {
+        var s = o.trim();
+        if (s === '' || s === '{}') return true;
+        try { o = JSON.parse(s); } catch (e) { return true; }
+      }
+      if (typeof o !== 'object') return true;
+      return Object.keys(o).length === 0;
+    }
+
+    if (isEmptyOutlook(outlook)) {
       el.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">No AI Market Outlook data available for ' + symbol + '. Run the outlook generator first.</div>';
       return;
     }
@@ -513,11 +526,13 @@
     html += buildRegimeTradeability(outlook);
     html += buildOutlookBars(outlook);
     html += buildFactors(outlook, breadthData);
+    // S9 (Track C): enforced section order — regime → confidence → key levels
+    // → options → strategy → AI explanation → invalidation (always visible).
+    html += buildKeyLevels(outlook);
     html += buildOptionsIntelligence(outlook);
     html += buildStrategies(outlook);
-    html += buildKeyLevels(outlook);
-    html += buildRisk(outlook);
     html += buildDecision(outlook);
+    html += buildRisk(outlook);
     html += buildTradeRecord(outlook);
 
     // Disclaimer
