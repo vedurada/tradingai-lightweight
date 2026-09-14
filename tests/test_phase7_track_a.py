@@ -48,8 +48,8 @@ def tmp_auth_key(monkeypatch, tmp_path):
 class TestNginxSnippet:
     def test_snippet_covers_server_and_locations(self):
         content = open(_repo("ops/nginx-tradingai.conf")).read()
-        assert content.count("include snippets/tradingai-security-headers.conf;") == 6, \
-            "server + 5 self-headered locations must include the snippet"
+        assert content.count("include snippets/tradingai-security-headers.conf;") == 7, \
+            "server + 6 self-headered locations must include the snippet (6th: Track C S1 404 location)"
 
     def test_snippet_has_all_headers(self):
         content = open(_repo("ops/nginx-snippets/tradingai-security-headers.conf")).read()
