@@ -1690,8 +1690,8 @@ def backtest():
             return error_response("INVALID_REQUEST", json.dumps(errors), 400)
     else:
         body = request.args.to_dict()
-        body["symbol"] = body.get("symbol", "NIFTY")
-        body["days"] = int(body.get("days", 30))
+    body["symbol"] = str(body.get("symbol", "NIFTY")).strip().upper()
+    body["days"] = int(body.get("days", 30))
 
     job_id = str(uuid.uuid4())[:12]
     with _jobs_lock:
@@ -1715,8 +1715,8 @@ def backtest_vix_strangle():
             return error_response("INVALID_REQUEST", json.dumps(errors), 400)
     else:
         body = request.args.to_dict()
-        body["symbol"] = body.get("symbol", "NIFTY")
-        body["days"] = int(body.get("days", 3650))
+    body["symbol"] = str(body.get("symbol", "NIFTY")).strip().upper()
+    body["days"] = int(body.get("days", 3650))
 
     job_id = str(uuid.uuid4())[:12]
     with _jobs_lock:
@@ -1740,8 +1740,8 @@ def backtest_5m_real():
             return error_response("INVALID_REQUEST", json.dumps(errors), 400)
     else:
         body = request.args.to_dict()
-        body["symbol"] = body.get("symbol", "NIFTY")
-        body["days"] = int(body.get("days", 60))
+    body["symbol"] = str(body.get("symbol", "NIFTY")).strip().upper()
+    body["days"] = int(body.get("days", 60))
 
     job_id = str(uuid.uuid4())[:12]
     with _jobs_lock:

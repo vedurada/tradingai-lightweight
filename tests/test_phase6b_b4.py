@@ -209,7 +209,9 @@ class TestAsyncBacktest:
                 async_result2 = r_poll2.get_json().get("result")
 
             if async_result and async_result2:
-                assert str(async_result) == str(async_result2), "Backtest results must be identical"
+                r1 = {k: v for k, v in async_result.items() if k != "generated_at"}
+                r2 = {k: v for k, v in async_result2.items() if k != "generated_at"}
+                assert r1 == r2, "Backtest results must be identical (excluding generated_at)"
 
 
 class TestMarketDataPerformance:
