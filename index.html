@@ -78,6 +78,13 @@ try {
       <div class="status">VIX: <span id="s-sensex-vix">—</span></div>
     </div>
     <div class="card" style="min-height:120px">
+      <h3>FINNIFTY</h3>
+      <div class="price" id="s-finnifty-price">—</div>
+      <div class="badge" style="background:#0ea5e920;color:#0ea5e9">N/A</div>
+      <div class="status">Trend: <span id="s-finnifty-trend">—</span></div>
+      <div class="status">VIX: <span id="s-finnifty-vix">—</span></div>
+    </div>
+    <div class="card" style="min-height:120px">
       <h3>INDIA VIX</h3>
       <div class="price" id="s-vix-price">—</div>
       <div class="status">Change: <span id="s-vix-change">—</span></div>
@@ -218,7 +225,7 @@ try {
       <strong>PCR (Put-Call Ratio)</strong> compares total Put open interest to Call open interest. A PCR above 1.5 suggests put-heavy positioning (often bearish sentiment); below 0.7 suggests call-heavy (bullish). Values between 0.7 and 1.5 are considered balanced. PCR does not predict direction alone — it measures where capital is allocated.
     </p>
     <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
-      <strong>Max Pain</strong> is the strike at which the maximum number of option holders would lose money at expiry. Price tends to gravitate toward Max Pain near expiry as market makers hedge to minimize payouts. It is a short-term reference, not a guarantee.
+      <strong>Max Pain</strong> is the strike at which the maximum number of option holders would lose money at expiry. Max Pain is a theoretical expiry reference derived from option open interest. Some traders watch it as a possible magnet level, but there is no reliable evidence that price converges to it; treat it as context, not a forecast. It is a short-term reference, not a guarantee.
     </p>
     <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
       <strong>Expected Move</strong> estimates the one-standard-deviation price range by expiry based on implied volatility — about 68% of the time price stays within this range. It is not a forecast of direction.
