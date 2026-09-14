@@ -10,6 +10,7 @@ import uuid
 import secrets
 import hashlib
 import hmac
+import functools
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -32,6 +33,8 @@ from data_quality import (
     DATA_QUALITY_UNAVAILABLE, DATA_QUALITY_PARTIAL,
     data_age_minutes,
 )
+from db_pool import ConnectionPool, PooledConnection
+from cache import ResponseCache
 
 app = Flask(__name__)
 
@@ -112,7 +115,31 @@ def _set_request_timeout():
 @app.after_request
 def _record_metrics_and_clear_timeout(response):
     signal.alarm(0)
-    response.headers["X-Correlation-ID"] = g.correlation_id
+    try:
+        response.headers["X-Correlation-ID"] = g.correlation_id
+    except AttributeError:
+        pass
+    try:
+        endpoint = request.endpoint
+        if endpoint:
+            duration_ms = (getattr(g, "request_start", _time.monotonic()) - _time.monotonic()) * 1000
+            status_code = response.status_code
+            error_code = None
+            if status_code >= 400:
+                try:
+                    body = response.get_json()
+                    if body and "error" in body and "code" in body["error"]:
+                        error_code = body["error"]["code"]
+                except Exception:
+                    pass
+            monitor.record_request(endpoint, duration_ms, status_code, error_code)
+            log_request(
+                logger, endpoint, status_code, error_code=error_code,
+                latency_ms=duration_ms, correlation_id=getattr(g, "correlation_id", "unknown"),
+            )
+    except Exception:
+        pass
+    return response
     endpoint = request.endpoint
     if endpoint:
         duration_ms = (_time.monotonic() - g.request_start) * 1000
@@ -230,12 +257,20 @@ def metrics():
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
 
+db_pool = ConnectionPool(lambda: DB_PATH, max_connections=10)
+response_cache = ResponseCache()
+_pool_db_path = DB_PATH
+_pool_lock = threading.Lock()
+
 def get_db():
-    conn = sqlite3.connect(DB_PATH, timeout=10, check_same_thread=False)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA busy_timeout=10000")
-    return conn
+    global db_pool, _pool_db_path
+    current_path = DB_PATH
+    with _pool_lock:
+        if _pool_db_path != current_path:
+            db_pool.close_all()
+            db_pool = ConnectionPool(lambda: DB_PATH, max_connections=10)
+            _pool_db_path = current_path
+    return PooledConnection(db_pool.get(), db_pool)
 
 def row_to_dict(row):
     if row is None:
@@ -317,14 +352,71 @@ def _enrich_with_freshness(response, source_tables):
         response["data_freshness"] = {"age_minutes": round(max(ages)) if ages else None, "stale": False}
     return response
 
+def _paginate_list(conn, select_sql, select_params, total_sql, total_params, page, page_size):
+    offset = (page - 1) * page_size
+    rows = conn.execute(select_sql, (*select_params, page_size, offset)).fetchall()
+    total_row = conn.execute(total_sql, total_params).fetchone()
+    total = total_row[0] if total_row else 0
+    return rows, total
+
+
+def _page_params():
+    page = request.args.get("page", 1, type=int)
+    page_size = request.args.get("page_size", 50, type=int)
+    page_size = min(page_size, 500)
+    page = max(page, 1)
+    return page, page_size
+
+
+def _paginated_response(rows, total, page, page_size):
+    return jsonify({
+        "data": [row_to_dict(r) for r in rows],
+        "pagination": {
+            "page": page,
+            "page_size": page_size,
+            "total": total,
+            "total_pages": (total + page_size - 1) // page_size if page_size > 0 else 0,
+        },
+    })
+
+
 def serialize_val(v):
     if isinstance(v, float):
         return round(v, 4)
     return v
 
+def cache_page(ttl):
+    def decorator(f):
+        @functools.wraps(f)
+        def wrapper(*args, **kwargs):
+            key_parts = [f.__name__, str(args), str(sorted(kwargs.items()))]
+            if request.args:
+                key_parts.append(str(sorted(request.args.items(multi=True))))
+            key = "|".join(key_parts)
+            cached = response_cache.get(key)
+            if cached is not None:
+                return jsonify(cached)
+            result = f(*args, **kwargs)
+            if isinstance(result, tuple) and len(result) == 2:
+                resp, status = result
+                if status == 200 and hasattr(resp, "get_json"):
+                    data = resp.get_json()
+                    if data is not None and "error" not in data:
+                        response_cache.set(key, data, ttl)
+                return resp, status
+            if hasattr(result, "get_json"):
+                data = result.get_json()
+                if data is not None and "error" not in data:
+                    response_cache.set(key, data, ttl)
+            return result
+        return wrapper
+    return decorator
+
+
 @app.route("/api/health")
 @limiter.exempt
 def health():
+    pool_status = db_pool.status
     sources = {
         "nifty_price": _check_source_freshness("nifty_price", threshold=30),
         "vix": _check_source_freshness("vix", threshold=60),
@@ -333,12 +425,16 @@ def health():
     any_stale = any(s["status"] == "stale" for s in sources.values())
     all_stale = all(s["status"] != "ok" for s in sources.values())
     overall = "ok" if not any_stale else "degraded"
+    if pool_status["exhausted"]:
+        overall = "degraded"
     warnings = []
     for name, info in sources.items():
         if info["status"] == "stale":
             warnings.append(f"{name} data {info['age_minutes']}m stale")
         elif info["status"] == "unavailable":
             warnings.append(f"{name} data unavailable")
+    if pool_status["exhausted"]:
+        warnings.append("connection pool exhausted")
     freshness = {}
     for name, info in sources.items():
         if info["age_minutes"] is not None:
@@ -350,16 +446,27 @@ def health():
         "data_freshness": freshness,
         "sources": sources,
         "overall": overall,
+        "pool": pool_status,
     })
 
 @app.route("/api/symbols")
+@cache_page(86400)
 def symbols():
+    page, page_size = _page_params()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM symbols WHERE active=1 ORDER BY type, symbol").fetchall()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM symbols WHERE active=1 ORDER BY type, symbol LIMIT ? OFFSET ?",
+        (),
+        "SELECT COUNT(*) FROM symbols WHERE active=1",
+        (),
+        page, page_size,
+    )
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/price/<symbol>")
+@cache_page(5)
 def latest_price(symbol):
     """Single genuine price: same source as /api/<symbol> quote (live_quotes -> price_1m -> price_1d)."""
     s = (symbol or "").upper()
@@ -402,6 +509,7 @@ def latest_price(symbol):
     return jsonify({"error": "no data", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
 
 @app.route("/api/prices/<symbol>")
+@cache_page(5)
 def prices(symbol):
     limit = request.args.get("limit", 100, type=int)
     interval = request.args.get("interval", "1m")
@@ -414,21 +522,39 @@ def prices(symbol):
     return jsonify([row_to_dict(r) for r in reversed(rows)])
 
 @app.route("/api/prices")
+@cache_page(5)
 def all_prices():
-    limit = request.args.get("limit", 50, type=int)
+    page, page_size = _page_params()
+    limit = request.args.get("limit", page_size, type=int)
+    limit = min(limit, page_size)
     symbols_param = request.args.get("symbols", "")
     conn = get_db()
     if symbols_param:
         syms = symbols_param.split(",")
         placeholders = ",".join("?" for _ in syms)
         assert_table_name("price_1m")
-        rows = conn.execute(f"SELECT * FROM price_1m WHERE symbol IN ({placeholders}) ORDER BY timestamp DESC LIMIT ?", (*syms, limit)).fetchall()
+        rows, total = _paginate_list(
+            conn,
+            f"SELECT * FROM price_1m WHERE symbol IN ({placeholders}) ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (*syms,),
+            "SELECT COUNT(*) FROM price_1m WHERE symbol IN ({})".format(placeholders),
+            (*syms,),
+            limit, (page - 1) * limit,
+        )
     else:
-        rows = conn.execute("SELECT * FROM price_1m ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+        rows, total = _paginate_list(
+            conn,
+            "SELECT * FROM price_1m ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (),
+            "SELECT COUNT(*) FROM price_1m",
+            (),
+            limit, (page - 1) * limit,
+        )
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    return _paginated_response(rows, total, page, limit)
 
 @app.route("/api/vix")
+@cache_page(5)
 def vix():
     conn = get_db()
     row = conn.execute("SELECT * FROM vix_data ORDER BY timestamp DESC LIMIT 1").fetchone()
@@ -449,14 +575,25 @@ def vix():
     return jsonify({"error": "no VIX data", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
 
 @app.route("/api/vix/history")
+@cache_page(5)
 def vix_history():
-    limit = request.args.get("limit", 100, type=int)
+    page, page_size = _page_params()
+    limit = request.args.get("limit", page_size, type=int)
+    limit = min(limit, page_size)
     conn = get_db()
-    rows = conn.execute("SELECT * FROM vix_data ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM vix_data ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        (),
+        "SELECT COUNT(*) FROM vix_data",
+        (),
+        limit, (page - 1) * limit,
+    )
     conn.close()
-    return jsonify([row_to_dict(r) for r in reversed(rows)])
+    return _paginated_response(list(reversed(rows)), total, page, limit)
 
 @app.route("/api/vix/daily")
+@cache_page(5)
 def vix_daily():
     days = request.args.get("days", 60, type=int)
     conn = get_db()
@@ -469,6 +606,7 @@ def vix_daily():
     return jsonify(list(seen.values()))
 
 @app.route("/api/indicators/<symbol>")
+@cache_page(5)
 def indicators(symbol):
     conn = get_db()
     row = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
@@ -478,6 +616,7 @@ def indicators(symbol):
     return jsonify({"error": "no indicators"}), 404
 
 @app.route("/api/indicators")
+@cache_page(5)
 def indicators_default():
     symbol = request.args.get("symbol", "NIFTY")
     conn = get_db()
@@ -767,6 +906,24 @@ def _data_completeness(**fields):
     return {k: bool(v) for k, v in fields.items()}
 
 
+def _execute_write(conn, query, params=None, max_retries=3):
+    for attempt in range(max_retries):
+        try:
+            conn.execute("BEGIN IMMEDIATE")
+            if params:
+                conn.execute(query, params)
+            else:
+                conn.execute(query)
+            conn.commit()
+            return True
+        except sqlite3.OperationalError as e:
+            conn.rollback()
+            if "database is locked" in str(e) and attempt < max_retries - 1:
+                _time.sleep(0.1 * (attempt + 1))
+                continue
+            raise
+
+
 def error_response(code, message, status_code=400):
     return jsonify({
         "error": {
@@ -879,6 +1036,7 @@ def _symbol_data(symbol):
         conn.close()
 
 @app.route("/api/regime/<symbol>")
+@cache_page(3600)
 def regime(symbol):
     conn = get_db()
     row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
@@ -888,13 +1046,23 @@ def regime(symbol):
     return jsonify({"error": "no regime"}), 404
 
 @app.route("/api/regimes")
+@cache_page(3600)
 def all_regimes():
+    page, page_size = _page_params()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM market_regime ORDER BY timestamp DESC LIMIT 50").fetchall()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM market_regime ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        (),
+        "SELECT COUNT(*) FROM market_regime",
+        (),
+        page, page_size,
+    )
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/strategy/<symbol>")
+@cache_page(3600)
 def strategy(symbol):
     conn = get_db()
     row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
@@ -904,14 +1072,38 @@ def strategy(symbol):
     return jsonify({"error": "no strategy"}), 404
 
 @app.route("/api/strategies")
+@cache_page(3600)
 def all_strategies():
+    page, page_size = _page_params()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM strategies ORDER BY timestamp DESC").fetchall()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM strategies ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        (),
+        "SELECT COUNT(*) FROM strategies",
+        (),
+        page, page_size,
+    )
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/scenarios/<symbol>")
+@cache_page(3600)
 def scenarios(symbol):
+    conn = get_db()
+    page, page_size = _page_params()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM scenarios WHERE symbol=? ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        (symbol,),
+        "SELECT COUNT(*) FROM scenarios WHERE symbol=?",
+        (symbol,),
+        page, page_size,
+    )
+    conn.close()
+    if rows:
+        return _paginated_response(rows, total, page, page_size)
+    return jsonify({"error": "no scenarios", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
     conn = get_db()
     row = conn.execute("SELECT * FROM scenarios WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
     conn.close()
@@ -920,6 +1112,7 @@ def scenarios(symbol):
     return jsonify({"error": "no scenarios"}), 404
 
 @app.route("/api/outlook/<symbol>")
+@cache_page(3600)
 def outlook(symbol):
     conn = get_db()
     row = conn.execute("SELECT * FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
@@ -929,14 +1122,24 @@ def outlook(symbol):
     return jsonify({"error": "no outlook"}), 404
 
 @app.route("/api/outlooks")
+@cache_page(3600)
 def all_outlooks():
+    page, page_size = _page_params()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM ai_outlooks ORDER BY timestamp DESC LIMIT 50").fetchall()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM ai_outlooks ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        (),
+        "SELECT COUNT(*) FROM ai_outlooks",
+        (),
+        page, page_size,
+    )
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/options/<symbol>")
 @limiter.limit("30/minute")
+@cache_page(600)
 def options(symbol):
     expiry = request.args.get("expiry", "")
     conn = get_db()
@@ -949,6 +1152,7 @@ def options(symbol):
 
 @app.route("/api/options/expiries/<symbol>")
 @limiter.limit("30/minute")
+@cache_page(600)
 def option_expiries(symbol):
     conn = get_db()
     rows = conn.execute("SELECT * FROM option_expiries WHERE symbol=? ORDER BY expiry", (symbol,)).fetchall()
@@ -956,6 +1160,7 @@ def option_expiries(symbol):
     return jsonify([row_to_dict(r) for r in rows])
 
 @app.route("/api/pcr")
+@cache_page(600)
 def pcr():
     """Put-Call Ratio per index symbol per expiry, from EOD OI data."""
     symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
@@ -978,6 +1183,7 @@ def pcr():
     return jsonify(out)
 
 @app.route("/api/maxpain")
+@cache_page(600)
 def max_pain():
     """Max-pain strike per index symbol per expiry."""
     symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
@@ -1006,6 +1212,7 @@ def max_pain():
     return jsonify(out)
 
 @app.route("/api/pcr-history")
+@cache_page(600)
 def pcr_history():
     """Daily PCR/max-pain trend per index symbol (for the small multi-day chart)."""
     symbols = request.args.get("symbols", "NIFTY,BANKNIFTY,FINNIFTY").split(",")
@@ -1022,6 +1229,7 @@ def pcr_history():
     return jsonify(out)
 
 @app.route("/api/oi-top")
+@cache_page(600)
 def oi_top():
     """Top OI strikes per symbol/expiry/side."""
     symbol = request.args.get("symbol", "NIFTY")
@@ -1035,6 +1243,7 @@ def oi_top():
     return jsonify([row_to_dict(r) for r in rows])
 
 @app.route("/api/oi-concentration/<symbol>")
+@cache_page(600)
 def oi_concentration(symbol):
     """OI concentration per expiry with source-aware OI change."""
     symbol = symbol.upper()
@@ -1073,6 +1282,7 @@ def oi_concentration(symbol):
     return jsonify(out)
 
 @app.route("/api/expected-move/<symbol>")
+@cache_page(600)
 def expected_move(symbol):
     """Options-implied expected move using ATM IV and time to expiry."""
     symbol = symbol.upper()
@@ -1264,6 +1474,7 @@ def _build_outlook_on_demand(conn, symbol):
 
 
 @app.route("/api/market-outlook")
+@cache_page(3600)
 def market_outlook_latest():
     """Latest daily market outlook record (framework payload), LLM-primary."""
     symbol = request.args.get("symbol", "NIFTY").upper()
@@ -1290,6 +1501,7 @@ def market_outlook_latest():
         conn.close()
 
 @app.route("/api/market-outlook/<date>")
+@cache_page(3600)
 def market_outlook_by_date(date):
     """Market outlook for a specific date (YYYY-MM-DD)."""
     symbol = request.args.get("symbol", "NIFTY").upper()
@@ -1396,16 +1608,18 @@ def portfolio_add():
     sym = (body.get("symbol") or "").strip().upper()
     direction = (body.get("direction") or "LONG").upper()
     conn = get_db()
-    conn.execute(
-        "INSERT INTO portfolio (user_id, symbol, strategy, entry_price, quantity, direction, entry_date,"
-        " exit_price, exit_date, points, result, created_at)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
-        (user_id, sym, body.get("strategy", ""), body.get("entry_price"), body.get("quantity"),
-         direction, body.get("entry_date") or datetime.now(timezone.utc).date().isoformat(),
-         body.get("exit_price"), body.get("exit_date"), body.get("points"),
-         (body.get("result") or "").upper(), datetime.now(timezone.utc).isoformat()))
-    conn.commit()
-    conn.close()
+    try:
+        _execute_write(
+            conn,
+            "INSERT INTO portfolio (user_id, symbol, strategy, entry_price, quantity, direction, entry_date,"
+            "exit_price, exit_date, points, result, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))",
+            (user_id, sym, body.get("strategy", ""), body.get("entry_price"), body.get("quantity"),
+             direction, body.get("entry_date") or datetime.now(timezone.utc).date().isoformat(),
+             body.get("exit_price"), body.get("exit_date"), body.get("points"),
+             (body.get("result") or "").upper()),
+        )
+    finally:
+        conn.close()
     return jsonify({"ok": True})
 
 @app.route("/api/portfolio/<int:pid>", methods=["DELETE"])
@@ -1424,52 +1638,165 @@ def portfolio_delete(pid):
     conn.close()
     return jsonify({"ok": True})
 
+_backtest_jobs = {}
+_jobs_lock = threading.Lock()
+
+
+def _validate_backtest_payload(body):
+    errors = []
+    if not body:
+        return errors
+    if "symbol" in body:
+        sym = str(body.get("symbol", "")).strip().upper()
+        if not sym:
+            errors.append("symbol is required")
+    if "days" in body:
+        try:
+            d = int(body.get("days", 0))
+            if d <= 0:
+                errors.append("days must be positive")
+        except (TypeError, ValueError):
+            errors.append("days must be integer")
+    return errors
+
+
+def _submit_backtest(job_id, engine_type, params):
+    try:
+        from backtest import BacktestEngine
+        db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+        engine = BacktestEngine(db_path)
+        if engine_type == "run":
+            result = engine.run(params.get("symbol", "NIFTY").strip().upper(), params.get("days", 30))
+        elif engine_type == "run_vix_strangle":
+            result = engine.run_vix_strangle(params.get("symbol", "NIFTY").strip().upper(), params.get("days", 3650))
+        elif engine_type == "run_5m_real":
+            result = engine.run_5m_real(params.get("symbol", "NIFTY").strip().upper(), params.get("days", 60))
+        else:
+            result = engine.run(params.get("symbol", "NIFTY").strip().upper(), params.get("days", 30))
+        with _jobs_lock:
+            _backtest_jobs[job_id] = {"status": "completed", "result": result}
+    except Exception as e:
+        with _jobs_lock:
+            _backtest_jobs[job_id] = {"status": "failed", "error": str(e)}
+
+
 @app.route("/api/backtest")
 @limiter.limit("10/minute")
 def backtest():
-    symbol = request.args.get("symbol", "NIFTY").strip().upper()
-    days = request.args.get("days", 30, type=int)
-    from backtest import BacktestEngine
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
-    engine = BacktestEngine(db_path)
-    result = engine.run(symbol, days)
-    return jsonify(result)
+    body = request.args.to_dict() if request.method == "GET" else (request.get_json(silent=True) or {})
+    if isinstance(body, dict) and body:
+        errors = _validate_backtest_payload(body)
+        if errors:
+            return error_response("INVALID_REQUEST", json.dumps(errors), 400)
+    else:
+        body = request.args.to_dict()
+        body["symbol"] = body.get("symbol", "NIFTY")
+        body["days"] = int(body.get("days", 30))
+
+    job_id = str(uuid.uuid4())[:12]
+    with _jobs_lock:
+        _backtest_jobs[job_id] = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat()}
+    thread = threading.Thread(
+        target=_submit_backtest,
+        args=(job_id, "run", body),
+        daemon=True,
+    )
+    thread.start()
+    return jsonify({"job_id": job_id, "status": "running", "poll": f"/api/backtest/{job_id}"}), 202
+
 
 @app.route("/api/backtest/vix-strangle")
 @limiter.limit("10/minute")
 def backtest_vix_strangle():
-    symbol = request.args.get("symbol", "NIFTY").strip().upper()
-    days = request.args.get("days", 3650, type=int)
-    from backtest import BacktestEngine
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
-    engine = BacktestEngine(db_path)
-    result = engine.run_vix_strangle(symbol, days)
-    return jsonify(result)
+    body = request.args.to_dict() if request.method == "GET" else (request.get_json(silent=True) or {})
+    if isinstance(body, dict) and body:
+        errors = _validate_backtest_payload(body)
+        if errors:
+            return error_response("INVALID_REQUEST", json.dumps(errors), 400)
+    else:
+        body = request.args.to_dict()
+        body["symbol"] = body.get("symbol", "NIFTY")
+        body["days"] = int(body.get("days", 3650))
+
+    job_id = str(uuid.uuid4())[:12]
+    with _jobs_lock:
+        _backtest_jobs[job_id] = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat()}
+    thread = threading.Thread(
+        target=_submit_backtest,
+        args=(job_id, "run_vix_strangle", body),
+        daemon=True,
+    )
+    thread.start()
+    return jsonify({"job_id": job_id, "status": "running", "poll": f"/api/backtest/{job_id}"}), 202
+
 
 @app.route("/api/backtest/5m-real")
 @limiter.limit("10/minute")
 def backtest_5m_real():
-    symbol = request.args.get("symbol", "NIFTY").strip().upper()
-    days = request.args.get("days", 60, type=int)
-    from backtest import BacktestEngine
-    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
-    engine = BacktestEngine(db_path)
-    result = engine.run_5m_real(symbol, days)
-    return jsonify(result)
+    body = request.args.to_dict() if request.method == "GET" else (request.get_json(silent=True) or {})
+    if isinstance(body, dict) and body:
+        errors = _validate_backtest_payload(body)
+        if errors:
+            return error_response("INVALID_REQUEST", json.dumps(errors), 400)
+    else:
+        body = request.args.to_dict()
+        body["symbol"] = body.get("symbol", "NIFTY")
+        body["days"] = int(body.get("days", 60))
+
+    job_id = str(uuid.uuid4())[:12]
+    with _jobs_lock:
+        _backtest_jobs[job_id] = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat()}
+    thread = threading.Thread(
+        target=_submit_backtest,
+        args=(job_id, "run_5m_real", body),
+        daemon=True,
+    )
+    thread.start()
+    return jsonify({"job_id": job_id, "status": "running", "poll": f"/api/backtest/{job_id}"}), 202
+
+
+@app.route("/api/backtest/<job_id>", methods=["GET"])
+def backtest_poll(job_id):
+    with _jobs_lock:
+        job = _backtest_jobs.get(job_id)
+    if job is None:
+        return error_response("NOT_FOUND", "Job not found", 404)
+    if job["status"] == "running":
+        return jsonify({"job_id": job_id, "status": "running"}), 202
+    if job["status"] == "completed":
+        return jsonify({"job_id": job_id, "status": "completed", "result": job["result"]})
+    if job["status"] == "failed":
+        return error_response("BACKTEST_FAILED", job["error"], 500)
 
 @app.route("/api/alerts")
+@cache_page(5)
 def alerts():
-    limit = request.args.get("limit", 50, type=int)
+    page, page_size = _page_params()
     symbol = request.args.get("symbol", "").strip().upper()
     conn = get_db()
     if symbol:
-        rows = conn.execute("SELECT * FROM alerts WHERE symbol=? ORDER BY timestamp DESC LIMIT ?", (symbol, limit)).fetchall()
+        rows, total = _paginate_list(
+            conn,
+            "SELECT * FROM alerts WHERE symbol=? ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (symbol,),
+            "SELECT COUNT(*) FROM alerts WHERE symbol=?",
+            (symbol,),
+            page, page_size,
+        )
     else:
-        rows = conn.execute("SELECT * FROM alerts ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+        rows, total = _paginate_list(
+            conn,
+            "SELECT * FROM alerts ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (),
+            "SELECT COUNT(*) FROM alerts",
+            (),
+            page, page_size,
+        )
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/etf-holdings")
+@cache_page(86400)
 def etf_holdings():
     symbol = request.args.get("symbol", "").strip().upper()
     conn = get_db()
@@ -1482,6 +1809,7 @@ def etf_holdings():
     return jsonify([row_to_dict(r) for r in rows])
 
 @app.route("/api/breadth")
+@cache_page(5)
 def breadth():
     conn = get_db()
     row = conn.execute("SELECT * FROM market_breadth ORDER BY timestamp DESC LIMIT 1").fetchone()
@@ -1491,6 +1819,7 @@ def breadth():
     return jsonify({"error": "no breadth"}), 404
 
 @app.route("/api/index-breadth")
+@cache_page(5)
 def index_breadth():
     """Latest official NSE advances/declines per index."""
     conn = get_db()
@@ -1504,14 +1833,23 @@ def index_breadth():
 
 
 @app.route("/api/breadth/history")
+@cache_page(5)
 def breadth_history():
-    limit = request.args.get("limit", 100, type=int)
+    page, page_size = _page_params()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM market_breadth ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM market_breadth ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        (),
+        "SELECT COUNT(*) FROM market_breadth",
+        (),
+        page, page_size,
+    )
     conn.close()
-    return jsonify([row_to_dict(r) for r in reversed(rows)])
+    return _paginated_response(list(reversed(rows)), total, page, page_size)
 
 @app.route("/api/snapshot")
+@cache_page(5)
 def snapshot():
     conn = get_db()
     row = conn.execute("SELECT * FROM market_snapshots ORDER BY timestamp DESC LIMIT 1").fetchone()
@@ -1521,14 +1859,23 @@ def snapshot():
     return jsonify({"error": "no snapshot"}), 404
 
 @app.route("/api/snapshots")
+@cache_page(5)
 def snapshots():
-    limit = request.args.get("limit", 50, type=int)
+    page, page_size = _page_params()
     conn = get_db()
-    rows = conn.execute("SELECT * FROM market_snapshots ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
+    rows, total = _paginate_list(
+        conn,
+        "SELECT * FROM market_snapshots ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+        (),
+        "SELECT COUNT(*) FROM market_snapshots",
+        (),
+        page, page_size,
+    )
     conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/fundamentals/<symbol>")
+@cache_page(86400)
 def fundamentals(symbol):
     conn = get_db()
     row = conn.execute("SELECT * FROM fundamentals WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
@@ -1538,6 +1885,7 @@ def fundamentals(symbol):
     return jsonify({"error": "no fundamentals"}), 404
 
 @app.route("/api/data_status")
+@cache_page(5)
 def data_status():
     conn = get_db()
     rows = conn.execute("SELECT * FROM data_status ORDER BY symbol").fetchall()
@@ -1545,49 +1893,108 @@ def data_status():
     return jsonify([row_to_dict(r) for r in rows])
 
 @app.route("/api/etf")
+@cache_page(86400)
 def etf():
     conn = get_db()
     rows = conn.execute("SELECT * FROM etf_data ORDER BY timestamp DESC LIMIT 50").fetchall()
     conn.close()
     return jsonify([row_to_dict(r) for r in rows])
 
+_MARKET_BG_RUNNING = False
+
+
+def _refresh_market_background():
+    global _MARKET_BG_RUNNING
+    _MARKET_BG_RUNNING = True
+    while True:
+        _time.sleep(15)
+        try:
+            data = _build_market()
+            with _MARKET["lock"] if "lock" in _MARKET else _MARKET:
+                _MARKET["data"] = data
+                _MARKET["at"] = _time.time()
+                _MARKET["building"] = False
+        except Exception as e:
+            app.logger.error(f"Market refresh failed: {e}")
+            with _MARKET["lock"] if "lock" in _MARKET else _MARKET:
+                _MARKET["building"] = False
+        if _MARKET["data"] is None:
+            pass
+
+
+def _ensure_market_bg():
+    global _MARKET_BG_RUNNING
+    if not _MARKET_BG_RUNNING and _MARKET["data"] is not None:
+        _MARKET_BG_RUNNING = True
+        threading.Thread(target=_refresh_market_background, daemon=True).start()
+
+
 @app.route("/api/market")
+@cache_page(20)
 def market():
     """Legacy shape: {instruments: {SYM: symbol_payload}, ai_outlook, last_updated, data_quality}.
-    Single-flight rebuild cached TTL; concurrent requests / stale serves from cache so the
-    site-wide ticker and dashboard never block on the ~20s full recompute."""
+    Non-blocking: stale data served during rebuild with STALE flag; background refresh thread
+    keeps cache current so site-wide ticker and dashboard never block."""
     c = _MARKET
     now = _time.time()
-    if (c["data"] is None or now - c["at"] > _MARKET_TTL) and not c["building"]:
-        c["building"] = True
-        data = None
+    if "lock" not in c:
+        c["lock"] = threading.Lock()
+    with c["lock"]:
+        if c["data"] is not None and (now - c["at"]) < _MARKET_TTL:
+            return jsonify(c["data"])
+        if c["data"] is not None:
+            if not c.get("building"):
+                c["building"] = True
+                _ensure_market_bg()
+            data = dict(c["data"]) if isinstance(c["data"], dict) else c["data"]
+            if isinstance(data, dict):
+                data["data_quality"] = DATA_QUALITY_STALE
+                data["data_freshness"] = {"age_minutes": round(now - c["at"]), "stale": True}
+            return jsonify(data)
+        if not c.get("building"):
+            c["building"] = True
         try:
             data = _build_market()
             c["data"] = data
             c["at"] = _time.time()
+            c["building"] = False
+            if data is not None:
+                _ensure_market_bg()
+                return jsonify(data)
         except Exception as e:
             app.logger.warning(f"market rebuild failed: {e}")
-        finally:
             c["building"] = False
-        if data is not None:
-            return jsonify(data)
-    if c["data"] is not None:
-        return jsonify(c["data"])
     deadline = _time.time() + _MARKET_TTL + 15
     while c["data"] is None and _time.time() < deadline:
         _time.sleep(0.5)
-        if not c["building"]:
-            c["building"] = True
-            try:
-                data = _build_market()
+        with c["lock"]:
+            if c["data"] is not None:
+                return jsonify(c["data"])
+            if not c.get("building"):
+                c["building"] = True
+        try:
+            data = _build_market()
+            with c["lock"]:
                 c["data"] = data
                 c["at"] = _time.time()
-            except Exception:
-                pass
-            finally:
+                c["building"] = False
+            if data is not None:
+                _ensure_market_bg()
+                return jsonify(data)
+        except Exception:
+            with c["lock"]:
                 c["building"] = False
             break
-    return jsonify(c["data"] or {})
+    with c["lock"]:
+        if c["data"] is None:
+            return jsonify({"error": "market data unavailable", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
+        data = c["data"]
+        if isinstance(data, dict) and data.get("data_quality") not in (DATA_QUALITY_STALE, DATA_QUALITY_UNAVAILABLE):
+            age = now - c["at"]
+            if age > 30:
+                data["data_quality"] = DATA_QUALITY_STALE
+                data["data_freshness"] = {"age_minutes": round(age), "stale": True}
+    return jsonify(c["data"])
 
 
 def _build_market():
@@ -1628,7 +2035,7 @@ GLOBAL_SYMBOLS = {
 _GLOBAL_CACHE = {"at": 0.0, "data": None}
 
 _MARKET_TTL = 20
-_MARKET = {"data": None, "at": 0.0, "building": False}
+_MARKET = {"data": None, "at": 0.0, "building": False, "lock": threading.Lock()}
 
 
 @app.route("/api/global")
@@ -1667,6 +2074,7 @@ def global_markets():
     return jsonify(out)
 
 @app.route("/api/history")
+@cache_page(600)
 def history():
     """Grouped {SYM: [...]} shape; covers history + monthly archive (1-year retention)."""
     symbol = request.args.get("symbol", "")
@@ -1773,6 +2181,7 @@ def mutual_funds():
     return jsonify({"total_schemes": total, "last_updated": datetime.now(timezone.utc).isoformat(), "buckets": buckets})
 
 @app.route("/api/actions")
+@cache_page(5)
 def all_actions():
     """Latest corporate actions across symbols (dividends, splits, buybacks)."""
     conn = get_db()
@@ -1789,6 +2198,7 @@ def symbol_actions():
     return jsonify([row_to_dict(r) for r in rows])
 
 @app.route("/api/company/<symbol>")
+@cache_page(86400)
 def company(symbol):
     """Latest stored company snapshot: info + analyst views + financials keys."""
     conn = get_db()
@@ -1869,17 +2279,24 @@ def chat_messages():
     ch = str(data.get("channel") or channel).strip()[:20].lower() or "global"
     ts = datetime.now(timezone.utc).isoformat()
     conn = get_db()
-    cur = conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", (ch, username, text, kind, ts))
-    conn.commit()
-    nid = cur.lastrowid
-    # retention: keep only last 500 per channel, 2000 global total
     try:
-        conn.execute("DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM chat_messages WHERE channel=? ORDER BY id DESC LIMIT 500) AND channel=?", (ch, ch))
-        conn.execute("DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM chat_messages ORDER BY id DESC LIMIT 2000)")
+        cur = conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", (ch, username, text, kind, ts))
         conn.commit()
-    except Exception:
-        pass
-    conn.close()
+        nid = cur.lastrowid
+        try:
+            _execute_write(
+                conn,
+                "DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM chat_messages WHERE channel=? ORDER BY id DESC LIMIT 500) AND channel=?",
+                (ch, ch),
+            )
+            _execute_write(
+                conn,
+                "DELETE FROM chat_messages WHERE id NOT IN (SELECT id FROM chat_messages ORDER BY id DESC LIMIT 2000)",
+            )
+        except Exception:
+            pass
+    finally:
+        conn.close()
     return jsonify({"id": nid, "channel": ch, "username": username, "text": text, "kind": kind, "created_at": ts})
 
 @app.route("/api/chat/alerts")

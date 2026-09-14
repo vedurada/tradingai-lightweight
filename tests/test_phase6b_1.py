@@ -46,17 +46,22 @@ class TestWALMode:
         assert timeout == 10000, f"Expected busy_timeout=10000, got {timeout}"
 
     def test_api_server_get_db_has_timeout(self):
-        src = open(os.path.join(os.path.dirname(__file__), "..", "backend", "api_server.py")).read()
-        tree = ast.parse(src)
+        import backend.db_pool as dp
+        src_api = open(os.path.join(os.path.dirname(__file__), "..", "backend", "api_server.py")).read()
+        src_pool = open(os.path.join(os.path.dirname(__file__), "..", "backend", "db_pool.py")).read()
+        tree = ast.parse(src_api)
+        func_src = None
         for node in ast.walk(tree):
             if isinstance(node, ast.FunctionDef) and node.name == "get_db":
-                func_src = ast.get_source_segment(src, node)
-                assert "timeout=" in func_src, "get_db() missing timeout parameter"
-                assert "PRAGMA journal_mode=WAL" in func_src, "get_db() missing WAL pragma"
-                assert "PRAGMA busy_timeout" in func_src, "get_db() missing busy_timeout"
+                func_src = ast.get_source_segment(src_api, node)
                 break
-        else:
-            pytest.fail("get_db() function not found")
+        assert func_src is not None, "get_db() not found"
+        assert "pool" in func_src or "PooledConnection" in func_src, "get_db() not using pool"
+        combined = src_api + src_pool
+        assert "timeout=" in combined, "Connection timeout configuration missing"
+        assert "journal_mode=WAL" in combined, "WAL pragma missing"
+        assert "busy_timeout" in combined, "busy_timeout missing"
+        assert hasattr(dp.ConnectionPool, "_connect"), "ConnectionPool missing _connect method"
 
 
 class TestConnectionLeakPrevention:
