@@ -29,7 +29,6 @@ rsync -avz --delete \
   --exclude='.pytest_cache' \
   --exclude='.git' \
   --exclude='logs' \
-  --exclude='deploy-vm.sh' \
   --exclude='deploy-to-vm.sh' \
   --exclude='docker-compose.yml' \
   --exclude='docker-compose.vm.yml' \
@@ -48,7 +47,7 @@ deploy_log "DEPLOY" "COMPLETE" "Files copied" $(($(date +%s) - START_TIME))
 # Cron sources it so GROQ_API_KEY stays out of this script and the crontab.
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "if [ ! -f /etc/tradingai/groq.env ]; then sudo mkdir -p /etc/tradingai && sudo chown $VM_USER:$VM_USER /etc/tradingai && echo 'export GROQ_API_KEY=PLACEHOLDER_REPLACE_ON_VM' > /etc/tradingai/groq.env && chmod 600 /etc/tradingai/groq.env; fi"
 
-ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance flask flask-cors flask-limiter && sudo pip3 install gunicorn==23.0.0 2>&1 | tail -3"
+ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "cd $PROJECT_DIR && pip3 install yfinance 'flask>=3.0' flask-cors flask-limiter && sudo pip3 install gunicorn==23.0.0 2>&1 | tail -3"
 
 # Sync served web root (nginx serves /var/www, repo lives in /opt/tradingai).
 # NOTE: pages reference assets/css/main.css + assets/css/chat.css, whose source is static/
