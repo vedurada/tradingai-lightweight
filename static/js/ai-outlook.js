@@ -56,7 +56,7 @@
       var r = await fetch(base + '/api/' + path);
       if (!r.ok) throw new Error('nf');
       return await r.json();
-    } catch (e) { return null; }
+    } catch (e) { return false; }
   }
 
   function factorLabel(label, color) {
@@ -484,8 +484,10 @@
     var vixData = results[2];
     var breadthData = results[3];
 
-    // S3 (Track C): empty payloads ("{}", "", {}) are truthy but carry no
-    // intelligence — treat them as missing, never render empty sections.
+    // S3 (Track C): section-level availability. Missing LLM narrative
+    // does NOT suppress valid deterministic data (regime, confidence,
+    // key levels, strategy). Each section renders its own — fallback.
+    // fetchJSON() returns false on network failure, never null.
     function isEmptyOutlook(o) {
       if (!o || o.error) return true;
       if (typeof o === 'string') {
@@ -496,11 +498,7 @@
       if (typeof o !== 'object') return true;
       return Object.keys(o).length === 0;
     }
-
-    if (isEmptyOutlook(outlook)) {
-      el.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">No AI Market Outlook data available for ' + symbol + '. Run the outlook generator first.</div>';
-      return;
-    }
+    var outlookUnavailable = !outlook || outlook.error || isEmptyOutlook(outlook);
 
     // Inject quote price for key levels
     if (symbolData && symbolData.quote) {
@@ -519,6 +517,9 @@
     var quote = symbolData ? symbolData.quote : null;
 
     var html = '';
+    if (outlookUnavailable) {
+      html += '<div style="padding:8px 14px;background:#fef3c7;border-radius:8px;font-size:0.82rem;color:#92400e;margin-bottom:0.5rem;border:1px solid #f59e0b30">AI Market Outlook narrative currently unavailable. Market regime, confidence, key levels and strategy fields update when data is populated.</div>';
+    }
     html += buildNavTabs(symbol, cfg);
     html += '<div class="card hero" style="background:linear-gradient(135deg,#052e16 0%,#15803d 100%);border:none;color:#fff">';
     html += buildHero(quote, outlook, symbol);

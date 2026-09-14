@@ -50,7 +50,9 @@ class TestEmptyGuard:
         js = read("static/js/ai-outlook.js")
         assert "function isEmptyOutlook" in js
         assert "'{}'" in js
-        assert "if (isEmptyOutlook(outlook))" in js
+        # whole-dashboard gate removed; availability is now a notice flag
+        assert "outlookUnavailable" in js
+        assert "Run the outlook generator first" not in js
 
     def test_guard_behavior_executes(self):
         js = read("static/js/ai-outlook.js")
@@ -63,6 +65,45 @@ class TestEmptyGuard:
             r = subprocess.run(["node", "-e", prog], capture_output=True,
                                text=True, cwd=ROOT)
             assert r.stdout.strip() == expected, (raw, r.stderr)
+
+    def test_fetchJSON_returns_false_not_null(self):
+        js = read("static/js/ai-outlook.js")
+        assert "catch (e) { return false; }" in js
+        assert "return null" not in js
+
+
+class TestDeterministicRenderWhenLLMAbsent:
+    def test_legacy_banner_removed(self):
+        js = read("static/js/ai-outlook.js")
+        assert "Run the outlook generator first" not in js
+
+    def test_outlookUnavailable_flag_present(self):
+        js = read("static/js/ai-outlook.js")
+        assert "outlookUnavailable" in js
+        assert "AI Market Outlook narrative currently unavailable" in js
+
+    def test_deterministic_payload_renders_without_ai_outlook_key(self):
+        """When api/market-outlook returns 22 keys but no ai_outlook key,
+        the guard must NOT suppress the dashboard — deterministic fields
+        (regime, confidence, key levels) must still render."""
+        payload = {"confidence": 64, "market_regime": None,
+                   "key_levels": {"supports": [], "resistances": []},
+                   "decision": {"verdict": "WAIT"}, "symbol": "NIFTY"}
+        # isEmptyOutlook must return false for a non-empty payload
+        helper = read("static/js/ai-outlook.js")[
+            read("static/js/ai-outlook.js").find("function isEmptyOutlook"):]
+        helper = helper[:helper.find("\n    }\n") + len("\n    }\n")]
+        prog = helper + f"\nconsole.log(isEmptyOutlook({json.dumps(payload)}));"
+        r = subprocess.run(["node", "-e", prog], capture_output=True,
+                           text=True, cwd=ROOT)
+        assert r.stdout.strip() == "false"
+
+    def test_fetch_failure_shows_notice_not_banner(self):
+        """fetchJSON returns false on network failure; isEmptyOutlook(false)
+        returns true so the subtle notice renders instead of a red banner."""
+        js = read("static/js/ai-outlook.js")
+        assert "catch (e) { return false; }" in js
+        assert "AI Market Outlook narrative currently unavailable" in js
 
 
 class TestFinniftyCard:
@@ -126,6 +167,7 @@ class TestPrerender:
                                                    errors="ignore")
 
     def test_values_injected_and_stamp_single(self, tmp_path):
+        t = self._run(tmp_path)
         t = self._run(tmp_path)
         assert 'id="s-nifty-price">26,150.50' in t
         assert 'id="s-finnifty-price">27,410.25' in t
