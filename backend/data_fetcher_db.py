@@ -679,7 +679,8 @@ def fetch_market_snapshot(conn: sqlite3.Connection) -> dict:
 
 def _fetch_symbol_minute(conn: sqlite3.Connection, symbol: str, yf_symbol: str, with_regime: bool = True, with_investment: bool = False) -> None:
     """Fetch 1m candles + AI-assisted screen for one symbol."""
-    data = fetch_yf_ohlcv(yf_symbol, interval="1m", period="1d")
+    period = "5d" if yf_symbol == "^BSESN" else "1d"
+    data = fetch_yf_ohlcv(yf_symbol, interval="1m", period=period)
     if data:
         store_price_data(conn, symbol, data, "price_1m")
         update_data_status(conn, symbol, "1m")
