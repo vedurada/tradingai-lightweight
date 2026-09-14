@@ -557,12 +557,6 @@
       });
     }
 
-    var bar = document.getElementById('last-updated-bar');
-    if (bar && outlook.date) {
-      var at = outlook.as_of_ist || '';
-      var timeOnly = at.indexOf(outlook.date) === 0 ? at.slice(outlook.date.length).trim() : at;
-      bar.textContent = 'Data as of ' + outlook.date + (timeOnly ? ' · ' + timeOnly : '');
-    }
   }
 
   /* ── Auto-refresh wrapper ── */
