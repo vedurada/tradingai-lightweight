@@ -48,9 +48,10 @@
     <ul>
       <li><strong>Essential functionality:</strong> maintaining your scroll position and site preferences between visits (sessionStorage/localStorage).</li>
       <li><strong>Analytics:</strong> Google Analytics cookies (_ga, _gid and related) used to measure page views, sessions and referral sources.</li>
-      <li><strong>Advertising (if enabled):</strong> if we display third-party ads (for example Google AdSense), advertising partners may set their own cookies and use device identifiers to show you relevant ads and measure advertising performance. Ads shown by Google may be personalised or non-personalised depending on your consent region.</li>
+      <li><strong>Advertising:</strong> we display third-party ads through Google AdSense (publisher ID pub-2262405054444130). Google and its advertising partners set their own cookies and use device identifiers to show ads and measure advertising performance. These include Google advertising cookies (such as _gads, _gac_* and DoubleClick/DART cookies). Ads shown by Google may be personalised or non-personalised depending on your consent choice and region. Learn more in the <a href="https://policies.google.com/privacy">Google Privacy Policy</a> and <a href="https://policies.google.com/technologies/ads">How Google uses information from sites that use its services</a>; control personalisation via <a href="https://adssettings.google.com">Google Ads Settings</a> and <a href="https://optout.aboutads.info">AboutAds opt-out</a>.</li>
     </ul>
-    <p>No ad partner is currently active on the site. If they become active, we will treat advertisements in line with the Google Advertising Program Policies and the consent requirements that apply to your location.</p>
+    <p>Advertisements on this site are handled in line with the Google Advertising Program Policies and the consent requirements that apply to your location. You can change your choice at any time with the <button type="button" id="tai-cookie-settings" style="background:none;border:0;padding:0;color:#2563eb;cursor:pointer;text-decoration:underline;font-size:inherit">Cookie settings</button> control below (also available on first visit as a banner).</p>
+    <script>document.getElementById('tai-cookie-settings').addEventListener('click', function () { if (window.TAIConsent) { window.TAIConsent.show(); } });</script>
   </div>
   <div class="card">
     <h3>4. How we use information</h3>
@@ -96,5 +97,6 @@
   </footer>
 </main>
 <script>function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();</script>
-<link rel="stylesheet" href="/assets/css/chat.css?v=2"><script src="/assets/js/chat.js?v=2" defer></script></body>
+<link rel="stylesheet" href="/assets/css/chat.css?v=2"><script src="/assets/js/chat.js?v=2" defer></script>
+<script src="/assets/js/consent.js" defer></script></body>
 </html>
