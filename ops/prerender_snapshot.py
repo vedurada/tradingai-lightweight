@@ -81,7 +81,11 @@ def prerender(root: str, api_base: str, dry_run: bool = False) -> str:
     html = patch_span(html, "s-vix-price", vix_price)
     html = patch_span(html, "s-vix-change", vix_chg_s)
 
-    if html == original_html:
+    api_has_data = any(
+        fmt_price((inst.get(sym, {}).get("quote") or {}).get("price"))
+        for sym in SYMBOLS.values()
+    ) or vix_price is not None
+    if not api_has_data:
         return "no-data"
     stamp = datetime.datetime.now(
         datetime.timezone(datetime.timedelta(hours=5, minutes=30))
