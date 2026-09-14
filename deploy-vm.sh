@@ -37,7 +37,7 @@ rsync -avz --delete \
   --exclude='data' \
   --exclude='frontend' \
   -e "ssh -i $SSH_KEY -o StrictHostKeyChecking=no" \
-  /Users/satya/remove_workspace/tradingai-lightweight/ \
+  /Users/satya/remove_workspace/tradingai.in_live_VM/ \
   "$VM_USER@$VM_HOST:$PROJECT_DIR/"
 
 echo "Files copied successfully"
@@ -65,8 +65,8 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" "(crontab -l 2
 
 # logrotate: install B.5 rotation for gunicorn/API logs (idempotent).
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no \
-  "/Users/satya/remove_workspace/tradingai-lightweight/ops/logrotate/tradingai-gunicorn" \
-  "/Users/satya/remove_workspace/tradingai-lightweight/ops/logrotate/tradingai-api" \
+  "/Users/satya/remove_workspace/tradingai.in_live_VM/ops/logrotate/tradingai-gunicorn" \
+  "/Users/satya/remove_workspace/tradingai.in_live_VM/ops/logrotate/tradingai-api" \
   "$VM_USER@$VM_HOST:/tmp/"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" \
   "sudo cp /tmp/tradingai-gunicorn /tmp/tradingai-api /etc/logrotate.d/ && sudo rm -f /tmp/tradingai-gunicorn /tmp/tradingai-api && echo LOGROTATE-INSTALLED"
@@ -77,8 +77,8 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" \
 # text/html -> blank page), so we re-sync + nginx -t + reload on EVERY deploy.
 # Durable: idempotent, and source-of-truth is ops/nginx-tradingai.conf (git).
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no \
-  "/Users/satya/remove_workspace/tradingai-lightweight/ops/nginx-tradingai.conf" \
-  "/Users/satya/remove_workspace/tradingai-lightweight/ops/nginx-snippets/tradingai-security-headers.conf" \
+  "/Users/satya/remove_workspace/tradingai.in_live_VM/ops/nginx-tradingai.conf" \
+  "/Users/satya/remove_workspace/tradingai.in_live_VM/ops/nginx-snippets/tradingai-security-headers.conf" \
   "$VM_USER@$VM_HOST:/tmp/"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" \
   "sudo mkdir -p /etc/nginx/snippets && sudo cp /tmp/nginx-tradingai.conf /etc/nginx/sites-enabled/tradingai && sudo cp /tmp/tradingai-security-headers.conf /etc/nginx/snippets/tradingai-security-headers.conf && sudo rm -f /tmp/nginx-tradingai.conf /tmp/tradingai-security-headers.conf && sudo nginx -t && sudo systemctl reload nginx && echo NGINX-GUARD-REASSERTED"
