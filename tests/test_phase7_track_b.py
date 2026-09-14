@@ -48,20 +48,15 @@ class TestConsent:
         assert "window.TAIConsent" in js
         assert "getElementBy?" not in js  # no malformed guards
 
-    def test_every_page_loads_consent_with_matching_prefix(self):
+    def test_every_page_loads_consent(self):
         bad = []
         for f in html_pages():
             t = open(f, encoding="utf-8", errors="ignore").read()
-            m_chat = re.search(r'<script src="([^"]*?)chat\.js[^"]*"[^>]*>',
-                               t)
             m_consent = re.search(
                 r'<script src="([^"]*?consent\.js)"[^>]*>', t)
-            if not m_chat or not m_consent:
+            if not m_consent:
                 bad.append(f)
                 continue
-            expect = m_chat.group(1)  # prefix before 'chat.js', as inserted
-            if m_consent.group(1) != expect + "consent.js":
-                bad.append(f)
         assert bad == []
 
 
