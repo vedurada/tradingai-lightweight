@@ -14,13 +14,17 @@ class Database:
         self._init_tables()
 
     def _conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=10)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
         return conn
 
     def _init_tables(self) -> None:
         conn = self._conn()
         c = conn.cursor()
+        c.execute("PRAGMA journal_mode=WAL")
+        c.execute("PRAGMA busy_timeout=10000")
         c.execute("""
             CREATE TABLE IF NOT EXISTS instruments (
                 symbol TEXT PRIMARY KEY,
@@ -247,27 +251,33 @@ class Database:
 
     def execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         conn = self._conn()
-        c = conn.cursor()
-        c.execute(sql, params)
-        conn.commit()
-        conn.close()
-        return c
+        try:
+            c = conn.cursor()
+            c.execute(sql, params)
+            conn.commit()
+            return c
+        finally:
+            conn.close()
 
     def fetchone(self, sql: str, params: tuple = ()) -> Optional[sqlite3.Row]:
         conn = self._conn()
-        c = conn.cursor()
-        c.execute(sql, params)
-        row = c.fetchone()
-        conn.close()
-        return row
+        try:
+            c = conn.cursor()
+            c.execute(sql, params)
+            row = c.fetchone()
+            return row
+        finally:
+            conn.close()
 
     def fetchall(self, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
         conn = self._conn()
-        c = conn.cursor()
-        c.execute(sql, params)
-        rows = c.fetchall()
-        conn.close()
-        return rows
+        try:
+            c = conn.cursor()
+            c.execute(sql, params)
+            rows = c.fetchall()
+            return rows
+        finally:
+            conn.close()
 
     def upsert(self, table: str, data: dict, conflict_columns: str) -> None:
         cols = ", ".join(data.keys())

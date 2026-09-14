@@ -534,6 +534,8 @@ def init_database(db_path: str = DB_PATH) -> None:
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.executescript(SCHEMA)
+    c.execute("PRAGMA journal_mode=WAL")
+    c.execute("PRAGMA busy_timeout=10000")
     # Migrate existing DBs: add columns introduced after initial schema.
     try:
         c.execute("PRAGMA table_info(symbols)")

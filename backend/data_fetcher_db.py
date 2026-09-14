@@ -9,6 +9,9 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from retry import retry_with_backoff
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from db_schema import init_database, DB_PATH, SCHEMA
 
@@ -39,8 +42,10 @@ def load_settings() -> dict:
 
 def get_db() -> sqlite3.Connection:
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=10000")
     return conn
 
 
@@ -59,32 +64,35 @@ def init_symbols(conn: sqlite3.Connection, config: dict) -> None:
     logger.info(f"Initialized symbols from config: {len(config['indices'])} indices, {len(config['stocks'])} stocks")
 
 
+@retry_with_backoff(max_retries=3, base_delay=2.0)
+def _fetch_yf_ohlcv_raw(yf_symbol: str, interval: str = "1m", period: str = "2d") -> list[dict]:
+    import yfinance as yf
+    ticker = yf.Ticker(yf_symbol)
+    hist = ticker.history(period=period, interval=interval)
+    if hist.empty:
+        return []
+    data = []
+    for idx, row in hist.iterrows():
+        ts = idx
+        try:
+            if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
+                ts = ts.astimezone(timezone.utc)
+        except Exception:
+            pass
+        data.append({
+            "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S"),
+            "open": float(row["Open"]),
+            "high": float(row["High"]),
+            "low": float(row["Low"]),
+            "close": float(row["Close"]),
+            "volume": int(row["Volume"]),
+        })
+    return data
+
+
 def fetch_yf_ohlcv(yf_symbol: str, interval: str = "1m", period: str = "2d") -> list[dict]:
     try:
-        import yfinance as yf
-        ticker = yf.Ticker(yf_symbol)
-        hist = ticker.history(period=period, interval=interval)
-        if hist.empty:
-            return []
-        data = []
-        for idx, row in hist.iterrows():
-            ts = idx
-            try:
-                # Normalize exchange-local (IST) index to UTC wall-clock so the
-                # naive timestamp matches other writers and sqlite datetime('now').
-                if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
-                    ts = ts.astimezone(timezone.utc)
-            except Exception:
-                pass
-            data.append({
-                "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S"),
-                "open": float(row["Open"]),
-                "high": float(row["High"]),
-                "low": float(row["Low"]),
-                "close": float(row["Close"]),
-                "volume": int(row["Volume"]),
-            })
-        return data
+        return _fetch_yf_ohlcv_raw(yf_symbol, interval, period)
     except Exception as e:
         logger.error(f"OHLCV error for {yf_symbol}: {e}")
         return []

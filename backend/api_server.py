@@ -20,8 +20,10 @@ CORS(app)
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
 
 def get_db():
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10, check_same_thread=False)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=10000")
     return conn
 
 def row_to_dict(row):
@@ -274,7 +276,7 @@ def _live_quote_row(conn, symbol):
     return d
 
 
-def _build_quote(symbol, price_row, live_row=None):
+def _build_quote(symbol, price_row, live_row=None, conn=None):
     """Quote with fallback chain: live NSE row -> 1m candle row. Never empty if either exists."""
     d = dict(live_row) if live_row else (row_to_dict(price_row) if price_row else None)
     if not d:
@@ -295,23 +297,17 @@ def _build_quote(symbol, price_row, live_row=None):
     d = row_to_dict(price_row)
     close = d.get("close", 0) or 0
     prev = d.get("previous_close", 0) or 0
-    # Single source for previous_close: live NSE previous_close preferred, else price_1d EOD prev close,
-    # never 1m-prev (intraday minute jitter). Falls back to price_1d daily close.
-    if not prev:
+    if not prev and conn is not None:
         try:
-            conn = get_db()
-            # prefer official daily prev close (bhavcopy/price_1d)
             prow = conn.execute("SELECT close FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 2", (symbol,)).fetchall()
             if len(prow) == 2:
                 prev = prow[1]["close"] or 0
             elif len(prow) == 1 and prow[0]["close"] != close:
                 prev = prow[0]["close"] or 0
-            # last resort: previous 1m close only if daily unavailable
             if not prev:
                 prow2 = conn.execute("SELECT close FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 2", (symbol,)).fetchall()
                 if len(prow2) > 1:
                     prev = prow2[1]["close"] or 0
-            conn.close()
         except Exception:
             pass
     change = (close - prev) if prev else 0
@@ -461,68 +457,120 @@ def _build_outlook(outlook_row):
     return {"market_summary": d.get("outlook", ""), "data_quality": d.get("data_quality", "")}
 
 
+def _data_completeness(**fields):
+    return {k: bool(v) for k, v in fields.items()}
+
+
+def error_response(code, message, status_code=400):
+    return jsonify({
+        "error": {
+            "code": code,
+            "message": message,
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+        }
+    }), status_code
+
+
+ERROR_CODES = {
+    "NO_DATA": "The requested data is not available",
+    "UNKNOWN_SYMBOL": "The requested symbol is not tracked",
+    "SYMBOL_REQUIRED": "A symbol parameter is required",
+    "OUTLOOK_NOT_READY": "Market outlook not yet computed for this date",
+    "INVALID_REQUEST": "The request parameters are invalid",
+    "RATE_LIMITED": "Too many requests, please wait",
+    "INTERNAL_ERROR": "An internal error occurred",
+    "DB_UNAVAILABLE": "Database is temporarily unavailable",
+    "CIRCUIT_OPEN": "An upstream data source is temporarily unavailable",
+}
+
+
+@app.errorhandler(404)
+def _handle_404(e):
+    return error_response("NO_DATA", "The requested resource was not found", 404)
+
+
+@app.errorhandler(500)
+def _handle_500(e):
+    app.logger.error(f"Unhandled 500: {e}")
+    return error_response("INTERNAL_ERROR", "An internal error occurred", 500)
+
+
+@app.errorhandler(400)
+def _handle_400(e):
+    return error_response("INVALID_REQUEST", str(e) or "Invalid request", 400)
+
+
 def _symbol_data(symbol):
     symbol = (symbol or "").upper()
     conn = get_db()
-    result = {}
-    price_row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    quote = _build_quote(symbol, price_row, _live_quote_row(conn, symbol))
-    if quote:
-        result["quote"] = quote
-    ind_row = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    ind = _build_indicators(ind_row)
-    if ind:
-        result["indicators"] = ind
-    regime_row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    if regime_row:
-        result["regime"] = row_to_dict(regime_row)
-    strat = _locked_strategy(conn, symbol)
-    if not strat:
-        strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-        strat = _build_strategy(strat_row)
-    if strat:
-        result["strategy"] = strat
-    scen_row = conn.execute("SELECT * FROM scenarios WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    result["scenarios"] = _build_scenarios(scen_row)
-    outlook_row = conn.execute("SELECT * FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    outlook = _build_outlook(outlook_row)
-    if outlook:
-        result["ai_outlook"] = outlook
     try:
-        stype = conn.execute("SELECT type FROM symbols WHERE symbol=?", (symbol,)).fetchone()
-        if stype and stype["type"] == "stock":
-            inv = {}
-            for r in conn.execute("SELECT * FROM investment_views WHERE symbol=? ORDER BY date DESC, horizon", (symbol,)).fetchall():
-                d = row_to_dict(r)
-                if d.get("horizon") not in inv:
-                    inv[d.get("horizon")] = d
-            if inv:
-                result["investment"] = inv
-    except Exception:
-        pass
-    try:
-        srow = conn.execute("SELECT lot_size, lot_source, lot_as_of FROM symbols WHERE symbol=?", (symbol,)).fetchone()
-        if srow and srow["lot_size"]:
-            result["lot"] = {"size": srow["lot_size"], "source": srow["lot_source"] or "config", "as_of": srow["lot_as_of"]}
-    except Exception:
-        pass
-    try:
-        exp = _live_expiry(conn, symbol)
-        if not exp:
-            from expiry import get_current_expiry
-            if symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"):
-                exp = get_current_expiry(symbol) if callable(get_current_expiry) else {}
-        if exp:
-            result["expiry"] = exp
-    except Exception:
-        pass
-    # last_updated = MARKET DATA time (quote candle), never computation time.
-    quote_ts = (result.get("quote") or {}).get("timestamp")
-    result["last_updated"] = quote_ts
-    result["computed_at"] = datetime.now(timezone.utc).isoformat()
-    result["data_quality"] = (result.get("ai_outlook") or {}).get("data_quality", "GOOD")
-    conn.close()
-    return jsonify(result)
+        result = {}
+        price_row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        quote = _build_quote(symbol, price_row, _live_quote_row(conn, symbol), conn=conn)
+        if quote:
+            result["quote"] = quote
+        ind_row = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        ind = _build_indicators(ind_row)
+        if ind:
+            result["indicators"] = ind
+        regime_row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        if regime_row:
+            result["regime"] = row_to_dict(regime_row)
+        strat = _locked_strategy(conn, symbol)
+        if not strat:
+            strat_row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+            strat = _build_strategy(strat_row)
+        if strat:
+            result["strategy"] = strat
+        scen_row = conn.execute("SELECT * FROM scenarios WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        result["scenarios"] = _build_scenarios(scen_row)
+        outlook_row = conn.execute("SELECT * FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        outlook = _build_outlook(outlook_row)
+        if outlook:
+            result["ai_outlook"] = outlook
+        try:
+            stype = conn.execute("SELECT type FROM symbols WHERE symbol=?", (symbol,)).fetchone()
+            if stype and stype["type"] == "stock":
+                inv = {}
+                for r in conn.execute("SELECT * FROM investment_views WHERE symbol=? ORDER BY date DESC, horizon", (symbol,)).fetchall():
+                    d = row_to_dict(r)
+                    if d.get("horizon") not in inv:
+                        inv[d.get("horizon")] = d
+                if inv:
+                    result["investment"] = inv
+        except Exception:
+            pass
+        try:
+            srow = conn.execute("SELECT lot_size, lot_source, lot_as_of FROM symbols WHERE symbol=?", (symbol,)).fetchone()
+            if srow and srow["lot_size"]:
+                result["lot"] = {"size": srow["lot_size"], "source": srow["lot_source"] or "config", "as_of": srow["lot_as_of"]}
+        except Exception:
+            pass
+        try:
+            exp = _live_expiry(conn, symbol)
+            if not exp:
+                from expiry import get_current_expiry
+                if symbol in ("NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"):
+                    exp = get_current_expiry(symbol) if callable(get_current_expiry) else {}
+            if exp:
+                result["expiry"] = exp
+        except Exception:
+            pass
+        quote_ts = (result.get("quote") or {}).get("timestamp")
+        result["last_updated"] = quote_ts
+        result["computed_at"] = datetime.now(timezone.utc).isoformat()
+        result["data_quality"] = (result.get("ai_outlook") or {}).get("data_quality", "GOOD")
+        result["data_completeness"] = _data_completeness(
+            quote=bool(result.get("quote")),
+            indicators=bool(result.get("indicators")),
+            regime=bool(result.get("regime")),
+            strategy=bool(result.get("strategy")),
+            scenarios=bool(result.get("scenarios")),
+            outlook=bool(result.get("ai_outlook")),
+        )
+        return jsonify(result)
+    finally:
+        conn.close()
 
 @app.route("/api/regime/<symbol>")
 def regime(symbol):
@@ -752,128 +800,143 @@ def options_intelligence(symbol):
     """Consolidated Options Intelligence: PCR, OI, Max Pain, IV, Expected Move, Options View, Confirmation."""
     symbol = symbol.upper()
     conn = get_db()
-    from backend.options import OptionsEngine
-    engine = OptionsEngine()
-
-    spot = None
-    qr = conn.execute("SELECT price FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    if qr and qr["price"]:
-        spot = qr["price"]
-
-    expiries = conn.execute(
-        "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (symbol,)
-    ).fetchall()
-
-    result = {
-        "symbol": symbol,
-        "spot": spot,
-        "data_quality": "LIVE",
-        "as_of": datetime.now(timezone.utc).isoformat(),
-        "pcr": None,
-        "oi": None,
-        "max_pain": None,
-        "iv": None,
-        "expected_move": None,
-        "options_view": None,
-        "confirmation": None,
-    }
-
-    for e in expiries:
-        expiry = e["expiry"]
-        rows = conn.execute(
-            "SELECT strike, option_type, open_interest, change_in_oi, implied_volatility FROM option_chain WHERE symbol=? AND expiry=?",
-            (symbol, expiry)
-        ).fetchall()
-        contracts = [dict(r) for r in rows]
-
-        if contracts:
-            concentration = engine.compute_oi_concentration(contracts)
-            result["oi"] = {
-                "call_total": concentration["call_oi"],
-                "put_total": concentration["put_oi"],
-                "total_oi": concentration["total_oi"],
-                "call_oi_change": concentration["call_oi_change"],
-                "put_oi_change": concentration["put_oi_change"],
-                "change_available": concentration["oi_change_available"],
-                "highest_call_oi": concentration["highest_call_oi"],
-                "highest_put_oi": concentration["highest_put_oi"],
-                "oi_concentration": concentration["oi_concentration"],
-                "major_call_zones": concentration["major_call_zones"],
-                "major_put_zones": concentration["major_put_zones"],
-            }
-
-        total_ce_oi = sum(c["open_interest"] for c in contracts if c["option_type"] == "CE")
-        total_pe_oi = sum(c["open_interest"] for c in contracts if c["option_type"] == "PE")
-        if total_ce_oi + total_pe_oi > 0:
-            result["pcr"] = {
-                "value": round(total_pe_oi / total_ce_oi, 3) if total_ce_oi > 0 else None,
-                "pe_oi": total_pe_oi,
-                "ce_oi": total_ce_oi,
-            }
-
-        if spot and spot > 0 and contracts:
-            em = engine.compute_expected_move(contracts, spot, expiry)
-            result["expected_move"] = em["expected_move"]
-
-            if contracts:
-                atm_iv = engine.calculate_iv_stats(contracts)
-                result["iv"] = {
-                    "atm": atm_iv.get("avg_iv"),
-                    "min": atm_iv.get("min_iv"),
-                    "max": atm_iv.get("max_iv"),
-                }
-
-            if contracts:
-                mp = engine.calculate_max_pain(contracts)
-                mp_strike = mp.get("max_pain") if isinstance(mp, dict) else None
-                if mp_strike is not None:
-                    result["max_pain"] = {"strike": mp_strike}
-
-        break
-
-    conn.close()
-
-    pcr_val = result["pcr"]["value"] if result.get("pcr") and result["pcr"].get("value") is not None else None
-    mp_strike = result["max_pain"]["strike"] if result.get("max_pain") and result["max_pain"].get("strike") is not None else None
-    em_result = result.get("expected_move") or {}
-    em_points = em_result.get("points") if isinstance(em_result.get("points"), (int, float)) else None
-
-    exp_bias = None
-    exp_conf = 0
-    derived = engine.derive_options_bias(mp_strike, spot, pcr_val, result.get("oi"))
-    exp_bias = derived.get("options_bias")
-    exp_conf = derived.get("options_confidence", 0)
-
-    mkt_bias = "BULLISH"
-    mkt_conf = 76
     try:
-        from outlook import build_outlook
-        from zoneinfo import ZoneInfo
-        ist = datetime.now(ZoneInfo("Asia/Kolkata"))
-        outlook = build_outlook(conn, symbol, ist.strftime("%Y-%m-%d"))
-        if outlook and outlook.get("bias"):
-            mkt_bias = outlook["bias"].get("label", "BULLISH")
-        if outlook and outlook.get("confidence"):
-            mkt_conf = outlook["confidence"]
-    except Exception:
-        pass
+        from backend.options import OptionsEngine
+        engine = OptionsEngine()
 
-    if result["oi"] or result["pcr"] or em_points is not None:
-        conf = engine.compute_confirmation(
-            market_bias=mkt_bias, market_confidence=mkt_conf,
-            options_bias=exp_bias, options_confidence=exp_conf,
-            pcr_value=pcr_val, max_pain_strike=mp_strike, spot=spot,
-            expected_move_points=em_points, oi_concentration=result.get("oi"),
-        )
-        result["confirmation"] = conf["confirmation"]
-        result["options_view"] = {
-            "bias": exp_bias if exp_bias else "NEUTRAL",
-            "confidence": exp_conf,
-            "reasons": conf["confirmation"].get("reasons", []),
+        spot = None
+        qr = conn.execute("SELECT price FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        if qr and qr["price"]:
+            spot = qr["price"]
+
+        expiries = conn.execute(
+            "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (symbol,)
+        ).fetchall()
+
+        has_option_data = False
+        for e in expiries:
+            expiry = e["expiry"]
+            rows = conn.execute(
+                "SELECT strike, option_type, open_interest, change_in_oi, implied_volatility FROM option_chain WHERE symbol=? AND expiry=?",
+                (symbol, expiry)
+            ).fetchall()
+            if rows:
+                has_option_data = True
+                break
+
+        result = {
+            "symbol": symbol,
+            "spot": spot,
+            "data_quality": "LIVE" if has_option_data else "DATA UNAVAILABLE",
+            "as_of": datetime.now(timezone.utc).isoformat(),
+            "pcr": None,
+            "oi": None,
+            "max_pain": None,
+            "iv": None,
+            "expected_move": None,
+            "options_view": None,
+            "confirmation": None,
+            "data_completeness": _data_completeness(
+                spot=spot is not None,
+                option_chain=has_option_data,
+            ),
         }
 
-    conn.close()
-    return jsonify(result)
+        for e in expiries:
+            expiry = e["expiry"]
+            rows = conn.execute(
+                "SELECT strike, option_type, open_interest, change_in_oi, implied_volatility FROM option_chain WHERE symbol=? AND expiry=?",
+                (symbol, expiry)
+            ).fetchall()
+            contracts = [dict(r) for r in rows]
+
+            if contracts:
+                concentration = engine.compute_oi_concentration(contracts)
+                result["oi"] = {
+                    "call_total": concentration["call_oi"],
+                    "put_total": concentration["put_oi"],
+                    "total_oi": concentration["total_oi"],
+                    "call_oi_change": concentration["call_oi_change"],
+                    "put_oi_change": concentration["put_oi_change"],
+                    "change_available": concentration["oi_change_available"],
+                    "highest_call_oi": concentration["highest_call_oi"],
+                    "highest_put_oi": concentration["highest_put_oi"],
+                    "oi_concentration": concentration["oi_concentration"],
+                    "major_call_zones": concentration["major_call_zones"],
+                    "major_put_zones": concentration["major_put_zones"],
+                }
+
+            total_ce_oi = sum(c["open_interest"] for c in contracts if c["option_type"] == "CE")
+            total_pe_oi = sum(c["open_interest"] for c in contracts if c["option_type"] == "PE")
+            if total_ce_oi + total_pe_oi > 0:
+                result["pcr"] = {
+                    "value": round(total_pe_oi / total_ce_oi, 3) if total_ce_oi > 0 else None,
+                    "pe_oi": total_pe_oi,
+                    "ce_oi": total_ce_oi,
+                }
+
+            if spot and spot > 0 and contracts:
+                em = engine.compute_expected_move(contracts, spot, expiry)
+                result["expected_move"] = em["expected_move"]
+
+                if contracts:
+                    atm_iv = engine.calculate_iv_stats(contracts)
+                    result["iv"] = {
+                        "atm": atm_iv.get("avg_iv"),
+                        "min": atm_iv.get("min_iv"),
+                        "max": atm_iv.get("max_iv"),
+                    }
+
+                if contracts:
+                    mp = engine.calculate_max_pain(contracts)
+                    mp_strike = mp.get("max_pain") if isinstance(mp, dict) else None
+                    if mp_strike is not None:
+                        result["max_pain"] = {"strike": mp_strike}
+
+            break
+
+        pcr_val = result["pcr"]["value"] if result.get("pcr") and result["pcr"].get("value") is not None else None
+        mp_strike = result["max_pain"]["strike"] if result.get("max_pain") and result["max_pain"].get("strike") is not None else None
+        em_result = result.get("expected_move") or {}
+        em_points = em_result.get("points") if isinstance(em_result.get("points"), (int, float)) else None
+
+        exp_bias = None
+        exp_conf = 0
+        derived = engine.derive_options_bias(mp_strike, spot, pcr_val, result.get("oi"))
+        exp_bias = derived.get("options_bias")
+        exp_conf = derived.get("options_confidence", 0)
+
+        mkt_bias = "BULLISH"
+        mkt_conf = 76
+        try:
+            from outlook import build_outlook
+            from zoneinfo import ZoneInfo
+            ist = datetime.now(ZoneInfo("Asia/Kolkata"))
+            outlook = build_outlook(conn, symbol, ist.strftime("%Y-%m-%d"))
+            if outlook and outlook.get("bias"):
+                mkt_bias = outlook["bias"].get("label", "BULLISH")
+            if outlook and outlook.get("confidence"):
+                mkt_conf = outlook["confidence"]
+        except Exception:
+            pass
+
+        if result["oi"] or result["pcr"] or em_points is not None:
+            conf = engine.compute_confirmation(
+                market_bias=mkt_bias, market_confidence=mkt_conf,
+                options_bias=exp_bias, options_confidence=exp_conf,
+                pcr_value=pcr_val, max_pain_strike=mp_strike, spot=spot,
+                expected_move_points=em_points, oi_concentration=result.get("oi"),
+            )
+            result["confirmation"] = conf["confirmation"]
+            result["options_view"] = {
+                "bias": exp_bias if exp_bias else "NEUTRAL",
+                "confidence": exp_conf,
+                "reasons": conf["confirmation"].get("reasons", []),
+            }
+
+        return jsonify(result)
+    finally:
+        conn.close()
 
 def _build_outlook_on_demand(conn, symbol):
     """Build a full outlook payload on the fly for any tracked symbol (index or stock)."""
@@ -900,21 +963,22 @@ def market_outlook_latest():
     except Exception:
         merge_llm_into_payload = None
     conn = get_db()
-    row = conn.execute("SELECT payload, created_at FROM market_outlooks WHERE symbol=? ORDER BY date DESC, id DESC LIMIT 1", (symbol,)).fetchone()
-    if row is None:
-        data = _build_outlook_on_demand(conn, symbol)
-        if data is not None and merge_llm_into_payload is not None:
+    try:
+        row = conn.execute("SELECT payload, created_at FROM market_outlooks WHERE symbol=? ORDER BY date DESC, id DESC LIMIT 1", (symbol,)).fetchone()
+        if row is None:
+            data = _build_outlook_on_demand(conn, symbol)
+            if data is not None and merge_llm_into_payload is not None:
+                data = merge_llm_into_payload(conn, symbol, data)
+            if data is None:
+                return jsonify({"error": f"no outlook yet for {symbol}"}), 404
+            return jsonify(data)
+        data = _parse_json_field(row["payload"])
+        if merge_llm_into_payload is not None:
             data = merge_llm_into_payload(conn, symbol, data)
-        conn.close()
-        if data is None:
-            return jsonify({"error": f"no outlook yet for {symbol}"}), 404
+        data["created_at"] = row["created_at"]
         return jsonify(data)
-    data = _parse_json_field(row["payload"])
-    if merge_llm_into_payload is not None:
-        data = merge_llm_into_payload(conn, symbol, data)
-    conn.close()
-    data["created_at"] = row["created_at"]
-    return jsonify(data)
+    finally:
+        conn.close()
 
 @app.route("/api/market-outlook/<date>")
 def market_outlook_by_date(date):
@@ -1171,7 +1235,8 @@ def _build_market():
             if ts and (not latest_ts or ts > latest_ts):
                 latest_ts = ts
     nifty_ai = (instruments.get("NIFTY") or {}).get("ai_outlook", {})
-    return {"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments}
+    has_prices = any(bool(v.get("quote")) for v in instruments.values())
+    return {"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments, "data_completeness": {"instruments": bool(instruments), "ai_outlook": bool(nifty_ai), "has_prices": has_prices}}
 
 GLOBAL_SYMBOLS = {
     "^NSEI": {"name": "NIFTY 50 (India)"},
