@@ -538,6 +538,17 @@ CREATE TABLE IF NOT EXISTS chat_messages (
 );
 CREATE INDEX IF NOT EXISTS idx_chat_channel_created ON chat_messages(channel, created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_chat_created ON chat_messages(created_at DESC);
+
+CREATE TABLE IF NOT EXISTS market_change_snapshots (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    captured_at TEXT NOT NULL,
+    state TEXT NOT NULL,
+    material_change INTEGER DEFAULT 0,
+    changes TEXT DEFAULT '[]',
+    UNIQUE(symbol, captured_at)
+);
+CREATE INDEX IF NOT EXISTS idx_mkt_change_sym_ts ON market_change_snapshots(symbol, captured_at DESC);
 """
 
 def init_database(db_path: str = DB_PATH) -> None:

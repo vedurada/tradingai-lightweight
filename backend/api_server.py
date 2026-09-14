@@ -2049,6 +2049,13 @@ def _refresh_market_background():
         _time.sleep(15)
         try:
             data = _build_market()
+            try:
+                import market_change
+                mc = market_change.analyze("NIFTY")
+                if mc.get("material"):
+                    app.logger.info(f"Material market change detected: {mc['changes']}")
+            except Exception as exc:
+                app.logger.debug(f"market_change check skipped: {exc}")
             with _MARKET["lock"] if "lock" in _MARKET else _MARKET:
                 _MARKET["data"] = data
                 _MARKET["at"] = _time.time()
