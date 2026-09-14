@@ -381,9 +381,13 @@
   }
 
   function buildRisk(outlook) {
-    var d = outlook.decision || {};
-    var items = [];
-    if (d.bull_invalidation) items.push('⚠ Close below ' + d.bull_invalidation.replace('Daily close above ', '').replace('Close below ', '') + ' invalidates bullish view');
+    var regime = (outlook.regime || {}).primary || '';
+    var isBullish = regime.toUpperCase().indexOf('BULL') >= 0;
+    var isBearish = regime.toUpperCase().indexOf('BEAR') >= 0;
+    if (d.bull_invalidation) {
+      var dir = isBullish ? 'bullish view' : isBearish ? 'current bearish stance' : 'current directional view';
+      items.push('⚠ Close below ' + d.bull_invalidation.replace('Daily close above ', '').replace('Close below ', '') + ' invalidates ' + dir);
+    }
     if (d.bear_invalidation) items.push('⚠ ' + d.bear_invalidation);
     var vix = outlook.vix || {};
     if (vix.value != null && vix.value > 18) items.push('⚠ VIX spike above 18 signals caution');
