@@ -476,24 +476,30 @@
 
     el.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b">Loading AI Market Outlook…</div>';
 
-    // Parallel fetches
     var outlookPath = cfg.date ? 'market-outlook/' + cfg.date + '?symbol=' + symbol : 'market-outlook?symbol=' + symbol;
-    var results = await Promise.all([
-      fetchJSON(base, outlookPath),
-      fetchJSON(base, api),
-      fetchJSON(base, 'vix'),
-      fetchJSON(base, 'breadth')
-    ]);
+    var results;
+    try {
+      results = await Promise.all([
+        fetchJSON(base, outlookPath),
+        fetchJSON(base, api),
+        fetchJSON(base, 'vix'),
+        fetchJSON(base, 'breadth')
+      ]);
+    } catch (e) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">Unable to load market data. Please refresh the page.</div>';
+      return;
+    }
 
     var outlook = results[0];
     var symbolData = results[1];
     var vixData = results[2];
     var breadthData = results[3];
 
-    // S3 (Track C): section-level availability. Missing LLM narrative
-    // does NOT suppress valid deterministic data (regime, confidence,
-    // key levels, strategy). Each section renders its own — fallback.
-    // fetchJSON() returns false on network failure, never null.
+    if (!outlook || outlook.error || typeof outlook !== 'object') {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">Market outlook data unavailable. Please try again later.</div>';
+      return;
+    }
+
     function isEmptyOutlook(o) {
       if (!o || o.error) return true;
       if (typeof o === 'string') {
@@ -506,12 +512,10 @@
     }
     var outlookUnavailable = !outlook || outlook.error || isEmptyOutlook(outlook);
 
-    // Inject quote price for key levels
     if (symbolData && symbolData.quote) {
       outlook._quotePrice = symbolData.quote.price;
     }
 
-    // Use fresh VIX from the dedicated endpoint if available
     if (vixData && (vixData.close != null || vixData.price != null)) {
       outlook.vix = outlook.vix || {};
       outlook.vix.value = vixData.close || vixData.price;
@@ -533,8 +537,6 @@
     html += buildRegimeTradeability(outlook);
     html += buildOutlookBars(outlook);
     html += buildFactors(outlook, breadthData);
-    // S9 (Track C): enforced section order — regime → confidence → key levels
-    // → options → strategy → AI explanation → invalidation (always visible).
     html += buildKeyLevels(outlook);
     html += buildOptionsIntelligence(outlook);
     html += buildStrategies(outlook);
@@ -542,13 +544,11 @@
     html += buildRisk(outlook);
     html += buildTradeRecord(outlook);
 
-    // Disclaimer
     html += '<div style="padding:10px 14px;background:#f8fafc;border-radius:8px;font-size:0.78rem;color:#64748b;margin-top:0.5rem;border:1px solid #e2e8f0">' +
       'Analysis generated from stored market data only. Not a guarantee of direction or profitability. Options involve substantial risk — independently assess position size and risk before trading.</div>';
 
     el.innerHTML = html;
 
-    // Wire in-place tab switches (homepage SPA mode)
     if (typeof cfg.onTab === 'function') {
       el.querySelectorAll('[data-tab]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -557,7 +557,6 @@
       });
     }
 
-    // Update the page-level updated bar if present
     var bar = document.getElementById('last-updated-bar');
     if (bar && outlook.date) {
       var at = outlook.as_of_ist || '';
