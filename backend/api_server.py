@@ -6,15 +6,20 @@ import sys
 import sqlite3
 import threading
 import time as _time
+import uuid
 from datetime import datetime, timezone
 from typing import Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, g
 from flask_cors import CORS
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from monitoring import RequestMonitor
+from logging_config import setup_logging, get_logger, log_request, log_alert
 
 app = Flask(__name__)
 
@@ -39,6 +44,9 @@ limiter = Limiter(
     default_limits=["60/minute"],
     storage_uri="memory://",
 )
+
+monitor = RequestMonitor()
+logger = setup_logging(os.environ.get("TRADINGAI_LOG_LEVEL", "INFO"))
 
 ENDPOINT_TIMEOUTS = {
     "health": 2,
@@ -85,11 +93,31 @@ def _set_request_timeout():
     if endpoint and endpoint in ENDPOINT_TIMEOUTS:
         signal.signal(signal.SIGALRM, _request_timeout_handler)
         signal.alarm(ENDPOINT_TIMEOUTS[endpoint])
+    g.correlation_id = f"req-{uuid.uuid4().hex[:12]}"
+    g.request_start = _time.monotonic()
 
 
 @app.after_request
-def _clear_request_timeout(response):
+def _record_metrics_and_clear_timeout(response):
     signal.alarm(0)
+    response.headers["X-Correlation-ID"] = g.correlation_id
+    endpoint = request.endpoint
+    if endpoint:
+        duration_ms = (_time.monotonic() - g.request_start) * 1000
+        status_code = response.status_code
+        error_code = None
+        if status_code >= 400:
+            try:
+                body = response.get_json()
+                if body and "error" in body and "code" in body["error"]:
+                    error_code = body["error"]["code"]
+            except Exception:
+                pass
+        monitor.record_request(endpoint, duration_ms, status_code, error_code)
+        log_request(
+            logger, endpoint, status_code, error_code=error_code,
+            latency_ms=duration_ms, correlation_id=g.correlation_id,
+        )
     return response
 
 
@@ -107,6 +135,25 @@ def _handle_413(e):
 @app.errorhandler(429)
 def _handle_429(e):
     return error_response("RATE_LIMITED", "Too many requests, please wait", 429)
+
+
+@app.route("/api/metrics")
+@limiter.exempt
+def metrics():
+    summary = monitor.get_summary()
+    alerts = monitor.check_alerts()
+    return jsonify({
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "uptime_seconds": monitor.get_uptime_seconds(),
+        "request_counts": summary["counts"],
+        "latency": summary["endpoints"],
+        "circuit_breakers": summary["circuit_breakers"],
+        "external_api_failures": summary["external_api_failures"],
+        "alerts": alerts,
+        "process_local": True,
+        "note": "Metrics are process-local. Multiple workers/instances maintain separate counters.",
+    })
+
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
 
