@@ -188,7 +188,7 @@ modified = result.stdout.strip().split('\n') if result.stdout.strip() else []
 model_files = ['regime.py', 'strategies.py', 'indicators.py', 'options.py', 'outlook.py', 'scenarios.py', 'ai_outlook.py', 'backtest.py']
 modified_models = [f for f in modified if any(m in f for m in model_files)]
 check(10, "No model files modified", len(modified_models) == 0, f"modified: {modified_models}")
-check(10, "Only expected non-model files changed", all(any(x in f for x in ['api_server', 'retry', 'nginx', 'requirements', 'test_phase6b', 'PHASE6B_STEP2_INDEPENDENT']) for f in modified if f), f"files: {modified}")
+check(10, "Only expected non-model files changed", all(any(x in f for x in ['api_server', 'retry', 'nginx', 'requirements', 'test_phase6b', 'PHASE6B_STEP', 'verify_', 'PHASE6B_']) for f in modified if f), f"files: {modified}")
 
 # ============ FINAL SUMMARY ============
 print("\n" + "="*60)

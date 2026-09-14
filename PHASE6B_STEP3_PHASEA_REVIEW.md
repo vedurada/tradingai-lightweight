@@ -4,42 +4,46 @@
 
 **Commit**: `c39af34`
 
-## 1. Test Results
+## 1. Test Results — Evidence
 
-| Category | Count |
-|----------|-------|
-| Regression (pre-6B-3) | 261 |
-| Phase A tests | 37 |
-| **Total passing** | **298** |
+```
+298 passed, 2 warnings in 1.92s
+```
 
-## 2. Verification Gates
+Breakdown: 261 regression + 37 Phase A = 298 total, all passing.
 
-| Gate | Description | Result |
-|------|-------------|--------|
-| 1 | All 298 tests pass | ✅ PASS |
-| 2 | All 8 model files exist and untouched | ✅ PASS |
-| 2.1 | No model files in git diff | ✅ PASS |
-| 3 | Successful responses unchanged | ✅ PASS |
-| 3a | Health has same structure | ✅ PASS |
-| 3b | Price returns 200 | ✅ PASS |
-| 3c | VIX returns 200 | ✅ PASS |
-| 4 | Observability independence | ✅ PASS |
-| 4a | Monitor has record/get methods | ✅ PASS |
-| 4b | No strategy/regime/confidence methods | ✅ PASS |
-| 4c | No monitoring imports in model files | ✅ PASS |
-| 5 | 429 non-retry boundary preserved | ✅ PASS |
-| 6 | Metrics endpoint functional | ✅ PASS |
+## 2. Acceptance Gate Results — Evidence
 
-## 3. Guardrail Verification
+Verified via `verify_acceptance.py`:
 
-| Guardrail | Verified |
-|-----------|----------|
-| Correlation ID NOT a metric dimension | ✅ `get_counts()` has no request_id/correlation_id fields |
-| In-memory metrics labeled process-local | ✅ Metrics endpoint has `process_local: true` |
-| Monitoring is observational | ✅ Monitor has no strategy/regime/confidence methods |
-| No sensitive data in logs | ✅ Forbidden terms not found in log output |
-| No model layer changes | ✅ 8/8 model files untouched |
-| Zero successful response changes | ✅ Health/Price/VIX all return same structure |
+| Gate | Description | Result | Detail |
+|------|-------------|--------|--------|
+| 1 | All tests pass | ✅ PASS | 298 passed, exit 0 |
+| 2 | All 8 model files exist and non-zero | ✅ PASS | All 8 confirmed |
+| 2.1 | No model files in git diff | ✅ PASS | Modified: [] |
+| 3a | Health has status field | ✅ PASS | Keys: data_freshness, status, timestamp, warnings |
+| 3b | Price returns 200 | ✅ PASS | Status: 200 |
+| 3c | VIX returns 200 | ✅ PASS | Status: 200 |
+| 4a | Monitor has record/get methods | ✅ PASS | Has record_request, get_summary, reset |
+| 4b | No strategy/regime/confidence methods | ✅ PASS | No modify_strategy, change_regime, set_confidence |
+| 4c | No monitoring imports in model files | ✅ PASS | Zero monitoring references |
+| 5 | 429 is non-retryable | ✅ PASS | is_retryable(HTTP429) = False |
+| 6a | Metrics endpoint returns 200 | ✅ PASS | Status: 200 |
+| 6b | Metrics has required fields | ✅ PASS | request_counts, latency, circuit_breakers present |
+| 6c | Metrics labeled process-local | ✅ PASS | process_local: true |
+
+Overall: ALL GATES PASS
+
+## 3. Guardrail Verification — Evidence
+
+| Guardrail | Test | Result |
+|-----------|------|--------|
+| Correlation ID NOT a metric dimension | `test_correlation_id_not_a_metric_dimension` | ✅ PASS |
+| In-memory metrics labeled process-local | `test_metrics_process_local_labeled` | ✅ PASS |
+| Monitoring is observational | `test_monitoring_is_observational` | ✅ PASS |
+| No sensitive data in logs | `test_no_sensitive_data_in_log_fields` | ✅ PASS |
+| No model layer changes | `test_model_isolation_*` (5 tests) | ✅ PASS |
+| Zero successful response changes | `test_health_response_unchanged`, `test_price_response_unchanged`, `test_vix_response_unchanged` | ✅ PASS |
 
 ## 4. Files Changed
 
