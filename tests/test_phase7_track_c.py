@@ -132,6 +132,17 @@ class TestPrerender:
         assert 'id="s-sensex-price">—' in t  # absent payload: never fabricate
         assert t.count("data-prerendered") == 1
 
+    def test_deploy_and_cron_wiring(self):
+        deploy = read("deploy-vm.sh")
+        # deploy-time invocation AFTER the health gate (API guaranteed up)
+        assert deploy.find("DEPLOY SUCCESS") < deploy.find(
+            "prerender_snapshot.py --root /var/www/tradingai.in/html "
+            "--api-base http://127.0.0.1:8000")
+        # cron invocation after BOTH outlook generations (mirrors injector)
+        assert deploy.count(
+            "ops/prerender_snapshot.py --root /var/www/tradingai.in/html "
+            ">> /opt/tradingai/logs/prerender.log 2>&1") == 2
+
 
 class TestSectionOrder:
     def test_s9_order(self):
