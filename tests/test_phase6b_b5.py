@@ -141,11 +141,13 @@ class TestValidateDataDepth:
     def test_validate_data_depth_table_not_found(self):
         from backend.data_fetcher_db import KEY_TABLES, _validate_data_depth
         original = dict(KEY_TABLES)
-        KEY_TABLES["nonexistent_table_xyz"] = {"min_rows": 0, "max_age_hours": 1, "value_col": None}
+        # vix_daily is sql_guard allow-listed but absent from the schema,
+        # so it exercises the sqlite (not guard) failure path.
+        KEY_TABLES["vix_daily"] = {"min_rows": 0, "max_age_hours": 1, "value_col": None, "date_col": "timestamp"}
         try:
             result = _validate_data_depth()
-            if "nonexistent_table_xyz" in result["details"]:
-                info = result["details"]["nonexistent_table_xyz"]
+            if "vix_daily" in result["details"]:
+                info = result["details"]["vix_daily"]
                 assert "issues" in info, "issues missing for nonexistent table"
                 assert "table_not_found" in str(info.get("issues", [])), f"expected table_not_found issue, got {info}"
         finally:
@@ -156,7 +158,7 @@ class TestValidateDataDepth:
         """A per-table check failure must not collapse the whole result."""
         from backend.data_fetcher_db import KEY_TABLES, _validate_data_depth
         original = dict(KEY_TABLES)
-        KEY_TABLES["nonexistent_table_xyz"] = {"min_rows": 0, "max_age_hours": 1, "value_col": None}
+        KEY_TABLES["vix_daily"] = {"min_rows": 0, "max_age_hours": 1, "value_col": None, "date_col": "timestamp"}
         try:
             result = _validate_data_depth()
             assert result["tables_checked"] == len(KEY_TABLES), (

@@ -7,6 +7,9 @@ ALLOWED_TABLES = {
     "regime_data", "strategy_data", "scenarios", "outlook_data",
     "symbols", "market_data", "data_status", "indicators",
     "users", "api_keys",
+    # B6.5: tables legitimately queried via dynamic names elsewhere.
+    "market_outlooks", "market_snapshots", "market_regime", "strategies",
+    "market_breadth", "index_breadth", "fundamentals", "etf_data",
 }
 
 

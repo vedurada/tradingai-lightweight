@@ -1,0 +1,10 @@
+{
+  "_comment": "B6.8 central alert/operational thresholds. Tuning these requires no code change. Missing or invalid file falls back to built-in defaults.",
+  "sustained_api_failures": {"threshold": 10, "window_seconds": 60, "severity": "WARNING"},
+  "abnormal_latency": {"p95_threshold_ms": 5000, "window_seconds": 300, "severity": "WARNING"},
+  "freshness_threshold_minutes": {"nifty_price": 30, "vix": 60, "outlook": 1440},
+  "backup_max_age_days": 1,
+  "circuit_breaker": {"failure_threshold": 5, "recovery_timeout_s": 60},
+  "pcr_put_heavy_max": 0.65,
+  "pcr_call_heavy_min": 1.30
+}

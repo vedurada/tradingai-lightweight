@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import sqlite3
 import os
+import sys
 import json
 from datetime import datetime, timezone
 from typing import Any, Optional
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sql_guard import assert_table_name
 
 
 class Database:
@@ -280,6 +284,7 @@ class Database:
             conn.close()
 
     def upsert(self, table: str, data: dict, conflict_columns: str) -> None:
+        assert_table_name(table)
         cols = ", ".join(data.keys())
         placeholders = ", ".join("?" for _ in data)
         update_set = ", ".join(f"{k}=excluded.{k}" for k in data if k != "id")
@@ -290,6 +295,7 @@ class Database:
         self.execute(sql, tuple(data.values()))
 
     def get_latest(self, table: str, symbol: str) -> Optional[dict]:
+        assert_table_name(table)
         row = self.fetchone(f"SELECT * FROM {table} WHERE symbol = ? ORDER BY timestamp DESC LIMIT 1", (symbol,))
         return dict(row) if row else None
 

@@ -6,11 +6,17 @@ class PooledConnection:
     def __init__(self, conn, pool):
         self._conn = conn
         self._pool = pool
+        self._closed = False
 
     def __getattr__(self, name):
         return getattr(self._conn, name)
 
     def close(self):
+        # B6.4: idempotent — explicit close() plus teardown-reclaim must never
+        # double-return a slot (that would corrupt the active count).
+        if self._closed:
+            return
+        self._closed = True
         self._pool.put(self._conn)
 
 

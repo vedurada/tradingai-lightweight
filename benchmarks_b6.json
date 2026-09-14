@@ -1,0 +1,452 @@
+{
+  "/api/price/NIFTY": {
+    "runs": 5,
+    "min_ms": 0.36,
+    "max_ms": 0.75,
+    "median_ms": 0.37,
+    "avg_ms": 0.45,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.4
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.37
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.75
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.36
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.37
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/price/BANKNIFTY": {
+    "runs": 5,
+    "min_ms": 0.38,
+    "max_ms": 0.41,
+    "median_ms": 0.39,
+    "avg_ms": 0.39,
+    "all_runs": [
+      {
+        "status": 404,
+        "latency_ms": 0.41
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.39
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.39
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.39
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/indicators/NIFTY": {
+    "runs": 5,
+    "min_ms": 0.38,
+    "max_ms": 0.45,
+    "median_ms": 0.42,
+    "avg_ms": 0.41,
+    "all_runs": [
+      {
+        "status": 404,
+        "latency_ms": 0.42
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.39
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.42
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.45
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/vix": {
+    "runs": 5,
+    "min_ms": 0.35,
+    "max_ms": 0.37,
+    "median_ms": 0.35,
+    "avg_ms": 0.35,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.37
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/market": {
+    "runs": 5,
+    "min_ms": 0.34,
+    "max_ms": 0.35,
+    "median_ms": 0.35,
+    "avg_ms": 0.35,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/symbols": {
+    "runs": 5,
+    "min_ms": 0.35,
+    "max_ms": 0.41,
+    "median_ms": 0.35,
+    "avg_ms": 0.36,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.36
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.41
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/outlook/NIFTY": {
+    "runs": 5,
+    "min_ms": 0.38,
+    "max_ms": 0.4,
+    "median_ms": 0.39,
+    "avg_ms": 0.39,
+    "all_runs": [
+      {
+        "status": 404,
+        "latency_ms": 0.4
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.39
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.4
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/strategies": {
+    "runs": 5,
+    "min_ms": 0.36,
+    "max_ms": 0.64,
+    "median_ms": 0.37,
+    "avg_ms": 0.45,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.37
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.36
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.36
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.54
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.64
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/regimes": {
+    "runs": 5,
+    "min_ms": 0.34,
+    "max_ms": 0.55,
+    "median_ms": 0.35,
+    "avg_ms": 0.39,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.55
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/options/NIFTY": {
+    "runs": 5,
+    "min_ms": 0.38,
+    "max_ms": 0.45,
+    "median_ms": 0.41,
+    "avg_ms": 0.41,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.41
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.45
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.41
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/pcr": {
+    "runs": 5,
+    "min_ms": 0.35,
+    "max_ms": 0.38,
+    "median_ms": 0.37,
+    "avg_ms": 0.37,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.37
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.36
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.37
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/maxpain": {
+    "runs": 5,
+    "min_ms": 0.34,
+    "max_ms": 0.42,
+    "median_ms": 0.35,
+    "avg_ms": 0.36,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.36
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.42
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/snapshot": {
+    "runs": 5,
+    "min_ms": 0.39,
+    "max_ms": 0.46,
+    "median_ms": 0.41,
+    "avg_ms": 0.42,
+    "all_runs": [
+      {
+        "status": 404,
+        "latency_ms": 0.41
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.43
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.46
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.41
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.39
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/breadth": {
+    "runs": 5,
+    "min_ms": 0.36,
+    "max_ms": 0.39,
+    "median_ms": 0.37,
+    "avg_ms": 0.37,
+    "all_runs": [
+      {
+        "status": 404,
+        "latency_ms": 0.38
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.39
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.37
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.36
+      },
+      {
+        "status": 404,
+        "latency_ms": 0.37
+      }
+    ],
+    "cacheable": true
+  },
+  "/api/data_status": {
+    "runs": 5,
+    "min_ms": 0.34,
+    "max_ms": 0.35,
+    "median_ms": 0.34,
+    "avg_ms": 0.34,
+    "all_runs": [
+      {
+        "status": 200,
+        "latency_ms": 0.35
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      },
+      {
+        "status": 200,
+        "latency_ms": 0.34
+      }
+    ],
+    "cacheable": true
+  }
+}

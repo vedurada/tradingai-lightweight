@@ -335,6 +335,17 @@ CREATE TABLE IF NOT EXISTS data_status (
     error_count INTEGER DEFAULT 0
 );
 
+-- B6.7: source-grained fetch health (the API-side _record_fetch_result writer
+-- targets this table; the fetcher-side per-symbol data_status table is untouched).
+CREATE TABLE IF NOT EXISTS fetch_health (
+    source TEXT PRIMARY KEY,
+    success_count INTEGER DEFAULT 0,
+    error_count INTEGER DEFAULT 0,
+    consecutive_failures INTEGER DEFAULT 0,
+    last_error TEXT,
+    last_ok_at TEXT
+);
+
 CREATE TABLE IF NOT EXISTS etf_data (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     symbol TEXT,

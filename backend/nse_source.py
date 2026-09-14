@@ -13,10 +13,21 @@ strike-level option chain, no tick feed. Stocks/ETFs stay yfinance-first.
 """
 
 import logging
+import os
+import sys
 from datetime import datetime, timezone
 from typing import Optional
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from circuit_breaker import CircuitBreaker, CircuitOpenError
+from monitoring import RequestMonitor
+
 logger = logging.getLogger("tradingai.nse")
+
+# B6.2: same contract as the yfinance breaker — open means existing
+# degradation ({} → stale/UNAVAILABLE downstream), never synthesized quotes.
+NSE_BREAKER = CircuitBreaker("nse_live", failure_threshold=5, recovery_timeout=60)
+nse_monitor = RequestMonitor()
 
 # NSE indexSymbol -> our symbol
 INDEX_MAP = {
@@ -45,6 +56,16 @@ def _num(v, default: float = 0.0) -> float:
 
 def fetch_index_quotes() -> dict[str, dict]:
     """{SYMBOL: {price, open, high, low, prev_close, change, change_pct, advances, declines, unchanged}}"""
+    try:
+        return NSE_BREAKER.call(_fetch_index_quotes_inner)
+    except CircuitOpenError:
+        nse_monitor.record_circuit_breaker_state("nse_live", NSE_BREAKER.state)
+        nse_monitor.record_external_failure("nse_live", "circuit_open")
+        logger.warning("CIRCUIT OPEN nse_live — serving existing degradation (empty)")
+        return {}
+
+
+def _fetch_index_quotes_inner() -> dict[str, dict]:
     out: dict[str, dict] = {}
     try:
         s = _session()

@@ -10,10 +10,27 @@ from typing import Any, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from retry import retry_with_backoff
+from circuit_breaker import CircuitBreaker, CircuitOpenError
+from monitoring import RequestMonitor
+
+# B6.2: breakers sit outside retry (one logical call = one sample). An open
+# breaker degrades to the existing empty-result fallbacks only — never
+# synthesized data. Trips are recorded to the monitor (surfaced via /metrics
+# in the API process; in the fetcher process they are logged + visible through
+# fetch_health) and logged structurally.
+YF_BREAKER = CircuitBreaker("yfinance", failure_threshold=5, recovery_timeout=60)
+NSE_BREAKER = CircuitBreaker("nse_live", failure_threshold=5, recovery_timeout=60)
+fetch_monitor = RequestMonitor()
+
+# B6.1: yfinance offers no per-call timeout on either pinned version, so bound
+# the history call with an executor. The stray thread (if any) finishes
+# harmlessly; the caller sees TimeoutError and follows existing degradation.
+YF_HISTORY_TIMEOUT_S = 25
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from db_schema import init_database, DB_PATH, SCHEMA
+from sql_guard import assert_table_name
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("tradingai.fetcher")
@@ -67,8 +84,14 @@ def init_symbols(conn: sqlite3.Connection, config: dict) -> None:
 @retry_with_backoff(max_retries=3, base_delay=2.0)
 def _fetch_yf_ohlcv_raw(yf_symbol: str, interval: str = "1m", period: str = "2d") -> list[dict]:
     import yfinance as yf
-    ticker = yf.Ticker(yf_symbol)
-    hist = ticker.history(period=period, interval=interval)
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _load():
+        ticker = yf.Ticker(yf_symbol)
+        return ticker.history(period=period, interval=interval)
+
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        hist = ex.submit(_load).result(timeout=YF_HISTORY_TIMEOUT_S)
     if hist.empty:
         return []
     data = []
@@ -92,7 +115,12 @@ def _fetch_yf_ohlcv_raw(yf_symbol: str, interval: str = "1m", period: str = "2d"
 
 def fetch_yf_ohlcv(yf_symbol: str, interval: str = "1m", period: str = "2d") -> list[dict]:
     try:
-        return _fetch_yf_ohlcv_raw(yf_symbol, interval, period)
+        return YF_BREAKER.call(_fetch_yf_ohlcv_raw, yf_symbol, interval, period)
+    except CircuitOpenError:
+        fetch_monitor.record_circuit_breaker_state("yfinance", YF_BREAKER.state)
+        fetch_monitor.record_external_failure("yfinance", "circuit_open")
+        logger.warning(f"CIRCUIT OPEN yfinance — serving existing degradation (empty)")
+        return []
     except Exception as e:
         logger.error(f"OHLCV error for {yf_symbol}: {e}")
         return []
@@ -1006,12 +1034,16 @@ def _validate_data_depth():
             min_date = None
             max_date = None
             try:
+                # B6.5: contained — even a disallowed name degrades one table,
+                # never collapses the whole health payload.
+                assert_table_name(table)
                 row_count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
                 if row_count < config["min_rows"]:
                     issues.append(f"row_count {row_count} < min {config['min_rows']}")
                     all_healthy = False
 
                 date_col = config.get("date_col", "timestamp")
+                assert date_col in ("timestamp", "date"), f"Disallowed date column: {date_col}"
                 date_row = conn.execute(f"SELECT MIN({date_col}) as min_ts, MAX({date_col}) as max_ts FROM {table}").fetchone()
                 min_date = date_row["min_ts"] if date_row and date_row["min_ts"] else None
                 max_date = date_row["max_ts"] if date_row and date_row["max_ts"] else None

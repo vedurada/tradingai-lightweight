@@ -64,6 +64,24 @@ limiter = Limiter(
 monitor = RequestMonitor()
 logger = setup_logging(os.environ.get("TRADINGAI_LOG_LEVEL", "INFO"))
 
+
+def _load_alert_rules():
+    # B6.8: centralized operational thresholds. Missing/invalid file falls back
+    # to the built-in defaults in monitoring.check_alerts — tuning never needs code.
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "alerting.json")
+    try:
+        with open(path) as f:
+            rules = json.load(f)
+        if not isinstance(rules, dict):
+            raise ValueError("alerting.json must be a JSON object")
+        return rules
+    except Exception as e:
+        logger.warning(f"Alert rules fallback to built-ins ({e})")
+        return None
+
+
+ALERT_RULES = _load_alert_rules()
+
 ENDPOINT_TIMEOUTS = {
     "health": 2,
     "price": 5,
@@ -118,7 +136,12 @@ def _set_request_timeout():
 
 @app.after_request
 def _record_metrics_and_clear_timeout(response):
-    signal.alarm(0)
+    # signal.alarm is process-wide; only disarm when armed on the main thread.
+    if threading.current_thread() is threading.main_thread():
+        try:
+            signal.alarm(0)
+        except Exception:
+            pass
     try:
         response.headers["X-Correlation-ID"] = g.correlation_id
     except AttributeError:
@@ -126,7 +149,7 @@ def _record_metrics_and_clear_timeout(response):
     try:
         endpoint = request.endpoint
         if endpoint:
-            duration_ms = (getattr(g, "request_start", _time.monotonic()) - _time.monotonic()) * 1000
+            duration_ms = (_time.monotonic() - getattr(g, "request_start", _time.monotonic())) * 1000
             status_code = response.status_code
             error_code = None
             if status_code >= 400:
@@ -143,24 +166,6 @@ def _record_metrics_and_clear_timeout(response):
             )
     except Exception:
         pass
-    return response
-    endpoint = request.endpoint
-    if endpoint:
-        duration_ms = (_time.monotonic() - g.request_start) * 1000
-        status_code = response.status_code
-        error_code = None
-        if status_code >= 400:
-            try:
-                body = response.get_json()
-                if body and "error" in body and "code" in body["error"]:
-                    error_code = body["error"]["code"]
-            except Exception:
-                pass
-        monitor.record_request(endpoint, duration_ms, status_code, error_code)
-        log_request(
-            logger, endpoint, status_code, error_code=error_code,
-            latency_ms=duration_ms, correlation_id=g.correlation_id,
-        )
     return response
 
 
@@ -245,7 +250,7 @@ signal.signal(signal.SIGTERM, lambda signum, frame: globals().__setitem__("_shut
 @limiter.exempt
 def metrics():
     summary = monitor.get_summary()
-    alerts = monitor.check_alerts()
+    alerts = monitor.check_alerts(ALERT_RULES)
     return jsonify({
         "timestamp": datetime.now(timezone.utc).isoformat(),
         "uptime_seconds": monitor.get_uptime_seconds(),
@@ -274,12 +279,41 @@ def get_db():
             db_pool.close_all()
             db_pool = ConnectionPool(lambda: DB_PATH, max_connections=10)
             _pool_db_path = current_path
-    return PooledConnection(db_pool.get(), db_pool)
+    pooled = PooledConnection(db_pool.get(), db_pool)
+    # B6.4: track per-request connections so teardown_request can reclaim slots
+    # leaked by view paths that raise before reaching conn.close().
+    try:
+        conns = g._db_conns
+    except Exception:
+        try:
+            g._db_conns = conns = []
+        except Exception:
+            return pooled
+    conns.append(pooled)
+    return pooled
 
 def row_to_dict(row):
     if row is None:
         return None
     return dict(row)
+
+
+@app.teardown_request
+def _close_leaked_connections(exc):
+    # B6.4 safety net: reclaim pool slots from views that raised before
+    # conn.close(). PooledConnection.close() is idempotent, so explicit
+    # closes plus this pass never double-return.
+    try:
+        conns = getattr(g, "_db_conns", None)
+    except Exception:
+        return
+    if not conns:
+        return
+    for c in conns:
+        try:
+            c.close()
+        except Exception:
+            pass
 
 
 def _check_source_freshness(source, threshold=30):
@@ -294,6 +328,7 @@ def _check_source_freshness(source, threshold=30):
             "market_outlooks": "market_outlooks",
         }
         table = table_map.get(source, source)
+        assert_table_name(table)
         date_col = "date" if table == "market_outlooks" else "timestamp"
         row = conn.execute(f"SELECT MAX({date_col}) as ts FROM {table}").fetchone()
         if not row or not row["ts"]:
@@ -329,17 +364,24 @@ def _deep_health_check():
 
 
 def _record_fetch_result(source, success, error_msg=None):
+    # B6.7: writes to fetch_health (source-grained). Previously targeted
+    # nonexistent data_status columns and always rolled back.
     conn = get_db()
     try:
+        now = datetime.now(timezone.utc).isoformat()
         if success:
             conn.execute(
-                "UPDATE data_status SET success_count = success_count + 1, consecutive_failures = 0 WHERE source = ?",
-                (source,),
+                "INSERT INTO fetch_health (source, success_count, error_count, consecutive_failures, last_error, last_ok_at)"
+                " VALUES (?, 1, 0, 0, NULL, ?) ON CONFLICT(source) DO UPDATE SET"
+                " success_count = success_count + 1, consecutive_failures = 0, last_ok_at = excluded.last_ok_at",
+                (source, now),
             )
         else:
             conn.execute(
-                "UPDATE data_status SET error_count = error_count + 1, consecutive_failures = consecutive_failures + 1, last_error = ? WHERE source = ?",
-                (error_msg, source),
+                "INSERT INTO fetch_health (source, success_count, error_count, consecutive_failures, last_error, last_ok_at)"
+                " VALUES (?, 0, 1, 1, ?, NULL) ON CONFLICT(source) DO UPDATE SET"
+                " error_count = error_count + 1, consecutive_failures = consecutive_failures + 1, last_error = excluded.last_error",
+                (source, error_msg),
             )
         conn.commit()
     except Exception:
@@ -353,6 +395,7 @@ def _enrich_with_freshness(response, source_tables):
         return response
     ages = []
     for table in source_tables:
+        assert_table_name(table)
         conn = get_db()
         try:
             row = conn.execute(f"SELECT MAX(timestamp) as ts FROM {table}").fetchone()
@@ -466,6 +509,15 @@ def health():
         deep = _deep_health_check()
     except Exception:
         deep = {"tables_checked": 0, "all_healthy": False, "details": {}}
+    try:
+        size_conn = get_db()
+        try:
+            sz = size_conn.execute("SELECT page_count * page_size AS bytes FROM pragma_page_count(), pragma_page_size()").fetchone()
+            db_size_mb = round((sz["bytes"] if sz and sz["bytes"] else 0) / 1024 / 1024, 2)
+        finally:
+            size_conn.close()
+    except Exception:
+        db_size_mb = None
     return jsonify({
         "status": overall,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -475,7 +527,32 @@ def health():
         "overall": overall,
         "pool": pool_status,
         "deep_health": deep,
+        "db_size_mb": db_size_mb,
     })
+
+@app.route("/api/ready")
+@limiter.exempt
+def ready():
+    # B6.9: PROCESS readiness only — DB file readable + pool alive.
+    # Deliberately no freshness/deep_health/overall verdict: a ready process
+    # must never imply healthy market data. /api/health stays authoritative.
+    issues = []
+    try:
+        probe = get_db()
+        try:
+            probe.execute("SELECT 1 FROM symbols LIMIT 1").fetchone()
+        finally:
+            probe.close()
+    except Exception as e:
+        issues.append(f"db_unreadable: {type(e).__name__}")
+    try:
+        if db_pool.status["exhausted"]:
+            issues.append("connection pool exhausted")
+    except Exception as e:
+        issues.append(f"pool_unknown: {type(e).__name__}")
+    if issues:
+        return jsonify({"ready": False, "issues": issues}), 503
+    return jsonify({"ready": True, "issues": []})
 
 @app.route("/api/symbols")
 @cache_page(86400)
@@ -1067,8 +1144,10 @@ def _symbol_data(symbol):
 @cache_page(3600)
 def regime(symbol):
     conn = get_db()
-    row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    conn.close()
+    try:
+        row = conn.execute("SELECT * FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    finally:
+        conn.close()
     if row:
         return jsonify(row_to_dict(row))
     return jsonify({"error": "no regime"}), 404
@@ -1078,23 +1157,27 @@ def regime(symbol):
 def all_regimes():
     page, page_size = _page_params()
     conn = get_db()
-    rows, total = _paginate_list(
-        conn,
-        "SELECT * FROM market_regime ORDER BY timestamp DESC LIMIT ? OFFSET ?",
-        (),
-        "SELECT COUNT(*) FROM market_regime",
-        (),
-        page, page_size,
-    )
-    conn.close()
+    try:
+        rows, total = _paginate_list(
+            conn,
+            "SELECT * FROM market_regime ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (),
+            "SELECT COUNT(*) FROM market_regime",
+            (),
+            page, page_size,
+        )
+    finally:
+        conn.close()
     return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/strategy/<symbol>")
 @cache_page(3600)
 def strategy(symbol):
     conn = get_db()
-    row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
-    conn.close()
+    try:
+        row = conn.execute("SELECT * FROM strategies WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+    finally:
+        conn.close()
     if row:
         return jsonify(row_to_dict(row))
     return jsonify({"error": "no strategy"}), 404
@@ -1104,15 +1187,17 @@ def strategy(symbol):
 def all_strategies():
     page, page_size = _page_params()
     conn = get_db()
-    rows, total = _paginate_list(
-        conn,
-        "SELECT * FROM strategies ORDER BY timestamp DESC LIMIT ? OFFSET ?",
-        (),
-        "SELECT COUNT(*) FROM strategies",
-        (),
-        page, page_size,
-    )
-    conn.close()
+    try:
+        rows, total = _paginate_list(
+            conn,
+            "SELECT * FROM strategies ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+            (),
+            "SELECT COUNT(*) FROM strategies",
+            (),
+            page, page_size,
+        )
+    finally:
+        conn.close()
     return _paginated_response(rows, total, page, page_size)
 
 @app.route("/api/scenarios/<symbol>")
@@ -1916,9 +2001,18 @@ def fundamentals(symbol):
 @cache_page(5)
 def data_status():
     conn = get_db()
-    rows = conn.execute("SELECT * FROM data_status ORDER BY symbol").fetchall()
-    conn.close()
-    return jsonify([row_to_dict(r) for r in rows])
+    try:
+        rows = conn.execute("SELECT * FROM data_status ORDER BY symbol").fetchall()
+        try:
+            health = conn.execute("SELECT * FROM fetch_health ORDER BY source").fetchall()
+        except Exception:
+            health = []
+    finally:
+        conn.close()
+    return jsonify({
+        "symbols": [row_to_dict(r) for r in rows],
+        "fetch_health": [row_to_dict(r) for r in health],
+    })
 
 @app.route("/api/etf")
 @cache_page(86400)
