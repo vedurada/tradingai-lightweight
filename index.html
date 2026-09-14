@@ -37,8 +37,8 @@ try {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
-<link rel="stylesheet" href="assets/css/main.css">
-<script src="assets/js/live-blink.js" defer></script>
+<link rel="stylesheet" href="/assets/css/main.css">
+<script src="/assets/js/live-blink.js" defer></script>
 </head>
 <body>
 <a href="#dashboard" class="skip-link">Skip to main content</a>
@@ -55,35 +55,35 @@ try {
 
   <!-- MARKET SNAPSHOT -->
   <div class="grid" style="margin:1rem 0; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem">
-    <div class="card" style="min-height:120px">
+    <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/nifty.html" data-clickable="1">
       <h3>NIFTY 50</h3>
       <div class="price" id="s-nifty-price">—</div>
       <div class="badge" style="background:#15803d20;color:#15803d">N/A</div>
       <div class="status">Trend: <span id="s-nifty-trend">—</span></div>
       <div class="status">VIX: <span id="s-nifty-vix">—</span></div>
     </div>
-    <div class="card" style="min-height:120px">
+    <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/banknifty.html" data-clickable="1">
       <h3>BANKNIFTY</h3>
       <div class="price" id="s-banknifty-price">—</div>
       <div class="badge" style="background:#dc262620;color:#dc2626">N/A</div>
       <div class="status">Trend: <span id="s-banknifty-trend">—</span></div>
       <div class="status">VIX: <span id="s-banknifty-vix">—</span></div>
     </div>
-    <div class="card" style="min-height:120px">
+    <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/sensex.html" data-clickable="1">
       <h3>SENSEX</h3>
       <div class="price" id="s-sensex-price">—</div>
       <div class="badge" style="background:#f59e0b20;color:#f59e0b">N/A</div>
       <div class="status">Trend: <span id="s-sensex-trend">—</span></div>
       <div class="status">VIX: <span id="s-sensex-vix">—</span></div>
     </div>
-    <div class="card" style="min-height:120px">
+    <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/finnifty.html" data-clickable="1">
       <h3>FINNIFTY</h3>
       <div class="price" id="s-finnifty-price">—</div>
       <div class="badge" style="background:#0ea5e920;color:#0ea5e9">N/A</div>
       <div class="status">Trend: <span id="s-finnifty-trend">—</span></div>
       <div class="status">VIX: <span id="s-finnifty-vix">—</span></div>
     </div>
-    <div class="card" style="min-height:120px">
+    <div class="card" style="min-height:120px;cursor:pointer" data-nav="/market.html" data-clickable="1">
       <h3>INDIA VIX</h3>
       <div class="price" id="s-vix-price">—</div>
       <div class="status">Change: <span id="s-vix-change">—</span></div>
@@ -133,9 +133,9 @@ try {
   </div>
 <footer>
     <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
+  <p class="status" style="margin-top:0.6rem"><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/disclaimer.html">Disclaimer</a> · <a href="/sitemap.xml">Sitemap</a></p></footer>
 </main>
-<script src="assets/js/ai-outlook.js"></script>
+<script src="/assets/js/ai-outlook.js"></script>
 <script>
 (function(){
   var _lastDataTs=null;
@@ -143,7 +143,15 @@ try {
   function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
   function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
   setInterval(tickClock,1000);tickClock();
-  setLastUpdated(new Date().toISOString(),true);
+  setLastUpdated(null,true);
+
+  fetchJSON('market').then(function(d){
+    if(d&&d.last_updated){setLastUpdated(d.last_updated,true);}
+  }).catch(function(){});
+
+  document.querySelectorAll('[data-nav]').forEach(function(c){
+    c.addEventListener('click',function(e){ if(e.target.closest('a')||e.target.closest('button'))return; location.href=c.getAttribute('data-nav'); });
+  });
 
   var SYMBOLS = {
     NIFTY:     { symbol:'NIFTY',     api:'nifty',     displayName:'NIFTY 50',  step:50,  lot:75 },
@@ -163,9 +171,29 @@ try {
     };
   }
 
-  function render(){
-    renderOutlookDashboard('dashboard', buildConfig(current));
+  function syncSnapshotPrices(marketData){
+    var map={NIFTY:'nifty',BANKNIFTY:'banknifty',FINNIFTY:'finnifty',SENSEX:'sensex'};
+    if(!marketData||!marketData.instruments)return;
+    for(var sym in map){
+      var el=document.getElementById('s-'+map[sym].toLowerCase()+'-price');
+      var inst=marketData.instruments[sym];
+      if(el&&inst&&inst.quote&&inst.quote.price!=null){
+        el.textContent=Number(inst.quote.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+        el.style.color='';
+      }
+    }
   }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    fetchJSON('market').then(function(d){
+      if(d) syncSnapshotPrices(d);
+    }).catch(function(){});
+  });
+
+  var _origRender=render;
+  render=function(){
+    _origRender();
+  };
 
   function switchTab(sym){
     if (!SYMBOLS[sym] || sym === current) return;
@@ -188,5 +216,30 @@ try {
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 </script>
-<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/consent.js" defer></script></body>
+<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/consent.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.card').forEach(function(c){
+    if(c.dataset.clickable==='1'||c.onclick)return;
+    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
+    var url=null;
+    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/market.html';
+    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/market.html';
+    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/market.html';
+    else if(h.includes('AI MARKET OUTLOOK')||h.includes('AI INTRADAY'))url='/strategies.html';
+    else if(h.includes('OPTIONS INTELLIGENCE')||h.includes('OPTION CHAIN')||h.includes('PCR')||h.includes('IV')||h.includes('MAX PAIN'))url='/strategy-builder.html';
+    else if(h.includes('STRATEG')||h.includes('BUY')||h.includes('SELL')||h.includes('EXIT')||h.includes('HOLD'))url='/strategies.html';
+    else if(h.includes('KEY LEVELS')||h.includes('SUPPORT')||h.includes('RESISTANCE'))url='/scanner.html';
+    else if(h.includes('SCANNER')||h.includes('SCAN'))url='/scanner.html';
+    else if(h.includes('TODAY')||h.includes('TERMINAL'))url='/today/index.html';
+    else if(h.includes('BACKTEST'))url='/tools/backtest.html';
+    else if(h.includes('POSITION')||h.includes('SIZE'))url='/tools/position-size.html';
+    else if(h.includes('HOLDING')||h.includes('ETF'))url='/etfs/top-etfs.html';
+    if(!url)return;
+    c.dataset.clickable='1';c.style.cursor='pointer';
+    c.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('button')||e.target.closest('table'))return;location.href=url;});
+  });
+});
+</script>
+</body>
 </html>

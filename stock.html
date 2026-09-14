@@ -38,8 +38,8 @@ try {
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
-<link rel="stylesheet" href="assets/css/main.css">
-<script src="assets/js/live-blink.js" defer></script>
+<link rel="stylesheet" href="/assets/css/main.css">
+<script src="/assets/js/live-blink.js" defer></script>
 </head>
 <body>
 <header>
@@ -65,9 +65,9 @@ try {
 
 <footer>
   <p>TradingAI provides market analysis and decision-support information. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  <p class="status" style="margin-top:0.6rem"><a href="about.html">About</a> · <a href="contact.html">Contact</a> · <a href="privacy.html">Privacy</a> · <a href="terms.html">Terms</a> · <a href="disclaimer.html">Disclaimer</a> · <a href="sitemap.xml">Sitemap</a></p></footer>
+  <p class="status" style="margin-top:0.6rem"><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/disclaimer.html">Disclaimer</a> · <a href="/sitemap.xml">Sitemap</a></p></footer>
 </main>
-<script src="assets/js/ai-outlook.js"></script>
+<script src="/assets/js/ai-outlook.js"></script>
 <script>
 (function(){
   function getSym(){var p=new URLSearchParams(location.search);return (p.get('symbol')||p.get('s')||'RELIANCE').toUpperCase();}
@@ -87,5 +87,30 @@ try {
   });
 })();
 </script>
-<script src="/assets/js/consent.js" defer></script></body>
+<script src="/assets/js/consent.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.card').forEach(function(c){
+    if(c.dataset.clickable==='1'||c.onclick)return;
+    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
+    var url=null;
+    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/market.html';
+    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/market.html';
+    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/market.html';
+    else if(h.includes('AI MARKET OUTLOOK')||h.includes('AI INTRADAY'))url='/strategies.html';
+    else if(h.includes('OPTIONS INTELLIGENCE')||h.includes('OPTION CHAIN')||h.includes('PCR')||h.includes('IV')||h.includes('MAX PAIN'))url='/strategy-builder.html';
+    else if(h.includes('STRATEG')||h.includes('BUY')||h.includes('SELL')||h.includes('EXIT')||h.includes('HOLD'))url='/strategies.html';
+    else if(h.includes('KEY LEVELS')||h.includes('SUPPORT')||h.includes('RESISTANCE'))url='/scanner.html';
+    else if(h.includes('SCANNER')||h.includes('SCAN'))url='/scanner.html';
+    else if(h.includes('TODAY')||h.includes('TERMINAL'))url='/today/index.html';
+    else if(h.includes('BACKTEST'))url='/tools/backtest.html';
+    else if(h.includes('POSITION')||h.includes('SIZE'))url='/tools/position-size.html';
+    else if(h.includes('HOLDING')||h.includes('ETF'))url='/etfs/top-etfs.html';
+    if(!url)return;
+    c.dataset.clickable='1';c.style.cursor='pointer';
+    c.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('button')||e.target.closest('table'))return;location.href=url;});
+  });
+});
+</script>
+</body>
 </html>

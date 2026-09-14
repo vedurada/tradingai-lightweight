@@ -549,6 +549,40 @@
 
     el.innerHTML = html;
 
+    var bar = document.getElementById('last-updated-bar');
+    if (bar && symbolData && symbolData.quote) {
+      var ts = symbolData.quote.timestamp || (symbolData.last_updated);
+      if (ts) {
+        try {
+          var ist = new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Kolkata', day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+          var p = {}; ist.formatToParts(new Date(ts)).forEach(function (x) { p[x.type] = x.value; });
+          bar.textContent = 'Data as of ' + p.day + ' ' + p.month + ' ' + p.year + ', ' + p.hour + ':' + p.minute + ':' + p.second + ' IST';
+          bar.style.color = '';
+        } catch (e) {
+          bar.textContent = 'Data as of ' + ts;
+        }
+      }
+    }
+
+    el.querySelectorAll('.card').forEach(function (c) {
+      if (c.dataset.clickable === '1' || c.onclick) return;
+      c.dataset.clickable = '1';
+      c.style.cursor = 'pointer';
+      c.addEventListener('click', function (e) {
+        if (e.target.closest('a') || e.target.closest('button') || e.target.closest('table')) return;
+        var h = (c.querySelector('h3') || {}).textContent || '';
+        var hu = h.toUpperCase();
+        if (hu.includes('MARKET REGIME') || hu.includes('TRADEABILITY')) location.href = '/market.html';
+        else if (hu.includes('TODAY') || hu.includes('OUTLOOK')) location.href = '/today/index.html';
+        else if (hu.includes('STRATEG')) location.href = '/strategies.html';
+        else if (hu.includes('KEY LEVELS')) location.href = '/scanner.html';
+        else if (hu.includes('OPTION') || hu.includes('PCR') || hu.includes('IV') || hu.includes('MAX PAIN') || hu.includes('CALL WALL') || hu.includes('SUPPORT') || hu.includes('RESISTANCE')) location.href = '/strategy-builder.html';
+        else if (hu.includes('RISK') || hu.includes('INVALIDATION')) location.href = '/scanner.html';
+        else if (hu.includes('AI DECISION') || hu.includes('AI GATED')) location.href = '/today/index.html';
+        else if (hu.includes('AI MARKET OUTLOOK')) location.href = '/market.html';
+      });
+    });
+
     if (typeof cfg.onTab === 'function') {
       el.querySelectorAll('[data-tab]').forEach(function (btn) {
         btn.addEventListener('click', function () {
