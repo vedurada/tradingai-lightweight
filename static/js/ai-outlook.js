@@ -381,6 +381,8 @@
   }
 
   function buildRisk(outlook) {
+    var d = outlook.decision || {};
+    var items = [];
     var regime = (outlook.regime || {}).primary || '';
     var isBullish = regime.toUpperCase().indexOf('BULL') >= 0;
     var isBearish = regime.toUpperCase().indexOf('BEAR') >= 0;
