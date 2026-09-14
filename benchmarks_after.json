@@ -1,0 +1,786 @@
+{
+  "commit": "801a5c1",
+  "runs": 10,
+  "endpoints": {
+    "/api/price/NIFTY": {
+      "runs": 10,
+      "min_ms": 0.339,
+      "max_ms": 0.799,
+      "median_ms": 0.347,
+      "avg_ms": 0.399,
+      "p90_ms": 0.799,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.357
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.348
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.343
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.342
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.347
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.345
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.354
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.339
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.799
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.411
+        }
+      ],
+      "cacheable": true,
+      "ttl": 5
+    },
+    "/api/price/BANKNIFTY": {
+      "runs": 10,
+      "min_ms": 0.393,
+      "max_ms": 0.516,
+      "median_ms": 0.404,
+      "avg_ms": 0.417,
+      "p90_ms": 0.516,
+      "all_runs": [
+        {
+          "status": 404,
+          "latency_ms": 0.516
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.423
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.413
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.407
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.4
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.393
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.402
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.415
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.399
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.401
+        }
+      ],
+      "cacheable": true,
+      "ttl": 5
+    },
+    "/api/indicators/NIFTY": {
+      "runs": 10,
+      "min_ms": 0.368,
+      "max_ms": 0.514,
+      "median_ms": 0.413,
+      "avg_ms": 0.416,
+      "p90_ms": 0.514,
+      "all_runs": [
+        {
+          "status": 404,
+          "latency_ms": 0.42
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.379
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.374
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.392
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.368
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.514
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.453
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.423
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.406
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.431
+        }
+      ],
+      "cacheable": true,
+      "ttl": 5
+    },
+    "/api/vix": {
+      "runs": 10,
+      "min_ms": 0.329,
+      "max_ms": 0.446,
+      "median_ms": 0.376,
+      "avg_ms": 0.377,
+      "p90_ms": 0.446,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.387
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.421
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.395
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.365
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.346
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.415
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.335
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.329
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.332
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.446
+        }
+      ],
+      "cacheable": true,
+      "ttl": 5
+    },
+    "/api/market": {
+      "runs": 10,
+      "min_ms": 0.326,
+      "max_ms": 0.466,
+      "median_ms": 0.33,
+      "avg_ms": 0.345,
+      "p90_ms": 0.466,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.466
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.347
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.337
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.332
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.331
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.328
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.327
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.326
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.327
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.329
+        }
+      ],
+      "cacheable": true,
+      "ttl": 20
+    },
+    "/api/symbols": {
+      "runs": 10,
+      "min_ms": 0.327,
+      "max_ms": 0.362,
+      "median_ms": 0.341,
+      "avg_ms": 0.342,
+      "p90_ms": 0.362,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.351
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.329
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.327
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.333
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.339
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.341
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.34
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.342
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.352
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.362
+        }
+      ],
+      "cacheable": true,
+      "ttl": 86400
+    },
+    "/api/outlook/NIFTY": {
+      "runs": 10,
+      "min_ms": 0.356,
+      "max_ms": 0.478,
+      "median_ms": 0.387,
+      "avg_ms": 0.402,
+      "p90_ms": 0.478,
+      "all_runs": [
+        {
+          "status": 404,
+          "latency_ms": 0.46
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.409
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.384
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.478
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.396
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.387
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.38
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.387
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.387
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.356
+        }
+      ],
+      "cacheable": true,
+      "ttl": 3600
+    },
+    "/api/strategies": {
+      "runs": 10,
+      "min_ms": 0.316,
+      "max_ms": 0.428,
+      "median_ms": 0.368,
+      "avg_ms": 0.367,
+      "p90_ms": 0.428,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.336
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.328
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.316
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.382
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.418
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.375
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.362
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.428
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.377
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.35
+        }
+      ],
+      "cacheable": true,
+      "ttl": 3600
+    },
+    "/api/regimes": {
+      "runs": 10,
+      "min_ms": 0.32,
+      "max_ms": 0.359,
+      "median_ms": 0.334,
+      "avg_ms": 0.333,
+      "p90_ms": 0.359,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.359
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.335
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.335
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.333
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.342
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.334
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.323
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.32
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.322
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.327
+        }
+      ],
+      "cacheable": true,
+      "ttl": 3600
+    },
+    "/api/options/NIFTY": {
+      "runs": 10,
+      "min_ms": 0.35,
+      "max_ms": 0.443,
+      "median_ms": 0.366,
+      "avg_ms": 0.375,
+      "p90_ms": 0.443,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.383
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.443
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.404
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.371
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.378
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.361
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.356
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.353
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.352
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.35
+        }
+      ],
+      "cacheable": true,
+      "ttl": 600
+    },
+    "/api/pcr": {
+      "runs": 10,
+      "min_ms": 0.332,
+      "max_ms": 0.421,
+      "median_ms": 0.354,
+      "avg_ms": 0.366,
+      "p90_ms": 0.421,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.346
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.332
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.411
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.397
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.421
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.357
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.356
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.352
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.34
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.348
+        }
+      ],
+      "cacheable": true,
+      "ttl": 600
+    },
+    "/api/maxpain": {
+      "runs": 10,
+      "min_ms": 0.322,
+      "max_ms": 0.39,
+      "median_ms": 0.339,
+      "avg_ms": 0.343,
+      "p90_ms": 0.39,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.39
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.365
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.353
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.337
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.328
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.323
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.324
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.341
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.322
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.344
+        }
+      ],
+      "cacheable": true,
+      "ttl": 600
+    },
+    "/api/snapshot": {
+      "runs": 10,
+      "min_ms": 0.344,
+      "max_ms": 0.591,
+      "median_ms": 0.376,
+      "avg_ms": 0.391,
+      "p90_ms": 0.591,
+      "all_runs": [
+        {
+          "status": 404,
+          "latency_ms": 0.591
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.395
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.391
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.381
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.376
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.376
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.366
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.346
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.344
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.345
+        }
+      ],
+      "cacheable": true,
+      "ttl": 5
+    },
+    "/api/breadth": {
+      "runs": 10,
+      "min_ms": 0.339,
+      "max_ms": 0.437,
+      "median_ms": 0.344,
+      "avg_ms": 0.355,
+      "p90_ms": 0.437,
+      "all_runs": [
+        {
+          "status": 404,
+          "latency_ms": 0.366
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.349
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.343
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.341
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.342
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.346
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.339
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.343
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.344
+        },
+        {
+          "status": 404,
+          "latency_ms": 0.437
+        }
+      ],
+      "cacheable": true,
+      "ttl": 5
+    },
+    "/api/data_status": {
+      "runs": 10,
+      "min_ms": 0.32,
+      "max_ms": 0.447,
+      "median_ms": 0.333,
+      "avg_ms": 0.351,
+      "p90_ms": 0.447,
+      "all_runs": [
+        {
+          "status": 200,
+          "latency_ms": 0.447
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.343
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.371
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.335
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.323
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.327
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.331
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.32
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.393
+        },
+        {
+          "status": 200,
+          "latency_ms": 0.323
+        }
+      ],
+      "cacheable": true,
+      "ttl": 5
+    }
+  }
+}
