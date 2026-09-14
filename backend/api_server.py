@@ -294,7 +294,8 @@ def _check_source_freshness(source, threshold=30):
             "market_outlooks": "market_outlooks",
         }
         table = table_map.get(source, source)
-        row = conn.execute(f"SELECT MAX(timestamp) as ts FROM {table}").fetchone()
+        date_col = "date" if table == "market_outlooks" else "timestamp"
+        row = conn.execute(f"SELECT MAX({date_col}) as ts FROM {table}").fetchone()
         if not row or not row["ts"]:
             result = {"status": "unavailable", "age_minutes": None}
         else:

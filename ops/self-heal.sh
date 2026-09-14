@@ -121,17 +121,27 @@ if [ -f "$EXPECTED_CRONTAB" ]; then
     fi
 fi
 
-# 9. Backup verification
-BACKUP_FILE="/opt/tradingai-backup/database/tradingai.db"
+# 9. Backup verification (vm-backup.sh keeps a .db.gz snapshot)
+BACKUP_DB="/opt/tradingai-backup/database/tradingai.db"
+BACKUP_GZ="/opt/tradingai-backup/database/tradingai.db.gz"
 MAX_BACKUP_AGE_DAYS=7
-if [ -f "$BACKUP_FILE" ]; then
+BACKUP_FILE=""
+[ -f "$BACKUP_DB" ] && BACKUP_FILE="$BACKUP_DB"
+[ -z "$BACKUP_FILE" ] && [ -f "$BACKUP_GZ" ] && BACKUP_FILE="$BACKUP_GZ"
+if [ -n "$BACKUP_FILE" ]; then
     BACKUP_AGE_DAYS=$(( ( $(date +%s) - $(stat -c %Y "$BACKUP_FILE" 2>/dev/null || echo 0) ) / 86400 ))
     if [ "$BACKUP_AGE_DAYS" -gt "$MAX_BACKUP_AGE_DAYS" ]; then
         log "ALERT backup_stale: ${BACKUP_AGE_DAYS}d old (max ${MAX_BACKUP_AGE_DAYS}d)"
     else
         log "OK backup_age: ${BACKUP_AGE_DAYS}d old"
     fi
-    if command -v sqlite3 >/dev/null 2>&1; then
+    if [ "$BACKUP_FILE" = "$BACKUP_GZ" ]; then
+        if gzip -t "$BACKUP_FILE" 2>/dev/null; then
+            log "OK backup_integrity: gzip verified"
+        else
+            log "ALERT backup_corrupt: gzip integrity check failed"
+        fi
+    elif command -v sqlite3 >/dev/null 2>&1; then
         if ! sqlite3 "$BACKUP_FILE" "SELECT 1 FROM symbols LIMIT 1" >/dev/null 2>&1; then
             log "ALERT backup_corrupt: cannot verify integrity"
         else

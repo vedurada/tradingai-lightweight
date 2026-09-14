@@ -978,10 +978,10 @@ def build_breadth(conn: sqlite3.Connection) -> None:
     logger.info(f"Breadth: adv={adv} dec={dec} unch={unch}")
 
 KEY_TABLES = {
-    "price_1m": {"min_rows": 0, "max_age_hours": 1, "value_col": None},
-    "price_1d": {"min_rows": 10, "max_age_hours": 96, "value_col": "close_price"},
-    "vix_data": {"min_rows": 1, "max_age_hours": 24, "value_col": "vix"},
-    "market_outlooks": {"min_rows": 1, "max_age_hours": 72, "value_col": None},
+    "price_1m": {"min_rows": 0, "max_age_hours": 1, "value_col": None, "date_col": "timestamp"},
+    "price_1d": {"min_rows": 10, "max_age_hours": 96, "value_col": "close_price", "date_col": "timestamp"},
+    "vix_data": {"min_rows": 1, "max_age_hours": 24, "value_col": "vix", "date_col": "timestamp"},
+    "market_outlooks": {"min_rows": 1, "max_age_hours": 72, "value_col": None, "date_col": "date"},
 }
 
 def _validate_data_depth():
@@ -1011,7 +1011,8 @@ def _validate_data_depth():
                     issues.append(f"row_count {row_count} < min {config['min_rows']}")
                     all_healthy = False
 
-                date_row = conn.execute(f"SELECT MIN(timestamp) as min_ts, MAX(timestamp) as max_ts FROM {table}").fetchone()
+                date_col = config.get("date_col", "timestamp")
+                date_row = conn.execute(f"SELECT MIN({date_col}) as min_ts, MAX({date_col}) as max_ts FROM {table}").fetchone()
                 min_date = date_row["min_ts"] if date_row and date_row["min_ts"] else None
                 max_date = date_row["max_ts"] if date_row and date_row["max_ts"] else None
 
