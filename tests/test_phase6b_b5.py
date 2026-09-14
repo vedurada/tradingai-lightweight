@@ -152,6 +152,25 @@ class TestValidateDataDepth:
             KEY_TABLES.clear()
             KEY_TABLES.update(original)
 
+    def test_validate_data_depth_per_table_failure_isolated(self):
+        """A per-table check failure must not collapse the whole result."""
+        from backend.data_fetcher_db import KEY_TABLES, _validate_data_depth
+        original = dict(KEY_TABLES)
+        KEY_TABLES["nonexistent_table_xyz"] = {"min_rows": 0, "max_age_hours": 1, "value_col": None}
+        try:
+            result = _validate_data_depth()
+            assert result["tables_checked"] == len(KEY_TABLES), (
+                f"one bad table collapsed the result: {result}"
+            )
+            assert "details" in result and len(result["details"]) == len(KEY_TABLES)
+            for table, info in result["details"].items():
+                assert info["row_count"] is None or isinstance(info["row_count"], int), (
+                    f"{table}: leaked row_count {info['row_count']!r}"
+                )
+        finally:
+            KEY_TABLES.clear()
+            KEY_TABLES.update(original)
+
     def test_check_source_freshness_with_depth(self):
         import backend.api_server as api_mod
         conn = get_db()

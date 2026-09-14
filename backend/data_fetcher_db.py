@@ -1002,6 +1002,9 @@ def _validate_data_depth():
         all_healthy = True
         for table, config in KEY_TABLES.items():
             issues = []
+            row_count = None
+            min_date = None
+            max_date = None
             try:
                 row_count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
                 if row_count < config["min_rows"]:
@@ -1013,11 +1016,17 @@ def _validate_data_depth():
                 max_date = date_row["max_ts"] if date_row and date_row["max_ts"] else None
 
                 if max_date:
-                    from datetime import datetime, timezone, timedelta
-                    if "T" in str(max_date):
-                        max_dt = datetime.fromisoformat(str(max_date).replace("Z", "+00:00"))
+                    from datetime import datetime, timezone
+                    max_str = str(max_date)
+                    if "T" in max_str:
+                        max_dt = datetime.fromisoformat(max_str.replace("Z", "+00:00"))
                     else:
-                        max_dt = datetime.strptime(str(max_date), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                        try:
+                            max_dt = datetime.strptime(max_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                        except ValueError:
+                            max_dt = datetime.strptime(max_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                    if max_dt.tzinfo is None:
+                        max_dt = max_dt.replace(tzinfo=timezone.utc)
                     age_hours = (datetime.now(timezone.utc) - max_dt).total_seconds() / 3600
                     if age_hours > config["max_age_hours"]:
                         issues.append(f"data_age {age_hours:.1f}h > max {config['max_age_hours']}h")
@@ -1025,9 +1034,12 @@ def _validate_data_depth():
             except sqlite3.Error:
                 issues.append("table_not_found")
                 all_healthy = False
+            except Exception as e:
+                issues.append(f"check_failed: {type(e).__name__}")
+                all_healthy = False
 
             details[table] = {
-                "row_count": row_count if 'row_count' in dir() else 0,
+                "row_count": row_count,
                 "min_date": min_date,
                 "max_date": max_date,
                 "status": "ok" if not issues else "degraded",
