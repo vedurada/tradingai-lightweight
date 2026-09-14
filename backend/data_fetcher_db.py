@@ -977,5 +977,74 @@ def build_breadth(conn: sqlite3.Connection) -> None:
     conn.commit()
     logger.info(f"Breadth: adv={adv} dec={dec} unch={unch}")
 
+KEY_TABLES = {
+    "price_1m": {"min_rows": 0, "max_age_hours": 1, "value_col": None},
+    "price_1d": {"min_rows": 10, "max_age_hours": 48, "value_col": "close_price"},
+    "vix_data": {"min_rows": 1, "max_age_hours": 24, "value_col": "vix"},
+    "market_outlooks": {"min_rows": 1, "max_age_hours": 72, "value_col": None},
+}
+
+def _validate_data_depth():
+    """Validate data depth for key tables.
+
+    Returns: {
+        "tables_checked": int,
+        "all_healthy": bool,
+        "details": {table_name: {row_count, min_date, max_date, status, issues}}
+    }
+    """
+    import sqlite3
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=5)
+        conn.row_factory = sqlite3.Row
+        details = {}
+        all_healthy = True
+        for table, config in KEY_TABLES.items():
+            issues = []
+            try:
+                row_count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                if row_count < config["min_rows"]:
+                    issues.append(f"row_count {row_count} < min {config['min_rows']}")
+                    all_healthy = False
+
+                date_row = conn.execute(f"SELECT MIN(timestamp) as min_ts, MAX(timestamp) as max_ts FROM {table}").fetchone()
+                min_date = date_row["min_ts"] if date_row and date_row["min_ts"] else None
+                max_date = date_row["max_ts"] if date_row and date_row["max_ts"] else None
+
+                if max_date:
+                    from datetime import datetime, timezone, timedelta
+                    if "T" in str(max_date):
+                        max_dt = datetime.fromisoformat(str(max_date).replace("Z", "+00:00"))
+                    else:
+                        max_dt = datetime.strptime(str(max_date), "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                    age_hours = (datetime.now(timezone.utc) - max_dt).total_seconds() / 3600
+                    if age_hours > config["max_age_hours"]:
+                        issues.append(f"data_age {age_hours:.1f}h > max {config['max_age_hours']}h")
+                        all_healthy = False
+            except sqlite3.Error:
+                issues.append("table_not_found")
+                all_healthy = False
+
+            details[table] = {
+                "row_count": row_count if 'row_count' in dir() else 0,
+                "min_date": min_date,
+                "max_date": max_date,
+                "status": "ok" if not issues else "degraded",
+                "issues": issues,
+            }
+
+        return {
+            "tables_checked": len(KEY_TABLES),
+            "all_healthy": all_healthy,
+            "details": details,
+        }
+    except Exception:
+        return {"tables_checked": 0, "all_healthy": False, "details": {}}
+    finally:
+        if conn:
+            conn.close()
+
+
 if __name__ == "__main__":
     fetch_all()

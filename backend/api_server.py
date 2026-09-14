@@ -33,6 +33,7 @@ from data_quality import (
     DATA_QUALITY_UNAVAILABLE, DATA_QUALITY_PARTIAL,
     data_age_minutes,
 )
+from data_fetcher_db import _validate_data_depth
 from db_pool import ConnectionPool, PooledConnection
 from cache import ResponseCache
 
@@ -292,17 +293,35 @@ def _check_source_freshness(source, threshold=30):
         table = table_map.get(source, source)
         row = conn.execute(f"SELECT MAX(timestamp) as ts FROM {table}").fetchone()
         if not row or not row["ts"]:
-            return {"status": "unavailable", "age_minutes": None}
-        age = data_age_minutes(row["ts"])
-        if age is None:
-            return {"status": "unavailable", "age_minutes": None}
-        if age > threshold:
-            return {"status": "stale", "age_minutes": round(age), "threshold": threshold}
-        return {"status": "ok", "age_minutes": round(age)}
+            result = {"status": "unavailable", "age_minutes": None}
+        else:
+            age = data_age_minutes(row["ts"])
+            if age is None:
+                result = {"status": "unavailable", "age_minutes": None}
+            elif age > threshold:
+                result = {"status": "stale", "age_minutes": round(age), "threshold": threshold}
+            else:
+                result = {"status": "ok", "age_minutes": round(age)}
+
+            try:
+                depth_row = conn.execute(f"SELECT COUNT(*) as cnt FROM {table}").fetchone()
+                if depth_row and depth_row["cnt"] < 5:
+                    result["depth_issues"] = [f"low_row_count: {depth_row['cnt']}"]
+            except Exception:
+                pass
+
+        return result
     except Exception:
         return {"status": "unavailable", "age_minutes": None}
     finally:
         conn.close()
+
+
+def _deep_health_check():
+    try:
+        return _validate_data_depth()
+    except Exception:
+        return {"tables_checked": 0, "all_healthy": False, "details": {}}
 
 
 def _record_fetch_result(source, success, error_msg=None):
@@ -439,6 +458,10 @@ def health():
     for name, info in sources.items():
         if info["age_minutes"] is not None:
             freshness[f"{name}_minutes_ago"] = info["age_minutes"]
+    try:
+        deep = _deep_health_check()
+    except Exception:
+        deep = {"tables_checked": 0, "all_healthy": False, "details": {}}
     return jsonify({
         "status": overall,
         "timestamp": datetime.now(timezone.utc).isoformat(),
@@ -447,6 +470,7 @@ def health():
         "sources": sources,
         "overall": overall,
         "pool": pool_status,
+        "deep_health": deep,
     })
 
 @app.route("/api/symbols")

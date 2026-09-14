@@ -88,4 +88,60 @@ if ! pgrep -x cron > /dev/null 2>&1 && ! pgrep -x crond > /dev/null 2>&1; then
   sudo service cron restart 2>&1 | head -2 | while read l; do log "cron: $l"; done
 fi
 
+# 7. Memory — check if gunicorn exceeds threshold
+if command -v systemctl >/dev/null 2>&1; then
+    MEM_USAGE=$(systemctl show tradingai-api -p MemoryCurrent 2>/dev/null | cut -d= -f2)
+    if [ -n "$MEM_USAGE" ] && [ "$MEM_USAGE" != "0" ]; then
+        MEM_MB=$((MEM_USAGE / 1024 / 1024))
+        if [ "$MEM_MB" -gt 1500 ]; then
+            log "MEMORY HIGH: ${MEM_MB}MB > 1500MB — restarting tradingai-api"
+            sudo systemctl restart tradingai-api 2>&1 | head -3 | while read l; do log "mem restart: $l"; done
+        else
+            log "MEMORY OK: ${MEM_MB}MB"
+        fi
+    fi
+fi
+
+# 8. Crontab — verify and repair if needed
+EXPECTED_CRONTAB="ops/crontab.txt"
+if [ -f "$EXPECTED_CRONTAB" ]; then
+    MISSING=0
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        [[ "${line:0:1}" == "#" ]] && continue
+        if ! crontab -l 2>/dev/null | grep -qF "$line"; then
+            MISSING=$((MISSING + 1))
+        fi
+    done < "$EXPECTED_CRONTAB"
+    if [ "$MISSING" -gt 0 ]; then
+        log "CRONTAB REPAIR: $MISSING missing entries, reinstalling"
+        crontab "$EXPECTED_CRONTAB" 2>/dev/null && log "CRONTAB REPAIR: completed" || log "CRONTAB REPAIR: failed"
+    else
+        log "CRONTAB OK: all entries present"
+    fi
+fi
+
+# 9. Backup verification
+BACKUP_FILE="/opt/tradingai-backup/database/tradingai.db"
+MAX_BACKUP_AGE_DAYS=7
+if [ -f "$BACKUP_FILE" ]; then
+    BACKUP_AGE_DAYS=$(( ( $(date +%s) - $(stat -c %Y "$BACKUP_FILE" 2>/dev/null || echo 0) ) / 86400 ))
+    if [ "$BACKUP_AGE_DAYS" -gt "$MAX_BACKUP_AGE_DAYS" ]; then
+        log "ALERT backup_stale: ${BACKUP_AGE_DAYS}d old (max ${MAX_BACKUP_AGE_DAYS}d)"
+    else
+        log "OK backup_age: ${BACKUP_AGE_DAYS}d old"
+    fi
+    if command -v sqlite3 >/dev/null 2>&1; then
+        if ! sqlite3 "$BACKUP_FILE" "SELECT 1 FROM symbols LIMIT 1" >/dev/null 2>&1; then
+            log "ALERT backup_corrupt: cannot verify integrity"
+        else
+            log "OK backup_integrity: verified"
+        fi
+    else
+        log "OK backup_exists: sqlite3 unavailable for integrity check"
+    fi
+else
+    log "ALERT backup_missing: no backup file"
+fi
+
 log "self-heal cycle done (disk ${DISK_PCT}%, api $(curl -sf --max-time 5 $API > /dev/null 2>&1 && echo ok || echo fail))"
