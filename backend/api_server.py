@@ -651,7 +651,7 @@ def indicators_default():
     conn.close()
     if row:
         d = row_to_dict(row)
-        age = data_age_minutes(row.get("timestamp"))
+        age = data_age_minutes(d.get("timestamp"))
         if age is None:
             d["data_quality"] = DATA_QUALITY_UNAVAILABLE
             d["data_freshness"] = {"age_minutes": None, "stale": True}
@@ -753,7 +753,7 @@ def _build_quote(symbol, price_row, live_row=None, conn=None):
     d = dict(live_row) if live_row else (row_to_dict(price_row) if price_row else None)
     if not d:
         return None
-    source = (live_row or {}).get("source", "NSE") if live_row else "yfinance"
+    source = d.get("source", "NSE") if live_row else "yfinance"
     if live_row:
         price = d.get("price", 0) or 0
         prev = d.get("previous_close", 0) or 0
