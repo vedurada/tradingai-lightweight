@@ -56,7 +56,7 @@
       var r = await fetch(base + '/api/' + path);
       if (!r.ok) throw new Error('nf');
       return await r.json();
-    } catch (e) { return null; }
+    } catch (e) { return false; }
   }
 
   function factorLabel(label, color) {
@@ -383,7 +383,13 @@
   function buildRisk(outlook) {
     var d = outlook.decision || {};
     var items = [];
-    if (d.bull_invalidation) items.push('⚠ Close below ' + d.bull_invalidation.replace('Daily close above ', '').replace('Close below ', '') + ' invalidates bullish view');
+    var regime = (outlook.regime || {}).primary || '';
+    var isBullish = regime.toUpperCase().indexOf('BULL') >= 0;
+    var isBearish = regime.toUpperCase().indexOf('BEAR') >= 0;
+    if (d.bull_invalidation) {
+      var dir = isBullish ? 'bullish view' : isBearish ? 'current bearish stance' : 'current directional view';
+      items.push('⚠ Close below ' + d.bull_invalidation.replace('Daily close above ', '').replace('Close below ', '') + ' invalidates ' + dir);
+    }
     if (d.bear_invalidation) items.push('⚠ ' + d.bear_invalidation);
     var vix = outlook.vix || {};
     if (vix.value != null && vix.value > 18) items.push('⚠ VIX spike above 18 signals caution');
@@ -470,31 +476,46 @@
 
     el.innerHTML = '<div style="text-align:center;padding:40px;color:#64748b">Loading AI Market Outlook…</div>';
 
-    // Parallel fetches
     var outlookPath = cfg.date ? 'market-outlook/' + cfg.date + '?symbol=' + symbol : 'market-outlook?symbol=' + symbol;
-    var results = await Promise.all([
-      fetchJSON(base, outlookPath),
-      fetchJSON(base, api),
-      fetchJSON(base, 'vix'),
-      fetchJSON(base, 'breadth')
-    ]);
+    var results;
+    try {
+      results = await Promise.all([
+        fetchJSON(base, outlookPath),
+        fetchJSON(base, api),
+        fetchJSON(base, 'vix'),
+        fetchJSON(base, 'breadth')
+      ]);
+    } catch (e) {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">Unable to load market data. Please refresh the page.</div>';
+      return;
+    }
 
     var outlook = results[0];
     var symbolData = results[1];
     var vixData = results[2];
     var breadthData = results[3];
 
-    if (!outlook || outlook.error) {
-      el.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">No AI Market Outlook data available for ' + symbol + '. Run the outlook generator first.</div>';
+    if (!outlook || outlook.error || typeof outlook !== 'object') {
+      el.innerHTML = '<div style="text-align:center;padding:40px;color:#dc2626">Market outlook data unavailable. Please try again later.</div>';
       return;
     }
 
-    // Inject quote price for key levels
+    function isEmptyOutlook(o) {
+      if (!o || o.error) return true;
+      if (typeof o === 'string') {
+        var s = o.trim();
+        if (s === '' || s === '{}') return true;
+        try { o = JSON.parse(s); } catch (e) { return true; }
+      }
+      if (typeof o !== 'object') return true;
+      return Object.keys(o).length === 0;
+    }
+    var outlookUnavailable = !outlook || outlook.error || isEmptyOutlook(outlook);
+
     if (symbolData && symbolData.quote) {
       outlook._quotePrice = symbolData.quote.price;
     }
 
-    // Use fresh VIX from the dedicated endpoint if available
     if (vixData && (vixData.close != null || vixData.price != null)) {
       outlook.vix = outlook.vix || {};
       outlook.vix.value = vixData.close || vixData.price;
@@ -506,6 +527,9 @@
     var quote = symbolData ? symbolData.quote : null;
 
     var html = '';
+    if (outlookUnavailable) {
+      html += '<div style="padding:8px 14px;background:#fef3c7;border-radius:8px;font-size:0.82rem;color:#92400e;margin-bottom:0.5rem;border:1px solid #f59e0b30">AI Market Outlook narrative currently unavailable. Market regime, confidence, key levels and strategy fields update when data is populated.</div>';
+    }
     html += buildNavTabs(symbol, cfg);
     html += '<div class="card hero" style="background:linear-gradient(135deg,#052e16 0%,#15803d 100%);border:none;color:#fff">';
     html += buildHero(quote, outlook, symbol);
@@ -513,20 +537,18 @@
     html += buildRegimeTradeability(outlook);
     html += buildOutlookBars(outlook);
     html += buildFactors(outlook, breadthData);
+    html += buildKeyLevels(outlook);
     html += buildOptionsIntelligence(outlook);
     html += buildStrategies(outlook);
-    html += buildKeyLevels(outlook);
-    html += buildRisk(outlook);
     html += buildDecision(outlook);
+    html += buildRisk(outlook);
     html += buildTradeRecord(outlook);
 
-    // Disclaimer
     html += '<div style="padding:10px 14px;background:#f8fafc;border-radius:8px;font-size:0.78rem;color:#64748b;margin-top:0.5rem;border:1px solid #e2e8f0">' +
       'Analysis generated from stored market data only. Not a guarantee of direction or profitability. Options involve substantial risk — independently assess position size and risk before trading.</div>';
 
     el.innerHTML = html;
 
-    // Wire in-place tab switches (homepage SPA mode)
     if (typeof cfg.onTab === 'function') {
       el.querySelectorAll('[data-tab]').forEach(function (btn) {
         btn.addEventListener('click', function () {
@@ -535,7 +557,6 @@
       });
     }
 
-    // Update the page-level updated bar if present
     var bar = document.getElementById('last-updated-bar');
     if (bar && outlook.date) {
       var at = outlook.as_of_ist || '';

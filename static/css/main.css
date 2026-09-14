@@ -109,3 +109,8 @@ details summary { cursor: pointer; color: var(--green); font-weight: 600; font-s
 .card.stock-card h3 { color: #0f172a; background: transparent; border-left: 3px solid #f59e0b; border-radius: 0 6px 6px 0; }
 
 
+
+/* Track B ad-placement guard: keep auto-ads clear of trade CTAs/buttons. */
+.cta-row + ins.adsbygoogle, ins.adsbygoogle + .cta-row,
+button + ins.adsbygoogle, ins.adsbygoogle + button { margin-top: 24px; }
+ins.adsbygoogle { display: block; margin-top: 24px; }

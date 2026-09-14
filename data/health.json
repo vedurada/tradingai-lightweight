@@ -2,7 +2,7 @@
   "status": "degraded",
   "stale_instruments": [],
   "total_instruments": 13,
-  "last_updated": "2026-09-14T08:40:02.394034+00:00",
+  "last_updated": "2026-09-14T10:25:02.204845+00:00",
   "checks": {
     "health_file": "PASS",
     "database": "PASS",

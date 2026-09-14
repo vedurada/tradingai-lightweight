@@ -2,6 +2,19 @@
 <html lang="en">
 <head>
 <!-- Google tag (gtag.js) -->
+<script>
+/* Track B: consent defaults precede gtag config. Deny until visitor accepts. */
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 <script>
@@ -74,5 +87,6 @@ async function tapeTick(){try{var el=document.getElementById('ticker-track');if(
 document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
 })();
 </script>
-<link rel="stylesheet" href="/assets/css/chat.css?v=2"><script src="/assets/js/chat.js?v=2" defer></script></body>
+<link rel="stylesheet" href="/assets/css/chat.css?v=2"><script src="/assets/js/chat.js?v=2" defer></script>
+<script src="/assets/js/consent.js" defer></script></body>
 </html>

@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<script>
+/* Track B consent defaults precede gtag config. Deny until visitor accepts. */
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Page not found — TradingAI</title>
+<meta name="description" content="The page you requested does not exist on TradingAI.in.">
+<meta name="robots" content="noindex">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+</head>
+<body>
+<main style="max-width:640px;margin:4rem auto;padding:0 1rem;text-align:center">
+  <h1>Page not found (404)</h1>
+  <p class="status">The address you requested does not exist on TradingAI.in. It may have been moved or mistyped.</p>
+  <p><a href="/index.html">Home</a> · <a href="/market.html">Market</a> · <a href="/learn/">Learn</a> · <a href="/contact.html">Contact</a></p>
+  <p class="status">TradingAI provides market analysis for information only; not investment advice.</p>
+</main>
+<script src="/assets/js/chat.js?v=2"></script>
+<script src="/assets/js/consent.js" defer></script>
+</body>
+</html>

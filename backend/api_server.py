@@ -47,9 +47,10 @@ ALLOWED_ORIGINS = os.environ.get(
 CORS(
     app,
     origins=ALLOWED_ORIGINS,
-    methods=["GET", "POST", "OPTIONS"],
+    methods=["GET", "POST", "DELETE", "OPTIONS"],
     allow_headers=["Content-Type", "Authorization"],
-    supports_credentials=True,
+    # A5: no frontend fetch uses credentials (verified) — cookies stay out.
+    supports_credentials=False,
 )
 
 app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
@@ -233,14 +234,23 @@ def _startup_guard():
 @app.before_request
 def _check_auth():
     if request.endpoint in ("portfolio_list", "portfolio_add", "portfolio_delete"):
-        auth_header = request.headers.get("Authorization", "")
-        if not auth_header.startswith("Bearer "):
-            return error_response("UNAUTHORIZED", "Authentication required", 401)
-        api_key = auth_header[7:]
-        user_id = get_user_id_for_key(api_key)
-        if user_id is None:
-            return error_response("UNAUTHORIZED", "Authentication required", 401)
-        g.user_id = user_id
+        error = _verify_bearer()
+        if error is not None:
+            return error
+
+
+def _verify_bearer():
+    """Shared Bearer check — identical 401 envelope everywhere.
+    Returns None on success (and sets g.user_id), else an error response."""
+    auth_header = request.headers.get("Authorization", "")
+    if not auth_header.startswith("Bearer "):
+        return error_response("UNAUTHORIZED", "Authentication required", 401)
+    api_key = auth_header[7:]
+    user_id = get_user_id_for_key(api_key)
+    if user_id is None:
+        return error_response("UNAUTHORIZED", "Authentication required", 401)
+    g.user_id = user_id
+    return None
 
 
 signal.signal(signal.SIGTERM, lambda signum, frame: globals().__setitem__("_shutdown_in_progress", True) or app.logger.info("SIGTERM received — graceful shutdown started"))
@@ -249,6 +259,13 @@ signal.signal(signal.SIGTERM, lambda signum, frame: globals().__setitem__("_shut
 @app.route("/api/metrics")
 @limiter.exempt
 def metrics():
+    # A4: localhost observers stay open; remote callers need a Bearer key
+    # (same 401 envelope). Keeps recon value out of public reach.
+    remote = (request.remote_addr or "").split(",")[0].strip()
+    if remote not in ("127.0.0.1", "::1"):
+        auth_error = _verify_bearer()
+        if auth_error is not None:
+            return auth_error
     summary = monitor.get_summary()
     alerts = monitor.check_alerts(ALERT_RULES)
     return jsonify({
@@ -2391,6 +2408,12 @@ def chat_messages():
     kind = str(data.get("kind") or "user").strip()[:10]
     if kind not in ("user", "system", "alert"):
         kind = "user"
+    # A2: only key holders may speak as system/alert; unauthenticated callers
+    # get the identical 401 envelope as portfolio endpoints.
+    if kind in ("system", "alert"):
+        auth_error = _verify_bearer()
+        if auth_error is not None:
+            return auth_error
     if not text:
         return jsonify({"error": "empty"}), 400
     if len(text) > _CHAT_MAX_LEN:
