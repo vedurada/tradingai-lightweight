@@ -7,8 +7,13 @@ import sqlite3
 import threading
 import time as _time
 import uuid
+import secrets
+import hashlib
+import hmac
 from datetime import datetime, timezone
 from typing import Optional
+
+assert os.environ.get("FLASK_DEBUG", "0") != "1", "FLASK_DEBUG must not be 1"
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
@@ -20,6 +25,8 @@ from flask_limiter.util import get_remote_address
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from monitoring import RequestMonitor
 from logging_config import setup_logging, get_logger, log_request, log_alert
+from sql_guard import assert_table_name
+from auth import generate_api_key, verify_api_key, get_user_id_for_key
 
 app = Flask(__name__)
 
@@ -137,6 +144,35 @@ def _handle_429(e):
     return error_response("RATE_LIMITED", "Too many requests, please wait", 429)
 
 
+@app.errorhandler(404)
+def _handle_404(e):
+    return error_response("NOT_FOUND", "Resource not found", 404)
+
+
+@app.errorhandler(500)
+def _handle_500(e):
+    app.logger.error(f"Internal error: {e}")
+    return error_response("INTERNAL_ERROR", "An internal error occurred", 500)
+
+
+@app.errorhandler(400)
+def _handle_400(e):
+    return error_response("INVALID_REQUEST", "Invalid request", 400)
+
+
+@app.before_request
+def _check_auth():
+    if request.endpoint in ("portfolio_list", "portfolio_add", "portfolio_delete"):
+        auth_header = request.headers.get("Authorization", "")
+        if not auth_header.startswith("Bearer "):
+            return error_response("UNAUTHORIZED", "Authentication required", 401)
+        api_key = auth_header[7:]
+        user_id = get_user_id_for_key(api_key)
+        if user_id is None:
+            return error_response("UNAUTHORIZED", "Authentication required", 401)
+        g.user_id = user_id
+
+
 @app.route("/api/metrics")
 @limiter.exempt
 def metrics():
@@ -190,12 +226,12 @@ def health():
                 try:
                     dt = datetime.strptime(ts[:19], fmt)
                     return (now - dt.replace(tzinfo=timezone.utc)).total_seconds() / 60
-                except: pass
+                except Exception: pass
             try:
                 dt = datetime.fromisoformat(ts)
                 if dt.tzinfo is None: dt = dt.replace(tzinfo=timezone.utc)
                 return (now - dt).total_seconds() / 60
-            except: return None
+            except Exception: return None
         rp = conn.execute("SELECT MAX(timestamp) as ts FROM price_1m WHERE symbol='NIFTY'").fetchone()
         if rp and rp["ts"]:
             age = _age_minutes(rp["ts"])
@@ -214,12 +250,12 @@ def health():
                     warnings.append(f"VIX data {age:.0f}m stale")
         ro = conn.execute("SELECT MAX(date) as ds FROM market_outlooks WHERE symbol='NIFTY'").fetchone()
         if ro and ro["ds"]:
-            try:
-                age_days = (now.date() - datetime.strptime(ro["ds"], "%Y-%m-%d").date()).days
-                freshness["outlook_days_old"] = age_days
-                if age_days > 1:
-                    warnings.append(f"Outlook {age_days}d old")
-            except: pass
+                try:
+                    age_days = (now.date() - datetime.strptime(ro["ds"], "%Y-%m-%d").date()).days
+                    freshness["outlook_days_old"] = age_days
+                    if age_days > 1:
+                        warnings.append(f"Outlook {age_days}d old")
+                except Exception: pass
     except Exception as e:
         app.logger.warning(f"health freshness check failed: {e}")
     conn.close()
@@ -260,6 +296,7 @@ def prices(symbol):
     limit = request.args.get("limit", 100, type=int)
     interval = request.args.get("interval", "1m")
     table = f"price_{interval}" if interval in ("1m", "5m", "15m", "1d") else "price_1m"
+    assert_table_name(table)
     conn = get_db()
     rows = conn.execute(f"SELECT * FROM {table} WHERE symbol=? ORDER BY timestamp DESC LIMIT ?", (symbol, limit)).fetchall()
     # keep history as candles, but last_updated/quote remains single-source via /api/price and /api/<symbol>
@@ -274,6 +311,7 @@ def all_prices():
     if symbols_param:
         syms = symbols_param.split(",")
         placeholders = ",".join("?" for _ in syms)
+        assert_table_name("price_1m")
         rows = conn.execute(f"SELECT * FROM price_1m WHERE symbol IN ({placeholders}) ORDER BY timestamp DESC LIMIT ?", (*syms, limit)).fetchall()
     else:
         rows = conn.execute("SELECT * FROM price_1m ORDER BY timestamp DESC LIMIT ?", (limit,)).fetchall()
@@ -1145,8 +1183,11 @@ def market_outlook_by_date(date):
 @app.route("/api/portfolio", methods=["GET"])
 @limiter.limit("30/minute")
 def portfolio_list():
+    user_id = getattr(g, "user_id", None)
+    if user_id is None:
+        return error_response("UNAUTHORIZED", "Authentication required", 401)
     conn = get_db()
-    rows = conn.execute("SELECT * FROM portfolio ORDER BY created_at DESC").fetchall()
+    rows = conn.execute("SELECT * FROM portfolio WHERE user_id=? ORDER BY created_at DESC", (user_id,)).fetchall()
     conn.close()
     items = [row_to_dict(r) for r in rows]
     try:
@@ -1216,6 +1257,9 @@ def validate_portfolio_payload(body):
 @app.route("/api/portfolio", methods=["POST"])
 @limiter.limit("30/minute")
 def portfolio_add():
+    user_id = getattr(g, "user_id", None)
+    if user_id is None:
+        return error_response("UNAUTHORIZED", "Authentication required", 401)
     body = request.get_json(silent=True) or {}
     errors = validate_portfolio_payload(body)
     if errors:
@@ -1224,10 +1268,10 @@ def portfolio_add():
     direction = (body.get("direction") or "LONG").upper()
     conn = get_db()
     conn.execute(
-        "INSERT INTO portfolio (symbol, strategy, entry_price, quantity, direction, entry_date,"
+        "INSERT INTO portfolio (user_id, symbol, strategy, entry_price, quantity, direction, entry_date,"
         " exit_price, exit_date, points, result, created_at)"
-        " VALUES (?,?,?,?,?,?,?,?,?,?,?)",
-        (sym, body.get("strategy", ""), body.get("entry_price"), body.get("quantity"),
+        " VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+        (user_id, sym, body.get("strategy", ""), body.get("entry_price"), body.get("quantity"),
          direction, body.get("entry_date") or datetime.now(timezone.utc).date().isoformat(),
          body.get("exit_price"), body.get("exit_date"), body.get("points"),
          (body.get("result") or "").upper(), datetime.now(timezone.utc).isoformat()))
@@ -1238,8 +1282,15 @@ def portfolio_add():
 @app.route("/api/portfolio/<int:pid>", methods=["DELETE"])
 @limiter.limit("30/minute")
 def portfolio_delete(pid):
+    user_id = getattr(g, "user_id", None)
+    if user_id is None:
+        return error_response("UNAUTHORIZED", "Authentication required", 401)
     conn = get_db()
-    conn.execute("DELETE FROM portfolio WHERE id=?", (pid,))
+    row = conn.execute("SELECT id FROM portfolio WHERE id=? AND user_id=?", (pid, user_id)).fetchone()
+    if row is None:
+        conn.close()
+        return error_response("NOT_FOUND", "Portfolio entry not found", 404)
+    conn.execute("DELETE FROM portfolio WHERE id=? AND user_id=?", (pid, user_id))
     conn.commit()
     conn.close()
     return jsonify({"ok": True})

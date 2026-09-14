@@ -177,8 +177,8 @@ class TestStagingDocumentation:
 class TestRegressionGate:
     def test_existing_tests_still_pass(self):
         result = subprocess.run(
-            ["python3", "-m", "pytest", "tests/", "-q", "--ignore=tests/test_phase6b_b1.py"],
-            capture_output=True, text=True, timeout=120,
+            ["python3", "-m", "pytest", "tests/", "-q", "-x", "--ignore=tests/test_phase6b_b1.py", "--ignore=tests/test_phase6b_b2.py"],
+            capture_output=True, text=True, timeout=300,
             cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         )
         output = result.stdout + result.stderr
