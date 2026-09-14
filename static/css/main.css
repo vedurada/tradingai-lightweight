@@ -1,4 +1,8 @@
 * { margin: 0; padding: 0; box-sizing: border-box; }
+.skip-link { position: absolute; left: -9999px; top: auto; width: 1px; height: 1px; overflow: hidden; z-index: 10001; }
+.skip-link:focus { position: fixed; left: 0; top: 0; width: auto; height: auto; padding: 0.8rem 1.2rem; background: var(--green); color: #fff; text-decoration: none; font-weight: 700; border-radius: 0 0 8px 0; }
+a:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
+[tabindex]:focus-visible { outline: 2px solid var(--green); outline-offset: 2px; }
 :root {
   --green: #15803d; --red: #dc2626; --yellow: #a16207; --blue: #1d4ed8;
   --ink: #0f172a; --muted: #475569; --faint: #64748b;
