@@ -257,6 +257,8 @@ def should_regenerate_ai(symbol: str = "NIFTY", max_age_minutes: int = 120) -> d
                 age_ok = age >= max_age_minutes
             except (ValueError, TypeError):
                 age_ok = True
+        else:
+            age_ok = True
 
         regen = result["material"] or age_ok
         return {
