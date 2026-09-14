@@ -81,9 +81,9 @@ class TestRequestTimeout:
         assert ENDPOINT_TIMEOUTS['backtest'] >= 30
 
     def test_timeout_handler_registered(self):
-        from backend.api_server import _set_request_timeout, _clear_request_timeout
+        from backend.api_server import _set_request_timeout, _record_metrics_and_clear_timeout
         assert _set_request_timeout is not None
-        assert _clear_request_timeout is not None
+        assert _record_metrics_and_clear_timeout is not None
 
     def test_504_handler_registered(self):
         from backend.api_server import _handle_timeout
