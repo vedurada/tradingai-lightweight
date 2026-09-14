@@ -979,7 +979,7 @@ def build_breadth(conn: sqlite3.Connection) -> None:
 
 KEY_TABLES = {
     "price_1m": {"min_rows": 0, "max_age_hours": 1, "value_col": None},
-    "price_1d": {"min_rows": 10, "max_age_hours": 48, "value_col": "close_price"},
+    "price_1d": {"min_rows": 10, "max_age_hours": 96, "value_col": "close_price"},
     "vix_data": {"min_rows": 1, "max_age_hours": 24, "value_col": "vix"},
     "market_outlooks": {"min_rows": 1, "max_age_hours": 72, "value_col": None},
 }
