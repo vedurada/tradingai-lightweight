@@ -8,6 +8,8 @@ import requests
 from datetime import datetime, timezone
 from typing import Any, Optional
 
+from regime_utils import normalize_regime
+
 logger = logging.getLogger("tradingai.ai")
 
 
@@ -32,7 +34,7 @@ class AIOutlookEngine:
         return """You are an Indian market analyst. Analyze the given market data and return JSON with:
 - asset: symbol name
 - date: YYYY-MM-DD
-- market_regime: TRENDING_BULLISH/TRENDING_BEARISH/RANGE_BOUND/HIGH_VOLATILITY/UNCONFIRMED
+- market_regime: BULLISH/BEARISH/SIDEWAYS/HIGH_VOLATILITY/UNCONFIRMED
 - directional_bias: BULLISH/BEARISH/NEUTRAL
 - confidence: 0-100
 - evidence_strength: 0.0-1.0
@@ -259,12 +261,12 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
     def _rule_based_outlook(self, data: dict) -> dict:
         price = data.get("price", 0)
         rsi = data.get("rsi")
-        regime = data.get("regime", "UNCONFIRMED")
+        regime = normalize_regime(data.get("regime", "UNCONFIRMED"))
         confidence = 50
-        if regime == "TRENDING_BULLISH":
+        if regime == "BULLISH":
             directional_bias = "BULLISH"
             confidence = 65
-        elif regime == "TRENDING_BEARISH":
+        elif regime == "BEARISH":
             directional_bias = "BEARISH"
             confidence = 65
         else:
@@ -275,9 +277,9 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
         atr = data.get("atr", 0)
         vix = data.get("vix", 0)
         vol_class = "HIGH" if (atr > 0 and atr > price * 0.02) or vix > 20 else ("MEDIUM" if atr > 0 else "LOW")
-        structure = "UPTREND" if regime == "TRENDING_BULLISH" else ("DOWNTREND" if regime == "TRENDING_BEARISH" else "RANGE")
+        structure = "UPTREND" if regime == "BULLISH" else ("DOWNTREND" if regime == "BEARISH" else "RANGE")
         no_trade = []
-        if regime == "UNCONFIRMED":
+        if regime == "UNKNOWN":
             no_trade.append("Unclear direction")
         if data.get("volume", 0) == 0:
             no_trade.append("Low liquidity")
@@ -302,11 +304,11 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
             "bullish_scenario": {"trigger": "Price above VWAP", "confirmation": "Break above resistance", "target": "Next resistance", "invalidation": "Below pivot"},
             "bearish_scenario": {"trigger": "Price below VWAP", "confirmation": "Break below support", "target": "Next support", "invalidation": "Above pivot"},
             "range_scenario": {"condition": "Price between support and resistance", "strategy_environment": "Iron Condor", "invalidation": "Breakout/breakdown"},
-            "primary_strategy": {"strategy": "NO TRADE" if regime == "UNCONFIRMED" else "Defined-risk spread", "market_condition": regime, "expiry": "NEXT_WEEKLY", "legs": [], "entry_trigger": "Wait for signal", "maximum_profit": "N/A", "maximum_loss": "N/A", "breakeven": "N/A", "stop_loss": "N/A", "target": "N/A", "adjustment": "N/A", "exit": "N/A"},
+            "primary_strategy": {"strategy": "NO TRADE" if regime == "UNKNOWN" else "Defined-risk spread", "market_condition": regime, "expiry": "NEXT_WEEKLY", "legs": [], "entry_trigger": "Wait for signal", "maximum_profit": "N/A", "maximum_loss": "N/A", "breakeven": "N/A", "stop_loss": "N/A", "target": "N/A", "adjustment": "N/A", "exit": "N/A"},
             "alternative_strategies": [],
             "intraday_plan": [],
             "no_trade_conditions": no_trade if no_trade else ["Unclear direction", "Low liquidity", "Conflicting indicators"],
-            "strategy_environment": "Neutral" if regime == "UNCONFIRMED" else regime,
+            "strategy_environment": "Neutral" if regime == "UNKNOWN" else regime,
             "invalidation": "Break of key support/resistance",
             "risk_warnings": ["This is decision-support, not a guaranteed signal"],
             "data_quality": data.get("data_quality", "PARTIAL"),

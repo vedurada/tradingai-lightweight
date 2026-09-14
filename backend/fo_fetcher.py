@@ -21,8 +21,10 @@ import zipfile
 from datetime import date, datetime, timedelta, timezone
 
 DB = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
-UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/126.0"}
+UA = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; x64) Chrome/126.0"}
 INDEX_SYMBOLS = {"NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"}
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from options import OptionsEngine
 # NSE FO bhavcopy URL (works for all dates since ~2020)
 BHAV_URL = "https://nsearchives.nseindia.com/content/fo/BhavCopy_NSE_FO_0_0_0_{ymd}_F_0000.csv.zip"
 TOP_N = 10  # top OI strikes per side per symbol/expiry
@@ -154,11 +156,8 @@ def compute_pcr_maxpain(conn: sqlite3.Connection) -> dict:
             pe_oi = sum(r["open_interest"] for r in chain if r["option_type"] == "PE")
             ce_oi = sum(r["open_interest"] for r in chain if r["option_type"] == "CE")
             pcr = round(pe_oi / ce_oi, 3) if ce_oi > 0 else None
-            # Max pain: strike where total PE+CE OI at expiry is minimized
-            strike_oi = {}
-            for r in chain:
-                strike_oi[r["strike"]] = strike_oi.get(r["strike"], 0) + r["open_interest"]
-            max_pain = min(strike_oi, key=strike_oi.get) if strike_oi else None
+            max_pain = OptionsEngine().calculate_max_pain([dict(r) for r in chain])["max_pain"]
+
             sym_data.append({
                 "expiry": expiry,
                 "pcr": pcr,
@@ -166,7 +165,7 @@ def compute_pcr_maxpain(conn: sqlite3.Connection) -> dict:
                 "ce_oi": ce_oi,
                 "max_pain": max_pain,
                 "total_oi": pe_oi + ce_oi,
-                "strikes": len(strike_oi),
+                "strikes": len(set(r["strike"] for r in chain if r["strike"] > 0 and r["open_interest"] > 0)),
             })
         out[sym] = sym_data
     return out

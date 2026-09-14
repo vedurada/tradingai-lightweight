@@ -19,8 +19,6 @@ from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from daily_page import _foot, _head, _nav
-
 IST = ZoneInfo("Asia/Kolkata")
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
 SYMBOL = "NIFTY"
@@ -204,6 +202,10 @@ def _tradeability(adx, rsi, vix_reg, gap, missing_oi) -> tuple:
 
 
 def _confidence(adx, rsi, vix_reg, missing_oi, gap) -> int:
+    # Authoritative final outlook confidence: how confident the complete trading outlook is.
+    # This is the user-facing confidence displayed as "AI Outlook Confidence".
+    # RegimeEngine._confidence() is separate (regime-classification confidence in market_regime.confidence).
+    # They measure different things and should NOT be forced to match.
     conf = 62
     if adx is not None and adx > 40:
         conf += 8
@@ -227,8 +229,8 @@ def _pcr_info(conn, symbol: str) -> dict:
         expiry = e["expiry"]
         pe = conn.execute("SELECT COALESCE(SUM(open_interest),0) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='PE'", (symbol, expiry)).fetchone()["s"]
         ce = conn.execute("SELECT COALESCE(SUM(open_interest),0) s FROM option_chain WHERE symbol=? AND expiry=? AND option_type='CE'", (symbol, expiry)).fetchone()["s"]
-        pcr = round(pe / ce, 2) if ce > 0 else None
-        out.append({"expiry": expiry, "pe_oi": pe, "ce_oi": ce, "pcr": pcr, "pcr_txt": f"{pcr:.2f}" if pcr is not None else None})
+        pcr = round(pe / ce, 3) if ce > 0 else None
+        out.append({"expiry": expiry, "pe_oi": pe, "ce_oi": ce, "pcr": pcr, "pcr_txt": f"{pcr:.3f}" if pcr is not None else None})
     return {"expiries": out, "available": bool(out)}
 
 
@@ -269,18 +271,6 @@ def _prev_day_top_strikes(conn, symbol: str, date: str, n: int = 3) -> dict:
         except:
             pass
     return {"available": bool(ce or pe), "date": prev_date, "ce": ce, "pe": pe, "max_ce_strike": ce[0]["strike"] if ce else None, "max_pe_strike": pe[0]["strike"] if pe else None}
-
-
-def _pcr_read(pcr) -> str:
-    if pcr is None:
-        return "unavailable"
-    if pcr < 0.7:
-        return "bearish (Call OI dominates — put protection thin)"
-    if pcr < 1.0:
-        return "leaning bearish"
-    if pcr < 1.25:
-        return "balanced / neutral"
-    return "bullish (Put OI dominates)"
 
 
 def _strategies(bias_label, probs, reg, vix_reg, vix_trend, adx, rsi, pcr_info, ce_wall, gap) -> dict:
@@ -345,6 +335,13 @@ def _trades(conn, date: str, symbol: str | None = None) -> list:
         }
         for r in rows
     ]
+
+
+def resolve_verdict(payload: dict) -> str:
+    return (payload.get("decision", {}).get("verdict")
+            or payload.get("verdict")
+            or payload.get("outlook", {}).get("verdict")
+            or payload.get("trade_decision") or "").strip().upper()
 
 
 def build_outlook(conn, symbol: str, date: str) -> dict:
@@ -589,8 +586,6 @@ def build_outlook(conn, symbol: str, date: str) -> dict:
     week_pcr = pcr["expiries"][0]["pcr"] if pcr["expiries"] else None
     put_oi = (f"Put protection thin vs calls (weekly PE {pe_oi_week:,.0f} vs CE {ce_oi_week:,.0f}) — weak support beyond {sup0}."
               if pe_oi_week else "Put OI detail unavailable (missing EOD chain).")
-    if week_pcr is not None and week_pcr < 0.95:
-        oi_signal = "MIXED"
     oi_signal = "BEARISH" if (week_pcr is not None and week_pcr < 0.7) else "MIXED" if pcr["available"] else "NEUTRAL"
     iv_env = (f"{vix_reg} VIX ({vix.get('close')} ) — {vix_trend}. Environment favours defined-risk premium selling; not naked selling, not late option buying."
               if vix.get("close") is not None else "IV data unavailable.")
@@ -627,7 +622,10 @@ def build_outlook(conn, symbol: str, date: str) -> dict:
     )
 
     trades = _trades(conn, date, symbol) if verdict == "TRADE" else []
-
+    # Confidence semantics:
+    #   payload["regime"]["confidence"] = RegimeEngine regime-classification confidence (market_regime.confidence)
+    #   payload["confidence"]           = authoritative final outlook confidence (_confidence above)
+    # These measure different things and are intentionally different. UI displays payload["confidence"].
     payload = {
         "date": date,
         "symbol": symbol,
@@ -671,10 +669,16 @@ def build_outlook(conn, symbol: str, date: str) -> dict:
 
 
 def merge_llm_into_payload(conn, symbol: str, payload: dict) -> dict:
-    """Overlay the most recent genuine LLM outlook onto the rule-based framework.
+    """Overlay the most recent genuine LLM outlook as explanation only.
 
-    LLM is primary for regime/bias/confidence/narrative; the rule engine remains
-    the structural backbone (expected range, gap, options, tradeability, trades).
+    LLM is EXPLANATION ONLY. It cannot modify any authoritative quantitative
+    decision (regime, bias, confidence, key levels, verdict, strategy).
+    Those fields come from RegimeEngine → build_outlook() and are immutable here.
+
+    What the LLM CAN contribute:
+    - primary_view: narrative summary (replaces rule-based narrative only)
+    - llm_explanation: all descriptive fields from the LLM output stored separately
+
     A rule-based ai_outlooks row (market_summary marked '<SYM> analysis - <REGIME>')
     or absence of any LLM row leaves the framework untouched (rule-based fallback).
     """
@@ -697,42 +701,24 @@ def merge_llm_into_payload(conn, symbol: str, payload: dict) -> dict:
     if not summary or "analysis - " in summary:
         return payload  # rule-based fallback row, not a genuine LLM narrative
 
-    regime = str(llm.get("market_regime") or "").upper().replace(" ", "_")
-    bias = str(llm.get("directional_bias") or "").upper()
-    conf = llm.get("confidence")
-    try:
-        conf = max(0.0, min(100.0, float(conf)))
-    except (TypeError, ValueError):
-        conf = None
-
     decision = payload.setdefault("decision", {})
     if summary:
         decision["primary_view"] = summary
-    if regime:
-        decision.setdefault("regime_override", {})["engine"] = regime
-    if bias:
-        decision.setdefault("regime_override", {})["bias"] = bias
-    if conf is not None:
-        decision.setdefault("regime_override", {})["confidence"] = round(conf)
 
-    if regime:
-        p_regime = payload.setdefault("regime", {})
-        p_regime["engine"] = regime
-        mapped = REGIME_MAP.get(regime, regime)
-        p_regime["primary"] = mapped
-    if bias:
-        payload.setdefault("bias", {})["label"] = bias
-    if conf is not None:
-        payload["confidence"] = round(conf)
-
-    sup = [n for n in (llm.get("support_levels") or []) if isinstance(n, (int, float))]
-    res = [n for n in (llm.get("resistance_levels") or []) if isinstance(n, (int, float))]
-    if sup or res:
-        kl = payload.setdefault("key_levels", {})
-        if sup:
-            kl["supports"] = [_num(n) for n in sup]
-        if res:
-            kl["resistances"] = [_num(n) for n in res]
+    explanation_fields = [
+        "trend_analysis", "momentum_analysis", "volatility_analysis",
+        "bullish_scenario", "bearish_scenario", "range_scenario",
+        "alternative_strategies", "intraday_plan", "no_trade_conditions",
+        "risk_warnings", "market_structure", "evidence_strength",
+        "volatility_classification", "data_quality", "generated_at",
+        "market_regime", "directional_bias", "confidence",
+    ]
+    llm_explanation = {}
+    for k in explanation_fields:
+        if llm.get(k) is not None:
+            llm_explanation[k] = llm[k]
+    if llm_explanation:
+        payload["llm_explanation"] = llm_explanation
 
     payload["ai_source"] = "LLM"
     payload["llm_generated_at"] = row["timestamp"]
@@ -852,7 +838,7 @@ def main() -> None:
     conn.commit()
     # ── fire-and-forget chat alert (no VM load: 1 local DB insert, clients poll 15s via nginx cache) ──
     try:
-        verdict = (payload.get("verdict") or payload.get("outlook", {}).get("verdict") or payload.get("trade_decision") or "").strip().upper()
+        verdict = resolve_verdict(payload)
         # payload verdict is TRADE/WAIT/AVOID — only TRADE triggers actionable alert
         if verdict == "TRADE":
             strat = payload.get("strategy") or payload.get("primary_strategy") or payload.get("outlook", {}).get("primary_strategy") or ""

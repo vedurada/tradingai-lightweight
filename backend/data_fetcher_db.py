@@ -9,8 +9,28 @@ from datetime import datetime, timezone, timedelta
 from typing import Any, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from retry import retry_with_backoff
+from circuit_breaker import CircuitBreaker, CircuitOpenError
+from monitoring import RequestMonitor
+
+# B6.2: breakers sit outside retry (one logical call = one sample). An open
+# breaker degrades to the existing empty-result fallbacks only — never
+# synthesized data. Trips are recorded to the monitor (surfaced via /metrics
+# in the API process; in the fetcher process they are logged + visible through
+# fetch_health) and logged structurally.
+YF_BREAKER = CircuitBreaker("yfinance", failure_threshold=5, recovery_timeout=60)
+NSE_BREAKER = CircuitBreaker("nse_live", failure_threshold=5, recovery_timeout=60)
+fetch_monitor = RequestMonitor()
+
+# B6.1: yfinance offers no per-call timeout on either pinned version, so bound
+# the history call with an executor. The stray thread (if any) finishes
+# harmlessly; the caller sees TimeoutError and follows existing degradation.
+YF_HISTORY_TIMEOUT_S = 25
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from db_schema import init_database, DB_PATH, SCHEMA
+from sql_guard import assert_table_name
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s: %(message)s")
 logger = logging.getLogger("tradingai.fetcher")
@@ -39,8 +59,10 @@ def load_settings() -> dict:
 
 def get_db() -> sqlite3.Connection:
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=10)
     conn.row_factory = sqlite3.Row
+    conn.execute("PRAGMA journal_mode=WAL")
+    conn.execute("PRAGMA busy_timeout=10000")
     return conn
 
 
@@ -59,32 +81,46 @@ def init_symbols(conn: sqlite3.Connection, config: dict) -> None:
     logger.info(f"Initialized symbols from config: {len(config['indices'])} indices, {len(config['stocks'])} stocks")
 
 
+@retry_with_backoff(max_retries=3, base_delay=2.0)
+def _fetch_yf_ohlcv_raw(yf_symbol: str, interval: str = "1m", period: str = "2d") -> list[dict]:
+    import yfinance as yf
+    from concurrent.futures import ThreadPoolExecutor
+
+    def _load():
+        ticker = yf.Ticker(yf_symbol)
+        return ticker.history(period=period, interval=interval)
+
+    with ThreadPoolExecutor(max_workers=1) as ex:
+        hist = ex.submit(_load).result(timeout=YF_HISTORY_TIMEOUT_S)
+    if hist.empty:
+        return []
+    data = []
+    for idx, row in hist.iterrows():
+        ts = idx
+        try:
+            if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
+                ts = ts.astimezone(timezone.utc)
+        except Exception:
+            pass
+        data.append({
+            "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S"),
+            "open": float(row["Open"]),
+            "high": float(row["High"]),
+            "low": float(row["Low"]),
+            "close": float(row["Close"]),
+            "volume": int(row["Volume"]),
+        })
+    return data
+
+
 def fetch_yf_ohlcv(yf_symbol: str, interval: str = "1m", period: str = "2d") -> list[dict]:
     try:
-        import yfinance as yf
-        ticker = yf.Ticker(yf_symbol)
-        hist = ticker.history(period=period, interval=interval)
-        if hist.empty:
-            return []
-        data = []
-        for idx, row in hist.iterrows():
-            ts = idx
-            try:
-                # Normalize exchange-local (IST) index to UTC wall-clock so the
-                # naive timestamp matches other writers and sqlite datetime('now').
-                if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
-                    ts = ts.astimezone(timezone.utc)
-            except Exception:
-                pass
-            data.append({
-                "timestamp": ts.strftime("%Y-%m-%d %H:%M:%S"),
-                "open": float(row["Open"]),
-                "high": float(row["High"]),
-                "low": float(row["Low"]),
-                "close": float(row["Close"]),
-                "volume": int(row["Volume"]),
-            })
-        return data
+        return YF_BREAKER.call(_fetch_yf_ohlcv_raw, yf_symbol, interval, period)
+    except CircuitOpenError:
+        fetch_monitor.record_circuit_breaker_state("yfinance", YF_BREAKER.state)
+        fetch_monitor.record_external_failure("yfinance", "circuit_open")
+        logger.warning(f"CIRCUIT OPEN yfinance — serving existing degradation (empty)")
+        return []
     except Exception as e:
         logger.error(f"OHLCV error for {yf_symbol}: {e}")
         return []
@@ -502,20 +538,58 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
         options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
         timestamp = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
-        regime_info = {"regime": "UNKNOWN", "confidence": 0, "trend": "", "momentum": "", "volatility": ""}
+        closes_ohlcv = [row.get("close", 0) for row in ohlcv]
+        sma20 = round(sum(closes_ohlcv[-20:]) / 20, 2) if len(closes_ohlcv) >= 20 else None
+        sma50 = round(sum(closes_ohlcv[-50:]) / 50, 2) if len(closes_ohlcv) >= 50 else None
+
+        vix_row = conn.execute("SELECT close, change_pct FROM vix_data ORDER BY timestamp DESC LIMIT 1").fetchone()
+        vix_close = vix_row["close"] if vix_row else None
+        vix_change_pct = vix_row["change_pct"] if vix_row else None
+
+        breadth_row = conn.execute("SELECT advances, declines, advance_decline_ratio FROM market_breadth ORDER BY timestamp DESC LIMIT 1").fetchone()
+        adv = breadth_row["advances"] if breadth_row else None
+        dec = breadth_row["declines"] if breadth_row else None
+        adr = breadth_row["advance_decline_ratio"] if breadth_row else None
+
+        market = {
+            "symbol": symbol,
+            "price": quote["price"],
+            "sma20": sma20,
+            "sma50": sma50,
+            "prev_close": quote.get("previous_close") or indicators.get("prev_day_close"),
+            "rsi": indicators.get("rsi"),
+            "macd": indicators.get("macd"),
+            "adx": indicators.get("adx"),
+            "vix_close": vix_close,
+            "vix_change_pct": vix_change_pct,
+            "advances": adv,
+            "declines": dec,
+            "advance_decline_ratio": adr,
+        }
+        pcr_val = None if options_analysis.get("data_unavailable", True) else options_analysis.get("pcr")
+        options_input = {"pcr": pcr_val}
+
+        regime_info = {"regime": "UNKNOWN", "confidence": 0, "trend": "", "momentum": "", "volatility": "", "breadth": "", "vix_regime": ""}
         try:
             regime_engine = RegimeEngine()
-            regime_info = regime_engine.evaluate(
-                price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"],
-                rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"),
-                vix_price=0, bollinger=indicators.get("bollinger_bands"), pivot=pivot_data,
-                support_resistance=indicators.get("support_resistance"), pcr=options_analysis.get("pcr"),
-                volume=quote.get("volume"), avg_volume=indicators.get("avg_volume"),
-            )
+            result = regime_engine.evaluate(market, options_input)
+            regime_info = {
+                "regime": result["regime"],
+                "confidence": result["confidence"],
+                "trend": result["components"]["trend"],
+                "momentum": result["components"]["momentum"],
+                "volatility": result["components"]["vix"],
+                "breadth": result["components"]["breadth"],
+                "vix_regime": result["components"]["vix"],
+                "reasons": result["reasons"],
+            }
         except Exception:
             pass
 
-        conn.execute("INSERT OR REPLACE INTO market_regime (symbol, timestamp, regime, confidence, evidence, trend, momentum, volatility) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", (symbol, timestamp, regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "", regime_info.get("trend",""), regime_info.get("momentum",""), regime_info.get("volatility","")))
+        conn.execute(
+            "INSERT OR REPLACE INTO market_regime (symbol, timestamp, regime, confidence, evidence, trend, momentum, volatility, breadth, vix_regime) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            (symbol, timestamp, regime_info.get("regime","UNKNOWN"), regime_info.get("confidence",0), "", regime_info.get("trend",""), regime_info.get("momentum",""), regime_info.get("volatility",""), regime_info.get("breadth",""), regime_info.get("vix_regime","")),
+        )
 
         ind = indicators if indicators else {}
         bb = ind.get("bollinger_bands", {}) if isinstance(ind.get("bollinger_bands"), dict) else {}
@@ -930,6 +1004,92 @@ def build_breadth(conn: sqlite3.Connection) -> None:
                  (datetime.now(timezone.utc).isoformat(), adv, dec, unch, round(ratio, 2), 0, 0, 0))
     conn.commit()
     logger.info(f"Breadth: adv={adv} dec={dec} unch={unch}")
+
+KEY_TABLES = {
+    "price_1m": {"min_rows": 0, "max_age_hours": 1, "value_col": None, "date_col": "timestamp"},
+    "price_1d": {"min_rows": 10, "max_age_hours": 96, "value_col": "close_price", "date_col": "timestamp"},
+    "vix_data": {"min_rows": 1, "max_age_hours": 24, "value_col": "vix", "date_col": "timestamp"},
+    "market_outlooks": {"min_rows": 1, "max_age_hours": 72, "value_col": None, "date_col": "date"},
+}
+
+def _validate_data_depth():
+    """Validate data depth for key tables.
+
+    Returns: {
+        "tables_checked": int,
+        "all_healthy": bool,
+        "details": {table_name: {row_count, min_date, max_date, status, issues}}
+    }
+    """
+    import sqlite3
+    conn = None
+    try:
+        conn = sqlite3.connect(DB_PATH, timeout=5)
+        conn.row_factory = sqlite3.Row
+        details = {}
+        all_healthy = True
+        for table, config in KEY_TABLES.items():
+            issues = []
+            row_count = None
+            min_date = None
+            max_date = None
+            try:
+                # B6.5: contained — even a disallowed name degrades one table,
+                # never collapses the whole health payload.
+                assert_table_name(table)
+                row_count = conn.execute(f"SELECT COUNT(*) FROM {table}").fetchone()[0]
+                if row_count < config["min_rows"]:
+                    issues.append(f"row_count {row_count} < min {config['min_rows']}")
+                    all_healthy = False
+
+                date_col = config.get("date_col", "timestamp")
+                assert date_col in ("timestamp", "date"), f"Disallowed date column: {date_col}"
+                date_row = conn.execute(f"SELECT MIN({date_col}) as min_ts, MAX({date_col}) as max_ts FROM {table}").fetchone()
+                min_date = date_row["min_ts"] if date_row and date_row["min_ts"] else None
+                max_date = date_row["max_ts"] if date_row and date_row["max_ts"] else None
+
+                if max_date:
+                    from datetime import datetime, timezone
+                    max_str = str(max_date)
+                    if "T" in max_str:
+                        max_dt = datetime.fromisoformat(max_str.replace("Z", "+00:00"))
+                    else:
+                        try:
+                            max_dt = datetime.strptime(max_str, "%Y-%m-%d %H:%M:%S").replace(tzinfo=timezone.utc)
+                        except ValueError:
+                            max_dt = datetime.strptime(max_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
+                    if max_dt.tzinfo is None:
+                        max_dt = max_dt.replace(tzinfo=timezone.utc)
+                    age_hours = (datetime.now(timezone.utc) - max_dt).total_seconds() / 3600
+                    if age_hours > config["max_age_hours"]:
+                        issues.append(f"data_age {age_hours:.1f}h > max {config['max_age_hours']}h")
+                        all_healthy = False
+            except sqlite3.Error:
+                issues.append("table_not_found")
+                all_healthy = False
+            except Exception as e:
+                issues.append(f"check_failed: {type(e).__name__}")
+                all_healthy = False
+
+            details[table] = {
+                "row_count": row_count,
+                "min_date": min_date,
+                "max_date": max_date,
+                "status": "ok" if not issues else "degraded",
+                "issues": issues,
+            }
+
+        return {
+            "tables_checked": len(KEY_TABLES),
+            "all_healthy": all_healthy,
+            "details": details,
+        }
+    except Exception:
+        return {"tables_checked": 0, "all_healthy": False, "details": {}}
+    finally:
+        if conn:
+            conn.close()
+
 
 if __name__ == "__main__":
     fetch_all()

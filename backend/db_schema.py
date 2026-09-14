@@ -161,17 +161,6 @@ CREATE TABLE IF NOT EXISTS market_breadth (
 );
 CREATE INDEX IF NOT EXISTS idx_breadth_ts ON market_breadth(timestamp DESC);
 
-CREATE TABLE IF NOT EXISTS sector_data (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    timestamp TEXT,
-    sector TEXT,
-    symbol TEXT,
-    change_pct REAL,
-    volume INTEGER,
-    UNIQUE(timestamp, sector)
-);
-CREATE INDEX IF NOT EXISTS idx_sector_ts ON sector_data(timestamp DESC);
-
 CREATE TABLE IF NOT EXISTS market_snapshots (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     timestamp TEXT,
@@ -227,17 +216,6 @@ CREATE TABLE IF NOT EXISTS indicators (
     UNIQUE(symbol, timestamp)
 );
 CREATE INDEX IF NOT EXISTS idx_ind_symbol_ts ON indicators(symbol, timestamp DESC);
-
-CREATE TABLE IF NOT EXISTS signals (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    symbol TEXT,
-    timestamp TEXT,
-    signal_type TEXT,
-    signal_value TEXT,
-    confidence REAL,
-    UNIQUE(symbol, timestamp, signal_type)
-);
-CREATE INDEX IF NOT EXISTS idx_sig_symbol_ts ON signals(symbol, timestamp DESC);
 
 CREATE TABLE IF NOT EXISTS scenarios (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -355,6 +333,17 @@ CREATE TABLE IF NOT EXISTS data_status (
     last_vix_fetch TEXT,
     status TEXT,
     error_count INTEGER DEFAULT 0
+);
+
+-- B6.7: source-grained fetch health (the API-side _record_fetch_result writer
+-- targets this table; the fetcher-side per-symbol data_status table is untouched).
+CREATE TABLE IF NOT EXISTS fetch_health (
+    source TEXT PRIMARY KEY,
+    success_count INTEGER DEFAULT 0,
+    error_count INTEGER DEFAULT 0,
+    consecutive_failures INTEGER DEFAULT 0,
+    last_error TEXT,
+    last_ok_at TEXT
 );
 
 CREATE TABLE IF NOT EXISTS etf_data (
@@ -556,6 +545,8 @@ def init_database(db_path: str = DB_PATH) -> None:
     conn = sqlite3.connect(db_path)
     c = conn.cursor()
     c.executescript(SCHEMA)
+    c.execute("PRAGMA journal_mode=WAL")
+    c.execute("PRAGMA busy_timeout=10000")
     # Migrate existing DBs: add columns introduced after initial schema.
     try:
         c.execute("PRAGMA table_info(symbols)")

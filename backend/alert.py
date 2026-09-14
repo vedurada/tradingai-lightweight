@@ -12,6 +12,19 @@ from typing import Any
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from database import Database
+from regime_utils import normalize_regime
+
+
+def _alert_thresholds():
+    # B6.8: PCR bounds from config/alerting.json; identical fallbacks keep
+    # standalone-cron behavior unchanged when the file is missing/invalid.
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "alerting.json")
+    try:
+        with open(path) as f:
+            cfg = json.load(f)
+        return float(cfg.get("pcr_put_heavy_max", 0.65)), float(cfg.get("pcr_call_heavy_min", 1.30))
+    except Exception:
+        return 0.65, 1.30
 
 logger = logging.getLogger("tradingai.alert")
 
@@ -65,8 +78,8 @@ def check_regime_changes(symbol: str, db: Database) -> list[dict]:
     for i in range(1, len(history)):
         prev = history[i]
         curr = history[i - 1]
-        prev_regime = prev.get("market_regime", "")
-        curr_regime = curr.get("market_regime", "")
+        prev_regime = normalize_regime(prev.get("market_regime", ""))
+        curr_regime = normalize_regime(curr.get("market_regime", ""))
         if prev_regime and curr_regime and prev_regime != curr_regime:
             message = f"Regime change: {prev_regime} -> {curr_regime} | Confidence: {curr.get('confidence', 'N/A')}% | Strategy: {curr.get('strategy', 'N/A')}"
             _log_alert(symbol, message)
@@ -150,13 +163,14 @@ def _check_pcr_oi(db_path: str | None = None) -> list[dict]:
         pcr = round(pe / ce, 3) if ce > 0 else None
         if pcr is None:
             continue
-        if pcr <= 0.65 and not _already_logged(conn, sym, "pcr_put_heavy", day):
-            msg = f"{sym} PCR {pcr} <= 0.65 (put-heavy) | expiry {cur_expiry}"
+        pcr_put_max, pcr_call_min = _alert_thresholds()
+        if pcr <= pcr_put_max and not _already_logged(conn, sym, "pcr_put_heavy", day):
+            msg = f"{sym} PCR {pcr} <= {pcr_put_max} (put-heavy) | expiry {cur_expiry}"
             _store(conn, sym, "pcr_put_heavy", msg)
             coll.append({"symbol": sym, "type": "pcr_put_heavy", "message": msg, "timestamp": day})
             _log_alert(sym, msg)
-        elif pcr >= 1.30 and not _already_logged(conn, sym, "pcr_call_heavy", day):
-            msg = f"{sym} PCR {pcr} >= 1.30 (call-heavy) | expiry {cur_expiry}"
+        elif pcr >= pcr_call_min and not _already_logged(conn, sym, "pcr_call_heavy", day):
+            msg = f"{sym} PCR {pcr} >= {pcr_call_min} (call-heavy) | expiry {cur_expiry}"
             _store(conn, sym, "pcr_call_heavy", msg)
             coll.append({"symbol": sym, "type": "pcr_call_heavy", "message": msg, "timestamp": day})
             _log_alert(sym, msg)

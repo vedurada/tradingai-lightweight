@@ -49,11 +49,28 @@ if [ ! -f "$DB" ]; then
   log "DB MISSING at $DB"
 else
   if ! python3 -c "import sqlite3; c=sqlite3.connect('$DB'); c.execute('SELECT 1 FROM symbols LIMIT 1').fetchone()" 2>/dev/null; then
-    log "DB UNREADABLE — attempting to restore from latest backup branch"
-    # Try to restore the snapshot that vm-backup.sh maintains
-    if [ -f /opt/tradingai-backup/database/tradingai.db ]; then
-      cp /opt/tradingai-backup/database/tradingai.db "$DB.tmp" 2>/dev/null && mv "$DB.tmp" "$DB" && log "DB restored from backup snapshot" || log "DB restore failed"
-      sudo systemctl restart tradingai-api 2>/dev/null || true
+    log "DB UNREADABLE — attempting to restore from latest backup snapshot"
+    # B6.6: row-verify before/after; restart API only if post-restore integrity passes.
+    RESTORE_SRC=""
+    [ -f /opt/tradingai-backup/database/tradingai.db ] && RESTORE_SRC="/opt/tradingai-backup/database/tradingai.db"
+    [ -z "$RESTORE_SRC" ] && [ -f /opt/tradingai-backup/database/tradingai.db.gz ] && RESTORE_SRC="/opt/tradingai-backup/database/tradingai.db.gz"
+    if [ -n "$RESTORE_SRC" ]; then
+      BEFORE_CNT=$(python3 -c "import sqlite3; print(sqlite3.connect('$DB').execute('SELECT COUNT(*) FROM symbols').fetchone()[0])" 2>/dev/null || echo "unreadable")
+      if [ "$RESTORE_SRC" = "/opt/tradingai-backup/database/tradingai.db.gz" ]; then
+        zcat "$RESTORE_SRC" > "$DB.tmp" 2>/dev/null && mv "$DB.tmp" "$DB" && log "DB restored from backup snapshot (rows before: $BEFORE_CNT)" || log "DB restore failed"
+      else
+        cp "$RESTORE_SRC" "$DB.tmp" 2>/dev/null && mv "$DB.tmp" "$DB" && log "DB restored from backup snapshot (rows before: $BEFORE_CNT)" || log "DB restore failed"
+      fi
+      AFTER_CNT=$(python3 -c "import sqlite3; print(sqlite3.connect('$DB').execute('SELECT COUNT(*) FROM symbols').fetchone()[0])" 2>/dev/null || echo "unreadable")
+      log "DB restore verify: symbols rows before=$BEFORE_CNT after=$AFTER_CNT"
+      if python3 -c "import sqlite3; c=sqlite3.connect('$DB'); c.execute('SELECT 1 FROM symbols LIMIT 1').fetchone()" 2>/dev/null; then
+        log "DB restore integrity OK — restarting tradingai-api"
+        sudo systemctl restart tradingai-api 2>/dev/null || true
+      else
+        log "ALERT restore_integrity_failed: not restarting API on unverified DB"
+      fi
+    else
+      log "ALERT restore_no_snapshot: no backup file to restore from"
     fi
   fi
 fi
@@ -86,6 +103,107 @@ fi
 if ! pgrep -x cron > /dev/null 2>&1 && ! pgrep -x crond > /dev/null 2>&1; then
   log "CRON DAEMON DOWN — restarting"
   sudo service cron restart 2>&1 | head -2 | while read l; do log "cron: $l"; done
+fi
+
+# 7. Memory — check if gunicorn exceeds threshold
+if command -v systemctl >/dev/null 2>&1; then
+    MEM_USAGE=$(systemctl show tradingai-api -p MemoryCurrent 2>/dev/null | cut -d= -f2)
+    if [ -n "$MEM_USAGE" ] && [ "$MEM_USAGE" != "0" ]; then
+        MEM_MB=$((MEM_USAGE / 1024 / 1024))
+        if [ "$MEM_MB" -gt 1500 ]; then
+            log "MEMORY HIGH: ${MEM_MB}MB > 1500MB — restarting tradingai-api"
+            sudo systemctl restart tradingai-api 2>&1 | head -3 | while read l; do log "mem restart: $l"; done
+        else
+            log "MEMORY OK: ${MEM_MB}MB"
+        fi
+    fi
+fi
+
+# 8. Crontab — verify and repair if needed
+EXPECTED_CRONTAB="ops/crontab.txt"
+if [ -f "$EXPECTED_CRONTAB" ]; then
+    MISSING=0
+    while IFS= read -r line; do
+        [ -z "$line" ] && continue
+        [[ "${line:0:1}" == "#" ]] && continue
+        if ! crontab -l 2>/dev/null | grep -qF "$line"; then
+            MISSING=$((MISSING + 1))
+        fi
+    done < "$EXPECTED_CRONTAB"
+    if [ "$MISSING" -gt 0 ]; then
+        log "CRONTAB REPAIR: $MISSING missing entries, reinstalling"
+        crontab "$EXPECTED_CRONTAB" 2>/dev/null && log "CRONTAB REPAIR: completed" || log "CRONTAB REPAIR: failed"
+    else
+        log "CRONTAB OK: all entries present"
+    fi
+fi
+
+# 9. Backup verification (vm-backup.sh keeps a .db.gz snapshot)
+BACKUP_DB="/opt/tradingai-backup/database/tradingai.db"
+BACKUP_GZ="/opt/tradingai-backup/database/tradingai.db.gz"
+# B6.6: vm-backup.sh runs daily — older than 24h means a missed run.
+MAX_BACKUP_AGE_DAYS=1
+BACKUP_FILE=""
+[ -f "$BACKUP_DB" ] && BACKUP_FILE="$BACKUP_DB"
+[ -z "$BACKUP_FILE" ] && [ -f "$BACKUP_GZ" ] && BACKUP_FILE="$BACKUP_GZ"
+if [ -n "$BACKUP_FILE" ]; then
+    BACKUP_AGE_DAYS=$(( ( $(date +%s) - $(stat -c %Y "$BACKUP_FILE" 2>/dev/null || echo 0) ) / 86400 ))
+    if [ "$BACKUP_AGE_DAYS" -gt "$MAX_BACKUP_AGE_DAYS" ]; then
+        log "ALERT backup_stale: ${BACKUP_AGE_DAYS}d old (max ${MAX_BACKUP_AGE_DAYS}d)"
+    else
+        log "OK backup_age: ${BACKUP_AGE_DAYS}d old"
+    fi
+    if [ "$BACKUP_FILE" = "$BACKUP_GZ" ]; then
+        if gzip -t "$BACKUP_FILE" 2>/dev/null; then
+            log "OK backup_integrity: gzip verified"
+        else
+            log "ALERT backup_corrupt: gzip integrity check failed"
+        fi
+    elif command -v sqlite3 >/dev/null 2>&1; then
+        if ! sqlite3 "$BACKUP_FILE" "SELECT 1 FROM symbols LIMIT 1" >/dev/null 2>&1; then
+            log "ALERT backup_corrupt: cannot verify integrity"
+        else
+            log "OK backup_integrity: verified"
+        fi
+    else
+        log "OK backup_exists: sqlite3 unavailable for integrity check"
+    fi
+    # B6.6: live-vs-backup row compare (>5% divergence on key tables = stale backup).
+    CMP_TMP="/tmp/backup-compare.db"
+    if [ "$BACKUP_FILE" = "$BACKUP_GZ" ]; then
+        zcat "$BACKUP_FILE" > "$CMP_TMP" 2>/dev/null || CMP_TMP=""
+    else
+        cp "$BACKUP_FILE" "$CMP_TMP" 2>/dev/null || CMP_TMP=""
+    fi
+    if [ -n "$CMP_TMP" ] && [ -f "$CMP_TMP" ]; then
+        DIVERGED=$(python3 -c "
+import sqlite3
+try:
+    live = sqlite3.connect('$DB')
+    bak = sqlite3.connect('$CMP_TMP')
+    bad = []
+    for tbl in ('symbols', 'price_1d'):
+        try:
+            l = live.execute(f'SELECT COUNT(*) FROM {tbl}').fetchone()[0]
+            b = bak.execute(f'SELECT COUNT(*) FROM {tbl}').fetchone()[0]
+            base = max(l, b, 1)
+            if abs(l - b) * 100 / base > 5:
+                bad.append(f'{tbl} live={l} backup={b}')
+        except Exception:
+            pass
+    print(';'.join(bad))
+except Exception:
+    print('')
+" 2>/dev/null || echo "")
+        rm -f "$CMP_TMP" 2>/dev/null || true
+        if [ -n "$DIVERGED" ]; then
+            log "ALERT backup_diverged: $DIVERGED"
+        else
+            log "OK backup_row_compare: within 5%"
+        fi
+    fi
+else
+    log "ALERT backup_missing: no backup file"
 fi
 
 log "self-heal cycle done (disk ${DISK_PCT}%, api $(curl -sf --max-time 5 $API > /dev/null 2>&1 && echo ok || echo fail))"

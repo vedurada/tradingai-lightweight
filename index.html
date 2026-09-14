@@ -83,7 +83,7 @@
       <div style="display:flex;align-items:center;gap:1rem;border-top:1px solid var(--line);padding-top:0.6rem">
         <div>
           <div style="font-weight:700;color:#15803d" id="outlook-confidence">—</div>/100
-          <div style="font-size:0.75rem;color:#64748b">Confidence</div>
+          <div style="font-size:0.75rem;color:#64748b" title="Measures agreement among market signals. It is not a probability of being correct.">Signal Confidence ⓘ</div>
         </div>
         <div>
           <div style="width:40px;height:40px;border-radius:50%;background:#f3f4f6;display:flex;align-items:center;justify-content:center;font-weight:700" id="outlook-score">—</div>
@@ -97,8 +97,205 @@
         <div style="font-size:0.75rem;color:#64748b">Today's Strategy</div>
         <div style="font-weight:700;color:#15803d" id="outlook-strategy">—</div>
       </div>
+      <div style="margin-top:0.4rem; font-size:0.75rem;color:#64748b;min-height:1.2rem" id="outlook-last-updated">—</div>
     </div>
   </div>
+
+  <script>
+  (async function(){
+    try {
+      const resp = await fetch('api/market-outlook?symbol=NIFTY');
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+
+      // Regime
+      const regime = (data.regime && data.regime.primary) || '—';
+      document.getElementById('outlook-regime').textContent = regime;
+
+      // Bias
+      const bias = (data.bias && data.bias.label) || '—';
+      document.getElementById('outlook-bias').textContent = bias;
+
+      // Confidence score /100
+      const conf = data.confidence !== undefined ? data.confidence : '—';
+      const confEl = document.getElementById('outlook-confidence');
+      confEl.textContent = conf;
+
+      // Tradeability score /100
+      const score = (data.tradeability && data.tradeability.score !== undefined) ? data.tradeability.score : '—';
+      document.getElementById('outlook-score').textContent = score;
+
+      // Expected Range
+      const er = data.expected_range || {};
+      const rangeUpper = er.upper !== undefined ? er.upper : '—';
+      const rangeLower = er.lower !== undefined ? er.lower : '—';
+      document.getElementById('outlook-range').textContent = `${rangeLower} — ${rangeUpper}`;
+
+      // Invalidation
+      const di = data.decision && data.decision.bull_invalidation ? data.decision.bull_invalidation :
+                 data.decision && data.decision.bear_invalidation ? data.decision.bear_invalidation : '—';
+      document.getElementById('outlook-invalidation').textContent = di;
+
+      // Today's Strategy
+      const strategies = data.strategies || [];
+      let strategy = '—';
+      if (strategies && strategies.length > 0) {
+        strategy = strategies[0].name || '—';
+      } else if (data.strategy_to_avoid) {
+        strategy = data.strategy_to_avoid;
+      }
+      document.getElementById('outlook-strategy').textContent = strategy;
+
+      // Last updated indicator
+      const lastUpdated = data.as_of_ist || data.created_at || '—';
+      const outlookLastEl = document.getElementById('outlook-last-updated');
+      if (lastUpdated && lastUpdated !== '—') {
+        outlookLastEl.textContent = `Last updated ${lastUpdated}`;
+      } else {
+        outlookLastEl.textContent = 'Data unavailable';
+      }
+    } catch (e) {
+      console.error('Failed to fetch market outlook:', e);
+      // Keep placeholders — don't convert missing values into false signals
+      const elIds = ['outlook-regime','outlook-bias','outlook-confidence','outlook-score','outlook-range','outlook-invalidation','outlook-strategy','outlook-last-updated'];
+      elIds.forEach(id => document.getElementById(id).textContent = '—');
+      document.getElementById('outlook-last-updated').textContent = 'Data unavailable';
+    }
+  })();
+  </script>
+
+  <!-- OPTIONS INTELLIGENCE -->
+  <h2>Options Intelligence <span class="status" id="oi-status">—</span></h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:1rem">
+    <div class="card card-accent">
+      <h3>Options Metrics</h3>
+      <table style="width:100%;border-collapse:collapse;font-size:0.85rem">
+        <tr><td style="padding:0.35rem 0;color:#64748b">PCR</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-pcr">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">Put OI</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-put">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">Call OI</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-call">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">OI Change</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-change">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">Max Pain</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-maxpain">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">IV (ATM)</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-iv">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">Expected Move</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-em">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">Expected Range</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-er">—</td></tr>
+        <tr><td style="padding:0.35rem 0;color:#64748b">OI Concent.</td><td style="padding:0.35rem 0;font-weight:700;text-align:right" id="oi-conc">—</td></tr>
+      </table>
+    </div>
+    <div class="card card-accent-blue">
+      <h3>Options View & Confirmation</h3>
+      <div style="margin-bottom:0.8rem">
+        <div style="font-size:0.75rem;color:#64748b">Options Bias</div>
+        <div style="font-weight:700;font-size:1.1rem" id="oi-bias">—</div>
+      </div>
+      <div style="margin-bottom:0.8rem">
+        <div style="font-size:0.75rem;color:#64748b">Confidence</div>
+        <div style="font-weight:700;font-size:1.1rem" id="oi-conf">—</div>
+      </div>
+      <div style="margin-bottom:0.8rem">
+        <div style="font-size:0.75rem;color:#64748b">Confirmation</div>
+        <span class="badge" id="oi-confirm-badge">—</span>
+      </div>
+      <div id="oi-reasons" style="font-size:0.78rem;color:#64748b;line-height:1.5"></div>
+    </div>
+  </div>
+
+  <div class="card card-accent-amber" style="margin-top:1.5rem">
+    <h3>Understanding Options Intelligence</h3>
+    <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
+      <strong>PCR (Put-Call Ratio)</strong> compares total Put open interest to Call open interest. A PCR above 1.5 suggests put-heavy positioning (often bearish sentiment); below 0.7 suggests call-heavy (bullish). Values between 0.7 and 1.5 are considered balanced. PCR does not predict direction alone — it measures where capital is allocated.
+    </p>
+    <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
+      <strong>Max Pain</strong> is the strike at which the maximum number of option holders would lose money at expiry. Price tends to gravitate toward Max Pain near expiry as market makers hedge to minimize payouts. It is a short-term reference, not a guarantee.
+    </p>
+    <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
+      <strong>Expected Move</strong> estimates the one-standard-deviation price range by expiry based on implied volatility — about 68% of the time price stays within this range. It is not a forecast of direction.
+    </p>
+    <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
+      <strong>OI Concentration</strong> highlights strikes with the highest Call and Put open interest, marking support (call concentration) and resistance (put concentration) zones. OI change data is available from NSE live feeds; yfinance-based sources may show zero change and are flagged as temporarily unavailable.
+    </p>
+    <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
+      <strong>Confirmation</strong> measures alignment between market direction and options positioning. CONFIRMED means market and options agree; DIVERGENCE means they disagree; PARTIAL CONFIRMATION means one is stronger than the other. Options view derives from Max Pain vs spot, PCR, and OI concentration — never from LLM.
+    </p>
+    <p style="font-size:0.78rem;color:#94a3b8;margin:0.5rem 0 0;font-style:italic">
+      All figures are computed server-side from NSE data. Values show "—" when data is temporarily unavailable. Educational purposes only — not investment advice.
+    </p>
+  </div>
+
+  <script>
+  (async function(){
+    try {
+      const resp = await fetch('api/options-intelligence/NIFTY');
+      const data = await resp.json();
+      if (data.error) throw new Error(data.error);
+
+      const statusEl = document.getElementById('oi-status');
+      if (statusEl) statusEl.textContent = data.data_quality === 'LIVE' ? 'LIVE' : 'DATA UNAVAILABLE';
+
+      function setVal(id, val, suffix) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        if (val === null || val === undefined || val === '—' || val === 'DATA TEMPORARILY UNAVAILABLE' || val === 'N/A') {
+          el.textContent = '—';
+        } else {
+          el.textContent = val + (suffix || '');
+        }
+      }
+
+      var pcr = data.pcr || {};
+      setVal('oi-pcr', pcr.value, '');
+      setVal('oi-put', pcr.pe_oi, '');
+      setVal('oi-call', pcr.ce_oi, '');
+
+      var oi = data.oi || {};
+      setVal('oi-change', oi.change_available ? (oi.call_oi_change !== null ? oi.call_oi_change : '—') : '—', '');
+      setVal('oi-maxpain', (data.max_pain && data.max_pain.strike) || null, '');
+
+      var iv = data.iv || {};
+      setVal('oi-iv', iv.atm, '%');
+
+      var em = data.expected_move || {};
+      if (em.points !== null && em.points !== undefined && em.lower && em.upper) {
+        setVal('oi-em', em.points, ' pts');
+        setVal('oi-er', em.lower + ' — ' + em.upper, '');
+      } else {
+        setVal('oi-em', null, '');
+        setVal('oi-er', null, '');
+      }
+
+      setVal('oi-conc', oi.oi_concentration || null, '%');
+
+      var ov = data.options_view || {};
+      setVal('oi-bias', ov.bias, '');
+      setVal('oi-conf', ov.confidence, '/100');
+
+      var confirm = data.confirmation || {};
+      var badge = document.getElementById('oi-confirm-badge');
+      if (badge) {
+        var s = confirm.status || '—';
+        badge.textContent = s;
+        badge.className = 'badge';
+        if (s === 'CONFIRMED') badge.classList.add('badge-green');
+        else if (s === 'DIVERGENCE') badge.classList.add('badge-red');
+        else if (s === 'PARTIAL CONFIRMATION') badge.classList.add('badge-yellow');
+        else if (s === 'NEUTRAL') badge.classList.add('badge-blue');
+      }
+
+      var reasonsEl = document.getElementById('oi-reasons');
+      if (reasonsEl && ov.reasons && ov.reasons.length > 0) {
+        reasonsEl.innerHTML = ov.reasons.map(function(r){return '<div style="margin-top:0.3rem;padding-left:0.5rem;border-left:2px solid #e2e8f0">' + r + '</div>'}).join('');
+      }
+    } catch (e) {
+      console.error('Failed to fetch options intelligence:', e);
+      ['oi-pcr','oi-put','oi-call','oi-change','oi-maxpain','oi-iv','oi-em','oi-er','oi-conc','oi-bias','oi-conf'].forEach(function(id){var el=document.getElementById(id);if(el)el.textContent='—';});
+      var badge = document.getElementById('oi-confirm-badge');
+      if (badge) { badge.textContent = '—'; badge.className = 'badge'; }
+      var reasonsEl = document.getElementById('oi-reasons');
+      if (reasonsEl) reasonsEl.innerHTML = '';
+      var statusEl = document.getElementById('oi-status');
+      if (statusEl) statusEl.textContent = 'Data unavailable';
+    }
+  })();
+  </script>
 
   <div id="dashboard"></div>
 

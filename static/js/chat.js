@@ -1,9 +1,10 @@
 /* TradingAI Live Chat — every page, anon/login, live + alerts (VM-light: polling 4s chat / 15s alerts, nginx 10s cache) */
 (() => {
-  const API = (p) => p; // same-origin /api via nginx -> 127.0.0.1:8000 (10s cache)
+   const API = (p) => p; // same-origin /api via nginx -> 127.0.0.1:8000 (10s cache)
   const CH_KEY = "ta_chat_user";
   const CH_NOTIFY = "ta_chat_notify";
   const $ = (s, r=document) => r.querySelector(s);
+  const hasSavedUser = () => !!localStorage.getItem(CH_KEY);
   let username = (localStorage.getItem(CH_KEY) || "").trim() || "Anonymous" + Math.floor(100+Math.random()*900);
   let channel = "global";
   let lastId = 0;
@@ -40,6 +41,7 @@
           <input id="ta-chat-user" maxlength="20" placeholder="Your name" value="${escAttr(username)}" />
           <button id="ta-chat-save">Save</button>
           <small id="ta-chat-who" style="white-space:nowrap"></small>
+          <button id="ta-chat-edit" style="display:none;background:transparent;color:#64748b;border:1px solid #e2e8f0;border-radius:6px;padding:4px 6px;font:11px system-ui;cursor:pointer">Change</button>
         </div>
         <form id="ta-chat-form">
           <input id="ta-chat-input" maxlength="300" placeholder="Message — be helpful, no spam" autocomplete="off" />

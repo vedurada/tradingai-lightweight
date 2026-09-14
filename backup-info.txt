@@ -1,8 +1,8 @@
-backup_utc=2026-09-13T13:00:14Z
-backup_ist=2026-09-13T18:30:14IST
-db_gz_size=16M
-db_size=133849088 (compressed 16076169)
-prices=3261
+backup_utc=2026-09-14T08:41:32Z
+backup_ist=2026-09-14T14:11:32IST
+db_gz_size=22M
+db_size=178724864 (compressed 22756738)
+prices=408
 history=21
 symbols=50
-files=119
+files=143

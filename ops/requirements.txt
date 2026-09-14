@@ -3,6 +3,7 @@
 yfinance==0.2.66
 Flask==2.3.2
 Flask-Cors==3.0.10
+Flask-Limiter==3.11.0
 pandas==2.3.3
 numpy==2.2.6
 requests==2.32.5

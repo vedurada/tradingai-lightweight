@@ -2,9 +2,13 @@ from __future__ import annotations
 
 import sqlite3
 import os
+import sys
 import json
 from datetime import datetime, timezone
 from typing import Any, Optional
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from sql_guard import assert_table_name
 
 
 class Database:
@@ -14,13 +18,17 @@ class Database:
         self._init_tables()
 
     def _conn(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=10)
         conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
         return conn
 
     def _init_tables(self) -> None:
         conn = self._conn()
         c = conn.cursor()
+        c.execute("PRAGMA journal_mode=WAL")
+        c.execute("PRAGMA busy_timeout=10000")
         c.execute("""
             CREATE TABLE IF NOT EXISTS instruments (
                 symbol TEXT PRIMARY KEY,
@@ -247,29 +255,36 @@ class Database:
 
     def execute(self, sql: str, params: tuple = ()) -> sqlite3.Cursor:
         conn = self._conn()
-        c = conn.cursor()
-        c.execute(sql, params)
-        conn.commit()
-        conn.close()
-        return c
+        try:
+            c = conn.cursor()
+            c.execute(sql, params)
+            conn.commit()
+            return c
+        finally:
+            conn.close()
 
     def fetchone(self, sql: str, params: tuple = ()) -> Optional[sqlite3.Row]:
         conn = self._conn()
-        c = conn.cursor()
-        c.execute(sql, params)
-        row = c.fetchone()
-        conn.close()
-        return row
+        try:
+            c = conn.cursor()
+            c.execute(sql, params)
+            row = c.fetchone()
+            return row
+        finally:
+            conn.close()
 
     def fetchall(self, sql: str, params: tuple = ()) -> list[sqlite3.Row]:
         conn = self._conn()
-        c = conn.cursor()
-        c.execute(sql, params)
-        rows = c.fetchall()
-        conn.close()
-        return rows
+        try:
+            c = conn.cursor()
+            c.execute(sql, params)
+            rows = c.fetchall()
+            return rows
+        finally:
+            conn.close()
 
     def upsert(self, table: str, data: dict, conflict_columns: str) -> None:
+        assert_table_name(table)
         cols = ", ".join(data.keys())
         placeholders = ", ".join("?" for _ in data)
         update_set = ", ".join(f"{k}=excluded.{k}" for k in data if k != "id")
@@ -280,6 +295,7 @@ class Database:
         self.execute(sql, tuple(data.values()))
 
     def get_latest(self, table: str, symbol: str) -> Optional[dict]:
+        assert_table_name(table)
         row = self.fetchone(f"SELECT * FROM {table} WHERE symbol = ? ORDER BY timestamp DESC LIMIT 1", (symbol,))
         return dict(row) if row else None
 
