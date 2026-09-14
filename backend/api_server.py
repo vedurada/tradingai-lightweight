@@ -27,6 +27,11 @@ from monitoring import RequestMonitor
 from logging_config import setup_logging, get_logger, log_request, log_alert
 from sql_guard import assert_table_name
 from auth import generate_api_key, verify_api_key, get_user_id_for_key
+from data_quality import (
+    DATA_QUALITY_LIVE, DATA_QUALITY_STALE,
+    DATA_QUALITY_UNAVAILABLE, DATA_QUALITY_PARTIAL,
+    data_age_minutes,
+)
 
 app = Flask(__name__)
 
@@ -160,6 +165,35 @@ def _handle_400(e):
     return error_response("INVALID_REQUEST", "Invalid request", 400)
 
 
+@app.errorhandler(sqlite3.OperationalError)
+def _handle_db_error(e):
+    app.logger.error(f"DB error: {e}")
+    return error_response("SERVICE_DEGRADED", "Database temporarily unavailable — please retry shortly", 503)
+
+
+_shutdown_in_progress = False
+_startup_checked = False
+
+
+def _ensure_startup():
+    global _startup_checked
+    if _startup_checked:
+        return
+    _startup_checked = True
+    try:
+        conn = get_db()
+        conn.execute("SELECT 1").fetchone()
+        conn.close()
+    except Exception as e:
+        app.logger.error(f"Startup check failed: {e}")
+        raise
+
+
+@app.before_request
+def _startup_guard():
+    _ensure_startup()
+
+
 @app.before_request
 def _check_auth():
     if request.endpoint in ("portfolio_list", "portfolio_add", "portfolio_delete"):
@@ -171,6 +205,9 @@ def _check_auth():
         if user_id is None:
             return error_response("UNAUTHORIZED", "Authentication required", 401)
         g.user_id = user_id
+
+
+signal.signal(signal.SIGTERM, lambda signum, frame: globals().__setitem__("_shutdown_in_progress", True) or app.logger.info("SIGTERM received — graceful shutdown started"))
 
 
 @app.route("/api/metrics")
@@ -205,6 +242,81 @@ def row_to_dict(row):
         return None
     return dict(row)
 
+
+def _check_source_freshness(source, threshold=30):
+    conn = get_db()
+    try:
+        table_map = {
+            "nifty_price": "price_1m",
+            "vix": "vix_data",
+            "outlook": "market_outlooks",
+            "price_1m": "price_1m",
+            "vix_data": "vix_data",
+            "market_outlooks": "market_outlooks",
+        }
+        table = table_map.get(source, source)
+        row = conn.execute(f"SELECT MAX(timestamp) as ts FROM {table}").fetchone()
+        if not row or not row["ts"]:
+            return {"status": "unavailable", "age_minutes": None}
+        age = data_age_minutes(row["ts"])
+        if age is None:
+            return {"status": "unavailable", "age_minutes": None}
+        if age > threshold:
+            return {"status": "stale", "age_minutes": round(age), "threshold": threshold}
+        return {"status": "ok", "age_minutes": round(age)}
+    except Exception:
+        return {"status": "unavailable", "age_minutes": None}
+    finally:
+        conn.close()
+
+
+def _record_fetch_result(source, success, error_msg=None):
+    conn = get_db()
+    try:
+        if success:
+            conn.execute(
+                "UPDATE data_status SET success_count = success_count + 1, consecutive_failures = 0 WHERE source = ?",
+                (source,),
+            )
+        else:
+            conn.execute(
+                "UPDATE data_status SET error_count = error_count + 1, consecutive_failures = consecutive_failures + 1, last_error = ? WHERE source = ?",
+                (error_msg, source),
+            )
+        conn.commit()
+    except Exception:
+        conn.rollback()
+    finally:
+        conn.close()
+
+
+def _enrich_with_freshness(response, source_tables):
+    if not isinstance(response, dict):
+        return response
+    ages = []
+    for table in source_tables:
+        conn = get_db()
+        try:
+            row = conn.execute(f"SELECT MAX(timestamp) as ts FROM {table}").fetchone()
+            if row and row["ts"]:
+                age = data_age_minutes(row["ts"])
+                if age is not None:
+                    ages.append(age)
+        except Exception:
+            pass
+        finally:
+            conn.close()
+    if not ages:
+        response["data_quality"] = DATA_QUALITY_UNAVAILABLE
+        response["data_freshness"] = {"age_minutes": None, "stale": True}
+    elif max(ages) > 30:
+        response["data_quality"] = DATA_QUALITY_STALE
+        response["data_freshness"] = {"age_minutes": round(max(ages)), "stale": True, "threshold_minutes": 30}
+    else:
+        response["data_quality"] = DATA_QUALITY_LIVE
+        response["data_freshness"] = {"age_minutes": round(max(ages)) if ages else None, "stale": False}
+    return response
+
 def serialize_val(v):
     if isinstance(v, float):
         return round(v, 4)
@@ -213,53 +325,32 @@ def serialize_val(v):
 @app.route("/api/health")
 @limiter.exempt
 def health():
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    now = datetime.now(timezone.utc)
-    status = "ok"
+    sources = {
+        "nifty_price": _check_source_freshness("nifty_price", threshold=30),
+        "vix": _check_source_freshness("vix", threshold=60),
+        "outlook": _check_source_freshness("outlook", threshold=1440),
+    }
+    any_stale = any(s["status"] == "stale" for s in sources.values())
+    all_stale = all(s["status"] != "ok" for s in sources.values())
+    overall = "ok" if not any_stale else "degraded"
     warnings = []
+    for name, info in sources.items():
+        if info["status"] == "stale":
+            warnings.append(f"{name} data {info['age_minutes']}m stale")
+        elif info["status"] == "unavailable":
+            warnings.append(f"{name} data unavailable")
     freshness = {}
-    try:
-        def _age_minutes(ts):
-            if not ts: return None
-            for fmt in ("%Y-%m-%dT%H:%M:%S+00:00", "%Y-%m-%dT%H:%M:%SZ", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d"):
-                try:
-                    dt = datetime.strptime(ts[:19], fmt)
-                    return (now - dt.replace(tzinfo=timezone.utc)).total_seconds() / 60
-                except Exception: pass
-            try:
-                dt = datetime.fromisoformat(ts)
-                if dt.tzinfo is None: dt = dt.replace(tzinfo=timezone.utc)
-                return (now - dt).total_seconds() / 60
-            except Exception: return None
-        rp = conn.execute("SELECT MAX(timestamp) as ts FROM price_1m WHERE symbol='NIFTY'").fetchone()
-        if rp and rp["ts"]:
-            age = _age_minutes(rp["ts"])
-            if age is not None:
-                freshness["nifty_price_minutes_ago"] = round(age, 1)
-                if age > 30:
-                    status = "degraded"
-                    warnings.append(f"NIFTY price data {age:.0f}m stale")
-        rv = conn.execute("SELECT MAX(timestamp) as ts FROM vix_data").fetchone()
-        if rv and rv["ts"]:
-            age = _age_minutes(rv["ts"])
-            if age is not None:
-                freshness["vix_minutes_ago"] = round(age, 1)
-                if age > 60:
-                    status = "degraded"
-                    warnings.append(f"VIX data {age:.0f}m stale")
-        ro = conn.execute("SELECT MAX(date) as ds FROM market_outlooks WHERE symbol='NIFTY'").fetchone()
-        if ro and ro["ds"]:
-                try:
-                    age_days = (now.date() - datetime.strptime(ro["ds"], "%Y-%m-%d").date()).days
-                    freshness["outlook_days_old"] = age_days
-                    if age_days > 1:
-                        warnings.append(f"Outlook {age_days}d old")
-                except Exception: pass
-    except Exception as e:
-        app.logger.warning(f"health freshness check failed: {e}")
-    conn.close()
-    return jsonify({"status": status, "timestamp": now.isoformat(), "warnings": warnings, "data_freshness": freshness})
+    for name, info in sources.items():
+        if info["age_minutes"] is not None:
+            freshness[f"{name}_minutes_ago"] = info["age_minutes"]
+    return jsonify({
+        "status": overall,
+        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "warnings": warnings,
+        "data_freshness": freshness,
+        "sources": sources,
+        "overall": overall,
+    })
 
 @app.route("/api/symbols")
 def symbols():
@@ -284,12 +375,31 @@ def latest_price(symbol):
             d = row_to_dict(price_row)
             # expose as quote for consistency
             pq = _build_quote(s, price_row, None)
+            if isinstance(pq, dict):
+                _pr_ts = dict(price_row).get("timestamp") if price_row else None
+                age = data_age_minutes(_pr_ts)
+                if age is None or age > 30:
+                    pq["data_quality"] = DATA_QUALITY_UNAVAILABLE if age is None else DATA_QUALITY_STALE
+                    pq["data_freshness"] = {"age_minutes": None if age is None else round(age), "stale": True}
+                else:
+                    pq["data_quality"] = DATA_QUALITY_LIVE
+                    pq["data_freshness"] = {"age_minutes": round(age), "stale": False}
             return jsonify(pq or d)
     quote = _build_quote(s, price_row, live_row)
     conn.close()
     if quote:
+        if isinstance(quote, dict):
+            _pr_ts = dict(price_row).get("timestamp") if price_row else None
+            _lr_ts = dict(live_row).get("timestamp") if live_row else None
+            age = data_age_minutes(_pr_ts) or data_age_minutes(_lr_ts)
+            if age is None or age > 30:
+                quote["data_quality"] = DATA_QUALITY_UNAVAILABLE if age is None else DATA_QUALITY_STALE
+                quote["data_freshness"] = {"age_minutes": None if age is None else round(age), "stale": True}
+            else:
+                quote["data_quality"] = DATA_QUALITY_LIVE
+                quote["data_freshness"] = {"age_minutes": round(age), "stale": False}
         return jsonify(quote)
-    return jsonify({"error": "no data"}), 404
+    return jsonify({"error": "no data", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
 
 @app.route("/api/prices/<symbol>")
 def prices(symbol):
@@ -325,10 +435,18 @@ def vix():
     conn.close()
     if row:
         d = row_to_dict(row)
-        # Legacy frontend expects {price, change, change_pct}.
         d["price"] = d.get("close", 0)
+        age = data_age_minutes(d.get("timestamp"))
+        if age is None:
+            pass
+        elif age > 60:
+            d["data_quality"] = DATA_QUALITY_STALE
+            d["data_freshness"] = {"age_minutes": round(age), "stale": True, "threshold_minutes": 60}
+        else:
+            d["data_quality"] = DATA_QUALITY_LIVE
+            d["data_freshness"] = {"age_minutes": round(age), "stale": False}
         return jsonify(d)
-    return jsonify({"error": "no VIX data"}), 404
+    return jsonify({"error": "no VIX data", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
 
 @app.route("/api/vix/history")
 def vix_history():
@@ -366,8 +484,19 @@ def indicators_default():
     row = conn.execute("SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
     conn.close()
     if row:
-        return jsonify(row_to_dict(row))
-    return jsonify({"error": "no indicators"}), 404
+        d = row_to_dict(row)
+        age = data_age_minutes(row.get("timestamp"))
+        if age is None:
+            d["data_quality"] = DATA_QUALITY_UNAVAILABLE
+            d["data_freshness"] = {"age_minutes": None, "stale": True}
+        elif age > 60:
+            d["data_quality"] = DATA_QUALITY_STALE
+            d["data_freshness"] = {"age_minutes": round(age), "stale": True, "threshold_minutes": 60}
+        else:
+            d["data_quality"] = DATA_QUALITY_LIVE
+            d["data_freshness"] = {"age_minutes": round(age), "stale": False}
+        return jsonify(d)
+    return jsonify({"error": "no indicators", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
 
 @app.route("/api/nifty")
 def nifty():
