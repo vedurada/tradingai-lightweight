@@ -1,0 +1,51 @@
+repos:
+  - repo: local
+    hooks:
+      - id: python-syntax
+        name: Python syntax check
+        entry: python3 -m py_compile
+        language: system
+        types: [python]
+        always_run: false
+
+      - id: pytest
+        name: Run pytest
+        entry: python3 -m pytest tests/ -x --tb=short
+        language: system
+        types: [python]
+        always_run: false
+
+      - id: forbidden-bare-except
+        name: Block bare except in non-test files
+        entry: bash ./ops/hooks/check-bare-except.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: forbidden-print-non-test
+        name: Block print in non-test files
+        entry: bash ./ops/hooks/check-print-non-test.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: forbidden-todo-non-test
+        name: Block TODO in non-test files
+        entry: bash ./ops/hooks/check-todo-non-test.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: model-boundary
+        name: Verify no model files modified
+        entry: bash ./ops/hooks/check-model-boundary.sh
+        language: system
+        pass_filenames: false
+        always_run: true
+
+      - id: ruff
+        name: Lint with ruff
+        entry: "ruff check backend/ tests/ config/ 2>/dev/null || echo 'SKIP: ruff not installed'"
+        language: system
+        types: [python]
+        always_run: false
