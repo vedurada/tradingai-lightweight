@@ -85,3 +85,61 @@ def revoke_api_key_by_id(key_id):
         conn.commit()
     finally:
         conn.close()
+
+
+def list_keys():
+    """Prefix-only listing — hashes never leave the DB."""
+    conn = _get_db()
+    try:
+        rows = conn.execute(
+            "SELECT id, user_id, key_prefix, label, is_active, created_at, last_used_at, revoked_at"
+            " FROM api_keys ORDER BY id"
+        ).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        conn.close()
+
+
+def revoke_api_key_by_prefix(prefix):
+    """Revoke by key prefix (first 8+ chars). Returns number of keys revoked."""
+    conn = _get_db()
+    try:
+        cur = conn.execute(
+            "UPDATE api_keys SET revoked_at = ?, is_active = 0"
+            " WHERE key_prefix LIKE ? AND is_active = 1",
+            (datetime.now(timezone.utc).isoformat(), prefix + "%"),
+        )
+        conn.commit()
+        return cur.rowcount
+    finally:
+        conn.close()
+
+
+def main(argv=None):
+    # A6: local key-lifecycle CLI (no HTTP surface). Run on the VM as ubuntu.
+    import argparse
+    parser = argparse.ArgumentParser(description="TradingAI API key management")
+    sub = parser.add_subparsers(dest="cmd", required=True)
+    sub.add_parser("list", help="list keys (prefixes only, never hashes)")
+    p_issue = sub.add_parser("issue", help="issue a key (prints raw key ONCE)")
+    p_issue.add_argument("--user-id", type=int, required=True)
+    p_issue.add_argument("--label", default="default")
+    p_revoke = sub.add_parser("revoke", help="revoke by key prefix")
+    p_revoke.add_argument("prefix")
+    args = parser.parse_args(argv)
+    ensure_schema()
+    if args.cmd == "list":
+        for k in list_keys():
+            print(f"id={k['id']} user={k['user_id']} prefix={k['key_prefix']} label={k['label']} "
+                  f"active={k['is_active']} created={k['created_at']} last_used={k['last_used_at']}")
+    elif args.cmd == "issue":
+        raw = store_api_key(args.user_id, None, label=args.label)
+        print(f"ISSUED label={args.label} key={raw}")
+        print("Store this key now — it cannot be recovered, only revoked and reissued.")
+    elif args.cmd == "revoke":
+        n = revoke_api_key_by_prefix(args.prefix)
+        print(f"revoked={n} prefix={args.prefix}")
+
+
+if __name__ == "__main__":
+    main()

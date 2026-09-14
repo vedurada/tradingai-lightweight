@@ -78,8 +78,9 @@ ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" \
 # Durable: idempotent, and source-of-truth is ops/nginx-tradingai.conf (git).
 scp -i "$SSH_KEY" -o StrictHostKeyChecking=no \
   "/Users/satya/remove_workspace/tradingai-lightweight/ops/nginx-tradingai.conf" \
-  "$VM_USER@$VM_HOST:/tmp/tradingai-nginx.conf"
+  "/Users/satya/remove_workspace/tradingai-lightweight/ops/nginx-snippets/tradingai-security-headers.conf" \
+  "$VM_USER@$VM_HOST:/tmp/"
 ssh -i "$SSH_KEY" -o StrictHostKeyChecking=no "$VM_USER@$VM_HOST" \
-  "sudo cp /tmp/tradingai-nginx.conf /etc/nginx/sites-enabled/tradingai && sudo rm -f /tmp/tradingai-nginx.conf && sudo nginx -t && sudo systemctl reload nginx && echo NGINX-GUARD-REASSERTED"
+  "sudo mkdir -p /etc/nginx/snippets && sudo cp /tmp/nginx-tradingai.conf /etc/nginx/sites-enabled/tradingai && sudo cp /tmp/tradingai-security-headers.conf /etc/nginx/snippets/tradingai-security-headers.conf && sudo rm -f /tmp/nginx-tradingai.conf /tmp/tradingai-security-headers.conf && sudo nginx -t && sudo systemctl reload nginx && echo NGINX-GUARD-REASSERTED"
 
 deploy_log "DEPLOY" "COMPLETE" "All stages done" $(($(date +%s) - START_TIME))
