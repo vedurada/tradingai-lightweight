@@ -10,12 +10,18 @@ RETRYABLE_EXCEPTIONS = (
     OSError,
     ConnectionError,
     TimeoutError,
-    TimeoutError,
 )
+
+NON_RETRYABLE_HTTP_CODES = {400, 401, 403, 404, 429, 500}
 
 
 def is_retryable(exception):
-    return isinstance(exception, RETRYABLE_EXCEPTIONS)
+    if isinstance(exception, RETRYABLE_EXCEPTIONS):
+        return True
+    status_code = getattr(exception, "response", None)
+    if status_code is not None and hasattr(status_code, "status_code"):
+        return status_code.status_code not in NON_RETRYABLE_HTTP_CODES and status_code.status_code >= 500
+    return False
 
 
 def retry_with_backoff(max_retries=MAX_RETRIES, base_delay=BASE_DELAY, max_delay=MAX_DELAY, max_total_duration=MAX_TOTAL_DURATION):

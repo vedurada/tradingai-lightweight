@@ -13,9 +13,100 @@ sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 from flask import Flask, jsonify, request
 from flask_cors import CORS
+from flask_limiter import Limiter
+from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
-CORS(app)
+
+ALLOWED_ORIGINS = os.environ.get(
+    "TRADINGAI_CORS_ORIGINS",
+    "https://tradingai.in,https://www.tradingai.in,http://localhost:3000,http://localhost:8080",
+).split(",")
+
+CORS(
+    app,
+    origins=ALLOWED_ORIGINS,
+    methods=["GET", "POST", "OPTIONS"],
+    allow_headers=["Content-Type", "Authorization"],
+    supports_credentials=True,
+)
+
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024
+
+limiter = Limiter(
+    app=app,
+    key_func=get_remote_address,
+    default_limits=["60/minute"],
+    storage_uri="memory://",
+)
+
+ENDPOINT_TIMEOUTS = {
+    "health": 2,
+    "price": 5,
+    "vix": 5,
+    "indicators": 5,
+    "symbols": 5,
+    "market": 10,
+    "global": 10,
+    "market_outlook": 10,
+    "history": 10,
+    "snapshot": 5,
+    "strategy": 10,
+    "regime": 5,
+    "scenarios": 5,
+    "outlook": 5,
+    "options": 10,
+    "pcr": 10,
+    "max_pain": 10,
+    "backtest": 60,
+    "portfolio": 5,
+    "alerts": 5,
+    "chat": 5,
+    "etf": 5,
+    "fundamentals": 5,
+    "data_status": 5,
+    "breadth": 5,
+}
+
+import signal
+
+TIMEOUT_HANDLER_CALLED = False
+
+
+def _request_timeout_handler(signum, frame):
+    global TIMEOUT_HANDLER_CALLED
+    TIMEOUT_HANDLER_CALLED = True
+    raise TimeoutError("Request timeout")
+
+
+@app.before_request
+def _set_request_timeout():
+    endpoint = request.endpoint
+    if endpoint and endpoint in ENDPOINT_TIMEOUTS:
+        signal.signal(signal.SIGALRM, _request_timeout_handler)
+        signal.alarm(ENDPOINT_TIMEOUTS[endpoint])
+
+
+@app.after_request
+def _clear_request_timeout(response):
+    signal.alarm(0)
+    return response
+
+
+@app.errorhandler(TimeoutError)
+def _handle_timeout(e):
+    app.logger.warning(f"Request timeout: {request.endpoint}")
+    return error_response("INTERNAL_ERROR", "Request timed out", 504)
+
+
+@app.errorhandler(413)
+def _handle_413(e):
+    return error_response("INVALID_REQUEST", "Request body too large", 413)
+
+
+@app.errorhandler(429)
+def _handle_429(e):
+    return error_response("RATE_LIMITED", "Too many requests, please wait", 429)
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
 
@@ -37,6 +128,7 @@ def serialize_val(v):
     return v
 
 @app.route("/api/health")
+@limiter.exempt
 def health():
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
@@ -630,6 +722,7 @@ def all_outlooks():
     return jsonify([row_to_dict(r) for r in rows])
 
 @app.route("/api/options/<symbol>")
+@limiter.limit("30/minute")
 def options(symbol):
     expiry = request.args.get("expiry", "")
     conn = get_db()
@@ -641,6 +734,7 @@ def options(symbol):
     return jsonify([row_to_dict(r) for r in rows])
 
 @app.route("/api/options/expiries/<symbol>")
+@limiter.limit("30/minute")
 def option_expiries(symbol):
     conn = get_db()
     rows = conn.execute("SELECT * FROM option_expiries WHERE symbol=? ORDER BY expiry", (symbol,)).fetchall()
@@ -796,6 +890,7 @@ def expected_move(symbol):
     return jsonify(out)
 
 @app.route("/api/options-intelligence/<symbol>")
+@limiter.limit("30/minute")
 def options_intelligence(symbol):
     """Consolidated Options Intelligence: PCR, OI, Max Pain, IV, Expected Move, Options View, Confirmation."""
     symbol = symbol.upper()
@@ -1001,6 +1096,7 @@ def market_outlook_by_date(date):
     return jsonify(data)
 
 @app.route("/api/portfolio", methods=["GET"])
+@limiter.limit("30/minute")
 def portfolio_list():
     conn = get_db()
     rows = conn.execute("SELECT * FROM portfolio ORDER BY created_at DESC").fetchall()
@@ -1023,15 +1119,62 @@ def portfolio_list():
                 it["pnl_pct"] = round(((price - it["entry_price"]) / it["entry_price"]) * 100 * (1 if it.get("direction") != "SHORT" else -1), 2)
     return jsonify(items)
 
-@app.route("/api/portfolio", methods=["POST"])
-def portfolio_add():
-    body = request.get_json(silent=True) or {}
-    sym = (body.get("symbol") or "").strip().upper()
-    if not sym:
-        return jsonify({"error": "symbol required"}), 400
+_VALID_SYMBOLS = None
+
+
+def get_valid_symbols():
+    global _VALID_SYMBOLS
+    if _VALID_SYMBOLS is None:
+        config_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "config", "instruments.json")
+        with open(config_path) as f:
+            config = json.load(f)
+        _VALID_SYMBOLS = set()
+        for inst in config["indices"] + config["stocks"]:
+            _VALID_SYMBOLS.add(inst["symbol"])
+    return _VALID_SYMBOLS
+
+
+def validate_portfolio_payload(body):
+    errors = {}
+    symbol = (body.get("symbol") or "").strip().upper()
+    if symbol not in get_valid_symbols():
+        errors["symbol"] = "Symbol is not tracked"
+    entry_price = body.get("entry_price")
+    try:
+        if entry_price is None or float(entry_price) <= 0:
+            errors["entry_price"] = "Entry price must be positive"
+    except (TypeError, ValueError):
+        errors["entry_price"] = "Entry price must be a number"
+    quantity = body.get("quantity")
+    try:
+        if quantity is None or int(quantity) < 1 or float(quantity) != int(quantity):
+            errors["quantity"] = "Quantity must be a positive integer"
+    except (TypeError, ValueError):
+        errors["quantity"] = "Quantity must be an integer"
     direction = (body.get("direction") or "LONG").upper()
     if direction not in ("LONG", "SHORT"):
-        direction = "LONG"
+        errors["direction"] = "Direction must be LONG or SHORT"
+    entry_date = body.get("entry_date")
+    if entry_date:
+        try:
+            datetime.strptime(str(entry_date), "%Y-%m-%d")
+        except ValueError:
+            errors["entry_date"] = "Invalid date format (YYYY-MM-DD)"
+    strategy = body.get("strategy")
+    if not strategy or not str(strategy).strip():
+        errors["strategy"] = "Strategy required"
+    return errors
+
+
+@app.route("/api/portfolio", methods=["POST"])
+@limiter.limit("30/minute")
+def portfolio_add():
+    body = request.get_json(silent=True) or {}
+    errors = validate_portfolio_payload(body)
+    if errors:
+        return error_response("INVALID_REQUEST", json.dumps(errors), 400)
+    sym = (body.get("symbol") or "").strip().upper()
+    direction = (body.get("direction") or "LONG").upper()
     conn = get_db()
     conn.execute(
         "INSERT INTO portfolio (symbol, strategy, entry_price, quantity, direction, entry_date,"
@@ -1046,6 +1189,7 @@ def portfolio_add():
     return jsonify({"ok": True})
 
 @app.route("/api/portfolio/<int:pid>", methods=["DELETE"])
+@limiter.limit("30/minute")
 def portfolio_delete(pid):
     conn = get_db()
     conn.execute("DELETE FROM portfolio WHERE id=?", (pid,))
@@ -1054,6 +1198,7 @@ def portfolio_delete(pid):
     return jsonify({"ok": True})
 
 @app.route("/api/backtest")
+@limiter.limit("10/minute")
 def backtest():
     symbol = request.args.get("symbol", "NIFTY").strip().upper()
     days = request.args.get("days", 30, type=int)
@@ -1064,6 +1209,7 @@ def backtest():
     return jsonify(result)
 
 @app.route("/api/backtest/vix-strangle")
+@limiter.limit("10/minute")
 def backtest_vix_strangle():
     symbol = request.args.get("symbol", "NIFTY").strip().upper()
     days = request.args.get("days", 3650, type=int)
@@ -1074,6 +1220,7 @@ def backtest_vix_strangle():
     return jsonify(result)
 
 @app.route("/api/backtest/5m-real")
+@limiter.limit("10/minute")
 def backtest_5m_real():
     symbol = request.args.get("symbol", "NIFTY").strip().upper()
     days = request.args.get("days", 60, type=int)
@@ -1456,6 +1603,7 @@ def _chat_rate_ok(ip: str) -> bool:
     return ok
 
 @app.route("/api/chat/messages", methods=["GET", "POST"])
+@limiter.limit("30/minute")
 def chat_messages():
     channel = (request.args.get("channel") or request.args.get("c") or "global").strip()[:20].lower() or "global"
     if request.method == "GET":
@@ -1508,6 +1656,7 @@ def chat_messages():
     return jsonify({"id": nid, "channel": ch, "username": username, "text": text, "kind": kind, "created_at": ts})
 
 @app.route("/api/chat/alerts")
+@limiter.limit("30/minute")
 def chat_alerts():
     """Latest system alerts (TRADE/CLOSE/news) for chat window — nginx cache 10s makes polling cheap."""
     try:
