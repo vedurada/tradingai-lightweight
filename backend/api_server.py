@@ -107,8 +107,11 @@ def _request_timeout_handler(signum, frame):
 def _set_request_timeout():
     endpoint = request.endpoint
     if endpoint and endpoint in ENDPOINT_TIMEOUTS:
-        signal.signal(signal.SIGALRM, _request_timeout_handler)
-        signal.alarm(ENDPOINT_TIMEOUTS[endpoint])
+        # SIGALRM can only be armed from the main thread; gthread workers
+        # serve requests in worker threads, so skip arming there.
+        if threading.current_thread() is threading.main_thread():
+            signal.signal(signal.SIGALRM, _request_timeout_handler)
+            signal.alarm(ENDPOINT_TIMEOUTS[endpoint])
     g.correlation_id = f"req-{uuid.uuid4().hex[:12]}"
     g.request_start = _time.monotonic()
 
