@@ -81,7 +81,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 ## Testing
 
 - **Framework**: pytest
-- **Total tests**: 1065 across 38+ test files
+- **Total tests**: 1117 across 42+ test files
 - **Test directories**: `tests/`
 - **Run all**: `python3 -m pytest tests/ -q`
 - **Run specific**: `python3 -m pytest tests/test_options.py -v`
@@ -93,6 +93,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **11 Phase 8 walk-forward tests**: `python3 -m pytest tests/test_phase8_walkforward.py -v`
 - **11 Phase 8 evidence tests**: `python3 -m pytest tests/test_phase8_evidence.py -v`
 - **6 known failures** (data-dependent, DB empty): see `docs/AUDIT_REPORT.md`
+- **30 Phase 9A tests**: `python3 -m pytest tests/test_phase9_journal.py -v`
 
 ## Deployment
 
@@ -193,6 +194,35 @@ Walk-Forward Validation Engine + Historical Evidence Engine.
 ### Frontend
 - `tools/walkforward.html` — Walk-forward validation UI with consent tags
 - `evidence/historical.html` — Historical evidence UI with consent tags, underlying vs options separation
+
+## Phase 9 Components
+
+Trader Intelligence system: Journal, Comparison, Personal Intelligence.
+
+### Phase 9A — Immutable Trade Journal (complete)
+
+Components: `backend/journal.py`, tables `trade_journal`, `trade_journal_events`, `user_feedback`.
+
+#### Key Design Principles
+- **Immutable core**: Planned entry, actual entry, stop, target, risk are NEVER changed after insertion
+- **Mutable fields**: Only notes, mistake, user_action, user_reason can be updated (creates audit events)
+- **TradingAI setup linkage**: `tradingai_setup_id` links journal entry to immutable TradingAI setup
+- **No AI calculations**: All statistics computed deterministically; AI only translates to text
+- **Minimum sample size**: 10 trades required before personal intelligence statistics are shown
+- **Audit trail**: Every mutable field update creates a `trade_journal_events` record
+
+#### API Endpoints
+- `POST /api/journal` — Create entry (user_action: TRADED/PAPER/SKIPPED)
+- `GET /api/journal` — List with filters (instrument, date, action)
+- `GET /api/journal/<id>` — Get single entry
+- `POST /api/journal/<id>/update` — Update mutable fields (creates audit events)
+- `GET /api/journal/<id>/events` — Audit event history
+- `GET /api/journal/<id>/compare` — TradingAI plan vs actual action
+- `GET /api/journal/stats` — Deterministic stats (INSUFFICIENT_DATA if < 10 trades)
+- `POST /api/journal/feedback` — Add user feedback
+
+#### Mobile-First UI
+- `tools/journal.html` — Progressive disclosure: TRADED/PAPER/SKIPPED first, relevant fields after
 
 ## Phase 7 Components
 
