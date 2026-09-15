@@ -88,6 +88,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **14 Phase 3 tests**: `python3 -m pytest tests/test_phase3.py -v`
 - **18 Phase 4 tests**: `python3 -m pytest tests/test_phase4.py -v`
 - **17 Phase 5 tests**: `python3 -m pytest tests/test_phase5.py -v`
+- **13 Phase 6 tests**: `python3 -m pytest tests/test_phase6.py -v`
 - **6 known failures** (data-dependent, DB empty): see `docs/AUDIT_REPORT.md`
 
 ## Deployment
@@ -111,7 +112,8 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 2**: ✅ COMPLETE — Market intelligence engine, 983/983 tests passing
 - **Phase 3**: ✅ COMPLETE — Options Intelligence Engine, 997/997 tests passing
 - **Phase 4**: ✅ COMPLETE — Intraday AI Market Outlook & Trade Setup Engine, 1012/1012 tests passing
-- **Phase 5**: In Progress — Historical AI Replay + Intraday Backtesting, 1032/1032 tests passing
+- **Phase 5**: ✅ COMPLETE — Historical AI Replay, 1032/1032 tests passing
+- **Phase 6**: In Progress — Live Intraday + Price-Tick Experience, 1045/1045 tests passing
 
 ## Phase 5 Components
 
@@ -122,6 +124,16 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - `history/replay.html` — Daily replay page with timeline
 - Strict no-lookahead: at each timestamp, only data ≤ that timestamp is used
 - Every snapshot preserves: timestamp, indicators version, data quality, evidence
+
+## Phase 6 Components
+
+- `backend/quote_tracker.py` — Quote tracking: per-quote metadata + aggregate cadence
+- `QuoteTracker.receive()` — Records quote with: previous_price, price_change, update_interval_ms, quote_age_ms, source
+- `QuoteTracker.get_telemetry()` — Aggregate: avg/median/min/max interval, quote age, source
+- `backend/api_server.py` — Added `/api/quote/track/<symbol>` and `/api/quote/telemetry/<symbol>` endpoints
+- `trade.html` — Live prices with blink-on-change (not timer), LIVE/STALE indicator, quote age, mobile-first
+- Blink rule: UP when price increases, DOWN when decreases, no blink when unchanged
+- Respects prefers-reduced-motion, animates only changed price
 
 - `backend/options_state.py` — OptionsState object (immutable, per-symbol)
 - `backend/options_normalizer.py` — Chain processor using frozen OptionsEngine
