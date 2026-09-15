@@ -145,9 +145,7 @@ try {
   setInterval(tickClock,1000);tickClock();
   setLastUpdated(null,true);
 
-  fetchJSON('market').then(function(d){
-    if(d&&d.last_updated){setLastUpdated(d.last_updated,true);}
-  }).catch(function(){});
+  (function(){fetch('/api/market').then(function(r){return r.json();}).then(function(d){if(d&&d.last_updated){var bar=document.getElementById('last-updated-bar');if(bar){bar.textContent='Data as of '+d.last_updated.slice(0,10)+' IST';}}}).catch(function(){})})();
 
   document.querySelectorAll('[data-nav]').forEach(function(c){
     c.addEventListener('click',function(e){ if(e.target.closest('a')||e.target.closest('button'))return; location.href=c.getAttribute('data-nav'); });
@@ -216,7 +214,7 @@ try {
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 </script>
-<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/consent.js" defer></script>
+<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/api.js"><\/script><script src="/assets/js/consent.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.card').forEach(function(c){
