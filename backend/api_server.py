@@ -2602,6 +2602,48 @@ def market_validate(symbol):
         conn.close()
 
 
+@app.route("/api/options/state/<symbol>")
+@limiter.limit("30/minute")
+def options_state(symbol):
+    """Options Intelligence State: bias, key levels, options snapshot with evidence and uncertainty. Mobile-first format."""
+    symbol = symbol.upper()
+    if symbol not in ("NIFTY", "BANKNIFTY", "SENSEX"):
+        return error_response("NOT_SUPPORTED", f"{symbol} is not available as a live options product"), 404
+    conn = get_db()
+    try:
+        spot = None
+        qr = conn.execute("SELECT price FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        if qr and qr["price"]:
+            spot = qr["price"]
+
+        rows = conn.execute(
+            "SELECT strike, option_type, open_interest, change_in_oi, implied_volatility, volume FROM option_chain WHERE symbol=? ORDER BY strike",
+            (symbol,),
+        ).fetchall()
+        chain = [dict(r) for r in rows]
+
+        if not chain:
+            from backend.options_state import OptionsState
+            state = OptionsState(
+                symbol=symbol, timestamp="", spot=spot,
+                atm_strike=None, expiry=None, dte=None,
+                pcr=None, pe_oi=None, ce_oi=None, total_oi=None,
+                max_pain=None, iv_atm=None, iv_rank=None,
+                expected_move=None, bias="NEUTRAL", confidence=0,
+                evidence=[], uncertainty=["No option chain data available"],
+                data_quality="DATA UNAVAILABLE",
+            )
+            return jsonify(state.to_dict())
+
+        from backend.options_normalizer import build_options_state
+        state = build_options_state(symbol, chain, spot, data_quality="LIVE")
+        return jsonify(state.to_dict())
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

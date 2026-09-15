@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<link rel="preconnect" href="https://www.googleagmanager.com" crossorigin>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Options Intelligence - TradingAI</title>
+<meta name="description" content="Mobile-first options intelligence: PCR, OI, Max Pain, IV, expected move with evidence and uncertainty.">
+<link rel="canonical" href="https://tradingai.in/options.html">
+<meta property="og:title" content="Options Intelligence - TradingAI">
+<meta property="og:description" content="Mobile-first options intelligence with evidence and uncertainty.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/options.html">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script src="/assets/js/keep-scroll.js" defer></script>
+<script src="/assets/js/live-blink.js" defer></script>
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <h2>Options Intelligence</h2>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading…</span></div></div>
+
+  <div class="card symbol-select" style="margin-bottom:1rem">
+    <label style="font-weight:700;display:block;margin-bottom:0.4rem">Symbol</label>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:0.4rem" id="sym-grid"></div>
+  </div>
+
+  <div id="opt-hero" class="card" style="margin-bottom:1rem;min-height:120px"><div class="status">Select a symbol above</div></div>
+
+  <div id="opt-bias" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Market Bias</h3>
+    <div id="opt-bias-content"></div>
+  </div>
+
+  <div id="opt-levels" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Key Levels</h3>
+    <div id="opt-levels-content"></div>
+  </div>
+
+  <div id="opt-options" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Options Snapshot</h3>
+    <div id="opt-options-content"></div>
+  </div>
+
+  <div id="opt-evidence" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Evidence</h3>
+    <div id="opt-evidence-content"></div>
+  </div>
+
+  <div id="opt-uncertainty" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Uncertainty</h3>
+    <div id="opt-uncertainty-content"></div>
+  </div>
+
+  <div id="opt-empty" class="card" style="display:none"><div class="status">No options data available for this symbol</div></div>
+
+  <div id="opt-error" class="card" style="display:none"><div class="status" style="color:#dc2626">Error loading data. Retrying…</div></div>
+
+<footer>
+  <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/disclaimer.html">Disclaimer</a></p>
+</footer>
+</main>
+<script>
+const API_BASE='';
+const SYMBOLS=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function regimeColor(r){if(!r)return'#64748b';var u=r.toUpperCase();if(u.includes('BULLISH'))return'#15803d';if(u.includes('BEARISH'))return'#dc2626';if(u.includes('RANGE'))return'#a16207';if(u.includes('VOLATILITY'))return'#c2410c';return'#64748b';}
+function biasColor(b){if(!b)return'#64748b';var u=b.toUpperCase();if(u.includes('BULLISH'))return'#15803d';if(u.includes('BEARISH'))return'#dc2626';return'#a16207';}
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);}catch(e){return null;}}
+function setLastUpdated(ts){var bar=document.getElementById('last-updated-bar');if(!ts){bar.textContent='Last refreshed: —';return;};bar.textContent='Data as of '+fmtIST(ts)+' IST';}
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
+setInterval(tickClock,1000);tickClock();
+
+var currentSymbol='NIFTY';
+function showSymbol(sym){currentSymbol=sym;loadData();}
+
+function loadData(){var hero=document.getElementById('opt-hero');hero.innerHTML='<div class="status">Loading '+currentSymbol+' options…</div>';document.getElementById('opt-empty').style.display='none';document.getElementById('opt-error').style.display='none';fetchJSON('options/state/'+currentSymbol).then(function(data){if(!data){showError();return;};if(data.error){showError();return;};render(data);}).catch(function(){showError();});}
+function showError(){document.getElementById('opt-hero').innerHTML='<div class="status" style="color:#dc2626">Error loading data</div>';document.getElementById('opt-empty').style.display='none';}
+
+function render(data){setLastUpdated(data.timestamp);var html='<div style="font-size:1.3rem;font-weight:700">'+data.symbol+'</div>';html+='<div class="status">Spot: '+formatPrice(data.spot)+'</div>';if(data.data_quality){html+='<div class="status"><span class="badge" style="background:'+(data.data_quality==='LIVE'?'#15803d':'#dc2626')+';color:#fff">'+data.data_quality+'</span></div>';}hero.innerHTML=html;hero.style.display='';
+
+document.getElementById('opt-empty').style.display='none';
+
+if(data.bias){var bc=biasColor(data.bias);var conf=data.confidence||0;document.getElementById('opt-bias').style.display='';
+document.getElementById('opt-bias-content').innerHTML='<div style="font-size:1.2rem;font-weight:700;color:'+bc+'">'+data.bias.toUpperCase()+'</div><div class="status">Confidence: '+conf+'/100</div>';}
+
+if(data.key_levels){var kl=document.getElementById('opt-levels');kl.style.display='';var lh='';if(data.key_levels.max_pain!=null){lh+='<div class="status">Max Pain: '+formatPrice(data.key_levels.max_pain)+'</div>';}if(data.key_levels.expected_range){var er=data.key_levels.expected_range;lh+='<div class="status">Expected Range: '+formatPrice(er.low)+' — '+formatPrice(er.high)+'</div>';}document.getElementById('opt-levels-content').innerHTML=lh;}
+
+if(data.options){var op=document.getElementById('opt-options');op.style.display='';var oh='';oh+='<div class="status">PCR: '+(data.options.pcr!=null?data.options.pcr.toFixed(2):'N/A')+'</div>';oh+='<div class="status">ATM: '+formatPrice(data.options.atm)+'</div>';oh+='<div class="status">IV: '+(data.options.iv!=null?data.options.iv.toFixed(2)+'%':'N/A')+'</div>';oh+='<div class="status">Max Pain: '+formatPrice(data.options.max_pain)+'</div>';document.getElementById('opt-options-content').innerHTML=oh;}
+
+if(data.evidence&&data.evidence.length){document.getElementById('opt-evidence').style.display='';var eh='';data.evidence.forEach(function(e){eh+='<div class="status">✓ '+e+'</div>';});document.getElementById('opt-evidence-content').innerHTML=eh;}
+
+if(data.uncertainty&&data.uncertainty.length){document.getElementById('opt-uncertainty').style.display='';var uh='';data.uncertainty.forEach(function(u){uh+='<div class="status" style="color:#dc2626">⚠ '+u+'</div>';});document.getElementById('opt-uncertainty-content').innerHTML=uh;}
+}
+
+var sg=document.getElementById('sym-grid');SYMBOLS.forEach(function(s){var btn=document.createElement('button');btn.textContent=s;btn.style.cssText='cursor:pointer;font-weight:700;border:1px solid #64748b;background:#64748b15;color:#64748b;border-radius:999px;padding:0.3rem 0.5rem;font-size:0.85rem';if(s===currentSymbol){btn.style.background='#64748b';btn.style.color='#fff';}btn.onclick=function(){document.querySelectorAll('#sym-grid button').forEach(function(b){b.style.background='#64748b15';b.style.color='#64748b';});btn.style.background='#64748b';btn.style.color='#fff';showSymbol(s);};sg.appendChild(btn);});
+
+document.addEventListener('DOMContentLoaded',function(){loadData();setInterval(loadData,30000);});
+</script>
+<script src="/assets/js/consent.js" defer></script>
+</body>
+</html>
