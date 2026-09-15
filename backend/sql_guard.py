@@ -10,6 +10,8 @@ ALLOWED_TABLES = {
     # B6.5: tables legitimately queried via dynamic names elsewhere.
     "market_outlooks", "market_snapshots", "market_regime", "strategies",
     "market_breadth", "index_breadth", "fundamentals", "etf_data",
+    # Phase 9: Trade Journal
+    "trade_journal", "trade_journal_events", "user_feedback",
 }
 
 

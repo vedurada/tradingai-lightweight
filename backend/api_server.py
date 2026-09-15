@@ -2936,6 +2936,246 @@ def quote_track(symbol):
         conn.close()
 
 
+@app.route("/api/journal", methods=["POST"])
+@limiter.limit("30/minute")
+def journal_create():
+    """Create a new trade journal entry."""
+    body = request.get_json(silent=True) or {}
+    required = ["date", "instrument", "user_action"]
+    missing = [f for f in required if f not in body]
+    if missing:
+        return error_response("INVALID_REQUEST", f"Missing: {', '.join(missing)}", 400)
+    try:
+        from journal import insert_journal
+        record = insert_journal(
+            date=str(body["date"]),
+            instrument=str(body["instrument"]).upper(),
+            strategy=str(body.get("strategy", "")) or None,
+            direction=str(body.get("direction", "")).upper() or None,
+            planned_entry=float(body["planned_entry"]) if body.get("planned_entry") is not None else None,
+            actual_entry=float(body.get("actual_entry")) if body.get("actual_entry") is not None else None,
+            stop=float(body.get("stop")) if body.get("stop") is not None else None,
+            target=float(body.get("target")) if body.get("target") is not None else None,
+            actual_exit=float(body.get("actual_exit")) if body.get("actual_exit") is not None else None,
+            quantity=int(body["quantity"]) if body.get("quantity") is not None else None,
+            risk_planned=float(body.get("risk_planned")) if body.get("risk_planned") is not None else None,
+            risk_actual=float(body.get("risk_actual")) if body.get("risk_actual") is not None else None,
+            market_regime=str(body.get("market_regime", "")) or None,
+            tradingai_evidence_score=float(body["tradingai_evidence_score"]) if body.get("tradingai_evidence_score") is not None else None,
+            tradingai_confidence=float(body.get("tradingai_confidence")) if body.get("tradingai_confidence") is not None else None,
+            user_action=str(body["user_action"]).upper(),
+            user_reason=str(body.get("user_reason", "")) or None,
+            result=str(body.get("result", "")) or None,
+            mistake=str(body.get("mistake", "")) or None,
+            notes=str(body.get("notes", "")) or None,
+            tradingai_setup_id=str(body.get("tradingai_setup_id", "")) or None,
+        )
+        return jsonify({
+            "journal_id": record.journal_id,
+            "tradingai_setup_id": record.tradingai_setup_id,
+            "date": record.date,
+            "instrument": record.instrument,
+            "user_action": record.user_action,
+            "created_at": record.created_at,
+        }), 201
+    except Exception as e:
+        return error_response("JOURNAL_CREATE_FAILED", str(e), 500)
+
+
+@app.route("/api/journal/<journal_id>", methods=["GET"])
+@limiter.limit("60/minute")
+def journal_get(journal_id):
+    """Get a trade journal entry by ID."""
+    try:
+        from journal import get_journal
+        record = get_journal(journal_id)
+        if record is None:
+            return error_response("NOT_FOUND", f"Journal {journal_id} not found", 404)
+        return jsonify({
+            "journal_id": record.journal_id,
+            "tradingai_setup_id": record.tradingai_setup_id,
+            "date": record.date,
+            "instrument": record.instrument,
+            "strategy": record.strategy,
+            "direction": record.direction,
+            "planned_entry": record.planned_entry,
+            "actual_entry": record.actual_entry,
+            "stop": record.stop,
+            "target": record.target,
+            "actual_exit": record.actual_exit,
+            "quantity": record.quantity,
+            "risk_planned": record.risk_planned,
+            "risk_actual": record.risk_actual,
+            "market_regime": record.market_regime,
+            "tradingai_evidence_score": record.tradingai_evidence_score,
+            "tradingai_confidence": record.tradingai_confidence,
+            "user_action": record.user_action,
+            "user_reason": record.user_reason,
+            "result": record.result,
+            "mistake": record.mistake,
+            "notes": record.notes,
+            "created_at": record.created_at,
+            "updated_at": record.updated_at,
+        })
+    except Exception as e:
+        return error_response("JOURNAL_GET_FAILED", str(e), 500)
+
+
+@app.route("/api/journal", methods=["GET"])
+@limiter.limit("60/minute")
+def journal_list():
+    """List trade journal entries with filters."""
+    instrument = request.args.get("instrument")
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+    user_action = request.args.get("user_action")
+    limit = min(int(request.args.get("limit", 50)), 100)
+    offset = int(request.args.get("offset", 0))
+    try:
+        from journal import list_journals
+        records = list_journals(
+            instrument=instrument, date_from=date_from, date_to=date_to,
+            user_action=user_action, limit=limit, offset=offset,
+        )
+        return jsonify({
+            "total": len(records),
+            "limit": limit,
+            "offset": offset,
+            "entries": [{
+                "journal_id": r.journal_id,
+                "tradingai_setup_id": r.tradingai_setup_id,
+                "date": r.date,
+                "instrument": r.instrument,
+                "strategy": r.strategy,
+                "direction": r.direction,
+                "user_action": r.user_action,
+                "result": r.result,
+                "notes": r.notes,
+                "created_at": r.created_at,
+            } for r in records],
+        })
+    except Exception as e:
+        return error_response("JOURNAL_LIST_FAILED", str(e), 500)
+
+
+@app.route("/api/journal/<journal_id>/update", methods=["POST"])
+@limiter.limit("30/minute")
+def journal_update(journal_id):
+    """Update mutable journal fields (notes, mistake, user_action, user_reason).
+
+    Core trade fields are immutable. Updates create audit events.
+    """
+    body = request.get_json(silent=True) or {}
+    allowed = {"notes", "mistake", "user_action", "user_reason"}
+    if not any(k in body for k in allowed):
+        return error_response("INVALID_REQUEST", f"Allowed fields: {', '.join(allowed)}", 400)
+    try:
+        from journal import update_journal_notes, get_journal
+        existing = get_journal(journal_id)
+        if existing is None:
+            return error_response("NOT_FOUND", f"Journal {journal_id} not found", 404)
+        record = update_journal_notes(
+            journal_id,
+            notes=body.get("notes", existing.notes),
+            mistake=body.get("mistake", existing.mistake),
+            user_action=body.get("user_action", existing.user_action),
+            user_reason=body.get("user_reason", existing.user_reason),
+        )
+        return jsonify({
+            "journal_id": record.journal_id,
+            "user_action": record.user_action,
+            "notes": record.notes,
+            "mistake": record.mistake,
+            "updated_at": record.updated_at,
+        })
+    except Exception as e:
+        return error_response("JOURNAL_UPDATE_FAILED", str(e), 500)
+
+
+@app.route("/api/journal/<journal_id>/events", methods=["GET"])
+@limiter.limit("60/minute")
+def journal_events(journal_id):
+    """Get audit events for a journal entry."""
+    try:
+        from journal import get_events
+        events = get_events(journal_id)
+        return jsonify({
+            "journal_id": journal_id,
+            "total_events": len(events),
+            "events": [{
+                "event_id": e.event_id,
+                "event_type": e.event_type,
+                "field_name": e.field_name,
+                "old_value": e.old_value,
+                "new_value": e.new_value,
+                "created_at": e.created_at,
+            } for e in events],
+        })
+    except Exception as e:
+        return error_response("JOURNAL_EVENTS_FAILED", str(e), 500)
+
+
+@app.route("/api/journal/<journal_id>/compare", methods=["GET"])
+@limiter.limit("30/minute")
+def journal_compare(journal_id):
+    """TradingAI plan vs actual trader action comparison."""
+    try:
+        from journal import get_comparison
+        comparison = get_comparison(journal_id)
+        if comparison is None:
+            return error_response("NOT_FOUND", f"Journal {journal_id} not found", 404)
+        return jsonify(comparison)
+    except Exception as e:
+        return error_response("JOURNAL_COMPARE_FAILED", str(e), 500)
+
+
+@app.route("/api/journal/stats", methods=["GET"])
+@limiter.limit("30/minute")
+def journal_stats():
+    """Deterministic statistics. Returns INSUFFICIENT_DATA if sample < 10."""
+    instrument = request.args.get("instrument")
+    strategy = request.args.get("strategy")
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+    try:
+        from journal import get_deterministic_stats
+        stats = get_deterministic_stats(
+            instrument=instrument, strategy=strategy,
+            date_from=date_from, date_to=date_to,
+        )
+        return jsonify(stats)
+    except Exception as e:
+        return error_response("JOURNAL_STATS_FAILED", str(e), 500)
+
+
+@app.route("/api/journal/feedback", methods=["POST"])
+@limiter.limit("30/minute")
+def journal_feedback():
+    """Add feedback to a journal entry."""
+    body = request.get_json(silent=True) or {}
+    if "journal_id" not in body or "rating" not in body:
+        return error_response("INVALID_REQUEST", "journal_id and rating required", 400)
+    try:
+        from journal import add_feedback
+        feedback = add_feedback(
+            journal_id=str(body["journal_id"]),
+            rating=int(body["rating"]),
+            category=str(body.get("category", "")) or None,
+            comment=str(body.get("comment", "")) or None,
+        )
+        if feedback is None:
+            return error_response("NOT_FOUND", "Journal not found", 404)
+        return jsonify({
+            "feedback_id": feedback.feedback_id,
+            "journal_id": feedback.journal_id,
+            "rating": feedback.rating,
+            "category": feedback.category,
+            "created_at": feedback.created_at,
+        }), 201
+    except Exception as e:
+        return error_response("FEEDBACK_FAILED", str(e), 500)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
