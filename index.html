@@ -52,9 +52,10 @@ try {
     <strong>Financial / Educational Disclaimer:</strong> TradingAI provides automated market analysis for informational and educational purposes only. Nothing here constitutes investment, financial, legal, or tax advice. All analysis is generated from publicly available NSE data and rule-based algorithms. Trading involves substantial risk, including loss of capital. Users must verify all data with their broker and make their own decisions. Past performance does not guarantee future results. SEBI does not endorse or review any content on this site.
   </div>
   <div class="updated-bar"><span id="last-updated-bar">Last refreshed: —</span></div>
+  <h3 style="margin:1.5rem 0 0.5rem 0">LIVE MARKET TICKER</h3>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
 
-  <h3 style="margin:1.5rem 0 0.5rem 0">Market Snapshot</h3>
+  <h3 style="margin:1.5rem 0 0.5rem 0">MARKET SNAPSHOT</h3>
   <!-- MARKET SNAPSHOT -->
   <div style="margin:1rem 0" data-prerendered="">
     <div class="grid" style="grid-template-columns:repeat(4,1fr); gap:1rem">
@@ -104,7 +105,7 @@ try {
 
   <!-- ADVANCE / DECLINE -->
   <div class="card" style="margin-top:1.5rem">
-    <h3>Advance / Decline</h3>
+    <h3>ADVANCE / DECLINE</h3>
     <div id="home-ad-bar"><span>Loading breadth data…</span></div>
     <div style="font-size:0.75rem;color:#64748b;margin-top:0.5rem">Market breadth / tape</div>
     <script>(function(){ (async function(){ try{var r=await(await fetch('/api/index-breadth')).json();if(!r||!r.length){document.getElementById('home-ad-bar').innerHTML='<span style="color:#94a3b8;font-size:0.85rem">No breadth data</span>';return;}var a=0,d=0,u=0;for(var i=0;i<r.length;i++){a+=r[i].advances||0;d+=r[i].declines||0;u+=r[i].unchanged||0;}document.getElementById('home-ad-bar').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;text-align:center;margin-top:0.5rem"><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Advances</div><div style="font-size:1.3rem;font-weight:800;color:#15803d">'+a+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Declines</div><div style="font-size:1.3rem;font-weight:800;color:#ef4444">'+d+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Unchanged</div><div style="font-size:1.3rem;font-weight:800;color:#64748b">'+u+'</div></div></div>';}catch(e){document.getElementById('home-ad-bar').textContent='Breadth unavailable';}})(); })();</script>
@@ -112,7 +113,7 @@ try {
 
   <!-- OPTIONS INTELLIGENCE -->
   <div class="card" style="margin-top:1.5rem">
-    <h3>Options Intelligence</h3>
+    <h3>OPTIONS INTELLIGENCE</h3>
     <div class="grid" style="grid-template-columns:repeat(3,1fr); gap:1rem; margin:0.8rem 0" id="options-data-cards">
       <div class="card" style="text-align:center;min-height:80px" id="options-pcr-card">
         <h3 style="font-size:0.85rem">PCR</h3>
@@ -137,14 +138,13 @@ try {
   </div>
 
   <div class="card content-card" style="margin-top:1.5rem">
-    <h3>How to read this page</h3>
+    <h3>HOW TO READ THIS PAGE</h3>
     <p style="font-size:1.05rem;color:#1e293b;letter-spacing:0.02em">Market → Regime → Options → Strategy → Risk</p>
-    <p style="font-size:0.85rem;color:#64748b;margin-top:0.5rem">Every section — regime, probability bars, 8-factor grid, options intelligence, strategies, key levels and AI decision — comes from the same automatic pipeline: publicly available NSE data in, structured analysis out. During market hours the page refreshes on a fast cycle. The AI Decision box honestly says WAIT when signals conflict. Nothing here is investment advice.</p>
   </div>
 
   <!-- Educational / Risk Disclosure -->
   <div class="card" style="margin:1.5rem 0 1rem 0;border-left:4px solid #dc2626">
-    <h3 style="margin:0.2rem 0 0.4rem;color:#dc2626">Educational / Risk Disclosure</h3>
+    <h3 style="margin:0.2rem 0 0.4rem;color:#dc2626">EDUCATIONAL / RISK DISCLOSURE</h3>
     <p style="margin:0; font-size:.9rem; line-height:1.5; color:#64748b">
       <strong>Educational Purpose Only:</strong> TradingAI provides automated market analysis and tools for informational and educational purposes only. Nothing on this website — including index outlooks, options strategies, PCR, max-pain figures, backtest results, or any other content — constitutes investment, financial, legal, or tax advice, nor a recommendation, offer, or solicitation to buy, sell, or hold any security or derivative. All analysis is generated from publicly available NSE data and rule-based algorithms. Trading involves substantial risk, including loss of capital. Users must verify all data with their broker and make their own decisions. Past performance, whether backtested or live, does not guarantee future results. SEBI does not endorse or review any content on this site.
     </p>
@@ -154,6 +154,12 @@ try {
   <p class="status" style="margin-top:0.6rem"><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/disclaimer.html">Disclaimer</a> · <a href="/sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script src="/assets/js/ai-outlook.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  renderOutlookDashboard('dashboard',{symbol:'NIFTY',api:'nifty',displayName:'NIFTY 50',step:50,lot:75,apiBase:'..'});
+  setInterval(function(){renderOutlookDashboard('dashboard',{symbol:'NIFTY',api:'nifty',displayName:'NIFTY 50',step:50,lot:75,apiBase:'..'});},30000);
+});
+</script>
 <script>
 (function(){
   var _lastDataTs=null;
