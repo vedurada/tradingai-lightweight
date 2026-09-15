@@ -89,6 +89,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **18 Phase 4 tests**: `python3 -m pytest tests/test_phase4.py -v`
 - **17 Phase 5 tests**: `python3 -m pytest tests/test_phase5.py -v`
 - **13 Phase 6 tests**: `python3 -m pytest tests/test_phase6.py -v`
+- **20 Phase 7 tests**: `python3 -m pytest tests/test_phase7.py -v`
 - **6 known failures** (data-dependent, DB empty): see `docs/AUDIT_REPORT.md`
 
 ## Deployment
@@ -113,7 +114,8 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 3**: ✅ COMPLETE — Options Intelligence Engine, 997/997 tests passing
 - **Phase 4**: ✅ COMPLETE — Intraday AI Market Outlook & Trade Setup Engine, 1012/1012 tests passing
 - **Phase 5**: ✅ COMPLETE — Historical AI Replay, 1032/1032 tests passing
-- **Phase 6**: In Progress — Live Intraday + Price-Tick Experience, 1045/1045 tests passing
+- **Phase 6**: ✅ COMPLETE — Live Intraday + Price-Tick Experience, 1045/1045 tests passing
+- **Phase 7**: In Progress — Deterministic Strategy Backtesting, 1065/1065 tests passing
 
 ## Phase 5 Components
 
@@ -152,3 +154,24 @@ Inputs: Market State + Gap Analysis + Options State → TradeSetup
 - Trade readiness: GO (entry window active), WAIT (conditions forming), NO_SETUP (no trade warranted)
 - Evidence-based, never guarantees outcomes
 - AI explicitly returns WAIT when conditions aren't ready
+
+## Phase 7 Components
+
+Deterministic Strategy Backtesting Engine — Entry/Exit simulator, cost model, performance engine, AI separation.
+
+### One engine, three environments
+- LIVE uses `TradeSetup` from Phase 4
+- REPLAY uses `TradeSetup` from Phase 4 + Phase 5 snapshot format
+- BACKTEST uses `TradeSetup` from Phase 4 + Phase 5 snapshot format + Entry/Exit simulation
+
+### Core Components
+- **Entry/Exit Simulator**: Entry on GO + ENTRY_WINDOW ACTIVE + valid levels; exit on target hit, invalidation hit, or EOD close. Uses closing prices (no intra-day ticks).
+- **Cost Model**: Brokerage (₹20/side), slippage (0.5 bps), exchange fee (0.03%), GST (18% on brokerage+slippage), stamp charge (0.003%). No negative costs.
+- **Trade Record**: Immutable namedtuple with 22+ fields including costs, P&L, R-multiples.
+- **Performance Engine**: Win rate, profit factor, net P&L, max drawdown, equity curve, R-multiples (best/worst/avg), time-of-day patterns.
+
+### Key Design Decisions
+- AI NEVER calculates backtest numbers (deterministic engine computes P&L; AI can only explain results)
+- `total_trades` includes all trades; `completed_trades` filters STILL_OPEN
+- Reuses Phase 4 trade setup data, Phase 5 snapshot format
+- Strict no-lookahead inherited from Phase 5
