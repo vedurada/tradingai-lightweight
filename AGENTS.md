@@ -87,6 +87,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Run specific**: `python3 -m pytest tests/test_options.py -v`
 - **14 Phase 3 tests**: `python3 -m pytest tests/test_phase3.py -v`
 - **18 Phase 4 tests**: `python3 -m pytest tests/test_phase4.py -v`
+- **17 Phase 5 tests**: `python3 -m pytest tests/test_phase5.py -v`
 - **6 known failures** (data-dependent, DB empty): see `docs/AUDIT_REPORT.md`
 
 ## Deployment
@@ -109,9 +110,18 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 1**: ✅ COMPLETE — Production foundation, 921/921 tests passing
 - **Phase 2**: ✅ COMPLETE — Market intelligence engine, 983/983 tests passing
 - **Phase 3**: ✅ COMPLETE — Options Intelligence Engine, 997/997 tests passing
-- **Phase 4**: In Progress — Intraday AI Market Outlook & Trade Setup Engine, 1012/1012 tests passing
+- **Phase 4**: ✅ COMPLETE — Intraday AI Market Outlook & Trade Setup Engine, 1012/1012 tests passing
+- **Phase 5**: In Progress — Historical AI Replay + Intraday Backtesting, 1032/1032 tests passing
 
-## Phase 4 Components
+## Phase 5 Components
+
+- `backend/replay_engine.py` — Timestamp-by-timestamp replay with strict no-lookahead
+- `replay_day()` — Takes 5m candles + prev close → list of ReplaySnapshot at each step
+- `ReplaySnapshot` — Immutable snapshot: timestamp, market_state, gap, trade_setup, what_ai_knew, what_ai_did_not_know
+- `backend/api_server.py` — Added `/api/replay/<symbol>/<date>` endpoint
+- `history/replay.html` — Daily replay page with timeline
+- Strict no-lookahead: at each timestamp, only data ≤ that timestamp is used
+- Every snapshot preserves: timestamp, indicators version, data quality, evidence
 
 - `backend/options_state.py` — OptionsState object (immutable, per-symbol)
 - `backend/options_normalizer.py` — Chain processor using frozen OptionsEngine
