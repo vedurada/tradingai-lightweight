@@ -199,6 +199,18 @@ Walk-Forward Validation Engine + Historical Evidence Engine.
 
 Trader Intelligence system: Journal, Comparison, Personal Intelligence.
 
+### Phase 9B — Expanded Comparison Engine (complete)
+
+Expanded TradingAI Plan vs User Actual comparison with deterministic classification:
+
+- Entry behavior: before/during confirmation, inside/outside entry window, planned vs actual entry
+- Risk adherence: stop adherence, target adherence, risk adherence, quantity comparison
+- Exit behavior: exit type (TARGET/STOP/MANUAL), exit timing, planned vs actual exit
+- Setup vs user outcome: AI predicted vs user result, match/mismatch
+- Compliance: traded WAIT, traded NO_SETUP, skipped valid setup, traded after invalidation, entered before confirmation
+
+All classifications are deterministic. AI may later explain already-calculated findings.
+
 ### Phase 9A — Immutable Trade Journal (complete)
 
 Components: `backend/journal.py`, tables `trade_journal`, `trade_journal_events`, `user_feedback`.
