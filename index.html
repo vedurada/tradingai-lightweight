@@ -47,11 +47,10 @@ try {
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
 </header>
   <main>
-  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <div class="card" style="margin:0.5rem 0;padding:0.6rem 1rem;background:#fef2f2;border-left:4px solid #dc2626;font-size:0.82rem;color:#991b1b">
+    <strong>Financial / Educational Disclaimer:</strong> TradingAI provides automated market analysis for informational and educational purposes only. Nothing here constitutes investment, financial, legal, or tax advice. All analysis is generated from publicly available NSE data and rule-based algorithms. Trading involves substantial risk, including loss of capital. Users must verify all data with their broker and make their own decisions. Past performance does not guarantee future results. SEBI does not endorse or review any content on this site.
+  </div>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
-
-  <!-- AI MARKET OUTLOOK rendered entirely by ai-outlook.js -->
-  <div id="dashboard"></div>
 
   <!-- MARKET SNAPSHOT -->
   <div class="grid" style="margin:1rem 0; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem">
@@ -90,9 +89,19 @@ try {
     </div>
   </div>
 
-  <!-- Understanding Options Intelligence (educational) -->
+  <!-- AI MARKET OUTLOOK rendered entirely by ai-outlook.js -->
+  <div id="dashboard"></div>
+
+  <!-- ADVANCE / DECLINE -->
+  <div class="card" style="margin-top:1.5rem">
+    <h3>Advance / Decline</h3>
+    <div id="home-ad-bar"><span>Loading breadth data…</span></div>
+    <script>(function(){ (async function(){ try{var r=await(await fetch('/api/index-breadth')).json();if(!r||!r.length){document.getElementById('home-ad-bar').innerHTML='<span style="color:#94a3b8;font-size:0.85rem">No breadth data</span>';return;}var html='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">';for(var i=0;i<r.length;i++){var b=r[i];html+='<div class="card" style="text-align:center"><strong>'+b.index_name+'</strong><br><span style="font-size:1.1rem;color:'+((b.advances||0)>=(b.declines||0)?'#15803d':'#dc2626')+'">'+b.advances+'▲ / '+(b.declines||0)+'▼</span></div>';}html+='</div>';document.getElementById('home-ad-bar').innerHTML=html;}catch(e){document.getElementById('home-ad-bar').textContent='Breadth unavailable';}})(); })();</script>
+  </div>
+
+  <!-- OPTIONS INTELLIGENCE -->
   <div class="card card-accent-amber" style="margin-top:1.5rem">
-    <h3>Understanding Options Intelligence</h3>
+    <h3>Options Intelligence</h3>
     <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.5rem">Signal Confidence ⓘ — measures agreement among market signals; not a probability of being correct.</div>
     <p style="font-size:0.88rem;line-height:1.7;color:#475569;margin:0.3rem 0">
       <strong>PCR (Put-Call Ratio)</strong> compares total Put open interest to Call open interest. A PCR above 1.5 suggests put-heavy positioning (often bearish sentiment); below 0.7 suggests call-heavy (bullish). Values between 0.7 and 1.5 are considered balanced. PCR does not predict direction alone — it measures where capital is allocated.
@@ -114,8 +123,6 @@ try {
     </p>
   </div>
 
-  <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-  <script>(async function(){try{const r=await (await fetch('api/backtest?symbol=NIFTY&days=30')).json();const g=r.ai_stats?.gated||r;const el=document.getElementById('home-bt-grid');const s=document.getElementById('home-bt-status');if(!r||!g){s.textContent='No backtest data';return;}s.textContent=`AI ${g.trades} trades · WR ${g.win_rate}% · PF ${g.profit_factor} · ${(g.total_points>=0?'+':'')+g.total_points} pts`;el.innerHTML=`<div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Win Rate</div><div style="font-weight:800;color:${g.win_rate>=55?'#15803d':'#dc2626'}">${g.win_rate}%</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Profit Factor</div><div style="font-weight:800">${g.profit_factor}</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Net</div><div style="font-weight:800;color:${g.total_points>=0?'#15803d':'#dc2626'}">${g.total_points>=0?'+':''}${g.total_points} pts</div></div><div class="card" style="border:none;box-shadow:none;padding:.7rem;text-align:center"><div class="status">Max DD</div><div style="font-weight:800;color:#dc2626">${g.max_drawdown} pts</div></div>`;}catch(e){const s=document.getElementById('home-bt-status');if(s)s.textContent='Backtest preview unavailable';}})();</script>
   <div class="card content-card" style="margin-top:1.5rem">
     <h3>How to read this page</h3>
     <p>TradingAI is a free, fully automatic market-intelligence service for the Indian stock market. This home page is the AI Market Outlook: a live dashboard for NIFTY, BANKNIFTY, FINNIFTY and SENSEX. Use the tabs above to switch index. Every section — the market regime, probability bars, 8-factor scoring grid, options intelligence, strategies, key levels and AI decision — comes from the same automatic pipeline: publicly available NSE data in, structured analysis out.</p>
@@ -213,7 +220,6 @@ try {
 })();
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
-</script>
 <script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/api.js"><\/script><script src="/assets/js/consent.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
