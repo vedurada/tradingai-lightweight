@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<link rel="preconnect" href="https://www.googleagmanager.com" crossorigin>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historical AI Replay - TradingAI</title>
+<meta name="description" content="What TradingAI would have said if it were live on this date.">
+<link rel="canonical" href="https://tradingai.in/history/replay.html">
+<meta property="og:title" content="Historical AI Replay - TradingAI">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script src="/assets/js/keep-scroll.js" defer></script>
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <h2>Historical AI Replay</h2>
+  <div class="card" style="margin-bottom:1rem">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+      <div><label style="font-weight:700">Symbol</label><br><span id="sel-symbol">NIFTY</span></div>
+      <div><label style="font-weight:700">Date</label><br><input type="date" id="replay-date" value="2026-09-15" style="width:100%;padding:0.3rem"></div>
+      <div style="display:flex;align-items:flex-end"><button onclick="loadReplay()" style="padding:0.4rem 1rem;cursor:pointer">Replay</button></div>
+    </div>
+  </div>
+
+  <div id="r-status" class="card" style="margin-bottom:1rem"><div class="status">Select date and click Replay</div></div>
+
+  <div id="r-summary" class="card" style="margin-bottom:1rem;display:none"></div>
+
+  <div id="r-timeline" class="card" style="display:none"></div>
+
+  <div id="r-empty" class="card" style="display:none"><div class="status">No data available for this date</div></div>
+  <div id="r-error" class="card" style="display:none"><div class="status" style="color:#dc2626">Error loading replay</div></div>
+
+<footer>
+  <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/disclaimer.html">Disclaimer</a></p>
+</footer>
+</main>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',hour12:false}).format(d);}catch(e){return null;}}
+function setLastUpdated(){var bar=document.getElementById('last-updated-bar');bar.textContent='Replay as of '+new Date().toLocaleDateString('en-GB');}setInterval(setLastUpdated,1000);setLastUpdated();
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+function loadReplay(){var date=document.getElementById('replay-date').value;if(!date)return;var bar=document.getElementById('r-status');bar.innerHTML='<div class="status">Loading replay for '+date+'…</div>';document.getElementById('r-empty').style.display='none';document.getElementById('r-error').style.display='none';fetchJSON('replay/NIFTY/'+date).then(function(data){if(!data||data.error){showError();return;}render(data);}).catch(function(){showError();});}
+function showError(){document.getElementById('r-error').style.display='';document.getElementById('r-status').innerHTML='<div class="status" style="color:#dc2626">Error loading data</div>';}
+function render(data){var bar=document.getElementById('r-status');bar.innerHTML='<div class="status">Replay: '+data.symbol+' on '+data.date+' — '+data.total_snapshots+' snapshots</div>';document.getElementById('r-empty').style.display='none';
+// Summary
+var summary=document.getElementById('r-summary');summary.style.display='';var snaps=data.snapshots;var first=snaps[0];var last=snaps[snaps.length-1];var readinessCounts={};snaps.forEach(function(s){var r=(s.trade_setup&&s.trade_setup.trade_readiness)||'UNKNOWN';readinessCounts[r]=(readinessCounts[r]||0)+1;});var sh='<h3>Day Summary</h3>';sh+='<div class="status">Open: '+formatPrice(first.market_state&&first.market_state.spot)+'</div>';sh+='<div class="status">Close: '+formatPrice(last.market_state&&last.market_state.spot)+'</div>';for(var r in readinessCounts){sh+='<div class="status"><strong>'+r+'</strong>: '+readinessCounts[r]+' steps</div>';}summary.innerHTML=sh;
+// Timeline
+var timeline=document.getElementById('r-timeline');timeline.style.display='';var th='';snaps.forEach(function(s){var ts=s.candle_time||s.timestamp;var tr=s.trade_setup||{};var readiness=tr.trade_readiness||'WAIT';var rc=readiness==='GO'?'#15803d':readiness==='NO_SETUP'?'#64748b':'#a16207';var ms=s.market_state||{};var regime=ms.regime||'N/A';var gap=s.gap;var gapStr=gap&&gap.available?gap.kind+' '+((gap.gap_pct>=0)?'+':'')+gap.gap_pct+'%':'N/A';var known=(s.what_ai_knew||[]).slice(0,3).join('; ');th+='<div class="card" style="margin-bottom:0.4rem;padding:0.6rem"><div style="font-weight:700;color:'+rc+'">'+readiness+'</div><div class="status">'+ts+'</div><div class="status">'+formatPrice(ms.spot)+' | '+regime+'</div><div class="status">Gap: '+gapStr+'</div><div style="font-size:0.8rem;color:#64748b;margin-top:0.2rem">'+known+'</div></div>';});timeline.innerHTML=th;
+}
+document.addEventListener('DOMContentLoaded',function(){loadReplay();});
+</script>
+<script src="/assets/js/consent.js" defer></script>
+</body>
+</html>

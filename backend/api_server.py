@@ -2752,6 +2752,77 @@ def trade_setup(symbol):
         conn.close()
 
 
+@app.route("/api/replay/<symbol>/<date>")
+@limiter.limit("30/minute")
+def replay(symbol, date):
+    """Historical AI Replay: timestamp-by-timestamp with strict no-lookahead."""
+    symbol = symbol.upper()
+    if symbol not in ("NIFTY", "BANKNIFTY", "SENSEX"):
+        return error_response("NOT_SUPPORTED", f"{symbol} is not available as a live options product", 404)
+    conn = get_db()
+    try:
+        from backend.replay_engine import replay_day
+
+        # Get 5m candles for the day
+        try:
+            rows = conn.execute(
+                "SELECT timestamp, open, high, low, close, volume FROM price_5m WHERE symbol=? AND date(timestamp)=? ORDER BY timestamp",
+                (symbol, date),
+            ).fetchall()
+            candles = [dict(r) for r in rows]
+        except Exception:
+            candles = []
+
+        # Previous close from price_1d
+        prev_close = None
+        try:
+            pc = conn.execute(
+                "SELECT close FROM price_1d WHERE symbol=? AND date(timestamp) < ? ORDER BY timestamp DESC LIMIT 1",
+                (symbol, date),
+            ).fetchone()
+            if pc and pc["close"]:
+                prev_close = float(pc["close"])
+        except Exception:
+            pass
+
+        # Options chain
+        options_chain = None
+        try:
+            oc = conn.execute(
+                "SELECT strike, option_type, open_interest, implied_volatility FROM option_chain WHERE symbol=? ORDER BY strike",
+                (symbol,),
+            ).fetchall()
+            if oc:
+                options_chain = [dict(r) for r in oc]
+        except Exception:
+            pass
+
+        # Determine data quality
+        data_quality = "LIVE" if candles else "DATA UNAVAILABLE"
+
+        snapshots = replay_day(
+            symbol=symbol,
+            date=date,
+            candles=candles,
+            prev_close=prev_close,
+            options_chain=options_chain,
+            options_timestamp=None,
+        )
+
+        result = {
+            "symbol": symbol,
+            "date": date,
+            "data_quality": data_quality,
+            "snapshots": [s.to_dict() for s in snapshots],
+            "total_snapshots": len(snapshots),
+        }
+        return jsonify(result)
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
