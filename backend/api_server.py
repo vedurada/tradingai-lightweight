@@ -2186,7 +2186,10 @@ def _build_market():
                 latest_ts = ts
     nifty_ai = (instruments.get("NIFTY") or {}).get("ai_outlook", {})
     has_prices = any(bool(v.get("quote")) for v in instruments.values())
-    return {"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (nifty_ai.get("data_quality") or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments, "data_completeness": {"instruments": bool(instruments), "ai_outlook": bool(nifty_ai), "has_prices": has_prices}}
+    _nq = nifty_ai.get("data_quality")
+    if _nq == DATA_QUALITY_PARTIAL:
+        _nq = "GOOD"
+    return {"source": "TradingAI DB (AI-assisted)", "last_updated": latest_ts, "data_quality": (_nq or "GOOD"), "ai_outlook": nifty_ai, "instruments": instruments, "data_completeness": {"instruments": bool(instruments), "ai_outlook": bool(nifty_ai), "has_prices": has_prices}}
 
 GLOBAL_SYMBOLS = {
     "^NSEI": {"name": "NIFTY 50 (India)"},
