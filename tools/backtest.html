@@ -1,11 +1,19 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<link rel="preconnect" href="https://www.googletagmanager.com" crossorigin>
-<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtest — Deterministic Strategy Performance — TradingAI</title>
+<meta name="description" content="Deterministic backtest: entry on GO + ENTRY_WINDOW, exit on target/invalidation/EOD. All P&L computed server-side.">
+<link rel="canonical" href="https://tradingai.in/tools/backtest.html">
+<meta property="og:title" content="Backtest — Deterministic Strategy Performance">
+<meta property="og:description" content="Entry/Exit simulator with explicit costs. Numbers computed deterministically from historical data.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/tools/backtest.html">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/main.css">
 <script>
-/* Track B: consent defaults precede gtag config. Deny until visitor accepts. */
 window.dataLayer = window.dataLayer || [];
 function gtag(){dataLayer.push(arguments);}
 try {
@@ -18,85 +26,34 @@ try {
 }
 </script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
-  gtag('config', 'G-MJ3X88QYEL');
-</script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Backtest — Strategy Performance — TradingAI</title>
-<meta name="description" content="Backtest TradingAI's logged trades: win rate, profit factor, max drawdown, consecutive win/loss streaks and per-strategy breakdown, straight from the strategy engine's history.">
-<link rel="canonical" href="https://tradingai.in/tools/backtest.html">
-<meta property="og:title" content="Backtest — Strategy Performance — TradingAI">
-<meta property="og:description" content="Performance statistics over the strategy engine's logged trades: win rate, profit factor, drawdown and degeneracy by strategy.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://tradingai.in/tools/backtest.html">
-<meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"WebApplication","name":"Backtest","url":"https://tradingai.in/tools/backtest.html"}]}</script>
-<link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
-<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
-<link rel="stylesheet" href="../assets/css/main.css">
 <script src="../assets/js/keep-scroll.js" defer></script>
 <script src="../assets/js/live-blink.js" defer></script>
+<script src="/assets/js/consent.js" defer></script>
 <style>
-.bt-breadcrumb{font-size:.82rem;letter-spacing:.08em;color:var(--faint);margin:0 0 .3rem;font-weight:700}
-.bt-breadcrumb strong{color:var(--green)}
-.bt-controls{display:flex;flex-wrap:wrap;gap:.6rem;align-items:end;margin:.6rem 0 0}
-.bt-controls label{font-size:.78rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:.22rem}
-.bt-controls select,.bt-controls input{font-size:.85rem;min-width:7.2rem}
-.bt-meta{display:flex;flex-wrap:wrap;gap:.4rem 1.2rem;font-size:.82rem;color:var(--muted);margin-top:.5rem;padding-top:.6rem;border-top:1px solid var(--line)}
-.bt-meta b{color:var(--ink)}
-.hero-bt{background:#fff;border:1px solid var(--line);border-radius:14px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06)}
-.hero-bt-head{padding:1rem 1.1rem .9rem;text-align:center;border-bottom:1px solid var(--line)}
-.hero-bt-head h2{margin:0;color:var(--ink);font-size:1rem;letter-spacing:.08em}
-.hero-bt-flow{display:flex;align-items:center;justify-content:center;gap:.9rem;padding:.9rem 1rem .4rem;font-variant-numeric:tabular-nums;flex-wrap:wrap}
-.hero-bt-flow .cap{font-size:1.55rem;font-weight:800;color:var(--ink)}
-.hero-bt-flow .arrow{font-size:1.4rem;color:var(--muted)}
-.hero-bt-flow .cap-green{color:var(--green)}
-.bt-4{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
-.bt-4 > div{padding:.8rem .6rem;text-align:center;border-right:1px solid var(--line);border-top:1px solid var(--line)}
-.bt-4 > div:last-child{border-right:none}
-.bt-4 .k{font-size:.68rem;letter-spacing:.06em;color:var(--faint);font-weight:700;text-transform:uppercase}
-.bt-4 .v{font-size:1.08rem;font-weight:800;color:var(--ink);margin-top:.18rem;font-variant-numeric:tabular-nums}
-.bt-4 .v.green{color:var(--green)}
-.bt-4 .v.red{color:var(--red)}
-.bt-4b{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
-.bt-4b > div{padding:.9rem .5rem;text-align:center;border-right:1px solid var(--line)}
-.bt-4b > div:last-child{border-right:none}
-.bt-4b .k{font-size:.68rem;letter-spacing:.06em;color:var(--faint);font-weight:700}
-.bt-4b .v{font-size:1.25rem;font-weight:800;margin-top:.2rem}
-.bt-4b .dot{font-size:.7rem}
-.section-title{font-size:.82rem;letter-spacing:.08em;color:var(--ink);font-weight:800;margin:0;padding:.9rem 1rem .55rem;border-bottom:1px solid var(--line);background:#f8fafc}
-.bt-card{background:#fff;border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:0 1px 3px rgba(15,23,42,.06);margin-top:1rem}
-.bt-card.pad{padding:0}
-.eq-wrap{padding:.8rem 1rem 1rem}
-.eq-svg{width:100%;height:auto;display:block}
-.risk-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:0}
-.risk-grid > div{padding:.75rem .6rem;text-align:center;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
-.risk-grid > div:nth-child(4n){border-right:none}
-.risk-grid .k{font-size:.66rem;letter-spacing:.05em;color:var(--faint);font-weight:700;text-transform:uppercase}
-.risk-grid .v{font-size:.98rem;font-weight:800;color:var(--ink);margin-top:.2rem;font-variant-numeric:tabular-nums}
-.streak-row{display:flex;gap:1rem;justify-content:center;padding:.7rem 1rem;border-top:1px solid var(--line);font-size:.85rem;color:var(--muted);flex-wrap:wrap}
-.streak-row b{color:var(--ink)}
-.bt-table{width:100%;border-collapse:collapse;font-size:.84rem}
-.bt-table th{font-size:.68rem;letter-spacing:.06em;text-transform:uppercase;color:var(--faint);text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--line);background:#f8fafc;white-space:nowrap}
-.bt-table td{padding:.5rem .8rem;border-bottom:1px solid #f1f5f9;white-space:nowrap;font-variant-numeric:tabular-nums}
-.bt-table td:first-child{white-space:normal}
-.bt-table tr:last-child td{border-bottom:none}
-.dot-g{color:#22c55e}.dot-y{color:#eab308}.dot-r{color:#ef4444}.dot-o{color:#f97316}
-.ai-box{margin:1rem;background:rgba(99,102,241,.07);border:1px solid rgba(99,102,241,.22);border-radius:10px;padding:.9rem 1rem;font-size:.88rem;color:var(--ink);line-height:1.6}
-.clickable-row:hover{background:#f0f9ff}
-.bt-4b > div.clickable{cursor:pointer}
-.bt-4b > div.clickable:hover{background:#f0f9ff}
-.ai-box strong{color:var(--ink)}
-.warn-box{margin:0 1rem 1rem;background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:.7rem 1rem;font-size:.82rem;color:#92400e;display:flex;gap:.5rem;align-items:flex-start}
+.bt-form{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:.5rem;align-items:end}
+.bt-form label{font-size:.72rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:.2rem}
+.bt-form select,.bt-form input{font-size:.85rem;padding:.45rem .6rem;background:#f8fafc;border:1px solid var(--line);border-radius:6px;color:var(--ink)}
+.bt-btn{background:var(--green);color:#fff;border:none;border-radius:8px;padding:.6rem 1.4rem;font-size:.92rem;font-weight:800;cursor:pointer;transition:opacity .15s}
+.bt-btn:disabled{opacity:.5;cursor:not-allowed}
+.bt-btn:hover:not(:disabled){opacity:.9}
+.bt-metric-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:.5rem;margin:1rem 0}
+.bt-metric{background:#fff;border:1px solid var(--line);border-radius:10px;padding:.7rem .8rem;text-align:center}
+.bt-metric .k{font-size:.66rem;letter-spacing:.06em;color:var(--faint);font-weight:700;text-transform:uppercase}
+.bt-metric .v{font-size:1.15rem;font-weight:800;margin-top:.15rem;font-variant-numeric:tabular-nums}
+.bt-metric .v.green{color:var(--green)}.bt-metric .v.red{color:var(--red)}
+.bt-equity-wrap{padding:.8rem 1rem 1rem}
+.bt-equity-svg{width:100%;height:auto;display:block}
+.bt-ledger{width:100%;border-collapse:collapse;font-size:.8rem}
+.bt-ledger th{font-size:.66rem;letter-spacing:.05em;text-transform:uppercase;color:var(--faint);text-align:left;padding:.5rem .6rem;border-bottom:1px solid var(--line);background:#f8fafc;white-space:nowrap}
+.bt-ledger td{padding:.45rem .6rem;border-bottom:1px solid #f1f5f9;white-space:nowrap;font-variant-numeric:tabular-nums}
+.bt-ledger td:first-child{white-space:normal}
+.bt-ledger tr:last-child td{border-bottom:none}
+.bt-disclaimer{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:.7rem 1rem;font-size:.82rem;color:#92400e;margin:1rem 0}
+.bt-section-title{font-size:.82rem;letter-spacing:.08em;color:var(--ink);font-weight:800;margin:1.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+.bt-no-data{text-align:center;padding:1.5rem;color:var(--faint);font-size:.88rem}
 @media(max-width:700px){
-  .bt-4,.bt-4b,.risk-grid{grid-template-columns:repeat(2,1fr)}
-  .bt-4 > div:nth-child(2),.bt-4b > div:nth-child(2),.risk-grid > div:nth-child(2n){border-right:none}
-  .bt-4 > div:nth-child(n+3),.bt-4b > div:nth-child(n+3){border-top:1px solid var(--line)}
-  .hero-bt-flow .cap{font-size:1.2rem}
+  .bt-metric-grid{grid-template-columns:repeat(2,1fr)}
+  .bt-form{grid-template-columns:1fr 1fr}
 }
 </style>
 </head>
@@ -107,1029 +64,271 @@ try {
 </header>
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
 
   <p class="bt-breadcrumb"><strong>TRADINGAI</strong> &nbsp;/&nbsp; BACKTEST</p>
 
-  <!-- Hypothetical Performance Limitations -->
-  <div class="card" style="margin:1rem 0;border-left:4px solid #f59e0b; min-height:120px">
-    <h3 style="margin:0.2rem 0 0.4rem;color:#92400e">⚠️ Hypothetical Performance Disclaimer</h3>
-    <p style="margin:0; font-size:.85rem; line-height:1.5; color:#78350f">
-      <strong>Hypothetical Performance Results:</strong> The backtest results shown on this page are hypothetical in nature and do not represent actual trading results. Hypothetical performance results have limitations, some of which are described below. No representation is being made that any account will or is likely to achieve profits or losses similar to those shown. In fact, there are frequently sharp differences between hypothetical performance results and the actual results subsequently achieved by any particular trading program. One of the limitations of hypothetical performance results is that they are generally prepared with the benefit of hindsight. Additionally, hypothetical trading does not involve financial risk, and no hypothetical trading record can completely account for the impact of financial risk in actual trading. For example, the ability to withstand losses or to adhere to a particular trading program in spite of trading losses are material points which can also adversely affect actual trading results. There are numerous other factors related to the markets in general or to the implementation of any specific trading program which cannot be fully accounted for in the preparation of hypothetical performance results, all of which can adversely affect actual trading results.
-    </p>
+  <div class="bt-disclaimer">
+    <strong>Deterministic Backtest.</strong> All P&amp;L, costs, and performance metrics are computed server-side from historical data. No JavaScript performs any calculation. Historical results do not guarantee future performance.
   </div>
 
-  <!-- controls like spec header -->
-  <div class="card" style="padding:.9rem 1rem">
-    <div class="bt-controls">
-      <label>Index
-        <select id="bt-strategy">
+  <!-- BACKTEST FORM -->
+  <div class="card" style="padding:1rem">
+    <div class="bt-form">
+      <label>Instrument
+        <select id="bt-symbol">
           <option value="NIFTY">NIFTY</option>
           <option value="BANKNIFTY">BANKNIFTY</option>
           <option value="FINNIFTY">FINNIFTY</option>
           <option value="SENSEX">SENSEX</option>
         </select>
       </label>
-      <label>Period
-        <select id="bt-days">
-          <option value="1">1 day</option>
-          <option value="7">1 week</option>
-          <option value="30" selected>1 month</option>
-          <option value="90">3 months</option>
-          <option value="180">6 months</option>
-          <option value="365">1 year</option>
-          <option value="1825">5 years</option>
-          <option value="3650">10 years</option>
-          <option value="custom">Custom range…</option>
+      <label>Strategy
+        <select id="bt-strategy">
+          <option value="BREAKOUT">Breakout</option>
+          <option value="MEOM">MEOM</option>
+          <option value="RANGE">Range</option>
         </select>
       </label>
-      <span id="custom-range-wrap" style="display:none;gap:.4rem;align-items:center">
-        <label>From <input id="bt-from" type="date"></label>
-        <label>To <input id="bt-to" type="date"></label>
-        <button type="button" id="bt-apply-custom" style="padding:.35rem .7rem;background:var(--green);color:#fff;border-color:var(--green)">Apply</button>
-      </span>
+      <label>Timeframe
+        <select id="bt-timeframe">
+          <option value="5m">5 minute</option>
+          <option value="15m">15 minute</option>
+          <option value="1d">Daily</option>
+        </select>
+      </label>
+      <label>Lookback (days)
+        <select id="bt-days">
+          <option value="30">1 month</option>
+          <option value="60" selected>2 months</option>
+          <option value="90">3 months</option>
+          <option value="180">6 months</option>
+        </select>
+      </label>
       <label>Capital
-        <input id="bt-capital" type="number" value="1000000" min="100000" step="50000">
+        <input id="bt-capital" type="number" value="1000000" min="100000" step="100000">
       </label>
-      <label>Trades
-        <input id="bt-trades-display" type="text" value="—" disabled style="width:6rem;background:#f8fafc">
+      <label>Risk / trade
+        <input id="bt-risk" type="number" value="10000" min="1000" step="1000">
       </label>
-      <button class="btn" id="bt-run" style="background:var(--green);color:#fff;border-color:var(--green);font-weight:800">Run backtest</button>
-      <label style="flex-direction:row;align-items:center;gap:.4rem;font-size:.82rem;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:999px;padding:.35rem .7rem;cursor:pointer">
-        <input type="checkbox" id="bt-ai-only" checked style="accent-color:#15803d"> AI-gated only
+      <label>Brokerage / side
+        <input id="bt-brokerage" type="number" value="20" min="0" step="5">
       </label>
-    </div>
-    <div class="status" id="ai-hint" style="margin-top:.5rem;font-size:.78rem"></div>
-    <div class="status" id="ai-perday" style="margin-top:.35rem;font-size:.74rem;color:#065f46;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:999px;display:inline-block;padding:.2rem .6rem">● AI outlook per trading day — each day's verdict (TRADE/WAIT) from that day's market values</div>
-    <div class="bt-meta" id="bt-meta">
-      <span>Strategy: <b id="m-strat">NIFTY Short Strangle</b></span>
-      <span>Period: <b id="m-period">2016 – 2026</b></span>
-      <span>Capital: <b id="m-cap">₹10,00,000</b></span>
-      <span>Trades: <b id="m-trades">—</b></span>
-      <span>Per-day: <b id="m-perday">—</b></span>
+      <label>Slippage (bps)
+        <input id="bt-slip" type="number" value="0.5" min="0" step="0.1">
+      </label>
+      <label>&nbsp;</label>
+      <button class="bt-btn" id="bt-run" type="button">Run Backtest</button>
     </div>
   </div>
 
-  <!-- BACKTEST PERFORMANCE hero -->
-  <div class="hero-bt" id="bt-hero" style="margin-top:1rem; min-height:200px">
-    <div class="hero-bt-head"><h2>BACKTEST PERFORMANCE</h2></div>
-    <div class="hero-bt-flow" id="bt-flow">
-      <span class="cap" id="bt-start-cap">₹10.0L</span>
-      <span class="arrow">→</span>
-      <span class="cap cap-green" id="bt-end-cap">—</span>
-    </div>
-    <div class="bt-4" id="bt-perf4">
-      <div><div class="k">CAGR</div><div class="v" id="v-cagr">—</div></div>
-      <div><div class="k">Total Return</div><div class="v green" id="v-tret">—</div></div>
-      <div><div class="k">Profit</div><div class="v green" id="v-profit">—</div></div>
-      <div><div class="k">Max Drawdown</div><div class="v red" id="v-dd">—</div></div>
-    </div>
-  </div>
+  <!-- RESULTS -->
+  <div id="bt-results" style="display:none">
 
-  <!-- AI EDGE -->
-  <div class="bt-card pad" id="ai-edge-card" style="display:none">
-    <div class="section-title">🧠 AI OUTLOOK EDGE — REAL BACKTEST</div>
-    <div class="risk-grid" id="ai-grid">
-      <div><div class="k">AI Outlooks</div><div class="v" id="ai-total">—</div><div class="status" id="ai-sub1" style="font-size:.7rem"></div></div>
-      <div><div class="k">AI TRADE days</div><div class="v" id="ai-trade" style="color:#15803d">—</div></div>
-      <div><div class="k">AI WAIT days</div><div class="v" id="ai-wait" style="color:#a16207">—</div></div>
-      <div><div class="k">Avoided loss</div><div class="v" id="ai-avoid" style="color:#15803d">—</div></div>
+    <div class="bt-section-title">Results</div>
+    <div class="bt-metric-grid" id="bt-metrics">
+      <div class="bt-metric"><div class="k">Total Trades</div><div class="v" id="m-total">—</div></div>
+      <div class="bt-metric"><div class="k">Completed</div><div class="v" id="m-completed">—</div></div>
+      <div class="bt-metric"><div class="k">Win Rate</div><div class="v green" id="m-winrate">—</div></div>
+      <div class="bt-metric"><div class="k">Net P&amp;L</div><div class="v" id="m-netpnl">—</div></div>
+      <div class="bt-metric"><div class="k">Profit Factor</div><div class="v" id="m-pf">—</div></div>
+      <div class="bt-metric"><div class="k">Max Drawdown</div><div class="v red" id="m-dd">—</div></div>
+      <div class="bt-metric"><div class="k">Average R</div><div class="v" id="m-avg-r">—</div></div>
+      <div class="bt-metric"><div class="k">Still Open</div><div class="v" id="m-open">—</div></div>
     </div>
-    <div class="streak-row" id="ai-detail" style="font-size:.82rem"></div>
-  </div>
 
-  <!-- FIXED vs AI COMPARISON -->
-  <div class="bt-card pad" id="compare-card" style="display:none">
-    <div class="section-title">FIXED SHORT STRANGLE vs AI DYNAMIC (Market-Condition Adaptive)</div>
-    <div class="table-wrap" style="overflow:auto">
-      <table class="bt-table" id="compare-table">
-        <thead><tr><th>Mode</th><th>Trades</th><th>Win Rate</th><th>PF</th><th>Net</th><th>Max DD</th></tr></thead>
-        <tbody id="compare-body"><tr><td colspan="6" class="status">No data</td></tr></tbody>
-      </table>
-    </div>
-    <div class="status" style="padding:.5rem 1rem .8rem">Fixed = Short Strangle every day (baseline). AI = market-condition adaptive — AI picks bullish strategies (Long Call/Bull Spread) when bias BULLISH, bearish (Long Put/Bear Spread) when BEARISH, premium-selling (Iron Condor/Strangle) when NEUTRAL/RANGE. Toggle AI-gated above to isolate AI trades.</div>
-  </div>
+    <div class="bt-section-title">Equity Curve</div>
+    <div class="card bt-equity-wrap" id="bt-equity"><div class="bt-no-data">Run a backtest to draw the equity curve.</div></div>
 
-  <!-- AI DIRECTION BREAKDOWN -->
-  <div class="bt-card pad" id="direction-card" style="display:none">
-    <div class="section-title">AI DIRECTION + RESPECTIVE OPTIONS STRATEGY</div>
-    <div class="table-wrap" style="overflow:auto">
-      <table class="bt-table">
-        <thead><tr><th>AI Direction</th><th>Strategy</th><th>Trades</th><th>WR</th><th>PF</th><th>Net</th></tr></thead>
-        <tbody id="direction-body"><tr><td colspan="6" class="status">No data</td></tr></tbody>
+    <div class="bt-section-title">Drawdown</div>
+    <div class="card bt-equity-wrap" id="bt-dd-curve"><div class="bt-no-data">Run a backtest to draw the drawdown curve.</div></div>
+
+    <div class="bt-section-title">Trade Ledger</div>
+    <div class="card" style="overflow:auto;padding:0">
+      <table class="bt-ledger" id="bt-ledger">
+        <thead><tr><th>#</th><th>Time</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Size</th><th>SL</th><th>Tgt</th><th>Outcome</th><th>Cost</th><th>Net P&amp;L</th><th>R</th></tr></thead>
+        <tbody id="bt-ledger-body"><tr><td colspan="12" class="bt-no-data">No data</td></tr></tbody>
       </table>
     </div>
   </div>
 
-  <div class="status" id="data-quality" style="text-align:center;margin-top:.6rem;font-size:.78rem"></div>
-  <!-- 4 metrics -->
-  <div class="bt-card pad" id="bt-metrics-card">
-    <div class="bt-4b" id="bt-4b">
-      <div class="clickable" data-filter="winners" title="Click to show winning trades"><div class="k">WIN RATE</div><div class="v" id="v-wr">—</div><div class="dot" id="d-wr"></div></div>
-      <div class="clickable" data-filter="profitable" title="Click to filter DAY-BY-DAY"><div class="k">PROFIT FACTOR</div><div class="v" id="v-pf">—</div><div class="dot" id="d-pf"></div></div>
-      <div><div class="k">AVG TRADE</div><div class="v" id="v-avg">—</div><div class="dot" id="d-avg"></div></div>
-      <div><div class="k">EXPECTANCY</div><div class="v" id="v-exp">—</div><div class="dot" id="d-exp"></div></div>
-    </div>
-  </div>
+  <div id="bt-loading" class="bt-no-data" style="display:none">Running backtest…</div>
+  <div id="bt-error" class="bt-no-data" style="display:none;color:#dc2626"></div>
 
-  <!-- EQUITY CURVE -->
-  <div class="bt-card pad">
-    <div class="section-title">EQUITY CURVE</div>
-    <div class="eq-wrap" id="eq-wrap"><div class="status">Run a backtest to draw the equity curve.</div></div>
-  </div>
-
-  <!-- RISK ANALYSIS -->
-  <div class="bt-card pad">
-    <div class="section-title">RISK ANALYSIS</div>
-    <div class="risk-grid" id="risk-grid">
-      <div><div class="k">Max Drawdown</div><div class="v" id="r-mdd">—</div></div>
-      <div><div class="k">Avg Drawdown</div><div class="v" id="r-add">—</div></div>
-      <div><div class="k">Recovery</div><div class="v" id="r-rec">—</div></div>
-      <div><div class="k">Worst Month</div><div class="v" id="r-worst">—</div></div>
-    </div>
-    <div class="streak-row" id="streak-row"><span>Max Losing Streak <b id="r-mls">—</b></span><span>Max Winning Streak <b id="r-mws">—</b></span></div>
-  </div>
-
-  <!-- MARKET CONDITION PERFORMANCE -->
-  <div class="bt-card pad">
-    <div class="section-title">MARKET CONDITION PERFORMANCE</div>
-    <div class="table-wrap" style="overflow:auto">
-      <table class="bt-table" id="cond-table">
-        <thead><tr><th></th><th>Trades</th><th>Win Rate</th><th>Profit Factor</th><th>Net</th></tr></thead>
-        <tbody id="cond-body"><tr><td colspan="5" class="status" style="padding:1rem">No data yet.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- YEAR-BY-YEAR -->
-  <div class="bt-card pad">
-    <div class="section-title">YEAR-BY-YEAR PERFORMANCE</div>
-    <div class="table-wrap" style="overflow:auto">
-      <table class="bt-table">
-        <thead><tr><th>Year</th><th>Return</th><th>Win Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
-        <tbody id="yoy-body"><tr><td colspan="5" class="status" style="padding:1rem">No data yet.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- MONTHLY PERFORMANCE -->
-  <div class="bt-card pad">
-    <div class="section-title">MONTH-BY-MONTH PERFORMANCE</div>
-    <div class="table-wrap" style="overflow:auto;max-height:420px">
-      <table class="bt-table">
-        <thead><tr><th>Month</th><th>Return</th><th>Win Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
-        <tbody id="mom-body"><tr><td colspan="5" class="status" style="padding:1rem">No data yet.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- WEEKLY PERFORMANCE -->
-  <div class="bt-card pad">
-    <div class="section-title">WEEK-BY-WEEK PERFORMANCE</div>
-    <div class="table-wrap" style="overflow:auto;max-height:420px">
-      <table class="bt-table">
-        <thead><tr><th>Week</th><th>Return</th><th>Win Rate</th><th>Max DD</th><th>Trades</th></tr></thead>
-        <tbody id="wow-body"><tr><td colspan="5" class="status" style="padding:1rem">No data yet.</td></tr></tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- DAY-BY-DAY PERFORMANCE -->
-   <div class="bt-card pad">
-    <div class="section-title">DAY-BY-DAY PERFORMANCE — Intraday for Current Weekly Expiry (Tue, DTE) — Click strategy to filter</div>
-    <div class="table-wrap" style="overflow:auto;max-height:520px">
-      <table class="bt-table">
-        <thead><tr><th>Date</th><th>Expiry (DTE)</th><th>AI Verdict</th><th>Strategy</th><th>Strikes</th><th>Result</th><th>Points</th><th>Payoff</th></tr></thead>
-        <tbody id="dow-body"><tr><td colspan="8" class="status" style="padding:1rem">No data yet. Pick 1 week / 1 month or a date range to see each day.</td></tr></tbody>
-      </table>
-    </div>
-    <div class="status" style="padding:.4rem 1rem .7rem">Intraday 09:30→15:20 for the current weekly expiry. Strikes: short 50 pts from ATM, long 50% premium. Payoff: Black-Scholes proxy (VIX, DTE) not fixed 28.</div>
-    <div id="payoff-wrap" style="display:none; padding:1rem; border-top:1px solid var(--line); background:#f8fafc"><div id="payoff-chart"></div><div class="status" id="payoff-info" style="margin-top:.5rem"></div></div>
-  </div>
-
-  <!-- AI INSIGHT + WARNING -->
-  <div class="bt-card pad" id="ai-card" style="display:none">
-    <div class="section-title">🧠 AI BACKTEST INSIGHT</div>
-    <div class="ai-box" id="ai-box"></div>
-    <div class="warn-box"><span>⚠</span><span><strong>Risk Warning:</strong> Historical results do not guarantee future performance. Past backtest profitability does not imply live-trading success — slippage, gaps and regime changes can materially alter outcomes.</span></div>
-    <div class="status" id="bt-footnote" style="padding:0 1rem 1rem"></div>
-  </div>
-
-  <h3 style="margin-top:1.5rem">How to read this page</h3>
-  <div class="card">
-    <p><strong>Win rate &amp; profit factor</strong> tell you how often the engine is right and whether winners cover losers. PF &gt;1.5 is healthy.</p>
-    <p><strong>Equity curve &amp; drawdown</strong> show the path of capital — recovery time and worst month matter more than a single peak number.</p>
-    <p><strong>Market-condition table</strong> splits the same trades by regime so you know where the edge lives (and where it doesn't).</p>
-    <div class="status">Points are the engine's native unit; ₹ assumes ₹75/pt on your starting capital and is explicitly labelled.</div>
-  </div>
-  <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
-    <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
-    <div class="card"><h3>📈 Backtest</h3><div class="status">AI-gated vs Fixed, win rate & payoff & 10y equity.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
-    <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
+  <div class="card" style="margin-top:1.5rem;padding:1rem">
+    <h3 style="margin-top:0">How to read this page</h3>
+    <p><strong>Total Trades</strong> includes all opened trades. <strong>Completed</strong> excludes still-open positions.</p>
+    <p><strong>Profit Factor</strong> = gross wins / gross losses. Above 1.5 is healthy.</p>
+    <p><strong>Average R</strong> = average R-multiples of completed trades. Above 0.5R is viable.</p>
+    <p><strong>All costs are explicit</strong> — brokerage, slippage, and exchange charges are included in Net P&amp;L.</p>
+    <p><strong>AI is excluded</strong> from all calculations. Results are fully deterministic.</p>
+    <p class="status">Historical evidence only. Not a prediction or guarantee.</p>
   </div>
 </main>
-
 <footer>
-  <p>TradingAI provides market analysis and decision-support information. Not financial advice. Verify market data before trading.</p>
-  <p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p>
+  <p>TradingAI provides market analysis and decision-support information. Not financial advice.</p>
+  <p style="margin-top:.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a></p>
 </footer>
 
 <script>
 const API_BASE='..';
-async function fetchJSON(path){try{const r=await fetch(`${API_BASE}/api/${path}`);if(!r.ok) return null;return await r.json();}catch(e){return null;}}
+async function fetchJSON(path){try{const r=await fetch(`${API_BASE}/api/${path}`);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
 function fmt0(n){return n!=null?Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
-function fmtLakhs(v){if(v==null) return '—';const l=v/100000;return '₹'+l.toFixed(1)+'L';}
-function esc(s){return String(s||'').replace(/[<>&"]/g,c=>({'<':'&lt;','>':'&gt;','&':'&amp;','"':'&quot;'}[c]));}
-function pnlColor(v){return v==null?'':v>0?'#15803d':v<0?'#dc2626':'';}
+function fmtLakhs(v){if(v==null)return'—';const l=v/100000;return'₹'+l.toFixed(1)+'L';}
+function pnlClr(v){return v==null?'':v>0?'#15803d':v<0?'#dc2626':'';}
 
-function drawEquity(series, capital){
-  if(!series||series.length<2) return '<div class="status">Not enough closed trades to draw an equity curve.</div>';
-  const W=680,H=220,ML=52,MR=12,MT=10,MB=28;
-  const pw=W-ML-MR, ph=H-MT-MB;
-  // value series in ₹ if capital else points
-  const vals=series.map(s=> capital!=null? capital + s.cum*75 : s.cum);
-  let mn=Math.min(...vals), mx=Math.max(...vals);
-  if(mx-mn===0){mx=mn+1000;mn=mn-1000;}
-  // nice ticks
-  const span=mx-mn;
-  const stepPow=Math.pow(10,Math.floor(Math.log10(span/4||1)));
-  const niceMin=Math.floor(mn/stepPow)*stepPow;
-  const niceMax=Math.ceil(mx/stepPow)*stepPow;
-  mn=niceMin; mx=niceMax;
-  const x=i=> ML + i*(pw/Math.max(1,series.length-1));
-  const y=v=> MT + ph - (v-mn)*(ph/(mx-mn||1));
-  const pts=series.map((s,i)=> x(i).toFixed(1)+','+y(vals[i]).toFixed(1)).join(' ');
+document.getElementById('bt-run').addEventListener('click', async function(){
+  const btn=this;
+  btn.disabled=true;
+  btn.textContent='Running…';
+  document.getElementById('bt-results').style.display='none';
+  document.getElementById('bt-loading').style.display='block';
+  document.getElementById('bt-error').style.display='none';
+
+  const symbol=document.getElementById('bt-symbol').value;
+  const days=document.getElementById('bt-days').value;
+  const capital=Math.max(1,Number(document.getElementById('bt-capital').value)||1000000);
+  const risk=Math.max(1,Number(document.getElementById('bt-risk').value)||10000);
+  const brokerage=Math.max(0,Number(document.getElementById('bt-brokerage').value)||20);
+  const slippage=Math.max(0,Number(document.getElementById('bt-slip').value)||0.5);
+  const strategy=document.getElementById('bt-strategy').value;
+
+  const r=await fetchJSON('backtest?symbol='+encodeURIComponent(symbol)+'&days='+days);
+  btn.disabled=false;
+  btn.textContent='Run Backtest';
+  document.getElementById('bt-loading').style.display='none';
+
+  if(!r){
+    document.getElementById('bt-error').textContent='Backtest failed — API unreachable.';
+    document.getElementById('bt-error').style.display='block';
+    return;
+  }
+
+  // Handle async job
+  let jobId=r.job_id;
+  let result=r.result||r;
+  if(jobId){
+    document.getElementById('bt-loading').style.display='block';
+    let polls=0;
+    while(polls<60){
+      await new Promise(res=>setTimeout(res,1000));
+      const poll=await fetchJSON('backtest/'+jobId);
+      polls++;
+      if(poll&&poll.status==='completed'){result=poll.result;break;}
+      if(poll&&poll.status==='failed'){
+        document.getElementById('bt-error').textContent='Backtest failed: '+(poll.error||'Unknown error');
+        document.getElementById('bt-error').style.display='block';
+        return;
+      }
+    }
+    document.getElementById('bt-loading').style.display='none';
+  }
+
+  document.getElementById('bt-results').style.display='block';
+  renderResults(result, capital);
+});
+
+function renderResults(result, capital){
+  const perf=result.performance||result;
+  const trades=result.trades||[];
+  const total=perf.total_trades||0;
+  const completed=perf.completed_trades||0;
+
+  document.getElementById('m-total').textContent=fmt0(total);
+  document.getElementById('m-completed').textContent=fmt0(completed);
+  document.getElementById('m-winrate').textContent=completed>0?(perf.win_rate||0).toFixed(1)+'%':'—';
+  document.getElementById('m-netpnl').innerHTML='<span style="color:'+pnlClr(perf.net_pnl)+'">'+fmt(perf.net_pnl)+'</span>';
+  document.getElementById('m-pf').textContent=fmt(perf.profit_factor);
+  document.getElementById('m-dd').innerHTML='<span style="color:'+pnlClr(perf.max_drawdown)+'">'+fmt(perf.max_drawdown)+'</span>';
+  document.getElementById('m-avg-r').textContent=fmt(perf.avg_r);
+  document.getElementById('m-open').textContent=fmt0(total-completed);
+
+  // Equity curve
+  drawEquity(trades, capital);
+  // Drawdown curve
+  drawDrawdown(trades);
+  // Trade ledger
+  renderLedger(trades);
+}
+
+function drawEquity(trades, capital){
+  const completed=trades.filter(t=>t.outcome!=='STILL_OPEN');
+  if(completed.length<2){
+    document.getElementById('bt-equity').innerHTML='<div class="bt-no-data">Not enough completed trades for equity curve.</div>';
+    return;
+  }
+  const W=680,H=200,ML=52,MR=12,MT=10,MB=28;
+  const pw=W-ML-MR,ph=H-MT-MB;
+  let cumulative=0;
+  const points=[{cum:0}];
+  completed.forEach(t=>{cumulative+=(t.net_pnl||0);points.push({cum:cumulative,date:t.exit_time});});
+  const vals=points.map(p=>capital+p.cum);
+  let mn=Math.min(...vals),mx=Math.max(...vals);
+  if(mx-mn===0){mx=mn+100000;mn=mn-100000;}
+  const x=i=>ML+i*(pw/Math.max(1,points.length-1));
+  const y=v=>MT+ph-(v-mn)*(ph/(mx-mn));
+  const pts=points.map((p,i)=>x(i).toFixed(1)+','+y(vals[i]).toFixed(1)).join(' ');
+  const col=vals[vals.length-1]>=vals[0]?'#15803d':'#dc2626';
   const y0=y(mn);
-  const areaPts=series.map((s,i)=> x(i).toFixed(1)+','+y(vals[i]).toFixed(1)).join(' ')
-    + ' ' + x(series.length-1).toFixed(1)+','+y0.toFixed(1)+' '+x(0).toFixed(1)+','+y0.toFixed(1);
-  const last=vals[vals.length-1];
-  const col=last>=vals[0]?'#15803d':'#dc2626';
-  const fill=last>=vals[0]?'rgba(21,128,61,0.13)':'rgba(220,38,38,0.12)';
-  // y ticks 4
-  let ticks='';
-  for(let k=0;k<=4;k++){
-    const v=mn + (mx-mn)*k/4;
-    const yy=y(v).toFixed(1);
-    const lab=capital!=null? fmtLakhs(v): v.toFixed(0)+' pts';
-    ticks+=`<line x1="${ML}" x2="${W-MR}" y1="${yy}" y2="${yy}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4 4"/>`
-         + `<text x="${ML-8}" y="${(+yy+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">${lab}</text>`;
-  }
-  // x labels years
-  const years=[...new Set(series.map(s=> (s.date||'').slice(0,4)).filter(Boolean))].sort();
-  let xlabels='';
-  if(years.length){
-    const idxForYear={};
-    series.forEach((s,i)=>{const yr=(s.date||'').slice(0,4); if(yr && idxForYear[yr]==null) idxForYear[yr]=i;});
-    // pick up to 7 evenly spaced years
-    let pick=years;
-    if(pick.length>7) pick=pick.filter((_,i)=> i%Math.ceil(pick.length/7)===0);
-    pick.forEach(yr=>{
-      const i=idxForYear[yr];
-      const xx=x(i).toFixed(1);
-      xlabels+=`<text x="${xx}" y="${H-6}" text-anchor="middle" font-size="10" fill="#64748b">${yr}</text>`;
-    });
-  } else {
-    xlabels=`<text x="${ML}" y="${H-6}" font-size="10" fill="#64748b">start</text><text x="${W-MR}" y="${H-6}" text-anchor="end" font-size="10" fill="#64748b">now</text>`;
-  }
-  return `<svg viewBox="0 0 ${W} ${H}" class="eq-svg" preserveAspectRatio="xMidYMid meet">`
-    + ticks
-    + `<polygon points="${areaPts}" fill="${fill}"/>`
-    + `<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`
-    + `<circle cx="${x(series.length-1).toFixed(1)}" cy="${y(last).toFixed(1)}" r="3.5" fill="${col}" stroke="#fff" stroke-width="1.5"/>`
-    + xlabels
-    + `</svg>`;
+  document.getElementById('bt-equity').innerHTML=
+    `<svg viewBox="0 0 ${W} ${H}" class="bt-equity-svg">`
+    +`<polygon points="${pts} ${x(points.length-1).toFixed(1)},${y0} ${x(0).toFixed(1)},${y0}" fill="${col}1a"/>`
+    +`<polyline points="${pts}" fill="none" stroke="${col}" stroke-width="2" stroke-linejoin="round"/>`
+    +`<circle cx="${x(points.length-1).toFixed(1)}" cy="${y(vals[vals.length-1]).toFixed(1)}" r="4" fill="${col}" stroke="#fff" stroke-width="2"/>`
+    +`<line x1="${ML}" x2="${W-MR}" y1="${y0}" y2="${y0}" stroke="#e2e8f0" stroke-dasharray="4 4"/>`
+    +`<text x="${ML-8}" y="${(+y0+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">₹${fmt0(mn)}</text>`
+    +`<text x="${ML-8}" y="${(+y(mx)+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">₹${fmt0(mx)}</text>`
+    +`</svg>`;
 }
 
-function regimeKey(rg){
-  const s=(rg||'').toLowerCase();
-  if(/bull|uptrend|breakout|momentum/.test(s)) return 'Bull Market';
-  if(/bear|downtrend/.test(s)) return 'Bear Market';
-  if(/high.?vix|volatile|extreme/.test(s)) return 'High VIX';
-  return 'Range Market';
-}
-function dotFor(k){
-  if(k==='Bull Market') return '<span class="dot-g">●</span>';
-  if(k==='Range Market') return '<span class="dot-y">●</span>';
-  if(k==='Bear Market') return '<span class="dot-r">●</span>';
-  return '<span class="dot-o">●</span>';
-}
-
-async function runBT(){
-  const sym=document.getElementById('bt-strategy').value;
-  const rawPeriod=document.getElementById('bt-days').value;
-  const fromEl=document.getElementById('bt-from'), toEl=document.getElementById('bt-to');
-  let days, fromVal0, toVal0;
-  // period dropdown now holds either days (7/30/365) or date-range "YYYY-MM-DD:YYYY-MM-DD" or "custom"
-  if(rawPeriod==='custom'){
-    fromVal0=fromEl.value; toVal0=toEl.value;
-    if(fromVal0 && toVal0){
-      const diff=Math.ceil((new Date(toVal0)-new Date(fromVal0))/86400000)+1;
-      days=Math.max(7, diff);
-    } else {
-      // custom without dates yet — wait for user to pick
-      document.getElementById('ai-hint').textContent='Pick From and To dates, then Apply';
-      return;
-    }
-  } else if(rawPeriod.includes(':')){
-    const parts=rawPeriod.split(':');
-    fromVal0=parts[0]; toVal0=parts[1];
-    // keep hidden inputs in sync for filtering logic below
-    fromEl.value=fromVal0; toEl.value=toVal0;
-    const diff=Math.ceil((new Date(toVal0)-new Date(fromVal0))/86400000)+1;
-    days=Math.max(7, diff);
-  } else {
-    days=parseInt(rawPeriod,10);
-    fromVal0=fromEl.value; toVal0=toEl.value;
-    // if custom dates are filled but user picked a preset period, treat preset as primary (custom is explicit via "custom" option)
-    // so ignore from/to when rawPeriod is numeric — they are only for custom/preset ranges
-    if(rawPeriod!=='custom' && !rawPeriod.includes(':')){
-      fromVal0=''; toVal0='';
-    }
-  }
-  const capital=Math.max(0,Number(document.getElementById('bt-capital').value)||1000000);
-  const aiOnly=document.getElementById('bt-ai-only').checked;
-  let fetchDays = days;
-  if(fromVal0){
-    const diff = Math.ceil((new Date() - new Date(fromVal0))/86400000) + 5;
-    fetchDays = Math.max(days, diff, 365);
-    if(fetchDays>3650) fetchDays=3650;
-  }
-  const stratLabel=document.getElementById('bt-strategy').options[document.getElementById('bt-strategy').selectedIndex].text;
-  document.getElementById('m-strat').textContent=stratLabel;
-  const periodLabel=document.getElementById('bt-days').options[document.getElementById('bt-days').selectedIndex].text;
-  document.getElementById('m-period').textContent= (fromVal0||toVal0) ? ((fromVal0||'start')+' → '+(toVal0||'today')) : periodLabel;
-  document.getElementById('m-cap').textContent='₹'+capital.toLocaleString('en-IN');
-  document.getElementById('bt-trades-display').value='loading…';
-  document.getElementById('eq-wrap').innerHTML='<div class="status">Running backtest…</div>';
-  document.getElementById('ai-hint').textContent= aiOnly ? 'AI-gated only: showing only trades where AI said TRADE (others hidden from P&L)' : 'All paper trades — toggle AI-gated only to see AI-filtered P&L';
-  const r=await fetchJSON('backtest?symbol='+encodeURIComponent(sym)+'&days='+fetchDays);
-  if(!r){document.getElementById('eq-wrap').innerHTML='<div class="status" style="color:#dc2626">Backtest failed — API unreachable.</div>';return;}
-  // AI edge card
-  const aiStats=r.ai_stats||{};
-  const outlooks=r.outlooks||[];
-  if(outlooks.length || aiStats.total_outlooks){
-    document.getElementById('ai-edge-card').style.display='block';
-    document.getElementById('ai-total').textContent= aiStats.total_outlooks ?? outlooks.length;
-    document.getElementById('ai-sub1').textContent= aiStats.total_outlooks ? `${aiStats.trade_verdict_days} TRADE · ${aiStats.wait_verdict_days} WAIT` : '';
-    document.getElementById('ai-trade').textContent= (aiStats.gated? aiStats.gated.trades : '—');
-    document.getElementById('ai-wait').textContent= (aiStats.wait_trades? aiStats.wait_trades.trades : '—');
-    const avoided=aiStats.wait_trades? aiStats.wait_trades.avoided_loss_pts : 0;
-    const netAv=aiStats.wait_trades? aiStats.wait_trades.net_avoided : 0;
-    document.getElementById('ai-avoid').textContent= avoided ? `+₹${(avoided*75/100000).toFixed(1)}L avoided` : '—';
-    const gated=r.ai_stats?.gated||{};
-    const wait=r.ai_stats?.wait_trades||{};
-     const _f2 = v => v==null? '—' : Number(v).toFixed(2);
-     document.getElementById('ai-detail').innerHTML=
-      gated.trades!=null ? `<span>AI TRADE: <b>${gated.trades} trades</b> · WR ${gated.win_rate}% · PF ${gated.profit_factor} · <span style="color:${pnlColor(gated.total_points)}">${gated.total_points>=0?'+':''}${_f2(gated.total_points)} pts</span></span><span>AI WAIT: <b>${wait.trades||0} trades</b> skipped · avoided loss <b style="color:#15803d">${_f2(wait.avoided_loss_pts)} pts</b> · missed win ${_f2(wait.missed_win_pts)} pts · net <b style="color:${pnlColor(wait.net_avoided)}">${wait.net_avoided>=0?'+':''}${_f2(wait.net_avoided)} pts</b></span>` 
-      : '<span class="status">No AI outlooks in this window — showing paper P&L only.</span>';
-  } else {
-    document.getElementById('ai-edge-card').style.display='none';
-  }
-  // per-day count badge
-  try{ const pd=document.getElementById('m-perday'); if(pd) pd.textContent = r.trades ? r.trades.length + ' per-day rows' : '—'; }catch(e){}
-  // data quality badge
-  try{
-    const dq=document.getElementById('data-quality');
-    if(r.data_quality){ dq.textContent='Data: '+r.data_quality + ' · every trading day has an AI verdict'; dq.style.color = r.is_true_60 ? '#15803d' : '#a16207'; dq.style.fontWeight='700'; }
-    else dq.textContent='';
-  }catch(e){}
-  // fixed vs AI comparison
-  try{
-    const fixed = r.fixed_baseline;
-    const gated = r.ai_stats?.gated;
-    const _f2c = v => v==null? '—' : Number(v).toFixed(2);
-    if(fixed || gated){
-      document.getElementById('compare-card').style.display='block';
-      const rows=[];
-      if(fixed) rows.push(`<tr><td><span style="color:#475569">●</span> Fixed Short Strangle</td><td>${fixed.trades}</td><td>${fixed.win_rate}%</td><td>${fixed.profit_factor}</td><td style="color:${pnlColor(fixed.total_points)}">${fixed.total_points>=0?'+':''}${_f2c(fixed.total_points)} pts · ₹${(fixed.total_points*75/100000).toFixed(1)}L</td><td style="color:#dc2626">-${(fixed.max_drawdown*75/100000).toFixed(1)}L</td></tr>`);
-      if(gated) rows.push(`<tr><td><span style="color:#15803d">●</span> AI Dynamic <span style="font-size:.7rem;color:#15803d">(market-condition)</span></td><td>${gated.trades}</td><td>${gated.win_rate}%</td><td>${gated.profit_factor}</td><td style="color:${pnlColor(gated.total_points)}">${gated.total_points>=0?'+':''}${_f2c(gated.total_points)} pts · ₹${(gated.total_points*75/100000).toFixed(1)}L</td><td style="color:#dc2626">-${(gated.max_drawdown*75/100000).toFixed(1)}L</td></tr>`);
-      if(gated && fixed) {
-        const diff = gated.total_points - fixed.total_points;
-        rows.push(`<tr style="background:#f0fdf4;font-weight:700"><td>AI Edge vs Fixed</td><td>${gated.trades-fixed.trades}</td><td>${(gated.win_rate-fixed.win_rate).toFixed(1)}pp</td><td>${(gated.profit_factor-fixed.profit_factor).toFixed(2)}</td><td style="color:${pnlColor(diff)}">${diff>=0?'+':''}${_f2c(diff)} pts</td><td></td></tr>`);
-      }
-      document.getElementById('compare-body').innerHTML = rows.join('');
-    } else {
-      document.getElementById('compare-card').style.display='none';
-    }
-  }catch(e){}
-
-  // AI direction + strategy breakdown — always show BULLISH/BEARISH/NEUTRAL
-  try{
-    const dir = r.ai_stats?.direction_breakdown || {};
-    document.getElementById('direction-card').style.display='block';
-    const _ff2 = v => v==null? '—' : Number(v).toFixed(2);
-    const order = ['BULLISH','BEARISH','NEUTRAL'];
-    const label = {BULLISH:'BULLISH — Long Call / Bull Call Spread / Bull Put Spread', BEARISH:'BEARISH — Long Put / Bear Put Spread / Bear Call Spread', NEUTRAL:'NEUTRAL/RANGE — Iron Condor / Short Strangle / Short Straddle / Calendar'};
-    const dot = {BULLISH:'🟢', BEARISH:'🔴', NEUTRAL:'🟡'};
-    let html='';
-    order.forEach(bucket=>{
-      const d = dir[bucket] || {trades:0, wins:0, losses:0, win_rate:0, profit_factor:0, total_points:0, strategies:{}};
-      const has = d.trades>0;
-      html+= `<tr style="background:${has?'#f8fafc':'#fff'};font-weight:700"><td>${dot[bucket]} ${bucket} <span style="font-weight:400;color:#64748b">(${d.trades} trades)</span><div style="font-weight:400;font-size:.68rem;color:#64748b">${label[bucket]}</div></td><td colspan="2">${has?`WR ${d.win_rate}% · PF ${d.profit_factor}`:'—'}</td><td colspan="2">${has? d.trades+' trades':'0 trades — no AI '+bucket.toLowerCase()+' signal in this window'}</td><td style="color:${has?pnlColor(d.total_points):'#64748b'}">${has? (d.total_points>=0?'+':'')+_ff2(d.total_points)+' pts':'—'}</td></tr>`;
-      if(has){
-        Object.entries(d.strategies||{}).sort((a,b)=>b[1].total_points-a[1].total_points).forEach(([strat, sd])=>{
-          html+= `<tr class="strat-row" data-strat="${esc(strat)}" style="cursor:pointer;background:#f0f9ff" title="Click to filter DAY-BY-DAY to ${esc(strat)} — ${sd.trades} trades"><td style="padding-left:1.4rem;color:#475569">↳ ${esc(strat)} <span style="font-size:.7rem;color:#0ea5e9">↗ click to view trades</span></td><td>${sd.trades}</td><td>${sd.win_rate}%</td><td>${sd.trades? (sd.total_points/sd.trades).toFixed(2):'0.00'} avg</td><td style="color:${pnlColor(sd.total_points)}">${sd.total_points>=0?'+':''}${_ff2(sd.total_points)}</td><td>${sd.wins}W/${sd.losses}L</td></tr>`;
-        });
-      } else {
-        // show which bullish/bearish strategies would be used, even if 0 trades
-        const examples = bucket==='BULLISH'?['Long Call','Bull Call Spread','Bull Put Spread']: bucket==='BEARISH'?['Long Put','Bear Put Spread','Bear Call Spread']:['Iron Condor','Short Strangle','Short Straddle'];
-        examples.forEach(s=>{ html+= `<tr style="color:#94a3b8"><td style="padding-left:1.4rem">${esc(s)}</td><td>0</td><td>—</td><td>—</td><td>—</td><td>0W/0L</td></tr>`;});
-      }
-    });
-    Object.keys(dir).forEach(k=>{ if(order.includes(k)) return; const d=dir[k]; html+= `<tr><td>${esc(k)}</td><td colspan="5">${d.trades} trades · ${_ff2(d.total_points)} pts</td></tr>`;});
-    document.getElementById('direction-body').innerHTML = html;
-    // delegated click — works even if rows added dynamically
-    const dirBody=document.getElementById('direction-body');
-    if(dirBody && !dirBody.dataset.bound){
-      dirBody.dataset.bound="1";
-      dirBody.addEventListener('click', (e)=>{
-        const row=e.target.closest('.strat-row');
-        if(!row) return;
-        const strat=row.getAttribute('data-strat');
-        if(!strat) return;
-        // reuse filtered logic from closure — call via window
-        if(window._filterByStrat) window._filterByStrat(strat);
-      });
-    }
-  }catch(e){ document.getElementById('direction-card').style.display='none'; }
-
-  if(!r.total_trades){document.getElementById('bt-trades-display').value='0';
-    document.getElementById('m-trades').textContent='0';
-    ['v-cagr','v-tret','v-profit','v-dd','v-wr','v-pf','v-avg','v-exp'].forEach(id=>document.getElementById(id).textContent='—');
-    ['d-wr','d-pf','d-avg','d-exp'].forEach(id=>document.getElementById(id).textContent='');
-    document.getElementById('eq-wrap').innerHTML='<div class="status">No closed trades for <strong>'+esc(sym)+'</strong> in the last '+days+' days.</div>';
-    document.getElementById('cond-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No closed trades.</td></tr>';
-    document.getElementById('yoy-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No closed trades.</td></tr>';
-    document.getElementById('mom-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No closed trades.</td></tr>';
-    document.getElementById('wow-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No closed trades.</td></tr>';
-    document.getElementById('ai-card').style.display='none';
+function drawDrawdown(trades){
+  const completed=trades.filter(t=>t.outcome!=='STILL_OPEN');
+  if(completed.length<1){
+    document.getElementById('bt-dd-curve').innerHTML='<div class="bt-no-data">Not enough completed trades for drawdown curve.</div>';
     return;
   }
-
-  // AI outlook primary, fallback Fixed when AI has no signal (full coverage, no gaps)
-  let trades=r.trades||[];
-  let isFallback = !!r.fallback_fixed;
-  let displayTrades= (aiOnly && !isFallback) ? trades.filter(t=> (t.ai_verdict||'')==='TRADE') : trades;
-  if(isFallback){
-    document.getElementById('ai-hint').textContent = 'Full coverage: AI had no TRADE signal in this window — showing Fixed Short Strangle baseline.';
-    document.getElementById('ai-hint').style.color='#a16207';
-    document.getElementById('ai-hint').style.fontWeight='700';
-  }
-  if(aiOnly && displayTrades.length===0 && !isFallback){
-    document.getElementById('bt-trades-display').value='0 (AI-gated)';
-    document.getElementById('m-trades').textContent='0 (AI-gated)';
-    ['v-cagr','v-tret','v-profit','v-dd','v-wr','v-pf','v-avg','v-exp'].forEach(id=>document.getElementById(id).textContent='—');
-    document.getElementById('eq-wrap').innerHTML='<div class="status">No <strong>AI TRADE</strong> trades in this window. AI correctly stayed in WAIT — this is the edge (avoided exposure). Uncheck AI-gated only to see all paper trades.</div>';
-    document.getElementById('cond-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No AI TRADE trades.</td></tr>';
-    document.getElementById('yoy-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No AI TRADE trades.</td></tr>';
-    document.getElementById('mom-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No AI TRADE trades.</td></tr>';
-    document.getElementById('wow-body').innerHTML='<tr><td colspan="5" class="status" style="padding:1rem">No AI TRADE trades.</td></tr>';
-    return;
-  }
-  const srcR= (aiOnly && !isFallback && r.ai_stats && r.ai_stats.gated) ? {
-    total_trades: r.ai_stats.gated.trades,
-    win_rate: r.ai_stats.gated.win_rate,
-    profit_factor: r.ai_stats.gated.profit_factor,
-    max_drawdown: r.ai_stats.gated.max_drawdown,
-    total_points: r.ai_stats.gated.total_points,
-    avg_win: (displayTrades.filter(t=>t.result==='WIN').reduce((a,t)=>a+(t.points||0),0) / Math.max(1, displayTrades.filter(t=>t.result==='WIN').length)),
-    avg_loss: (displayTrades.filter(t=>t.result==='LOSS').reduce((a,t)=>a+Math.abs(t.points||0),0) / Math.max(1, displayTrades.filter(t=>t.result==='LOSS').length)),
-  } : r;
-  let sorted=[...displayTrades].sort((a,b)=> (a.date||'').localeCompare(b.date||'') || (a.created_at||'').localeCompare(b.created_at||''));
-  let cum=0;
-  let series=sorted.map(t=>{cum+=(t.points||0);return {cum:cum, date:t.date||t.created_at||'', verdict:t.ai_verdict||''};});
-  // date-range filter for day-wise / month / week custom view
-  const fromVal=document.getElementById('bt-from').value;
-  const toVal=document.getElementById('bt-to').value;
-  if(fromVal || toVal){
-    const filtered = sorted.filter(t=>{ const d=(t.date||t.created_at||'').slice(0,10); if(fromVal && d < fromVal) return false; if(toVal && d > toVal) return false; return true; });
-    sorted = filtered;
-    cum=0; series = sorted.map(t=>{cum+=(t.points||0); return {cum:cum, date:t.date||t.created_at||'', verdict:t.ai_verdict||''};});
-    if(fromVal || toVal) document.getElementById('m-period').textContent = (fromVal||'start')+' → '+(toVal||'today');
-  }
-  const lastCum=series.length?series[series.length-1].cum:0;
-  const totalPtsForHero= srcR.total_points!=null && !(fromVal||toVal) ? srcR.total_points : lastCum;
-  const profitRs=totalPtsForHero*75;
-  const endCap=capital+profitRs;
-  const totalRet=capital>0? profitRs/capital*100:0;
-  let years = Math.max(0.25, days/365);
-  if(fromVal && toVal){
-    try{ const d1=new Date(fromVal), d2=new Date(toVal); const diff=Math.ceil((d2-d1)/86400000)+1; years=Math.max(0.02, diff/365); }catch(e){}
-  } else if(fromVal || toVal){
-    // single bound: estimate from filtered length
-    years = Math.max(0.02, sorted.length/260); // ~260 trading days per year
-  }
-  const cagr=capital>0 && endCap>0? (Math.pow(endCap/capital,1/years)-1)*100:0;
-
-  const mddPts=srcR.max_drawdown!=null? srcR.max_drawdown : (r.max_drawdown||0);
-  const mddPct=capital>0? -(mddPts*75)/capital*100:0;
-
-  document.getElementById('bt-trades-display').value= String(srcR.total_trades ?? displayTrades.length) + (aiOnly?' (AI)':'');
-  document.getElementById('m-trades').textContent= (srcR.total_trades ?? displayTrades.length).toLocaleString('en-IN') + (aiOnly?' AI-gated':'');
-  document.getElementById('bt-start-cap').textContent=fmtLakhs(capital);
-  document.getElementById('bt-end-cap').textContent=fmtLakhs(endCap);
-  document.getElementById('v-cagr').textContent= isFinite(cagr)? cagr.toFixed(1)+'%':'—';
-  document.getElementById('v-cagr').style.color=cagr>=0?'#15803d':'#dc2626';
-  document.getElementById('v-tret').textContent= (totalRet>=0?'+':'')+totalRet.toFixed(1)+'%';
-  document.getElementById('v-profit').textContent= (profitRs>=0?'+':'')+'₹'+ (Math.abs(profitRs)/100000).toFixed(1)+'L';
-  document.getElementById('v-dd').textContent= '-'+Math.abs(mddPct).toFixed(1)+'%';
-
-  const win=srcR.win_rate ?? r.win_rate ?? 0;
-  const pf=srcR.profit_factor ?? r.profit_factor ?? 0;
-  const avgPts= displayTrades.length? totalPtsForHero/displayTrades.length:0;
-  const avgRs=avgPts*75;
-  const expPts=(srcR.avg_win!=null && srcR.avg_loss!=null)? (win/100)*srcR.avg_win - ((1-win/100))*srcR.avg_loss : avgPts;
-  const expRs=expPts*75;
-
-  function setMetric(id, dotId, val, fmtVal, good){
-    const el=document.getElementById(id); el.textContent=fmtVal;
-    el.style.color=good? '#15803d': (good===false?'#dc2626':'var(--ink)');
-    const d=document.getElementById(dotId);
-    if(d) d.innerHTML= val==null?'': (good?'🟢':good===false?'🔴':'🟡');
-    if(d) d.style.fontSize='.72rem';
-  }
-  setMetric('v-wr','d-wr',win, win.toFixed(1)+'%', win>=55);
-  setMetric('v-pf','d-pf',pf, pf.toFixed(2), pf>=1.5);
-  setMetric('v-avg','d-avg',avgPts, '₹'+fmt0(avgRs), avgRs>=0);
-  setMetric('v-exp','d-exp',expRs, (expRs>=0?'+':'')+'₹'+fmt0(Math.abs(expRs)), expRs>=0);
-
-  document.getElementById('eq-wrap').innerHTML= drawEquity(series, capital);
-
-  let peak=0, eq=0, dds=[];
-  sorted.forEach(t=>{eq+=(t.points||0); if(eq>peak) peak=eq; const dd=peak-eq; if(dd>0) dds.push(dd);});
-  const avgDD=dds.length? dds.reduce((a,b)=>a+b,0)/dds.length :0;
-  const avgDDPct=capital>0? -(avgDD*75)/capital*100:0;
-  document.getElementById('r-mdd').textContent='-'+Math.abs(mddPct).toFixed(1)+'%';
-  document.getElementById('r-add').textContent= dds.length? '-'+Math.abs(avgDDPct).toFixed(1)+'%':'—';
-  let maxDdIdx=-1, maxDdVal=0; peak=0; eq=0;
-  sorted.forEach((t,i)=>{eq+=(t.points||0); if(eq>peak) peak=eq; const dd=peak-eq; if(dd>maxDdVal){maxDdVal=dd; maxDdIdx=i;}});
-  let recStr='—';
-  if(maxDdIdx>=0){
-    let cum2=0, peakVal=0;
-    sorted.slice(0,maxDdIdx+1).forEach(t=>{cum2+=(t.points||0); if(cum2>peakVal) peakVal=cum2;});
-    let recIdx=-1;
-    let c=0;
-    for(let i=0;i<sorted.length;i++){c+=(sorted[i].points||0); if(i>maxDdIdx && c>=peakVal){recIdx=i;break;}}
-    if(recIdx>=0){
-      const d1=new Date(sorted[maxDdIdx].date||sorted[maxDdIdx].created_at);
-      const d2=new Date(sorted[recIdx].date||sorted[recIdx].created_at);
-      if(!isNaN(d1)&&!isNaN(d2)){const mo=Math.max(1,Math.round((d2-d1)/(1000*60*60*24*30))); recStr=mo+' mo';}
-      else recStr=(recIdx-maxDdIdx)+' trades';
-    } else recStr='—';
-  }
-  document.getElementById('r-rec').textContent=recStr;
-  const worstMonthMap={};
-  sorted.forEach(t=>{const k=(t.date||t.created_at||'').slice(0,7); if(!k) return; worstMonthMap[k]=(worstMonthMap[k]||0)+(t.points||0);});
-  let worstK=null, worstV=0; Object.entries(worstMonthMap).forEach(([k,v])=>{if(worstK==null||v<worstV){worstK=k; worstV=v;}});
-  const worstPct=worstK!=null && capital>0? (worstV*75)/capital*100:0;
-  document.getElementById('r-worst').textContent= worstK? worstPct.toFixed(1)+'%':'—';
-  document.getElementById('r-mls').textContent= (aiOnly && !isFallback ? (r.ai_stats?.gated? 0 : 0) : r.max_consecutive_losses||0)+' trades';
-  // when aiOnly, recompute streaks from filtered (skip fallback — already correct)
-  if(aiOnly && !isFallback){
-    let cw=0, ml=0, cl=0, mw=0;
-    displayTrades.forEach(t=>{if(t.result==='WIN'){cw++;cl=0;mw=Math.max(mw,cw);} else if(t.result==='LOSS'){cl++;cw=0;ml=Math.max(ml,cl);}});
-    document.getElementById('r-mls').textContent= ml+' trades';
-    document.getElementById('r-mws').textContent= mw+' trades';
-  } else {
-    document.getElementById('r-mls').textContent= (r.max_consecutive_losses||0)+' trades';
-    document.getElementById('r-mws').textContent= (r.max_consecutive_wins||0)+' trades';
-  }
-
-  const groups={};
-  displayTrades.forEach(t=>{
-    const key=regimeKey(t.market_regime||t.regime||'');
-    if(!groups[key]) groups[key]=[];
-    groups[key].push(t);
-  });
-  const order=['Bull Market','Range Market','Bear Market','High VIX'];
-  const rows=order.filter(k=>groups[k]).map(k=>{
-    const arr=groups[k];
-    const pts=arr.reduce((a,t)=>a+(t.points||0),0);
-    const wins=arr.filter(t=>t.result==='WIN').length;
-    const wr=arr.length? wins/arr.length*100:0;
-    const pos=arr.filter(t=>(t.points||0)>0).reduce((a,t)=>a+(t.points||0),0);
-    const neg=Math.abs(arr.filter(t=>(t.points||0)<0).reduce((a,t)=>a+(t.points||0),0));
-    const pf2=neg? pos/neg : (pos>0? 9.99:0);
-    const netRs=pts*75;
-    return `<tr class="clickable-row" data-regime="${esc(k)}" style="cursor:pointer" title="Click to filter DAY-BY-DAY to ${esc(k)}"><td>${dotFor(k)} ${esc(k)}</td><td>${arr.length}</td><td>${wr.toFixed(0)}% WR</td><td>PF ${pf2.toFixed(2)}</td><td style="color:${pnlColor(pts)}">${netRs>=0?'+':''}₹${(netRs/100000).toFixed(1)}L</td></tr>`;
-  });
-  Object.keys(groups).forEach(k=>{if(order.includes(k)) return; const arr=groups[k]; const pts=arr.reduce((a,t)=>a+(t.points||0),0); const wr=arr.length? arr.filter(t=>t.result==='WIN').length/arr.length*100:0; const pos=arr.filter(t=>(t.points||0)>0).reduce((a,t)=>a+(t.points||0),0); const neg=Math.abs(arr.filter(t=>(t.points||0)<0).reduce((a,t)=>a+(t.points||0),0)); const pf2=neg?pos/neg:0; rows.push(`<tr><td>${esc(k)}</td><td>${arr.length}</td><td>${wr.toFixed(0)}% WR</td><td>PF ${pf2.toFixed(2)}</td><td style="color:${pnlColor(pts)}">${(pts*75>=0?'+':'')+'₹'+(pts*75/100000).toFixed(1)}L</td></tr>`);});
-  document.getElementById('cond-body').innerHTML= rows.length? rows.join(''):'<tr><td colspan="5" class="status" style="padding:1rem">No regime tags logged.</td></tr>';
-
-  const byYear={};
-  sorted.forEach(t=>{const y=(t.date||t.created_at||'').slice(0,4); if(!y) return; (byYear[y]=byYear[y]||[]).push(t);});
-  const yoy=Object.keys(byYear).sort().reverse().map(y=>{
-    const arr=byYear[y];
-    const pts=arr.reduce((a,t)=>a+(t.points||0),0);
-    const wins=arr.filter(t=>t.result==='WIN').length;
-    const wr=arr.length? wins/arr.length*100:0;
-    let eq2=0, pk=0, mdd=0;
-    arr.forEach(t=>{eq2+=(t.points||0); if(eq2>pk) pk=eq2; const dd=pk-eq2; if(dd>mdd) mdd=dd;});
-    const mddPctY=capital>0? -(mdd*75)/capital*100:0;
-    const contrib=capital>0? pts*75/capital*100 :0;
-    const aiTradeCnt=arr.filter(t=> (t.ai_verdict||'')==='TRADE').length;
-    const aiWaitCnt=arr.filter(t=> ['WAIT','AVOID','NO_TRADE'].includes(t.ai_verdict||'')).length;
-    return `<tr class="clickable-row" data-year="${y}" style="cursor:pointer" title="Click to filter DAY-BY-DAY to ${y}"><td>${y}</td><td style="color:${pnlColor(pts)}">${contrib>=0?'+':''}${contrib.toFixed(1)}%</td><td>${wr.toFixed(0)}% <span style="font-size:.7rem;color:#64748b">(${aiTradeCnt}T/${aiWaitCnt}W)</span></td><td style="color:#dc2626">-${Math.abs(mddPctY).toFixed(1)}%</td><td>${arr.length}</td></tr>`;
-  }).join('');
-  document.getElementById('yoy-body').innerHTML= yoy || '<tr><td colspan="5" class="status" style="padding:1rem">No yearly breakdown.</td></tr>';
-
-  // month-by-month
-  const byMonth={};
-  sorted.forEach(t=>{const m=(t.date||t.created_at||'').slice(0,7); if(!m) return; (byMonth[m]=byMonth[m]||[]).push(t);});
-  const mom=Object.keys(byMonth).sort().reverse().map(m=>{
-    const arr=byMonth[m];
-    const pts=arr.reduce((a,t)=>a+(t.points||0),0);
-    const wins=arr.filter(t=>t.result==='WIN').length;
-    const wr=arr.length? wins/arr.length*100:0;
-    let eq2=0,pk=0,mdd=0; arr.forEach(t=>{eq2+=(t.points||0); if(eq2>pk) pk=eq2; const dd=pk-eq2; if(dd>mdd) mdd=dd;});
-    const mddPct=capital>0? -(mdd*75)/capital*100:0;
-    const contrib=capital>0? pts*75/capital*100:0;
-    return `<tr class="clickable-row" data-month="${m}" style="cursor:pointer" title="Click to filter DAY-BY-DAY to ${m}"><td>${m}</td><td style="color:${pnlColor(pts)}">${contrib>=0?'+':''}${contrib.toFixed(1)}%</td><td>${wr.toFixed(0)}%</td><td style="color:#dc2626">-${Math.abs(mddPct).toFixed(1)}%</td><td>${arr.length}</td></tr>`;
-  }).join('');
-  document.getElementById('mom-body').innerHTML= mom || '<tr><td colspan="5" class="status" style="padding:1rem">No monthly breakdown.</td></tr>';
-  // week-by-week (ISO week)
-  function isoWeek(dstr){
-    try{const d=new Date(dstr); if(isNaN(d)) return dstr.slice(0,10);
-    const jan1=new Date(d.getFullYear(),0,1);
-    const diff=(d - jan1)/86400000;
-    const w=Math.ceil((diff + jan1.getDay()+1)/7);
-    return d.getFullYear()+'-W'+String(w).padStart(2,'0');
-    }catch(e){ return dstr.slice(0,10); }
-  }
-  const byWeek={};
-  sorted.forEach(t=>{const w=isoWeek(t.date||t.created_at||''); (byWeek[w]=byWeek[w]||[]).push(t);});
-  const wow=Object.keys(byWeek).sort().reverse().map(w=>{
-    const arr=byWeek[w];
-    const pts=arr.reduce((a,t)=>a+(t.points||0),0);
-    const wins=arr.filter(t=>t.result==='WIN').length;
-    const wr=arr.length? wins/arr.length*100:0;
-    let eq2=0,pk=0,mdd=0; arr.forEach(t=>{eq2+=(t.points||0); if(eq2>pk) pk=eq2; const dd=pk-eq2; if(dd>mdd) mdd=dd;});
-    const mddPct=capital>0? -(mdd*75)/capital*100:0;
-    const contrib=capital>0? pts*75/capital*100:0;
-    return `<tr class="clickable-row" data-week="${w}" style="cursor:pointer" title="Click to filter DAY-BY-DAY to ${w}"><td>${w}</td><td style="color:${pnlColor(pts)}">${contrib>=0?'+':''}${contrib.toFixed(1)}%</td><td>${wr.toFixed(0)}%</td><td style="color:#dc2626">-${Math.abs(mddPct).toFixed(1)}%</td><td>${arr.length}</td></tr>`;
-  }).join('');
-  document.getElementById('wow-body').innerHTML= wow || '<tr><td colspan="5" class="status" style="padding:1rem">No weekly breakdown.</td></tr>';
-  // ---- make every block clickable to its DAY-BY-DAY filter ----
-  (function(){
-    const sortedLocal = sorted;
-    function renderFiltered(filtered, title){
-      const byDayF={}; filtered.forEach(x=>{const d=(x.date||x.created_at||'').slice(0,10); (byDayF[d]=byDayF[d]||[]).push(x);});
-      const dowF=Object.keys(byDayF).sort().reverse().map(d=>{
-        const arr=byDayF[d]; const pts=arr.reduce((a,x)=>a+(x.points||0),0);
-        const strat0=(arr[0]?.strategy||'—').replace(' (Sim)',''); const verdict=arr[0]?.ai_verdict||'—';
-        const expiry=arr[0]?.expiry||'—'; const dte=arr[0]?.dte;
-        const expiryTxt = expiry!=='—' && dte!=null ? `${expiry} (${dte} DTE)` : esc(expiry);
-        const badge = verdict==='TRADE'?'badge-green':verdict==='WAIT'?'badge-yellow':'badge-blue';
-        const strikes=fmtStrikes(arr[0]);
-        return `<tr style="cursor:pointer" data-date="${d}"><td>${d}</td><td>${expiryTxt}</td><td><span class="badge ${badge}">${esc(verdict)}</span></td><td>${esc(strat0)}</td><td style="font-size:.78rem">${strikes}</td><td><span style="color:${pnlColor(pts)}">${esc(arr[0]?.result||'—')}</span></td><td style="color:${pnlColor(pts)}">${pts>=0?'+':''}${Number(pts).toFixed(2)}</td><td><span style="color:#0ea5e9;font-size:.78rem">view</span></td></tr>`;
-      }).join('') || `<tr><td colspan="8" class="status" style="padding:1rem">No trades for filter.</td></tr>`;
-      const winsF=filtered.filter(x=>x.result==='WIN').length, lossesF=filtered.filter(x=>x.result==='LOSS').length, ptsF=filtered.reduce((a,x)=>a+(x.points||0),0);
-      const wrF=filtered.length? (winsF/filtered.length*100).toFixed(1):'0.0';
-      document.getElementById('dow-body').innerHTML = `<tr><td colspan="8" class="status" style="background:#f0f9ff;color:#0c4a6e;padding:.6rem">${title} — ${filtered.length} trades · ${winsF}W/${lossesF}L · WR ${wrF}% · ${ptsF>=0?'+':''}${ptsF.toFixed(2)} pts <a href="#" id="clear-filter" style="color:#0ea5e9">Clear</a></td></tr>` + dowF;
-      document.getElementById('dow-body').scrollIntoView({behavior:'smooth', block:'start'});
-      document.getElementById('clear-filter')?.addEventListener('click', (e)=>{e.preventDefault(); document.getElementById('dow-body').innerHTML = dow || '<tr><td colspan="8" class="status" style="padding:1rem">No daily breakdown.</td></tr>'; document.getElementById('payoff-wrap').style.display='none';});
-    }
-    // cond by regime
-    document.getElementById('cond-body')?.addEventListener('click', (e)=>{
-      const tr=e.target.closest('tr[data-regime]'); if(!tr) return;
-      const rg=tr.dataset.regime; const filtered=sortedLocal.filter(x=> regimeKey(x.market_regime||'')===rg);
-      renderFiltered(filtered, `Filtered to ${rg}`);
-    });
-    document.getElementById('yoy-body')?.addEventListener('click', (e)=>{
-      const tr=e.target.closest('tr[data-year]'); if(!tr) return;
-      const y=tr.dataset.year; const filtered=sortedLocal.filter(x=> (x.date||'').slice(0,4)===y);
-      renderFiltered(filtered, `Year ${y}`);
-    });
-    document.getElementById('mom-body')?.addEventListener('click', (e)=>{
-      const tr=e.target.closest('tr[data-month]'); if(!tr) return;
-      const m=tr.dataset.month; const filtered=sortedLocal.filter(x=> (x.date||'').slice(0,7)===m);
-      renderFiltered(filtered, `Month ${m}`);
-    });
-    document.getElementById('wow-body')?.addEventListener('click', (e)=>{
-      const tr=e.target.closest('tr[data-week]'); if(!tr) return;
-      const w=tr.dataset.week; const filtered=sortedLocal.filter(x=> isoWeek(x.date||'')===w);
-      renderFiltered(filtered, `Week ${w}`);
-    });
-    // AI edge / compare / metrics
-    document.getElementById('ai-edge-card')?.addEventListener('click', (e)=>{
-      const card=e.target.closest('.risk-grid > div'); if(!card) return;
-      const k=card.querySelector('.k')?.textContent||'';
-      if(k.includes('TRADE')) renderFiltered(sortedLocal.filter(x=> (x.ai_verdict||'')==='TRADE'), 'AI TRADE days');
-      else if(k.includes('WAIT')) renderFiltered(sortedLocal.filter(x=> ['WAIT','AVOID'].includes(x.ai_verdict||'')), 'AI WAIT days');
-    });
-    document.getElementById('bt-4b')?.addEventListener('click', (e)=>{
-      const c=e.target.closest('[data-filter]'); if(!c) return;
-      if(c.dataset.filter==='winners') renderFiltered(sortedLocal.filter(x=> x.result==='WIN'), 'Winners');
-      else renderFiltered(sortedLocal.filter(x=> x.result==='WIN' || x.result==='LOSS'), 'All trades');
-    });
-  })();
-
-  window.fmtStrikes = function(t){
-    if(t.short_strike && t.long_strike) return `${t.short_strike}/${t.long_strike} (ATM ${t.atm})`;
-    if(t.short_strike) return `${t.short_strike} (ATM ${t.atm||'-'})`;
-    return t.strike_desc ? esc(t.strike_desc) : '—';
-  }
-  function fmtStrikes(t){ return window.fmtStrikes(t); }
-  window.drawPayoffFor = function(t){
-    const wrap=document.getElementById('payoff-wrap'), chart=document.getElementById('payoff-chart'), info=document.getElementById('payoff-info');
-    if(!t || !t.short_strike){ wrap.style.display='none'; return; }
-    wrap.style.display='block';
-    const atm=t.atm||t.locked_price, pts=t.points, strat=t.strategy||'';
-    const isBear=strat.toUpperCase().includes('BEAR'), isBull=strat.toUpperCase().includes('BULL'), isStrangle=strat.includes('Short Strangle');
-    // Bear Put Spread and Bear Call Spread share same payoff shape (profit on downside), Bull spreads profit on upside — mirror Bear Call design
-    const credit=isStrangle?35:(isBear||isBull?28:35);
-    const callStrike = isStrangle ? t.short_strike : null, putStrike = isStrangle ? t.long_strike : null;
-    const beUpper = isStrangle ? (callStrike + credit) : null, beLower = isStrangle ? (putStrike - credit) : null;
-    const breakeven = isStrangle ? `${beLower} / ${beUpper}` : (isBear ? t.short_strike+credit : isBull ? t.short_strike-credit : atm);
-    const maxProfit=credit, maxLoss=isStrangle?-80:-50;
-    // header card — Strangle shows Call/Put shorts separately, not Short/Long
-    const headerStrikes = isStrangle ? `Call Short ${callStrike}CE / Put Short ${putStrike}PE` : `Short ${t.short_strike} Long ${t.long_strike||'-'}`;
-    const vixDisp = t.vix!=null ? t.vix : (t.vix_value!=null ? t.vix_value : '-');
-    const profitRs = t.rupees!=null ? Number(t.rupees) : Math.round(pts*(t.lot||65));
-    const profitStr = (profitRs>=0?'+':'') + '₹' + Math.abs(profitRs).toLocaleString('en-IN');
-    let html=`<div style="display:flex;flex-wrap:wrap;gap:.6rem;align-items:center;justify-content:space-between;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:.7rem .9rem"><div><div style="font-weight:800;color:#0f172a">${esc(strat)} <span style="font-weight:400;color:#64748b">· ${esc(t.strike_desc||'')}</span></div><div style="font-size:.78rem;color:#475569;margin-top:.15rem">Expiry ${t.expiry||'-'} (${t.dte||'-'} DTE) · ATM ${atm} · ${headerStrikes} · Lot ${t.lot||'-'} · VIX ${vixDisp}</div></div><div style="text-align:right"><div style="font-weight:800;color:${pts>=0?'#15803d':'#dc2626'};font-size:1.15rem">${profitStr} <span style="font-weight:400;font-size:.85rem;color:#64748b">(${pts>=0?'+':''}${pts} pts)</span></div><div style="font-size:.78rem;color:#64748b">${pts>=0?'WIN':'LOSS'} on ${t.date} · Entry ${t.locked_price} → Exit ${t.closed_price}</div></div></div>`;
-    const lot=t.lot||65, maxProfitRs=maxProfit*lot, maxLossRs=maxLoss*lot;
-    const breakevenLabel = isStrangle ? `Breakevens` : `Breakeven`;
-    const breakevenVal = isStrangle ? `${beLower} & ${beUpper}` : breakeven;
-    const widthVal = isStrangle ? `100 pts` : `50 pts`;
-    const shortLabel = isStrangle ? `Call Short` : `Short Strike`;
-    const longLabel = isStrangle ? `Put Short` : `Long Strike`;
-    const shortVal = isStrangle ? `${callStrike}CE` : `${t.short_strike} ${isBear?'CE':'PE'}`;
-    const longVal = isStrangle ? `${putStrike}PE` : `${t.long_strike||'-'} ${isBear?'CE':'PE'}`;
-    html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.6rem;font-size:.78rem"><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.5rem;text-align:center"><div style="color:#15803d;font-weight:700">Max Profit</div><div style="font-weight:800">₹${maxProfitRs.toLocaleString('en-IN')}</div><div style="font-size:.70rem;color:#64748b">+${maxProfit} pts ×${lot}</div></div><div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:.5rem;text-align:center"><div style="color:#dc2626;font-weight:700">Max Loss</div><div style="font-weight:800">₹${maxLossRs.toLocaleString('en-IN')}</div><div style="font-size:.70rem;color:#64748b">${maxLoss} pts ×${lot}</div></div><div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.5rem;text-align:center"><div style="color:#2563eb;font-weight:700">${breakevenLabel}</div><div style="font-weight:800">${breakevenVal}</div><div style="font-size:.68rem;color:#64748b">${isStrangle?`Put ${beLower} / Call ${beUpper}`:``}</div></div><div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:.5rem;text-align:center"><div style="color:#a16207;font-weight:700">Spot Now</div><div style="font-weight:800">${t.closed_price}</div></div></div>`;
-    // width / strikes detail row for Strangle
-    if(isStrangle){
-      html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.5rem;font-size:.78rem;text-align:center"><div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.4rem"><div style="color:#2563eb;font-weight:700">${shortLabel}</div><div style="font-weight:800">${shortVal}</div></div><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.4rem"><div style="color:#15803d;font-weight:700">${longLabel}</div><div style="font-weight:800">${longVal}</div></div><div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:.4rem"><div style="color:#a16207;font-weight:700">ATM</div><div style="font-weight:800">${atm}</div></div><div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:.4rem"><div style="color:#7c3aed;font-weight:700">Width</div><div style="font-weight:800">${widthVal}</div></div></div>`;
-    }
-    html+=`<svg width="640" height="190" viewBox="0 0 640 190" style="max-width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:10px;margin-top:.7rem"><defs><linearGradient id="pg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#86efac" stop-opacity="0.35"/><stop offset="100%" stop-color="#86efac" stop-opacity="0.05"/></linearGradient><linearGradient id="lg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#fca5a5" stop-opacity="0.05"/><stop offset="100%" stop-color="#fca5a5" stop-opacity="0.35"/></linearGradient></defs>`;
-    const ptsArr=[];
-    for(let i=-250;i<=250;i+=25){ const spot=atm+i; let payoff=0;
-      if(isBear){ payoff= spot < t.short_strike ? credit : credit - (spot - t.short_strike)*0.8; }
-      else if(isBull){ payoff= spot > t.short_strike ? credit : credit - (t.short_strike - spot)*0.8; }
-      else if(isStrangle){ payoff= Math.abs(spot-atm) < 50 ? credit : credit - (Math.abs(spot-atm)-50)*0.9; }
-      else payoff= pts;
-      if(payoff < -90) payoff=-90; if(payoff>50) payoff=50;
-      ptsArr.push({spot, payoff});
-    }
-    const minP=Math.min(...ptsArr.map(p=>p.payoff), -50), maxP=Math.max(...ptsArr.map(p=>p.payoff), 40);
-    const yZero = 150 - (0-minP)/(maxP-minP||1)*110;
-    // between-strikes profit zone green, loss beyond red (vertical)
-    const xShortCalc = 50 + ((t.short_strike-(atm-250))/500)*540;
-    const xLongCalc = t.long_strike ? 50 + ((t.long_strike-(atm-250))/500)*540 : null;
-    if(isStrangle){
-      const xPut = 50 + ((t.long_strike-(atm-250))/500)*540, xCall = 50 + ((t.short_strike-(atm-250))/500)*540;
-      const xl=Math.min(xPut,xCall), xr=Math.max(xPut,xCall);
-      html+=`<rect x="50" y="15" width="${xl-50}" height="135" fill="#fecaca" opacity="0.32"/><rect x="${xl}" y="15" width="${xr-xl}" height="135" fill="#86efac" opacity="0.32"/><rect x="${xr}" y="15" width="${590-xr}" height="135" fill="#fecaca" opacity="0.32"/>`;
-    } else if(isBear){
-      html+=`<rect x="50" y="15" width="${xShortCalc-50}" height="135" fill="#86efac" opacity="0.32"/><rect x="${xShortCalc}" y="15" width="${590-xShortCalc}" height="135" fill="#fecaca" opacity="0.32"/>`;
-    } else if(isBull){
-      html+=`<rect x="50" y="15" width="${xShortCalc-50}" height="135" fill="#fecaca" opacity="0.32"/><rect x="${xShortCalc}" y="15" width="${590-xShortCalc}" height="135" fill="#86efac" opacity="0.32"/>`;
-    } else {
-      html+=`<rect x="50" y="15" width="540" height="${Math.max(0,yZero-15)}" fill="url(#pg)"/><rect x="50" y="${yZero}" width="540" height="${150-yZero}" fill="url(#lg)"/>`;
-    }
-    // grid
-    for(let y=15;y<=150;y+=22){ html+=`<line x1="50" x2="590" y1="${y}" y2="${y}" stroke="#f1f5f9" stroke-width="1"/>`; }
-    for(let x=50;x<=590;x+=54){ html+=`<line x1="${x}" x2="${x}" y1="15" y2="150" stroke="#f1f5f9" stroke-width="1"/>`; }
-    // zero line
-    html+=`<line x1="50" x2="590" y1="${yZero}" y2="${yZero}" stroke="#334155" stroke-width="1.2" stroke-dasharray="6 3"/><text x="555" y="${yZero-4}" text-anchor="end" font-size="9" fill="#334155" font-weight="700">0 pts</text>`;
-    // payoff line
-    html+=`<polyline fill="none" stroke="#0f172a" stroke-width="3" stroke-linejoin="round" points="`;
-    ptsArr.forEach(p=>{ const x=50 + (p.spot-(atm-250))/500*540, y=150 - (p.payoff-minP)/(maxP-minP||1)*110; html+= `${x},${y} `; });
-    html+=`"/>`;
-    // markers — Strangle shows Call/Put shorts + 2 BEs, spreads show Short/Long + single BE
-    const xAtm=50 + 250/500*540;
-    html+=`<line x1="${xAtm}" x2="${xAtm}" y1="15" y2="150" stroke="#eab308" stroke-width="2" stroke-dasharray="4 4"/><text x="${xAtm}" y="12" text-anchor="middle" font-size="9" fill="#a16207" font-weight="700">ATM ${atm}</text>`;
-    if(isStrangle){
-      const xCall=50 + ((callStrike-(atm-250))/500)*540, xPut=50 + ((putStrike-(atm-250))/500)*540, xBeC=50 + ((beUpper-(atm-250))/500)*540, xBeP=50 + ((beLower-(atm-250))/500)*540;
-      html+=`<line x1="${xCall}" x2="${xCall}" y1="15" y2="150" stroke="#0ea5e9" stroke-width="2"/><text x="${xCall}" y="168" text-anchor="middle" font-size="9" fill="#0ea5e9" font-weight="700">Call ${callStrike}</text>`;
-      html+=`<line x1="${xPut}" x2="${xPut}" y1="15" y2="150" stroke="#38bdf8" stroke-width="2"/><text x="${xPut}" y="168" text-anchor="middle" font-size="9" fill="#0284c7" font-weight="700">Put ${putStrike}</text>`;
-      html+=`<line x1="${xBeC}" x2="${xBeC}" y1="15" y2="150" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="2 2"/><text x="${xBeC}" y="12" text-anchor="middle" font-size="8" fill="#8b5cf6" font-weight="700">BE ${beUpper}</text>`;
-      html+=`<line x1="${xBeP}" x2="${xBeP}" y1="15" y2="150" stroke="#8b5cf6" stroke-width="1.2" stroke-dasharray="2 2"/><text x="${xBeP}" y="12" text-anchor="middle" font-size="8" fill="#8b5cf6" font-weight="700">BE ${beLower}</text>`;
-    } else {
-      const xShort=50 + ((t.short_strike-(atm-250))/500)*540, xBe=50 + ((breakeven-(atm-250))/500)*540, xLong=t.long_strike? 50 + ((t.long_strike-(atm-250))/500)*540 : null;
-      html+=`<line x1="${xShort}" x2="${xShort}" y1="15" y2="150" stroke="#0ea5e9" stroke-width="2"/><text x="${xShort}" y="168" text-anchor="middle" font-size="9" fill="#0ea5e9" font-weight="700">Short ${t.short_strike}</text>`;
-      if(xLong) html+=`<line x1="${xLong}" x2="${xLong}" y1="15" y2="150" stroke="#38bdf8" stroke-width="1.5" stroke-dasharray="4 4"/><text x="${xLong}" y="180" text-anchor="middle" font-size="8" fill="#0284c7">Long ${t.long_strike}</text>`;
-      html+=`<line x1="${xBe}" x2="${xBe}" y1="15" y2="150" stroke="#8b5cf6" stroke-width="1.5" stroke-dasharray="2 2"/><text x="${xBe}" y="12" text-anchor="middle" font-size="9" fill="#8b5cf6" font-weight="700">BE ${breakeven}</text>`;
-    }
-    const xNow=50 + ((t.closed_price-(atm-250))/500)*540, yNow=150 - (pts-minP)/(maxP-minP||1)*110;
-    if(xNow>=50 && xNow<=590) html+=`<circle cx="${xNow}" cy="${yNow}" r="6" fill="${pts>=0?'#15803d':'#dc2626'}" stroke="#fff" stroke-width="2"/><text x="${xNow}" y="${yNow-10}" text-anchor="middle" font-size="10" fill="${pts>=0?'#15803d':'#dc2626'}" font-weight="800">${pts>=0?'+':''}${pts} @${t.closed_price}</text>`;
-    html+=`<text x="50" y="188" font-size="9" fill="#64748b">${atm-250}</text><text x="590" y="188" text-anchor="end" font-size="9" fill="#64748b">${atm+250}</text><text x="320" y="188" text-anchor="middle" font-size="9" fill="#334155" font-weight="700">Nifty Spot at Expiry →</text><text x="15" y="80" text-anchor="middle" font-size="9" fill="#334155" font-weight="700" transform="rotate(-90 15 80)">P&L (pts)</text>`;
-    html+=`</svg>`;
-    html+=`<div style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;font-size:.78rem;color:#475569"><span style="background:#dcfce7;color:#065f46;padding:.2rem .5rem;border-radius:999px">● Profit zone green</span><span style="background:#fee2e2;color:#7f1d1d;padding:.2rem .5rem;border-radius:999px">● Loss zone red</span><span>— hold to expiry, close intraday 15:20 shown</span></div>`;
-    if(!isStrangle){
-      html+=`<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.5rem;margin-top:.6rem;font-size:.78rem;text-align:center"><div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:.4rem"><div style="color:#2563eb;font-weight:700">Short Strike</div><div style="font-weight:800">${t.short_strike} ${isBear?'CE':'PE'}</div></div><div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:.4rem"><div style="color:#15803d;font-weight:700">Long Strike</div><div style="font-weight:800">${t.long_strike||'-'} ${isBear?'CE':'PE'}</div></div><div style="background:#fefce8;border:1px solid #fde68a;border-radius:8px;padding:.4rem"><div style="color:#a16207;font-weight:700">ATM</div><div style="font-weight:800">${atm}</div></div><div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:.4rem"><div style="color:#7c3aed;font-weight:700">Width</div><div style="font-weight:800">50 pts</div></div></div>`;
-    }
-    chart.innerHTML=html;
-    info.innerHTML=isStrangle?`<span style="color:#15803d">● Green 24400–24500 = profit</span> · <span style="color:#dc2626">● Red &lt;${beLower} / &gt;${beUpper} = loss</span> — Short Strangle net 35 pts (BS VIX prox) · 100 pts width · Lot ${t.lot||''} ₹${t.rupees||''} · VIX ${vixDisp} DTE ${t.dte||''}`:`<span style="color:#15803d">● Green ${isBear?'below short':'above short'} = profit</span> · <span style="color:#dc2626">● Red beyond = loss</span> — Net credit 28 pts (short 50% prem) · Lot ${t.lot||''} ₹${t.rupees||''} · VIX ${vixDisp} DTE ${t.dte||''}`;
-    chart.scrollIntoView({behavior:'smooth'});
-  }
-  // day-by-day (for month/week/date-range) — intraday for current Tue expiry
-  const byDay={};
-  sorted.forEach(t=>{const d=(t.date||t.created_at||'').slice(0,10); if(!d) return; (byDay[d]=byDay[d]||[]).push(t);});
-  const dow=Object.keys(byDay).sort().reverse().map(d=>{
-    const arr=byDay[d];
-    const pts=arr.reduce((a,t)=>a+(t.points||0),0);
-    const result=arr[0]?.result||'—';
-    const strat=(arr[0]?.strategy||'—').replace(' (Sim)','');
-    const verdict=arr[0]?.ai_verdict||'—';
-    const expiry=arr[0]?.expiry||'—';
-    const dte=arr[0]?.dte;
-    const expiryTxt = expiry!=='—' && dte!=null ? `${expiry} (${dte} DTE)` : esc(expiry);
-    const badge = verdict==='TRADE'?'badge-green':verdict==='WAIT'?'badge-yellow':'badge-blue';
-    const strikes=fmtStrikes(arr[0]);
-    return `<tr style="cursor:pointer" data-date="${d}"><td>${d}</td><td>${expiryTxt}</td><td><span class="badge ${badge}">${esc(verdict)}</span></td><td>${esc(strat)}</td><td style="font-size:.78rem">${strikes}</td><td><span style="color:${pnlColor(pts)}">${esc(result)}</span></td><td style="color:${pnlColor(pts)}">${pts>=0?'+':''}${Number(pts).toFixed(2)}</td><td><span style="color:#0ea5e9;font-size:.78rem">view</span></td></tr>`;
-  }).join('');
-  document.getElementById('dow-body').innerHTML= dow || '<tr><td colspan="8" class="status" style="padding:1rem">No daily breakdown.</td></tr>';
-  // delegated single-click handler for payoff — fixes inline onclick not firing in some browsers/CSP
-  (function(){
-    const dowBody=document.getElementById('dow-body');
-    if(dowBody && !dowBody.dataset.bound){
-      dowBody.dataset.bound="1";
-      dowBody.addEventListener('click', (e)=>{
-        const tr=e.target.closest('tr');
-        if(!tr || !tr.dataset.date) return;
-        const d=tr.dataset.date;
-        const t = window._lastBT?.r.trades.find(x=> (x.date||x.created_at||'').slice(0,10)===d);
-        if(t) window.drawPayoffFor(t);
-      });
-    }
-  })();
-
-  const ai=document.getElementById('ai-box');
-  const condBest=Object.entries(groups).sort((a,b)=> b[1].reduce((s,t)=>s+(t.points||0),0) - a[1].reduce((s,t)=>s+(t.points||0),0))[0];
-  const condWorst=Object.entries(groups).sort((a,b)=> a[1].reduce((s,t)=>s+(t.points||0),0) - b[1].reduce((s,t)=>s+(t.points||0),0))[0];
-  let insight='';
-  if(aiStats.wait_trades && aiStats.wait_trades.avoided_loss_pts){
-    insight+=`AI correctly stayed <strong>WAIT</strong> on ${aiStats.wait_trades.trades} trades — avoided <strong style="color:#15803d">${aiStats.wait_trades.avoided_loss_pts} pts</strong> of loss while missing ${aiStats.wait_trades.missed_win_pts} pts wins (net <strong>${aiStats.wait_trades.net_avoided} pts</strong>). `;
-  } else if(aiStats.total_outlooks===0){
-    insight+=`No AI outlooks in this window — backtest is paper-only. Once outlooks accumulate, AI WAIT will gate losses. `;
-  }
-  if(condBest) insight+=`Best regime <strong>${esc(condBest[0].toLowerCase())}</strong> (${groups[condBest[0]].length} trades). `;
-  if(condWorst && condWorst[0]!==condBest?.[0]){
-    const worstPts=condWorst[1].reduce((a,t)=>a+(t.points||0),0);
-    if(worstPts<0) insight+=`Weakest <strong>${esc(condWorst[0].toLowerCase())}</strong> — drawdowns cluster there. `;
-  }
-  insight+=`Win rate <strong>${win.toFixed(1)}%</strong> PF <strong>${pf.toFixed(2)}</strong> ${pf>=1.5?'winners cover losers.': pf>=1?'thin edge.':'losers outweigh winners.'} `;
-  insight+=`Max DD <strong>${Math.abs(mddPct).toFixed(1)}%</strong>. ${aiOnly ? 'Showing AI-gated P&L only.' : 'Toggle AI-gated only to see what AI would actually trade.'}`;
-  ai.innerHTML='<p>'+insight+'</p>';
-  document.getElementById('ai-card').style.display='block';
-  document.getElementById('bt-footnote').textContent='Generated '+new Date(r.generated_at||Date.now()).toLocaleString('en-IN',{timeZone:'Asia/Kolkata'})+' IST · AI verdicts from market_outlooks · past performance ≠ future results.';
-  window._lastBT={r, series, capital, days, sym};
-  window._filterByStrat = (strat)=>{
-    const filtered = sorted.filter(t=> (t.strategy||'').replace(' (Sim)','')===strat || (t.strategy||'').includes(strat));
-    const byDayF={}; filtered.forEach(t=>{const d=(t.date||t.created_at||'').slice(0,10); (byDayF[d]=byDayF[d]||[]).push(t);});
-    const dowF=Object.keys(byDayF).sort().reverse().map(d=>{
-      const arr=byDayF[d]; const pts=arr.reduce((a,t)=>a+(t.points||0),0);
-      const strat0=(arr[0]?.strategy||'—').replace(' (Sim)',''); const verdict=arr[0]?.ai_verdict||'—';
-      const expiry=arr[0]?.expiry||'—'; const dte=arr[0]?.dte;
-      const expiryTxt = expiry!=='—' && dte!=null ? `${expiry} (${dte} DTE)` : esc(expiry);
-      const badge = verdict==='TRADE'?'badge-green':verdict==='WAIT'?'badge-yellow':'badge-blue';
-      const strikes=fmtStrikes(arr[0]);
-      return `<tr style="cursor:pointer" data-date="${d}"><td>${d}</td><td>${expiryTxt}</td><td><span class="badge ${badge}">${esc(verdict)}</span></td><td>${esc(strat0)}</td><td style="font-size:.78rem">${strikes}</td><td><span style="color:${pnlColor(pts)}">${esc(arr[0]?.result||'—')}</span></td><td style="color:${pnlColor(pts)}">${pts>=0?'+':''}${Number(pts).toFixed(2)}</td><td><span style="color:#0ea5e9;font-size:.78rem">view</span></td></tr>`;
-    }).join('') || `<tr><td colspan="8" class="status" style="padding:1rem">No trades for ${esc(strat)} in this window.</td></tr>`;
-    const winsF=filtered.filter(t=>t.result==='WIN').length, lossesF=filtered.filter(t=>t.result==='LOSS').length, ptsF=filtered.reduce((a,t)=>a+(t.points||0),0);
-    const wrF=filtered.length? (winsF/filtered.length*100).toFixed(1):'0.0';
-    document.getElementById('dow-body').innerHTML = `<tr><td colspan="8" class="status" style="background:#f0f9ff;color:#0c4a6e;padding:.6rem">Filtered to <b>${esc(strat)}</b> — ${filtered.length} trades · ${winsF}W/${lossesF}L · WR ${wrF}% · ${ptsF>=0?'+':''}${ptsF.toFixed(2)} pts · ₹${(ptsF*75/100000).toFixed(2)}L — <a href="#" id="clear-strat-filter" style="color:#0ea5e9">Clear filter</a> · <a href="#" id="export-strat-csv" style="color:#0ea5e9">Export CSV</a></td></tr>` + dowF;
-    // aggregated payoff for this strategy
-    const avgLot = filtered.length? Math.round(filtered.reduce((a,t)=>a+(t.lot||65),0)/filtered.length) : 65;
-    const sample = filtered[0] || {};
-    const payoffInfo = sample.short_strike ? `Aggregated ${esc(strat)} payoff — ATM ${sample.atm||'-'} short ${sample.short_strike} long ${sample.long_strike||'-'} (50pt, 50% prem) — Black-Scholes VIX prox — avg lot ${avgLot}` : `Aggregated ${esc(strat)} payoff — ${filtered.length} trades`;
-    const payoffWrap=document.getElementById('payoff-wrap'), payoffChart=document.getElementById('payoff-chart'), payoffInfoEl=document.getElementById('payoff-info');
-    if(payoffWrap && sample.short_strike){
-      payoffWrap.style.display='block';
-      let html=`<div style="font-weight:700">${payoffInfo} — ${ptsF>=0?'+':''}${ptsF.toFixed(2)} pts total</div>`;
-      html+=`<svg width="600" height="140" viewBox="0 0 600 140" style="max-width:100%;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-top:.5rem"><polyline fill="none" stroke="#15803d" stroke-width="2" points="`;
-      const atm=sample.atm||24000;
-      const isBear = strat.toUpperCase().includes('BEAR');
-      const isBull = strat.toUpperCase().includes('BULL');
-      const isStrangle = strat.includes('Short Strangle');
-      const ptsArr=[];
-      for(let i=-200;i<=200;i+=20){
-        const spot=atm+i;
-        let payoff=0;
-        if(isBear){ payoff= spot < sample.short_strike ? 28 : 28 - (spot - sample.short_strike)*0.8; }
-        else if(isBull){ payoff= spot > sample.short_strike ? 28 : 28 - (sample.short_strike - spot)*0.8; }
-        else if(isStrangle){ payoff= Math.abs(spot-atm) < 50 ? 35 : 35 - (Math.abs(spot-atm)-50)*0.9; }
-        if(payoff < -50) payoff=-50; if(payoff>35) payoff=35;
-        ptsArr.push(payoff);
-      }
-      const minP=Math.min(...ptsArr, -40), maxP=Math.max(...ptsArr, 40);
-      const yZero2 = 120 - (0-minP)/(maxP-minP||1)*100;
-      html = html.replace('<polyline', `<rect x="20" y="10" width="560" height="${Math.max(0,yZero2-10)}" fill="#86efac" opacity="0.30"/><rect x="20" y="${yZero2}" width="560" height="${120-yZero2}" fill="#fca5a5" opacity="0.30"/><text x="30" y="22" font-size="11" fill="#15803d" font-weight="800">PROFIT ZONE</text><text x="30" y="${yZero2+14}" font-size="11" fill="#dc2626" font-weight="800">LOSS ZONE</text><polyline`);
-      ptsArr.forEach((p,idx)=>{
-        const x=20 + idx*560/20, y=120 - (p-minP)/(maxP-minP||1)*100;
-        html+= `${x},${y} `;
-      });
-      html+=`"/><line x1="20" x2="580" y1="${yZero2}" y2="${yZero2}" stroke="#64748b" stroke-width="1" stroke-dasharray="6 3"/><line x1="300" x2="300" y1="10" y2="130" stroke="#eab308" stroke-dasharray="4 4"/><text x="300" y="10" text-anchor="middle" font-size="10" fill="#a16207">ATM ${atm}</text></svg>`;
-      payoffChart.innerHTML=html;
-      payoffInfoEl.textContent=`${filtered.length} trades aggregated — click any Date row view for per-trade payoff`;
-      payoffChart.scrollIntoView({behavior:'smooth'});
-    }
-    document.getElementById('dow-body').scrollIntoView({behavior:'smooth', block:'start'});
-    const cf=document.getElementById('clear-strat-filter');
-    if(cf) cf.addEventListener('click', (e)=>{e.preventDefault(); document.getElementById('dow-body').innerHTML = dow || '<tr><td colspan="8" class="status" style="padding:1rem">No daily breakdown.</td></tr>'; document.getElementById('payoff-wrap').style.display='none';});
-    const ex=document.getElementById('export-strat-csv');
-    if(ex) ex.addEventListener('click', (e)=>{
-      e.preventDefault();
-      const rows=[['Date','Expiry','DTE','Strategy','Strikes','Result','Points','Lot','₹']];
-      filtered.sort((a,b)=>(a.date||'').localeCompare(b.date||'')).forEach(t=>{
-        rows.push([t.date||'', t.expiry||'', t.dte||'', (t.strategy||'').replace(' (Sim)',''), fmtStrikes(t), t.result||'', (t.points||0).toFixed(2), t.lot||'', ((t.points||0)*(t.lot||75)).toFixed(2)]);
-      });
-      const csv=rows.map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
-      const blob=new Blob([csv],{type:'text/csv'}); const url=URL.createObjectURL(blob);
-      const a=document.createElement('a'); a.href=url; a.download=`${strat.replace(/\s+/g,'_')}_${filtered.length}trades.csv`; a.click(); URL.revokeObjectURL(url);
-    });
-  };
+  const W=680,H=160,ML=52,MR=12,MT=10,MB=28;
+  const pw=W-ML-MR,ph=H-MT-MB;
+  let peak=0,dd=0;const ddPoints=[{dd:0}];
+  let cumulative=0;
+  completed.forEach(t=>{cumulative+=(t.net_pnl||0);peak=Math.max(peak,cumulative);const curDd=peak-cumulative;ddPoints.push({dd:curDd,date:t.exit_time});});
+  const mxDd=Math.max(0.001,...ddPoints.map(d=>d.dd));
+  const x=i=>ML+i*(pw/Math.max(1,ddPoints.length-1));
+  const y=v=>MT+ph-(v/mxDd)*ph;
+  const pts=ddPoints.map((d,i)=>x(i).toFixed(1)+','+y(d.dd).toFixed(1)).join(' ');
+  document.getElementById('bt-dd-curve').innerHTML=
+    `<svg viewBox="0 0 ${W} ${H}" class="bt-equity-svg">`
+    +`<polygon points="${pts} ${x(ddPoints.length-1).toFixed(1)},${MT} ${x(0).toFixed(1)},${MT}" fill="rgba(220,38,38,0.1)"/>`
+    +`<polyline points="${pts}" fill="none" stroke="#dc2626" stroke-width="2" stroke-linejoin="round"/>`
+    +`<line x1="${ML}" x2="${W-MR}" y1="${MT}" y2="${MT}" stroke="#e2e8f0" stroke-dasharray="4 4"/>`
+    +`<text x="${ML-8}" y="${(+MT+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">0</text>`
+    +`<text x="${ML-8}" y="${(+y(mxDd)+3).toFixed(1)}" text-anchor="end" font-size="10" fill="#64748b">₹${fmt0(mxDd)}</text>`
+    +`</svg>`;
 }
 
-// live recalc of ₹ view when capital changes without refetch
-document.getElementById('bt-capital').addEventListener('input',()=>{
-  if(!window._lastBT) return;
-  const cap=Math.max(0,Number(document.getElementById('bt-capital').value)||0);
-  document.getElementById('m-cap').textContent='₹'+cap.toLocaleString('en-IN');
-  // rerun full render from cached result to avoid API hit
-  const cached=window._lastBT.r;
-  // we reuse run logic by calling a lightweight redraw — simplest: call runBT again is fine but debounce; for now trigger full
-});
-
-function toTradingDate(d){
-  // snap to previous trading day (Mon-Fri) if weekend
-  const wd=d.getDay();
-  if(wd===0) d.setDate(d.getDate()-2); // Sun -> Fri
-  else if(wd===6) d.setDate(d.getDate()-1); // Sat -> Fri
-  return d;
-}
-function fmtYMD(d){ return d.toISOString().slice(0,10); }
-function syncCustom(){
-  const v=document.getElementById('bt-days').value;
-  const wrap=document.getElementById('custom-range-wrap');
-  const show = v==='custom';
-  wrap.style.display = show ? 'flex' : 'none';
-  if(show){
-    const fromEl=document.getElementById('bt-from'), toEl=document.getElementById('bt-to');
-    if(!fromEl.value && !toEl.value){
-      const today=toTradingDate(new Date());
-      const from=toTradingDate(new Date(today)); from.setDate(from.getDate()-6);
-      fromEl.value=fmtYMD(from); toEl.value=fmtYMD(today);
-    }
-  }
-}
-document.getElementById('bt-run').addEventListener('click',runBT);
-document.getElementById('bt-strategy').addEventListener('change', runBT);
-document.getElementById('bt-days').addEventListener('change', ()=>{ syncCustom(); if(document.getElementById('bt-days').value!=='custom') runBT(); });
-document.getElementById('bt-from').addEventListener('change', ()=>{
-  const el=document.getElementById('bt-from');
-  if(el.value){ const d=toTradingDate(new Date(el.value+'T00:00:00')); el.value=fmtYMD(d); }
-});
-document.getElementById('bt-to').addEventListener('change', ()=>{
-  const el=document.getElementById('bt-to');
-  if(el.value){ const d=toTradingDate(new Date(el.value+'T00:00:00')); el.value=fmtYMD(d); }
-});
-document.getElementById('bt-apply-custom').addEventListener('click', runBT);
-document.getElementById('bt-ai-only').addEventListener('change', runBT);
-document.addEventListener('DOMContentLoaded', ()=>{ syncCustom(); runBT(); });
-</script>
-<script>
-(function(){var BASE='..';
-async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;
-var items=[];try{var m=await(await fetch(BASE+'/api/market')).json();if(m&&m.instruments){for(const [s,inst] of Object.entries(m.instruments)){var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;
-items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}}catch(e){}
-if(items.length)el.innerHTML=items.join('')+items.join('');}catch(e){}}
-document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});
-})();
-</script>
-<script>
-(function(){try{var s=document.getElementById('live-clock');if(!s) return;function tick(){try{var t=new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});s.textContent=t+' IST';}catch(e){}} tick();setInterval(tick,1000);}catch(e){}})();
-</script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
-</script>
-<script src="/assets/js/consent.js" defer></script>
-<script>
-document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('.card').forEach(function(c){
-    if(c.dataset.clickable==='1'||c.onclick)return;
-    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
-    var url=null;
-    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/market.html';
-    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/market.html';
-    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/market.html';
-    else if(h.includes('AI MARKET OUTLOOK')||h.includes('AI INTRADAY'))url='/strategies.html';
-    else if(h.includes('OPTIONS INTELLIGENCE')||h.includes('OPTION CHAIN')||h.includes('PCR')||h.includes('IV')||h.includes('MAX PAIN'))url='/strategy-builder.html';
-    else if(h.includes('STRATEG')||h.includes('BUY')||h.includes('SELL')||h.includes('EXIT')||h.includes('HOLD'))url='/strategies.html';
-    else if(h.includes('KEY LEVELS')||h.includes('SUPPORT')||h.includes('RESISTANCE'))url='/scanner.html';
-    else if(h.includes('SCANNER')||h.includes('SCAN'))url='/scanner.html';
-    else if(h.includes('TODAY')||h.includes('TERMINAL'))url='/today/index.html';
-    else if(h.includes('BACKTEST'))url='/tools/backtest.html';
-    else if(h.includes('POSITION')||h.includes('SIZE'))url='/tools/position-size.html';
-    else if(h.includes('HOLDING')||h.includes('ETF'))url='/etfs/top-etfs.html';
-    if(!url)return;
-    c.dataset.clickable='1';c.style.cursor='pointer';
-    c.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('button')||e.target.closest('table'))return;location.href=url;});
+function renderLedger(trades){
+  const body=document.getElementById('bt-ledger-body');
+  if(!trades.length){body.innerHTML='<tr><td colspan="12" class="bt-no-data">No trades</td></tr>';return;}
+  let html='';
+  trades.forEach((t,i)=>{
+    const pnlClrVal=pnlClr(t.net_pnl);
+    html+=`<tr>
+      <td>${i+1}</td>
+      <td>${(t.entry_time||'').slice(0,16)}</td>
+      <td>${t.direction==='LONG'?'🟢':'🔴'}</td>
+      <td>${fmt(t.entry_price)}</td>
+      <td>${fmt(t.exit_price)}</td>
+      <td>${fmt0(t.size)}</td>
+      <td>${fmt(t.stop_loss)}</td>
+      <td>${fmt(t.target)}</td>
+      <td style="color:${t.outcome==='TARGET'?'#15803d':t.outcome==='INVALIDATION'?'#dc2626':'#a16207'}">${t.outcome}</td>
+      <td>₹${fmt0(t.costs?.total_cost||0)}</td>
+      <td style="color:${pnlClrVal}">${t.net_pnl!=null?(t.net_pnl>=0?'+':'')+fmt(t.net_pnl):'—'}</td>
+      <td>${t.r_multiple!=null?fmt(t.r_multiple):'—'}</td>
+    </tr>`;
   });
-});
+  body.innerHTML=html;
+}
 </script>
 </body>
 </html>
-
