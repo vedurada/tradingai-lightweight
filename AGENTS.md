@@ -90,6 +90,8 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **17 Phase 5 tests**: `python3 -m pytest tests/test_phase5.py -v`
 - **13 Phase 6 tests**: `python3 -m pytest tests/test_phase6.py -v`
 - **20 Phase 7 tests**: `python3 -m pytest tests/test_phase7.py -v`
+- **11 Phase 8 walk-forward tests**: `python3 -m pytest tests/test_phase8_walkforward.py -v`
+- **11 Phase 8 evidence tests**: `python3 -m pytest tests/test_phase8_evidence.py -v`
 - **6 known failures** (data-dependent, DB empty): see `docs/AUDIT_REPORT.md`
 
 ## Deployment
@@ -116,6 +118,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 5**: ✅ COMPLETE — Historical AI Replay, 1032/1032 tests passing
 - **Phase 6**: ✅ COMPLETE — Live Intraday + Price-Tick Experience, 1045/1045 tests passing
 - **Phase 7**: ✅ COMPLETE — Deterministic Strategy Backtesting, 1065/1065 tests passing
+- **Phase 8**: ✅ COMPLETE — Walk-Forward Validation + Historical Evidence, 1087/1087 tests passing
 
 ## Phase 5 Components
 
@@ -154,6 +157,42 @@ Inputs: Market State + Gap Analysis + Options State → TradeSetup
 - Trade readiness: GO (entry window active), WAIT (conditions forming), NO_SETUP (no trade warranted)
 - Evidence-based, never guarantees outcomes
 - AI explicitly returns WAIT when conditions aren't ready
+
+## Phase 8 Components
+
+Walk-Forward Validation Engine + Historical Evidence Engine.
+
+### Key Design Decisions (Phase 8)
+- **Terminology**: Development → Validation → Out-of-Sample (NOT Training → Validate → Test)
+- **Deterministic evidence**: Historical similarity computed deterministically, NO LLM decides
+- **Underlying vs Options separation**: Underlying outcomes and Options outcomes tracked separately (options data often unavailable)
+- **AI excluded**: AI NEVER computes walk-forward or evidence metrics
+- **INSUFFICIENT_HISTORICAL_DATA**: Explicit handling with data coverage reporting
+- **One engine, three environments** inherited from Phase 7
+
+### Walk-Forward Engine (backend/walkforward.py)
+- `compute_walkforward(symbol, start, end, strategy)` → WalkForwardResult namedtuple
+- Chronological window splitting: Development → Validation → Out-of-Sample
+- Each window has full provenance: strategy_version, indicator_version, data_version, cost_model_version
+- Returns metrics for dev/val/OOS or None if INSUFFICIENT_HISTORICAL_DATA
+- Data coverage always reported (total_candles, trading_days, data_start, data_end)
+- Edge cases: No data → INSUFFICIENT_HISTORICAL_DATA, partial data → partial results with coverage
+
+### Historical Evidence Engine (backend/historical_evidence.py)
+- `find_historical_evidence(symbol, date, criteria)` → evidence result with matches, coverage, subsequent move stats
+- Daily-level similarity matching: regime, gap, price location, RSI conditions
+- **Underlying outcomes**: {date, subsequent_move_pct, high_low_pct, range_pct, vol_rank, trend, close_location, regime}
+- **Options outcomes**: Separate array, empty when no option data available (no LLM hallucination)
+- AI excluded from all calculations (no ai_model, confidence, or explanation fields)
+- Coverage always reported (total_days, earliest, latest, match_count)
+
+### API Endpoints
+- `/api/walkforward/<symbol>/<start>/<end>` — Walk-forward validation results (rate limited)
+- `/api/evidence/<symbol>/<date>` — Historical evidence for a date (rate limited)
+
+### Frontend
+- `tools/walkforward.html` — Walk-forward validation UI with consent tags
+- `evidence/historical.html` — Historical evidence UI with consent tags, underlying vs options separation
 
 ## Phase 7 Components
 
