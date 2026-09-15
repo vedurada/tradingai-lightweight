@@ -8,6 +8,7 @@ database/
 data/*.json
 !data/.gitkeep
 logs/
+backups/
 tmp/
 __pycache__/
 *.pyc
