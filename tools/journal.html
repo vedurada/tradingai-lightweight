@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trade Journal — TradingAI</title>
+<meta name="description" content="Immutable trade journal: record your trades, link to TradingAI setup, compare plan vs action.">
+<link rel="canonical" href="https://tradingai.in/tools/journal.html">
+<meta property="og:title" content="Trade Journal — TradingAI">
+<meta property="og:url" content="https://tradingai.in/tools/journal.html">
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}</script>
+<script>gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script src="/assets/js/consent.js" defer></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0e17; color: #e0e6f0; min-height: 100vh; padding: 16px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.badge-consent { background: #1a3a5c; color: #5ba3f5; }
+.card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: #94a3b8; }
+.card h3 { font-size: 13px; font-weight: 500; margin-bottom: 8px; color: #64748b; }
+.form-group { margin-bottom: 12px; }
+.form-group label { display: block; font-size: 12px; color: #64748b; margin-bottom: 4px; }
+.form-group input, .form-group select, .form-group textarea {
+width: 100%; padding: 10px 12px; background: #0a0e17; border: 1px solid #1e293b;
+border-radius: 8px; color: #e0e6f0; font-size: 14px; outline: none;
+}
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+border-color: #2563eb;
+}
+.btn { display: block; width: 100%; padding: 14px; border-radius: 10px; border: none;
+font-size: 15px; font-weight: 600; cursor: pointer; margin-top: 8px; }
+.btn-primary { background: #2563eb; color: #fff; }
+.btn-secondary { background: #1e293b; color: #e0e6f0; }
+.btn-action { padding: 16px; font-size: 16px; margin-bottom: 8px; border-radius: 12px; }
+.link { color: #5ba3f5; text-decoration: none; font-size: 13px; }
+.section { margin-bottom: 24px; }
+.hidden { display: none; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-box { background: #0a0e17; border-radius: 8px; padding: 12px; text-align: center; }
+.stat-value { font-size: 22px; font-weight: 700; }
+.stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+.insufficient { background: #1a1a0a; border: 1px solid #3a3a1a; border-radius: 8px; padding: 16px; text-align: center; color: #b8a040; font-size: 14px; }
+.setup-id { font-family: monospace; font-size: 12px; color: #64748b; padding: 4px 8px; background: #0a0e17; border-radius: 4px; display: inline-block; margin-top: 4px; }
+.evidence-tag { display: inline-block; padding: 3px 8px; border-radius: 4px; font-size: 12px; font-weight: 500; margin-right: 4px; }
+.evidence-good { background: #0a2a1a; color: #4ade80; }
+.evidence-warn { background: #2a2a0a; color: #fbbf24; }
+.comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+.comparison-col { background: #0a0e17; border-radius: 8px; padding: 12px; }
+.comparison-col h4 { font-size: 11px; color: #64748b; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px; }
+.metric { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+.metric-label { color: #64748b; }
+.metric-value { font-weight: 500; }
+.diff { color: #f87171; font-size: 11px; margin-top: 4px; }
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a3a5c; color: #5ba3f5; padding: 12px 24px; border-radius: 8px; font-size: 14px; z-index: 100; display: none; }
+.journal-entry { border: 1px solid #1e293b; border-radius: 8px; padding: 12px; margin-bottom: 8px; }
+.entry-header { display: flex; justify-content: space-between; align-items: center; }
+.entry-date { font-size: 12px; color: #64748b; }
+.entry-action { font-size: 12px; font-weight: 600; padding: 2px 8px; border-radius: 4px; }
+.action-TRADED { background: #0a2a1a; color: #4ade80; }
+.action-SKIPPED { background: #2a2a0a; color: #fbbf24; }
+.action-PENDING { background: #2a0a1a; color: #f87171; }
+.action-PAPER { background: #0a1a2a; color: #60a5fa; }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>Trade Journal</h1>
+<span class="badge badge-consent">CONSENT_REQUIRED</span>
+</div>
+
+<div id="setup-section">
+<div class="card">
+<h2>Did you take this setup?</h2>
+<div class="setup-id" id="setup-id-display">No setup linked</div>
+<div style="margin-top: 16px;">
+<button class="btn btn-action btn-primary" onclick="selectAction('TRADED')">TRADED</button>
+<button class="btn btn-action btn-secondary" onclick="selectAction('PAPER')">PAPER TRADED</button>
+<button class="btn btn-action btn-secondary" onclick="selectAction('SKIPPED')">SKIPPED</button>
+</div>
+</div>
+</div>
+
+<div id="traded-fields" class="hidden">
+<div class="card">
+<h2>Actual Trade</h2>
+<div class="form-group"><label>Actual Entry</label><input type="number" id="actual_entry" step="0.01"></div>
+<div class="form-group"><label>Actual Exit</label><input type="number" id="actual_exit" step="0.01"></div>
+<div class="form-group"><label>Quantity</label><input type="number" id="quantity"></div>
+<div class="form-group"><label>Actual Risk (₹)</label><input type="number" id="risk_actual" step="0.01"></div>
+<div class="form-group"><label>Result</label>
+<select id="result"><option value="WIN">WIN</option><option value="LOSS">LOSS</option><option value="FLAT">FLAT</option></select>
+</div>
+<div class="form-group"><label>Mistake</label><input type="text" id="mistake" placeholder="Optional"></div>
+</div>
+</div>
+
+<div id="skip-fields" class="hidden">
+<div class="card">
+<h2>Why Skipped?</h2>
+<div class="form-group"><label>Reason</label><textarea id="skip_reason" rows="3" placeholder="Conditions not met, etc."></textarea></div>
+</div>
+</div>
+
+<div id="notes-field" class="card" style="margin-top: 12px;">
+<h2>Notes</h2>
+<div class="form-group"><label>Notes</label><textarea id="notes" rows="3" placeholder="What happened?"></textarea></div>
+<div class="form-group"><label>User Reason</label><input type="text" id="user_reason" placeholder="Why did you take this action?"></div>
+<button class="btn btn-primary" onclick="saveEntry()">Save Entry</button>
+</div>
+
+<div id="save-toast" class="toast">Entry saved</div>
+
+<div id="stats-section" class="section hidden">
+<div class="card">
+<h2>Personal Statistics</h2>
+<div id="stats-content"></div>
+</div>
+</div>
+
+<div id="journal-list-section" class="section hidden">
+<div class="card">
+<h2>Recent Entries</h2>
+<div id="journal-list"></div>
+</div>
+</div>
+
+<div id="comparison-section" class="section hidden">
+<div class="card">
+<h2>TradingAI vs You</h2>
+<div id="comparison-content"></div>
+</div>
+</div>
+
+<script>
+const API_BASE = '..';
+async function fetchJSON(path, options = {}) {
+try { const r = await fetch(`${API_BASE}/api/${path}`, options); if (!r.ok) return null; return await r.json(); } catch(e) { return null; }
+}
+
+let currentAction = null;
+let currentJournalId = null;
+
+function selectAction(action) {
+currentAction = action;
+document.getElementById('traded-fields').classList.add('hidden');
+document.getElementById('skip-fields').classList.add('hidden');
+if (action === 'TRADED') document.getElementById('traded-fields').classList.remove('hidden');
+if (action === 'SKIPPED') document.getElementById('skip-fields').classList.remove('hidden');
+}
+
+async function saveEntry() {
+const data = {
+date: new Date().toISOString().slice(0, 10),
+instrument: 'NIFTY',
+user_action: currentAction,
+};
+if (currentAction === 'TRADED') {
+data.actual_entry = parseFloat(document.getElementById('actual_entry').value) || null;
+data.actual_exit = parseFloat(document.getElementById('actual_exit').value) || null;
+data.quantity = parseInt(document.getElementById('quantity').value) || null;
+data.risk_actual = parseFloat(document.getElementById('risk_actual').value) || null;
+data.result = document.getElementById('result').value;
+data.mistake = document.getElementById('mistake').value || null;
+}
+data.notes = document.getElementById('notes').value || null;
+data.user_reason = document.getElementById('user_reason').value || null;
+
+const result = await fetchJSON('journal', { method: 'POST', headers: {'Content-Type':'application/json'}, body: JSON.stringify(data) });
+if (result) {
+currentJournalId = result.journal_id;
+showToast('Entry saved');
+loadRecentEntries();
+loadStats();
+}
+}
+
+function showToast(msg) {
+const toast = document.getElementById('save-toast');
+toast.textContent = msg;
+toast.style.display = 'block';
+setTimeout(() => { toast.style.display = 'none'; }, 3000);
+}
+
+async function loadRecentEntries() {
+const result = await fetchJSON('journal?limit=10');
+if (!result) return;
+const container = document.getElementById('journal-list');
+container.innerHTML = result.entries.map(e => `
+<div class="journal-entry">
+<div class="entry-header">
+<span class="entry-date">${e.date}</span>
+<span class="entry-action action-${e.user_action}">${e.user_action}</span>
+</div>
+<div style="font-size:13px;color:#64748b;margin-top:4px;">${e.instrument} · ${e.strategy || ''}</div>
+<div style="font-size:12px;color:#64748b;margin-top:2px;">${e.notes || ''}</div>
+</div>
+`).join('');
+document.getElementById('journal-list-section').classList.remove('hidden');
+}
+
+async function loadStats() {
+const stats = await fetchJSON('journal/stats?instrument=NIFTY');
+if (!stats) return;
+const container = document.getElementById('stats-content');
+if (stats.insufficient_data) {
+container.innerHTML = `<div class="insufficient">Need ${stats.minimum_required} trades for insights. Have ${stats.sample_size}.</div>`;
+} else {
+container.innerHTML = `
+<div class="stats-grid">
+<div class="stat-box"><div class="stat-value">${stats.total_trades}</div><div class="stat-label">Total</div></div>
+<div class="stat-box"><div class="stat-value">${stats.win_rate}%</div><div class="stat-label">Win Rate</div></div>
+<div class="stat-box"><div class="stat-value">${stats.avg_risk_actual || '—'}</div><div class="stat-label">Avg Risk</div></div>
+<div class="stat-box"><div class="stat-value">${stats.took_trade}</div><div class="stat-label">Traded</div></div>
+</div>`;
+}
+document.getElementById('stats-section').classList.remove('hidden');
+}
+
+// Check for setup ID in URL or localStorage
+const urlParams = new URLSearchParams(window.location.search);
+const setupId = urlParams.get('setup_id') || localStorage.getItem('tradingai_setup_id');
+if (setupId) {
+document.getElementById('setup-id-display').textContent = setupId;
+document.getElementById('setup-id-display').classList.remove('hidden');
+}
+
+// Load existing data on mount
+loadRecentEntries();
+loadStats();
+</script>
+</body>
+</html>
