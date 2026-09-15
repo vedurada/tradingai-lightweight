@@ -29,6 +29,9 @@ class TradeJournalRecord:
         "direction", "planned_entry", "actual_entry", "stop", "target",
         "actual_exit", "quantity", "risk_planned", "risk_actual",
         "market_regime", "tradingai_evidence_score", "tradingai_confidence",
+        "tradingai_trade_readiness", "entry_window_start", "entry_window_end",
+        "confirmation_at", "invalidation_at", "actual_entry_at", "actual_exit_at",
+        "tradingai_predicted_outcome",
         "user_action", "user_reason", "result", "mistake", "notes",
         "created_at", "updated_at",
     ]
@@ -124,6 +127,14 @@ def init_tables():
             market_regime TEXT,
             tradingai_evidence_score REAL,
             tradingai_confidence REAL,
+            tradingai_trade_readiness TEXT,
+            entry_window_start TEXT,
+            entry_window_end TEXT,
+            confirmation_at TEXT,
+            invalidation_at TEXT,
+            actual_entry_at TEXT,
+            actual_exit_at TEXT,
+            tradingai_predicted_outcome TEXT,
             user_action TEXT NOT NULL DEFAULT 'PENDING',
             user_reason TEXT,
             result TEXT,
@@ -194,6 +205,14 @@ def insert_journal(
     market_regime: str = None,
     tradingai_evidence_score: float = None,
     tradingai_confidence: float = None,
+    tradingai_trade_readiness: str = None,
+    entry_window_start: str = None,
+    entry_window_end: str = None,
+    confirmation_at: str = None,
+    invalidation_at: str = None,
+    actual_entry_at: str = None,
+    actual_exit_at: str = None,
+    tradingai_predicted_outcome: str = None,
     user_action: str = "PENDING",
     user_reason: str = None,
     result: str = None,
@@ -218,14 +237,22 @@ def insert_journal(
                 direction, planned_entry, actual_entry, stop, target,
                 actual_exit, quantity, risk_planned, risk_actual,
                 market_regime, tradingai_evidence_score, tradingai_confidence,
+                tradingai_trade_readiness, entry_window_start, entry_window_end,
+                confirmation_at, invalidation_at, actual_entry_at, actual_exit_at,
+                tradingai_predicted_outcome,
                 user_action, user_reason, result, mistake, notes,
                 created_at, updated_at
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?,
+                      ?, ?, ?, ?, ?, ?, ?, ?,
+                      ?, ?, ?, ?, ?, ?, ?)
         """, (
             journal_id, tradingai_setup_id, date, instrument.upper(), strategy,
             direction.upper() if direction else None, planned_entry, actual_entry,
             stop, target, actual_exit, quantity, risk_planned, risk_actual,
             market_regime, tradingai_evidence_score, tradingai_confidence,
+            tradingai_trade_readiness, entry_window_start, entry_window_end,
+            confirmation_at, invalidation_at, actual_entry_at, actual_exit_at,
+            tradingai_predicted_outcome,
             user_action.upper(), user_reason, result, mistake, notes,
             now, now,
         ))
@@ -603,3 +630,281 @@ def get_deterministic_stats(instrument: str = None, strategy: str = None,
         return result
     finally:
         conn.close()
+
+
+class JournalComparison:
+    __slots__ = [
+        "journal_id", "tradingai_setup_id",
+        "entry_behavior", "risk_adherence", "exit_behavior",
+        "setup_vs_user_outcome", "compliance",
+    ]
+
+    def __init__(self, **kwargs):
+        for field in self.__slots__:
+            setattr(self, field, kwargs.get(field))
+
+    @classmethod
+    def from_db_row(cls, row):
+        if row is None:
+            return None
+        return cls(**dict(row)) if hasattr(row, "keys") else cls(**dict(zip(
+            cls.__slots__, row)))
+
+
+def _classify_entry_behavior(record: TradeJournalRecord) -> Dict[str, Any]:
+    diffs: Dict[str, Any] = {}
+
+    if record.actual_entry_at and record.confirmation_at:
+        if record.actual_entry_at < record.confirmation_at:
+            diffs["before_confirmation"] = True
+        else:
+            diffs["before_confirmation"] = False
+    else:
+        diffs["before_confirmation"] = None
+
+    if record.actual_entry_at and record.confirmation_at:
+        if record.actual_entry_at >= record.confirmation_at:
+            diffs["during_confirmation"] = True
+        else:
+            diffs["during_confirmation"] = False
+    else:
+        diffs["during_confirmation"] = None
+
+    if record.actual_entry_at and record.entry_window_start and record.entry_window_end:
+        if record.entry_window_start <= record.actual_entry_at <= record.entry_window_end:
+            diffs["inside_entry_window"] = True
+        else:
+            diffs["inside_entry_window"] = False
+    else:
+        diffs["inside_entry_window"] = None
+
+    if record.planned_entry is not None and record.actual_entry is not None:
+        if record.direction == "LONG":
+            diff = record.actual_entry - record.planned_entry
+        else:
+            diff = record.planned_entry - record.actual_entry
+        diffs["entry_price_diff"] = round(diff, 2)
+        if abs(diff) <= 0.01:
+            diffs["entry_match"] = "EXACT"
+        elif abs(diff) <= record.planned_entry * 0.001:
+            diffs["entry_match"] = "WITHIN_SLIPPAGE"
+        else:
+            diffs["entry_match"] = "DIFFERENT"
+    else:
+        diffs["entry_price_diff"] = None
+        diffs["entry_match"] = None
+
+    return diffs
+
+
+def _classify_risk_adherence(record: TradeJournalRecord) -> Dict[str, Any]:
+    diffs: Dict[str, Any] = {}
+
+    if record.stop is not None and record.actual_exit is not None:
+        diffs["stop_adherence"] = "HIT" if record.actual_exit <= record.stop else "NOT_HIT"
+    else:
+        diffs["stop_adherence"] = None
+
+    if record.target is not None and record.actual_exit is not None:
+        diffs["target_adherence"] = "HIT" if record.actual_exit >= record.target else "NOT_HIT"
+    else:
+        diffs["target_adherence"] = None
+
+    if record.risk_planned is not None and record.risk_actual is not None:
+        if record.risk_planned > 0:
+            ratio = record.risk_actual / record.risk_planned
+            if abs(ratio - 1.0) <= 0.05:
+                diffs["risk_adherence"] = "WITHIN_5PCT"
+            elif ratio > 1.0:
+                diffs["risk_adherence"] = "EXCEEDED"
+            else:
+                diffs["risk_adherence"] = "UNDER"
+        else:
+            diffs["risk_adherence"] = None
+    else:
+        diffs["risk_adherence"] = None
+
+    diffs["quantity_diff"] = None
+    diffs["quantity_pct_change"] = None
+
+    return diffs
+
+
+def _classify_exit_behavior(record: TradeJournalRecord) -> Dict[str, Any]:
+    diffs: Dict[str, Any] = {}
+
+    if record.actual_exit is not None and record.stop is not None and record.target is not None:
+        if record.direction == "LONG":
+            at_stop = record.actual_exit <= record.stop
+            at_target = record.actual_exit >= record.target
+        else:
+            at_stop = record.actual_exit >= record.stop
+            at_target = record.actual_exit <= record.target
+        diffs["exited_at_stop"] = at_stop
+        diffs["exited_at_target"] = at_target
+        if at_stop:
+            diffs["exit_type"] = "STOP"
+        elif at_target:
+            diffs["exit_type"] = "TARGET"
+        else:
+            diffs["exit_type"] = "MANUAL"
+    else:
+        diffs["exited_at_stop"] = None
+        diffs["exited_at_target"] = None
+        diffs["exit_type"] = None
+
+    if record.actual_exit_at and record.target:
+        if record.direction == "LONG":
+            diff = record.actual_exit - record.target
+        else:
+            diff = record.target - record.actual_exit
+        diffs["exit_timing_vs_target"] = round(diff, 2)
+    else:
+        diffs["exit_timing_vs_target"] = None
+
+    if record.actual_exit_at and record.stop:
+        if record.direction == "LONG":
+            diff = record.actual_exit - record.stop
+        else:
+            diff = record.stop - record.actual_exit
+        diffs["exit_timing_vs_stop"] = round(diff, 2)
+    else:
+        diffs["exit_timing_vs_stop"] = None
+
+    return diffs
+
+
+def _classify_setup_vs_outcome(record: TradeJournalRecord) -> Dict[str, Any]:
+    diffs: Dict[str, Any] = {}
+
+    ai_outcome = (record.tradingai_predicted_outcome or "").upper()
+    user_result = (record.result or "").upper()
+
+    diffs["tradingai_outcome"] = ai_outcome if ai_outcome else None
+    diffs["user_outcome"] = user_result if user_result else None
+
+    if ai_outcome and user_result:
+        if ai_outcome == user_result:
+            diffs["outcome_match"] = "MATCH"
+        elif ai_outcome == "FLAT" or user_result == "FLAT":
+            diffs["outcome_match"] = "PARTIAL"
+        else:
+            diffs["outcome_match"] = "MISMATCH"
+    else:
+        diffs["outcome_match"] = None
+
+    return diffs
+
+
+def _classify_compliance(record: TradeJournalRecord) -> Dict[str, Any]:
+    diffs: Dict[str, Any] = {}
+
+    readiness = (record.tradingai_trade_readiness or "").upper()
+    action = (record.user_action or "").upper()
+
+    if readiness == "WAIT" and action == "TRADED":
+        diffs["traded_wait"] = True
+    else:
+        diffs["traded_wait"] = False
+
+    if readiness == "NO_SETUP" and action == "TRADED":
+        diffs["traded_no_setup"] = True
+    else:
+        diffs["traded_no_setup"] = False
+
+    if readiness == "GO" and action == "SKIPPED":
+        diffs["skipped_valid_setup"] = True
+    else:
+        diffs["skipped_valid_setup"] = False
+
+    if readiness == "WAIT" and action == "SKIPPED":
+        diffs["correctly_skipped_wait"] = True
+    else:
+        diffs["correctly_skipped_wait"] = False
+
+    if record.invalidation_at and record.actual_exit_at:
+        diffs["traded_after_invalidation"] = record.actual_exit_at > record.invalidation_at
+    else:
+        diffs["traded_after_invalidation"] = None
+
+    if record.confirmation_at and record.actual_entry_at:
+        diffs["entered_before_confirmation"] = record.actual_entry_at < record.confirmation_at
+    else:
+        diffs["entered_before_confirmation"] = None
+
+    return diffs
+
+
+def get_detailed_comparison(journal_id: str) -> Optional[Dict[str, Any]]:
+    record = get_journal(journal_id)
+    if record is None:
+        return None
+
+    return {
+        "journal_id": record.journal_id,
+        "tradingai_setup_id": record.tradingai_setup_id,
+        "date": record.date,
+        "instrument": record.instrument,
+        "entry_behavior": _classify_entry_behavior(record),
+        "risk_adherence": _classify_risk_adherence(record),
+        "exit_behavior": _classify_exit_behavior(record),
+        "setup_vs_user_outcome": _classify_setup_vs_outcome(record),
+        "compliance": _classify_compliance(record),
+        "tradingai_readiness": record.tradingai_trade_readiness,
+        "tradingai_predicted_outcome": record.tradingai_predicted_outcome,
+        "user_action": record.user_action,
+        "result": record.result,
+    }
+
+
+def classify_all_journals() -> Dict[str, List[str]]:
+    """Classify all journal entries for compliance and comparison patterns.
+
+    Returns counts of each classification category.
+    Deterministic - no AI involvement.
+    """
+    conn = _conn()
+    try:
+        rows = conn.execute("SELECT * FROM trade_journal").fetchall()
+        records = [TradeJournalRecord.from_db_row(row) for row in rows]
+    finally:
+        conn.close()
+
+    categories = {
+        "traded_wait": [],
+        "traded_no_setup": [],
+        "skipped_valid_setup": [],
+        "correctly_skipped_wait": [],
+        "traded_after_invalidation": [],
+        "entered_before_confirmation": [],
+        "outcome_mismatch": [],
+        "exited_before_stop": [],
+        "exited_at_target": [],
+    }
+
+    for record in records:
+        compliance = _classify_compliance(record)
+        if compliance["traded_wait"]:
+            categories["traded_wait"].append(record.journal_id)
+        if compliance["traded_no_setup"]:
+            categories["traded_no_setup"].append(record.journal_id)
+        if compliance["skipped_valid_setup"]:
+            categories["skipped_valid_setup"].append(record.journal_id)
+        if compliance["correctly_skipped_wait"]:
+            categories["correctly_skipped_wait"].append(record.journal_id)
+        if compliance["traded_after_invalidation"]:
+            categories["traded_after_invalidation"].append(record.journal_id)
+        if compliance["entered_before_confirmation"]:
+            categories["entered_before_confirmation"].append(record.journal_id)
+
+        outcome = _classify_setup_vs_outcome(record)
+        if outcome["outcome_match"] == "MISMATCH":
+            categories["outcome_mismatch"].append(record.journal_id)
+
+        risk = _classify_risk_adherence(record)
+        if risk.get("stop_adherence") == "NOT_HIT":
+            categories["exited_before_stop"].append(record.journal_id)
+        if risk.get("target_adherence") == "HIT":
+            categories["exited_at_target"].append(record.journal_id)
+
+    return {k: v for k, v in categories.items()}

@@ -27,6 +27,9 @@ from backend.journal import (
     get_events, add_feedback, get_feedback, get_trade_count,
     has_minimum_sample, get_comparison, get_deterministic_stats,
     init_tables, TradeJournalRecord, MIN_SAMPLE_SIZE,
+    _classify_entry_behavior, _classify_risk_adherence, _classify_exit_behavior,
+    _classify_setup_vs_outcome, _classify_compliance,
+    get_detailed_comparison, classify_all_journals, JournalComparison,
 )
 
 DB_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "database", "tradingai.db")
@@ -300,3 +303,155 @@ class TestEdgeCases:
     def test_feedback_for_nonexistent(self):
         feedbacks = get_feedback("J-NONEXISTENT")
         assert feedbacks == []
+
+
+class Test9BComparisonDimensions:
+    def test_journal_accepts_readiness(self):
+        record = _make_journal(
+            tradingai_trade_readiness="WAIT",
+            tradingai_predicted_outcome="DOWN",
+            entry_window_start="2026-09-15T09:30:00",
+            entry_window_end="2026-09-15T11:00:00",
+            confirmation_at="2026-09-15T10:00:00",
+            actual_entry_at="2026-09-15T09:45:00",
+        )
+        assert record.tradingai_trade_readiness == "WAIT"
+        assert record.tradingai_predicted_outcome == "DOWN"
+
+    def test_comparison_before_confirmation(self):
+        record = _make_journal(
+            actual_entry_at="2026-09-15T09:45:00",
+            confirmation_at="2026-09-15T10:00:00",
+        )
+        result = _classify_entry_behavior(record)
+        assert result["before_confirmation"] is True
+        assert result["during_confirmation"] is False
+
+    def test_comparison_during_confirmation(self):
+        record = _make_journal(
+            actual_entry_at="2026-09-15T10:30:00",
+            confirmation_at="2026-09-15T10:00:00",
+        )
+        result = _classify_entry_behavior(record)
+        assert result["before_confirmation"] is False
+        assert result["during_confirmation"] is True
+
+    def test_comparison_inside_entry_window(self):
+        record = _make_journal(
+            actual_entry_at="2026-09-15T10:00:00",
+            entry_window_start="2026-09-15T09:30:00",
+            entry_window_end="2026-09-15T11:00:00",
+        )
+        result = _classify_entry_behavior(record)
+        assert result["inside_entry_window"] is True
+
+    def test_comparison_outside_entry_window(self):
+        record = _make_journal(
+            actual_entry_at="2026-09-15T12:00:00",
+            entry_window_start="2026-09-15T09:30:00",
+            entry_window_end="2026-09-15T11:00:00",
+        )
+        result = _classify_entry_behavior(record)
+        assert result["inside_entry_window"] is False
+
+    def test_entry_price_match_exact(self):
+        record = _make_journal(planned_entry=24800.0, actual_entry=24800.0)
+        result = _classify_entry_behavior(record)
+        assert result["entry_match"] == "EXACT"
+
+    def test_risk_stop_adherence(self):
+        record = _make_journal(stop=25100.0, actual_exit=25000.0)
+        result = _classify_risk_adherence(record)
+        assert result["stop_adherence"] in ("HIT", "NOT_HIT")
+
+    def test_risk_target_adherence(self):
+        record = _make_journal(target=24500.0, actual_exit=24400.0)
+        result = _classify_risk_adherence(record)
+        assert result["target_adherence"] in ("HIT", "NOT_HIT")
+
+    def test_risk_exceeded(self):
+        record = _make_journal(risk_planned=1000.0, risk_actual=1500.0)
+        result = _classify_risk_adherence(record)
+        assert result["risk_adherence"] == "EXCEEDED"
+
+    def test_exit_type_target(self):
+        record = _make_journal(stop=25100.0, target=24500.0, actual_exit=24400.0)
+        result = _classify_exit_behavior(record)
+        assert result["exit_type"] in ("TARGET", "STOP", "MANUAL")
+
+    def test_compliance_traded_wait(self):
+        record = _make_journal(
+            tradingai_trade_readiness="WAIT",
+            user_action="TRADED",
+        )
+        result = _classify_compliance(record)
+        assert result["traded_wait"] is True
+
+    def test_compliance_correctly_skipped_wait(self):
+        record = _make_journal(
+            tradingai_trade_readiness="WAIT",
+            user_action="SKIPPED",
+        )
+        result = _classify_compliance(record)
+        assert result["correctly_skipped_wait"] is True
+
+    def test_compliance_skipped_valid_setup(self):
+        record = _make_journal(
+            tradingai_trade_readiness="GO",
+            user_action="SKIPPED",
+        )
+        result = _classify_compliance(record)
+        assert result["skipped_valid_setup"] is True
+
+    def test_compliance_after_invalidation(self):
+        record = _make_journal(
+            invalidation_at="2026-09-15T10:00:00",
+            actual_exit_at="2026-09-15T11:00:00",
+        )
+        result = _classify_compliance(record)
+        assert result["traded_after_invalidation"] is True
+
+    def test_setup_vs_outcome_match(self):
+        record = _make_journal(
+            tradingai_predicted_outcome="WIN",
+            result="WIN",
+        )
+        result = _classify_setup_vs_outcome(record)
+        assert result["outcome_match"] == "MATCH"
+
+    def test_setup_vs_outcome_mismatch(self):
+        record = _make_journal(
+            tradingai_predicted_outcome="WIN",
+            result="LOSS",
+        )
+        result = _classify_setup_vs_outcome(record)
+        assert result["outcome_match"] == "MISMATCH"
+
+    def test_detailed_comparison_basic(self):
+        record = _make_journal(
+            tradingai_trade_readiness="GO",
+            tradingai_predicted_outcome="UP",
+            tradingai_setup_id="TA-20260915-NIFTY-094321",
+        )
+        comparison = get_detailed_comparison(record.journal_id)
+        assert comparison is not None
+        assert "entry_behavior" in comparison
+        assert "risk_adherence" in comparison
+        assert "exit_behavior" in comparison
+        assert "setup_vs_user_outcome" in comparison
+        assert "compliance" in comparison
+        assert comparison["tradingai_readiness"] == "GO"
+
+    def test_classify_all_empty(self):
+        result = classify_all_journals()
+        assert isinstance(result, dict)
+        for key in ["traded_wait", "traded_no_setup", "skipped_valid_setup",
+                     "correctly_skipped_wait", "outcome_mismatch", "exited_before_stop"]:
+            assert key in result
+            assert isinstance(result[key], list)
+
+    def test_comparison_deterministic(self):
+        record = _make_journal()
+        comp1 = get_detailed_comparison(record.journal_id)
+        comp2 = get_detailed_comparison(record.journal_id)
+        assert comp1 == comp2
