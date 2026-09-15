@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<link rel="preconnect" href="https://www.googleagmanager.com" crossorigin>
+<link rel="preconnect" href="https://pagead2.googlesyndication.com" crossorigin>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI — Intraday Trade Setup</title>
+<meta name="description" content="Mobile-first intraday trade setup: bias, gap, readiness, lifecycle.">
+<link rel="canonical" href="https://tradingai.in/trade.html">
+<meta property="og:title" content="Trade Setup - TradingAI">
+<meta property="og:description" content="Mobile intraday trade setup with evidence and uncertainty.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/trade.html">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script src="/assets/js/keep-scroll.js" defer></script>
+<script src="/assets/js/live-blink.js" defer></script>
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading…</span></div></div>
+
+  <div class="card symbol-select" style="margin-bottom:1rem">
+    <label style="font-weight:700;display:block;margin-bottom:0.4rem">Symbol</label>
+    <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:0.4rem" id="sym-grid"></div>
+  </div>
+
+  <div id="t-hero" class="card" style="margin-bottom:1rem"><div class="status">Loading…</div></div>
+
+  <div id="t-bias" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Bias</h3>
+    <div id="t-bias-content"></div>
+  </div>
+
+  <div id="t-gap" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Gap</h3>
+    <div id="t-gap-content"></div>
+  </div>
+
+  <div id="t-evidence" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Evidence</h3>
+    <div id="t-evidence-content"></div>
+  </div>
+
+  <div id="t-readiness" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Trade Readiness</h3>
+    <div id="t-readiness-content"></div>
+  </div>
+
+  <div id="t-setup" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Setup</h3>
+    <div id="t-setup-content"></div>
+  </div>
+
+  <div id="t-options" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Options</h3>
+    <div id="t-options-content"></div>
+  </div>
+
+  <div id="t-uncertainty" class="card" style="margin-bottom:1rem;display:none">
+    <h3>Uncertainty</h3>
+    <div id="t-uncertainty-content"></div>
+  </div>
+
+  <div id="t-empty" class="card" style="display:none"><div class="status">No setup data available</div></div>
+  <div id="t-error" class="card" style="display:none"><div class="status" style="color:#dc2626">Error loading data</div></div>
+
+<footer>
+  <p>TradingAI provides market analysis and decision-support information. Market conditions can change rapidly. Options involve substantial risk, including loss of capital. No strategy or outlook guarantees profit.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/disclaimer.html">Disclaimer</a></p>
+</footer>
+</main>
+<script>
+const API_BASE='';
+const SYMBOLS=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];
+async function fetchJSON(path){try{const ts=Date.now();const res=await fetch(`${API_BASE}/api/${path}`);if(!res.ok)throw new Error('Not found');return await res.json();}catch{return null;}}
+function formatPrice(p){return p!=null?p.toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'-';}
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);}catch(e){return null;}}function setLastUpdated(ts){var bar=document.getElementById('last-updated-bar');if(!ts){bar.textContent='Last refreshed: —';return;};bar.textContent='Data as of '+fmtIST(ts)+' IST';}function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+var currentSymbol='NIFTY';
+function showSymbol(sym){currentSymbol=sym;loadData();}
+function loadData(){var hero=document.getElementById('t-hero');hero.innerHTML='<div class="status">Loading '+currentSymbol+' setup…</div>';document.getElementById('t-empty').style.display='none';document.getElementById('t-error').style.display='none';fetchJSON('trade-setup/'+currentSymbol).then(function(data){if(!data){showError();return;};if(data.error){showError();return;};render(data);}).catch(function(){showError();});}
+function showError(){document.getElementById('t-hero').innerHTML='<div class="status" style="color:#dc2626">Error</div>';document.getElementById('t-empty').style.display='none';}
+function render(data){setLastUpdated(data.timestamp);var hero='<div style="font-size:1.3rem;font-weight:700">'+data.symbol+'</div>';hero+='<div class="status">Spot: '+formatPrice(data.stages.ENTRY_WINDOW.levels.trigger)+'</div>';document.getElementById('t-hero').innerHTML=hero;
+var pct=data.gap_info?data.gap_info.gap_pct:null;if(pct!=null){var color=pct>=0?'#15803d':'#dc2626';hero+='<div class="status"><span style="color:'+color+';font-weight:700">'+((pct>=0)?'+':'')+pct+'%</span> gap</div>';}
+
+document.getElementById('t-empty').style.display='none';
+
+// Bias
+if(data.stages.CONFIRMATION && data.stages.CONFIRMATION.evidence.length){
+document.getElementById('t-bias').style.display='';
+document.getElementById('t-bias-content').innerHTML=data.stages.CONFIRMATION.evidence.map(function(e){return'<div class="status">'+e+'</div>';}).join('');
+}
+
+// Gap
+if(data.gap_info){document.getElementById('t-gap').style.display='';var gh='';gh+='<div class="status">'+data.gap_info.kind+' '+((pct!=null)?((pct>=0)?'+':'')+pct+'%':'')+'</div>';gh+='<div class="status">Cover: '+(data.gap_info.cover_prob!=null?data.gap_info.cover_prob+'%':'N/A')+'</div>';document.getElementById('t-gap-content').innerHTML=gh;}
+
+// Evidence
+if(data.evidence&&data.evidence.length){document.getElementById('t-evidence').style.display='';var eh='';data.evidence.forEach(function(e){eh+='<div class="status">✓ '+e+'</div>';});document.getElementById('t-evidence-content').innerHTML=eh;}
+
+// Readiness
+var rc=data.trade_readiness||'WAIT';var rcColor=rc==='GO'?'#15803d':rc==='NO_SETUP'?'#64748b':'#a16207';document.getElementById('t-readiness').style.display='';document.getElementById('t-readiness-content').innerHTML='<div style="font-size:1.5rem;font-weight:700;color:'+rcColor+'">'+rc+'</div><div class="status">Stage: '+data.current_stage+'</div>';
+
+// Setup lifecycle + levels
+document.getElementById('t-setup').style.display='';var sh='';var stageOrder=['DETECTED','TRIGGER','CONFIRMATION','ENTRY_WINDOW','ACTIVE','COMPLETE'];stageOrder.forEach(function(s){var st=data.stages[s];if(!st)return;var sc=st.status==='ACTIVE'?'#15803d':st.status==='WAIT'?'#a16207':st.status==='SKIPPED'?'#64748b':'#64748b';sh+='<div class="status"><span style="color:'+sc+';font-weight:700">'+s+'</span>: '+st.reason+'</div>';});if(data.setup_type){sh+='<h3 style="margin-top:0.6rem">Levels</h3>';sh+='<div class="status">Trigger: '+formatPrice(data.trigger_level)+'</div>';sh+='<div class="status">Entry: '+formatPrice(data.entry_window?data.entry_window.low:0)+'–'+formatPrice(data.entry_window?data.entry_window.high:0)+'</div>';sh+='<div class="status">Invalidation: '+formatPrice(data.invalidation)+'</div>';sh+='<div class="status">Target: '+formatPrice(data.target)+'</div>';}document.getElementById('t-setup-content').innerHTML=sh;
+
+// Options
+if(data.options_summary){document.getElementById('t-options').style.display='';var oh='';oh+='<div class="status">PCR: '+(data.options_summary.pcr!=null?data.options_summary.pcr.toFixed(2):'N/A')+'</div>';oh+='<div class="status">ATM: '+formatPrice(data.options_summary.atm)+'</div>';oh+='<div class="status">IV: '+(data.options_summary.iv!=null?data.options_summary.iv.toFixed(2)+'%':'N/A')+'</div>';oh+='<div class="status">Bias: '+(data.options_summary.bias||'N/A')+'</div>';document.getElementById('t-options-content').innerHTML=oh;}
+
+// Uncertainty
+if(data.uncertainty&&data.uncertainty.length){document.getElementById('t-uncertainty').style.display='';var uh='';data.uncertainty.forEach(function(u){uh+='<div class="status" style="color:#dc2626">⚠ '+u+'</div>';});document.getElementById('t-uncertainty-content').innerHTML=uh;}
+}
+
+var sg=document.getElementById('sym-grid');SYMBOLS.forEach(function(s){var btn=document.createElement('button');btn.textContent=s;btn.style.cssText='cursor:pointer;font-weight:700;border:1px solid #64748b;background:#64748b15;color:#64748b;border-radius:999px;padding:0.3rem 0.5rem;font-size:0.85rem';if(s===currentSymbol){btn.style.background='#64748b';btn.style.color='#fff';}btn.onclick=function(){document.querySelectorAll('#sym-grid button').forEach(function(b){b.style.background='#64748b15';b.style.color='#64748b';});btn.style.background='#64748b';btn.style.color='#fff';showSymbol(s);};sg.appendChild(btn);});
+document.addEventListener('DOMContentLoaded',function(){loadData();setInterval(loadData,30000);});
+</script>
+<script src="/assets/js/consent.js" defer></script>
+</body>
+</html>

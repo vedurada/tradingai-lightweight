@@ -2644,6 +2644,114 @@ def options_state(symbol):
         conn.close()
 
 
+@app.route("/api/trade-setup/<symbol>")
+@limiter.limit("30/minute")
+def trade_setup(symbol):
+    """Trade Setup: Market + Options + Gap → lifecycle stages with readiness GO/WAIT/NO_SETUP."""
+    symbol = symbol.upper()
+    if symbol not in ("NIFTY", "BANKNIFTY", "SENSEX"):
+        return error_response("NOT_SUPPORTED", f"{symbol} is not available as a live options product", 404)
+    conn = get_db()
+    try:
+        from backend.trade_lifecycle import detect_trade_setup
+
+        # Spot from live quotes
+        spot = None
+        qr = conn.execute("SELECT price FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)).fetchone()
+        if qr and qr["price"]:
+            spot = qr["price"]
+
+        # Market indicators
+        ind = conn.execute(
+            "SELECT rsi, adx, atr, vwap, pivot, prev_day_close, day_high, day_low FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",
+            (symbol,)).fetchone()
+        ind = dict(ind) if ind else {}
+
+        # Regime
+        reg = conn.execute(
+            "SELECT regime, confidence FROM market_regime WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",
+            (symbol,)).fetchone()
+        reg = dict(reg) if reg else {}
+
+        # Previous close for gap calculation
+        prev_close = None
+        if ind.get("prev_day_close"):
+            prev_close = ind["prev_day_close"]
+        else:
+            pc = conn.execute(
+                "SELECT close FROM price_1d WHERE symbol=? AND date(timestamp) < date('now') ORDER BY timestamp DESC LIMIT 1",
+                (symbol,)).fetchone()
+            if pc:
+                prev_close = pc["close"]
+
+        # Open price
+        day_open = ind.get("day_open")
+        if not day_open and spot:
+            day_open = spot
+
+        # Gap calculation
+        gap = None
+        if day_open and prev_close:
+            try:
+                gap_pts = float(day_open) - float(prev_close)
+                gap_pct = round(gap_pts / float(prev_close) * 100, 2)
+                kind = "GAP UP" if gap_pts > float(prev_close) * 0.0015 else "GAP DOWN" if gap_pts < -float(prev_close) * 0.0015 else "FLAT OPEN"
+                gap = {
+                    "gap_pct": gap_pct,
+                    "kind": kind,
+                    "open": float(day_open),
+                    "high": ind.get("day_high"),
+                    "low": ind.get("day_low"),
+                    "prev_close": float(prev_close),
+                }
+            except (TypeError, ValueError):
+                gap = None
+
+        # Market state
+        market_state = None
+        if ind:
+            market_state = {
+                "spot": spot,
+                "regime": reg,
+                "confidence": reg.get("confidence") if reg else None,
+                "indicators": {k: v for k, v in ind.items() if v is not None},
+            }
+
+        # Options state (best effort)
+        options_state = None
+        try:
+            rows = conn.execute(
+                "SELECT strike, option_type, open_interest, implied_volatility FROM option_chain WHERE symbol=? ORDER BY strike",
+                (symbol,)).fetchall()
+            if rows:
+                from backend.options_normalizer import build_options_state
+                chain = [dict(r) for r in rows]
+                options_state = build_options_state(symbol, chain, spot)
+        except Exception:
+            pass
+
+        timestamp = ""
+        try:
+            from datetime import datetime, timezone
+            timestamp = datetime.now(timezone.utc).isoformat()
+        except Exception:
+            pass
+
+        setup = detect_trade_setup(
+            symbol=symbol,
+            market_state=market_state,
+            options_state=options_state.to_dict() if options_state else None,
+            gap=gap,
+            timestamp=timestamp,
+            data_quality="LIVE" if spot else "DATA UNAVAILABLE",
+        )
+        return jsonify(setup.to_dict())
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
