@@ -86,6 +86,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Run all**: `python3 -m pytest tests/ -q`
 - **Run specific**: `python3 -m pytest tests/test_options.py -v`
 - **14 Phase 3 tests**: `python3 -m pytest tests/test_phase3.py -v`
+- **18 Phase 4 tests**: `python3 -m pytest tests/test_phase4.py -v`
 - **6 known failures** (data-dependent, DB empty): see `docs/AUDIT_REPORT.md`
 
 ## Deployment
@@ -107,12 +108,25 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 0**: ✅ COMPLETE — Audit done, fixes applied, 856 tests passing
 - **Phase 1**: ✅ COMPLETE — Production foundation, 921/921 tests passing
 - **Phase 2**: ✅ COMPLETE — Market intelligence engine, 983/983 tests passing
-- **Phase 3**: In Progress — Options Intelligence Engine, 997/997 tests passing (14 Phase 3 tests added)
+- **Phase 3**: ✅ COMPLETE — Options Intelligence Engine, 997/997 tests passing
+- **Phase 4**: In Progress — Intraday AI Market Outlook & Trade Setup Engine, 1012/1012 tests passing
 
-## Phase 3 Components
+## Phase 4 Components
 
 - `backend/options_state.py` — OptionsState object (immutable, per-symbol)
 - `backend/options_normalizer.py` — Chain processor using frozen OptionsEngine
 - `backend/api_server.py` — Added `/api/options/state/<symbol>` endpoint
 - `options-mobile.html` — Mobile-first options UI template
-- FINNIFTY: Scoped to historical data only, NOT available as live product (404 for `/api/options/state/FINNIFTY`)
+- FINNIFTY: Scoped to historical data only, NOT available as live product (404 for `/api/options/state/FINNIFTY`, 404 for `/api/trade-setup/FINNIFTY`)
+
+## Phase 4 Architecture
+
+Trade lifecycle: DETECTED → TRIGGER → CONFIRMATION → ENTRY_WINDOW → ACTIVE → COMPLETE
+
+Inputs: Market State + Gap Analysis + Options State → TradeSetup
+
+- `detect_trade_setup()` returns TradeSetup with 6 lifecycle stages
+- Each stage has: status, timestamp, evidence, uncertainty, levels, reason
+- Trade readiness: GO (entry window active), WAIT (conditions forming), NO_SETUP (no trade warranted)
+- Evidence-based, never guarantees outcomes
+- AI explicitly returns WAIT when conditions aren't ready
