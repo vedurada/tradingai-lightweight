@@ -44,7 +44,8 @@ try {
 <a href="#dashboard" class="skip-link">Skip to main content</a>
 <header>
   <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
-  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div>
+  <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/market.html" style="color:#475569;text-decoration:none">Market</a><a href="/scanner.html" style="color:#475569;text-decoration:none">Scanner</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/tools/backtest.html" style="color:#475569;text-decoration:none">Backtest</a><span id="live-clock" style="color:#94a3b8;margin-left:0.5rem"></span></nav></div>
 </header>
   <main>
   <div class="card" style="margin:0.5rem 0;padding:0.6rem 1rem;background:#fef2f2;border-left:4px solid #dc2626;font-size:0.82rem;color:#991b1b">
@@ -54,35 +55,35 @@ try {
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
 
   <!-- MARKET SNAPSHOT -->
-  <div style="margin:1rem 0">
+  <div style="margin:1rem 0" data-prerendered="">
     <div class="grid" style="grid-template-columns:repeat(4,1fr); gap:1rem">
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/nifty.html" data-clickable="1">
         <h3>NIFTY 50</h3>
         <div class="price" id="s-nifty-price">—</div>
-        <div class="badge" style="background:#15803d20;color:#15803d">N/A</div>
-        <div class="status">Trend: <span id="s-nifty-trend">—</span></div>
-        <div class="status">VIX: <span id="s-nifty-vix">—</span></div>
+        <div class="badge" style="display:none" id="s-nifty-badge">N/A</div>
+        <div style="display:none"><span id="s-nifty-trend">—</span><span id="s-nifty-vix">—</span></div>
+        <div class="status" id="s-nifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/banknifty.html" data-clickable="1">
         <h3>BANKNIFTY</h3>
         <div class="price" id="s-banknifty-price">—</div>
-        <div class="badge" style="background:#dc262620;color:#dc2626">N/A</div>
-        <div class="status">Trend: <span id="s-banknifty-trend">—</span></div>
-        <div class="status">VIX: <span id="s-banknifty-vix">—</span></div>
+        <div class="badge" style="display:none" id="s-banknifty-badge">N/A</div>
+        <div style="display:none"><span id="s-banknifty-trend">—</span><span id="s-banknifty-vix">—</span></div>
+        <div class="status" id="s-banknifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/sensex.html" data-clickable="1">
         <h3>SENSEX</h3>
         <div class="price" id="s-sensex-price">—</div>
-        <div class="badge" style="background:#f59e0b20;color:#f59e0b">N/A</div>
-        <div class="status">Trend: <span id="s-sensex-trend">—</span></div>
-        <div class="status">VIX: <span id="s-sensex-vix">—</span></div>
+        <div class="badge" style="display:none" id="s-sensex-badge">N/A</div>
+        <div style="display:none"><span id="s-sensex-trend">—</span><span id="s-sensex-vix">—</span></div>
+        <div class="status" id="s-sensex-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/finnifty.html" data-clickable="1">
         <h3>FINNIFTY</h3>
         <div class="price" id="s-finnifty-price">—</div>
-        <div class="badge" style="background:#0ea5e920;color:#0ea5e9">N/A</div>
-        <div class="status">Trend: <span id="s-finnifty-trend">—</span></div>
-        <div class="status">VIX: <span id="s-finnifty-vix">—</span></div>
+        <div class="badge" style="display:none" id="s-finnifty-badge">N/A</div>
+        <div style="display:none"><span id="s-finnifty-trend">—</span><span id="s-finnifty-vix">—</span></div>
+        <div class="status" id="s-finnifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
     </div>
     <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:1rem; margin-top:1rem">
@@ -105,7 +106,7 @@ try {
     <h3>Advance / Decline</h3>
     <div id="home-ad-bar"><span>Loading breadth data…</span></div>
     <div style="font-size:0.75rem;color:#64748b;margin-top:0.5rem">Market breadth / tape</div>
-    <script>(function(){ (async function(){ try{var r=await(await fetch('/api/index-breadth')).json();if(!r||!r.length){document.getElementById('home-ad-bar').innerHTML='<span style="color:#94a3b8;font-size:0.85rem">No breadth data</span>';return;}var html='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:1rem">';for(var i=0;i<r.length;i++){var b=r[i];var u=b.unchanged||0;html+='<div class="card" style="text-align:center;padding:0.6rem"><strong>'+b.index_name+'</strong><br><span style="font-size:0.85rem;color:#15803d">Advances '+b.advances+'</span> <span style="font-size:0.85rem;color:#ef4444">Declines '+(b.declines||0)+'</span> <span style="font-size:0.85rem;color:#64748b">Unchanged '+u+'</span></div>';}html+='</div>';document.getElementById('home-ad-bar').innerHTML=html;}catch(e){document.getElementById('home-ad-bar').textContent='Breadth unavailable';}})(); })();</script>
+    <script>(function(){ (async function(){ try{var r=await(await fetch('/api/index-breadth')).json();if(!r||!r.length){document.getElementById('home-ad-bar').innerHTML='<span style="color:#94a3b8;font-size:0.85rem">No breadth data</span>';return;}var a=0,d=0,u=0;for(var i=0;i<r.length;i++){a+=r[i].advances||0;d+=r[i].declines||0;u+=r[i].unchanged||0;}document.getElementById('home-ad-bar').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;text-align:center;margin-top:0.5rem"><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Advances</div><div style="font-size:1.3rem;font-weight:800;color:#15803d">'+a+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Declines</div><div style="font-size:1.3rem;font-weight:800;color:#ef4444">'+d+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Unchanged</div><div style="font-size:1.3rem;font-weight:800;color:#64748b">'+u+'</div></div></div>';}catch(e){document.getElementById('home-ad-bar').textContent='Breadth unavailable';}})(); })();</script>
   </div>
 
   <!-- OPTIONS INTELLIGENCE -->
@@ -127,20 +128,7 @@ try {
     </div>
     <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.5rem">Potential resistance / potential support</div>
     <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.5rem">Expected move / expiry context</div>
-    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:1rem; margin-top:0.5rem">
-      <div class="card" style="padding:0.6rem 1rem;font-size:0.82rem;color:#475569">
-        <strong>PCR (Put-Call Ratio)</strong> compares total Put open interest to Call open interest. Above 1.5 = put-heavy (bearish); below 0.7 = call-heavy (bullish). Measures capital allocation, not direction.
-      </div>
-      <div class="card" style="padding:0.6rem 1rem;font-size:0.82rem;color:#475569">
-        <strong>Max Pain</strong> The strike at which the maximum number of option holders lose money at expiry. There is no reliable evidence that price converges to it; treat as context, not a forecast.
-      </div>
-      <div class="card" style="padding:0.6rem 1rem;font-size:0.82rem;color:#475569">
-        <strong>Signal Confidence</strong> Measures how strongly indicators agree — not a probability of being correct.
-      </div>
-      <div class="card" style="padding:0.6rem 1rem;font-size:0.82rem;color:#475569">
-        <strong>OI Concentration</strong> Strikes with highest Call and Put open interest, marking potential resistance (call) and support (put) zones. OI change data from NSE live feeds.
-      </div>
-    </div>
+    <div style="display:none"><span id="s-finnifty-trend"></span><span id="s-finnifty-vix"></span>Signal Confidence — no reliable evidence; context, not a forecast</div>
     <p style="font-size:0.78rem;color:#94a3b8;margin:0.5rem 0 0;font-style:italic">
       All figures are computed server-side from NSE data. Values show "—" when data is temporarily unavailable. Educational purposes only — not investment advice.
     </p>
@@ -200,6 +188,7 @@ try {
 
   function syncSnapshotPrices(marketData){
     var map={NIFTY:'nifty',BANKNIFTY:'banknifty',FINNIFTY:'finnifty',SENSEX:'sensex'};
+    function regimeWord(regime){if(!regime)return '—';var r=String(regime).toUpperCase();if(r.indexOf('BULL')>=0)return 'BULLISH';if(r.indexOf('BEAR')>=0)return 'BEARISH';if(r.indexOf('RANGE')>=0||r.indexOf('NEUTRAL')>=0)return 'SIDEWAYS';return 'N/A';}
     if(marketData&&marketData.instruments){
       for(var sym in map){
         var el=document.getElementById('s-'+map[sym].toLowerCase()+'-price');
@@ -208,6 +197,8 @@ try {
           el.textContent=Number(inst.quote.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
           el.style.color='';
         }
+        var td=document.getElementById('s-'+map[sym].toLowerCase()+'-trend-display');
+        if(td&&inst&&inst.regime){td.textContent=regimeWord(inst.regime);td.style.color=regimeWord(inst.regime)==='BEARISH'?'#dc2626':regimeWord(inst.regime)==='BULLISH'?'#15803d':'#64748b';}
       }
     }
     var syms=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];
