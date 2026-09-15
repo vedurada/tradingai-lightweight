@@ -179,21 +179,42 @@ try {
 
   function syncSnapshotPrices(marketData){
     var map={NIFTY:'nifty',BANKNIFTY:'banknifty',FINNIFTY:'finnifty',SENSEX:'sensex'};
-    if(!marketData||!marketData.instruments)return;
-    for(var sym in map){
-      var el=document.getElementById('s-'+map[sym].toLowerCase()+'-price');
-      var inst=marketData.instruments[sym];
-      if(el&&inst&&inst.quote&&inst.quote.price!=null){
-        el.textContent=Number(inst.quote.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
-        el.style.color='';
+    if(marketData&&marketData.instruments){
+      for(var sym in map){
+        var el=document.getElementById('s-'+map[sym].toLowerCase()+'-price');
+        var inst=marketData.instruments[sym];
+        if(el&&inst&&inst.quote&&inst.quote.price!=null){
+          el.textContent=Number(inst.quote.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+          el.style.color='';
+        }
       }
     }
+    var syms=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];
+    var pending=syms.length;
+    syms.forEach(function(sym){
+      fetch('/api/price/'+sym).then(function(r){return r.json();}).then(function(d){
+        if(d&&d.price!=null){
+          var el=document.getElementById('s-'+sym.toLowerCase()+'-price');
+          if(el&&el.textContent==='—'){el.textContent=Number(d.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});el.style.color='';}
+        }
+      }).catch(function(){})
+       .finally(function(){
+         pending--;
+         if(pending===0){
+           var anyDisplayed=false;
+           syms.forEach(function(s){if(document.getElementById('s-'+s.toLowerCase()+'-price').textContent!=='—')anyDisplayed=true;});
+           if(!anyDisplayed){
+             syms.forEach(function(s){var el=document.getElementById('s-'+s.toLowerCase()+'-price');if(el&&el.textContent==='—')el.textContent='Market opens 9:15 AM IST';});
+           }
+         }
+       });
+    });
   }
 
   document.addEventListener('DOMContentLoaded',function(){
-    fetchJSON('market').then(function(d){
+    fetch('/api/market').then(function(r){return r.json();}).then(function(d){
       if(d) syncSnapshotPrices(d);
-    }).catch(function(){});
+    }).catch(function(){syncSnapshotPrices(null);});
   });
 
   var _origRender=render;
