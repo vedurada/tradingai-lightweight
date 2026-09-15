@@ -2653,7 +2653,7 @@ def trade_setup(symbol):
         return error_response("NOT_SUPPORTED", f"{symbol} is not available as a live options product", 404)
     conn = get_db()
     try:
-        from backend.trade_lifecycle import detect_trade_setup
+        from trade_lifecycle import detect_trade_setup
 
         # Spot from live quotes
         spot = None
