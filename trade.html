@@ -53,7 +53,11 @@ try {
     <div class="grid" style="grid-template-columns:repeat(4,1fr);gap:0.4rem" id="sym-grid"></div>
   </div>
 
-  <div id="t-hero" class="card" style="margin-bottom:1rem"><div class="status">Loading…</div></div>
+  <div id="t-hero" class="card" style="margin-bottom:1rem">
+    <div style="font-size:1.3rem;font-weight:700"><span id="t-sym">NIFTY</span> <span id="p-NIFTY" style="color:#64748b">—</span> <span id="b-NIFTY" style="font-size:0.8rem;opacity:0">▲</span></div>
+    <div class="status"><span id="a-NIFTY">—</span></div>
+    <div id="t-hero-data"></div>
+  </div>
 
   <div id="t-bias" class="card" style="margin-bottom:1rem;display:none">
     <h3>Bias</h3>
@@ -108,8 +112,9 @@ var currentSymbol='NIFTY';
 function showSymbol(sym){currentSymbol=sym;loadData();}
 function loadData(){var hero=document.getElementById('t-hero');hero.innerHTML='<div class="status">Loading '+currentSymbol+' setup…</div>';document.getElementById('t-empty').style.display='none';document.getElementById('t-error').style.display='none';fetchJSON('trade-setup/'+currentSymbol).then(function(data){if(!data){showError();return;};if(data.error){showError();return;};render(data);}).catch(function(){showError();});}
 function showError(){document.getElementById('t-hero').innerHTML='<div class="status" style="color:#dc2626">Error</div>';document.getElementById('t-empty').style.display='none';}
-function render(data){setLastUpdated(data.timestamp);var hero='<div style="font-size:1.3rem;font-weight:700">'+data.symbol+'</div>';hero+='<div class="status">Spot: '+formatPrice(data.stages.ENTRY_WINDOW.levels.trigger)+'</div>';document.getElementById('t-hero').innerHTML=hero;
-var pct=data.gap_info?data.gap_info.gap_pct:null;if(pct!=null){var color=pct>=0?'#15803d':'#dc2626';hero+='<div class="status"><span style="color:'+color+';font-weight:700">'+((pct>=0)?'+':'')+pct+'%</span> gap</div>';}
+function render(data){document.getElementById('t-sym').textContent=data.symbol;if(data.stages&&data.stages.CONFIRMATION&&data.stages.CONFIRMATION.market_state&&data.stages.CONFIRMATION.market_state.spot){var spot=data.stages.CONFIRMATION.market_state.spot;updatePrice(data.symbol,spot);}var hd=document.getElementById('t-hero-data');hd.innerHTML='';
+if(data.market_state){var ms=data.market_state;hd.innerHTML+='<div class="status">'+formatPrice(ms.spot)+'</div>';hd.innerHTML+='<div class="status">'+ms.regime+'</div>';}
+var pct=data.gap_info?data.gap_info.gap_pct:null;if(pct!=null){var color=pct>=0?'#15803d':'#dc2626';hd.innerHTML+='<div class="status"><span style="color:'+color+';font-weight:700">'+((pct>=0)?'+':'')+pct+'%</span> gap</div>';}
 
 document.getElementById('t-empty').style.display='none';
 
@@ -138,8 +143,11 @@ if(data.options_summary){document.getElementById('t-options').style.display='';v
 if(data.uncertainty&&data.uncertainty.length){document.getElementById('t-uncertainty').style.display='';var uh='';data.uncertainty.forEach(function(u){uh+='<div class="status" style="color:#dc2626">⚠ '+u+'</div>';});document.getElementById('t-uncertainty-content').innerHTML=uh;}
 }
 
+var _prices={};var _lastQuoteAt={};var _reducedMotion=window.matchMedia('(prefers-reduced-motion:reduce)').matches;function updatePrice(sym,price){var el=document.getElementById('p-'+sym);if(!el)return;var old=_prices[sym];el.textContent=formatPrice(price);if(old!==null&&old!==price){var isUp=price>old;el.style.transition='color 0.3s';el.style.color=isUp?'#15803d':'#dc2626';if(!_reducedMotion){setTimeout(function(){el.style.color='';},800);}}_prices[sym]=price;var now=Date.now();if(_lastQuoteAt[sym]&&!_reducedMotion){var bl=document.getElementById('b-'+sym);if(bl){bl.style.opacity='1';setTimeout(function(){bl.style.opacity='0';},800);}}_lastQuoteAt[sym]=now;}function updateQuoteAge(sym){var el=document.getElementById('a-'+sym);if(!el)return;var la=_lastQuoteAt[sym];if(!la){el.textContent='';return;}var age=Math.round((Date.now()-la)/1000);if(age<3){el.textContent='● LIVE · '+age+'s';el.style.color='#15803d';}else if(age<30){el.textContent='● LIVE · '+age+'s';el.style.color='#a16207';}else{el.textContent='● STALE · '+age+'s';el.style.color='#dc2626';}}
 var sg=document.getElementById('sym-grid');SYMBOLS.forEach(function(s){var btn=document.createElement('button');btn.textContent=s;btn.style.cssText='cursor:pointer;font-weight:700;border:1px solid #64748b;background:#64748b15;color:#64748b;border-radius:999px;padding:0.3rem 0.5rem;font-size:0.85rem';if(s===currentSymbol){btn.style.background='#64748b';btn.style.color='#fff';}btn.onclick=function(){document.querySelectorAll('#sym-grid button').forEach(function(b){b.style.background='#64748b15';b.style.color='#64748b';});btn.style.background='#64748b';btn.style.color='#fff';showSymbol(s);};sg.appendChild(btn);});
-document.addEventListener('DOMContentLoaded',function(){loadData();setInterval(loadData,30000);});
+function loadData(){var hero=document.getElementById('t-hero');hero.innerHTML='<div class="status">Loading '+currentSymbol+' setup…</div>';fetchJSON('trade-setup/'+currentSymbol).then(function(data){if(!data||data.error){return;}render(data);fetchJSON('quote/track/'+currentSymbol).then(function(q){if(q&&q.price!=null){updatePrice(currentSymbol,q.price);}});}).catch(function(){});}
+function loadAllPrices(){SYMBOLS.forEach(function(s){fetchJSON('quote/track/'+s).then(function(q){if(q&&q.price!=null){updatePrice(s,q.price);}});});}
+document.addEventListener('DOMContentLoaded',function(){loadData();setInterval(function(){loadData();loadAllPrices();updateQuoteAge(currentSymbol);},5000);setInterval(function(){SYMBOLS.forEach(updateQuoteAge);},1000);});
 </script>
 <script src="/assets/js/consent.js" defer></script>
 </body>

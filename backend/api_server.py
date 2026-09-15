@@ -2823,6 +2823,68 @@ def replay(symbol, date):
         conn.close()
 
 
+# Quote tracker instances (global, per symbol)
+_quote_trackers: Dict[str, Any] = {}
+
+
+@app.route("/api/quote/telemetry/<symbol>")
+@limiter.limit("30/minute")
+def quote_telemetry(symbol):
+    """Quote telemetry: cadence, freshness, source info for a symbol."""
+    symbol = symbol.upper()
+    if symbol not in ("NIFTY", "BANKNIFTY", "SENSEX"):
+        return error_response("NOT_SUPPORTED", f"{symbol} is not a tracked symbol", 404)
+    try:
+        from quote_tracker import QuoteTracker
+        if symbol not in _quote_trackers:
+            _quote_trackers[symbol] = QuoteTracker(symbol)
+        tracker = _quote_trackers[symbol]
+        return jsonify(tracker.get_telemetry())
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+
+
+@app.route("/api/quote/track/<symbol>")
+@limiter.limit("60/minute")
+def quote_track(symbol):
+    """Track a single quote: returns the quote with telemetry metadata."""
+    symbol = symbol.upper()
+    if symbol not in ("NIFTY", "BANKNIFTY", "SENSEX"):
+        return error_response("NOT_SUPPORTED", f"{symbol} is not a tracked symbol", 404)
+    conn = get_db()
+    try:
+        from quote_tracker import QuoteTracker
+        if symbol not in _quote_trackers:
+            _quote_trackers[symbol] = QuoteTracker(symbol)
+        tracker = _quote_trackers[symbol]
+
+        qr = conn.execute(
+            "SELECT price, timestamp FROM live_quotes WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",
+            (symbol,)).fetchone()
+        if qr and qr["price"]:
+            quote = tracker.receive(
+                float(qr["price"]),
+                source_timestamp=qr["timestamp"],
+                source="live_quotes",
+            )
+            return jsonify({
+                "symbol": symbol,
+                "price": quote["current_price"],
+                "price_change": quote["price_change"],
+                "previous_price": quote["previous_price"],
+                "quote_received_at": quote["quote_received_at"],
+                "source_timestamp": quote["source_timestamp"],
+                "source": quote["source"],
+                "update_interval_ms": quote["update_interval_ms"],
+                "quote_age_ms": quote["quote_age_ms"],
+            })
+        return jsonify({"symbol": symbol, "price": None, "source": "no_data"})
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
