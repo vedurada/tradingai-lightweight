@@ -286,5 +286,73 @@ document.addEventListener('DOMContentLoaded',function(){
   });
 });
 </script>
+<script>
+(function(){
+  var SYMBOLS=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];
+  var SYM_MAP={NIFTY:'nifty',BANKNIFTY:'banknifty',FINNIFTY:'finnifty',SENSEX:'sensex'};
+
+  function regimeFromChange(pct){if(pct==null)return '—';if(pct<-0.5)return 'BEARISH';if(pct>0.5)return 'BULLISH';return 'SIDEWAYS';}
+  function regimeColor(t){if(t==='BEARISH')return '#dc2626';if(t==='BULLISH')return '#15803d';return '#64748b';}
+
+  function updatePrice(sym,price,changePct){
+    var el=document.getElementById('s-'+SYM_MAP[sym].toLowerCase()+'-price');
+    if(el&&price!=null){el.textContent=Number(price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});el.style.color='';}
+    var td=document.getElementById('s-'+SYM_MAP[sym].toLowerCase()+'-trend-display');
+    if(td){var t=regimeFromChange(changePct);td.textContent=t;td.style.color=regimeColor(t);}
+  }
+
+  function updateVix(data){
+    if(!data)return;
+    var p=data.close||data.price;
+    var el=document.getElementById('s-vix-price');
+    if(el&&p!=null){el.textContent=Number(p).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});el.style.color='';}
+    var ch=document.getElementById('s-vix-change');
+    if(ch&&data.change_pct!=null){ch.textContent=(data.change_pct>=0?'+':'')+Number(data.change_pct).toFixed(2)+'%';}
+  }
+
+  function updateHeroPrice(sym,price){
+    if(!price)return;
+    var dashboard=document.getElementById('dashboard');
+    if(!dashboard)return;
+    var formatted=Number(price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
+    var heroDiv=dashboard.querySelector('h2');
+    if(heroDiv&&heroDiv.textContent.trim().indexOf(sym)===0){
+      var parent=heroDiv.parentElement;
+      var priceEl=parent.querySelector('div');
+      if(priceEl&&priceEl.textContent.indexOf('—')>=0){priceEl.textContent=formatted;}
+    }
+    var heroCards=dashboard.querySelectorAll('div[style*="font-size:2rem"]');
+    heroCards.forEach(function(hc){if(hc.textContent.indexOf('—')>=0){hc.textContent=formatted;}});
+  }
+
+  function loadLive(){
+    var pending=SYMBOLS.length+1;
+    SYMBOLS.forEach(function(sym){
+      fetch('/api/price/'+sym).then(function(r){return r.json();}).then(function(d){
+        if(d&&d.price!=null){updatePrice(sym,d.price,d.change_pct);if(sym==='NIFTY')updateHeroPrice(sym,d.price);}
+      }).catch(function(){})
+       .finally(function(){pending--;if(pending===0)updateTimestamp();});
+    });
+    fetch('/api/vix').then(function(r){return r.json();}).then(function(d){updateVix(d);}).catch(function(){})
+      .finally(function(){pending--;if(pending===0)updateTimestamp();});
+  }
+
+  function updateTimestamp(){
+    var bar=document.getElementById('last-updated-bar');if(!bar)return;
+    var now=new Date();
+    try{
+      var ist=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(now);
+      var p={};ist.formatToParts(ist).forEach(function(x){p[x.type]=x.value;});
+      bar.textContent='Data as of '+p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second+' IST';bar.style.color='';
+    }catch(e){}
+  }
+
+  document.addEventListener('DOMContentLoaded',function(){
+    loadLive();
+    setInterval(loadLive,30000);
+    setTimeout(function(){loadLive();},3000);
+  });
+})();
+</script>
 </body>
 </html>
