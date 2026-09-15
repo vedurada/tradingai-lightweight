@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Walk-Forward — OOS Performance — TradingAI</title>
+<meta name="description" content="Chronological walk-forward validation: Development → Validation → Out-of-Sample Test.">
+<link rel="canonical" href="https://tradingai.in/tools/walkforward.html">
+<meta property="og:title" content="Walk-Forward Validation">
+<meta property="og:description" content="Does TradingAI continue to work on data it was not tuned against?">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/main.css">
+<script src="/assets/js/consent.js" defer></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<style>
+.wf-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:.5rem;margin:.8rem 0}
+.wf-metric{background:#fff;border:1px solid var(--line);border-radius:10px;padding:.6rem .7rem;text-align:center}
+.wf-metric .k{font-size:.62rem;letter-spacing:.05em;color:var(--faint);font-weight:700;text-transform:uppercase}
+.wf-metric .v{font-size:1.05rem;font-weight:800;margin-top:.15rem;font-variant-numeric:tabular-nums}
+.wf-window{background:#fff;border:1px solid var(--line);border-radius:10px;padding:.8rem 1rem;margin:.6rem 0;border-left:3px solid var(--green)}
+.wf-window.tested{border-left-color:var(--ink)}
+.wf-window .wid{font-size:.72rem;letter-spacing:.05em;color:var(--ink);font-weight:800;text-transform:uppercase}
+.wf-window .period{font-size:.78rem;color:var(--muted);margin:.2rem 0}
+.wf-dates{font-size:.72rem;color:var(--faint);font-variant-numeric:tabular-nums}
+.wf-metric-grid-3{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;margin:.4rem 0;font-size:.78rem}
+.wf-tag{display:inline-block;padding:.15rem .4rem;border-radius:4px;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.wf-tag.dev{background:#e0f2fe;color:#0369a1}
+.wf-tag.val{background:#fef3c7;color:#92400e}
+.wf-tag.oos{background:#dcfce7;color:#15803d}
+.wf-disclaimer{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:.7rem 1rem;font-size:.82rem;color:#92400e;margin:1rem 0}
+.wf-loading{text-align:center;padding:1.5rem;color:var(--faint)}
+@media(max-width:700px){
+  .wf-grid{grid-template-columns:repeat(2,1fr)}
+  .wf-metric-grid-3{grid-template-columns:repeat(3,1fr)}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <p class="bt-breadcrumb"><strong>TRADINGAI</strong> &nbsp;/&nbsp; WALK-FORWARD</p>
+
+  <div class="wf-disclaimer">
+    <strong>Walk-Forward Validation.</strong> Chronological Development → Validation → Out-of-Sample windows. No random splitting. No future data leakage. AI excluded from all calculations.
+  </div>
+
+  <div class="card" style="padding:1rem">
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:end">
+      <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:.2rem">Instrument
+        <select id="wf-symbol"><option>NIFTY</option><option>BANKNIFTY</option><option>FINNIFTY</option><option>SENSEX</option></select>
+      </label>
+      <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:.2rem">Start
+        <input id="wf-start" type="date" value="2026-06-24">
+      </label>
+      <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:.2rem">End
+        <input id="wf-end" type="date" value="2026-09-15">
+      </label>
+      <button class="btn" id="wf-run" style="background:var(--green);color:#fff;border-color:var(--green);font-weight:800">Run Walk-Forward</button>
+    </div>
+  </div>
+
+  <div id="wf-loading" class="wf-loading" style="display:none">Running walk-forward validation…</div>
+  <div id="wf-error" style="display:none;color:#dc2626;text-align:center;padding:1rem"></div>
+
+  <div id="wf-results" style="display:none">
+
+    <div class="wf-window tested" style="border-left-color:var(--ink)">
+      <div class="wid" id="wf-window-id">—</div>
+      <div class="period" id="wf-window-period">—</div>
+      <div class="wf-metric-grid-3" id="wf-window-summary">
+        <div><strong>Dev:</strong> <span id="wf-dev-trades">—</span> trades</div>
+        <div><strong>Val:</strong> <span id="wf-val-trades">—</span> trades</div>
+        <div><strong>OOS:</strong> <span id="wf-oos-trades">—</span> trades</div>
+      </div>
+    </div>
+
+    <div class="wf-disclaimer" style="margin-top:1rem">
+      <strong>Methodology:</strong> Development period is NOT training — it applies fixed deterministic rules. Validation selects parameters only. Out-of-Sample is the final, untouched test.
+    </div>
+
+    <div class="card" style="padding:.8rem 1rem">
+      <div style="font-size:.78rem;font-weight:800;margin-bottom:.5rem">WINDOW SUMMARY</div>
+      <div id="wf-window-list"></div>
+    </div>
+
+    <div class="card" style="padding:.8rem 1rem;margin-top:.6rem">
+      <div style="font-size:.78rem;font-weight:800;margin-bottom:.5rem">OOS PERFORMANCE</div>
+      <div class="wf-grid" id="wf-oos-metrics">
+        <div class="wf-metric"><div class="k">Total Trades</div><div class="v" id="wf-oos-total">—</div></div>
+        <div class="wf-metric"><div class="k">Win Rate</div><div class="v green" id="wf-oos-wr">—</div></div>
+        <div class="wf-metric"><div class="k">Net P&amp;L</div><div class="v" id="wf-oos-pnl">—</div></div>
+        <div class="wf-metric"><div class="k">Profit Factor</div><div class="v" id="wf-oos-pf">—</div></div>
+        <div class="wf-metric"><div class="k">Max DD</div><div class="v red" id="wf-oos-dd">—</div></div>
+        <div class="wf-metric"><div class="k">Avg R</div><div class="v" id="wf-oos-r">—</div></div>
+      </div>
+    </div>
+
+    <div class="card" style="padding:.8rem 1rem;margin-top:.6rem">
+      <div style="font-size:.78rem;font-weight:800;margin-bottom:.5rem">DATA COVERAGE</div>
+      <div id="wf-coverage" style="font-size:.82rem;color:var(--muted)"></div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;padding:1rem">
+    <h3 style="margin-top:0">How to read this page</h3>
+    <p><strong>Development</strong> applies fixed rules. It is NOT training — no parameters are learned.</p>
+    <p><strong>Validation</strong> tests if the approach generalizes to nearby but unseen days.</p>
+    <p><strong>Out-of-Sample</strong> is the final, untouched test. This is the only number that matters.</p>
+    <p class="status">Historical evidence only. Not a prediction or guarantee.</p>
+  </div>
+</main>
+<footer>
+  <p>TradingAI provides market analysis and decision-support information. Not financial advice.</p>
+  <p style="margin-top:.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a></p>
+</footer>
+<script>
+const API_BASE='..';
+async function fetchJSON(path){try{const r=await fetch(`${API_BASE}/api/${path}`);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function fmt0(n){return n!=null?Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
+function pnlClr(v){return v==null?'':v>0?'#15803d':v<0?'#dc2626':'';}
+
+document.getElementById('wf-run').addEventListener('click', async function(){
+  const btn=this;
+  btn.disabled=true;
+  btn.textContent='Running…';
+  document.getElementById('wf-results').style.display='none';
+  document.getElementById('wf-loading').style.display='block';
+  document.getElementById('wf-error').style.display='none';
+
+  const symbol=document.getElementById('wf-symbol').value;
+  const start=document.getElementById('wf-start').value;
+  const end=document.getElementById('wf-end').value;
+
+  const r=await fetchJSON(`walkforward/${symbol}/${start}/${end}`);
+  btn.disabled=false;
+  btn.textContent='Run Walk-Forward';
+  document.getElementById('wf-loading').style.display='none';
+
+  if(!r){
+    document.getElementById('wf-error').textContent='Walk-forward failed — API unreachable.';
+    document.getElementById('wf-error').style.display='block';
+    return;
+  }
+
+  const windows=r.windows||[];
+  if(!windows.length){
+    document.getElementById('wf-error').textContent='No walk-forward windows could be created with the given data range.';
+    document.getElementById('wf-error').style.display='block';
+    return;
+  }
+
+  document.getElementById('wf-results').style.display='block';
+  renderResults(windows);
+});
+
+function renderResults(windows){
+  const w=windows[0];
+  const test=w.test_metrics||{};
+
+  document.getElementById('wf-window-id').textContent=w.window_id;
+  document.getElementById('wf-window-period').textContent=w.symbol;
+  document.getElementById('wf-dev-trades').textContent=w.development_metrics?w.development_metrics.total_trades:0;
+  document.getElementById('wf-val-trades').textContent=w.validation_metrics?w.validation_metrics.total_trades:0;
+  document.getElementById('wf-oos-trades').textContent=test.total_trades||0;
+
+  document.getElementById('wf-oos-total').textContent=fmt0(test.total_trades||0);
+  document.getElementById('wf-oos-wr').textContent=test.win_rate!=null?test.win_rate+'%':'—';
+  document.getElementById('wf-oos-pnl').innerHTML='<span style="color:'+pnlClr(test.net_pnl)+'">'+fmt(test.net_pnl)+'</span>';
+  document.getElementById('wf-oos-pf').textContent=fmt(test.profit_factor);
+  document.getElementById('wf-oos-dd').innerHTML='<span style="color:#dc2626">'+fmt(test.max_drawdown)+'</span>';
+  document.getElementById('wf-oos-r').textContent=fmt(test.avg_r);
+
+  let covHtml='<strong>Coverage:</strong> '+w.coverage.total_days+' days | '+w.coverage.earliest+' → '+w.coverage.latest;
+  if(w.insufficient_data){covHtml+=' | <span style="color:#dc2626;font-weight:700">'+w.message+'</span>';}
+  document.getElementById('wf-coverage').innerHTML=covHtml;
+
+  const list=document.getElementById('wf-window-list');
+  let html='';
+  windows.forEach((w, i)=>{
+    const test=w.test_metrics||{};
+    const val=w.validation_metrics||{};
+    const dev=w.development_metrics||{};
+    html+=`<div class="wf-window" style="margin:.5rem 0">
+      <div class="wid">${w.window_id} <span class="wf-tag dev">DEV</span> <span class="wf-tag val">VAL</span> <span class="wf-tag oos">OOS</span></div>
+      <div class="period">${w.development_start} → ${w.test_end}</div>
+      <div class="wf-dates">Dev: ${w.development_start} to ${w.development_end} | Val: ${w.validation_start} to ${w.validation_end} | OOS: ${w.test_start} to ${w.test_end}</div>
+      <div class="wf-metric-grid-3">
+        <div>Dev: <strong>${dev.total_trades||0}</strong></div>
+        <div>Val: <strong>${val.total_trades||0}</strong></div>
+        <div>OOS: <strong>${test.total_trades||0}</strong></div>
+      </div>
+    </div>`;
+  });
+  list.innerHTML=html;
+}
+</script>
+</body>
+</html>

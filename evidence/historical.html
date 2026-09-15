@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Historical Evidence — Similar Setups — TradingAI</title>
+<meta name="description" content="How did similar setups behave historically? Evidence only, not prediction.">
+<link rel="canonical" content="https://tradingai.in/evidence/historical.html">
+<meta property="og:title" content="Historical Evidence">
+<meta property="og:description" content="Similar setups from history. How did they turn out?">
+<meta property="og:type" content="website">
+<meta name="twitter:card" content="summary">
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/main.css">
+<script src="/assets/js/consent.js" defer></script>
+<script>
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<style>
+.he-current{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1rem;margin:.8rem 0}
+.he-tag{display:inline-block;padding:.2rem .5rem;border-radius:4px;font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em;margin:.15rem}
+.he-tag.bull{background:#dcfce7;color:#15803d}.he-tag.bear{background:#fee2e2;color:#dc2626}.he-tag.neutral{background:#f3f4f6;color:#4b5563}
+.he-tag.trend{background:#e0f2fe;color:#0369a1}.he-tag.range{background:#fef3c7;color:#92400e}
+.he-match{background:#fff;border:1px solid var(--line);border-radius:12px;padding:1rem;margin:.8rem 0}
+.he-match-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:.5rem;font-size:.85rem}
+.he-metric{font-size:1.2rem;font-weight:800;font-variant-numeric:tabular-nums}
+.he-metric.green{color:var(--green)}.he-metric.red{color:var(--red)}
+.he-section{font-size:.82rem;letter-spacing:.08em;color:var(--ink);font-weight:800;margin:1rem 0 .3rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+.he-note{font-size:.78rem;color:var(--faint);text-align:center;margin-top:1rem}
+.he-warn{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:.7rem 1rem;font-size:.82rem;color:#92400e;margin:1rem 0}
+.he-btn{display:inline-block;background:var(--ink);color:#fff;padding:.5rem 1rem;border-radius:8px;font-size:.85rem;font-weight:700;text-decoration:none;margin-top:.5rem}
+@media(max-width:700px){.he-match-grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+
+  <p class="bt-breadcrumb"><strong>TRADINGAI</strong> &nbsp;/&nbsp; HISTORICAL EVIDENCE</p>
+
+  <div class="he-warn">
+    <strong>Historical evidence only.</strong> Not a prediction or guarantee. Similarity is deterministic, not decided by AI.
+  </div>
+
+  <div class="card" style="padding:1rem">
+    <div style="display:flex;flex-wrap:wrap;gap:.5rem;align-items:end">
+      <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:.2rem">Symbol
+        <select id="he-symbol"><option>NIFTY</option><option>BANKNIFTY</option></select>
+      </label>
+      <label style="font-size:.72rem;font-weight:700;color:var(--muted);display:flex;flex-direction:column;gap:.2rem">Reference Date
+        <input id="he-date" type="date" value="2026-09-15">
+      </label>
+      <button class="btn" id="he-run" style="background:var(--green);color:#fff;border-color:var(--green);font-weight:800">Find Similar Setups</button>
+    </div>
+  </div>
+
+  <div id="he-loading" style="text-align:center;padding:2rem;color:var(--faint);display:none">Searching historical matches…</div>
+  <div id="he-error" style="display:none;color:#dc2626;text-align:center;padding:1rem"></div>
+
+  <div id="he-results" style="display:none">
+
+    <div class="he-current" id="he-current">
+      <div class="section-title">Current Setup</div>
+      <div id="he-tags"></div>
+    </div>
+
+    <div class="he-section">Historical Matches</div>
+    <div class="he-match" id="he-match-summary">
+      <div class="he-match-grid">
+        <div><div class="he-metric" id="he-count">—</div><div style="font-size:.66rem;color:var(--faint);font-weight:700;text-transform:uppercase">Sessions Found</div></div>
+        <div><div class="he-metric green" id="he-confirmed">—</div><div style="font-size:.66rem;color:var(--faint);font-weight:700;text-transform:uppercase">Confirmed</div></div>
+        <div><div class="he-metric red" id="he-failed">—</div><div style="font-size:.66rem;color:var(--faint);font-weight:700;text-transform:uppercase">Failed</div></div>
+        <div><div class="he-metric" id="he-rate">—</div><div style="font-size:.66rem;color:var(--faint);font-weight:700;text-transform:uppercase">Confirmation Rate</div></div>
+      </div>
+    </div>
+
+    <div class="he-section">Subsequent Move</div>
+    <div class="he-match" id="he-move">
+      <div class="he-match-grid">
+        <div><div class="he-metric" id="he-median">—</div><div style="font-size:.66rem;color:var(--faint);font-weight:700;text-transform:uppercase">Median Move</div></div>
+        <div><div class="he-metric" id="he-average">—</div><div style="font-size:.66rem;color:var(--faint);font-weight:700;text-transform:uppercase">Average Move</div></div>
+        <div><div class="he-metric" id="he-best">—</div><div style="font-size:.66rem;color:var(--faint);font-weight:700;text-transform:uppercase">Best Window</div></div>
+      </div>
+    </div>
+
+    <div class="he-section">Options Evidence</div>
+    <div class="he-match" id="he-options">
+      <div style="font-size:.85rem;color:var(--muted)" id="he-options-text">Checking historical option data…</div>
+    </div>
+
+    <div style="text-align:center;margin-top:1rem">
+      <a class="he-btn" id="he-view-sessions" href="#">View Matching Sessions</a>
+    </div>
+
+    <div class="he-note">Historical evidence only. Not a prediction or guarantee. Deterministic similarity matching.</div>
+  </div>
+
+  <div class="card" style="margin-top:1.5rem;padding:1rem">
+    <h3 style="margin-top:0">How this works</h3>
+    <p>Similarity is determined by explicit conditions: regime, gap direction, price location, RSI range. No LLM decides whether setups are similar.</p>
+    <p>The engine searches historical data and reports what happened. AI can explain the evidence afterward.</p>
+    <p><strong>Underlying vs Options:</strong> NIFTY move statistics are always available. Options P&amp;L is shown only when historical option data exists.</p>
+    <p class="status">Historical evidence only. Not a prediction or guarantee.</p>
+  </div>
+</main>
+<footer>
+  <p>TradingAI provides market analysis and decision-support information. Not financial advice.</p>
+  <p style="margin-top:.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a></p>
+</footer>
+<script>
+const API_BASE='..';
+async function fetchJSON(path){try{const r=await fetch(`${API_BASE}/api/${path}`);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function pnlClr(v){return v==null?'':v>0?'#15803d':v<0?'#dc2626':'';}
+
+document.getElementById('he-run').addEventListener('click', async function(){
+  const btn=this;
+  btn.disabled=true;
+  btn.textContent='Searching…';
+  document.getElementById('he-results').style.display='none';
+  document.getElementById('he-loading').style.display='block';
+  document.getElementById('he-error').style.display='none';
+
+  const symbol=document.getElementById('he-symbol').value;
+  const date=document.getElementById('he-date').value;
+
+  const r=await fetchJSON(`evidence/${symbol}/${date}`);
+  btn.disabled=false;
+  btn.textContent='Find Similar Setups';
+  document.getElementById('he-loading').style.display='none';
+
+  if(!r){
+    document.getElementById('he-error').textContent='Evidence search failed — API unreachable.';
+    document.getElementById('he-error').style.display='block';
+    return;
+  }
+
+  if(r.insufficient_data){
+    document.getElementById('he-error').textContent=r.message;
+    document.getElementById('he-error').style.display='block';
+    return;
+  }
+
+  document.getElementById('he-results').style.display='block';
+  renderResults(r);
+});
+
+function renderResults(r){
+  const cond=r.conditions;
+  let tagsHtml='';
+  const regimeMap={TRENDING_UP:'🟢 TRENDING UP',TRENDING_DOWN:'🔴 TRENDING DOWN',RANGING:'🟡 RANGING',UNKNOWN:'⬜ UNKNOWN'};
+  if(cond.regime) tagsHtml+=`<span class="he-tag trend">${regimeMap[cond.regime]||cond.regime}</span>`;
+  if(cond.gap_direction) tagsHtml+=`<span class="he-tag ${cond.gap_direction==='UP'?'bull':cond.gap_direction==='DOWN'?'bear':'neutral'}">GAP ${cond.gap_direction}</span>`;
+  if(cond.price_location) tagsHtml+=`<span class="he-tag range">${cond.price_location}</span>`;
+  tagsHtml+=`<span class="he-tag neutral">RSI ${cond.rsi||'?'}</span>`;
+  document.getElementById('he-tags').innerHTML=tagsHtml;
+
+  document.getElementById('he-count').textContent=r.match_count;
+  document.getElementById('he-confirmed').innerHTML='<span class="he-metric green">'+r.confirmed+'</span>';
+  document.getElementById('he-failed').innerHTML='<span class="he-metric red">'+r.failed+'</span>';
+  document.getElementById('he-rate').textContent=r.confirmation_rate+'%';
+
+  document.getElementById('he-median').innerHTML='<span style="color:'+pnlClr(r.median_subsequent_move)+'">'+fmt(r.median_subsequent_move)+'%</span>';
+  document.getElementById('he-average').innerHTML='<span style="color:'+pnlClr(r.average_subsequent_move)+'">'+fmt(r.average_subsequent_move)+'%</span>';
+  document.getElementById('he-best').textContent=r.best_window||'—';
+
+  if(r.option_data_available){
+    document.getElementById('he-options-text').innerHTML='<strong>Options data available.</strong> P&amp;L analysis requires historical option prices for exact dates.';
+  } else {
+    document.getElementById('he-options-text').innerHTML='<strong>No historical option data.</strong> Options evidence requires historical option prices which do not exist for this period. Only underlying (NIFTY) evidence is shown.';
+  }
+
+  const viewBtn=document.getElementById('he-view-sessions');
+  if(r.match_count>0){
+    viewBtn.style.display='inline-block';
+    viewBtn.textContent='View '+r.match_count+' Matching Sessions';
+    viewBtn.href='#';
+  } else {
+    viewBtn.style.display='none';
+  }
+}
+</script>
+</body>
+</html>
