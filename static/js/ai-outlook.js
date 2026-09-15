@@ -406,14 +406,20 @@
     var d = outlook.decision || {};
     var strats = outlook.strategies || [];
     var verdict = d.verdict || '—';
+    var regime = outlook.regime ? (outlook.regime.primary || '') : '';
     var vColor = verdict === 'TRADE' ? '#15803d' : '#a16207';
+    if (regime.toUpperCase().includes('UNKNOWN') || verdict === 'WAIT') {
+      verdict = 'NO CLEAR EDGE';
+      vColor = '#64748b';
+    }
+    var strat = regimeToStrategy(regime);
     return '<div class="card" style="margin-bottom:1rem;border-top:3px solid ' + vColor + '">' +
       '<h3 style="margin:0 0 10px;font-size:0.9rem">AI DECISION</h3>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 14px;background:#f8fafc;border-radius:8px">' +
       '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">VERDICT</div>' +
       '<div style="margin-top:4px"><span style="background:' + vColor + ';color:#fff;padding:4px 14px;border-radius:6px;font-weight:800;font-size:0.95rem">' + verdict + '</span></div></div>' +
-      '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">PREFERRED</div>' +
-      '<div style="margin-top:4px;font-weight:700;font-size:0.9rem;color:#0f172a">' + (strats.length ? strats[0].name : '—') + '</div></div>' +
+      '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">PREFERRED STRATEGY</div>' +
+      '<div style="margin-top:4px;font-weight:700;font-size:0.9rem;color:#0f172a">' + (strats.length ? strats[0].name : strat) + '</div></div>' +
       '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">CONFIDENCE</div>' +
       '<div style="margin-top:4px;font-weight:700;font-size:0.9rem;color:#0f172a">' + (outlook.confidence != null ? outlook.confidence + '%' : '—') + '</div></div>' +
       '</div></div>';
@@ -463,6 +469,37 @@
       '<th style="padding:6px 8px;text-align:right;font-size:0.75rem;color:#0f172a;font-weight:800">POINTS</th>' +
       '<th style="padding:6px 8px;text-align:right;font-size:0.75rem;color:#0f172a;font-weight:800">RESULT</th>' +
       '</tr>' + rows + '</table></div></div>';
+  }
+
+  function outlookStaleWarning(outlook) {
+    if (!outlook || !outlook.date) return '';
+    var ageMs = Date.now() - new Date(outlook.date + ' 00:00:00').getTime();
+    var ageMin = Math.round(ageMs / 60000);
+    if (ageMin > 1440) {
+      return '<div style="padding:8px 14px;background:#fef3c7;border-radius:8px;font-size:0.82rem;color:#92400e;margin-bottom:0.5rem;border:1px solid #f59e0b30">⚠️ This outlook is ' + ageMin + ' minutes old (threshold: 1440 min). Data may be stale — await fresh market data.</div>';
+    }
+    return '';
+  }
+
+  function regimeToStrategy(regime) {
+    var r = (regime || '').toUpperCase();
+    if (r.includes('BEARISH')) return 'Bear Put Spread';
+    if (r.includes('BULLISH')) return 'Bull Call Spread';
+    if (r.includes('NEUTRAL') || r.includes('RANGE') || r.includes('UNKNOWN')) return 'Defined Risk Premium Sell';
+    return 'Monitor for setup';
+  }
+
+  function outlookChanged(outlook, symbol) {
+    var current = outlook.date || outlook.created_at || '';
+    if (!current) return '';
+    var key = 'outlook_' + (symbol || 'NIFTY') + '_date';
+    var prev = localStorage.getItem(key);
+    if (prev && prev !== current) {
+      localStorage.setItem(key, current);
+      return '<div style="padding:8px 14px;background:#dbeafe;border-radius:8px;font-size:0.82rem;color:#1e40af;margin-bottom:0.5rem;border:1px solid #3b82f630">🔔 OUTLOOK CHANGED — Analysis updated: ' + current + '</div>';
+    }
+    localStorage.setItem(key, current);
+    return '';
   }
 
   /* ── Main render function ── */
@@ -530,6 +567,8 @@
     if (outlookUnavailable) {
       html += '<div style="padding:8px 14px;background:#fef3c7;border-radius:8px;font-size:0.82rem;color:#92400e;margin-bottom:0.5rem;border:1px solid #f59e0b30">AI Market Outlook narrative currently unavailable. Market regime, confidence, key levels and strategy fields update when data is populated.</div>';
     }
+    html += outlookStaleWarning(outlook);
+    html += outlookChanged(outlook, symbol);
     html += buildNavTabs(symbol, cfg);
     html += '<div class="card hero" style="background:linear-gradient(135deg,#052e16 0%,#15803d 100%);border:none;color:#fff">';
     html += buildHero(quote, outlook, symbol);
@@ -546,6 +585,9 @@
 
     html += '<div style="padding:10px 14px;background:#f8fafc;border-radius:8px;font-size:0.78rem;color:#64748b;margin-top:0.5rem;border:1px solid #e2e8f0">' +
       'Analysis generated from stored market data only. Not a guarantee of direction or profitability. Options involve substantial risk — independently assess position size and risk before trading.</div>';
+    if (outlook.created_at) {
+      html += '<div style="padding:6px 14px;font-size:0.72rem;color:#94a3b8;margin-top:0.3rem">Analysis last generated: ' + outlook.created_at + '</div>';
+    }
 
     el.innerHTML = html;
 
