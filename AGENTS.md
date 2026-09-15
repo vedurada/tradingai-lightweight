@@ -52,21 +52,30 @@ These files are model-layer boundary. Any change to them requires a new Phase de
 
 ## Current DB State (as of 2026-09-15)
 
-**IMPORTANT**: The database is mostly empty. 39 of 41 tables have 0 rows. Only `market_change_snapshots` (7710 rows, NIFTY only) and `chat_messages` (10) have data.
+DB populated via `data_fetcher_db.py` (ran during Phase 0 audit). 19 of 41 tables have data. 23 tables still empty (non-critical — handled by cron backfill).
 
-- All `/api/price/{SYMBOL}` endpoints return 404 (no data)
-- `/api/vix` returns 404 (no data)
-- `/api/NIFTY` returns 404 (no instruments)
-- `/api/health` returns 200 with warnings (ready: true, but data unavailable)
-- `/api/metrics` returns 200 (process-local)
+- `/api/price/NIFTY` → 200, LIVE, price ~23118
+- `/api/price/BANKNIFTY` → 200, LIVE
+- `/api/price/FINNIFTY` → 200, LIVE
+- `/api/price/SENSEX` → 200, LIVE
+- `/api/vix` → 200, LIVE, ~13.27
+- `/api/NIFTY` → 200, data_completeness all true
+- `/api/health` → 200, status ok, ready true
+- `/api/metrics` → 200, process-local
+- `/api/market` → 200, data_quality GOOD
 
-**To populate DB**: Run backfill scripts in `/opt/tradingai/backend/`:
+**If DB becomes empty again**: Run on VM:
+```bash
+cd /opt/tradingai/backend
+SKIP_LLM=1 python3 data_fetcher_db.py
+```
+
+**If you need more historical data**: Run on VM:
 ```bash
 cd /opt/tradingai/backend
 python3 backfill_yearly.py
 python3 backfill_indices_10y.py --period 10y
 python3 backfill_outlooks.py --days 3650 --overwrite
-SKIP_LLM=1 python3 data_fetcher_db.py
 ```
 
 ## Testing
