@@ -264,7 +264,7 @@ class TestSecretProtection:
 
     def test_groq_key_not_in_git(self):
         result = subprocess.run(
-            ["git", "grep", "gsk_", "--", "*.py", "*.json", "*.html", "*.js"],
+            ["git", "grep", "gsk_[A-Za-z0-9]", "--", "*.py", "*.json", "*.html", "*.js"],
             capture_output=True, text=True, timeout=10,
             cwd=os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
         )
