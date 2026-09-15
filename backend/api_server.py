@@ -1898,6 +1898,57 @@ def backtest_poll(job_id):
     if job["status"] == "failed":
         return error_response("BACKTEST_FAILED", job["error"], 500)
 
+
+@app.route("/api/walkforward/<symbol>/<start>/<end>")
+@limiter.limit("10/minute")
+def walkforward(symbol, start, end):
+    from walkforward import run_walkforward
+    symbol = str(symbol).strip().upper()
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+    try:
+        results = run_walkforward(
+            symbol=symbol,
+            start_date=start,
+            end_date=end,
+            dev_days=int(request.args.get("dev_days", 30)),
+            val_days=int(request.args.get("val_days", 14)),
+            oos_days=int(request.args.get("oos_days", 14)),
+            step_days=int(request.args.get("step_days", 0)) or 14,
+            db_path=db_path,
+        )
+        return jsonify({"symbol": symbol, "windows": [r._asdict() for r in results]})
+    except Exception as e:
+        return error_response("WALKFORWARD_FAILED", str(e), 500)
+
+
+@app.route("/api/evidence/<symbol>/<date>")
+@limiter.limit("10/minute")
+def evidence(symbol, date):
+    from historical_evidence import run_historical_evidence, SimilarityCondition
+    symbol = str(symbol).strip().upper()
+    db_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "database", "tradingai.db")
+    try:
+        conditions = SimilarityCondition(
+            regime=request.args.get("regime", "ANY"),
+            gap_direction=request.args.get("gap", "ANY"),
+            price_location=request.args.get("location", "ANY"),
+            vwap_position=request.args.get("vwap", "ANY"),
+            rsi_range_min=int(request.args.get("rsi_min", 0)) if request.args.get("rsi_min") else None,
+            rsi_range_max=int(request.args.get("rsi_max", 100)) if request.args.get("rsi_max") else None,
+            trade_readiness=request.args.get("readiness", "ANY"),
+            setup_type=request.args.get("setup", "ANY"),
+        )
+        result = run_historical_evidence(
+            symbol=symbol,
+            query_date=date,
+            conditions=conditions,
+            db_path=db_path,
+        )
+        return jsonify(result._asdict())
+    except Exception as e:
+        return error_response("EVIDENCE_FAILED", str(e), 500)
+
+
 @app.route("/api/alerts")
 @cache_page(5)
 def alerts():
