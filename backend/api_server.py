@@ -2608,7 +2608,7 @@ def options_state(symbol):
     """Options Intelligence State: bias, key levels, options snapshot with evidence and uncertainty. Mobile-first format."""
     symbol = symbol.upper()
     if symbol not in ("NIFTY", "BANKNIFTY", "SENSEX"):
-        return error_response("NOT_SUPPORTED", f"{symbol} is not available as a live options product"), 404
+        return error_response("NOT_SUPPORTED", f"{symbol} is not available as a live options product", 404)
     conn = get_db()
     try:
         spot = None
@@ -2623,7 +2623,7 @@ def options_state(symbol):
         chain = [dict(r) for r in rows]
 
         if not chain:
-            from backend.options_state import OptionsState
+            from options_state import OptionsState
             state = OptionsState(
                 symbol=symbol, timestamp="", spot=spot,
                 atm_strike=None, expiry=None, dte=None,
@@ -2635,7 +2635,7 @@ def options_state(symbol):
             )
             return jsonify(state.to_dict())
 
-        from backend.options_normalizer import build_options_state
+        from options_normalizer import build_options_state
         state = build_options_state(symbol, chain, spot, data_quality="LIVE")
         return jsonify(state.to_dict())
     except Exception as e:
