@@ -2761,7 +2761,7 @@ def replay(symbol, date):
         return error_response("NOT_SUPPORTED", f"{symbol} is not available as a live options product", 404)
     conn = get_db()
     try:
-        from backend.replay_engine import replay_day
+        from replay_engine import replay_day
 
         # Get 5m candles for the day
         try:
