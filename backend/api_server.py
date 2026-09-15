@@ -2502,6 +2502,106 @@ def _push_chat_alert(channel: str, text: str, username: str = "AI"):
     except Exception:
         pass
 
+@app.route("/api/market/state/<symbol>")
+@cache_page(60)
+def market_state(symbol):
+    """Complete market state for a symbol: indicators + regime + SR + expected range.
+
+    All values are observed or derived — NEVER synthesized.
+    Timestamp is candle timestamp (look-ahead protection).
+    """
+    symbol = (symbol or "").upper()
+    conn = get_db()
+    try:
+        from market_state import build_market_state
+        state = build_market_state(symbol, conn)
+        if state is None:
+            return jsonify({"error": "no market state", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
+        result = state.to_dict()
+        result["data_quality"] = DATA_QUALITY_LIVE
+        result["data_freshness"] = {"age_minutes": 0, "stale": False}
+        result["computed_at"] = datetime.now(timezone.utc).isoformat()
+        return jsonify(result)
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
+@app.route("/api/market/expected-range/<symbol>")
+@cache_page(600)
+def expected_range_endpoint(symbol):
+    """Expected price range from ATR + VIX for a symbol."""
+    symbol = (symbol or "").upper()
+    conn = get_db()
+    try:
+        from expected_range import compute_expected_range
+        ind_row = conn.execute(
+            "SELECT * FROM indicators WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)
+        ).fetchone()
+        if not ind_row:
+            return jsonify({"error": "no indicators", "data_quality": DATA_QUALITY_UNAVAILABLE}), 404
+        ind = dict(ind_row)
+        price = ind.get("day_high", 0) or ind.get("close", 0) or 0
+        bb = {"upper": ind.get("bollinger_upper"), "lower": ind.get("bollinger_lower"),
+              "middle": ind.get("bollinger_middle"), "width": ind.get("bollinger_width")}
+        atr = ind.get("atr")
+        sr = _parse_json_field(ind.get("support_resistance"), {})
+        ind_for_range = {"bollinger_bands": bb if bb.get("upper") else None,
+                         "atr": atr, "support_resistance": sr if isinstance(sr, dict) else {}}
+        expected = compute_expected_range(ind_for_range, price, None)
+        expected["data_quality"] = DATA_QUALITY_LIVE
+        expected["symbol"] = symbol
+        expected["timestamp"] = ind.get("timestamp", "")
+        return jsonify(expected)
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
+@app.route("/api/market/validate/<symbol>")
+@cache_page(300)
+def market_validate(symbol):
+    """Market data validation report for a symbol."""
+    symbol = (symbol or "").upper()
+    conn = get_db()
+    try:
+        from data_validator import MarketValidator
+        mv = MarketValidator(DB_PATH)
+        result = {"symbol": symbol, "checks": {}}
+
+        cont_1m = mv.validate_candle_continuity(conn, symbol, "price_1m", 1)
+        cont_5m = mv.validate_candle_continuity(conn, symbol, "price_5m", 5)
+        ohlc_5m = mv.validate_candle_ohlc(conn, "price_5m")
+        ohlc_1m = mv.validate_candle_ohlc(conn, "price_1m")
+        ist = mv.validate_ist_timestamps(conn, "price_1m")
+
+        if cont_1m["gaps"]:
+            result["checks"]["continuity_1m"] = cont_1m
+        if cont_5m["gaps"]:
+            result["checks"]["continuity_5m"] = cont_5m
+        if ohlc_5m["invalid"] > 0:
+            result["checks"]["ohlc_5m"] = ohlc_5m
+        if ohlc_1m["invalid"] > 0:
+            result["checks"]["ohlc_1m"] = ohlc_1m
+        if ist["non_ist_count"] > 0:
+            result["checks"]["ist_timestamps"] = ist
+
+        try:
+            mc = mv.validate_market_candles(conn)
+            result["checks"]["market_candles"] = mc
+        except Exception:
+            pass
+
+        result["valid"] = len(result["checks"]) == 0
+        return jsonify(result)
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

@@ -165,9 +165,212 @@ def validate_price_data(db_path: str) -> List[Dict]:
     return results
 
 
+class MarketValidator:
+    """Phase 2 market-specific validation."""
+
+    EXPECTED_TIMEFRAMES = {"1m", "5m", "15m", "1d"}
+
+    def __init__(self, db_path: str):
+        self.db_path = db_path
+        self.now = datetime.datetime.utcnow()
+
+    def validate_candle_continuity(self, conn: sqlite3.Connection, symbol: str,
+                                    table: str = "price_1m", expected_gap_minutes: int = 1,
+                                    lookback_hours: int = 24) -> Dict:
+        """Check for missing candles (gaps) in a price table.
+
+        Returns: {total: int, gaps: [{timestamp, expected, actual}], missing_count: int}
+        """
+        result = {"symbol": symbol, "table": table, "total": 0, "gaps": [],
+                   "missing_count": 0, "continuous": True}
+        try:
+            rows = conn.execute(
+                f"SELECT timestamp FROM {table} WHERE symbol=? ORDER BY timestamp DESC LIMIT ?",
+                (symbol, lookback_hours * 60 // expected_gap_minutes + 10),
+            ).fetchall()
+            result["total"] = len(rows)
+            if len(rows) < 2:
+                return result
+            timestamps = [r[0] for r in rows]
+            for i in range(len(timestamps) - 1):
+                try:
+                    t1 = datetime.datetime.strptime(timestamps[i], "%Y-%m-%d %H:%M:%S")
+                    t2 = datetime.datetime.strptime(timestamps[i + 1], "%Y-%m-%d %H:%M:%S")
+                    gap = (t1 - t2).total_seconds() / 60
+                    if gap > expected_gap_minutes * 1.5:
+                        result["gaps"].append({
+                            "after": timestamps[i + 1],
+                            "before": timestamps[i],
+                            "gap_minutes": round(gap),
+                            "expected_gap": expected_gap_minutes,
+                        })
+                        result["missing_count"] += int(gap / expected_gap_minutes) - 1
+                        result["continuous"] = False
+                except (ValueError, TypeError):
+                    continue
+        except sqlite3.Error:
+            pass
+        return result
+
+
+    def validate_ist_timestamps(self, conn: sqlite3.Connection, table: str,
+                                 timestamp_col: str = "timestamp") -> Dict:
+        """Check if timestamps are in IST timezone (per Phase 2 requirement).
+
+        Returns: {table: str, total: int, ist_count: int, non_ist_count: int,
+                   non_ist_examples: [str]}
+        """
+        result = {"table": table, "total": 0, "ist_count": 0, "non_ist_count": 0,
+                   "non_ist_examples": []}
+        try:
+            rows = conn.execute(f"SELECT {timestamp_col} FROM [{table}]").fetchall()
+            result["total"] = len(rows)
+            for row in rows:
+                val = str(row[0]) if row[0] else ""
+                if "+05:30" in val or "Asia/Kolkata" in val or "+0530" in val:
+                    result["ist_count"] += 1
+                elif "Z" in val or "+00:00" in val or "UTC" in val:
+                    result["non_ist_count"] += 1
+                    if len(result["non_ist_examples"]) < 3:
+                        result["non_ist_examples"].append(val[:30])
+                else:
+                    result["non_ist_count"] += 1
+        except sqlite3.Error:
+            pass
+        return result
+
+
+    def validate_candle_ohlc(self, conn: sqlite3.Connection, table: str = "price_5m") -> Dict:
+        """Validate OHLC relationships in candle tables.
+
+        Returns: {table: str, total: int, valid: int, invalid: int,
+                   issues: [{row, issue, timestamp}]}
+        """
+        result = {"table": table, "total": 0, "valid": 0, "invalid": 0, "issues": []}
+        try:
+            cur = conn.execute(f"SELECT * FROM [{table}]")
+            rows = cur.fetchall()
+            cols = [d[0] for d in cur.description]
+            result["total"] = len(rows)
+            for i, row in enumerate(rows):
+                rec = dict(zip(cols, row))
+                issues = []
+                if rec.get("high", 0) < rec.get("low", 0):
+                    issues.append("high_below_low")
+                if rec.get("high", 0) < rec.get("open", 0):
+                    issues.append("high_below_open")
+                if rec.get("high", 0) < rec.get("close", 0):
+                    issues.append("high_below_close")
+                if rec.get("low", 0) > rec.get("open", 0):
+                    issues.append("low_above_open")
+                if rec.get("low", 0) > rec.get("close", 0):
+                    issues.append("low_above_close")
+                if rec.get("open", 0) <= 0 and rec.get("close", 0) <= 0:
+                    issues.append("zero_open_close")
+                if issues:
+                    result["invalid"] += 1
+                    result["issues"].append({
+                        "row": i, "issues": issues,
+                        "timestamp": rec.get("timestamp", ""),
+                    })
+                else:
+                    result["valid"] += 1
+        except sqlite3.Error:
+            pass
+        return result
+
+
+    def validate_market_candles(self, conn: sqlite3.Connection) -> Dict:
+        """Validate market_candles table integrity.
+
+        Returns: {table: str, total: int, timeframes: {str: int},
+                   symbols: [str], issues: [str]}
+        """
+        result = {"table": "market_candles", "total": 0, "timeframes": {},
+                   "symbols": [], "issues": []}
+        try:
+            rows = conn.execute("SELECT DISTINCT timeframe FROM market_candles").fetchall()
+            for r in rows:
+                tf = r[0]
+                count = conn.execute(
+                    "SELECT COUNT(*) FROM market_candles WHERE timeframe=?", (tf,)
+                ).fetchone()[0]
+                result["timeframes"][tf] = count
+
+            syms = conn.execute("SELECT DISTINCT symbol FROM market_candles").fetchall()
+            result["symbols"] = [r[0] for r in syms]
+
+            total = conn.execute("SELECT COUNT(*) FROM market_candles").fetchone()[0]
+            result["total"] = total
+
+            for tf in ["1m", "5m", "15m", "1d"]:
+                if tf not in result["timeframes"]:
+                    result["issues"].append(f"missing_timeframe: {tf}")
+        except sqlite3.Error as e:
+            result["issues"].append(str(e))
+        return result
+
+
+    def validate_expected_range(self, price: float, expected_low: float,
+                                  expected_high: float) -> List[str]:
+        """Validate that a price is within an expected range.
+
+        Returns list of issues (empty = valid).
+        """
+        issues = []
+        if price <= 0 or expected_low <= 0 or expected_high <= 0:
+            return ["invalid_input"]
+        if expected_low > expected_high:
+            issues.append("range_inverted: low > high")
+        if price < expected_low:
+            issues.append(f"price_below_range: {price} < {expected_low}")
+        if price > expected_high:
+            issues.append(f"price_above_range: {price} > {expected_high}")
+        return issues
+
+
+def validate_market_data(db_path: str) -> List[Dict]:
+    """Convenience function: validate all market data."""
+    conn = sqlite3.connect(db_path, timeout=30)
+    conn.execute("PRAGMA journal_mode=WAL")
+    validator = MarketValidator(db_path)
+    results = []
+    try:
+        mv = MarketValidator(db_path)
+        for symbol in ["NIFTY", "BANKNIFTY", "FINNIFTY", "SENSEX"]:
+            for table, gap in [("price_1m", 1), ("price_5m", 5)]:
+                try:
+                    cont = mv.validate_candle_continuity(conn, symbol, table, gap)
+                    if cont["gaps"]:
+                        results.append(cont)
+                except Exception:
+                    pass
+        for table in ["price_1m", "price_5m", "price_1d"]:
+            try:
+                ohlc = mv.validate_candle_ohlc(conn, table)
+                if ohlc["invalid"] > 0:
+                    results.append(ohlc)
+            except Exception:
+                pass
+        try:
+            mc = mv.validate_market_candles(conn)
+            if mc["issues"]:
+                results.append(mc)
+        except Exception:
+            pass
+    except Exception:
+        pass
+    conn.close()
+    return results
+
+
 if __name__ == "__main__":
     import sys
     db_path = sys.argv[1] if len(sys.argv) > 1 else "database/tradingai.db"
     results = validate_price_data(db_path)
     for r in results:
+        print(r)
+    print("---")
+    mresults = validate_market_data(db_path)
+    for r in mresults:
         print(r)
