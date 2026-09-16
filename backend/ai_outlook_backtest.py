@@ -37,6 +37,22 @@ CANDLE_INTERVAL_MIN = 5
 DEFAULT_SESSIONS = 30
 DEFAULT_HORIZONS = [5, 15, 30, 60, 120]
 DEFAULT_EVAL_HORIZON_MIN = 60
+IST_OFFSET = datetime.timedelta(hours=5, minutes=30)
+
+
+def _to_ist(ts: str) -> str:
+    if not ts or ts == "":
+        return ""
+    dt = datetime.datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
+    return (dt + IST_OFFSET).strftime("%Y-%m-%d %H:%M:%S IST")
+
+
+def _to_ist_hour(ts: str) -> int:
+    if not ts or ts == "":
+        return 0
+    dt = datetime.datetime.strptime(ts, "%Y-%m-%d %H:%M:%S")
+    dt_ist = dt + IST_OFFSET
+    return dt_ist.hour
 
 
 def load_price_5m(db_path: str, symbol: str) -> List[Dict[str, Any]]:
@@ -492,8 +508,7 @@ def compute_metrics(decisions: List[Dict[str, Any]]) -> Dict[str, Any]:
     for b in hour_buckets:
         by_hour[b] = {"count": 0, "wins": 0, "losses": 0, "returns": []}
     for d in triggered:
-        ts = d["timestamp"]
-        h = int(ts[11:13]) if len(ts) >= 13 else 0
+        h = _to_ist_hour(d["timestamp"])
         if h == 9:
             bucket = "09:15-10:00"
         elif h < 11:
@@ -661,7 +676,9 @@ def generate_reports(
         "candle_count": sum(len(d) for d in [decisions]),
         "symbol": symbol,
         "summary": metrics,
-        "generated_at": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "timezone": "UTC timestamps in database. All displayed times converted to IST (UTC+5:30). Market hours: 09:15-15:30 IST.",
+        "generated_at_utc": datetime.datetime.now(datetime.timezone.utc).isoformat(),
+        "generated_at_ist": (datetime.datetime.now(datetime.timezone.utc) + IST_OFFSET).strftime("%Y-%m-%d %H:%M:%S IST"),
     }
 
     with open(os.path.join(output_dir, "summary.json"), "w") as f:
@@ -693,6 +710,10 @@ def generate_reports(
             for k in row:
                 if row[k] is None:
                     row[k] = ""
+            row["timestamp"] = _to_ist(row.get("timestamp", "") or "")
+            row["exit_time"] = _to_ist(row.get("exit_time", "") or "")
+            row["actual_entry_time"] = _to_ist(row.get("actual_entry_time", "") or "")
+            row["date"] = (d.get("timestamp") or "")[:10]
             w.writerow(row)
 
     with open(os.path.join(output_dir, "daily_results.csv"), "w", newline="") as f:
@@ -753,7 +774,7 @@ th {{ background: #f1f5f9; font-weight: 600; }}
 </head>
 <body>
 <h1>TradingAI AI Outlook Historical Validation</h1>
-<p><strong>Symbol:</strong> {symbol} &nbsp;|&nbsp; <strong>Sessions:</strong> {sessions} &nbsp;|&nbsp; <strong>Timeframe:</strong> 5-minute &nbsp;|&nbsp; <strong>Data Quality:</strong> {data_quality}</p>
+<p><strong>Symbol:</strong> {symbol} &nbsp;|&nbsp; <strong>Sessions:</strong> {sessions} &nbsp;|&nbsp; <strong>Timeframe:</strong> 5-minute &nbsp;|&nbsp; <strong>Timezone:</strong> IST (UTC+5:30) &nbsp;|&nbsp; <strong>Market Hours:</strong> 09:15-15:30 IST &nbsp;|&nbsp; <strong>Data Quality:</strong> {data_quality}</p>
 
 <h2>Executive Summary</h2>
 <div class="kpi">
