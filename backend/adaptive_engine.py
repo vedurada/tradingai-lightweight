@@ -133,6 +133,8 @@ def classify_market_structure(data: dict) -> dict:
     Returns structured classification with all adaptive fields.
     Data must come from validated sources — no fabricated values.
     """
+    if data is None:
+        data = {}
     price = _safe(data.get("price"))
     ema20 = _safe(data.get("ema20"))
     ema50 = _safe(data.get("ema50"))
