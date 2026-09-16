@@ -51,7 +51,7 @@ try {
   <div class="card" style="margin:0.5rem 0;padding:0.6rem 1rem;background:#fef2f2;border-left:4px solid #dc2626;font-size:0.82rem;color:#991b1b">
     <strong>Financial / Educational Disclaimer:</strong> TradingAI provides automated market analysis for informational and educational purposes only. Nothing here constitutes investment, financial, legal, or tax advice. All analysis is generated from publicly available NSE data and rule-based algorithms. Trading involves substantial risk, including loss of capital. Users must verify all data with their broker and make their own decisions. Past performance does not guarantee future results. SEBI does not endorse or review any content on this site.
   </div>
-  <div class="updated-bar"><span id="last-updated-bar">Last refreshed: —</span></div>
+  <div class="updated-bar"><span id="last-updated-bar">Last refreshed: —</span> <span class="status" id="session-state" style="font-size:0.78rem">Session checking…</span></div>
   <h3 style="margin:1.5rem 0 0.5rem 0">LIVE MARKET TICKER</h3>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
 
@@ -138,8 +138,14 @@ try {
   </div>
 
   <div class="card content-card" style="margin-top:1.5rem">
-    <h3>HOW TO READ THIS PAGE</h3>
-    <p style="font-size:1.05rem;color:#1e293b;letter-spacing:0.02em">Market → Regime → Options → Strategy → Risk</p>
+    <h3>QUICK ACTIONS</h3>
+    <div style="display:flex;flex-wrap:wrap;gap:0.6rem;margin-top:0.5rem">
+      <a href="/today/index.html" style="padding:6px 14px;background:#15803d;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Today</a>
+      <a href="/indices/nifty.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">NIFTY</a>
+      <a href="/options/pcr.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Options</a>
+      <a href="/strategies.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Strategies</a>
+      <a href="/strategy-builder.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Builder</a>
+    </div>
   </div>
 
   <!-- Educational / Risk Disclosure -->
@@ -261,7 +267,7 @@ document.addEventListener('DOMContentLoaded',function(){
 })();
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
-<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/api.js"><\/script><script src="/assets/js/consent.js" defer></script>
+<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/api.js"><\/script><script>document.addEventListener('DOMContentLoaded',function(){var el=document.getElementById('session-state');if(!el)return;var d=new Date();var ist=d.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});var dt=new Date(ist);var day=dt.getDay();if(day===0||day===6){el.textContent='CLOSED · WEEKEND';el.style.color='#64748b';return;}var h=dt.getHours();var m=dt.getMinutes();var mins=h*60+m;var state,color;if(mins<570){state='PRE_MARKET';color='#94a3b8';}else if(mins<990){state='OPEN · LIVE';color='#15803d';}else if(mins<1200){state='CLOSED · AFTERNOON';color='#eab308';}else if(mins<1230){state='POST_MARKET';color='#f97316';}else{state='CLOSED';color='#64748b';}el.textContent=state;el.style.color=color;});})();</script><script src="/assets/js/consent.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.card').forEach(function(c){

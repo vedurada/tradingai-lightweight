@@ -1,5 +1,12 @@
 const API_BASE = '';
 
+function setDataState(el, state, msg) {
+  if (!el) return;
+  var colors = { LIVE:'#15803d', UPDATED:'#2563eb', STALE:'#eab308', UNAVAILABLE:'#64748b', ERROR:'#dc2626' };
+  el.innerHTML = '<div style="font-size:0.85rem;font-weight:700;color:'+(colors[state]||'#64748b')+'">'+state+'</div><div style="font-size:0.78rem;color:#64748b;margin-top:0.2rem">'+(msg||'')+'</div>';
+  el.dataset.state = state;
+}
+
 async function fetchJSON(path) {
   try {
     const ts = Date.now();
