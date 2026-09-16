@@ -122,12 +122,14 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 7**: ✅ COMPLETE — Deterministic Strategy Backtesting, 1065/1065 tests passing
 - **Phase 8**: ✅ COMPLETE — Walk-Forward Validation + Historical Evidence, 1087/1087 tests passing
 - **Phase 9C**: ✅ COMPLETE — Personal Trading Intelligence engine (backend + frontend), 26/26 tests passing
+- **Phase 33.4–33.6**: ✅ COMPLETE — Deployment prep, infra validation, controlled deployment (560-line doc, 10 stages, 52-page validation)
+- **Phase 35**: ✅ COMPLETE — VM full product audit, P0 financial-semantic defect fixed, level invariant regression test added, all 4 indices verified, options-unavailable safety confirmed
 
 ## Workspace Milestone (FROZEN)
 
-- **Commit**: 9e184f4 (docs: Update PHASE 29 with user audit summary)
-- **Tag**: v2b5583a-baseline-13-g9e184f4
-- **Tests**: 75/75 passing
+- **Commit**: 2da3107 (Phase 35 complete: P0 financial-data defect fixed, level invariant regression test added)
+- **Tag**: phase35-complete
+- **Tests**: 1168/1168 passing (1162 app + 6 invariant)
 - **Git**: Clean, pushed
 - **Status**: Frozen — no further implementation without authorization
 

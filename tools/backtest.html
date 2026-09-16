@@ -177,13 +177,17 @@ function fmt0(n){return n!=null?Number(n).toLocaleString('en-IN',{maximumFractio
 function fmtLakhs(v){if(v==null)return'—';const l=v/100000;return'₹'+l.toFixed(1)+'L';}
 function pnlClr(v){return v==null?'':v>0?'#15803d':v<0?'#dc2626':'';}
 
+let btSubmitting=false;
 document.getElementById('bt-run').addEventListener('click', async function(){
+  if(btSubmitting)return;
   const btn=this;
   btn.disabled=true;
   btn.textContent='Running…';
+  btSubmitting=true;
   document.getElementById('bt-results').style.display='none';
   document.getElementById('bt-loading').style.display='block';
   document.getElementById('bt-error').style.display='none';
+  document.getElementById('bt-error').textContent='';
 
   const symbol=document.getElementById('bt-symbol').value;
   const days=document.getElementById('bt-days').value;
@@ -194,19 +198,21 @@ document.getElementById('bt-run').addEventListener('click', async function(){
   const strategy=document.getElementById('bt-strategy').value;
 
   const r=await fetchJSON('backtest?symbol='+encodeURIComponent(symbol)+'&days='+days);
-  btn.disabled=false;
-  btn.textContent='Run Backtest';
-  document.getElementById('bt-loading').style.display='none';
 
   if(!r){
+    btn.disabled=false;
+    btn.textContent='Run Backtest';
+    btSubmitting=false;
+    document.getElementById('bt-loading').style.display='none';
     document.getElementById('bt-error').textContent='Backtest failed — API unreachable.';
     document.getElementById('bt-error').style.display='block';
     return;
   }
 
-  // Handle async job
   let jobId=r.job_id;
   let result=r.result||r;
+  let state='COMPLETED';
+
   if(jobId){
     document.getElementById('bt-loading').style.display='block';
     let polls=0;
@@ -216,12 +222,40 @@ document.getElementById('bt-run').addEventListener('click', async function(){
       polls++;
       if(poll&&poll.status==='completed'){result=poll.result;break;}
       if(poll&&poll.status==='failed'){
-        document.getElementById('bt-error').textContent='Backtest failed: '+(poll.error||'Unknown error');
-        document.getElementById('bt-error').style.display='block';
-        return;
+        result=poll;
+        state='FAILED';
+        break;
+      }
+      if(!poll){
+        result=poll;
+        state='NO_DATA';
+        break;
       }
     }
+    if(polls>=60&&(!result||!result.status||result.status==='running')){
+      state='TIMEOUT';
+    }
     document.getElementById('bt-loading').style.display='none';
+  }
+
+  btn.disabled=false;
+  btn.textContent='Run Backtest';
+  btSubmitting=false;
+
+  if(state==='FAILED'){
+    document.getElementById('bt-error').textContent='Backtest failed: '+(result.error||'Unknown error');
+    document.getElementById('bt-error').style.display='block';
+    return;
+  }
+  if(state==='TIMEOUT'){
+    document.getElementById('bt-error').textContent='Backtest timed out — please try again.';
+    document.getElementById('bt-error').style.display='block';
+    return;
+  }
+  if(state==='NO_DATA'){
+    document.getElementById('bt-error').textContent='Backtest returned no data — please try again.';
+    document.getElementById('bt-error').style.display='block';
+    return;
   }
 
   document.getElementById('bt-results').style.display='block';
