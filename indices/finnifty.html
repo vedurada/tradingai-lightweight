@@ -23,7 +23,8 @@
   <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/market.html" style="color:#475569;text-decoration:none">Market</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a></nav>
 </header>
 <main>
-  <div class="updated-bar"><span id="last-updated-bar">Last refreshed: —</span></div>
+  <div class="updated-bar"><span id="last-updated-bar" style="color:#dc2626">DATA STALE</span></div>
+  <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:.5rem .8rem;font-size:.8rem;color:#92400e;margin-bottom:1rem"><strong>FINNIFTY data is delayed.</strong> Source: yfinance (current feed unavailable). Spot and indicators update less frequently than NIFTY/BANKNIFTY. Values shown may be stale. Check back during active market hours for fresher data.</div>
   <div style="font-size:0.78rem;color:#64748b;margin-bottom:0.6rem"><a href="/index.html">Home</a> / <a href="/market.html">Market</a> / <strong>Fin NIFTY Outlook</strong></div>
 
   <!-- Index Selector -->
@@ -39,7 +40,7 @@
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:1.5rem">
     <div class="card">
       <h3>Spot</h3>
-      <div class="price" id="finnifty-spot">Loading…</div>
+      <div class="price" id="finnifty-spot" style="color:#64748b">DATA UNAVAILABLE</div>
       <div class="status" id="finnifty-spot-change">—</div>
     </div>
     <div class="card">
@@ -291,6 +292,7 @@ async function loadNiftyData(){
   FINNIFTY_LOADED=true;
 }
 document.addEventListener('DOMContentLoaded',function(){loadNiftyData();setInterval(loadNiftyData,30000);});
+(function(){function fixStale(){var els=['finnifty-change','finnifty-change-pct','finnifty-vwap','finnifty-ema20'];for(var i=0;i<els.length;i++){var el=document.getElementById(els[i]);if(el){var t=el.textContent.trim();if(t==='0.00'||t==='0'||t==='+0.00'||t==='0.0'){el.textContent='UNAVAILABLE';el.style.color='#64748b';}}}var spot=document.getElementById('finnifty-spot');if(spot&&spot.textContent.trim()==='25,262.40'){spot.title='Stale: last known price from yfinance';}}setTimeout(fixStale,3500);})();
 </script>
 <script src="/assets/js/consent.js" defer></script>
 </body>
