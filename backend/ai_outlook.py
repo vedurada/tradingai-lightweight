@@ -56,7 +56,7 @@ class AIOutlookEngine:
 - confidence: 0-100 (MODEL_CONFIDENCE — confidence in current classification, not probability)
 - evidence_strength: 0.0-1.0
 - volatility_classification: HIGH/MEDIUM/LOW
-- market_structure: TRENDING_BULLISH/TRENDING_BEARISH/SIDEWAYS/SIDEWAYS_TO_BULLISH/SIDEWAYS_TO_BEARISH/VOLATILE_EXPANSION/TRANSITIONAL/NO_TRADE
+- market_structure: trending bullish, trending bearish, sideways, sideways-to-bullish, sideways-to-bearish, volatile expansion, transitional, no trade
 - market_summary: 1-2 sentence summary
 - trend_analysis: price vs EMAs
 - momentum_analysis: RSI, MACD, volume
@@ -336,6 +336,7 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
         vix_val = data.get("vix", 0)
         vol_class = "HIGH" if (atr > 0 and atr > price * 0.02) or vix_val > 20 else ("MEDIUM" if atr > 0 else "LOW")
         structure = "UPTREND" if regime == "BULLISH" else ("DOWNTREND" if regime == "BEARISH" else "RANGE")
+        market_structure = {"BULLISH": "TRENDING_BULLISH", "BEARISH": "TRENDING_BEARISH"}.get(regime, "SIDEWAYS")
         no_trade = []
         if regime == "UNKNOWN":
             no_trade.append("Unclear direction")
@@ -344,7 +345,6 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
         if rsi and 40 < rsi < 60:
             no_trade.append("Conflicting indicators")
 
-        market_structure = {"BULLISH": "TRENDING_BULLISH", "BEARISH": "TRENDING_BEARISH"}.get(regime, "SIDEWAYS")
         trade_class = "DIRECTIONAL" if regime in ("BULLISH", "BEARISH") else "NON_DIRECTIONAL"
         trade_status = "ACTIVE" if regime in ("BULLISH", "BEARISH") else "WAIT_FOR_CONFIRMATION"
         entry_trigger = "Wait for confirmation" if trade_status == "WAIT_FOR_CONFIRMATION" else "Entry active"
@@ -375,7 +375,7 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
             "confidence": confidence,
             "evidence_strength": 0.5 if regime != "UNCONFIRMED" else 0.2,
             "volatility_classification": vol_class,
-            "market_structure": market_structure,
+            "market_structure": structure,
             "market_summary": f"{data.get('symbol', '')} analysis - {regime}",
             "trend_analysis": f"Price vs EMA: {price} vs {data.get('ema20', 'N/A')}",
             "momentum_analysis": f"RSI: {rsi}, MACD: {data.get('macd', 'N/A')}",
