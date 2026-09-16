@@ -37,6 +37,77 @@ Limitation: Browser/DOM rendering verified only where noted. Most dynamic behavi
 
 ---
 
+## PHASE 29 — User Audit Summary
+
+### Three categories of remaining work
+
+| Category | Scope | Action |
+|----------|-------|--------|
+| **A. Already largely solved** | HTML architecture, page hierarchy, navigation, trust pages, learn pages | No action needed |
+| **B. Not solved** | Live runtime/data pipeline — loading/empty states on public site | Fix runtime chains |
+| **C. Cannot safely finish from workspace alone** | VM dependency, production runtime, cron, SQLite, nginx, API | VM inventory required |
+
+### Key findings from public production audit
+
+1. **/home.html still publicly reachable** — nginx config has 301 redirect (`ops/nginx-tradingai.conf:120`), but VM may not have it deployed. Must verify on VM.
+
+2. **Mutual funds typo** — "Anualised" should be "Annualised" (present in public version; workspace version may differ).
+
+3. **/ vs /index.html canonical** — Must definitively establish whether these are the same canonical page, different implementations, or one redirecting to the other. Requires VM/nginx verification.
+
+4. **Homepage backtest shows Loading** — /index.html has separate backtest component showing "Loading 22 trading 1M backtest…" even though /tools/backtest.html works on interaction.
+
+### Final page status matrix
+
+| # | Page | Structural | Runtime | Priority |
+|---|------|-----------|---------|----------|
+| 1 | / | ✅ | 🔴 | P0 |
+| 2 | /index.html | ✅ | 🟠 | P0 |
+| 3 | /market.html | ✅ | 🟠 | P0 |
+| 4 | /indices/nifty.html | ✅ | 🟠 | P0 |
+| 5 | /indices/banknifty.html | ✅ | 🟠 | P0 |
+| 6 | /indices/finnifty.html | ✅ | 🟠 | P0 |
+| 7 | /indices/sensex.html | ✅ | 🟠 | P0 |
+| 8 | /today/index.html | ✅ | 🔴 | P0 |
+| 9 | /options/pcr.html | ✅ | 🟠 | P0 |
+| 10 | /strategies.html | ✅ | 🟠 | P0 |
+| 11 | /strategy-builder.html | ✅ | 🟠 | P1 |
+| 12 | /tools/position-size.html | ✅ | 🟠 | P1 |
+| 13 | /tools/backtest.html | ✅ | 🟠 | P1 |
+| 14 | /scanner.html | ✅ | 🟠 | P1 |
+| 15 | /mutual-funds/ | ✅ | 🟠 | P2 |
+| 16 | /learn/ | ✅ | ✅ | P2 |
+| 17 | /learn/* guide pages | ✅ | 🟠 | P2 |
+| 18-23 | Trust pages + 404 | ✅ | ✅ | P3 |
+| 24 | Legacy URLs (/home.html etc.) | 301 design | Needs VM verify | P0 |
+
+### Product workflow (must be preserved)
+
+```
+TRADINGAI
+  ↓
+DAILY AI OUTLOOK
+  ├── NIFTY → OPTIONS → STRATEGY → BUILDER → POSITION SIZE → BACKTEST
+  ├── BANKNIFTY
+  └── SENSEX
+  ↓
+OPTIONS INTELLIGENCE (PCR/OI/Max Pain/Walls/Expected Move)
+  ↓
+AI STRATEGIES
+  ↓
+MARKET → SCANNER
+LEARN → indicators → live pages → OPTIONS/STRATEGY
+RESEARCH → MUTUAL FUNDS
+```
+
+### PHASE 29 goal
+
+Get to a state where opening TradingAI at 9:30 AM gives a trader a coherent answer to:
+
+"What is the current market regime, what evidence supports it, what are the important levels/options concentrations, what conditions would invalidate the view, and is there a strategy setup—or is it better to wait?"
+
+---
+
 ## P0 — Core Trading Pages
 
 ### / (Homepage)
