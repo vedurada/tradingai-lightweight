@@ -48,7 +48,7 @@ try {
 <main>
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
 
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>  <h2>OPTIONS STRATEGY ENGINE <span class="status">index options only — stocks get BUY/HOLD/EXIT on the <a href="/scanner.html">Scanner</a></span></h2>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span style="color:#64748b">Market closed · Strategies active when market reopens</span></div></div>  <h2>OPTIONS STRATEGY ENGINE <span class="status">index options only — stocks get BUY/HOLD/EXIT on the <a href="/scanner.html">Scanner</a></span></h2>
 
   <div class="card hero" style="margin-bottom:1rem">
     <div style="display:flex;flex-wrap:wrap;gap:0.8rem;align-items:end">
@@ -75,7 +75,7 @@ try {
 
   <div class="card" style="margin-bottom:1rem">
     <h3>Strategy Intelligence</h3>
-    <div id="e-ai">Loading…</div>
+    <div id="e-ai" style="color:#64748b">Waiting for market data…</div>
   </div>
 
   <h3>STRATEGY CARDS <span class="status">premiums fill live at your broker — ₹ math shown per strike-width</span></h3>
@@ -97,7 +97,7 @@ try {
 
   <div class="card" style="margin-bottom:1rem">
     <h3>STRATEGY PERFORMANCE <span class="status">deterministic, AI excluded</span></h3>
-    <div id="e-perf" class="status">Loading…</div>
+    <div id="e-perf" class="status" style="color:#64748b">Performance data: waiting for backtest results…</div>
   </div>
 
   
@@ -185,25 +185,39 @@ function renderAll(){
   var er=(sup.length&&res.length)?(fmt(sup[0])+' – '+fmt(res[0])):'—';
   var vr=vixRegime(ST.vix);
   var cands=TPL.map(function(t){return {name:t.name,ok:t.views.indexOf(view)!==-1};});
+  var activeCands=cands.filter(function(c){return c.ok;});
   var risk=(vr==='HIGH'||vr==='VERY HIGH')?'High':(reg.confidence>=60?'Moderate':'Elevated');
   var reason='Regime '+ (reg.regime||'unknown') +' ('+(reg.confidence||0)+'%), price '+trend+', VIX '+vr+'; range '+(sup.length?fmt(sup[0]):'—')+'–'+(res.length?fmt(res[0]):'—')+'. Option OI positioning unavailable (no NSE chain feed).';
   var aiHtml='<div class="status">Market regime: <strong>'+(reg.regime||'N/A')+'</strong> | Trend: '+trend+' | India VIX: '+vr+' | Expected range: '+er+'</div>';
   aiHtml+='<div class="status">Options positioning — PUT SUPPORT / CALL RESISTANCE: <span style="color:#64748b">unavailable (no live NSE option-chain feed yet)</span></div>';
-  aiHtml+='<div class="status">Strategy candidates ('+view+'):</div>';
-  for(var ci=0;ci<cands.length;ci++){aiHtml+='<div class="status">'+(cands[ci].ok?'<span style="color:#15803d">✓</span>':'<span style="color:#64748b">—</span>')+' '+cands[ci].name+'</div>';}
+  if(activeCands.length>0){
+    aiHtml+='<div class="status" style="font-weight:800;color:#15803d;font-size:0.88rem">ACTIVE SETUP</div>';
+    for(var ci=0;ci<cands.length;ci++){if(cands[ci].ok){aiHtml+='<div class="status"><span style="color:#15803d;font-weight:700">ACTIVE</span> '+cands[ci].name+'</div>';}}
+    var condCands=cands.filter(function(c){return !c.ok;});
+    if(condCands.length>0){aiHtml+='<div class="status" style="font-weight:700;color:#eab308;font-size:0.85rem">CONDITIONAL SETUP</div>';}
+    for(var ci2=0;ci2<cands.length;ci2++){if(!cands[ci2].ok){aiHtml+='<div class="status" style="color:#eab308"><span style="color:#eab308;font-weight:700">CONDITIONAL</span> '+cands[ci2].name+' (triggers on '+cands[ci2].views.join('/')+')</div>';}}
+  } else {
+    aiHtml+='<div class="status" style="font-weight:800;color:#dc2626;font-size:0.92rem">NO TRADE</div>';
+    aiHtml+='<div class="status">No strategies meet current conditions. Waiting for regime shift before entering.</div>';
+    aiHtml+='<div class="status" style="color:#64748b">Conditional setups will activate when: '+TPL.map(function(t){return t.name+' on '+t.views.join('/');}).join(', ')+'</div>';
+  }
   aiHtml+='<div class="status">Risk condition: <strong>'+risk+'</strong></div><div class="status">Reason: '+reason+'</div>';
   aiHtml+='<div class="status"><a href="'+meta.page+'">Open '+sym+' Market Intelligence →</a></div>';
   document.getElementById('e-ai').innerHTML=aiHtml;
-  // Grouped cards
+  // Grouped cards with ACTIVE/CONDITIONAL labels
   var groups=['Directional bullish','Directional bearish','Neutral / range','High-volatility / event'];
   var gh='';
+  var totalActive=0;
   for(var gi=0;gi<groups.length;gi++){
+    var groupActive=0;
     gh+='<h4 style="margin:0.8rem 0 0.3rem">'+groups[gi]+'</h4><div class="grid">';
     for(var ti=0;ti<TPL.length;ti++){var t=TPL[ti];if(t.group!==groups[gi])continue;
       var legs=t.legs(A,step);var ok=t.views.indexOf(view)!==-1;
+      if(ok)groupActive++;totalActive++;
+      var stateLabel=ok?'<span style="color:#15803d;font-weight:700;font-size:0.72rem;letter-spacing:0.05em">ACTIVE</span>':'<span style="color:#eab308;font-weight:700;font-size:0.72rem;letter-spacing:0.05em">CONDITIONAL</span>';
       var legHtml='';for(var li=0;li<legs.length;li++){legHtml+='<div class="status">'+legs[li].a+' '+fmt(legs[li].k)+' '+legs[li].t+'</div>';}
       var be=t.be(A,step);
-      gh+='<div class="card" style="cursor:pointer" onclick="if(event.target.closest(\'a\'))return;location.href=\'strategy-builder.html?index='+ST.index+'&template='+t.id+'\'"><h4>'+t.name+' '+(ok?'<span style="color:#15803d">✓</span>':'<span style="color:#64748b">—</span>')+'</h4>'
+      gh+='<div class="card" style="cursor:pointer;border-top:3px solid '+(ok?'#15803d':'#eab308')+'" onclick="if(event.target.closest(\'a\'))return;location.href=\'strategy-builder.html?index='+ST.index+'&template='+t.id+'\'"><h4>'+t.name+' '+stateLabel+'</h4>'
         +'<div class="status">Spot '+fmt(spot)+' | ATM '+fmt(A)+' | Expiry: '+(expShow.expiry_label||'—')+' ('+(expShow.days_to_expiry!=null?expShow.days_to_expiry+' DTE':'—')+(expShow.tenor?', '+expShow.tenor:'')+')</div>'
         +legHtml
         +'<div class="status">Width '+fmt(step)+' pts ≈ ₹'+Number(step*lot).toLocaleString('en-IN')+'/lot</div>'
@@ -215,6 +229,10 @@ function renderAll(){
         +'</div>';
     }
     gh+='</div>';
+  }
+  // NO TRADE state when no strategies match
+  if(totalActive===0){
+    gh='<div class="card" style="border-left:4px solid #dc2626;margin-bottom:1rem;padding:1rem"><h3 style="color:#dc2626">NO TRADE</h3><div class="status">Current regime ('+(reg.regime||'unknown')+') does not support any strategy in the current view ('+view+'). Waiting for conditions to improve.</div><div class="status" style="color:#64748b">Conditional setups will activate when market view shifts to: '+TPL.map(function(t){return t.views.join('/');}).join(', ')+'</div></div>'+gh;
   }
   document.getElementById('e-groups').innerHTML=gh;
   for(var dj=0;dj<TPL.length;dj++){drawPayoff('po-'+TPL[dj].id,TPL[dj].shape);}
