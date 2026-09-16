@@ -19,6 +19,38 @@ Baseline: v2b5583a-baseline (commit 35decaf)
 | Browser/API verification | ⏳ Deferred until VM runtime |
 | Deployment | ⏳ Deferred until VM verification |
 
+## PHASE 29 — Production Page Functional Audit (COMPLETE)
+
+| Phase | Status |
+|-------|--------|
+| PHASE 29 audit | ✅ Complete |
+| Today API contracts | 🔴 3 endpoints absent, 1 structure mismatch |
+| /home.html redirect | 🟠 Config exists, VM verification needed |
+| / vs /index.html canonical | 🟠 Unverified |
+| Legacy URLs (/home.html etc.) | 🟠 Public access still possible |
+| Mutual funds | 🟠 Typo + Loading state |
+
+Documents:
+- `docs/PHASE29_FUNCTIONAL_AUDIT.md` — 24-page status matrix + today terminal chain analysis
+- `docs/PHASE29_API_MAP.md` — 90 backend routes mapped + VM verification checklist
+
+## PHASE 30 — Next Phase (Pending VM Access)
+
+Production VM Read-Only Inventory & Runtime Dependency Audit
+
+- 30A: VM inventory (read-only)
+- 30B: Dependency mapping (HTML → JS → API → Flask → Python → SQLite → external source)
+- 30C: Verify 4 highest-risk issues (Today contracts, /home.html, canonical, market pipeline)
+- 31: Confirm classification + dependency map
+- 32: Repair API/data contracts
+- 33: Runtime browser audit
+- 34: Data freshness/integrity
+- 35: Cross-page workflow testing
+- 36: Legacy cleanup
+- 37: SEO/Search Console
+- 38: Performance/mobile/security regression
+- Production release
+
 
 
 For every retained core page: compare approved layout plan vs current HTML.
