@@ -94,6 +94,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **11 Phase 8 evidence tests**: `python3 -m pytest tests/test_phase8_evidence.py -v`
 - **6 known failures** (data-dependent, DB empty): see `docs/AUDIT_REPORT.md`
 - **30 Phase 9A tests**: `python3 -m pytest tests/test_phase9_journal.py -v`
+- **26 Phase 9C tests**: `python3 -m pytest tests/test_phase9c_personal_intelligence.py -v`
 
 ## Deployment
 
@@ -120,6 +121,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 6**: ✅ COMPLETE — Live Intraday + Price-Tick Experience, 1045/1045 tests passing
 - **Phase 7**: ✅ COMPLETE — Deterministic Strategy Backtesting, 1065/1065 tests passing
 - **Phase 8**: ✅ COMPLETE — Walk-Forward Validation + Historical Evidence, 1087/1087 tests passing
+- **Phase 9C**: 🔄 IN PROGRESS — Personal Trading Intelligence engine, 26/26 tests passing (backend only, frontend pending)
 
 ## Phase 5 Components
 
@@ -235,6 +237,44 @@ Components: `backend/journal.py`, tables `trade_journal`, `trade_journal_events`
 
 #### Mobile-First UI
 - `tools/journal.html` — Progressive disclosure: TRADED/PAPER/SKIPPED first, relevant fields after
+
+### Phase 9C — Personal Trading Intelligence (in progress)
+
+Personal Trading Intelligence engine built on Journal data with strict AI separation.
+
+#### Key Design Principles
+- **Deterministic-first**: All statistics computed by deterministic engine
+- **AI explanation only**: AI may explain already-calculated findings, NEVER calculate statistics
+- **Sample size protection**: Minimum 10 trades required; SUFFICIENT_DATA/INSUFFICIENT_DATA in every response
+- **No auto-modification**: Strategies, thresholds, signals NEVER auto-modified based on personal intelligence
+- **Every response includes**: `data_status`, `sample_size`, `minimum_required`
+
+#### Components
+- `backend/personal_intelligence.py` — 12 intelligence functions:
+  - `intelligence_summary` — Trading Intelligence Summary (total_trades, win_rate, categories, by_regime, by_action, by_direction, by_result)
+  - `intelligence_instrument` — Per-Instrument Statistics (by_regime, by_strategy)
+  - `intelligence_strategy` — Per-Strategy Statistics (by_instrument)
+  - `intelligence_regime` — Market-Regime Statistics (by_strategy)
+  - `intelligence_direction` — Direction Statistics (win_rate, by_regime, by_instrument)
+  - `intelligence_time_of_day` — Time-of-Day Behavior (time_slots with win_rate, avg_risk)
+  - `intelligence_adherence` — Entry/Exit Adherence (entry_window_rate, confirmation_rate, stop_hold_rate, target_hit_rate)
+  - `intelligence_behavior` — Risk-Taking Behavior (exit_type_distribution, risk_distribution)
+  - `intelligence_compliance` — Compliance Analysis (traded_when_was_wait, skipped_valid_setup, traded_after_invalidation)
+  - `intelligence_mistakes` — Recurring Mistake Patterns (mistake_patterns by type)
+  - `intelligence_setup_adherence` — Setup Adherence (ai_accuracy, ai_outcome_correct, ai_outcome_wrong)
+  - `intelligence_risk_behavior` — Planned vs Actual Risk Behavior (avg_risk_ratio, avg_risk_planned, avg_risk_actual)
+
+#### API Endpoints (all under /api/intelligence/, rate limited 30/minute)
+- `GET /api/intelligence/summary` — Trading Intelligence Summary
+- `GET /api/intelligence/instrument/<symbol>` — Per-Instrument Analysis
+- `GET /api/intelligence/strategy/<name>` — Per-Strategy Analysis
+- `GET /api/intelligence/regime/<name>` — Market Regime Analysis
+- `GET /api/intelligence/behavior` — Behavior Analysis
+- `GET /api/intelligence/mistakes` — Recurring Mistake Patterns
+- `GET /api/intelligence/setup-adherence` — Setup Adherence
+
+#### Tests
+- `tests/test_phase9c_personal_intelligence.py` — 26 tests (data status, sample size, determinism, per-function, AI exclusion, edge cases)
 
 ## Phase 7 Components
 
