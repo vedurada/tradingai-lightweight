@@ -52,8 +52,8 @@ try {
     <strong>Financial / Educational Disclaimer:</strong> TradingAI provides automated market analysis for informational and educational purposes only. Nothing here constitutes investment, financial, legal, or tax advice. All analysis is generated from publicly available NSE data and rule-based algorithms. Trading involves substantial risk, including loss of capital. Users must verify all data with their broker and make their own decisions. Past performance does not guarantee future results. SEBI does not endorse or review any content on this site.
   </div>
   <div class="updated-bar"><span id="last-updated-bar">MARKET CLOSED</span> <span class="status" id="session-state" style="font-size:0.78rem">MARKET CLOSED</span></div>
-  <h3 style="margin:1.5rem 0 0.5rem 0">LIVE MARKET TICKER</h3>
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
+  <h3 style="margin:1.5rem 0 0.5rem 0">MARKET CLOSED</h3>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span style="color:#64748b">Market closed · Last session 16 Sep 2026</span></div></div>
 
   <h3 style="margin:1.5rem 0 0.5rem 0">MARKET SNAPSHOT</h3>
   <!-- MARKET SNAPSHOT -->
@@ -106,7 +106,7 @@ try {
   <!-- ADVANCE / DECLINE -->
   <div class="card" style="margin-top:1.5rem">
     <h3>ADVANCE / DECLINE</h3>
-    <div id="home-ad-bar"><span>Loading breadth data…</span></div>
+    <div id="home-ad-bar"><span style="color:#64748b">Breadth: CLOSED</span></div>
     <div style="font-size:0.75rem;color:#64748b;margin-top:0.5rem">Market breadth / tape</div>
     <script>(function(){ (async function(){ try{var r=await(await fetch('/api/index-breadth')).json();if(!r||!r.length){document.getElementById('home-ad-bar').innerHTML='<span style="color:#94a3b8;font-size:0.85rem">No breadth data</span>';return;}var a=0,d=0,u=0;for(var i=0;i<r.length;i++){a+=r[i].advances||0;d+=r[i].declines||0;u+=r[i].unchanged||0;}document.getElementById('home-ad-bar').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;text-align:center;margin-top:0.5rem"><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Advances</div><div style="font-size:1.3rem;font-weight:800;color:#15803d">'+a+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Declines</div><div style="font-size:1.3rem;font-weight:800;color:#ef4444">'+d+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Unchanged</div><div style="font-size:1.3rem;font-weight:800;color:#64748b">'+u+'</div></div></div>';}catch(e){document.getElementById('home-ad-bar').textContent='Breadth unavailable';}})(); })();</script>
   </div>
