@@ -14,16 +14,16 @@ Branch deployed: html/h31-shell-core-pages @ 9ead08c
 | API endpoints | 48/49 PASS (backtest async) |
 | HTML pages | 63 files audited |
 | Database | 46 tables audited |
-| Bugs found | 3 critical, 3 open |
-| Bugs fixed | 3 critical |
+| Bugs found | 4 critical, 3 open |
+| Bugs fixed | 4 critical |
 | H31 modified | NO |
 | Phase 34 | NOT STARTED |
 
 ### Key Findings
-1. **API**: All 48 tested endpoints return 200 with valid data. Backtest returns 202 (async, by design). FINNIFTY risk and maxpain fixed.
+1. **API**: All 48 tested endpoints return 200 with valid data. Backtest returns 202 (async, by design). FINNIFTY risk, maxpain, pcr-history fixed. **CRITICAL**: /api/key-levels returned wrong support/resistance values (all supports above spot) — fixed to use pivot/r1/s1/r2/s2/r3/s3 columns from indicators table (verified: S3<S2<S1<Spot<R1<R2<R3).
 2. **HTML**: 63 HTML files present, all return 200 via HTTPS, all have H1, most have navigation. Loading states are expected (JS-driven pages).
-3. **DB**: 46 tables, 35+ populated. Empty tables: instruments/regimes (legacy), option_chain/oi_top_strikes/pcr_history (data pipeline gap), portfolio/alerts/etf/mf (expected empty).
-4. **Critical fixes applied**: FINNIFTY risk 404, maxpain 500, OptionsEngine import bug.
+3. **DB**: 46 tables, 35+ populated. indicators.support_resistance column had incorrect values — regenerated using pivot/r1/s1 calculation for all symbols. NIFTY daily outlook/close pages regenerated with correct data.
+4. **Critical fixes applied**: FINNIFTY risk 404, maxpain 500, pcr-history 500, key-levels wrong support/resistance.
 
 ## VM Inventory
 
@@ -206,11 +206,13 @@ All outlook pages in /market/ have LIVE data state with correct symbol mapping.
 
 ### BUG-003 ✅ | P0 | /api/pcr-history | 500 INTERNAL_ERROR | Same import bug as BUG-002 | Fixed by BUG-002 | FIXED
 
-### BUG-004 | P1 | /api/oi-top | Empty array [] | oi_top_strikes table empty (data pipeline gap) | Requires options data pipeline | OPEN
+### BUG-004 ✅ | P0 | /api/key-levels | Wrong supports/resistances | `indicators.support_resistance` column in DB had all supports ABOVE current spot (23,217) and all resistances above spot — contradicts conventional model (S3<S2<S1<Spot<R1<R2<R3). Root cause: support_resistance column populated with incorrect values during data fetch. Fix: changed `market_state.build_market_state()` and `daily_page.py` to derive support/resistance from pivot/r1/s1/r2/s2/r3/s3 columns instead. Also regenerated indicators.support_resistance for all symbols and re-rendered NIFTY daily pages. | FIXED
 
-### BUG-005 | P1 | option_chain | 0 rows (should be populated) | data_fetcher_db.py option fetch not running or returns empty | Requires options data pipeline | OPEN
+### BUG-005 | P1 | /api/oi-top | Empty array [] | oi_top_strikes table empty (data pipeline gap) | Requires options data pipeline | OPEN
 
-### BUG-006 | P1 | /api/backtest | 202 running (async) | Jobs complete on first poll but expire quickly | Frontend needs proper polling | OPEN
+### BUG-006 | P1 | option_chain | 0 rows (should be populated) | data_fetcher_db.py option fetch not running or returns empty | Requires options data pipeline | OPEN
+
+### BUG-007 | P1 | /api/backtest | 202 running (async) | Jobs complete on first poll but expire quickly | Frontend needs proper polling | OPEN
 
 ## Fixed Code Changes on VM
 
@@ -222,6 +224,20 @@ All outlook pages in /market/ have LIVE data state with correct symbol mapping.
 5. Line 1464: Same import fix
 6. Maxpain endpoint: Added graceful empty chain handling (if no chain → UNAVAILABLE, try/except → UNAVAILABLE)
 
+### /opt/tradingai/backend/market_state.py
+- Changed `build_market_state()` to derive support/resistance from pivot/r1/s1/r2/s2/r3/s3 columns instead of `support_resistance` JSON field (which had incorrect values: all supports above spot)
+
+### /opt/tradingai/backend/daily_page.py
+- Changed `_fetch_day()` to derive support/resistance from pivot/r1/s1/r2/s2/r3/s3 columns instead of `support_resistance` JSON field
+
+### /opt/tradingai/database/tradingai.db
+- Regenerated `support_resistance` column for ALL symbols using pivot/r1/s1 calculation (verified: S3<S2<S1<Spot<R1<R2<R3> for all)
+
+### /var/www/tradingai.in/html/market/
+- Regenerated NIFTY daily outlook pages: nifty-outlook-2026-09-13.html, nifty-outlook-2026-09-15.html, nifty-outlook-2026-09-16.html
+- Regenerated NIFTY close pages: nifty-close-2026-09-13.html, nifty-close-2026-09-15.html, nifty-close-2026-09-16.html
+- All now show correct support (below spot) and resistance (above spot)
+
 ## Verification After Fixes
 
 | Endpoint | Before | After |
@@ -230,6 +246,7 @@ All outlook pages in /market/ have LIVE data state with correct symbol mapping.
 | /api/maxpain?symbol=NIFTY | 500 | 200 ({}) |
 | /api/maxpain?symbol=BANKNIFTY | 500 | 200 ({}) |
 | /api/pcr-history?symbols=NIFTY | 500 | 200 ({}) |
+| /api/key-levels?symbol=NIFTY | supports=[23737, 23786, 23873] ALL above spot | supports=[22892, 23004, 23061] below spot, resistances=[23230, 23341, 23398] above spot |
 | All APIs (retest) | 44/49 | 48/49 |
 
 ## Navigation Audit

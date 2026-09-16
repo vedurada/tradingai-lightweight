@@ -1,26 +1,26 @@
-# Phase 35 Bug Register
+# Phase 35 Bug Register — Updated
 
 Date: 2026-09-16
-Status: IN PROGRESS — bugs being fixed on VM
+Status: IN PROGRESS
 
-## Format
-ID | Severity | Page/Component | Expected | Actual | Root Cause | Fix | Status
+## Bugs Fixed
+### BUG-001 ✅ | P0 | /api/risk/FINNIFTY 404 | Added FINNIFTY to allowed symbols | FIXED
+### BUG-002 ✅ | P0 | /api/maxpain 500 | Fixed OptionsEngine import + graceful handling | FIXED
+### BUG-003 ✅ | P0 | /api/pcr-history 500 | Fixed by BUG-002 | FIXED
+### BUG-004 ✅ | P0 | /api/key-levels wrong supports/resistances | support_resistance JSON in indicators table wrong (all supports above spot 23,217); root cause: indicators table support_resistance column populated with incorrect values; fixed key-levels endpoint (market_state.build_market_state) and daily_page.py to use pivot/r1/s1/r2/s2/r3/s3 columns; also regenerated indicators table and NIFTY daily pages | FIXED
 
-## Bugs Found & Fixed
+## Bugs Open
+### BUG-005 | P1 | option_chain empty | Root cause: yfinance returns 0 Indian options expirations, NSE API returns 404 | DATA SOURCE LIMITATION — not fixable without new data source | DEFERRED (monitor NSE API)
+### BUG-006 | P1 | /api/oi-top returns [] | Root cause: oi_top_strikes table empty (same data source) | DEFERRED (same as BUG-005)
+### BUG-007 | P1 | /api/backtest 202 async | Jobs complete but frontend doesn't properly poll | OPEN
 
-### BUG-001 ✅ | P0 | /api/risk/FINNIFTY | Risk data for FINNIFTY | 404 "FINNIFTY is not available" | Risk endpoint line 3390: allowed symbols list missing FINNIFTY | Added FINNIFTY to allowed symbols | FIXED
+## Data Source Findings
+- yfinance: 0 expirations for ^NSEI (NIFTY), ^NSEBANK (BANKNIFTY)
+- NSE API: 404 (unstable/disabled endpoint)
+- option_chain: 0 rows (correct — no data source available)
+- Pages correctly show UNAVAILABLE (not fabricated data)
+- This is an external dependency issue, not a code bug
 
-### BUG-002 ✅ | P0 | /api/maxpain | Max pain data per symbol | 500 INTERNAL_ERROR | OptionsEngine import `from backend.options` fails (no backend/__init__.py) | Changed to `from options import OptionsEngine` + graceful empty handling | FIXED
-
-### BUG-003 ✅ | P0 | /api/pcr-history | PCR data | 500 (same import bug) | Same as BUG-002 | Fixed by BUG-002 | FIXED
-
-### BUG-004 | P1 | /api/oi-top | OI top strikes | Returns empty array [] | oi_top_strikes table has 0 rows (data pipeline gap) | Requires data pipeline fix | OPEN
-
-### BUG-005 | P1 | option_chain table | Populated option chain data | 0 rows (option_expiries has 27) | data_fetcher_db.py option fetch fails or returns empty chains | Requires data pipeline fix | OPEN
-
-### BUG-006 | P1 | /api/backtest | Backtest results | Returns 202 "running" (async) | Backtest jobs are async; first poll shows completed with data, second poll shows NOT_FOUND (job expired) | Jobs are ephemeral; frontend needs to poll and display result | OPEN
-
-## Bugs Intentionally Deferred
-- instruments table empty (0 rows) — legacy table, symbols (47 rows) is current
-- regimes table empty (0 rows) — legacy table, market_regime (12,905 rows) is current
-- Empty tables: portfolio, alerts, etf_data, mf_data, history_archive, price_15m, prices, daily_strategy — expected empty, no data source or user-dependent
+## Additional Fixes (Phase 35)
+- Regenerated indicators.support_resistance column for all symbols using pivot/r1/s1 calculation (S3<S2<S1<Spot<R1<R2<R3)
+- Regenerated NIFTY daily outlook/close pages (2026-09-15, 2026-09-16) with correct support/resistance
