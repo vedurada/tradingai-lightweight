@@ -3176,6 +3176,87 @@ def journal_feedback():
         return error_response("FEEDBACK_FAILED", str(e), 500)
 
 
+@app.route("/api/intelligence/summary", methods=["GET"])
+@limiter.limit("30/minute")
+def pi_summary():
+    """Trading Intelligence Summary."""
+    date_from = request.args.get("date_from")
+    date_to = request.args.get("date_to")
+    try:
+        from personal_intelligence import intelligence_summary
+        return jsonify(intelligence_summary(
+            date_from=date_from or None, date_to=date_to or None,
+        ))
+    except Exception as e:
+        return error_response("PI_SUMMARY_FAILED", str(e), 500)
+
+
+@app.route("/api/intelligence/instrument/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def pi_instrument(symbol):
+    """Per-Instrument Analysis."""
+    try:
+        from personal_intelligence import intelligence_instrument
+        return jsonify(intelligence_instrument(symbol.upper()))
+    except Exception as e:
+        return error_response("PI_INSTRUMENT_FAILED", str(e), 500)
+
+
+@app.route("/api/intelligence/strategy/<name>", methods=["GET"])
+@limiter.limit("30/minute")
+def pi_strategy(name):
+    """Per-Strategy Analysis."""
+    try:
+        from personal_intelligence import intelligence_strategy
+        return jsonify(intelligence_strategy(name))
+    except Exception as e:
+        return error_response("PI_STRATEGY_FAILED", str(e), 500)
+
+
+@app.route("/api/intelligence/regime/<name>", methods=["GET"])
+@limiter.limit("30/minute")
+def pi_regime(name):
+    """Market Regime Analysis."""
+    try:
+        from personal_intelligence import intelligence_regime
+        return jsonify(intelligence_regime(name.upper()))
+    except Exception as e:
+        return error_response("PI_REGIME_FAILED", str(e), 500)
+
+
+@app.route("/api/intelligence/behavior", methods=["GET"])
+@limiter.limit("30/minute")
+def pi_behavior():
+    """Behavior Analysis."""
+    try:
+        from personal_intelligence import intelligence_behavior
+        return jsonify(intelligence_behavior())
+    except Exception as e:
+        return error_response("PI_BEHAVIOR_FAILED", str(e), 500)
+
+
+@app.route("/api/intelligence/mistakes", methods=["GET"])
+@limiter.limit("30/minute")
+def pi_mistakes():
+    """Recurring Mistake Patterns."""
+    try:
+        from personal_intelligence import intelligence_mistakes
+        return jsonify(intelligence_mistakes())
+    except Exception as e:
+        return error_response("PI_MISTAKES_FAILED", str(e), 500)
+
+
+@app.route("/api/intelligence/setup-adherence", methods=["GET"])
+@limiter.limit("30/minute")
+def pi_setup_adherence():
+    """Setup Adherence."""
+    try:
+        from personal_intelligence import intelligence_setup_adherence
+        return jsonify(intelligence_setup_adherence())
+    except Exception as e:
+        return error_response("PI_SETUP_ADHERENCE_FAILED", str(e), 500)
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
