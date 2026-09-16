@@ -1196,7 +1196,12 @@ def strategy(symbol):
     finally:
         conn.close()
     if row:
-        return jsonify(row_to_dict(row))
+        d = row_to_dict(row)
+        d["name"] = d.get("strategy")
+        d["entry"] = d.get("entry_trigger")
+        d["risk"] = d.get("maximum_loss")
+        d["strategies"] = [{"name": d.get("strategy"), "entry": d.get("entry_trigger"), "risk": d.get("maximum_loss"), "target": d.get("target"), "rank": 1}]
+        return jsonify(d)
     return jsonify({"error": "no strategy"}), 404
 
 @app.route("/api/strategies")
@@ -1606,7 +1611,8 @@ def _build_outlook_on_demand(conn, symbol):
 @app.route("/api/market-outlook")
 @cache_page(3600)
 def market_outlook_latest():
-    """Latest daily market outlook record (framework payload), LLM-primary."""
+    """Latest daily market outlook record (framework payload), LLM-primary.
+    Returns both raw fields (for indices pages) and outlook wrapper (for today terminal)."""
     symbol = request.args.get("symbol", "NIFTY").upper()
     try:
         from outlook import merge_llm_into_payload
@@ -1621,11 +1627,13 @@ def market_outlook_latest():
                 data = merge_llm_into_payload(conn, symbol, data)
             if data is None:
                 return jsonify({"error": f"no outlook yet for {symbol}"}), 404
+            data["outlook"] = {k: data.get(k) for k in ["bias", "confidence", "primary_view", "key_drivers", "regime", "decision", "date", "symbol"]}
             return jsonify(data)
         data = _parse_json_field(row["payload"])
         if merge_llm_into_payload is not None:
             data = merge_llm_into_payload(conn, symbol, data)
         data["created_at"] = row["created_at"]
+        data["outlook"] = {k: data.get(k) for k in ["bias", "confidence", "primary_view", "key_drivers", "regime", "decision", "date", "symbol"]}
         return jsonify(data)
     finally:
         conn.close()
@@ -1649,6 +1657,7 @@ def market_outlook_by_date(date):
         data = merge_llm_into_payload(conn, symbol, data)
     conn.close()
     data["created_at"] = row["created_at"]
+    data["outlook"] = {k: data.get(k) for k in ["bias", "confidence", "primary_view", "key_drivers", "regime", "decision", "date", "symbol"]}
     return jsonify(data)
 
 @app.route("/api/portfolio", methods=["GET"])
