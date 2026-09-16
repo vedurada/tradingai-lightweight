@@ -115,6 +115,13 @@ function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.inc
 function updateClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
 setInterval(updateClock,1000);updateClock();
 
+function setDataState(el,state,msg){
+  if(!el)return;
+  if(state==='LIVE'){el.style.color='';el.textContent=msg;}
+  else if(state==='STALE'){el.style.color='#eab308';el.textContent=msg;}
+  else if(state==='UNAVAILABLE'){el.style.color='#64748b';el.textContent=msg;}
+  else if(state==='ERROR'){el.style.color='#dc2626';el.textContent=msg;}
+}
 async function loadTodayData(){
   var sessionEl=document.getElementById('t-session-status');
   try{
@@ -158,8 +165,8 @@ async function loadTodayData(){
         if(o.outlook.regime){html+='<div class="status" style="margin-top:0.3rem">Regime: <strong>'+o.outlook.regime.primary+'</strong> | Direction: '+regimeText(o.outlook.bias?o.outlook.bias.label:'')+' | Confidence: '+(o.outlook.confidence||'—')+'%</div>';}
         el.innerHTML=html||'<div class="status">Outlook pending</div>';
       }
-    }
-  }catch(e){}
+    }else{setDataState(document.getElementById('t-outlook'),'UNAVAILABLE','AI outlook data unavailable — endpoint pending verification')}
+  }catch(e){setDataState(document.getElementById('t-outlook'),'ERROR','AI outlook error — check API endpoint')}
   try{
     var kl=await fetchJSON('key-levels?symbol=NIFTY');
     if(kl){
@@ -171,8 +178,8 @@ async function loadTodayData(){
         if(kl.opening_range)html+='<div style="font-size:0.82rem;font-weight:700;color:#64748b;margin:0.5rem 0 0.3rem">Opening Range</div>'+fp(kl.opening_range.low)+' — '+fp(kl.opening_range.high);
         el.innerHTML=html||'<div class="status">Levels pending</div>';
       }
-    }
-  }catch(e){}
+    }else{setDataState(document.getElementById('t-levels'),'UNAVAILABLE','Key levels pending backend verification')}
+  }catch(e){setDataState(document.getElementById('t-levels'),'ERROR','Key levels error — endpoint pending')}
   try{
     var opt=await fetchJSON('options/state/NIFTY');
     if(opt){
@@ -197,8 +204,8 @@ async function loadTodayData(){
       if(cond.bullish){var el=document.getElementById('t-bullish');if(el)el.textContent=cond.bullish;}
       if(cond.bearish){var el=document.getElementById('t-bearish');if(el)el.textContent=cond.bearish;}
       if(cond.no_trade){var el=document.getElementById('t-notrade');if(el)el.textContent=cond.no_trade;}
-    }
-  }catch(e){}
+    }else{setDataState(document.getElementById('t-bullish'),'UNAVAILABLE','Intraday conditions pending');setDataState(document.getElementById('t-bearish'),'UNAVAILABLE','Intraday conditions pending');setDataState(document.getElementById('t-notrade'),'UNAVAILABLE','Intraday conditions pending')}
+  }catch(e){setDataState(document.getElementById('t-bullish'),'ERROR','Intraday conditions error');setDataState(document.getElementById('t-bearish'),'ERROR','Intraday conditions error');setDataState(document.getElementById('t-notrade'),'ERROR','Intraday conditions error')}
   try{
     var str=await fetchJSON('strategy/NIFTY');
     if(str){
@@ -208,8 +215,8 @@ async function loadTodayData(){
         if(str.strategies){str.strategies.forEach(function(s){html+='<div style="margin-bottom:0.5rem;padding:0.6rem 0.8rem;background:#f8fafc;border-radius:8px;border-left:3px solid '+(s.rank===1?'#15803d':'#a16207')+'"><div style="font-weight:700">'+s.name+'</div><div class="status" style="font-size:0.82rem">Entry: '+(s.entry||'—')+' | Risk: '+(s.risk||'—')+' | Target: '+(s.target||'—')+'</div></div>';});}
         el.innerHTML=html||'<div class="status">No strategies</div>';
       }
-    }
-  }catch(e){}
+    }else{setDataState(document.getElementById('t-strategy'),'UNAVAILABLE','Strategy candidates pending backend verification')}
+  }catch(e){setDataState(document.getElementById('t-strategy'),'ERROR','Strategy candidates error — endpoint pending')}
   try{
     var risk=await fetchJSON('risk/NIFTY');
     if(risk){
@@ -222,8 +229,8 @@ async function loadTodayData(){
         html+='</div>';
         el.innerHTML=html||'<div class="status">No risk data</div>';
       }
-    }
-  }catch(e){}
+    }else{setDataState(document.getElementById('t-risk'),'UNAVAILABLE','Risk data pending backend verification')}
+  }catch(e){setDataState(document.getElementById('t-risk'),'ERROR','Risk data error — endpoint pending')}
   try{
     var tl=await fetchJSON('session-timeline');
     if(tl){
@@ -237,8 +244,8 @@ async function loadTodayData(){
         html+='</div>';
         el.innerHTML=html||'<div class="status">No timeline</div>';
       }
-    }
-  }catch(e){}
+    }else{setDataState(document.getElementById('t-timeline'),'UNAVAILABLE','Session timeline pending backend verification')}
+  }catch(e){setDataState(document.getElementById('t-timeline'),'ERROR','Session timeline error — endpoint pending')}
 }
 document.addEventListener('DOMContentLoaded',function(){loadTodayData();setInterval(loadTodayData,30000);});
 </script>
