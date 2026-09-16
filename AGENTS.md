@@ -123,6 +123,28 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 8**: ✅ COMPLETE — Walk-Forward Validation + Historical Evidence, 1087/1087 tests passing
 - **Phase 9C**: ✅ COMPLETE — Personal Trading Intelligence engine (backend + frontend), 26/26 tests passing
 
+## Workspace Milestone (FROZEN)
+
+- **Tag**: v2b5583a-baseline (commit 35decaf)
+- **Latest**: 55614b0 (docs updates since baseline)
+- **Tests**: 75 passing
+- **Git**: Clean, pushed
+- **Status**: Frozen — no further implementation without authorization
+
+## VM Phase (Pending Authorization)
+
+When VM access is available, start read-only:
+
+1. PHASE 10 — VM inventory (read-only)
+2. PHASE 15 — Legacy cleanup (archive → verify → delete)
+3. PHASE 13/14 — Browser/API runtime audit
+4. Verify / vs /index.html canonical
+5. Deploy synchronized pages
+6. Full regression
+7. Production release
+
+Do NOT modify VM until inventory is complete and classifications confirmed.
+
 ## Phase 5 Components
 
 - `backend/replay_engine.py` — Timestamp-by-timestamp replay with strict no-lookahead
