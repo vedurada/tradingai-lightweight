@@ -79,6 +79,31 @@ Limitation: Browser/DOM rendering verified only where noted. Most dynamic behavi
 **Immediate action**: Browser-test to confirm sections transition from Loading to data.
 **Key finding**: Restructured, but runtime behavior unknown without browser.
 
+### today/index.html API chain (10 sequential calls)
+
+`loadTodayData()` executes each section independently (try/catch). One failure does not block others, but ALL are guarded by `fetchJSON` returning null on error.
+
+| # | Section | API endpoint | Backend route | Status if fails |
+|---|---------|-------------|--------------|-----------------|
+| 1 | Session Status | Inline Date check | None | Works |
+| 2 | Market Snapshot | `fetchJSON('market')` | `/api/market` | Prices show Loading… |
+| 3 | AI Outlook | `fetchJSON('market-outlook?symbol=NIFTY')` | `/api/market-outlook` | **Loading forever** (o.outlook undefined — structure mismatch) |
+| 4 | Key Levels | `fetchJSON('key-levels?symbol=NIFTY')` | `/api/key-levels` | **NOT FOUND in api_server.py** |
+| 5 | Options | `fetchJSON('options/state/NIFTY')` | `/api/options/state/NIFTY` | Exists, may return data |
+| 6 | Breadth | `fetchJSON('breadth')` | `/api/breadth` | Exists, may return data |
+| 7 | Intraday Conditions | `fetchJSON('intraday-conditions?symbol=NIFTY')` | `/api/intraday-conditions` | **NOT FOUND in api_server.py** |
+| 8 | Strategy | `fetchJSON('strategy/NIFTY')` | `/api/strategy/NIFTY` | Exists, may return data |
+| 9 | Risk | `fetchJSON('risk/NIFTY')` | `/api/risk/NIFTY` | **NOT FOUND in api_server.py** |
+| 10 | Timeline | `fetchJSON('session-timeline')` | `/api/session-timeline` | **NOT FOUND in api_server.py** |
+
+### Confirmed issues in /today/index.html
+
+- **3 missing endpoints**: `/api/key-levels`, `/api/intraday-conditions`, `/api/risk/NIFTY` — Flask returns 404 → section always Loading…
+- **1 structure mismatch**: `/api/market-outlook` returns raw `{bias, regime, ...}` but today expects `{outlook: {bias, regime, ...}}` → AI Outlook section always Loading…
+- **4 sections likely working**: Session (inline), Market Snapshot (`/api/market`), Options (`/api/options/state/NIFTY`), Breadth (`/api/breadth`), Strategy (`/api/strategy/NIFTY`) — IF API running
+
+**Bottom line**: Today terminal needs minimum 4 backend fixes OR frontend changes to match existing endpoints.
+
 ---
 
 ### /indices/nifty.html (NIFTY Deep Dive)
@@ -337,6 +362,57 @@ Limitation: Browser/DOM rendering verified only where noted. Most dynamic behavi
 | 20 | /learn/ | Content refinement per SEO plan |
 | 21 | /mutual-funds/ | Positioning vs core product |
 | 22 | All | Secondary nav cards verification |
+
+---
+
+## CRITICAL: API Response Structure Mismatch — /today/index.html
+
+**Discovery date**: 16 September 2026
+**Severity**: P0 — blocks entire Today terminal AI Outlook section
+
+### The mismatch
+
+`/api/market-outlook?symbol=NIFTY` returns the outlook payload **directly**:
+```json
+{
+  "bias": {"label": "BULLISH", ...},
+  "regime": {"primary": "RANGE-BULLISH", ...},
+  "strategies": [...],
+  ...
+}
+```
+
+`/today/index.html` JavaScript expects it **wrapped in `{outlook: ...}`**:
+```javascript
+var o = await fetchJSON('market-outlook?symbol=NIFTY');
+if(o && o.outlook) {  // ← o.outlook is UNDEFINED when API returns raw payload
+  // AI Outlook section code never executes
+}
+```
+
+### Where each consumer expects which format
+
+| Consumer | Expects | API returns | Match? |
+|----------|---------|-------------|--------|
+| ai-outlook.js (NIFTY page, homepage dashboard) | Raw object `{bias, regime, strategies, ...}` | Raw object | ✅ |
+| /today/index.html inline `loadTodayData()` | Wrapped `{outlook: {bias, regime, ...}}` | Raw object | ❌ MISMATCH |
+| api_server.py `/api/market-outlook` | — | Returns raw `market_outlooks.payload` JSON | — |
+| api_server.py `/api/market-outlook/<date>` | — | Returns raw `market_outlooks.payload` JSON | — |
+
+### Consequence
+
+The AI Outlook section (`#t-outlook`) on `/today/index.html` will ALWAYS show "Loading today's outlook…" because `o.outlook` is `undefined` when the API returns the raw payload. The `if(o&&o.outlook)` guard skips all AI Outlook rendering.
+
+The Today terminal's Market Snapshot section (`#t-snapshot`) uses `fetchJSON('market')` which returns `{instruments: {...}, ...}` — this likely works correctly because `market.js` and `dashboard.js` use the same unwrapped format.
+
+### Fix required
+
+Either:
+- **Fix frontend**: Change `/today/index.html` to expect raw `o` instead of `o.outlook`, OR
+- **Fix backend**: Wrap `/api/market-outlook` response in `{outlook: data}` for today terminal context, OR
+- **Fix backend**: Create separate endpoint `/api/market-outlook/wrapped` or similar
+
+Recommended: Fix frontend to match raw payload format (consistent with ai-outlook.js).
 
 ---
 
