@@ -3257,6 +3257,272 @@ def pi_setup_adherence():
         return error_response("PI_SETUP_ADHERENCE_FAILED", str(e), 500)
 
 
+@app.route("/api/key-levels")
+@cache_page(60)
+def key_levels():
+    """Key Levels: support, resistance, opening range for a symbol.
+
+    Reuses market_state.build_market_state() — no duplicate calculation.
+    """
+    symbol = request.args.get("symbol", "").upper()
+    if not symbol:
+        return error_response("SYMBOL_REQUIRED", "A symbol parameter is required", 400)
+    conn = get_db()
+    try:
+        from market_state import build_market_state
+        state = build_market_state(symbol, conn)
+        if state is None:
+            return jsonify({
+                "symbol": symbol,
+                "supports": [],
+                "resistances": [],
+                "opening_range": None,
+                "data_state": "UNAVAILABLE",
+                "message": "Insufficient market data to compute key levels",
+            }), 200
+        supports = list(state.support or [])
+        resistances = list(state.resistance or [])
+        opening_range = None
+        ind = state.indicators or {}
+        if ind.get("day_open") and ind.get("prev_day_close"):
+            try:
+                opening_range = {
+                    "low": min(float(ind["day_open"]), float(ind["prev_day_close"])),
+                    "high": max(float(ind["day_open"]), float(ind["prev_day_close"])),
+                }
+            except (TypeError, ValueError):
+                opening_range = None
+        return jsonify({
+            "symbol": symbol,
+            "supports": supports,
+            "resistances": resistances,
+            "opening_range": opening_range,
+            "timestamp": state.timestamp,
+            "data_state": "LIVE",
+        }), 200
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
+@app.route("/api/intraday-conditions")
+@cache_page(60)
+def intraday_conditions():
+    """Intraday Conditions: bullish, bearish, no-trade conditions for a symbol.
+
+    Reuses regime data from build_market_state and RegimeEngine — no duplicate calculation.
+    Conditions are derived from observed indicators (RSI, MACD, regime, VIX).
+    """
+    symbol = request.args.get("symbol", "").upper()
+    if not symbol:
+        return error_response("SYMBOL_REQUIRED", "A symbol parameter is required", 400)
+    conn = get_db()
+    try:
+        from market_state import build_market_state
+        from regime import RegimeEngine
+        state = build_market_state(symbol, conn)
+        if state is None:
+            return jsonify({
+                "symbol": symbol,
+                "bullish": None,
+                "bearish": None,
+                "no_trade": None,
+                "data_state": "UNAVAILABLE",
+                "message": "Insufficient market data to determine conditions",
+            }), 200
+        ind = state.indicators or {}
+        regime = state.regime or {}
+        regime_name = regime.get("regime", "UNKNOWN") if isinstance(regime, dict) else regime
+        confidence = regime.get("confidence", 0) if isinstance(regime, dict) else 0
+        rsi = ind.get("rsi")
+        macd = ind.get("macd")
+        vix = ind.get("vix") or (state.snapshot or {}).get("vix")
+
+        bullish = None
+        bearish = None
+        no_trade = None
+
+        if regime_name == "BULLISH" and rsi is not None and rsi < 70 and macd is not None and macd > 0:
+            bullish = f"Trend intact ({regime_name}, RSI {rsi:.0f}, MACD positive). Scale into positions on dips."
+            no_trade = f"Avoid new positions if RSI exceeds 70 or MACD turns negative."
+        elif regime_name == "BEARISH" and rsi is not None and rsi > 30 and macd is not None and macd < 0:
+            bearish = f"Downward pressure confirmed ({regime_name}, RSI {rsi:.0f}, MACD negative). Use defined-risk strategies."
+            no_trade = f"No trades in uncertain or sideways regimes. Wait for confirmation."
+        else:
+            no_trade = f"Market regime is {regime_name}. Wait for clear trend confirmation before entering positions."
+            if vix is not None and vix > 20:
+                no_trade += f" VIX elevated at {vix:.1f}."
+
+        return jsonify({
+            "symbol": symbol,
+            "bullish": bullish,
+            "bearish": bearish,
+            "no_trade": no_trade,
+            "regime": regime_name,
+            "confidence": confidence,
+            "timestamp": state.timestamp,
+            "data_state": "LIVE",
+        }), 200
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
+@app.route("/api/risk/<symbol>")
+@cache_page(60)
+def risk_endpoint(symbol):
+    """Risk guidance: max risk, recommended position size, warnings for a symbol.
+
+    Reuses trade_lifecycle.detect_trade_setup() — no duplicate calculation.
+    """
+    symbol = symbol.upper()
+    if symbol not in ("NIFTY", "BANKNIFTY", "SENSEX"):
+        return error_response("NOT_SUPPORTED", f"{symbol} is not available", 404)
+    conn = get_db()
+    try:
+        from trade_lifecycle import detect_trade_setup
+        from market_state import build_market_state
+        market_state = build_market_state(symbol, conn)
+        if market_state is None:
+            return jsonify({
+                "symbol": symbol,
+                "max_risk": "1% of capital",
+                "recommended_size": None,
+                "warnings": ["Market state unavailable: cannot compute risk. Data pending backend verification."],
+                "data_state": "UNAVAILABLE",
+            }), 200
+        ind = market_state.indicators or {}
+        prev_close = ind.get("prev_day_close")
+        day_open = ind.get("day_open")
+        spot = market_state.snapshot.get("spot") if market_state.snapshot else None
+        if not spot and day_open:
+            spot = day_open
+        if not prev_close:
+            row = conn.execute(
+                "SELECT close FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (symbol,)
+            ).fetchone()
+            if row:
+                prev_close = row["close"]
+        gap = None
+        if day_open and prev_close:
+            try:
+                gap = {
+                    "gap_pct": round((float(day_open) - float(prev_close)) / float(prev_close) * 100, 2),
+                    "open": float(day_open),
+                    "prev_close": float(prev_close),
+                }
+            except (TypeError, ValueError):
+                gap = None
+        options_state = None
+        try:
+            rows = conn.execute(
+                "SELECT strike, option_type, open_interest, implied_volatility FROM option_chain WHERE symbol=? ORDER BY strike",
+                (symbol,),
+            ).fetchall()
+            if rows:
+                options_state = {"chain": [dict(r) for r in rows]}
+        except Exception:
+            pass
+        setup = detect_trade_setup(
+            symbol=symbol,
+            market_state={
+                "spot": spot,
+                "regime": market_state.regime,
+                "confidence": market_state.regime.get("confidence", 0) if isinstance(market_state.regime, dict) else 0,
+                "indicators": ind,
+            },
+            options_state=options_state,
+            gap=gap,
+            timestamp=market_state.timestamp or "",
+        )
+        stages = setup.stages if hasattr(setup, "stages") else {}
+        warnings = []
+        for stage_name, stage in stages.items():
+            if stage.status == "WAIT":
+                warnings.append(stage.reason or f"{stage_name}: conditions not ready.")
+            elif stage.status == "NO_SETUP":
+                warnings.append(f"No trade warranted at this time ({stage_name}).")
+        max_risk = "1% of capital"
+        if setup.max_risk:
+            max_risk = setup.max_risk
+        recommended_size = None
+        if setup.recommended_size:
+            recommended_size = setup.recommended_size
+        return jsonify({
+            "symbol": symbol,
+            "max_risk": max_risk,
+            "recommended_size": recommended_size,
+            "warnings": warnings if warnings else ["No active warnings."],
+            "data_state": "LIVE",
+        }), 200
+    except Exception as e:
+        return error_response("INTERNAL_ERROR", str(e), 500)
+    finally:
+        conn.close()
+
+
+@app.route("/api/session-timeline")
+@cache_page(5)
+def session_timeline():
+    """Session Timeline: PRE_MARKET, OPEN, LIVE, CLOSED, POST_MARKET states.
+
+    Computed from market hours (9:30 AM - 3:30 PM IST). No external dependency.
+    """
+    from datetime import datetime, timezone, timedelta
+    now_utc = datetime.now(timezone.utc)
+    try:
+        ist_now = now_utc + timedelta(hours=5, minutes=30)
+    except Exception:
+        ist_now = now_utc
+    hour = ist_now.hour
+    minute = ist_now.minute
+    mins = hour * 60 + minute
+    is_weekday = ist_now.weekday() < 5
+
+    pre_market = "PRE-MARKET: Prepare. Review overnight news, global markets, and pre-market ranges."
+    open_market = "OPEN: Market opened at 9:30 AM IST. First 15 minutes are high-volatility."
+    trading_hours = "LIVE: Active trading session. Monitor positions and adjust as needed."
+    close = "CLOSED: Market closed at 3:30 PM IST. Review positions and plan for next session."
+    post_market = "POST-MARKET: After-hours analysis. Review daily outcomes and prepare for next day."
+
+    if not is_weekday:
+        state = "CLOSED"
+        state_desc = "Market closed — Weekend. No trading activity."
+    elif mins < 570:
+        state = "PRE_MARKET"
+        mins_to_open = 570 - mins
+        state_desc = f"PRE-MARKET: {mins_to_open} minutes until market open."
+    elif mins < 990:
+        state = "OPEN"
+        state_desc = open_market
+    elif mins < 1200:
+        state = "LIVE"
+        mins_to_close = 1200 - mins
+        state_desc = f"LIVE: {mins_to_close} minutes until market close."
+    elif mins < 1230:
+        state = "CLOSED"
+        state_desc = close
+    else:
+        state = "POST_MARKET"
+        state_desc = post_market
+
+    return jsonify({
+        "state": state,
+        "description": state_desc,
+        "pre_market": pre_market,
+        "open_market": open_market,
+        "trading_hours": trading_hours,
+        "close": close,
+        "post_market": post_market,
+        "ist_time": ist_now.strftime("%H:%M:%S IST"),
+        "ist_date": ist_now.strftime("%d %b %Y"),
+        "timestamp": now_utc.isoformat(),
+        "data_state": "LIVE",
+    }), 200
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
