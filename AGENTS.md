@@ -125,25 +125,72 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 
 ## Workspace Milestone (FROZEN)
 
-- **Tag**: v2b5583a-baseline (commit 35decaf)
-- **Latest**: 55614b0 (docs updates since baseline)
-- **Tests**: 75 passing
+- **Commit**: 9e184f4 (docs: Update PHASE 29 with user audit summary)
+- **Tag**: v2b5583a-baseline-13-g9e184f4
+- **Tests**: 75/75 passing
 - **Git**: Clean, pushed
 - **Status**: Frozen — no further implementation without authorization
 
+## PHASE 29 — Production Page Functional Audit (COMPLETE)
+
+- `docs/PHASE29_FUNCTIONAL_AUDIT.md` — 24-page status matrix + today terminal chain analysis
+- `docs/PHASE29_API_MAP.md` — 90 backend routes mapped to frontend + VM verification checklist
+- `docs/PHASE29_FUNCTIONAL_AUDIT.md` — includes user audit summary
+
+### Critical PHASE 29 findings
+
+1. `/today/index.html` calls 3 nonexistent endpoints: `/api/key-levels`, `/api/intraday-conditions`, `/api/risk/NIFTY`
+2. `/api/market-outlook` returns raw object; /today expects `{outlook: ...}` — structure mismatch
+3. `/home.html` still publicly reachable despite 301 in workspace nginx config
+4. `/` vs `/index.html` canonical relationship unverified
+5. `/mutual-funds/` — "Anualised" typo + Loading state
+
+### Three categories of remaining work
+
+- **A. Solved**: HTML architecture, page hierarchy, navigation, trust pages, learn pages
+- **B. Not solved**: Runtime/data pipeline — loading/empty states on public site
+- **C. Workspace alone can't finish**: VM dependency, cron, SQLite, nginx, API endpoints
+
+⚠️ Do NOT create /api/key-levels, /api/risk, etc. blindly. First inspect VM's existing Flask app and data model — endpoints may need different implementation.
+
 ## VM Phase (Pending Authorization)
 
-When VM access is available, start read-only:
+PHASE 30 — Production VM Read-Only Inventory & Runtime Dependency Audit
 
-1. PHASE 10 — VM inventory (read-only)
-2. PHASE 15 — Legacy cleanup (archive → verify → delete)
-3. PHASE 13/14 — Browser/API runtime audit
-4. Verify / vs /index.html canonical
-5. Deploy synchronized pages
-6. Full regression
-7. Production release
+Phase 30A — VM inventory (read-only):
+- /var/www/tradingai.in/html/
+- backend/, data/, config/, scripts/
+- SQLite database
+- cron jobs, systemd services/timers
+- nginx configuration
+- logs
+
+Phase 30B — Map actual dependencies (HTML → JS → API → Flask → Python → SQLite/data source → external market source)
+
+Phase 30C — Verify 4 highest-risk issues:
+1. Today API contracts (frontend expectations vs Flask routes)
+2. /home.html redirect (actual nginx config + live HTTP response)
+3. / vs /index.html canonical (authoritative URL, sitemap, canonical tag)
+4. Market-data pipeline (why pages receive empty/loading values)
+
+Then: PHASE 31 confirm classification → PHASE 32 repair API/data contracts → PHASE 33 runtime browser audit → PHASE 34 data freshness → PHASE 35 cross-page workflow → PHASE 36 legacy cleanup → PHASE 37 SEO → PHASE 38 performance/security regression → Production release
+
+When VM access is available, start read-only:
+1. PHASE 30 — VM inventory (read-only)
+2. PHASE 30B — Dependency mapping
+3. PHASE 30C — Verify 4 highest-risk issues
+4. PHASE 31 — Confirm classification + dependency map
+5. PHASE 32 — Repair API/data contracts
+6. PHASE 33 — Runtime browser audit
+7. PHASE 34 — Data freshness/integrity
+8. PHASE 35 — Cross-page workflow testing
+9. PHASE 36 — Legacy cleanup
+10. PHASE 37 — SEO/Search Console
+11. PHASE 38 — Performance/mobile/security regression
+12. Production release
 
 Do NOT modify VM until inventory is complete and classifications confirmed.
+Do NOT create endpoints blindly — inspect existing Flask app first.
 
 ## Phase 5 Components
 
