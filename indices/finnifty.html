@@ -1,42 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<!-- Google tag (gtag.js) -->
-<script>
-/* Track B: consent defaults precede gtag config. Deny until visitor accepts. */
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-try {
-  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
-  if (!_tai || _tai.state !== 'granted') {
-    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
-  }
-} catch (e) {
-  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
-}
-</script>
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
-<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-MJ3X88QYEL');
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FIN NIFTY - AI Market Outlook - TradingAI</title>
-<meta name="description" content="AI Market Outlook for FIN NIFTY: regime analysis, probability bars, 8-factor scoring, options intelligence, key levels and AI verdict.">
+<title>FINNIFTY 50 - AI Market Outlook - TradingAI</title>
+<meta name="description" content="Deep FINNIFTY 50 analysis: market regime, technical structure, key levels, options intelligence, intraday conditions, AI strategy, and risk assessment.">
 <link rel="canonical" href="https://tradingai.in/indices/finnifty.html">
-<meta property="og:title" content="FIN NIFTY AI Market Outlook - TradingAI">
-<meta property="og:description" content="Real-time AI Market Outlook for FIN NIFTY: regime, bias, strategies, key levels and verdict.">
+<meta property="og:title" content="FINNIFTY 50 AI Market Outlook - TradingAI">
+<meta property="og:description" content="FINNIFTY 50 deep analysis: regime, technicals, key levels, options intelligence, strategy, and intraday conditions.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tradingai.in/indices/finnifty.html">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"FIN NIFTY AI Market Outlook","item":"https://tradingai.in/indices/finnifty.html"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"FINNIFTY 50 AI Market Outlook","item":"https://tradingai.in/indices/finnifty.html"}]}]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
-<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
-<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
 <link rel="stylesheet" href="../assets/css/main.css">
 <script src="../assets/js/live-blink.js" defer></script>
 </head>
@@ -47,72 +23,275 @@ try {
   <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/market.html" style="color:#475569;text-decoration:none">Market</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a></nav>
 </header>
 <main>
-  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <div class="updated-bar"><span id="last-updated-bar">Last refreshed: —</span></div>
   <div style="font-size:0.78rem;color:#64748b;margin-bottom:0.6rem"><a href="/index.html">Home</a> / <a href="/market.html">Market</a> / <strong>Fin NIFTY Outlook</strong></div>
-  <div id="dashboard"></div>
-<div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"><div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div><div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div><div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div><div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div></div>
 
-  <div style="margin-top:1.5rem;display:flex;flex-wrap:wrap;gap:0.5rem">
-    <a href="/today/index.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">📅 Today FINNIFTY Report →</div></a>
+  <!-- Index Selector -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem">
+    <a href="../indices/finnifty.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer;background:#dcfce7;border-color:#15803d;font-weight:700">FINNIFTY</div></a>
+    <a href="../indices/banknifty.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">BANKNIFTY</div></a>
+    <a href="../indices/finnifty.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">FINNIFTY</div></a>
+    <a href="../indices/sensex.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">SENSEX</div></a>
+  </div>
+
+  <!-- SECTION 1: FINNIFTY 50 Snapshot -->
+  <h2>FINNIFTY 50</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:1.5rem">
+    <div class="card">
+      <h3>Spot</h3>
+      <div class="price" id="finnifty-spot">Loading…</div>
+      <div class="status" id="finnifty-spot-change">—</div>
+    </div>
+    <div class="card">
+      <h3>Change</h3>
+      <div class="price" id="finnifty-change">Loading…</div>
+      <div class="status" id="finnifty-change-pct">—</div>
+    </div>
+    <div class="card">
+      <h3>VIX</h3>
+      <div class="price" id="finnifty-vix">Loading…</div>
+      <div class="status" id="finnifty-vix-regime">—</div>
+    </div>
+    <div class="card">
+      <h3>Market Regime</h3>
+      <div class="price" id="finnifty-regime" style="font-size:1.1rem">Loading…</div>
+      <div class="status" id="finnifty-regime-detail">—</div>
+    </div>
+    <div class="card">
+      <h3>Confidence</h3>
+      <div class="price" id="finnifty-confidence" style="font-size:1.1rem">Loading…</div>
+      <div class="status" id="finnifty-confidence-detail">—</div>
+    </div>
+  </div>
+
+  <!-- SECTION 2: AI Market Outlook -->
+  <h2>AI Market Outlook</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="ai-outlook">
+    <div class="status">Loading market outlook…</div>
+  </div>
+
+  <!-- SECTION 3: Technical Structure -->
+  <h2>Technical Structure</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:1.5rem">
+    <div class="card">
+      <h3>VWAP</h3>
+      <div class="price" id="finnifty-vwap">Loading…</div>
+      <div class="status" id="finnifty-vwap-pos">—</div>
+    </div>
+    <div class="card">
+      <h3>EMA 20</h3>
+      <div class="price" id="finnifty-ema20">Loading…</div>
+      <div class="status" id="finnifty-ema20-pos">—</div>
+    </div>
+    <div class="card">
+      <h3>RSI</h3>
+      <div class="price" id="finnifty-rsi">Loading…</div>
+      <div class="status" id="finnifty-rsi-pos">—</div>
+    </div>
+    <div class="card">
+      <h3>MACD</h3>
+      <div class="price" id="finnifty-macd">Loading…</div>
+      <div class="status" id="finnifty-macd-pos">—</div>
+    </div>
+    <div class="card">
+      <h3>ADX</h3>
+      <div class="price" id="finnifty-adx">Loading…</div>
+      <div class="status" id="finnifty-adx-pos">—</div>
+    </div>
+    <div class="card">
+      <h3>CPR</h3>
+      <div class="price" id="finnifty-cpr">Loading…</div>
+      <div class="status" id="finnifty-cpr-pos">—</div>
+    </div>
+  </div>
+
+  <!-- SECTION 4: Key Levels -->
+  <h2>Key Levels</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="key-levels">
+    <div class="status">Loading key levels…</div>
+  </div>
+
+  <!-- SECTION 5: Options Intelligence -->
+  <h2>Options Intelligence</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="options-intel">
+    <div class="status">Loading options data…</div>
+  </div>
+
+  <!-- SECTION 6: Intraday Conditions -->
+  <h2>Intraday Conditions</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-bottom:1.5rem">
+    <div class="card" style="border-left:4px solid #15803d">
+      <h3>Bullish if</h3>
+      <div class="status" id="bullish-condition">Loading…</div>
+    </div>
+    <div class="card" style="border-left:4px solid #dc2626">
+      <h3>Bearish if</h3>
+      <div class="status" id="bearish-condition">Loading…</div>
+    </div>
+    <div class="card" style="border-left:4px solid #64748b">
+      <h3>No-trade if</h3>
+      <div class="status" id="notrade-condition">Loading…</div>
+    </div>
+  </div>
+
+  <!-- SECTION 7: AI Options Strategy -->
+  <h2>AI Options Strategy</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="ai-strategy">
+    <div class="status">Loading strategy…</div>
+  </div>
+
+  <!-- Related Tools -->
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:1.5rem 0">
+    <a href="/strategy-builder.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">🔧 Strategy Builder →</div></a>
+    <a href="/options/pcr.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">📊 PCR →</div></a>
     <a href="/tools/backtest.html?symbol=FINNIFTY&days=30" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">📈 FINNIFTY Backtest →</div></a>
-    <a href="/scanner.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">🔍 Scanner →</div></a>
-    <a href="/strategies.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">📋 Strategies →</div></a>
+    <a href="/tools/position-size.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">⚖️ Position Size →</div></a>
+    <a href="/today/index.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">🕘 Today Terminal →</div></a>
   </div>
-  <div class="card content-card" style="margin-top:1.5rem">
-    <h3>How to read this page</h3>
-    <p>This page is the full TradingAI AI Market Outlook for FIN NIFTY. Every section — the market regime, probability bars, 8-factor scoring grid, options intelligence, strategies, key levels and AI decision — comes from the same automatic pipeline: publicly available NSE data in, structured analysis out.</p>
-    <p>The sections reinforce one another. The regime tells you the macro posture. The probability bars quantify directional bias. The 8-factor grid breaks down why the AI holds that view — from trend and momentum to VIX and breadth. And the options intelligence summarises where the big money sits. Reading these together is more informative than any single number.</p>
-    <p>During market hours the page refreshes on a fast cycle, and price, levels and PCR figures are recomputed from the live feed. The AI Decision box labels the trade or no-trade verdict the model would take under the current regime — and it will honestly say WAIT when signals conflict.</p>
-    <p>This is automated research, not advice, and FIN NIFTY derivatives risk losing the entire premium and more. Verify data with your broker and decide for yourself.</p>
+
+  <div style="padding:8px 14px;background:#f8fafc;border-radius:8px;font-size:0.78rem;color:#64748b;border:1px solid #e2e8f0;margin-bottom:1rem">
+    Analysis generated from stored market data only. Not a guarantee of direction or profitability. Options involve substantial risk — independently assess position size and risk before trading.
   </div>
+
 <footer>
   <p>TradingAI provides market analysis and decision-support information. No strategy or outlook guarantees profit. Verify market data and consider your own risk tolerance before trading.</p>
-  <p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
+  <p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a></p>
+</footer>
 </main>
-<script src="../assets/js/ai-outlook.js"></script>
 <script>
-(function(){
-  var _lastDataTs=null;
-  function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
-  function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
-  function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
-  setInterval(tickClock,1000);tickClock();
-  setLastUpdated(null,true);
-
-  document.addEventListener('DOMContentLoaded',function(){
-    fetchJSON('../api/market').then(function(d){
-      if(d&&d.last_updated){setLastUpdated(d.last_updated,true);}
-    }).catch(function(){});
-    renderOutlookDashboard('dashboard',{symbol:'FINNIFTY',api:'finnifty',displayName:'FIN NIFTY',step:25,lot:40,apiBase:'..'});
-    setInterval(function(){renderOutlookDashboard('dashboard',{symbol:'FINNIFTY',api:'finnifty',displayName:'FIN NIFTY',step:25,lot:40,apiBase:'..'});},30000);
-  });
-})();
+const API_BASE='..';
+async function fetchJSON(path){try{const r=await fetch(API_BASE+'/api/'+path);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
+function fp(v){return v!=null?Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function setStatus(el,text,color){if(!el)return;el.textContent=text;el.style.color=color||'inherit';}
+function setLoading(el){if(!el)return;el.textContent='Loading…';el.style.color='#64748b';}
+function setError(el){if(!el)return;el.textContent='Data unavailable';el.style.color='#dc2626';}
+function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d)+' IST';}catch(e){return null;}}
+function updateTimestamp(ts){var bar=document.getElementById('last-updated-bar');if(!bar||!ts)return;var t=fmtIST(ts);if(t){bar.textContent='Data as of '+t;bar.style.color='';}}
+function regimeText(r){if(!r)return '—';r=r.toUpperCase();if(r.indexOf('BULL')>=0)return 'BULLISH';if(r.indexOf('BEAR')>=0)return 'BEARISH';if(r.indexOf('RANGE')>=0||r.indexOf('NEUTRAL')>=0)return 'RANGE';return r;}
+function regimeColor(r){if(!r)return '#64748b';r=r.toUpperCase();if(r.indexOf('BULL')>=0)return '#15803d';if(r.indexOf('BEAR')>=0)return '#dc2626';if(r.indexOf('RANGE')>=0||r.indexOf('NEUTRAL')>=0)return '#a16207';return '#64748b';}
+var FINNIFTY_LOADED=false;
+async function loadNiftyData(){
+  try{
+    var m=await fetchJSON('market');
+    if(m&&m.instruments&&m.instruments.FINNIFTY){
+      var inst=m.instruments.FINNIFTY;
+      var q=inst.quote||{};
+      var spotEl=document.getElementById('finnifty-spot');
+      if(spotEl&&q.price!=null){spotEl.textContent=fp(q.price);spotEl.style.color='';}
+      var changeEl=document.getElementById('finnifty-change');
+      if(changeEl&&q.change!=null){changeEl.textContent=(q.change>=0?'+':'')+fp(q.change);changeEl.style.color=q.change>=0?'#15803d':'#dc2626';}
+      var pctEl=document.getElementById('finnifty-change-pct');
+      if(pctEl&&q.change_pct!=null){pctEl.textContent=(q.change_pct>=0?'+':'')+q.change_pct.toFixed(2)+'%';pctEl.style.color=q.change_pct>=0?'#15803d':'#dc2626';}
+      var vixEl=document.getElementById('finnifty-vix');
+      if(vixEl&&m.vix&&m.vix.value!=null){vixEl.textContent=fp(m.vix.value);vixEl.style.color='';}
+      var vixRegEl=document.getElementById('finnifty-vix-regime');
+      if(vixRegEl&&m.vix&&m.vix.value!=null){var v=m.vix.value;var vr=v<11?'VERY LOW':v<13?'LOW':v<16?'NORMAL':v<20?'ELEVATED':v<25?'HIGH':'EXTREME';vixRegEl.textContent=vr;}
+      var regEl=document.getElementById('finnifty-regime');
+      if(regEl&&inst.regime){regEl.textContent=regimeText(inst.regime);regEl.style.color=regimeColor(inst.regime);}
+      var regDetEl=document.getElementById('finnifty-regime-detail');
+      if(regDetEl&&inst.tradeability){regDetEl.textContent='Tradeability: '+(inst.tradeability.score||'—')+'/100';}
+      var confEl=document.getElementById('finnifty-confidence');
+      if(confEl&&m.market_outlook){confEl.textContent=m.market_outlook.confidence!=null?m.market_outlook.confidence+'%':'—';} else if(confEl&&m.confidence){confEl.textContent=m.confidence+'%';}
+      var confDetEl=document.getElementById('finnifty-confidence-detail');
+      if(confDetEl){confDetEl.textContent=(m.market_outlook&&m.market_outlook.bias)?m.market_outlook.bias.label:'—';}
+      var techEl=document.getElementById('finnifty-vwap');
+      if(techEl&&inst.vwap!=null){techEl.textContent=fp(inst.vwap);techEl.style.color='';}
+      var emaEl=document.getElementById('finnifty-ema20');
+      if(emaEl&&inst.ema!=null){emaEl.textContent=fp(inst.ema);emaEl.style.color='';}
+      var rsiEl=document.getElementById('finnifty-rsi');
+      if(rsiEl&&ind&&inst.rsi!=null){rsiEl.textContent=inst.rsi.toFixed(0);rsiEl.style.color='';}
+      var rsiPosEl=document.getElementById('finnifty-rsi-pos');
+      if(rsiPosEl&&inst.rsi!=null){rsiPosEl.textContent=inst.rsi>60?'Overbought':inst.rsi<40?'Oversold':'Neutral';}
+      var macdEl=document.getElementById('finnifty-macd');
+      if(macdEl&&inst.macd!=null){macdEl.textContent=inst.macd.toFixed(2);macdEl.style.color='';}
+      var macdPosEl=document.getElementById('finnifty-macd-pos');
+      if(macdPosEl&&inst.macd!=null){macdPosEl.textContent=inst.macd>0?'Bullish':'Bearish';}
+      var adxEl=document.getElementById('finnifty-adx');
+      if(adxEl&&inst.adx!=null){adxEl.textContent=inst.adx.toFixed(0);adxEl.style.color='';}
+      var adxPosEl=document.getElementById('finnifty-adx-pos');
+      if(adxPosEl&&inst.adx!=null){adxPosEl.textContent=inst.adx>25?'Strong trend':inst.adx>20?'Weak trend':'No trend';}
+      var cprEl=document.getElementById('finnifty-cpr');
+      if(cprEl&&inst.cpr!=null){cprEl.textContent=fp(inst.cpr);cprEl.style.color='';}
+      var cprPosEl=document.getElementById('finnifty-cpr-pos');
+      if(cprPosEl&&inst.cpr!=null){cprPosEl.textContent=inst.cpr>0?'Bullish':'Bearish';}
+    }
+    if(m&&m.last_updated)updateTimestamp(m.last_updated);
+  }catch(e){}
+  try{
+    var o=await fetchJSON('market-outlook?symbol=FINNIFTY');
+    if(o){
+      var outlookEl=document.getElementById('ai-outlook');
+      if(outlookEl){
+        var html='';
+        if(o.bias&&o.bias.label){html+='<div style="font-size:1.1rem;font-weight:700;color:'+regimeColor(o.bias.label)+';margin-bottom:0.5rem">'+regimeText(o.bias.label)+' — '+o.bias.label+'</div>';}
+        if(o.decision&&o.decision.verdict){html+='<div class="status" style="margin-bottom:0.5rem">AI Decision: <strong>'+o.decision.verdict+'</strong> (confidence: '+(o.confidence||'—')+'%)</div>';}
+        if(o.reasoning||o.why){var reasons=Array.isArray(o.reasoning||o.why)?(o.reasoning||o.why):[o.reasoning||o.why];html+='<div style="font-size:0.85rem;color:#475569">'+reasons.slice(0,3).map(function(r){return '✓ '+r;}).join('<br>')+'</div>';}
+        if(o.key_drivers){var drivers=Array.isArray(o.key_drivers)?o.key_drivers:[o.key_drivers];html+='<div style="font-size:0.82rem;color:#64748b;margin-top:0.5rem">Key drivers: '+drivers.slice(0,3).join('; ')+'</div>';}
+        outlookEl.innerHTML=html||'<div class="status">Outlook pending</div>';
+      }
+    }
+  }catch(e){}
+  try{
+    var kl=await fetchJSON('key-levels?symbol=FINNIFTY');
+    if(kl){
+      var klEl=document.getElementById('key-levels');
+      if(klEl){
+        var klHtml='';
+        if(kl.supports){klHtml+='<div style="font-size:0.82rem;font-weight:700;color:#64748b;margin-bottom:0.3rem">Support</div>';kl.supports.forEach(function(s){klHtml+='<div class="status" style="margin-bottom:2px">S'+kl.supports.indexOf(s)+1+': '+fp(s)+'</div>';});}
+        if(kl.resistances){klHtml+='<div style="font-size:0.82rem;font-weight:700;color:#64748b;margin:0.5rem 0 0.3rem">Resistance</div>';kl.resistances.forEach(function(r){klHtml+='<div class="status" style="margin-bottom:2px">R'+kl.resistances.indexOf(r)+1+': '+fp(r)+'</div>';});}
+        if(kl.opening_range){klHtml+='<div style="font-size:0.82rem;font-weight:700;color:#64748b;margin:0.5rem 0 0.3rem">Opening Range</div>'+fp(kl.opening_range.low)+' — '+fp(kl.opening_range.high);}
+        klEl.innerHTML=klHtml||'<div class="status">Levels pending</div>';
+      }
+    }
+  }catch(e){}
+  try{
+    var opt=await fetchJSON('options/state/FINNIFTY');
+    if(opt){
+      var optEl=document.getElementById('options-intel');
+      if(optEl){
+        var optHtml='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr))">';
+        if(opt.pcr!=null)optHtml+='<div class="card"><h3>PCR</h3><div class="price" style="font-size:1.3rem">'+opt.pcr.toFixed(2)+'</div></div>';
+        if(opt.atm!=null)optHtml+='<div class="card"><h3>ATM</h3><div class="price" style="font-size:1.3rem">'+fp(opt.atm)+'</div></div>';
+        if(opt.max_pain!=null)optHtml+='<div class="card"><h3>Max Pain</h3><div class="price" style="font-size:1.3rem">'+fp(opt.max_pain)+'</div></div>';
+        if(opt.expected_move!=null)optHtml+='<div class="card"><h3>Expected Move</h3><div class="price" style="font-size:1.3rem">±'+fp(opt.expected_move)+'</div></div>';
+        if(opt.call_wall!=null)optHtml+='<div class="card"><h3>Call Wall</h3><div class="price" style="font-size:1.3rem">'+fp(opt.call_wall)+'</div></div>';
+        if(opt.put_wall!=null)optHtml+='<div class="card"><h3>Put Wall</h3><div class="price" style="font-size:1.3rem">'+fp(opt.put_wall)+'</div></div>';
+        optHtml+='</div>';
+        optEl.innerHTML=optHtml;
+      }
+    }
+  }catch(e){}
+  try{
+    var str=await fetchJSON('strategy/FINNIFTY');
+    if(str){
+      var strEl=document.getElementById('ai-strategy');
+      if(strEl){
+        var strHtml='';
+        if(str.name){strHtml+='<div style="font-size:1.1rem;font-weight:700;color:#15803d;margin-bottom:0.5rem">'+str.name+'</div>';}
+        if(str.entry){strHtml+='<div class="status" style="margin-bottom:0.3rem">Entry: '+str.entry+'</div>';}
+        if(str.risk){strHtml+='<div class="status" style="margin-bottom:0.3rem;color:#dc2626">Risk: '+str.risk+'</div>';}
+        if(str.target){strHtml+='<div class="status" style="margin-bottom:0.3rem;color:#15803d">Target: '+str.target+'</div>';}
+        if(str.invalidation){strHtml+='<div class="status" style="margin-bottom:0.3rem;color:#a16207">Invalidation: '+str.invalidation+'</div>';}
+        if(str.structure){strHtml+='<div class="status" style="margin-bottom:0.3rem">Structure: '+str.structure+'</div>';}
+        strEl.innerHTML=strHtml||'<div class="status">No strategy available</div>';
+      }
+    }
+  }catch(e){}
+  try{
+    var cond=await fetchJSON('intraday-conditions?symbol=FINNIFTY');
+    if(cond){
+      var bullEl=document.getElementById('bullish-condition');
+      if(bullEl&&cond.bullish)bullEl.textContent=cond.bullish;
+      var bearEl=document.getElementById('bearish-condition');
+      if(bearEl&&cond.bearish)bearEl.textContent=cond.bearish;
+      var noTradeEl=document.getElementById('notrade-condition');
+      if(noTradeEl&&cond.no_trade)noTradeEl.textContent=cond.no_trade;
+    }
+  }catch(e){}
+  FINNIFTY_LOADED=true;
+}
+document.addEventListener('DOMContentLoaded',function(){loadNiftyData();setInterval(loadNiftyData,30000);});
 </script>
 <script src="/assets/js/consent.js" defer></script>
-<script>
-document.addEventListener('DOMContentLoaded',function(){
-  document.querySelectorAll('.card').forEach(function(c){
-    if(c.dataset.clickable==='1'||c.onclick)return;
-    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
-    var url=null;
-    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/market.html';
-    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/market.html';
-    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/market.html';
-    else if(h.includes('AI MARKET OUTLOOK')||h.includes('AI INTRADAY'))url='/strategies.html';
-    else if(h.includes('OPTIONS INTELLIGENCE')||h.includes('OPTION CHAIN')||h.includes('PCR')||h.includes('IV')||h.includes('MAX PAIN'))url='/strategy-builder.html';
-    else if(h.includes('STRATEG')||h.includes('BUY')||h.includes('SELL')||h.includes('EXIT')||h.includes('HOLD'))url='/strategies.html';
-    else if(h.includes('KEY LEVELS')||h.includes('SUPPORT')||h.includes('RESISTANCE'))url='/scanner.html';
-    else if(h.includes('SCANNER')||h.includes('SCAN'))url='/scanner.html';
-    else if(h.includes('TODAY')||h.includes('TERMINAL'))url='/today/index.html';
-    else if(h.includes('BACKTEST'))url='/tools/backtest.html';
-    else if(h.includes('POSITION')||h.includes('SIZE'))url='/tools/position-size.html';
-    else if(h.includes('HOLDING')||h.includes('ETF'))url='/etfs/top-etfs.html';
-    if(!url)return;
-    c.dataset.clickable='1';c.style.cursor='pointer';
-    c.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('button')||e.target.closest('table'))return;location.href=url;});
-  });
-});
-</script>
 </body>
 </html>
-
