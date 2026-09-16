@@ -3463,6 +3463,7 @@ def risk_endpoint(symbol):
             "recommended_size": recommended_size,
             "warnings": warnings if warnings else ["No active warnings."],
             "data_state": "LIVE",
+            "timestamp": market_state.timestamp or "",
         }), 200
     except Exception as e:
         return error_response("INTERNAL_ERROR", str(e), 500)
