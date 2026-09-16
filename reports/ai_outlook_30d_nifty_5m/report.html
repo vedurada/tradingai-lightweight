@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>AI Outlook Historical Validation — NIFTY 30 Sessions</title>
+<style>
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 2rem; background: #f8fafc; color: #0f172a; }
+h1 { font-size: 1.5rem; border-bottom: 2px solid #0f172a; padding-bottom: 0.5rem; }
+h2 { font-size: 1.2rem; margin-top: 2rem; }
+table { border-collapse: collapse; width: 100%; margin: 1rem 0; }
+th, td { border: 1px solid #e2e8f0; padding: 8px 12px; text-align: left; }
+th { background: #f1f5f9; font-weight: 600; }
+.kpi { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin: 1rem 0; }
+.kpi-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 1rem; text-align: center; }
+.kpi-value { font-size: 1.8rem; font-weight: 800; }
+.kpi-label { font-size: 0.8rem; color: #64748b; }
+</style>
+</head>
+<body>
+<h1>TradingAI AI Outlook Historical Validation</h1>
+<p><strong>Symbol:</strong> NIFTY &nbsp;|&nbsp; <strong>Sessions:</strong> 30 &nbsp;|&nbsp; <strong>Timeframe:</strong> 5-minute &nbsp;|&nbsp; <strong>Data Quality:</strong> PASS</p>
+
+<h2>Executive Summary</h2>
+<div class="kpi">
+  <div class="kpi-card"><div class="kpi-value">2250</div><div class="kpi-label">Total Outlooks</div></div>
+  <div class="kpi-card"><div class="kpi-value">56</div><div class="kpi-label">Triggered Setups</div></div>
+  <div class="kpi-card"><div class="kpi-value">0</div><div class="kpi-label">Wins</div></div>
+  <div class="kpi-card"><div class="kpi-value">56</div><div class="kpi-label">Losses</div></div>
+</div>
+<div class="kpi">
+  <div class="kpi-card"><div class="kpi-value">0.0%</div><div class="kpi-label">Historical Win Rate</div></div>
+  <div class="kpi-card"><div class="kpi-value">100.0%</div><div class="kpi-label">Historical Loss Rate</div></div>
+  <div class="kpi-card"><div class="kpi-value">83.93%</div><div class="kpi-label">Directional Accuracy</div></div>
+  <div class="kpi-card"><div class="kpi-value">-0.5799%</div><div class="kpi-label">Avg Return</div></div>
+</div>
+<p><strong>95% Confidence Interval:</strong> 0% – 6.42% (Wilson interval, n=56)</p>
+<p><em>Historical results do not guarantee future performance.</em></p>
+
+<h2>Outcome Breakdown</h2>
+<table>
+<tr><th>Category</th><th>Count</th></tr>
+<tr><td>Directional Outlooks</td><td>56</td></tr>
+<tr><td>Bullish</td><td>9</td></tr>
+<tr><td>Bearish</td><td>47</td></tr>
+<tr><td>Non-Directional</td><td>0</td></tr>
+<tr><td>WAIT</td><td>56</td></tr>
+<tr><td>NO_TRADE</td><td>2194</td></tr>
+<tr><td>Triggered</td><td>56</td></tr>
+<tr><td>No Trigger</td><td>0</td></tr>
+<tr><td>Wins</td><td>0</td></tr>
+<tr><td>Losses</td><td>56</td></tr>
+<tr><td>Expired</td><td>0</td></tr>
+</table>
+
+<h2>Performance by Market Structure</h2>
+<table>
+<tr><th>Structure</th><th>Count</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Avg Return</th></tr>
+<tr><td>SIDEWAYS_TO_BEARISH</td><td>47</td><td>0</td><td>47</td><td>0.0%</td><td>-0.5886%</td></tr>
+<tr><td>SIDEWAYS_TO_BULLISH</td><td>9</td><td>0</td><td>9</td><td>0.0%</td><td>-0.5343%</td></tr>
+</table>
+<h2>Performance by Time of Day</h2>
+<table>
+<tr><th>Time Bucket</th><th>Setups</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Avg Return</th></tr>
+<tr><td>09:15-10:00</td><td>25</td><td>0</td><td>0</td><td>0.0%</td><td>-0.5518%</td></tr>
+<tr><td>10:00-11:00</td><td>31</td><td>0</td><td>0</td><td>0.0%</td><td>-0.6025%</td></tr>
+<tr><td>11:00-12:00</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>12:00-13:00</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>13:00-14:00</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>14:00-15:30</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+</table>
+<h2>Performance by Confidence</h2>
+<table>
+<tr><th>Bucket</th><th>Count</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Avg Return</th></tr>
+<tr><td>LOW</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>MEDIUM</td><td>56</td><td>0</td><td>0</td><td>0.0%</td><td>-0.5799%</td></tr>
+<tr><td>HIGH</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+</table>
+<h2>Daily Results</h2>
+<table>
+<tr><th>Date</th><th>Outlooks</th><th>Triggered</th><th>Wins</th><th>Losses</th><th>Win Rate</th><th>Net Return</th></tr>
+<tr><td>2026-08-04</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-08-05</td><td>75</td><td>7</td><td>0</td><td>7</td><td>0.0%</td><td>-3.7024%</td></tr>
+<tr><td>2026-08-06</td><td>75</td><td>2</td><td>0</td><td>2</td><td>0.0%</td><td>-1.0181%</td></tr>
+<tr><td>2026-08-07</td><td>75</td><td>3</td><td>0</td><td>3</td><td>0.0%</td><td>-1.765%</td></tr>
+<tr><td>2026-08-10</td><td>75</td><td>2</td><td>0</td><td>2</td><td>0.0%</td><td>-1.0124%</td></tr>
+<tr><td>2026-08-11</td><td>75</td><td>1</td><td>0</td><td>1</td><td>0.0%</td><td>-0.5671%</td></tr>
+<tr><td>2026-08-12</td><td>75</td><td>1</td><td>0</td><td>1</td><td>0.0%</td><td>-0.5174%</td></tr>
+<tr><td>2026-08-13</td><td>75</td><td>2</td><td>0</td><td>2</td><td>0.0%</td><td>-1.0587%</td></tr>
+<tr><td>2026-08-14</td><td>75</td><td>3</td><td>0</td><td>3</td><td>0.0%</td><td>-1.6654%</td></tr>
+<tr><td>2026-08-17</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-08-18</td><td>75</td><td>2</td><td>0</td><td>2</td><td>0.0%</td><td>-1.0176%</td></tr>
+<tr><td>2026-08-19</td><td>75</td><td>3</td><td>0</td><td>3</td><td>0.0%</td><td>-2.8545%</td></tr>
+<tr><td>2026-08-20</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-08-21</td><td>75</td><td>1</td><td>0</td><td>1</td><td>0.0%</td><td>-0.5936%</td></tr>
+<tr><td>2026-08-24</td><td>75</td><td>1</td><td>0</td><td>1</td><td>0.0%</td><td>-0.5164%</td></tr>
+<tr><td>2026-08-25</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-08-26</td><td>75</td><td>5</td><td>0</td><td>5</td><td>0.0%</td><td>-2.57%</td></tr>
+<tr><td>2026-08-27</td><td>75</td><td>5</td><td>0</td><td>5</td><td>0.0%</td><td>-2.6057%</td></tr>
+<tr><td>2026-08-28</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-08-31</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-09-01</td><td>75</td><td>2</td><td>0</td><td>2</td><td>0.0%</td><td>-1.3875%</td></tr>
+<tr><td>2026-09-02</td><td>75</td><td>1</td><td>0</td><td>1</td><td>0.0%</td><td>-0.5297%</td></tr>
+<tr><td>2026-09-03</td><td>75</td><td>4</td><td>0</td><td>4</td><td>0.0%</td><td>-2.0477%</td></tr>
+<tr><td>2026-09-04</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-09-07</td><td>75</td><td>4</td><td>0</td><td>4</td><td>0.0%</td><td>-2.0547%</td></tr>
+<tr><td>2026-09-08</td><td>75</td><td>4</td><td>0</td><td>4</td><td>0.0%</td><td>-2.7299%</td></tr>
+<tr><td>2026-09-09</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+<tr><td>2026-09-10</td><td>75</td><td>2</td><td>0</td><td>2</td><td>0.0%</td><td>-1.7317%</td></tr>
+<tr><td>2026-09-11</td><td>75</td><td>1</td><td>0</td><td>1</td><td>0.0%</td><td>-0.5266%</td></tr>
+<tr><td>2026-09-15</td><td>75</td><td>0</td><td>0</td><td>0</td><td>0.0%</td><td>0.0%</td></tr>
+</table>
+<h2>Confusion Matrix (Directional)</h2>
+<table>
+<tr><th>Metric</th><th>Value</th></tr>
+<tr><td>tp</td><td>0</td></tr>
+<tr><td>fp</td><td>0</td></tr>
+<tr><td>fn</td><td>9</td></tr>
+<tr><td>tn</td><td>47</td></tr>
+<tr><td>precision</td><td>0.0</td></tr>
+<tr><td>recall</td><td>0.0</td></tr>
+<tr><td>fpr</td><td>0.0</td></tr>
+<tr><td>fnr</td><td>100.0</td></tr>
+</table>
+<h2>Methodology</h2>
+<ul>
+<li>Replayed AI Outlook Engine using deterministic classification at each 5-minute candle.</li>
+<li>Strict no-look-ahead: decisions use only data through the candle timestamp.</li>
+<li>Outcomes evaluated using future candles after decision is frozen.</li>
+<li>Evaluation horizon: 60 minutes post-trigger (5, 15, 30, 60, 120 min computed where data permits).</li>
+<li>Win/Loss based on target/invalidation from AI output.</li>
+<li>Underlying-index historical validation. Actual options execution results may differ materially.</li>
+</ul>
+</body>
+</html>
