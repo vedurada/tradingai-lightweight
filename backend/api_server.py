@@ -3454,11 +3454,9 @@ def risk_endpoint(symbol):
             elif stage.status == "NO_SETUP":
                 warnings.append(f"No trade warranted at this time ({stage_name}).")
         max_risk = "1% of capital"
-        if setup.max_risk:
+        if getattr(setup, "max_risk", None):
             max_risk = setup.max_risk
-        recommended_size = None
-        if setup.recommended_size:
-            recommended_size = setup.recommended_size
+        recommended_size = getattr(setup, "recommended_size", None)
         return jsonify({
             "symbol": symbol,
             "max_risk": max_risk,
