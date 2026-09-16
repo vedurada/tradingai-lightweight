@@ -218,4 +218,5 @@ class TestLinkIntegrity:
 
     def test_045_no_dashboard_empty_text(self):
         t = read("index.html")
-        assert "Loading market ticker" in t or "Loading" in t
+        has_state = any(s in t for s in ["MARKET CLOSED", "LIVE", "DELAYED", "STALE", "UNAVAILABLE", "ERROR", "CLOSED"])
+        assert has_state, "Homepage must show explicit data state (CLOSED/LIVE/etc.), not just Loading"
