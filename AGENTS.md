@@ -121,7 +121,7 @@ python3 backfill_outlooks.py --days 3650 --overwrite
 - **Phase 6**: ✅ COMPLETE — Live Intraday + Price-Tick Experience, 1045/1045 tests passing
 - **Phase 7**: ✅ COMPLETE — Deterministic Strategy Backtesting, 1065/1065 tests passing
 - **Phase 8**: ✅ COMPLETE — Walk-Forward Validation + Historical Evidence, 1087/1087 tests passing
-- **Phase 9C**: 🔄 IN PROGRESS — Personal Trading Intelligence engine, 26/26 tests passing (backend only, frontend pending)
+- **Phase 9C**: ✅ COMPLETE — Personal Trading Intelligence engine (backend + frontend), 26/26 tests passing
 
 ## Phase 5 Components
 
@@ -273,8 +273,20 @@ Personal Trading Intelligence engine built on Journal data with strict AI separa
 - `GET /api/intelligence/mistakes` — Recurring Mistake Patterns
 - `GET /api/intelligence/setup-adherence` — Setup Adherence
 
+#### API Endpoints (all under /api/intelligence/, rate limited 30/min)
+- `GET /api/intelligence/summary` — Trading Intelligence Summary
+- `GET /api/intelligence/instrument/<symbol>` — Per-Instrument Analysis
+- `GET /api/intelligence/strategy/<name>` — Per-Strategy Analysis
+- `GET /api/intelligence/regime/<name>` — Market Regime Analysis
+- `GET /api/intelligence/behavior` — Behavior Analysis
+- `GET /api/intelligence/mistakes` — Recurring Mistake Patterns
+- `GET /api/intelligence/setup-adherence` — Setup Adherence
+
+#### Frontend
+- `tools/intelligence.html` — Mobile-first UI with 7 sections (Summary, Instrument, Strategy, Regime, Behavior, Mistakes, Setup Adherence), SUFFICIENT_DATA/INSUFFICIENT_DATA display, progressive disclosure
+
 #### Tests
-- `tests/test_phase9c_personal_intelligence.py` — 26 tests (data status, sample size, determinism, per-function, AI exclusion, edge cases)
+- `tests/test_phase9c_personal_intelligence.py` — 26 tests (data status, sample size, determinism, per-function, AI exclusion, edge cases), all passing
 
 ## Phase 7 Components
 
