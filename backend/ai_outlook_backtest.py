@@ -264,13 +264,15 @@ def _extract_invalidation_price(decision: Dict[str, Any], bias: str) -> Optional
 def evaluate_outcomes(
     decisions: List[Dict[str, Any]],
     db_path: str,
+    symbol: str = "NIFTY",
 ) -> List[Dict[str, Any]]:
     conn = sqlite3.connect(db_path)
     conn.row_factory = sqlite3.Row
     c = conn.cursor()
     c.execute(
         "SELECT timestamp, open, high, low, close, volume "
-        "FROM price_5m ORDER BY timestamp",
+        "FROM price_5m WHERE symbol=? ORDER BY timestamp",
+        (symbol,),
     )
     all_candles = [dict(r) for r in c.fetchall()]
     conn.close()
@@ -295,27 +297,23 @@ def evaluate_outcomes(
             decision["max_adverse_excursion"] = 0.0
             continue
 
-        trigger_price = _extract_trigger_price(decision, bias)
-
-        target_pct = 1.0
-        invalidation_pct = -0.5
-
         max_fav = 0.0
         max_adv = 0.0
-        found_trigger = False
-        found_invalidation = False
-        found_target = False
-        trigger_time = None
         exit_time = None
         exit_price = None
+        eod_close = None
+
+        entry_dt = datetime.datetime.strptime(entry_time, "%Y-%m-%d %H:%M:%S")
+        eod_cutoff = entry_dt + datetime.timedelta(days=1)
 
         for future_candle in all_candles:
             ft = future_candle["timestamp"]
             if ft <= entry_time:
                 continue
+            ft_dt = datetime.datetime.strptime(ft, "%Y-%m-%d %H:%M:%S")
+            if ft_dt >= eod_cutoff:
+                continue
 
-            f_high = future_candle["high"]
-            f_low = future_candle["low"]
             f_close = future_candle["close"]
 
             pct_from_entry = ((f_close - entry_price) / entry_price) * 100 if entry_price else 0.0
@@ -324,58 +322,32 @@ def evaluate_outcomes(
             if pct_from_entry < max_adv:
                 max_adv = pct_from_entry
 
-            if not found_trigger and trigger_price:
-                if bias in ("BULLISH", "MILD_BULLISH") and f_high >= trigger_price:
-                    found_trigger = True
-                    trigger_time = ft
-                    decision["actual_entry_time"] = ft
-                    decision["actual_entry_price"] = f_close
-                    decision["time_to_trigger"] = _minutes_between(entry_time, ft)
-                elif bias in ("BEARISH", "MILD_BEARISH") and f_low <= trigger_price:
-                    found_trigger = True
-                    trigger_time = ft
-                    decision["actual_entry_time"] = ft
-                    decision["actual_entry_price"] = f_close
-                    decision["time_to_trigger"] = _minutes_between(entry_time, ft)
-
-            if found_trigger:
-                if not found_invalidation and f_low <= entry_price * (1 + invalidation_pct / 100):
-                    found_invalidation = True
-                    exit_time = ft
-                    exit_price = f_low
-                if not found_target and f_high >= entry_price * (1 + target_pct / 100):
-                    found_target = True
-                    if not found_invalidation:
-                        exit_time = ft
-                        exit_price = f_high
+            dt_ft_ist = ft_dt + IST_OFFSET
+            if dt_ft_ist.hour >= 15 and dt_ft_ist.minute >= 25 and dt_ft_ist.hour < 16:
+                exit_time = ft
+                exit_price = f_close
+                eod_close = f_close
 
         decision["max_favorable_excursion"] = round(max_fav, 4)
         decision["max_adverse_excursion"] = round(max_adv, 4)
 
-        if found_trigger:
-            if exit_time:
-                decision["exit_time"] = exit_time
-                decision["exit_price"] = exit_price
-                decision["time_to_outcome"] = _minutes_between(entry_time, exit_time)
-                decision["return_pct"] = round(((exit_price - entry_price) / entry_price) * 100, 4)
-                if found_target and not found_invalidation:
-                    decision["outcome"] = "WIN"
-                    decision["reason"] = "Target reached before invalidation"
-                elif found_invalidation and (not found_target or exit_price <= entry_price):
-                    decision["outcome"] = "LOSS"
-                    decision["reason"] = "Invalidation reached before target"
-                elif found_target and found_invalidation and exit_price > entry_price:
-                    decision["outcome"] = "WIN"
-                    decision["reason"] = "Target reached before invalidation"
-                else:
-                    decision["outcome"] = "LOSS"
-                    decision["reason"] = "Invalidation reached before target"
+        if exit_time and eod_close:
+            decision["exit_time"] = exit_time
+            decision["exit_price"] = exit_price
+            decision["time_to_outcome"] = _minutes_between(entry_time, exit_time)
+            decision["return_pct"] = round(((eod_close - entry_price) / entry_price) * 100, 4)
+            if bias in ("BULLISH", "MILD_BULLISH") and eod_close > entry_price:
+                decision["outcome"] = "WIN"
+                decision["reason"] = "EOD: Price moved in predicted direction"
+            elif bias in ("BEARISH", "MILD_BEARISH") and eod_close < entry_price:
+                decision["outcome"] = "WIN"
+                decision["reason"] = "EOD: Price moved in predicted direction"
             else:
-                decision["outcome"] = "EXPIRED"
-                decision["reason"] = "Neither target nor invalidation reached within horizon"
+                decision["outcome"] = "LOSS"
+                decision["reason"] = "EOD: Price moved against predicted direction"
         else:
-            decision["outcome"] = "NO_TRIGGER"
-            decision["reason"] = "Entry condition not confirmed within evaluation horizon"
+            decision["outcome"] = "EXPIRED"
+            decision["reason"] = "No EOD close found within evaluation horizon"
 
     return decisions
 
@@ -461,22 +433,11 @@ def compute_metrics(decisions: List[Dict[str, Any]]) -> Dict[str, Any]:
         avg_loss = 0.0
     payoff_ratio = round(avg_win / abs(avg_loss), 4) if avg_loss != 0 else 0.0
 
+    max_dd = 0.0
     if all_returns:
-        cumulative = []
-        running = 0.0
-        for r in all_returns:
-            running += r
-            cumulative.append(running)
-        peak = cumulative[0]
-        max_dd = 0.0
-        for v in cumulative:
-            if v > peak:
-                peak = v
-            dd = (v - peak) / peak * 100 if peak != 0 else 0.0
-            if dd < max_dd:
-                max_dd = dd
-    else:
-        max_dd = 0.0
+        max_loss = min(all_returns)
+        if max_loss < max_dd:
+            max_dd = max_loss
 
     by_structure: Dict[str, Dict[str, Any]] = {}
     for d in triggered:
@@ -901,7 +862,7 @@ def main():
     first_date = decisions[0]["date"]
     last_date = decisions[-1]["date"]
 
-    decisions = evaluate_outcomes(decisions, args.db_path)
+    decisions = evaluate_outcomes(decisions, args.db_path, args.symbol)
 
     session_candle_count = sum(1 for d in decisions)
 

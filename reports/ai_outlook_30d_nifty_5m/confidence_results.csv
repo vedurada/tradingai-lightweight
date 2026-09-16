@@ -1,4 +1,4 @@
 confidence_bucket,count,wins,losses,win_rate,avg_return
 LOW,0,0,0,0.0,0.0
-MEDIUM,56,0,0,0.0,-0.5799
+MEDIUM,56,24,0,100.0,0.0682
 HIGH,0,0,0,0.0,0.0

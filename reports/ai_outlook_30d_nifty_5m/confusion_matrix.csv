@@ -1,9 +1,9 @@
 metric,value
-tp,0
-fp,0
-fn,9
-tn,47
-precision,0.0
-recall,0.0
-fpr,0.0
-fnr,100.0
+tp,4
+fp,20
+fn,5
+tn,27
+precision,16.67
+recall,44.44
+fpr,42.55
+fnr,55.56
