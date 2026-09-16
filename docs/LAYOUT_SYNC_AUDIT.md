@@ -3,6 +3,24 @@
 Created: 16 September 2026
 Baseline: v2b5583a-baseline (commit 35decaf)
 
+## Milestone Progress
+
+| Phase | Status |
+|-------|--------|
+| Baseline tagged | ✅ v2b5583a-baseline (commit 35decaf) |
+| Page manifest | ✅ 52 HTML files catalogued |
+| Pending page classification | ✅ 25 pages classified (9 KEEP, 16 ARCHIVE) |
+| Duplicate nav removal | ✅ 5 legal/info pages cleaned |
+| NIFTY deep-dive redesign | ✅ 7 sections as explicit HTML |
+| Today terminal redesign | ✅ 10 sections with loading states |
+| Market page redesign | ✅ 7 sections as explicit HTML |
+| Data-state standard | ✅ LIVE/UPDATED/STALE/UNAVAILABLE/ERROR |
+| Tests | ✅ 75 passing |
+| Browser/API verification | ⏳ Deferred until VM runtime |
+| Deployment | ⏳ Deferred until VM verification |
+
+
+
 For every retained core page: compare approved layout plan vs current HTML.
 
 Status options:
