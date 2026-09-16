@@ -18,11 +18,6 @@ try {
 }
 </script>
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}gtag('js', new Date());
-  gtag('config', 'G-MJ3X88QYEL');
-</script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Strategy Intelligence - TradingAI</title>
@@ -110,12 +105,6 @@ try {
       <p>Each strategy row links to the guide so you can read the mechanics of the structure and to the builder so you can see the payoff profile at any strike you choose. Studying why a structure fits a regime — and when it breaks — is the fastest way to make these tools your own rather than taking them at face value.</p>
       <p>Strategies are generated from public end-of-day and intraday data and may be delayed by the feed. They are research illustrations, not recommendations and not personalised advice. Options risk losing the entire premium and more. Verify premiums, margins and lot sizes with your broker before acting.</p>
   </div>
-  <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
-    <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
-    <div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
-    <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
-  </div>
 
 <footer>
     <p>TradingAI provides market analysis and decision-support information. Options involve substantial risk. No structure guarantees profit. <a href="strategies-guide.html">Strategy definitions →</a> <a href="/strategy-builder.html">Custom builder →</a></p>
@@ -124,7 +113,7 @@ try {
 </main>
 <script>
 const API_BASE='';
-var IDX={NIFTY:{step:50,lot:75,api:'nifty',page:'indices/nifty.html'},BANKNIFTY:{step:100,lot:30,api:'banknifty',page:'indices/banknifty.html'},FINNIFTY:{step:50,lot:65,api:'finnifty',page:'indices/nifty.html'},SENSEX:{step:100,lot:20,api:'sensex',page:'indices/nifty.html'}};
+var IDX={NIFTY:{step:50,lot:75,api:'nifty',page:'indices/nifty.html'},BANKNIFTY:{step:100,lot:30,api:'banknifty',page:'indices/banknifty.html'},FINNIFTY:{step:50,lot:65,api:'finnifty',page:'indices/finnifty.html'},SENSEX:{step:100,lot:20,api:'sensex',page:'indices/sensex.html'}};
 var TPL=[
 {id:'buy-ce',name:'Buy ATM CE',group:'Directional bullish',views:['Bullish'],legs:function(A,S){return[{a:'BUY',t:'CE',k:A,n:'ATM'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' + premium'];},mp:'High (unlimited)',ml:'Premium paid',dir:'Bullish',theta:'Negative',shape:[[-1.2,0],[-0.05,0],[1.2,1]]},
 {id:'bull-call',name:'Bull Call Spread',group:'Directional bullish',views:['Bullish'],legs:function(A,S){return[{a:'BUY',t:'CE',k:A,n:'ATM'},{a:'SELL',t:'CE',k:A+S,n:'cap'}];},be:function(A,S){return['Breakeven = '+fmt(A)+' + net premium'];},mp:'Width − premium',ml:'Premium paid',dir:'Bullish',theta:'Negative',shape:[[-1.2,0],[-0.2,0],[0.2,1],[1.2,1]]},

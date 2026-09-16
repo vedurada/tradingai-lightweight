@@ -199,7 +199,7 @@ async function loadNiftyData(){
       var emaEl=document.getElementById('sensex-ema20');
       if(emaEl&&inst.ema!=null){emaEl.textContent=fp(inst.ema);emaEl.style.color='';}
       var rsiEl=document.getElementById('sensex-rsi');
-      if(rsiEl&&ind&&inst.rsi!=null){rsiEl.textContent=inst.rsi.toFixed(0);rsiEl.style.color='';}
+      if(rsiEl&&inst.rsi!=null){rsiEl.textContent=inst.rsi.toFixed(0);rsiEl.style.color='';}
       var rsiPosEl=document.getElementById('sensex-rsi-pos');
       if(rsiPosEl&&inst.rsi!=null){rsiPosEl.textContent=inst.rsi>60?'Overbought':inst.rsi<40?'Oversold':'Neutral';}
       var macdEl=document.getElementById('sensex-macd');

@@ -31,7 +31,6 @@
   <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem">
     <a href="../indices/finnifty.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer;background:#dcfce7;border-color:#15803d;font-weight:700">FINNIFTY</div></a>
     <a href="../indices/banknifty.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">BANKNIFTY</div></a>
-    <a href="../indices/finnifty.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">FINNIFTY</div></a>
     <a href="../indices/sensex.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">SENSEX</div></a>
   </div>
 
@@ -200,7 +199,7 @@ async function loadNiftyData(){
       var emaEl=document.getElementById('finnifty-ema20');
       if(emaEl&&inst.ema!=null){emaEl.textContent=fp(inst.ema);emaEl.style.color='';}
       var rsiEl=document.getElementById('finnifty-rsi');
-      if(rsiEl&&ind&&inst.rsi!=null){rsiEl.textContent=inst.rsi.toFixed(0);rsiEl.style.color='';}
+      if(rsiEl&&inst.rsi!=null){rsiEl.textContent=inst.rsi.toFixed(0);rsiEl.style.color='';}
       var rsiPosEl=document.getElementById('finnifty-rsi-pos');
       if(rsiPosEl&&inst.rsi!=null){rsiPosEl.textContent=inst.rsi>60?'Overbought':inst.rsi<40?'Oversold':'Neutral';}
       var macdEl=document.getElementById('finnifty-macd');
@@ -232,6 +231,7 @@ async function loadNiftyData(){
       }
     }
   }catch(e){}
+  if(!document.getElementById('ai-outlook').innerHTML.trim()){document.getElementById('ai-outlook').innerHTML='<div class="status" style="color:#64748b">AI Outlook: data unavailable for FINNIFTY</div>';}
   try{
     var kl=await fetchJSON('key-levels?symbol=FINNIFTY');
     if(kl){
@@ -245,6 +245,7 @@ async function loadNiftyData(){
       }
     }
   }catch(e){}
+  if(!document.getElementById('key-levels').innerHTML.trim()){document.getElementById('key-levels').innerHTML='<div class="status" style="color:#64748b">Key Levels: data unavailable for FINNIFTY</div>';}
   try{
     var opt=await fetchJSON('options/state/FINNIFTY');
     if(opt){
@@ -262,6 +263,7 @@ async function loadNiftyData(){
       }
     }
   }catch(e){}
+  if(!document.getElementById('options-intel').innerHTML.trim()){document.getElementById('options-intel').innerHTML='<div class="status" style="color:#64748b">Options: data unavailable for FINNIFTY</div>';}
   try{
     var str=await fetchJSON('strategy/FINNIFTY');
     if(str){
@@ -278,6 +280,7 @@ async function loadNiftyData(){
       }
     }
   }catch(e){}
+  if(!document.getElementById('ai-strategy').innerHTML.trim()){document.getElementById('ai-strategy').innerHTML='<div class="status" style="color:#64748b">AI Strategy: data unavailable for FINNIFTY</div>';}
   try{
     var cond=await fetchJSON('intraday-conditions?symbol=FINNIFTY');
     if(cond){
@@ -289,6 +292,9 @@ async function loadNiftyData(){
       if(noTradeEl&&cond.no_trade)noTradeEl.textContent=cond.no_trade;
     }
   }catch(e){}
+  if(!document.getElementById('bullish-condition').textContent||document.getElementById('bullish-condition').textContent==='Loading…'){document.getElementById('bullish-condition').textContent='No bullish signal available for FINNIFTY';document.getElementById('bullish-condition').style.color='#64748b';}
+  if(!document.getElementById('bearish-condition').textContent||document.getElementById('bearish-condition').textContent==='Loading…'){document.getElementById('bearish-condition').textContent='No bearish signal available for FINNIFTY';document.getElementById('bearish-condition').style.color='#64748b';}
+  if(!document.getElementById('notrade-condition').textContent||document.getElementById('notrade-condition').textContent==='Loading…'){document.getElementById('notrade-condition').textContent='No trade conditions available for FINNIFTY';document.getElementById('notrade-condition').style.color='#64748b';}
   FINNIFTY_LOADED=true;
 }
 document.addEventListener('DOMContentLoaded',function(){loadNiftyData();setInterval(loadNiftyData,30000);});

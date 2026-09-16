@@ -111,6 +111,13 @@ try {
     <script>(function(){ (async function(){ try{var r=await(await fetch('/api/index-breadth')).json();if(!r||!r.length){document.getElementById('home-ad-bar').innerHTML='<span style="color:#94a3b8;font-size:0.85rem">No breadth data</span>';return;}var a=0,d=0,u=0;for(var i=0;i<r.length;i++){a+=r[i].advances||0;d+=r[i].declines||0;u+=r[i].unchanged||0;}document.getElementById('home-ad-bar').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;text-align:center;margin-top:0.5rem"><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Advances</div><div style="font-size:1.3rem;font-weight:800;color:#15803d">'+a+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Declines</div><div style="font-size:1.3rem;font-weight:800;color:#ef4444">'+d+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Unchanged</div><div style="font-size:1.3rem;font-weight:800;color:#64748b">'+u+'</div></div></div>';}catch(e){document.getElementById('home-ad-bar').textContent='Breadth unavailable';}})(); })();</script>
   </div>
 
+  <!-- DATA STATUS -->
+  <div class="card" style="margin-top:1.5rem">
+    <h3>DATA STATUS</h3>
+    <div id="home-data-status"><div class="status" style="color:#64748b">Checking data sources…</div></div>
+    <script>(function(){var el=document.getElementById('home-data-status');if(!el)return;var now=new Date(new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}));var day=now.getDay();var mins=now.getHours()*60+now.getMinutes();var isWeekday=day>=1&&day<=5;var isMarket=isWeekday&&mins>=570&&mins<930;var html='';if(!isWeekday){html='<div style="font-size:0.85rem;color:#64748b">Market closed · Weekend</div>';}else if(!isMarket){html='<div style="font-size:0.85rem;color:#64748b">Market closed · Next open: 09:15 IST</div>';}else{html='<div style="font-size:0.85rem;color:#15803d">Market LIVE · '+now.toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',hour12:false})+' IST</div>';}el.innerHTML=html;})();</script>
+  </div>
+
   <!-- OPTIONS INTELLIGENCE -->
   <div class="card" style="margin-top:1.5rem">
     <h3>OPTIONS INTELLIGENCE</h3>
@@ -127,10 +134,13 @@ try {
         <h3 style="font-size:0.85rem">OI Concentration</h3>
         <div class="price" id="options-oi">—</div>
       </div>
+      <div class="card" style="text-align:center;min-height:80px" id="options-expmove-card">
+        <h3 style="font-size:0.85rem">EXPECTED MOVE</h3>
+        <div class="price" id="options-expmove">—</div>
+      </div>
     </div>
     <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.5rem">Potential resistance / potential support</div>
-    <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.5rem">Expected move / expiry context</div>
-    <div style="display:none"><span id="s-finnifty-trend"></span><span id="s-finnifty-vix"></span>Signal Confidence — no reliable evidence; context, not a forecast</div>
+    <div style="font-size:0.75rem;color:#64748b;margin-bottom:0.5rem">ATR-based expected move · Next expiry context</div>
     <p style="font-size:0.78rem;color:#94a3b8;margin:0.5rem 0 0;font-style:italic">
       All figures are computed server-side from NSE data. Values show "—" when data is temporarily unavailable. Educational purposes only — not investment advice.
     </p>
@@ -145,6 +155,7 @@ try {
       <a href="/options/pcr.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Options</a>
       <a href="/strategies.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Strategies</a>
       <a href="/strategy-builder.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Builder</a>
+      <a href="/tools/backtest.html" style="padding:6px 14px;background:#0f172a;color:#fff;border-radius:6px;text-decoration:none;font-size:0.85rem;font-weight:700">Backtest</a>
     </div>
   </div>
 
@@ -267,7 +278,7 @@ document.addEventListener('DOMContentLoaded',function(){
 })();
 </script>
 <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
-<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/api.js"><\/script><script>document.addEventListener('DOMContentLoaded',function(){var el=document.getElementById('session-state');if(!el)return;var d=new Date();var ist=d.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});var dt=new Date(ist);var day=dt.getDay();if(day===0||day===6){el.textContent='CLOSED · WEEKEND';el.style.color='#64748b';return;}var h=dt.getHours();var m=dt.getMinutes();var mins=h*60+m;var state,color;if(mins<570){state='PRE_MARKET';color='#94a3b8';}else if(mins<990){state='OPEN · LIVE';color='#15803d';}else if(mins<1200){state='CLOSED · AFTERNOON';color='#eab308';}else if(mins<1230){state='POST_MARKET';color='#f97316';}else{state='CLOSED';color='#64748b';}el.textContent=state;el.style.color=color;});})();</script><script src="/assets/js/consent.js" defer></script>
+<script>(function(){var BASE='';async function tapeTick(){try{var el=document.getElementById('ticker-track');if(!el)return;var m=null,ib=null;try{m=await(await fetch(BASE+'/api/market')).json();}catch(e){}try{ib=await(await fetch(BASE+'/api/index-breadth')).json();}catch(e){}var items=[];if(m&&m.instruments){for(var s in m.instruments){var inst=m.instruments[s];var q=inst.quote||{};if(q.price==null)continue;var up=(q.change||0)>=0;items.push('<span><strong>'+s+'</strong> '+Number(q.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2})+' <span style="color:'+(up?'#22c55e':'#ef4444')+'">'+(up?'▲':'▼')+Math.abs(q.change_pct||0).toFixed(2)+'%</span></span>');}}if(ib&&ib.length){for(var i=0;i<ib.length;i++){var b=ib[i];items.push('<span><strong>'+b.index_name+' A/D</strong> <span style="color:#22c55e">'+b.advances+'↑</span>/<span style="color:#ef4444">'+b.declines+'↓</span></span>');}}if(!items.length)return;el.innerHTML=items.join('')+items.join('');}catch(e){}}document.addEventListener('DOMContentLoaded',function(){tapeTick();setInterval(tapeTick,60000);});})();</script><script src="/assets/js/api.js"><\/script><script>document.addEventListener('DOMContentLoaded',function(){var el=document.getElementById('session-state');if(!el)return;var d=new Date();var ist=d.toLocaleString('en-IN',{timeZone:'Asia/Kolkata'});var dt=new Date(ist);var day=dt.getDay();if(day===0||day===6){el.textContent='CLOSED · WEEKEND';el.style.color='#64748b';return;}var h=dt.getHours();var m=dt.getMinutes();var mins=h*60+m;var state,color;if(mins<570){state='PRE_MARKET';color='#94a3b8';}else if(mins<720){state='OPEN · LIVE';color='#15803d';}else if(mins<780){state='CLOSED · LUNCH';color='#eab308';}else if(mins<930){state='OPEN · LIVE';color='#15803d';}else{state='CLOSED';color='#64748b';}el.textContent=state;el.style.color=color;});})();</script><script src="/assets/js/consent.js" defer></script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
   document.querySelectorAll('.card').forEach(function(c){

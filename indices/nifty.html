@@ -162,9 +162,10 @@
 const API_BASE='..';
 async function fetchJSON(path){try{const r=await fetch(API_BASE+'/api/'+path);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
 function fp(v){return v!=null?Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
-function setStatus(el,text,color){if(!el)return;el.textContent=text;el.style.color=color||'inherit';}
-function setLoading(el){if(!el)return;el.textContent='Loading…';el.style.color='#64748b';}
-function setError(el){if(!el)return;el.textContent='Data unavailable';el.style.color='#dc2626';}
+  function setStatus(el,text,color){if(!el)return;el.textContent=text;el.style.color=color||'inherit';}
+  function setLoading(el){if(!el)return;el.textContent='Loading…';el.style.color='#64748b';}
+  function setError(el){if(!el)return;el.textContent='Data unavailable';el.style.color='#dc2626';}
+  function setDefaultUnavailable(id){var el=document.getElementById(id);if(el&&el.textContent==='Loading…'){el.textContent='DATA UNAVAILABLE';el.style.color='#64748b';}}
 function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d)+' IST';}catch(e){return null;}}
 function updateTimestamp(ts){var bar=document.getElementById('last-updated-bar');if(!bar||!ts)return;var t=fmtIST(ts);if(t){bar.textContent='Data as of '+t;bar.style.color='';}}
 function regimeText(r){if(!r)return '—';r=r.toUpperCase();if(r.indexOf('BULL')>=0)return 'BULLISH';if(r.indexOf('BEAR')>=0)return 'BEARISH';if(r.indexOf('RANGE')>=0||r.indexOf('NEUTRAL')>=0)return 'RANGE';return r;}
@@ -199,7 +200,7 @@ async function loadNiftyData(){
       var emaEl=document.getElementById('nifty-ema20');
       if(emaEl&&inst.ema!=null){emaEl.textContent=fp(inst.ema);emaEl.style.color='';}
       var rsiEl=document.getElementById('nifty-rsi');
-      if(rsiEl&&ind&&inst.rsi!=null){rsiEl.textContent=inst.rsi.toFixed(0);rsiEl.style.color='';}
+      if(rsiEl&&inst.rsi!=null){rsiEl.textContent=inst.rsi.toFixed(0);rsiEl.style.color='';}
       var rsiPosEl=document.getElementById('nifty-rsi-pos');
       if(rsiPosEl&&inst.rsi!=null){rsiPosEl.textContent=inst.rsi>60?'Overbought':inst.rsi<40?'Oversold':'Neutral';}
       var macdEl=document.getElementById('nifty-macd');
@@ -216,7 +217,12 @@ async function loadNiftyData(){
       if(cprPosEl&&inst.cpr!=null){cprPosEl.textContent=inst.cpr>0?'Bullish':'Bearish';}
     }
     if(m&&m.last_updated)updateTimestamp(m.last_updated);
-  }catch(e){}
+  }catch(e){
+    var dp=document.getElementById('nifty-spot');if(dp&&dp.textContent==='Loading…'){dp.textContent='DATA UNAVAILABLE';dp.style.color='#64748b';}
+    var dch=document.getElementById('nifty-change');if(dch&&dch.textContent==='Loading…'){dch.textContent='DATA UNAVAILABLE';dch.style.color='#64748b';}
+    var dpc=document.getElementById('nifty-change-pct');if(dpc&&dpc.textContent==='Loading…'){dpc.textContent='DATA UNAVAILABLE';dpc.style.color='#64748b';}
+    setDefaultUnavailable('nifty-vix');setDefaultUnavailable('nifty-vix-regime');setDefaultUnavailable('nifty-regime');setDefaultUnavailable('nifty-regime-detail');setDefaultUnavailable('nifty-confidence');setDefaultUnavailable('nifty-confidence-detail');setDefaultUnavailable('nifty-vwap');setDefaultUnavailable('nifty-ema20');setDefaultUnavailable('nifty-rsi');setDefaultUnavailable('nifty-rsi-pos');setDefaultUnavailable('nifty-macd');setDefaultUnavailable('nifty-macd-pos');setDefaultUnavailable('nifty-adx');setDefaultUnavailable('nifty-adx-pos');setDefaultUnavailable('nifty-cpr');setDefaultUnavailable('nifty-cpr-pos');
+  }
   try{
     var o=await fetchJSON('market-outlook?symbol=NIFTY');
     if(o){
@@ -243,7 +249,7 @@ async function loadNiftyData(){
         klEl.innerHTML=klHtml||'<div class="status">Levels pending</div>';
       }
     }
-  }catch(e){}
+  }catch(e){setDefaultUnavailable('key-levels');document.getElementById('key-levels').innerHTML='<div class="status" style="color:#64748b">Key Levels: data unavailable</div>';}
   try{
     var opt=await fetchJSON('options/state/NIFTY');
     if(opt){
@@ -260,7 +266,7 @@ async function loadNiftyData(){
         optEl.innerHTML=optHtml;
       }
     }
-  }catch(e){}
+  }catch(e){document.getElementById('options-intel').innerHTML='<div class="status" style="color:#64748b">Options: data unavailable</div>';}
   try{
     var str=await fetchJSON('strategy/NIFTY');
     if(str){
@@ -276,7 +282,7 @@ async function loadNiftyData(){
         strEl.innerHTML=strHtml||'<div class="status">No strategy available</div>';
       }
     }
-  }catch(e){}
+  }catch(e){document.getElementById('ai-strategy').innerHTML='<div class="status" style="color:#64748b">AI Strategy: data unavailable</div>';}
   try{
     var cond=await fetchJSON('intraday-conditions?symbol=NIFTY');
     if(cond){
@@ -287,7 +293,12 @@ async function loadNiftyData(){
       var noTradeEl=document.getElementById('notrade-condition');
       if(noTradeEl&&cond.no_trade)noTradeEl.textContent=cond.no_trade;
     }
-  }catch(e){}
+  }catch(e){
+    setDefaultUnavailable('bullish-condition');setDefaultUnavailable('bearish-condition');setDefaultUnavailable('notrade-condition');
+    var bc=document.getElementById('bullish-condition');if(bc&&bc.textContent==='Loading…')bc.textContent='No signal available';bc.style.color='#64748b';
+    var ber=document.getElementById('bearish-condition');if(ber&&ber.textContent==='Loading…')ber.textContent='No signal available';ber.style.color='#64748b';
+    var nt=document.getElementById('notrade-condition');if(nt&&nt.textContent==='Loading…')nt.textContent='No signal available';nt.style.color='#64748b';
+  }
   NIFTY_LOADED=true;
 }
 document.addEventListener('DOMContentLoaded',function(){loadNiftyData();setInterval(loadNiftyData,30000);});

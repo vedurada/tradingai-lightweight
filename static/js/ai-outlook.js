@@ -408,21 +408,28 @@
     var verdict = d.verdict || '—';
     var regime = outlook.regime ? (outlook.regime.primary || '') : '';
     var vColor = verdict === 'TRADE' ? '#15803d' : '#a16207';
-    if (regime.toUpperCase().includes('UNKNOWN') || verdict === 'WAIT') {
+    if (regime.toUpperCase().includes('UNKNOWN')) {
       verdict = 'NO CLEAR EDGE';
       vColor = '#64748b';
     }
-    var strat = regimeToStrategy(regime);
+    var status = outlook.trade_status || '';
+    var statusColor = status === 'ACTIVE' ? '#15803d' : status === 'WAIT_FOR_CONFIRMATION' || status === 'WAIT_FOR_PULLBACK' ? '#eab308' : status === 'CONDITIONAL' ? '#a16207' : '#64748b';
+    var entryTrigger = outlook.entry_trigger || '';
+    var invalidation = outlook.invalidation || '';
+    var strat = outlook.preferred_strategy || regimeToStrategy(regime);
     return '<div class="card" style="margin-bottom:1rem;border-top:3px solid ' + vColor + '">' +
       '<h3 style="margin:0 0 10px;font-size:0.9rem">AI DECISION</h3>' +
       '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;padding:12px 14px;background:#f8fafc;border-radius:8px">' +
       '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">VERDICT</div>' +
       '<div style="margin-top:4px"><span style="background:' + vColor + ';color:#fff;padding:4px 14px;border-radius:6px;font-weight:800;font-size:0.95rem">' + verdict + '</span></div></div>' +
-      '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">PREFERRED STRATEGY</div>' +
-      '<div style="margin-top:4px;font-weight:700;font-size:0.9rem;color:#0f172a">' + (strats.length ? strats[0].name : strat) + '</div></div>' +
+      '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">STATUS</div>' +
+      '<div style="margin-top:4px"><span style="background:' + statusColor + ';color:#fff;padding:4px 14px;border-radius:6px;font-weight:800;font-size:0.82rem">' + (status ? status.replace(/_/g, ' ') : '—') + '</span></div></div>' +
       '<div><div style="font-size:0.78rem;color:#64748b;font-weight:600">CONFIDENCE</div>' +
       '<div style="margin-top:4px;font-weight:700;font-size:0.9rem;color:#0f172a">' + (outlook.confidence != null ? outlook.confidence + '%' : '—') + '</div></div>' +
-      '</div></div>';
+      '</div>' +
+      (entryTrigger ? '<div style="font-size:0.82rem;color:#475569;margin-top:8px"><strong>Entry:</strong> ' + entryTrigger + '</div>' : '') +
+      (invalidation ? '<div style="font-size:0.82rem;color:#dc2626;margin-top:4px"><strong>Invalidation:</strong> ' + invalidation + '</div>' : '') +
+      '</div>';
   }
 
   function buildTradeRecord(outlook) {
@@ -487,6 +494,32 @@
     if (r.includes('BULLISH')) return 'Bull Call Spread';
     if (r.includes('NEUTRAL') || r.includes('RANGE') || r.includes('UNKNOWN')) return 'Defined Risk Premium Sell';
     return 'Monitor for setup';
+  }
+
+  function buildMarketStructure(outlook) {
+    var structure = outlook.market_structure || '—';
+    var bias = outlook.directional_bias || '—';
+    var tradeClass = outlook.trade_class || '—';
+    var tradeStatus = outlook.trade_status || '';
+    var dataState = outlook.data_state || 'LIVE';
+    var stateColor = dataState === 'LIVE' ? '#15803d' : dataState === 'STALE' ? '#eab308' : dataState === 'UNAVAILABLE' ? '#64748b' : '#dc2626';
+    var statusColor = tradeStatus === 'ACTIVE' ? '#15803d' : tradeStatus === 'WAIT_FOR_CONFIRMATION' || tradeStatus === 'WAIT_FOR_PULLBACK' ? '#eab308' : tradeStatus === 'CONDITIONAL' ? '#a16207' : '#64748b';
+    return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem">' +
+      '<div class="card">' +
+      '<h3 style="margin:0 0 8px;font-size:0.85rem">MARKET STRUCTURE</h3>' +
+      '<div style="font-size:1.1rem;font-weight:800;color:#0f172a">' + structure.replace(/_/g, ' ') + '</div>' +
+      '<div style="font-size:0.78rem;color:#64748b;margin-top:2px">Bias: <strong>' + bias.replace(/_/g, ' ') + '</strong> · Class: ' + tradeClass.replace(/_/g, ' ') + '</div>' +
+      '</div>' +
+      '<div class="card">' +
+      '<h3 style="margin:0 0 8px;font-size:0.85rem">TRADE STATUS</h3>' +
+      '<div style="font-size:1.1rem;font-weight:800;color:' + statusColor + '">' + (tradeStatus ? tradeStatus.replace(/_/g, ' ') : '—') + '</div>' +
+      '<div style="font-size:0.78rem;color:#64748b;margin-top:2px">Data: <strong style="color:' + stateColor + '">' + dataState + '</strong></div>' +
+      '</div>' +
+      '<div class="card">' +
+      '<h3 style="margin:0 0 8px;font-size:0.85rem">DATA STATUS</h3>' +
+      '<div style="font-size:1.1rem;font-weight:800;color:' + stateColor + '">' + dataState + '</div>' +
+      '<div style="font-size:0.78rem;color:#64748b;margin-top:2px">Last update: ' + (outlook.date || '—') + '</div>' +
+      '</div></div>';
   }
 
   function outlookChanged(outlook, symbol) {
@@ -573,6 +606,7 @@
     html += '<div class="card hero" style="background:linear-gradient(135deg,#052e16 0%,#15803d 100%);border:none;color:#fff">';
     html += buildHero(quote, outlook, symbol);
     html += '</div>';
+    html += buildMarketStructure(outlook);
     html += buildRegimeTradeability(outlook);
     html += buildOutlookBars(outlook);
     html += buildFactors(outlook, breadthData);
