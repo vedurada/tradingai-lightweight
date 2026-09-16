@@ -249,12 +249,12 @@ Status options:
 | Page | Status | Priority | Action |
 |------|--------|----------|--------|
 | / | 🟠 PARTIAL | P1 | Fix Loading… states, add freshness indicators |
-| /indices/nifty.html | 🔴 MISMATCH | P1 | Major restructure needed (per user audit) |
+| /indices/nifty.html | 🟠 PARTIAL → ✅ REDESIGNED | P1 | Full structural redesign complete — 7 sections as explicit HTML |
 | /indices/banknifty.html | 🟠 PARTIAL | P1 | Verify against NIFTY template |
 | /indices/finnifty.html | 🟠 PARTIAL | P1 | Verify against NIFTY template |
 | /indices/sensex.html | 🟠 PARTIAL | P1 | Verify against NIFTY template |
-| /today/index.html | 🔴 MISMATCH | P1 | Major restructure needed |
-| /market.html | 🔴 MISMATCH | P1 | Market grid not rendered |
+| /today/index.html | 🟠 PARTIAL → ✅ REDESIGNED | P1 | Full structural redesign complete — 10 sections with loading states |
+| /market.html | 🟠 PARTIAL → ✅ REDESIGNED | P1 | Full structural redesign complete — 7 sections as explicit HTML |
 | /options/pcr.html | 🟠 PARTIAL | P1 | Verify data rendering |
 | /strategies.html | 🟠 PARTIAL | P1 | Fix Loading… states |
 | /strategy-builder.html | 🟢 ALIGNED | P2 | Test workflow integration |
