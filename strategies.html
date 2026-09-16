@@ -26,10 +26,10 @@ try {
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Strategy Intelligence - TradingAI</title>
-<meta name="description" content="Index option strategy engine: live calculators, AI analysis, comparison and performance">
+<meta name="description" content="Index option strategy engine: deterministic calculators, comparison and performance">
 <link rel="canonical" href="https://tradingai.in/strategies.html">
 <meta property="og:title" content="Strategy Intelligence - TradingAI">
-<meta property="og:description" content="Index option strategy engine: live calculators, AI analysis and payoff comparison.">
+<meta property="og:description" content="Index option strategy engine: deterministic calculators and payoff comparison.">
 <meta property="og:type" content="website">
 <meta property="og:url" content="https://tradingai.in/strategies.html">
 <meta name="twitter:card" content="summary">
@@ -74,7 +74,7 @@ try {
   </div>
 
   <div class="card" style="margin-bottom:1rem">
-    <h3>AI STRATEGY ANALYSIS</h3>
+    <h3>Strategy Intelligence</h3>
     <div id="e-ai">Loading…</div>
   </div>
 
@@ -96,12 +96,12 @@ try {
   </div>
 
   <div class="card" style="margin-bottom:1rem">
-    <h3>STRATEGY PERFORMANCE <span class="status">paper trades, 9:30 → 3:20 IST</span></h3>
+    <h3>STRATEGY PERFORMANCE <span class="status">deterministic, AI excluded</span></h3>
     <div id="e-perf" class="status">Loading…</div>
   </div>
 
   
-<div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"><div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div><div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div><div class="card"><h3>📈 Backtest</h3><div class="status">AI-gated vs Fixed, win rate & payoff & 10y equity.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div><div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div></div>
+<div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"><div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div><div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div><div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div><div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div></div>
 
   <div class="card content-card" style="margin-top:1.5rem">
     <h3>How to read this page</h3>
@@ -113,7 +113,7 @@ try {
   <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
     <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
     <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
-    <div class="card"><h3>📈 Backtest</h3><div class="status">AI-gated vs Fixed, win rate & payoff & 10y equity.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
+    <div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
     <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
   </div>
 
@@ -227,7 +227,7 @@ async function loadPerf(){
   var names=Object.keys(byName).sort();if(!names.length){el.textContent='No settled strategy trades yet.';return;}
   var html='<table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Win rate</th><th>Total pts</th><th>Profit factor</th></tr></thead><tbody>';
   for(var i=0;i<names.length;i++){var b=byName[names[i]];var wr=(b.wins/b.trades*100).toFixed(1);var pf=b.gl>0?(b.gw/b.gl).toFixed(2):'∞';var tc=b.pts>=0?'#15803d':'#dc2626';html+='<tr><td>'+names[i]+'</td><td>'+b.trades+'</td><td>'+b.wins+'</td><td>'+wr+'%</td><td style="color:'+tc+';font-weight:bold">'+(b.pts>=0?'+':'')+b.pts.toFixed(2)+'</td><td>'+pf+'</td></tr>';}
-  html+='</tbody></table><div class="status">Paper trades only (9:30 → 3:20 IST). <a href="/tools/backtest.html">View complete history →</a></div>';
+  html+='</tbody></table>    <div class="status">Deterministic backtest only. <a href="/tools/backtest.html">View complete history →</a></div>';
   el.innerHTML=html;
 }
 document.getElementById('e-index').addEventListener('change',function(){ST.index=this.value;ST.tenor='W';ST.viewOverride=null;loadEngine();});
