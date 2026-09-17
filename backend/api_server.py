@@ -3566,6 +3566,293 @@ def session_timeline():
     }), 200
 
 
+@app.route("/api/outlook/5m/latest/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_outlook_5m_latest(symbol):
+    from outlook_change_detector import evaluate, needs_ai_outlook
+    try:
+        result = evaluate(symbol)
+        ai_needs = needs_ai_outlook(symbol)
+        return jsonify({
+            "success": True,
+            "data": {
+                **result,
+                "ai_outlook_available": not ai_needs["needs_ai"],
+            },
+        }), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/outlook/5m/timeline/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_outlook_5m_timeline(symbol):
+    from db_schema import DB_PATH
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 20, type=int)
+        offset = (page - 1) * per_page
+
+        total = conn.execute(
+            "SELECT COUNT(*) FROM ai_outlooks_5m WHERE instrument=?", (symbol,)
+        ).fetchone()[0]
+
+        rows = conn.execute(
+            "SELECT * FROM ai_outlooks_5m WHERE instrument=? ORDER BY generated_at DESC LIMIT ? OFFSET ?",
+            (symbol, per_page, offset),
+        ).fetchall()
+
+        outlooks = []
+        for r in rows:
+            d = dict(r)
+            for f in ("evidence_json", "watch_levels_json", "confirmation_json", "invalidation_json", "risk_json", "material_changes_json"):
+                try:
+                    d[f] = json.loads(d.get(f) or "[]")
+                except (json.JSONDecodeError, TypeError):
+                    d[f] = []
+            outlooks.append(d)
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "outlooks": outlooks,
+                "pagination": {"page": page, "per_page": per_page, "total": total},
+            },
+        }), 200
+    finally:
+        conn.close()
+
+
+@app.route("/api/outlook/5m/snapshot/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_outlook_5m_snapshot(symbol):
+    from db_schema import DB_PATH
+    import sqlite3
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(
+            "SELECT * FROM market_snapshots_5m WHERE symbol=? ORDER BY candle_timestamp DESC LIMIT 1",
+            (symbol,),
+        ).fetchone()
+        if not row:
+            return jsonify({"success": True, "data": {"snapshot": None, "data_state": "NO_DATA"}}), 200
+        d = dict(row)
+        return jsonify({"success": True, "data": {"snapshot": d, "data_state": "LIVE"}}), 200
+    finally:
+        conn.close()
+
+
+@app.route("/api/outlook/5m/changes/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_outlook_5m_changes(symbol):
+    from outlook_change_detector import evaluate
+    try:
+        result = evaluate(symbol)
+        return jsonify({"success": True, "data": result}), 200
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/ai-outlook/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_ai_outlook(symbol):
+    from db_schema import DB_PATH
+    from outlook_scheduler import is_market_open, get_current_candle_timestamp
+    import sqlite3, json
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        market_status = is_market_open()
+        current_ts = get_current_candle_timestamp()
+
+        row = conn.execute(
+            "SELECT * FROM ai_outlooks_5m WHERE instrument=? ORDER BY generated_at DESC LIMIT 1",
+            (symbol,),
+        ).fetchone()
+        current = dict(row) if row else None
+
+        if current:
+            for f in ("evidence_json", "watch_levels_json", "confirmation_json", "invalidation_json", "risk_json", "material_changes_json"):
+                try:
+                    current[f] = json.loads(current.get(f) or "[]")
+                except (json.JSONDecodeError, TypeError):
+                    current[f] = []
+            generated_dt = datetime.fromisoformat(current["generated_at"].replace("Z", "+00:00"))
+            age_seconds = (datetime.now(timezone.utc) - generated_dt).total_seconds()
+            current["age_seconds"] = round(age_seconds)
+            current["age_minutes"] = round(age_seconds / 60)
+            if age_seconds > MAX_OUTLOOK_AGE_MINUTES * 60:
+                current["age_status"] = "STALE"
+            elif age_seconds > OUTLOOK_AGE_WARN_MINUTES * 60:
+                current["age_status"] = "AGING"
+            else:
+                current["age_status"] = "FRESH"
+        else:
+            current = {"data_state": "NO_OUTLOOK", "age_status": "NO_OUTLOOK"}
+
+        prev_row = conn.execute(
+            "SELECT * FROM ai_outlooks_5m WHERE instrument=? AND generated_at < ? ORDER BY generated_at DESC LIMIT 1",
+            (symbol, row["generated_at"] if row else "1970-01-01T00:00:00Z"),
+        ).fetchone()
+        previous = dict(prev_row) if prev_row else None
+
+        timeline = []
+        tl_rows = conn.execute(
+            "SELECT * FROM ai_outlooks_5m WHERE instrument=? ORDER BY generated_at DESC LIMIT 20",
+            (symbol,),
+        ).fetchall()
+        for r in tl_rows:
+            d = dict(r)
+            for f in ("evidence_json", "watch_levels_json", "confirmation_json", "invalidation_json", "risk_json"):
+                try:
+                    d[f] = json.loads(d.get(f) or "[]")
+                except (json.JSONDecodeError, TypeError):
+                    d[f] = []
+            timeline.append(d)
+
+        data_state = market_status.get("session", "CLOSED")
+        if not current or current.get("data_state") == "NO_OUTLOOK":
+            data_state = "UNAVAILABLE"
+        elif market_status.get("session") == "CLOSED":
+            data_state = "DELAYED"
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "instrument": symbol,
+                "current": current,
+                "previous": previous,
+                "change": None if not previous else {
+                    "bias_changed": previous.get("bias") != (current or {}).get("bias"),
+                    "confidence_changed": previous.get("confidence") != (current or {}).get("confidence"),
+                    "regime_changed": previous.get("market_regime") != (current or {}).get("market_regime"),
+                    "trade_state_changed": previous.get("trade_state") != (current or {}).get("trade_state"),
+                },
+                "timeline": timeline,
+                "data_state": data_state,
+                "market_status": market_status,
+                "current_candle": current_ts,
+            },
+        }), 200
+    finally:
+        conn.close()
+
+
+@app.route("/api/ai-outlook/timeline/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_ai_outlook_timeline(symbol):
+    from db_schema import DB_PATH
+    import sqlite3, json
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 20, type=int)
+        offset = (page - 1) * per_page
+
+        total = conn.execute(
+            "SELECT COUNT(*) FROM ai_outlooks_5m WHERE instrument=?", (symbol,)
+        ).fetchone()[0]
+
+        rows = conn.execute(
+            "SELECT * FROM ai_outlooks_5m WHERE instrument=? ORDER BY generated_at DESC LIMIT ? OFFSET ?",
+            (symbol, per_page, offset),
+        ).fetchall()
+
+        outlooks = []
+        for r in rows:
+            d = dict(r)
+            for f in ("evidence_json", "watch_levels_json", "confirmation_json", "invalidation_json", "risk_json", "material_changes_json"):
+                try:
+                    d[f] = json.loads(d.get(f) or "[]")
+                except (json.JSONDecodeError, TypeError):
+                    d[f] = []
+            outlooks.append(d)
+
+        return jsonify({
+            "success": True,
+            "data": {
+                "instrument": symbol,
+                "outlooks": outlooks,
+                "pagination": {"page": page, "per_page": per_page, "total": total},
+            },
+        }), 200
+    finally:
+        conn.close()
+
+
+@app.route("/api/ai-outlook/scheduler", methods=["GET"])
+@limiter.limit("10/minute")
+def api_ai_outlook_scheduler():
+    from outlook_scheduler import is_market_open, get_current_candle_timestamp, run_scheduler
+    from db_schema import DB_PATH
+    import sqlite3
+
+    market_status = is_market_open()
+    current_candle = get_current_candle_timestamp()
+
+    result = {"dry_run": True}
+    try:
+        result = run_scheduler(dry_run=True)
+    except Exception as e:
+        result = {"dry_run": True, "error": str(e)}
+
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        snapshot_count = conn.execute(
+            "SELECT COUNT(*) FROM market_snapshots_5m WHERE candle_timestamp=?",
+            (current_candle,) if current_candle else ("",),
+        ).fetchone()[0]
+        outlook_count = conn.execute(
+            "SELECT COUNT(*) FROM ai_outlooks_5m WHERE instrument='NIFTY'",
+        ).fetchone()[0]
+    finally:
+        conn.close()
+
+    return jsonify({
+        "success": True,
+        "data": {
+            "market_status": market_status,
+            "current_candle": current_candle,
+            "scheduler_dry_run": result,
+            "stats": {
+                "snapshots_current_candle": snapshot_count,
+                "total_outlooks_nifty": outlook_count,
+            },
+        },
+    }), 200
+
+
+@app.route("/api/outlook/5m/outcome", methods=["POST"])
+@limiter.limit("30/minute")
+def api_outlook_5m_outcome():
+    data = request.get_json(silent=True) or {}
+    outlook_id = data.get("outlook_id")
+    symbol = data.get("symbol", "NIFTY")
+    horizon_minutes = data.get("horizon_minutes", 5)
+    entry_price = data.get("entry_price")
+
+    from outcome_engine import OutcomeEngine
+    engine = OutcomeEngine()
+
+    if outlook_id:
+        result = engine.record_outcome(outlook_id, symbol, entry_price, horizon_minutes)
+        return jsonify({"success": True, "data": result}), 200
+
+    pending = engine.get_pending_evaluations()
+    evaluated = []
+    for p in pending:
+        ev = engine.evaluate_outcome(p["outlook_id"], p["symbol"], p["horizon_minutes"])
+        if ev:
+            evaluated.append(ev)
+    return jsonify({"success": True, "data": {"pending": pending, "evaluated": evaluated}}), 200
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

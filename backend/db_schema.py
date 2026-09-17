@@ -549,7 +549,101 @@ CREATE TABLE IF NOT EXISTS market_change_snapshots (
     UNIQUE(symbol, captured_at)
 );
 CREATE INDEX IF NOT EXISTS idx_mkt_change_sym_ts ON market_change_snapshots(symbol, captured_at DESC);
-"""
+
+CREATE TABLE IF NOT EXISTS ai_outlooks_5m (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    outlook_id TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    candle_timestamp TEXT,
+    generated_at TEXT,
+    model TEXT,
+    model_version TEXT,
+    prompt_version TEXT,
+    data_snapshot_id TEXT,
+    bias TEXT,
+    confidence INTEGER DEFAULT 0,
+    market_regime TEXT,
+    summary TEXT,
+    evidence_json TEXT DEFAULT '[]',
+    watch_levels_json TEXT DEFAULT '[]',
+    confirmation_json TEXT DEFAULT '[]',
+    invalidation_json TEXT DEFAULT '[]',
+    risk_json TEXT DEFAULT '[]',
+    trade_state TEXT DEFAULT 'NO_TRADE',
+    expected_horizon_minutes INTEGER DEFAULT 30,
+    material_changes_json TEXT DEFAULT '[]',
+    data_state TEXT DEFAULT 'UNAVAILABLE',
+    created_at TEXT,
+    UNIQUE(outlook_id)
+);
+CREATE INDEX IF NOT EXISTS idx_ai5m_instrument_ts ON ai_outlooks_5m(instrument, candle_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_ai5m_generated ON ai_outlooks_5m(generated_at DESC);
+
+CREATE TABLE IF NOT EXISTS ai_outcome_predictions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    outlook_id TEXT NOT NULL,
+    symbol TEXT NOT NULL,
+    entry_price REAL,
+    reference_price REAL,
+    horizon_minutes INTEGER,
+    future_return_pct REAL,
+    correct BOOLEAN,
+    mfe_pct REAL,
+    mae_pct REAL,
+    bias TEXT,
+    recorded_at TEXT,
+    evaluated_at TEXT,
+    status TEXT DEFAULT 'PENDING',
+    created_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_outcome_outlook ON ai_outcome_predictions(outlook_id);
+CREATE INDEX IF NOT EXISTS idx_outcome_symbol ON ai_outcome_predictions(symbol, recorded_at DESC);
+
+CREATE TABLE IF NOT EXISTS market_snapshots_5m (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    symbol TEXT NOT NULL,
+    candle_timestamp TEXT NOT NULL,
+    snapshot_time TEXT,
+    open REAL,
+    high REAL,
+    low REAL,
+    close REAL,
+    volume INTEGER,
+    vwap REAL,
+    ema9 REAL,
+    ema21 REAL,
+    ema20 REAL,
+    ema200 REAL,
+    rsi REAL,
+    rsi_14 REAL,
+    macd REAL,
+    macd_signal REAL,
+    adx REAL,
+    atr REAL,
+    cpr_upper REAL,
+    cpr_lower REAL,
+    pivot REAL,
+    support REAL,
+    resistance REAL,
+    prev_day_high REAL,
+    prev_day_low REAL,
+    price_vs_vwap TEXT,
+    trend_state TEXT,
+    volatility_state TEXT,
+    regime TEXT,
+    vix REAL,
+    pcr REAL,
+    call_oi REAL,
+    put_oi REAL,
+    expected_move REAL,
+    max_pain REAL,
+    data_state TEXT DEFAULT 'LIVE',
+    data_timestamp TEXT,
+    created_at TEXT,
+    UNIQUE(symbol, candle_timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_snap5m_sym_ts ON market_snapshots_5m(symbol, candle_timestamp DESC);
+ """
 
 def init_database(db_path: str = DB_PATH) -> None:
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
