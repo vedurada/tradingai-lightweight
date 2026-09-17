@@ -51,6 +51,16 @@ try {
 .bt-disclaimer{background:#fef3c7;border:1px solid #fcd34d;border-radius:10px;padding:.7rem 1rem;font-size:.82rem;color:#92400e;margin:1rem 0}
 .bt-section-title{font-size:.82rem;letter-spacing:.08em;color:var(--ink);font-weight:800;margin:1.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
 .bt-no-data{text-align:center;padding:1.5rem;color:var(--faint);font-size:.88rem}
+.bt-outlook-title{font-size:.82rem;letter-spacing:.08em;color:var(--ink);font-weight:800;margin:1.2rem 0 .5rem;padding-bottom:.3rem;border-bottom:1px solid var(--line)}
+.bt-outlook-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:.4rem;margin:.6rem 0}
+.bt-outlook-day{background:#fff;border:1px solid var(--line);border-radius:8px;padding:.5rem .6rem;font-size:.72rem}
+.bt-outlook-day .od{font-size:.66rem;color:var(--faint);font-weight:700;letter-spacing:.05em;margin-bottom:.2rem}
+.bt-outlook-day .ov{display:inline-block;padding:.1rem .35rem;border-radius:3px;font-size:.66rem;font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+.bt-outlook-day .ov.go{background:#dcfce7;color:#15803d}
+.bt-outlook-day .ov.wait{background:#fef3c7;color:#92400e}
+.bt-outlook-day .ov.no{background:#fef2f2;color:#991b1b}
+.bt-outlook-day .ov.trade{background:#dbeafe;color:#1e40af}
+.bt-outlook-day .om{color:var(--muted);font-size:.68rem}
 @media(max-width:700px){
   .bt-metric-grid{grid-template-columns:repeat(2,1fr)}
   .bt-form{grid-template-columns:1fr 1fr}
@@ -149,6 +159,12 @@ try {
         <tbody id="bt-ledger-body"><tr><td colspan="12" class="bt-no-data">No data</td></tr></tbody>
       </table>
     </div>
+
+    <div class="bt-section-title">AI Outlook — Past Days</div>
+    <div id="bt-outlook" style="display:none">
+      <div class="bt-outlook-grid" id="bt-outlook-grid"></div>
+    </div>
+    <div id="bt-outlook-loading" style="display:none;text-align:center;padding:.5rem;color:var(--faint);font-size:.78rem">Loading daily AI outlooks…</div>
   </div>
 
   <div id="bt-loading" class="bt-no-data" style="display:none">Running backtest…</div>
@@ -260,6 +276,7 @@ document.getElementById('bt-run').addEventListener('click', async function(){
 
   document.getElementById('bt-results').style.display='block';
   renderResults(result, capital);
+  loadOutlooks(symbol, days);
 });
 
 function renderResults(result, capital){
@@ -362,6 +379,29 @@ function renderLedger(trades){
     </tr>`;
   });
   body.innerHTML=html;
+}
+
+async function loadOutlooks(symbol, days){
+  var el=document.getElementById('bt-outlook');
+  var ld=document.getElementById('bt-outlook-loading');
+  if(!el||!ld)return;
+  el.style.display='none';
+  ld.style.display='block';
+  var from=new Date(); from.setDate(from.getDate()-days);
+  var fp=from.toISOString().slice(0,10);
+  var tp=new Date().toISOString().slice(0,10);
+  var data=await fetchJSON('market-outlooks?symbol='+symbol+'&from='+fp+'&to='+tp);
+  ld.style.display='none';
+  if(!data||!data.outlooks||!data.outlooks.length){el.style.display='none';return;}
+  el.style.display='block';
+  var html='';
+  data.outlooks.forEach(function(o){
+    var vc=(o.verdict||'').toUpperCase();
+    var cls=vc==='TRADE'?'trade':vc==='NO_TRADE'?'no':'wait';
+    var lbl=vc==='NO_TRADE'?'NO_TRADE':vc;
+    html+='<div class="bt-outlook-day"><div class="od">'+o.date+'</div><span class="ov '+cls+'">'+lbl+'</span><div class="om">conf:'+(o.confidence||'?')+(o.regime?' \u00b7 '+o.regime:'')+(o.bias?' \u00b7 '+o.bias:'')+(o.tradeability?' \u00b7 '+o.tradeability:'')+'</div></div>';
+  });
+  document.getElementById('bt-outlook-grid').innerHTML=html;
 }
 </script>
 </body>

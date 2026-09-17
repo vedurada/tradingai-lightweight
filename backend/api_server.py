@@ -1660,6 +1660,41 @@ def market_outlook_by_date(date):
     data["outlook"] = {k: data.get(k) for k in ["bias", "confidence", "primary_view", "key_drivers", "regime", "decision", "date", "symbol"]}
     return jsonify(data)
 
+@app.route("/api/market-outlooks")
+@cache_page(600)
+def market_outlooks_range():
+    """Market outlooks for a date range."""
+    symbol = request.args.get("symbol", "NIFTY").upper()
+    date_from = request.args.get("from")
+    date_to = request.args.get("to")
+    conn = get_db()
+    try:
+        rows = conn.execute(
+            "SELECT date, payload, created_at FROM market_outlooks WHERE symbol=? AND date >= ? AND date <= ? ORDER BY date ASC",
+            (symbol, date_from or "2016-01-01", date_to or "2099-12-31"),
+        ).fetchall()
+        outlooks = []
+        for r in rows:
+            p = _parse_json_field(r["payload"])
+            decision = (p.get("decision") or {})
+            verdict = decision.get("verdict") or "WAIT"
+            conf = p.get("confidence")
+            strat0 = ((p.get("strategies") or [{}])[0].get("name") if p.get("strategies") else None)
+            if verdict == "WAIT" and isinstance(conf, (int, float)) and conf >= 32 and strat0 and strat0.upper() != "NO TRADE":
+                verdict = "TRADE"
+            outlooks.append({
+                "date": r["date"],
+                "verdict": verdict,
+                "confidence": conf,
+                "regime": (p.get("regime") or {}).get("primary"),
+                "bias": (p.get("bias") or {}).get("label"),
+                "tradeability": (p.get("tradeability") or {}).get("band"),
+                "strategy": ((p.get("strategies") or [{}])[0].get("name") if p.get("strategies") else None),
+            })
+        return jsonify({"symbol": symbol, "count": len(outlooks), "outlooks": outlooks})
+    finally:
+        conn.close()
+
 @app.route("/api/portfolio", methods=["GET"])
 @limiter.limit("30/minute")
 def portfolio_list():
