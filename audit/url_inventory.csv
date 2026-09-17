@@ -1,0 +1,37 @@
+url,http_status,canonical_url,title,indexable,page_type,data_dependencies,last_checked,issues
+/,200,https://tradingai.in/,AI Market Outlook - NIFTY BANKNIFTY FINNIFTY SENSEX - TradingAI,yes,homepage,/api/market;/api/price/NIFTY;/api/price/BANKNIFTY;/api/price/FINNIFTY;/api/price/SENSEX;/api/vix;/api/index-breadth;/api/pcr;/api/oi-top;/api/maxpain,2026-09-17,duplicate_homepage;loading_state
+/index.html,200,https://tradingai.in/,AI Market Outlook - NIFTY BANKNIFTY FINNIFTY SENSEX - TradingAI,yes,homepage,/api/market;/api/price/NIFTY;/api/price/BANKNIFTY;/api/price/FINNIFTY;/api/price/SENSEX;/api/vix;/api/index-breadth;/api/pcr;/api/oi-top;/api/maxpain,2026-09-17,duplicate_homepage;loading_state
+/home.html,200,https://tradingai.in/,AI Market Outlook - NIFTY BANKNIFTY FINNIFTY SENSEX - TradingAI,yes,homepage,/api/market;/api/price/NIFTY;/api/price/BANKNIFTY;/api/price/FINNIFTY;/api/price/SENSEX;/api/vix;/api/index-breadth;/api/pcr;/api/oi-top;/api/maxpain,2026-09-17,duplicate_homepage;loading_state
+/market.html,200,https://tradingai.in/market.html,Market Overview - TradingAI,yes,market_page,/api/market;/api/price/NIFTY;/api/price/BANKNIFTY;/api/price/SENSEX;/api/price/FINNIFTY;/api/vix,2026-09-17,loading_state
+/indices/nifty.html,200,https://tradingai.in/indices/nifty.html,NIFTY 50 - AI Market Outlook - TradingAI,yes,index_page,/api/market;/api/price/NIFTY;/api/maxpain;/api/expected-move/NIFTY;/api/pcr;/api/oi-top;/api/ai-outlook,2026-09-17,loading_state
+/indices/banknifty.html,200,https://tradingai.in/indices/banknifty.html,BANKNIFTY 50 - AI Market Outlook - TradingAI,yes,index_page,/api/market;/api/price/BANKNIFTY;/api/maxpain;/api/expected-move/BANKNIFTY;/api/pcr;/api/oi-top,2026-09-17,loading_state
+/indices/finnifty.html,200,https://tradingai.in/indices/finnifty.html,FINNIFTY 50 - AI Market Outlook - TradingAI,yes,index_page,/api/market;/api/price/FINNIFTY,2026-09-17,loading_state;stale_data;unavailable_data
+/indices/sensex.html,200,https://tradingai.in/indices/sensex.html,SENSEX 50 - AI Market Outlook - TradingAI,yes,index_page,/api/market;/api/price/SENSEX,2026-09-17,loading_state;stale_data
+/today/index.html,200,https://tradingai.in/today/index.html,NIFTY Today — Live Intraday Terminal - TradingAI,yes,today_page,/api/market;/api/price/NIFTY;/api/vix;/api/market-outlook;/api/pcr;/api/oi-top,2026-09-17,loading_state
+/options/pcr.html,200,https://tradingai.in/options/pcr.html,Options PCR & Max Pain - NIFTY BANKNIFTY,yes,options_page,/api/pcr;/api/maxpain;/api/oi-top;/api/price/NIFTY,2026-09-17,loading_state
+/strategies.html,200,https://tradingai.in/strategies.html,Strategies - TradingAI,yes,strategy_page,/api/strategy;/api/market,2026-09-17,loading_state
+/strategy-builder.html,200,https://tradingai.in/strategy-builder.html,Strategy Builder - TradingAI,yes,tool_page,/api/maxpain;/api/pcr,2026-09-17,loading_state
+/tools/backtest.html,200,https://tradingai.in/tools/backtest.html,Backtest — Deterministic Strategy Performance — TradingAI,yes,tool_page,/api/backtest;/api/market-outlooks;/api/walkforward;/api/evidence,2026-09-17,loading_state
+/tools/position-size.html,200,https://tradingai.in/tools/position-size.html,Position Size & Expected Move Calculator - TradingAI,yes,tool_page,,2026-09-17,loading_state
+/about.html,200,https://tradingai.in/about.html,About TradingAI — AI Market Intelligence Platform,yes,info_page,,2026-09-17,
+/contact.html,200,https://tradingai.in/contact.html,Contact TradingAI — AI Market Intelligence Platform,yes,info_page,,2026-09-17,
+/privacy.html,200,https://tradingai.in/privacy.html,Privacy Policy - TradingAI,yes,info_page,,2026-09-17,
+/terms.html,200,https://tradingai.in/terms.html,Terms of Service - TradingAI,yes,info_page,,2026-09-17,
+/disclaimer.html,200,https://tradingai.in/disclaimer.html,Disclaimer - TradingAI,yes,info_page,,2026-09-17,
+/faq.html,404,HTTP Error 404: Not Found,404,yes,error_page,,,status_404;no_canonical;no_title
+/learn/option-greeks.html,200,https://tradingai.in/learn/option-greeks.html,Option Greeks in Plain English - TradingAI,yes,learn_page,,2026-09-17,loading_state
+/mutual-funds/index.html,200,https://tradingai.in/mutual-funds/index.html,Best Mutual Funds in India - Ranked by Risk & Return,yes,info_page,,2026-09-17,loading_state
+/etfs/index.html,404,HTTP Error 404: Not Found,404,yes,error_page,,,status_404
+/sectors/index.html,404,HTTP Error 404: Not Found,404,yes,error_page,,,status_404
+/global/index.html,404,HTTP Error 404: Not Found,404,yes,error_page,,,status_404
+/queries/index.html,200,https://tradingai.in/queries/index.html,Stock Queries Library - TradingAI,yes,info_page,,2026-09-17,loading_state
+/news/index.html,200,https://tradingai.in/news/index.html,Stock Market News Today - TradingAI,yes,info_page,,2026-09-17,loading_state
+/options/pcr-mobile.html,404,HTTP Error 404: Not Found,404,yes,error_page,,,status_404
+/options-mobile.html,200,https://tradingai.in/options-mobile.html,Options Intelligence - TradingAI,yes,options_page,/api/options/state/NIFTY,2026-09-17,loading_state
+/stock.html,200,https://tradingai.in/stock.html,Stock — TradingAI,yes,stock_page,,2026-09-17,loading_state
+/stock-options.html,200,https://tradingai.in/stock-options.html,Stock Options - Positional Structures - TradingAI,yes,options_page,,2026-09-17,loading_state
+/scanner.html,200,https://tradingai.in/scanner.html,Scanner - TradingAI,yes,scanner_page,,2026-09-17,loading_state
+/alerts.html,200,https://tradingai.in/alerts.html,Market Alerts — PCR & OI Signals — TradingAI,yes,alerts_page,,2026-09-17,loading_state
+/portfolio.html,200,https://tradingai.in/portfolio.html,Portfolio Tracker — TradingAI,yes,portfolio_page,/api/portfolio,2026-09-17,loading_state
+/history.html,200,https://tradingai.in/history.html,History - TradingAI,yes,history_page,,2026-09-17,loading_state
+/trade.html,200,https://tradingai.in/trade.html,TradingAI — Intraday Trade Setup,yes,trade_page,/api/market;/api/price/NIFTY;/api/options/state/NIFTY,2026-09-17,loading_state

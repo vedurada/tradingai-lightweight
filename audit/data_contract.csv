@@ -1,0 +1,134 @@
+DATA CONTRACT AUDIT
+Generated: 2026-09-17
+
+=== NIFTY ===
+Source: NSE API (primary) / yfinance (fallback)
+Backend script: data_fetcher_db.py (live), backfill_indices_10y.py (historical)
+Output table: price_1m, price_1d, market_candles, market_snapshots
+Frontend consumer: /indices/nifty.html, /, /market.html, /today/index.html
+Update frequency: 1 minute (live), daily (1d)
+Max allowed age: 5 minutes (live), 24 hours (1d)
+Actual freshness: STALE - 967 minutes old (yfinance fallback)
+Fallback: yfinance NIFTY.NS (delayed)
+Failure behavior: Shows STALE label, data quality flag
+Status: STALE — needs NSE API connection
+
+=== BANKNIFTY ===
+Source: NSE API (primary) / yfinance (fallback)
+Backend script: data_fetcher_db.py (live)
+Output table: price_1m, price_1d, market_snapshots
+Frontend consumer: /indices/banknifty.html, /, /market.html
+Update frequency: 1 minute (live)
+Max allowed age: 5 minutes (live)
+Actual freshness: LIVE (recent deploy refreshed)
+Fallback: yfinance BANKNIFTY.NS
+Status: LIVE
+
+=== SENSEX ===
+Source: yfinance (BSE SENSEX) — NO direct NSE API
+Backend script: data_fetcher_db.py
+Output table: price_1m, price_1d, market_snapshots
+Frontend consumer: /indices/sensex.html, /, /market.html
+Update frequency: 1 minute (if NSE API), 15 min (yfinance)
+Max allowed age: 5 minutes (live)
+Actual freshness: STALE (yfinance, ~14 min old)
+Fallback: yfinance SENSEX.NS (BSE, delayed)
+Status: STALE — yfinance only source
+
+=== FINNIFTY ===
+Source: yfinance (FINNIFTY.NS) — LIMITED data
+Backend script: data_fetcher_db.py
+Output table: price_1d (only)
+Frontend consumer: /indices/finnifty.html
+Update frequency: daily
+Max allowed age: 24 hours
+Actual freshness: STALE (no live data)
+Fallback: None (no reliable source)
+Status: UNAVAILABLE — no reliable live data source for intraday
+
+=== India VIX ===
+Source: NSE API / yfinance
+Backend script: data_fetcher_db.py
+Output table: vix_data
+Frontend consumer: /, /indices/nifty.html, /market.html, /today/index.html
+Update frequency: 1 minute
+Max allowed age: 5 minutes
+Actual freshness: LIVE (recent)
+Fallback: yfinance INDIA VIX INDEX
+Status: LIVE
+
+=== Market Breadth ===
+Source: NSE API / yfinance
+Backend script: data_fetcher_db.py, prerender_snapshot.py
+Output table: index_breadth, market_breadth
+Frontend consumer: /, /market.html
+Update frequency: 1 minute (live), hourly (aggregate)
+Max allowed age: 5 minutes (live)
+Actual freshness: STALE
+Fallback: Prerendered snapshot
+Status: STALE
+
+=== Technical Indicators ===
+Source: Computed from price data
+Backend script: indicators.py (frozen model), market_state.py, daily_page.py
+Output table: indicators, market_regime
+Frontend consumer: /indices/nifty.html, /market.html, /today/index.html
+Update frequency: Every price update (1 min)
+Max allowed age: 5 minutes
+Actual freshness: Depends on price data
+Fallback: Last computed value
+Status: STALE (follows price data)
+
+=== PCR ===
+Source: NSE FO API / prerender
+Backend script: fo_fetcher.py, daily_page.py, prerender_snapshot.py
+Output table: pcr_history, market_snapshots
+Frontend consumer: /options/pcr.html, /indices/nifty.html
+Update frequency: End-of-day (primary), 5-minute (live if available)
+Max allowed age: 1 day (EOD), 5 minutes (live)
+Actual freshness: EOD (limited live data)
+Fallback: Last EOD value
+Status: EOD — clearly labeled on page
+
+=== OI (Open Interest) ===
+Source: NSE FO API
+Backend script: fo_fetcher.py, nse_live_chain.py
+Output table: option_chain, oi_top_strikes, pcr_history
+Frontend consumer: /indices/nifty.html, /options/pcr.html, /options-mobile.html
+Update frequency: 5 minutes (live), EOD (historical)
+Max allowed age: 5 minutes (live)
+Actual freshness: LIVE (recent data in option_chain table)
+Fallback: Last known OI
+Status: LIVE (for NIFTY/BANKNIFTY)
+
+=== AI Outlook ===
+Source: Groq API (LLM) / rule-based (replay)
+Backend script: ai_outlook.py, outlook.py, backfill_outlooks.py
+Output table: ai_outlooks, market_outlooks
+Frontend consumer: /, /indices/nifty.html, /today/index.html, /tools/backtest.html
+Update frequency: Daily (pre-market 9:15 IST, post-close 19:15 IST)
+Max allowed age: 24 hours
+Actual freshness: Recent (26028 historical records)
+Fallback: Rule-based outlook (for replay/historical)
+Status: LIVE (daily refresh)
+
+=== Strategy Data ===
+Source: strategies.py (frozen model), strategies table
+Backend script: daily_page.py, pnl_tracker.py
+Output table: strategies, daily_strategy
+Frontend consumer: /strategies.html, /indices/nifty.html
+Update frequency: Daily
+Max allowed age: 24 hours
+Actual freshness: 25143 records, stale
+Fallback: NO TRADE if insufficient data
+Status: STALE
+
+=== Backtest Data ===
+Source: Historical price data + AI outlook (rule-based replay)
+Backend script: backtest.py, backfill_outlooks.py
+Output table: N/A (computed on demand)
+Frontend consumer: /tools/backtest.html
+Update frequency: On demand (user request)
+Max allowed age: N/A
+Fallback: INSUFFICIENT_HISTORICAL_DATA
+Status: Needs backfill (30-day NIFTY 5m test)

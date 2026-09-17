@@ -1,0 +1,38 @@
+{
+  "instrument": "NIFTY",
+  "timeframe": "5m",
+  "period": "2026-08-08 to 2026-09-15",
+  "trading_days": 27,
+  "candles_analyzed": 1875,
+  "strategy": "EMA CROSS (9/21) \u2014 deterministic intraday",
+  "cost_model": {
+    "brokerage_per_side": 20,
+    "slippage_bps": 0.5,
+    "exchange_fee_pct": 0.03,
+    "gst_pct": 18,
+    "stamp_charge_pct": 0.003
+  },
+  "metrics": {
+    "total_trades": 12,
+    "wins": 2,
+    "losses": 10,
+    "win_rate": 16.67,
+    "avg_win": 14832.9,
+    "avg_loss": -12024.2,
+    "profit_factor": 0.2467,
+    "net_pnl": -90576.15,
+    "max_drawdown": -96186.11,
+    "avg_r": -0.6267,
+    "largest_win": 24055.85,
+    "largest_loss": -12303.17,
+    "best_r": 2.0,
+    "worst_r": -1.0,
+    "no_trade_days": 15
+  },
+  "data_quality": {
+    "good_days": 25,
+    "partial_days": 0,
+    "poor_days": 2
+  },
+  "look_ahead_check": "PASS \u2014 strict chronological processing, no future data accessed"
+}

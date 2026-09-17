@@ -1,0 +1,41 @@
+HOMEPAGE ARCHITECTURE ANALYSIS
+Generated: 2026-09-17
+
+=== CURRENT STATE ===
+Three URLs serve identical homepage content:
+1. https://tradingai.in/ → index.html (200)
+2. https://tradingai.in/index.html → index.html (200)  
+3. https://tradingai.in/home.html → index.html (200)
+
+All three have the same title: "AI Market Outlook - NIFTY, BANKNIFTY, FINNIFTY, SENSEX - TradingAI"
+All three have the same canonical: <link rel="canonical" href="https://tradingai.in/">
+
+=== CANONICAL HOMEPAGE ===
+https://tradingai.in/
+
+The nginx config uses: try_files $uri $uri/ /index.html
+So / serves index.html content correctly.
+/index.html is the physical file.
+/home.html currently 200s with same content (duplicate).
+
+=== REDIRECT RECOMMENDATIONS ===
+1. /home.html → 301 redirect to / (already partially configured but not working)
+2. /index.html → should use canonical tag (already correct in HTML)
+3. No 301 for /index.html needed since canonical is set correctly
+
+=== NGINX FIX NEEDED ===
+Add to server block:
+  location = /home.html { return 301 /; }
+
+This prevents duplicate homepage content.
+
+=== REMOVED/ARCHIVED LEGACY PAGES ===
+None yet - /home.html currently still serves content (not 404)
+
+=== RATIONALE ===
+Having /, /index.html, and /home.html all serve the same content creates:
+1. Duplicate content for SEO (dilutes page rank)
+2. Confusing user experience (different URLs, same content)
+3. Analytics fragmentation (three URLs tracked separately)
+
+The canonical tag / rel="canonical" helps search engines but 301 redirects are stronger.

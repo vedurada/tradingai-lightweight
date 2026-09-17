@@ -1,0 +1,136 @@
+PRODUCTION BEFORE CHANGES AUDIT
+Generated: 2026-09-17
+
+=== VM INFO ===
+Hostname: webserver
+OS: Ubuntu 22.04.5 LTS (Jammy Jellyfish)
+Architecture: x86_64
+CPU: AMD EPYC 7551 32-Core Processor, 2 vCPUs, 2 threads/core
+RAM: 956Mi total, 224Mi free, 569Mi available (50GB disk, 34% used)
+Swap: 2.0Gi
+Python: 3.10.12
+SQLite: 3.37.2
+nginx: 1.18.0
+gunicorn: 23.0.0
+
+=== WEBROOT ===
+Primary: /var/www/tradingai.in/html/
+Project: /opt/tradingai/
+Backend: /opt/tradingai/backend/
+Data: /opt/tradingai/data/
+Logs: /opt/tradingai/logs/
+Database: /opt/tradingai/database/tradingai.db (WAL mode)
+
+=== NGINX CONFIG ===
+Config: /etc/nginx/sites-enabled/tradingai
+- Listens 80 → 301 HTTPS
+- Listens 443 SSL (Let's Encrypt)
+- root /var/www/tradingai.in/html
+- index index.html
+- /indices/market.html → 301 /market.html (ghost-path guard)
+- Static assets: cache 1h
+- /data/: no-cache
+- *.html: no-cache
+- /: try_files $uri $uri/ /index.html
+- API proxied via gunicorn on 127.0.0.1:8000
+
+=== ACTIVE SERVICES ===
+- cron.service (running)
+- nginx.service (running)
+- tradingai-api.service (running, gunicorn 3 workers on 127.0.0.1:8000)
+
+=== CRON JOBS ===
+*/2 * * * * curl /api/health (self-heal)
+0 3 * * * cleanup.sh
+# Market hours (9:30-15:30 IST):
+- 0 3,3 9-15 data_fetcher_db.py (hourly during market)
+- */5 9-15 monitor.py, alert.py, pnl_tracker.py evaluate/close
+- 35 9,15 daily_page.py morning/close
+- */5 9-15 pnl_tracker.py evaluate, close at 15:20
+- 30 18 vm-backup.sh
+- 0 2 1 pnl_tracker.py archive 365
+- 35 18 bhavcopy.py daily/holidays
+- 30 6 backfill_yearly.py
+- 40 18 fo_fetcher.py daily
+- 30 9,19 outlook.py (AI outlook refresh, needs GROQ_API_KEY)
+- */2 self-heal.sh
+- */15 nse_live_chain.py poll
+- 7 etf_fetcher.py, mf_fetcher.py
+- 3 18 sitemap_gen.py
+
+=== DATABASE TABLES ===
+ai_outlooks: 26028 | market_outlooks: 202 | price_1m: 34374 | price_1d: 2646 |
+option_chain: 17580 | vix_data: 1714 | market_candles: 54274 | price_5m: 17400 |
+market_snapshots: 857 | market_change_snapshots: 25613 | indicators: 26016 |
+market_regime: 26016 | scenarios: 25143 | strategies: 25143 | oi_top_strikes: 8603 |
+option_expiries: 27 | index_breadth: 3428 | market_breadth: 857 | fundamentals: 1627 |
+trade_journal: 1596 | trade_journal_events: 320 | user_feedback: 64 |
+symbols: 47 | instruments: 0 | regimes: 0 | portfolio: 0 | history_archive: 0 |
+alerts: 0 | etf_data: 0 | etf_holdings: 0 | daily_strategy: 0 | prices: 0 |
+_ migrations: 2 | sqlite_sequence: 24 | fetch_health: 1 | news: 105 | corporate_actions: 255 |
+mf_returns: 31 | mf_schemes: 14361 | chat_messages: 501 | history: 8 | investment_views: 204 |
+data_status: 48 | stock_options: | alerts:
+
+=== PUBLIC HTML PAGES (webroot) ===
+/, /index.html, /home.html (DUPLICATE), /market.html,
+/indices/nifty.html, /indices/banknifty.html, /indices/finnifty.html, /indices/sensex.html,
+/today/index.html, /options/pcr.html, /strategies.html,
+/strategy-builder.html, /tools/backtest.html, /tools/position-size.html,
+/about.html, /contact.html, /privacy.html, /terms.html, /disclaimer.html,
+/learn/option-greeks.html, /mutual-funds/index.html, /options-mobile.html,
+/stock.html, /stock-options.html, /scanner.html, /alerts.html,
+/portfolio.html, /history.html, /trade.html,
+/faq.html (404), /etfs/index.html (404), /sectors/index.html (404),
+/global/index.html (404), /options/pcr-mobile.html (404)
+
+=== JSON/DATA ENDPOINTS (API) ===
+/api/health, /api/market, /api/price/{SYMBOL}, /api/vix,
+/api/index-breadth, /api/maxpain (500), /api/oi-top, /api/pcr,
+/api/expected-move/{SYMBOL} (500), /api/options/intelligence/{SYMBOL} (500),
+/api/options/state/{SYMBOL}, /api/walkforward/{SYMBOL}/{FROM}/{TO},
+/api/evidence/{SYMBOL}/{DATE}, /api/market-outlook (exists),
+/api/market-outlooks (new), /api/journal, /api/intelligence/*,
+/api/replay/{SYMBOL}/{DATE}, /api/quote/track/{SYMBOL}, /api/quote/telemetry/{SYMBOL},
+/api/portfolio, /api/backtest, /api/strategy, /api/ai-outlook
+
+=== BACKEND SCRIPTS ===
+adaptive_engine.py, aggregate.py, ai_outlook.py, ai_outlook_backtest.py,
+ai_validator.py, alert.py, api_server.py, auth.py, backfill_5m_60d.py,
+backfill_indices_10y.py, backfill_outlooks.py, backfill_yearly.py, backtest.py,
+backtest_engine.py, bhavcopy.py, cache.py, circuit_breaker.py, daily_page.py,
+data_fetcher_db.py, data_normalizer.py, data_quality.py, data_validator.py,
+database.py, db_pool.py, db_schema.py, etf_fetcher.py, expected_range.py,
+expiry.py, fetch_market.py, fo_fetcher.py, generate_data.py, generate_json.py,
+historical_evidence.py, history_logger.py, indicators.py, indicators_versioned.py,
+investment.py, journal.py, logging_config.py, lot_sizes.py, market_change.py,
+market_state.py, mc_backfill.py, mf_fetcher.py, migrate_portfolio_user.py,
+migration.py, migration_phase2.py, monitor.py, monitoring.py, nse_fo.py,
+nse_live_chain.py, nse_source.py, options.py (FROZEN), options_normalizer.py,
+options_state.py, outlook.py (FROZEN), personal_intelligence.py, pnl_tracker.py,
+quote_tracker.py, regime.py (FROZEN), regime_utils.py, replay_engine.py,
+retry.py, scenarios.py (FROZEN), sitemap_gen.py, sql_guard.py, strategies.py (FROZEN),
+trade_lifecycle.py, walkforward.py
+
+=== LEGACY/DUPLICATE FILES ===
+/home.html (duplicate homepage), /options/pcr-mobile.html (404),
+/etfs/index.html (404), /sectors/index.html (404), /global/index.html (404),
+/scanner.html, /alerts.html, /portfolio.html (auth required),
+/history.html, /trade.html, /options-mobile.html
+
+=== EXTERNAL APIs/DATA SOURCES ===
+yfinance (price fallback, 1-min delayed for indices),
+NSE API (live prices, OI, option chain),
+NSE FO API (F&O data),
+Google Finance (via yfinance),
+Groq API (AI outlook generation, requires GROQ_API_KEY),
+Bhavcopy (daily F&O data from NSE)
+
+=== KNOWN ISSUES ===
+1. /api/maxpain → 500 (gunicorn working dir import path issue)
+2. /api/expected-move/{SYMBOL} → 500 (same issue)
+3. /api/options/intelligence/{SYMBOL} → 500 (same issue)
+4. /home.html serves duplicate homepage content
+5. index.html has 3 permanent "Loading…" states
+6. FINNIFTY data is stale/unavailable
+7. sitemap.xml and robots.txt empty
+8. SENSEX price STALE (967+ min old)
