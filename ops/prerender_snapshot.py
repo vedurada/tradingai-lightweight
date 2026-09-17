@@ -76,7 +76,6 @@ def prerender(root: str, api_base: str, dry_run: bool = False) -> str:
         reg = (item.get("regime") or {}).get("regime")
         html = patch_span(html, f"s-{key}-price", fmt_price(q.get("price")))
         html = patch_span(html, f"s-{key}-trend", reg)
-        html = patch_span(html, f"s-{key}-vix", vix_price)
         html = patch_badge(html, names[key], reg)
     html = patch_span(html, "s-vix-price", vix_price)
     html = patch_span(html, "s-vix-change", vix_chg_s)

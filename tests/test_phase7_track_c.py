@@ -109,7 +109,7 @@ class TestDeterministicRenderWhenLLMAbsent:
 class TestFinniftyCard:
     def test_static_card_present(self):
         t = read("index.html")
-        for sid in ("s-finnifty-price", "s-finnifty-trend", "s-finnifty-vix"):
+        for sid in ("s-finnifty-price", "s-finnifty-trend"):
             assert f'id="{sid}"' in t, sid
 
 
