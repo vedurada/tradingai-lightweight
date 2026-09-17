@@ -99,6 +99,32 @@ try {
     <div id="dashboard"></div>
   </div>
 
+  <!-- PHASE 41 — TRADE QUALIFICATION SUMMARY -->
+  <div style="margin-top:1.5rem">
+    <h3>Trade Qualification</h3>
+    <div id="home-qualification">
+      <div class="status">Loading qualification…</div>
+    </div>
+  </div>
+
+  <!-- PHASE 41 — ACTIVE PAPER TRADE + EVIDENCE -->
+  <div style="margin-top:1rem">
+    <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem">
+      <div>
+        <h3>Paper Trade</h3>
+        <div id="home-paper-trade">
+          <div class="status">Loading…</div>
+        </div>
+      </div>
+      <div>
+        <h3>Market Evidence</h3>
+        <div id="home-evidence">
+          <div class="status">Loading…</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- ADVANCE / DECLINE -->
   <div class="card" style="margin-top:1.5rem">
     <h3>ADVANCE / DECLINE</h3>
@@ -305,6 +331,90 @@ document.addEventListener('DOMContentLoaded',function(){
     c.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('button')||e.target.closest('table'))return;location.href=url;});
   });
 });
+</script>
+<script>
+/* Phase 41 — Home page integration */
+(function(){
+  async function fetchAPI(path,method,body){
+    try{
+      var opts={method:method||"GET",headers:{}};
+      if(body){opts.headers["Content-Type"]="application/json";opts.body=JSON.stringify(body);}
+      var r=await fetch("/api"+path+"?_="+Date.now(),opts);
+      if(!r.ok)return null;
+      return await r.json();
+    }catch(e){return null;}
+  }
+  function setEl(id,html){var el=document.getElementById(id);if(el)el.innerHTML=html;}
+  function fmtP(v){return v!=null?v.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";}
+
+  async function loadHomePhase41(){
+    try{
+      var qual=await fetchAPI("/trade-qualification","POST",{instrument:"NIFTY",snapshot:{close:0},evidence:{overall:{}},market_state:{},outlook:{bias:"NEUTRAL",trade_state:"NO_TRADE"}});
+      var qel=document.getElementById("home-qualification");
+      if(qel){
+        if(qual&&qual.data){
+          var qd=qual.data;
+          var st=qd.trade_status||"NO_TRADE";
+          var sc=st==="TRADE"?"#15803d":st==="WAIT"?"#eab308":"#dc2626";
+          var sb=st==="TRADE"?"#dcfce7":st==="WAIT"?"#fef3c7":"#fef2f2";
+          var checks=qd.checks||{};
+          var pCnt=0,tCnt=0;
+          for(var k in checks){tCnt++;if(checks[k].passed)pCnt++;}
+          qel.innerHTML='<div style="border:2px solid '+sc+';border-radius:8px;padding:10px 14px;background:'+sb+'">'+
+            '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+            '<h3 style="margin:0;font-size:0.85rem;font-weight:700">TRADE QUALIFICATION</h3>'+
+            '<span style="padding:3px 10px;border-radius:4px;font-size:0.82rem;font-weight:800;background:'+sc+';color:#fff">'+st.replace(/_/g," ")+'</span></div>'+
+            '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px">'+(qd.reason||"Loading…")+'</div>'+
+            '<div style="font-size:0.78rem;color:#64748b">Checks: '+pCnt+'/'+tCnt+' passed'+(qd.strategy?' | Strategy: <strong>'+qd.strategy+'</strong>':'')+(qd.direction?' | Direction: '+qd.direction:'')+'</div></div>';
+        }else{setEl("home-qualification",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification: Data unavailable</div>');}
+      }
+    }catch(e){setEl("home-qualification",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification unavailable</div>');}
+
+    try{
+      var pt=await fetchAPI("/paper-trades");
+      var ptel=document.getElementById("home-paper-trade");
+      if(ptel){
+        if(pt&&pt.data&&pt.data.count>0){
+          var t=pt.data.trades[0];
+          var pnl=t.pnl;
+          var pnlStr=pnl!=null?(pnl>=0?"+":"")+pnl.toFixed(2):"—";
+          var pnlColor=pnl>0?"#15803d":pnl<0?"#dc2626":"#64748b";
+          ptel.innerHTML='<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;background:#fff;font-size:0.78rem;color:#64748b">'+
+            '<div style="font-weight:700;color:#0f172a;margin-bottom:2px">PAPER TRADE — '+((t.status||"ACTIVE")+'</div>'+
+            '<div>P&L: <span style="color:'+pnlColor+';font-weight:700">'+pnlStr+'</span> | Entry: '+fmtP(t.entry_price)+' | Exit: '+fmtP(t.exit_price)+'</div>'+
+            '<div style="font-size:0.72rem;color:#94a3b8;margin-top:4px">NO BROKER ORDER PLACED</div></div>';
+        }else{ptel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">No active paper trade</div>';}
+      }
+    }catch(e){setEl("home-paper-trade",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Paper trade unavailable</div>');}
+
+    try{
+      var ev=await fetchAPI("/market-evidence/NIFTY");
+      var eel=document.getElementById("home-evidence");
+      if(eel){
+        var evData=(ev&&ev.data)?(ev.data.evidence||ev.data.groups||null):null;
+        if(evData&&evData.groups){
+          var groups=['trend','momentum','structure','volatility','options','confirmation'];
+          var html='<div style="font-size:0.78rem">';
+          for(var i=0;i<groups.length;i++){
+            var g=groups[i];
+            var gd=evData.groups[g];
+            if(gd){
+              var sig=gd.signal||gd.availability||"—";
+              var score=gd.confidence!=null?gd.confidence+"/"+((gd.strength||'WEAK').charAt(0)+(gd.strength||'WEAK').slice(1).toLowerCase()):"—";
+              var col=sig==="BULLISH"?"#15803d":sig==="BEARISH"?"#dc2626":sig==="RANGE"?"#eab308":"#64748b";
+              html+='<div style="padding:2px 0"><span style="font-weight:700;color:'+col+'">'+sig+'</span> <span style="color:#64748b">'+g+' '+score+'</span></div>';
+            }
+          }
+          html+='</div>';
+          eel.innerHTML=html;
+        }else if(ev&&ev.error){eel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence: '+ev.error+'</div>';}
+        else{eel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence: unavailable</div>';}
+      }
+    }catch(e){setEl("home-evidence",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence unavailable</div>');}
+  }
+  document.addEventListener("DOMContentLoaded",loadHomePhase41);
+  setInterval(loadHomePhase41,60000);
+})();
 </script>
 <script>
 (function(){

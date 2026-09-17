@@ -1,0 +1,7 @@
+stage,count,description
+1,1950,Total 5m candles (2026-08-08 to 2026-09-15)
+2,1929,Eligible after warm-up (excluded first 21)
+3,1184,Evidence directional (BULLISH/BEARISH)
+4,1184,Qualified setups (TRADE status)
+5,1184,Paper trades created
+6,1184,Paper trades completed

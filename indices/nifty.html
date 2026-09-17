@@ -140,6 +140,24 @@
     <div class="status">Loading strategy…</div>
   </div>
 
+  <!-- SECTION 7.5: Market Evidence -->
+  <h2>Market Evidence</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="market-evidence">
+    <div class="status">Loading evidence…</div>
+  </div>
+
+  <!-- SECTION 8: Trade Qualification -->
+  <h2>Trade Qualification</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="trade-qualification">
+    <div class="status">Loading qualification…</div>
+  </div>
+
+  <!-- SECTION 9: Paper Trade -->
+  <h2>Paper Trade</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="paper-trade">
+    <div class="status">Loading paper trade…</div>
+  </div>
+
   <!-- Related Tools -->
   <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:1.5rem 0">
     <a href="/strategy-builder.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">🔧 Strategy Builder →</div></a>
@@ -299,6 +317,88 @@ async function loadNiftyData(){
     var ber=document.getElementById('bearish-condition');if(ber&&ber.textContent==='Loading…')ber.textContent='No signal available';ber.style.color='#64748b';
     var nt=document.getElementById('notrade-condition');if(nt&&nt.textContent==='Loading…')nt.textContent='No signal available';nt.style.color='#64748b';
   }
+  /* PHASE 41 — Market Evidence */
+  (async function(){
+    try{
+      var ev=await fetchJSON('market-evidence/NIFTY');
+      var el=document.getElementById('market-evidence');
+      if(!el)return;
+      var evData=(ev&&ev.data)?(ev.data.evidence||ev.data.groups||null):null;
+      if(evData&&evData.groups){
+        var html='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:0.5rem">';
+        var groups=['trend','momentum','structure','volatility','options','confirmation'];
+        for(var i=0;i<groups.length;i++){
+          var g=groups[i];
+          var gd=evData.groups[g];
+          if(gd){
+            var sig=gd.signal||gd.availability||'—';
+            var score=gd.confidence!=null?gd.confidence+'/'+((gd.strength||'WEAK').charAt(0)+(gd.strength||'WEAK').slice(1).toLowerCase()):'—';
+            var col=sig==='BULLISH'?'#15803d':sig==='BEARISH'?'#dc2626':sig==='RANGE'?'#eab308':'#64748b';
+            html+='<div class="card" style="border-left:3px solid '+col+'"><h3 style="font-size:0.75rem;text-transform:capitalize">'+g+'</h3><div style="font-weight:700;color:'+col+';font-size:0.9rem">'+sig+' '+score+'</div></div>';
+          }
+        }
+        html+='</div>';
+        el.innerHTML=html;
+      }else if(ev&&ev.error){el.innerHTML='<div class="status" style="color:#64748b">'+ev.error+'</div>';}
+      else{el.innerHTML='<div class="status">Evidence unavailable</div>';}
+    }catch(e){document.getElementById('market-evidence').innerHTML='<div class="status">Evidence error</div>';}
+  })();
+  /* PHASE 41 — Trade Qualification */
+  (async function(){
+    try{
+      var q=await fetchJSON('trade-qualification','POST',{instrument:'NIFTY',snapshot:{close:0},evidence:{overall:{}},market_state:{},outlook:{bias:'NEUTRAL',trade_state:'NO_TRADE'}});
+      var el=document.getElementById('trade-qualification');
+      if(!el)return;
+      if(q&&q.data){
+        var d=q.data;
+        var st=d.trade_status||'NO_TRADE';
+        var sc=st==='TRADE'?'#15803d':st==='WAIT'?'#eab308':'#dc2626';
+        var sb=st==='TRADE'?'#dcfce7':st==='WAIT'?'#fef3c7':'#fef2f2';
+        var checks=d.checks||{};
+        var pCnt=0,tCnt=0;
+        for(var k in checks){tCnt++;if(checks[k].passed)pCnt++;}
+        var html='<div style="border:2px solid '+sc+';border-radius:8px;padding:10px 14px;background:'+sb+'">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+          '<h3 style="margin:0;font-size:0.85rem;font-weight:700">TRADE QUALIFICATION</h3>'+
+          '<span style="padding:3px 10px;border-radius:4px;font-size:0.82rem;font-weight:800;background:'+sc+';color:#fff">'+st.replace(/_/g,' ')+'</span></div>'+
+          '<div style="font-size:0.75rem;color:#64748b;margin-bottom:6px">'+(d.reason||'Loading…')+'</div>';
+        var checkNames={ai_outlook_present:'AI outlook',ai_bias_valid:'Bias valid',ai_trade_state_valid:'Trade state',evidence_available:'Evidence',evidence_directional:'Directional',bullish_confirmation:'Bullish conf',invalidation_defined:'Invalidation',risk_calculable:'Risk calc',risk_reward_acceptable:'R:R ok',core_data_available:'Data ok'};
+        for(var ck in checkNames){
+          if(checks[ck]){
+            var p=checks[ck].passed;
+            html+='<div style="display:flex;align-items:center;gap:6px;padding:2px 0;font-size:0.75rem;color:'+(p?'#15803d':'#dc2626')+'"><span style="font-weight:700">'+(p?'✓':'✗')+'</span><span>'+checkNames[ck]+'</span></div>';
+          }
+        }
+        html+='<div style="margin-top:6px;font-size:0.78rem;color:#64748b">Strategy: <strong>'+(d.strategy||'—')+'</strong> | Direction: '+(d.direction||'—')+' | '+pCnt+'/'+tCnt+' checks</div></div>';
+        el.innerHTML=html;
+      }else if(q&&q.error){el.innerHTML='<div class="status" style="color:#64748b">'+q.error+'</div>';}
+      else{el.innerHTML='<div class="status">Qualification unavailable</div>';}
+    }catch(e){document.getElementById('trade-qualification').innerHTML='<div class="status">Qualification error</div>';}
+  })();
+  /* PHASE 41 — Paper Trade */
+  (async function(){
+    try{
+      var pt=await fetchJSON('paper-trades');
+      var el=document.getElementById('paper-trade');
+      if(!el)return;
+      if(pt&&pt.data&&pt.data.count>0){
+        var t=pt.data.trades[0];
+        var pnl=t.pnl;
+        var pnlStr=pnl!=null?(pnl>=0?'+':'')+pnl.toFixed(2):'—';
+        var pnlColor=pnl>0?'#15803d':pnl<0?'#dc2626':'#64748b';
+        el.innerHTML='<div style="border:1px solid #e2e8f0;border-radius:8px;padding:10px 14px;background:#fff">'+
+          '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
+          '<h3 style="margin:0;font-size:0.85rem;font-weight:700">PAPER TRADE</h3>'+
+          '<span style="padding:3px 10px;border-radius:4px;font-size:0.78rem;font-weight:700;background:#dbeafe;color:#1e40af">'+(t.status||'ACTIVE')+'</span></div>'+
+          '<div style="font-size:0.78rem;color:#64748b">ID: <span style="font-family:monospace;font-size:0.72rem">'+(t.trade_id||'—')+'</span></div>'+
+          '<div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.78rem;color:#64748b;margin-top:4px">'+
+          '<div>Entry: '+fp(t.entry_price)+'</div><div>Exit: '+fp(t.exit_price)+'</div>'+
+          '<div>P&L: <span style="color:'+pnlColor+';font-weight:700">'+pnlStr+'</span></div>'+
+          '<div>Reason: '+(t.exit_reason||'—')+'</div></div>'+
+          '<div style="font-size:0.72rem;color:#94a3b8;margin-top:6px">PAPER TRADE — NO BROKER ORDER</div></div>';
+      }else{el.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">No active paper trade</div>';}
+    }catch(e){document.getElementById('paper-trade').innerHTML='<div class="status">Paper trade error</div>';}
+  })();
   NIFTY_LOADED=true;
 }
 document.addEventListener('DOMContentLoaded',function(){loadNiftyData();setInterval(loadNiftyData,30000);});
