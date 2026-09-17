@@ -3853,6 +3853,63 @@ def api_outlook_5m_outcome():
     return jsonify({"success": True, "data": {"pending": pending, "evaluated": evaluated}}), 200
 
 
+@app.route("/api/market-evidence/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_market_evidence(symbol):
+    from market_evidence_engine import MarketEvidenceEngine
+    from market_snapshot import get_latest_snapshot, get_snapshot_history
+    engine = MarketEvidenceEngine()
+    snapshot = get_latest_snapshot(symbol)
+    if not snapshot:
+        return jsonify({"success": True, "data": {
+            "instrument": symbol, "evidence": None,
+            "data_state": "NO_DATA", "engine_version": "1.0.0-phase40",
+        }}), 200
+    evidence = engine.evaluate(snapshot, data_state=snapshot.get("data_state", "LIVE"), symbol=symbol)
+    history = get_snapshot_history(symbol, limit=5)
+    return jsonify({"success": True, "data": {
+        "instrument": symbol,
+        "evidence": evidence,
+        "recent_snapshots": history,
+        "engine_version": "1.0.0-phase40",
+    }}), 200
+
+
+@app.route("/api/market-evidence/timeline/<symbol>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_market_evidence_timeline(symbol):
+    from db_schema import DB_PATH
+    import sqlite3, json
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    try:
+        page = request.args.get("page", 1, type=int)
+        per_page = request.args.get("per_page", 20, type=int)
+        offset = (page - 1) * per_page
+        total = conn.execute(
+            "SELECT COUNT(*) FROM market_evidence_5m WHERE instrument=?", (symbol,)
+        ).fetchone()[0]
+        rows = conn.execute(
+            "SELECT * FROM market_evidence_5m WHERE instrument=? ORDER BY candle_timestamp DESC LIMIT ? OFFSET ?",
+            (symbol, per_page, offset),
+        ).fetchall()
+        evolutions = []
+        for r in rows:
+            d = dict(r)
+            for f in ("trend_json", "momentum_json", "structure_json", "volatility_json", "options_json", "confirmation_json", "conflict_json"):
+                try:
+                    d[f] = json.loads(d.get(f) or "{}")
+                except (json.JSONDecodeError, TypeError):
+                    d[f] = {}
+            evolutions.append(d)
+        return jsonify({"success": True, "data": {
+            "instrument": symbol, "evidence": evolutions,
+            "pagination": {"page": page, "per_page": per_page, "total": total},
+        }}), 200
+    finally:
+        conn.close()
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

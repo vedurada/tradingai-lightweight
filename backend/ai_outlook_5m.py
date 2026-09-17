@@ -15,12 +15,16 @@ logger = logging.getLogger("tradingai.ai_outlook_5m")
 
 IST = "Asia/Kolkata"
 
-AI_OUTLOOK_PROMPT = """You are an Indian intraday market analyst. Analyze the current market state and return a structured JSON outlook.
+AI_OUTLOOK_PROMPT = """You are an Indian intraday market analyst. Analyze the structured market evidence below and return a structured JSON outlook.
 
 IMPORTANT: This is an AI-generated market outlook for INFORMATIONAL purposes only. It is NOT a trade recommendation.
 The confidence value is the AI model's assessment, NOT a validated probability.
+NEVER present confidence as "X% probability of profit".
 
-Market state data will be provided below. Return ONLY valid JSON with these fields:
+The AI must NOT invent indicators or market facts. Only use the structured evidence provided.
+If evidence groups show UNAVAILABLE, acknowledge the gap — do NOT fabricate direction.
+
+Market evidence will be provided below. Return ONLY valid JSON with these fields:
 
 {
   "instrument": "NIFTY",
@@ -28,20 +32,26 @@ Market state data will be provided below. Return ONLY valid JSON with these fiel
   "bias": "BULLISH|BEARISH|RANGE|MIXED",
   "confidence": 0-100,
   "market_regime": "BULLISH|BEARISH|RANGE|MIXED",
-  "summary": "1-2 sentence outlook summary",
-  "evidence": ["list of supporting factors"],
+  "summary": "1-2 sentence factual outlook summary",
+  "evidence": ["list of supporting factors from evidence"],
+  "conflicting_evidence": ["list of conflicting evidence if any"],
   "watch_levels": ["key levels to monitor"],
   "confirmation_conditions": ["what would confirm this view"],
   "invalidation_conditions": ["what would invalidate this view"],
   "risk_conditions": ["risk factors"],
   "trade_state": "TRADE|WAIT|NO_TRADE",
   "strategy_context": null,
-  "expected_horizon_minutes": 30
+  "expected_horizon_minutes": 30,
+  "data_availability": {
+    "trend": "LIVE|DELAYED|UNAVAILABLE",
+    "options": "LIVE|DELAYED|UNAVAILABLE"
+  }
 }
 
 Allowed bias values ONLY: BULLISH, BEARISH, RANGE, MIXED. No other labels.
 Allowed trade_state ONLY: TRADE, WAIT, NO_TRADE. The AI must NOT be forced to produce a trade.
 BULLISH market does NOT automatically mean TRADE. RANGE market often means NO_TRADE.
+The AI may return NO_TRADE for ANY bias.
 
 If required inputs are unavailable, return:
 {
@@ -51,16 +61,18 @@ If required inputs are unavailable, return:
   "trade_state": "NO_TRADE",
   "summary": "DATA UNAVAILABLE — required inputs are not available",
   "evidence": [],
+  "conflicting_evidence": [],
   "watch_levels": [],
   "confirmation_conditions": [],
   "invalidation_conditions": [],
   "risk_conditions": ["data unavailable"],
   "trade_state": "NO_TRADE",
   "strategy_context": null,
-  "expected_horizon_minutes": 30
+  "expected_horizon_minutes": 30,
+  "data_availability": {"trend": "UNAVAILABLE", "options": "UNAVAILABLE"}
 }
 
-Market state data:
+Structured market evidence:
 """
 
 
@@ -69,13 +81,21 @@ class AIOutlookGenerator5m:
         self.model = model
         self.engine = AIOutlookEngine()
 
-    def generate(self, symbol: str, market_state: dict, material_changes: list = None) -> dict:
+    def generate(self, symbol: str, market_state: dict, material_changes: list = None, evidence: dict = None) -> dict:
         timestamp = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
         outlook_id = f"OUTLOOK-{symbol}-{timestamp.replace(':', '')}"
 
-        prompt = self._build_prompt(symbol, market_state, material_changes or [])
+        prompt = self._build_prompt(symbol, market_state, material_changes or [], evidence)
         ai_response = self._call_llm(prompt)
         validated = self._validate(ai_response, symbol, timestamp)
+
+        data_state = "LIVE"
+        if evidence and evidence.get("groups"):
+            ds = evidence.get("data_state", "")
+            if ds and ds != "LIVE":
+                data_state = ds
+            elif market_state.get("data_state") and market_state.get("data_state") != "LIVE":
+                data_state = market_state.get("data_state")
 
         result = {
             "outlook_id": outlook_id,
@@ -97,7 +117,9 @@ class AIOutlookGenerator5m:
             "trade_state": validated.get("trade_state", "NO_TRADE"),
             "expected_horizon_minutes": validated.get("expected_horizon_minutes", 30),
             "material_changes": material_changes or [],
-            "data_state": "LIVE" if market_state.get("regime") else "UNAVAILABLE",
+            "evidence_received": evidence is not None,
+            "evidence_summary": self._evidence_summary(evidence) if evidence else None,
+            "data_state": data_state,
         }
 
         logger.info(
@@ -106,10 +128,30 @@ class AIOutlookGenerator5m:
         )
         return result
 
-    def _build_prompt(self, symbol: str, state: dict, changes: list) -> str:
+    def _build_prompt(self, symbol: str, state: dict, changes: list, evidence: dict) -> str:
         state_json = json.dumps(state, indent=2, default=str)
         changes_json = json.dumps(changes, indent=2, default=str) if changes else "[]"
-        return AI_OUTLOOK_PROMPT + f"\n\nCurrent state:\n{state_json}\n\nRecent changes:\n{changes_json}"
+        evidence_json = json.dumps(evidence, indent=2, default=str) if evidence else "{}"
+        return AI_OUTLOOK_PROMPT + f"\n\nCurrent state:\n{state_json}\n\nEvidence:\n{evidence_json}\n\nRecent changes:\n{changes_json}"
+
+    def _evidence_summary(self, evidence: dict) -> dict:
+        if not evidence or not evidence.get("groups"):
+            return None
+        groups = evidence.get("groups", {})
+        overall = evidence.get("overall", {})
+        summary = {
+            "overall_signal": overall.get("overall_signal"),
+            "overall_strength": overall.get("overall_strength"),
+            "conflict_detected": evidence.get("conflict", {}).get("detected", False),
+            "groups": {},
+        }
+        for name, g in groups.items():
+            summary["groups"][name] = {
+                "signal": g.get("signal"),
+                "strength": g.get("strength"),
+                "availability": g.get("availability"),
+            }
+        return summary
 
     def _call_llm(self, prompt: str) -> dict:
         try:

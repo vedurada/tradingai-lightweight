@@ -643,6 +643,32 @@ CREATE TABLE IF NOT EXISTS market_snapshots_5m (
     UNIQUE(symbol, candle_timestamp)
 );
 CREATE INDEX IF NOT EXISTS idx_snap5m_sym_ts ON market_snapshots_5m(symbol, candle_timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS market_evidence_5m (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    evidence_id TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    candle_timestamp TEXT NOT NULL,
+    generated_at TEXT,
+    snapshot_id TEXT,
+    trend_json TEXT DEFAULT '{}',
+    momentum_json TEXT DEFAULT '{}',
+    structure_json TEXT DEFAULT '{}',
+    volatility_json TEXT DEFAULT '{}',
+    options_json TEXT DEFAULT '{}',
+    confirmation_json TEXT DEFAULT '{}',
+    overall_signal TEXT DEFAULT 'INSUFFICIENT_DATA',
+    overall_strength TEXT DEFAULT 'NONE',
+    conflict_json TEXT DEFAULT '{}',
+    data_quality TEXT DEFAULT 'UNAVAILABLE',
+    data_state TEXT DEFAULT 'UNAVAILABLE',
+    engine_version TEXT,
+    created_at TEXT,
+    UNIQUE(evidence_id),
+    UNIQUE(instrument, candle_timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_evidence_sym_ts ON market_evidence_5m(instrument, candle_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_evidence_overall ON market_evidence_5m(overall_signal);
  """
 
 def init_database(db_path: str = DB_PATH) -> None:
