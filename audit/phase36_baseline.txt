@@ -1,0 +1,59 @@
+PHASE 36 BASELINE
+Generated: 2026-09-17
+
+=== Git ===
+Commit: 7abddd86ba6c16a4d260f3ea9e0be2daf9389665
+Message: fix: restore frozen model files + production hardening (43 sections)
+Branch: html/h31-shell-core-pages
+Tag: none (Phase 35 tag: phase35-complete at 2da3107)
+Working tree: Clean (3 untracked files unrelated to work)
+
+=== VM ===
+Hostname: webserver
+OS: Ubuntu 22.04.5 LTS
+Architecture: x86_64
+CPU: AMD EPYC 7551, 2 vCPUs
+RAM: 956Mi (569Mi available)
+Disk: 45GB (34% used)
+
+=== Paths ===
+Webroot: /var/www/tradingai.in/html/
+Project: /opt/tradingai/
+Backend: /opt/tradingai/backend/
+Data: /opt/tradingai/data/
+Database: /opt/tradingai/database/tradingai.db (170MB, WAL mode)
+Logs: /opt/tradingai/logs/
+Config: /opt/tradingai/ops/systemd/tradingai-api.service
+
+=== Services ===
+nginx: active (1.18.0)
+tradingai-api: active (gunicorn 23.0.0, 3 workers on 127.0.0.1:8000)
+cron: active
+4 gunicorn worker processes running
+
+=== Python ===
+Version: 3.10.12
+SQLite: 3.37.2
+
+=== Key Endpoints (pre-Phase 36 baseline) ===
+/api/health → 200 (degraded during market closed)
+/api/price/NIFTY → 200, LIVE
+/api/price/BANKNIFTY → 200, LIVE
+/api/price/SENSEX → 200, LIVE (delayed)
+/api/price/FINNIFTY → 200 (stale/unavailable data)
+/api/maxpain → 500 (pre-existing, gunicorn working dir issue)
+/api/expected-move/NIFTY → 500 (pre-existing)
+/api/market-outlooks → 200 (new, deployed aa45266)
+/api/backtest → 202 (async, returns job_id)
+/api/walkforward → 200
+/api/evidence → 200
+
+=== Working Tree (committed) ===
+3 files staged in commit 7abddd8:
+- backend/outlook.py (reverted to baseline)
+- backend/ai_outlook.py (reverted to baseline)
+- audit/, data/backtest/, backend/backtest_5m.py (new audit files)
+
+=== Phase 35 Baseline (for comparison) ===
+Tests: 1,060 passed / 9 failed (same failures expected)
+FrozenBoundary: PASS
