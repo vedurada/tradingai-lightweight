@@ -13,23 +13,6 @@ from regime_utils import normalize_regime
 logger = logging.getLogger("tradingai.ai")
 
 
-def _safe(v, default=0.0):
-    try:
-        if v is None:
-            return default
-        return float(v)
-    except (TypeError, ValueError):
-        return default
-
-
-def _load_adaptive():
-    try:
-        from adaptive_engine import adaptive_outlook, classify_market_structure
-        return adaptive_outlook, classify_market_structure
-    except Exception:
-        return None, None
-
-
 FREE_PROVIDERS = ["gemini", "groq", "deepseek", "openrouter", "ollama"]
 
 
@@ -52,11 +35,11 @@ class AIOutlookEngine:
 - asset: symbol name
 - date: YYYY-MM-DD
 - market_regime: BULLISH/BEARISH/SIDEWAYS/HIGH_VOLATILITY/UNCONFIRMED
-- directional_bias: BULLISH/MILD_BULLISH/NEUTRAL/MILD_BEARISH/BEARISH/MIXED
-- confidence: 0-100 (MODEL_CONFIDENCE — confidence in current classification, not probability)
+- directional_bias: BULLISH/BEARISH/NEUTRAL
+- confidence: 0-100
 - evidence_strength: 0.0-1.0
 - volatility_classification: HIGH/MEDIUM/LOW
-- market_structure: trending bullish, trending bearish, sideways, sideways-to-bullish, sideways-to-bearish, volatile expansion, transitional, no trade
+- market_structure: UPTREND/DOWNTREND/RANGE
 - market_summary: 1-2 sentence summary
 - trend_analysis: price vs EMAs
 - momentum_analysis: RSI, MACD, volume
@@ -75,15 +58,7 @@ class AIOutlookEngine:
 - invalidation: key invalidation level
 - risk_warnings: list of warnings
 - data_quality: GOOD/PARTIAL/STALE
-- generated_at: ISO timestamp
-- trade_class: DIRECTIONAL/MILD_DIRECTIONAL/NON_DIRECTIONAL/NO_TRADE
-- trade_status: ACTIVE/WAIT/WAIT_FOR_CONFIRMATION/CONDITIONAL/NO_TRADE/WAIT_FOR_PULLBACK
-- entry_trigger: explicit entry condition
-- confirmation_conditions: list of required confirmations
-- target_zone: defined target zone
-- supporting_factors: list of supporting evidence
-- conflicting_factors: list of conflicting evidence
-- interpretation: concise trader-readable narrative consistent with structured output"""
+- generated_at: ISO timestamp"""
 
     def _cached(self, key: str) -> Optional[Any]:
         if key in self._cache and key in self._cache_time:
@@ -96,33 +71,12 @@ class AIOutlookEngine:
         if cached:
             return cached
         prompt = self._build_prompt(symbol, data)
-        adaptive_fn, classify_fn = _load_adaptive()
         if use_llm:
-            llm_outlook = self._call_llm_chain(prompt, data)
-            if llm_outlook:
-                outlook = self._normalize_llm_outlook(symbol, llm_outlook, data)
-            else:
-                outlook = self._adaptive_fallback(data, adaptive_fn)
+            outlook = self._call_llm_chain(prompt, data)
+            outlook = self._normalize_llm_outlook(symbol, outlook, data)
         else:
-            outlook = self._adaptive_fallback(data, adaptive_fn)
-        if classify_fn:
-            try:
-                classified = classify_fn(data)
-                outlook["market_structure"] = classified["market_structure"]
-                outlook["directional_bias"] = classified["directional_bias"]
-                outlook["trade_class"] = classified["trade_class"]
-                outlook["trade_status"] = classified["trade_status"]
-                outlook["entry_trigger"] = classified["entry_trigger"]
-                outlook["confirmation_conditions"] = classified["confirmation_conditions"]
-                outlook["preferred_strategy"] = classified["preferred_strategy"]
-                outlook["invalidation"] = classified["invalidation"]
-                outlook["target_zone"] = classified["target_zone"]
-                outlook["supporting_factors"] = classified["supporting_factors"]
-                outlook["conflicting_factors"] = classified["conflicting_factors"]
-                outlook["adaptive_confidence"] = classified["confidence"]
-            except Exception:
-                pass
-        logger.info(f"AI outlook for {symbol}: structure={outlook.get('market_structure', '?')} bias={outlook.get('directional_bias', '?')} status={outlook.get('trade_status', '?')} conf={outlook.get('confidence', '?')}")
+            outlook = self._rule_based_outlook(data)
+        logger.info(f"AI outlook for {symbol}: {outlook.get('market_regime', '?')} bias={outlook.get('directional_bias', '?')} conf={outlook.get('confidence', '?')}")
         self._cache[f"ai:{symbol}"] = outlook
         return outlook
 
@@ -304,20 +258,8 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
         text = resp["response"]
         return self._parse_json(text)
 
-    def _adaptive_fallback(self, data: dict, adaptive_fn) -> dict:
-        if adaptive_fn:
-            try:
-                result = adaptive_fn(data)
-                result["data_state"] = data.get("data_state", "LIVE")
-                result["data_quality"] = data.get("data_quality", "VALID")
-                result["adaptive"] = True
-                return result
-            except Exception as e:
-                logger.warning(f"Adaptive engine failed: {e}")
-        return self._rule_based_outlook(data)
-
     def _rule_based_outlook(self, data: dict) -> dict:
-        price = _safe(data.get("price", 0))
+        price = data.get("price", 0)
         rsi = data.get("rsi")
         regime = normalize_regime(data.get("regime", "UNCONFIRMED"))
         confidence = 50
@@ -333,10 +275,9 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
         if rsi and (rsi > 70 or rsi < 30):
             confidence += 10
         atr = data.get("atr", 0)
-        vix_val = data.get("vix", 0)
-        vol_class = "HIGH" if (atr > 0 and atr > price * 0.02) or vix_val > 20 else ("MEDIUM" if atr > 0 else "LOW")
+        vix = data.get("vix", 0)
+        vol_class = "HIGH" if (atr > 0 and atr > price * 0.02) or vix > 20 else ("MEDIUM" if atr > 0 else "LOW")
         structure = "UPTREND" if regime == "BULLISH" else ("DOWNTREND" if regime == "BEARISH" else "RANGE")
-        market_structure = {"BULLISH": "TRENDING_BULLISH", "BEARISH": "TRENDING_BEARISH"}.get(regime, "SIDEWAYS")
         no_trade = []
         if regime == "UNKNOWN":
             no_trade.append("Unclear direction")
@@ -344,29 +285,6 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
             no_trade.append("Low liquidity")
         if rsi and 40 < rsi < 60:
             no_trade.append("Conflicting indicators")
-
-        trade_class = "DIRECTIONAL" if regime in ("BULLISH", "BEARISH") else "NON_DIRECTIONAL"
-        trade_status = "ACTIVE" if regime in ("BULLISH", "BEARISH") else "WAIT_FOR_CONFIRMATION"
-        entry_trigger = "Wait for confirmation" if trade_status == "WAIT_FOR_CONFIRMATION" else "Entry active"
-        confirmation = ["Price above VWAP"] if regime == "BULLISH" else ["Price below VWAP"] if regime == "BEARISH" else ["Range confirmation"]
-        invalidation = "Break of key support/resistance"
-        target_zone = "Next resistance zone" if regime == "BULLISH" else "Next support zone" if regime == "BEARISH" else "Range bounds"
-        preferred_strategy = {"BULLISH": "BULL CALL SPREAD", "BEARISH": "BEAR PUT SPREAD"}.get(regime, "IRON_CONDOR")
-
-        supporting = []
-        if regime == "BULLISH":
-            supporting.append(f"Regime: {regime}")
-        elif regime == "BEARISH":
-            supporting.append(f"Regime: {regime}")
-        else:
-            supporting.append("Regime: Neutral/range-bound")
-
-        conflicting = []
-        if regime == "UNKNOWN":
-            conflicting.append("Unclear direction")
-
-        interpretation = f"Market structure: {market_structure}. Directional bias: {directional_bias}. Trade status: {trade_status}. Preferred approach: {preferred_strategy}. {entry_trigger}."
-
         return {
             "asset": data.get("symbol", ""),
             "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
@@ -379,31 +297,20 @@ Return valid JSON with: asset, date, market_regime, directional_bias, confidence
             "market_summary": f"{data.get('symbol', '')} analysis - {regime}",
             "trend_analysis": f"Price vs EMA: {price} vs {data.get('ema20', 'N/A')}",
             "momentum_analysis": f"RSI: {rsi}, MACD: {data.get('macd', 'N/A')}",
-            "volatility_analysis": f"ATR: {atr}, VIX: {vix_val}",
+            "volatility_analysis": f"ATR: {atr}, VIX: {vix}",
             "support_levels": data.get("support_levels", []),
             "resistance_levels": data.get("resistance_levels", []),
             "options_analysis": "DATA UNAVAILABLE" if data.get("options_unavailable") else "Options data available",
             "bullish_scenario": {"trigger": "Price above VWAP", "confirmation": "Break above resistance", "target": "Next resistance", "invalidation": "Below pivot"},
             "bearish_scenario": {"trigger": "Price below VWAP", "confirmation": "Break below support", "target": "Next support", "invalidation": "Above pivot"},
             "range_scenario": {"condition": "Price between support and resistance", "strategy_environment": "Iron Condor", "invalidation": "Breakout/breakdown"},
-            "primary_strategy": {"strategy": preferred_strategy if regime != "UNKNOWN" else "NO TRADE", "market_condition": regime, "expiry": "NEXT_WEEKLY", "legs": [], "entry_trigger": entry_trigger, "maximum_profit": "N/A", "maximum_loss": "N/A", "breakeven": "N/A", "stop_loss": "N/A", "target": target_zone, "adjustment": "N/A", "exit": "N/A"},
+            "primary_strategy": {"strategy": "NO TRADE" if regime == "UNKNOWN" else "Defined-risk spread", "market_condition": regime, "expiry": "NEXT_WEEKLY", "legs": [], "entry_trigger": "Wait for signal", "maximum_profit": "N/A", "maximum_loss": "N/A", "breakeven": "N/A", "stop_loss": "N/A", "target": "N/A", "adjustment": "N/A", "exit": "N/A"},
             "alternative_strategies": [],
             "intraday_plan": [],
             "no_trade_conditions": no_trade if no_trade else ["Unclear direction", "Low liquidity", "Conflicting indicators"],
             "strategy_environment": "Neutral" if regime == "UNKNOWN" else regime,
-            "trade_class": trade_class,
-            "trade_status": trade_status,
-            "entry_trigger": entry_trigger,
-            "confirmation_conditions": confirmation,
-            "invalidation": invalidation,
-            "target_zone": target_zone,
-            "preferred_strategy": preferred_strategy,
-            "supporting_factors": supporting,
-            "conflicting_factors": conflicting,
-            "interpretation": interpretation,
+            "invalidation": "Break of key support/resistance",
             "risk_warnings": ["This is decision-support, not a guaranteed signal"],
             "data_quality": data.get("data_quality", "PARTIAL"),
             "generated_at": datetime.now(timezone.utc).isoformat(),
-            "data_state": data.get("data_state", "LIVE"),
-            "adaptive": False,
         }
