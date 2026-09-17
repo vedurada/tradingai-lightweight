@@ -25,15 +25,15 @@ try {
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Stock Market News Today - TradingAI</title>
-<meta name="description" content="Today's Indian stock market news and stocks in news — headlines tracked per symbol across major publishers.">
-<link rel="canonical" href="https://tradingai.in/news/index.html">
-<meta property="og:title" content="Stock Market News Today - TradingAI">
-<meta property="og:description" content="Stocks in news today — tracked headlines.">
+<title>52-Week High and Low Stocks - TradingAI</title>
+<meta name="description" content="Stocks near 52-week highs and lows — live from one year of daily candles across TradingAI tracked stocks.">
+<link rel="canonical" href="https://tradingai.in/stocks/52-week.html">
+<meta property="og:title" content="52-Week High and Low Stocks - TradingAI">
+<meta property="og:description" content="52-week highs, lows and stocks trading near them — live.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://tradingai.in/news/">
+<meta property="og:url" content="https://tradingai.in/stocks/52-week.html">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Market News","item":"https://tradingai.in/news/"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"52-Week High/Low","item":"https://tradingai.in/stocks/52-week.html"}]}]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
@@ -49,31 +49,21 @@ try {
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
   <div class="card hero" style="margin-bottom:1rem">
-    <h2 style="margin:0">STOCKS &amp; MARKET NEWS</h2>
-    <div class="status">Headlines tracked for TradingAI symbols — latest 50, and corporate actions on file.</div>
+    <h2 style="margin:0">52-WEEK HIGH &amp; LOW</h2>
+    <div class="status">Distance from 52-week extremes across tracked stocks — live from 1 year of daily candles.</div>
   </div>
-  <div class="card" style="margin-bottom:1rem">
-    <h3>Filter by symbol</h3>
-    <div id="news-syms" class="status">Loading symbols…</div>
-  </div>
-  <div id="news-list"><div class="card">Loading news…</div></div>
-  <div class="card"><h3>Corporate actions on file</h3><div id="corp-list"><div class="status">Loading…</div></div></div>
+  <div id="w52-grid"><div class="card">Loading 52-week data…</div></div>
   
+<div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"><div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div><div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div><div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div><div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div></div>
+
   <div class="card content-card" style="margin-top:1.5rem">
     <h3>How to read this page</h3>
-      <p>The news page gathers today's market headlines, pre-market cues and corporate actions from public sources and organises them around the symbols and themes TradingAI tracks. It is the 'what moved, and why' layer that turns raw price data into narrative context.</p>
-      <p>Reading markets well means triangulating the numbers with the news. A big NIFTY gap usually has a catalyst in the morning cues; a stock pinned at its day high often connects to an announcement in the news list. Keep the market dashboard and an index page open alongside this feed so price behaviour and headlines speak to each other.</p>
-      <p>Corporate actions matter mechanically: dividends, splits, buybacks and rights issues change price series and can distort technical signals. We surface these so you can adjust your read of a chart instead of being surprised by an ex-date gap. Our data-quality and regime pages explain how these events are handled in the pipelines.</p>
-      <p>Headlines open to external sources under their own terms, and we do not vouch for their accuracy. The page aggregates public information for research; it is not advice, and reacting to a headline alone is rarely a sound strategy. Verify facts before acting.</p>
+      <p>The 52-week page surfaces which tracked stocks are pressing near their one-year highs or lows — one of the most revealing long-chart relationships a trader can scan. It compares the latest close against the highest high and lowest low of the past year and flags names within a few percent of either extreme.</p>
+      <p>Breakouts toward new highs with increasing volume can confirm institutional interest; stocks hugging their lows may be cheap or may be value traps. Reading both lists together shows you the market's internal momentum — many names near highs on rising tape is healthy, while a broad cluster near lows warrants caution.</p>
+      <p>The page is computed from a year of stored daily candles per stock, so the extremes are exact up to your data's depth. Every row links to the stock's research page, to the scanner for momentum checks, and the Learn hub explains how support and resistance form on long time frames.</p>
+      <p>This is automatically generated research from public market data, not a tip list. 'Near the 52-week high' is information, not a buy signal — trend-following works less well in range-bound regimes. Always verify levels and do your own diligence before trading.</p>
   </div>
-  <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
-    <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
-    <div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
-    <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
-  </div>
-
-<footer><p>Headline source links open externally. Not financial advice.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
+<footer><p>52-week range from stored daily candles (backfilled ~1 year via Yahoo). Not financial advice.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';
@@ -84,28 +74,15 @@ function brandBtn(sym){sym=(sym||'').toUpperCase();var b=BRAND[sym]||{c:'#64748b
 var _last=null;function fmtIST(t){try{if(!t)return null;var d=new Date(t);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
 function setBar(t,ok){var b=document.getElementById('last-updated-bar');if(!b)return;if(t)_last=t;var s=fmtIST(_last);if(ok===false){b.style.color='#dc2626';b.textContent='Update failed — retrying'+(s?(' | Data as of '+s+' IST'):'');return;}b.style.color='';b.textContent=s?('Data as of '+s+' IST'):'Last refreshed: —';}
 function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
-var ALLNEWS=[];var ACTIVE='all';
-function fmtDay(ts){try{var d=new Date(ts.replace(' ','T')+'Z'.replace('Z','') + (ts.includes('T')?'':'T00:00:00'));if(isNaN(d))d=new Date(ts);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric'});return f.format(d);}catch(e){return ts?String(ts).slice(0,10):'—';}}
-async function loadNews(){var list=document.getElementById('news-list');if(!list)return;var data=await fetchJSON('news');if(!data||!data.length){list.innerHTML='<div class="card">No headlines yet today.</div>';setBar(null,false);return;}
-ALLNEWS=data;
-var syms=[];var seen={};
-for(var i=0;i<data.length;i++){var s=data[i].symbol;if(!seen[s]){seen[s]=1;syms.push(s);}}
-var symWrap=document.getElementById('news-syms');if(symWrap){symWrap.innerHTML='<button onclick="filterNews(\'all\')" class="badge badge-green" style="cursor:pointer;border:none;margin:0.2rem">All</button>'+syms.map(function(s){return '<button onclick="filterNews(\''+s+'\')" class="badge badge-blue" style="cursor:pointer;border:none;margin:0.2rem">'+s+'</button>';}).join('');}
-renderNews();setBar(new Date().toISOString(),true);}
-function filterNews(sym){ACTIVE=sym;document.querySelectorAll('#news-syms button').forEach(function(b){b.style.boxShadow=b.textContent===sym||(sym==='all'&&b.textContent==='All')?'0 0 0 2px currentColor':'none';});renderNews();}
-function renderNews(){var list=document.getElementById('news-list');if(!list)return;var rows=ALLNEWS.filter(function(n){return ACTIVE==='all'||n.symbol===ACTIVE;});
-var html='';var lastDay=null;
-for(var i=0;i<rows.length;i++){var it=rows[i];var day=fmtDay(it.timestamp);
-if(day!==lastDay){html+=lastDay?'</div></div>':'';html+='<div class="card" style="margin-bottom:1rem"><h3>'+day+'</h3><div>';lastDay=day;}
-var url=it.url||('https://www.google.com/search?q='+encodeURIComponent(it.headline));
-html+='<div style="padding:0.35rem 0;border-bottom:1px solid #eef2f7"><div style="font-size:0.95rem"><a href="'+url+'" target="_blank" rel="noopener" style="color:inherit;text-decoration:none">'+brandBtn(it.symbol)+' <span style="font-weight:600">'+it.headline+'</span></a></div><div class="status">'+ (it.publisher||'')+' • '+String(it.timestamp).slice(0,16).replace('T',' ')+' IST</div></div>';}
-html+=lastDay?'</div></div>':'';
-list.innerHTML=html||'<div class="card">No headlines for this filter.</div>';}
-async function loadCorp(){var el=document.getElementById('corp-list');if(!el)return;var d=await fetchJSON('actions');if(!d||!d.length){el.innerHTML='<div class="status">No corporate actions on file.</div>';return;}
-var html='<div class="status">'+d.length+' actions tracked (dividends, splits, buybacks).</div>';
-for(var i=0;i<Math.min(d.length,20);i++){var a=d[i];html+='<div style="padding:0.3rem 0;border-bottom:1px solid #eef2f7">'+brandBtn(a.symbol)+' <span class="badge" style="background:#dbeafe20;color:#2563eb">'+(a.action_type||'—')+'</span> <span>'+fmt(a.value)+'</span> <span class="status">'+String(a.timestamp).slice(0,10)+'</span></div>';}
-el.innerHTML=html;}
-document.addEventListener('DOMContentLoaded',function(){loadNews();loadCorp();setInterval(loadNews,300000);});
+async function loadW52(){var grid=document.getElementById('w52-grid');if(!grid)return;var syms=await fetchJSON('symbols');var stocks=(syms||[]).filter(s=>s.type==='stock').map(s=>s.symbol.toLowerCase());var rows=[];
+for(var i=0;i<stocks.length;i++){var d=await fetchJSON('/prices/'+stocks[i].toUpperCase()+'?interval=1d&limit=265');if(!d||!d.length)continue;var hi=null,lo=null,last=null;for(var j=0;j<d.length;j++){var v=d[j];if(v.high!=null&&(hi==null||v.high>hi))hi=v.high;if(v.low!=null&&(lo==null||v.low<lo))lo=v.low;if(v.close!=null)last=v.close;}if(hi==null||lo==null||last==null)continue;
+var offHigh=(hi&&hi>0)?((last-hi)/hi*100):0;var offLow=(lo&&lo>0)?((lo-last)/lo*100):Math.abs(((last-lo)/lo*100));var nearHigh=offHigh>-5;var nearLow=offLow<5;rows.push({sym:stocks[i].toUpperCase(),last:last,hi:hi,lo:lo,offHigh:offHigh,offLow:offLow,nearHigh:nearHigh,nearLow:nearLow});}
+rows.sort(function(a,b){return a.offHigh-b.offHigh;});
+var nearCount=rows.filter(function(r){return r.nearHigh;}).length;
+var html='<div class="card hero" style="margin-bottom:1rem"><h3>Near 52-Week High: '+nearCount+' of '+rows.length+'</h3></div><div class="card" style="overflow-x:auto"><table class="scan-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Symbol</th><th>Price</th><th>52W High</th><th>Off High</th><th>52W Low</th><th>Off Low</th></tr></thead><tbody>';
+for(var ri=0;ri<rows.length;ri++){var r=rows[ri];var c=r.offHigh>-5?'#15803d':(r.offLow<5?'#dc2626':(r.offHigh<0?'#a16207':'#0f172a'));html+='<tr style="cursor:pointer" onclick="location.href=\'/stock.html?symbol='+r.sym+'\'"><td>'+brandBtn(r.sym)+(r.nearHigh?' <span class="badge" style="background:#15803d20;color:#15803d">NEAR HIGH</span>':(r.nearLow?' <span class="badge" style="background:#dc262620;color:#dc2626">NEAR LOW</span>':''))+'</td><td>'+fmt(r.last)+'</td><td>'+fmt(r.hi)+'</td><td style="color:'+c+';font-weight:bold">'+(r.offHigh>=0?'+':'')+r.offHigh.toFixed(1)+'%</td><td>'+fmt(r.lo)+'</td><td>'+r.offLow.toFixed(1)+'%</td></tr>';}
+html+='</tbody></table></div>';grid.innerHTML=html;setBar(new Date().toISOString(),true);}
+document.addEventListener('DOMContentLoaded',function(){loadW52();setInterval(loadW52,300000);});
 </script>
 <script>
 (function(){var BASE='..';

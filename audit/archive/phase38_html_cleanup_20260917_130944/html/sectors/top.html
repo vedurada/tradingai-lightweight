@@ -25,15 +25,15 @@ try {
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Best Mutual Funds in India - Ranked by Returns - TradingAI</title>
-<meta name="description" content="Top Indian mutual funds by 1Y/3Y/5Y returns across large cap, flexi cap, mid cap, small cap, ELSS, index, value and liquid — from daily NAV data.">
-<link rel="canonical" href="https://tradingai.in/mutual-funds/index.html">
-<meta property="og:title" content="Best Mutual Funds in India - TradingAI">
-<meta property="og:description" content="Ranked mutual funds by 1Y/3Y/5Y returns across categories.">
+<title>Sector Performance Today - TradingAI</title>
+<meta name="description" content="Live Indian sector performance by equal-weight proxy basket of tracked stocks — banking, IT, pharma, energy, consumer and more.">
+<link rel="canonical" href="https://tradingai.in/sectors/top.html">
+<meta property="og:title" content="Sector Performance Today - TradingAI">
+<meta property="og:description" content="Live sector moves: banking, IT, pharma, energy, consumer.">
 <meta property="og:type" content="website">
-<meta property="og:url" content="https://tradingai.in/mutual-funds/">
+<meta property="og:url" content="https://tradingai.in/sectors/top.html">
 <meta name="twitter:card" content="summary">
-<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Mutual Funds","item":"https://tradingai.in/mutual-funds/"}]}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Sectors","item":"https://tradingai.in/sectors/top.html"}]}]}</script>
 <link rel="icon" href="/favicon.svg" type="image/svg+xml">
 <link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
 <link rel="apple-touch-icon" href="/apple-touch-icon.svg">
@@ -49,17 +49,17 @@ try {
   <div class="updated-bar"><span id="last-updated-bar"></span></div>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market ticker…</span></div></div>
   <div class="card hero" style="margin-bottom:1rem">
-    <h2 style="margin:0">BEST MUTUAL FUNDS IN INDIA</h2>
-    <div class="status">Annualised returns from daily NAV (AMFI + mfapi). Direct Growth plans. Not a buy recommendation.</div>
+    <h2 style="margin:0">SECTOR PERFORMANCE TODAY</h2>
+    <div class="status">Equal-weight proxy basket of tracked stocks — live change%.</div>
   </div>
-  <div id="mf-grid"><div class="card">Loading mutual funds…</div></div>
+  <div id="sector-grid"><div class="card">Loading sectors…</div></div>
   
   <div class="card content-card" style="margin-top:1.5rem">
     <h3>How to read this page</h3>
-      <p>TradingAI now covers mutual funds as well as equities — this page shows the best direct-growth scheme in each major category based on the latest NAV returns, alongside the number of schemes collected into our database. We use AMFI's published NAVs and deliberately prefer Direct plans, whose lower expense ratios matter enormously to long-term compounding.</p>
-      <p>Reading fund rankings responsibly means understanding the metric. We rank by recent returns so you can see which categories have momentum, but winners rotate — a top-1Y fund is not automatically a great 3Y or 10Y fund. Category first, scheme second: decide which category fits your horizon and risk, then compare schemes within it on returns, standard deviation, expense ratio and fund-manager consistency.</p>
-      <p>Direct plans and regular plans differ mainly in the distribution commission built into the regular plan's expense ratio. For the same fund, direct NAVs are typically a percentage lower in cost, which compounds into meaningfully higher long-term returns. That is why we surface direct-growth options by default.</p>
-      <p>This page is informational, built from public AMFI data that can lag or contain errors. It is not advice to buy or sell any fund, and past returns never guarantee future performance. Always verify the current NAV, expense ratio and exit loads with the AMC or AMFI before investing.</p>
+      <p>The Sectors page ranks market sectors using proxy baskets of the stocks TradingAI tracks, so you can see where strength and weakness are concentrated across Banking, IT, Pharma, Energy, Metals, FMCG, Auto and more. It answers 'which part of the market is working today?' — the essential breadth question behind any index move.</p>
+      <p>Sector leadership rotates. Early in a market rally cyclicals and financials often lead; defensives and FMCG tend to shine in risk-off sessions; IT moves on global tech sentiment and the rupee. Watching which sector is leading — rather than only watching the index level — tells you the character of the current move and how durable it may be.</p>
+      <p>The baskets are approximate proxies we maintain for the stocks we follow, so a sector can only be as accurate as its constituents. Pair the sector view with the scanner to confirm individual names and with the news feed to understand any catalyst behind the rotation.</p>
+      <p>Proxy reflects our coverage, and coverage can lag the exchange's official indices. The page is automatically built from public data for research, not advice. Use it to understand the day's leadership, then investigate the specific names yourself.</p>
   </div>
   <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
     <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
@@ -68,25 +68,41 @@ try {
     <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
   </div>
 
-<footer><p>Returns annualised from NAV history; verify current NAV/expense ratio on AMFI before investing.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
+<footer><p>Proxy baskets use the stocks TradingAI tracks. Not financial advice.</p><p class="status" style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="../sitemap.xml">Sitemap</a></p></footer>
 </main>
 <script>
 const API_BASE='..';
+const SECTORS=[
+ {name:'Banking & Finance',sym:['AXISBANK','ICICIBANK','HDFCBANK','SBIN','KOTAKBANK','BAJFINANCE']},
+ {name:'IT & Tech',sym:['INFY','TCS','HCLTECH','TECHM','WIPRO','MPHASIS','PERSISTENT','COFORGE','TANLA','KPITTECH']},
+ {name:'Pharma & Healthcare',sym:['SUNPHARMA','LUPIN','MAXHEALTH']},
+ {name:'Auto & Industrials',sym:['MARUTI','CUMMINSIND','VOLTAS','DIXON','ASTRAL','CCL']},
+ {name:'Energy & Utilities',sym:['RELIANCE','NTPC','ONGC','COALINDIA','POWERGRID']},
+ {name:'Consumer & Durables',sym:['ITC','TITAN','RADICO','KPRMILL']},
+ {name:'Infra & Realty',sym:['LT','ULTRACEMCO','GODREJPROP']}
+];
+const BRAND={RELIANCE:{c:'#0B4F6C',d:'ril.com'},HDFCBANK:{c:'#004178',d:'hdfcbank.com'},ICICIBANK:{c:'#C41230',d:'icicibank.com'},SBIN:{c:'#22409A',d:'sbi.co.in'},INFY:{c:'#007CC3',d:'infosys.com'},TCS:{c:'#3A55A0',d:'tcs.com'},LT:{c:'#FFCC00',d:'larsentoubro.com'},AXISBANK:{c:'#861F41',d:'axisbank.com'},ADANIENT:{c:'#00A651',d:'adani.com'},BHARTIARTL:{c:'#E4001C',d:'airtel.in'},WIPRO:{c:'#341C75',d:'wipro.com'},HCLTECH:{c:'#0066B3',d:'hcltech.com'},TECHM:{c:'#D71921',d:'techmahindra.com'},MARUTI:{c:'#002A5C',d:'marutisuzuki.com'},ITC:{c:'#2D7D46',d:'itcportal.com'},KOTAKBANK:{c:'#ED1C24',d:'kotak.com'},BAJFINANCE:{c:'#003366',d:'bajajfinserv.in'},SUNPHARMA:{c:'#D50032',d:'sunpharma.com'},TITAN:{c:'#000000',d:'titancompany.in'},ULTRACEMCO:{c:'#FF6600',d:'ultratechcement.com'},POWERGRID:{c:'#007A33',d:'powergrid.in'},NTPC:{c:'#FF0000',d:'ntpc.co.in'},ONGC:{c:'#8B0000',d:'ongcindia.com'},COALINDIA:{c:'#333333',d:'coalindia.in'},PERSISTENT:{c:'#00AEEF',d:'persistent.com'},COFORGE:{c:'#E30613',d:'coforge.com'},MPHASIS:{c:'#002B5C',d:'mphasis.com'},DIXON:{c:'#E30613',d:'dixoninfo.com'},CUMMINSIND:{c:'#000000',d:'cumminsindia.com'},MAXHEALTH:{c:'#0066CC',d:'maxhealthcare.in'},LUPIN:{c:'#00693E',d:'lupin.com'},VOLTAS:{c:'#0072BC',d:'voltas.com'},GODREJPROP:{c:'#E31837',d:'godrejproperties.com'},ASTRAL:{c:'#0066A1',d:'astralpipes.com'},KPITTECH:{c:'#009639',d:'kpit.com'},TANLA:{c:'#FF6F00',d:'tanla.com'},KPRMILL:{c:'#8B4513',d:'kprmilllimited.com'},RADICO:{c:'#800000',d:'radicokhaitan.com'},CCL:{c:'#A52A2A',d:'cclproducts.com'}};
 async function fetchJSON(p){try{const r=await fetch(API_BASE+'/api/'+p);if(!r.ok)throw 0;return await r.json();}catch(e){return null;}}
 function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
-function pct(n,dec){dec=dec||2;return n!=null?((n>0?'+':'')+Number(n).toFixed(dec)+'%'):'—';}
-function cptr(n){return n>=0?'#15803d':'#dc2626';}
+function brandBtn(sym){sym=(sym||'').toUpperCase();var b=BRAND[sym]||{c:'#64748b',d:''};return '<button onclick="location.href=\'/stock.html?symbol='+sym+'\'" style="cursor:pointer;font-weight:700;border:1px solid '+b.c+';background:'+b.c+'15;color:'+b.c+';border-radius:999px;padding:0.2rem 0.6rem;display:inline-flex;align-items:center;gap:0.3rem"><img src="https://www.google.com/s2/favicons?domain='+b.d+'&sz=32" width="14" height="14" style="border-radius:2px" onerror="this.style.display=\'none\'">'+sym+'</button>';}
 var _last=null;function fmtIST(t){try{if(!t)return null;var d=new Date(t);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
 function setBar(t,ok){var b=document.getElementById('last-updated-bar');if(!b)return;if(t)_last=t;var s=fmtIST(_last);if(ok===false){b.style.color='#dc2626';b.textContent='Update failed — retrying'+(s?(' | Data as of '+s+' IST'):'');return;}b.style.color='';b.textContent=s?('Data as of '+s+' IST'):'Last refreshed: —';}
 function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
-async function loadMF(){var grid=document.getElementById('mf-grid');if(!grid)return;var d=await fetchJSON('mf');if(!d||!d.buckets){grid.innerHTML='<div class="card">Mutual fund data unavailable yet — nightly AMFI snapshot may still be running.</div>';setBar(null,false);return;}
-var html='<div class="status" style="margin-bottom:1rem">'+d.total_schemes.toLocaleString('en-IN')+' schemes in AMFI daily snapshot • Direct Growth plans ranked by annualised returns</div>';
-for(var bi=0;bi<d.buckets.length;bi++){var b=d.buckets[bi];html+='<div class="card" style="margin-bottom:1rem"><h3>'+b.category+' <span class="badge" style="background:#dbeafe20;color:#2563eb">'+b.schemes_tracked+' schemes</span></h3>';if(!b.funds||!b.funds.length){html+='<div class="status">Returns pending (weekly refresh).</div>';html+='</div>';continue;}
-html+='<table class="scan-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Fund</th><th>AMC</th><th style="text-align:right">NAV</th><th style="text-align:right">1Y</th><th style="text-align:right">3Y</th><th style="text-align:right">5Y</th></tr></thead><tbody>';
-for(var fi=0;fi<b.funds.length;fi++){var f=b.funds[fi];html+='<tr><td><a href="https://www.google.com/search?q='+encodeURIComponent(f.scheme_name)+'" target="_blank" rel="noopener" style="text-decoration:none;color:inherit" title="Search this fund">'+f.scheme_name.replace(/\s*-\s*Direct Plan - Growth/i,'')+'</a></td><td style="color:#64748b">'+(f.fund_house||'—')+'</td><td style="text-align:right">'+fmt(f.nav)+'</td><td style="text-align:right;color:'+cptr(f.ret_1y||0)+';font-weight:bold">'+pct(f.ret_1y)+'</td><td style="text-align:right;color:'+cptr(f.ret_3y||0)+'">'+pct(f.ret_3y)+'</td><td style="text-align:right;color:'+cptr(f.ret_5y||0)+'">'+pct(f.ret_5y)+'</td></tr>';}
-html+='</tbody></table></div>';}
-grid.innerHTML=html;setBar(new Date().toISOString(),true);}
-document.addEventListener('DOMContentLoaded',function(){loadMF();setInterval(loadMF,600000);});
+async function loadSectors(){var grid=document.getElementById('sector-grid');if(!grid)return;
+var quotes={};
+for(var si=0;si<SECTORS.length;si++){var members=SECTORS[si].sym;for(var mi=0;mi<members.length;mi++){var d=await fetchJSON(members[mi].toLowerCase());if(d&&d.quote&&!quotes[members[mi]])quotes[members[mi]]=d.quote;}}
+var out=[];
+for(var i=0;i<SECTORS.length;i++){var s=SECTORS[i];var parts=[];for(var j=0;j<s.sym.length;j++){var q=quotes[s.sym[j]];if(q&&q.change_pct!=null)parts.push({sym:s.sym[j],chg:q.change_pct});}
+if(!parts.length)continue;
+var avg=parts.reduce(function(t,p){return t+p.chg;},0)/parts.length;
+var best=parts.reduce(function(a,b){return b.chg>a.chg?b:a;});
+var worst=parts.reduce(function(a,b){return b.chg<a.chg?b:a;});
+out.push({name:s.name,avg:avg,n:parts.length,best:best,worst:worst});}
+out.sort(function(a,b){return b.avg-a.avg;});
+var html='<div class="grid">';
+for(var k=0;k<out.length;k++){var sec=out[k];var c=sec.avg>=0?'#15803d':'#dc2626';html+='<div class="card"><h3>'+sec.name+'</h3><div class="price" style="color:'+c+'">'+(sec.avg>=0?'+':'')+sec.avg.toFixed(2)+'%</div><div class="status">'+sec.n+' stocks • Leader '+brandBtn(sec.best.sym)+' '+(sec.best.chg>=0?'+':'')+sec.best.chg.toFixed(1)+'%</div><div class="status">Lagging '+brandBtn(sec.worst.sym)+' '+(sec.worst.chg>=0?'+':'')+sec.worst.chg.toFixed(1)+'%</div></div>';}
+html+='</div><p class="status">Computed live from TradingAI tracked stocks (equal-weight).</p>';grid.innerHTML=html;setBar(new Date().toISOString(),true);}
+document.addEventListener('DOMContentLoaded',function(){loadSectors();setInterval(loadSectors,60000);});
 </script>
 <script>
 (function(){var BASE='..';

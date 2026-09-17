@@ -1,0 +1,254 @@
+[
+  {
+    "source": "alerts.html",
+    "dest": "html/alerts.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "etfs/holdings.html",
+    "dest": "html/etfs/holdings.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "etfs/top-etfs.html",
+    "dest": "html/etfs/top-etfs.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "global/markets.html",
+    "dest": "html/global/markets.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "market/nifty-close-2026-09-13.html",
+    "dest": "html/market/nifty-close-2026-09-13.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/nifty-close-2026-09-15.html",
+    "dest": "html/market/nifty-close-2026-09-15.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/nifty-close-2026-09-16.html",
+    "dest": "html/market/nifty-close-2026-09-16.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/nifty-close-2026-09-17.html",
+    "dest": "html/market/nifty-close-2026-09-17.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/nifty-outlook-2026-09-13.html",
+    "dest": "html/market/nifty-outlook-2026-09-13.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/nifty-outlook-2026-09-15.html",
+    "dest": "html/market/nifty-outlook-2026-09-15.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/nifty-outlook-2026-09-16.html",
+    "dest": "html/market/nifty-outlook-2026-09-16.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/nifty-outlook-2026-09-17.html",
+    "dest": "html/market/nifty-outlook-2026-09-17.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-banknifty-2026-09-15.html",
+    "dest": "html/market/outlook-banknifty-2026-09-15.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-banknifty-2026-09-16.html",
+    "dest": "html/market/outlook-banknifty-2026-09-16.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-banknifty-2026-09-17.html",
+    "dest": "html/market/outlook-banknifty-2026-09-17.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-finnifty-2026-09-15.html",
+    "dest": "html/market/outlook-finnifty-2026-09-15.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-finnifty-2026-09-16.html",
+    "dest": "html/market/outlook-finnifty-2026-09-16.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-finnifty-2026-09-17.html",
+    "dest": "html/market/outlook-finnifty-2026-09-17.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-nifty-2026-09-13.html",
+    "dest": "html/market/outlook-nifty-2026-09-13.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-nifty-2026-09-15.html",
+    "dest": "html/market/outlook-nifty-2026-09-15.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-nifty-2026-09-16.html",
+    "dest": "html/market/outlook-nifty-2026-09-16.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-nifty-2026-09-17.html",
+    "dest": "html/market/outlook-nifty-2026-09-17.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-sensex-2026-09-15.html",
+    "dest": "html/market/outlook-sensex-2026-09-15.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-sensex-2026-09-16.html",
+    "dest": "html/market/outlook-sensex-2026-09-16.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "market/outlook-sensex-2026-09-17.html",
+    "dest": "html/market/outlook-sensex-2026-09-17.html",
+    "action": "ARCHIVE",
+    "reason": "Daily generated market report"
+  },
+  {
+    "source": "mutual-funds/index.html",
+    "dest": "html/mutual-funds/index.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "news/index.html",
+    "dest": "html/news/index.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "portfolio.html",
+    "dest": "html/portfolio.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "queries/index.html",
+    "dest": "html/queries/index.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "scanner.html",
+    "dest": "html/scanner.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "sectors/top.html",
+    "dest": "html/sectors/top.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stock-options.html",
+    "dest": "html/stock-options.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stock.html",
+    "dest": "html/stock.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stocks/52-week.html",
+    "dest": "html/stocks/52-week.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stocks/reliance.html",
+    "dest": "html/stocks/reliance.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stocks/top-large-cap.html",
+    "dest": "html/stocks/top-large-cap.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stocks/top-mid-small.html",
+    "dest": "html/stocks/top-mid-small.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stocks/top-performers.html",
+    "dest": "html/stocks/top-performers.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "stocks/undervalued.html",
+    "dest": "html/stocks/undervalued.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "strategies-guide.html",
+    "dest": "html/strategies-guide.html",
+    "action": "REMOVE",
+    "reason": "Unrelated to intraday index-options trading product"
+  },
+  {
+    "source": "tools/intelligence.html",
+    "dest": "html/tools/intelligence.html",
+    "action": "ARCHIVE",
+    "reason": "Personal intelligence tool - user-specific, not public"
+  },
+  {
+    "source": "tools/journal.html",
+    "dest": "html/tools/journal.html",
+    "action": "ARCHIVE",
+    "reason": "Trade journal - user-specific, not public"
+  }
+]

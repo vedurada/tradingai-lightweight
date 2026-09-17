@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<!-- Google tag (gtag.js) -->
+<script>
+/* Track B: consent defaults precede gtag config. Deny until visitor accepts. */
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+try {
+  var _tai = JSON.parse(window.localStorage.getItem('tai_consent') || 'null');
+  if (!_tai || _tai.state !== 'granted') {
+    gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+  }
+} catch (e) {
+  gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});
+}
+</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Options Strategies Guide - TradingAI</title>
+<meta name="description" content="Definitions of every options strategy used on TradingAI.in">
+<link rel="canonical" href="https://tradingai.in/strategies-guide.html">
+<meta property="og:title" content="Options Strategies Guide - TradingAI">
+<meta property="og:description" content="Plain-English definitions of every option strategy used on TradingAI.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/strategies-guide.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Options Strategies Guide","item":"https://tradingai.in/strategies-guide.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="/favicon.ico" type="image/x-icon">
+<link rel="apple-touch-icon" href="/apple-touch-icon.svg">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script src="/assets/js/keep-scroll.js" defer></script>
+<script src="/assets/js/live-blink.js" defer></script></head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+</header>
+<main>
+  <div class="updated-bar"></div>
+  <h2>Options Strategies Guide</h2>
+  <p class="status">Every strategy below is one TradingAI can assign to NIFTY / BANKNIFTY / FINNIFTY / SENSEX.
+  Stocks always get BUY / HOLD / EXIT instead — never option legs.
+  <a href="/strategy-builder.html">Open the Strategy Builder →</a></p>
+  <div class="card" style="margin-bottom:1rem"><div class="status">Go deeper: <a href="learn/">Free options education</a> · <a href="tools/position-size.html">Position size calculator</a> · <a href="/strategy-builder.html">Strategy Builder</a></div></div>
+  <div id="guide-grid" class="grid"></div>
+  
+  <div class="card content-card" style="margin-top:1.5rem">
+    <h3>How to read this page</h3>
+      <p>This guide is the plain-English reference for every options strategy TradingAI can assign. For each strategy you get the intended outlook, the exact leg structure, maximum profit, maximum loss, the breakeven calculation, and the market condition it suits. It is the dictionary the rest of the site relies on when an index page says 'Bull Put Spread' or 'Iron Condor'.</p>
+      <p>Reading the guide before the strategy pages saves a lot of confusion, because the name alone does not tell you the risk. A 'condor' is usually low-risk but caps your profit; a 'straddle' can profit from a big move either way but bleeds value if the index sits still. Knowing which condition each strategy is designed for lets you compare what the site recommends against what you actually believe the market will do.</p>
+      <p>The last row — NO TRADE — is every bit as important as the rest. 'Conflicting signals, stale data, or extreme VIX' is a legitimate conclusion, because preserving capital is itself a position. A tool that never said 'no trade' would be telling you something false about the quality of the intraday data.</p>
+      <p>This material is educational. Options involve substantial risk and possible loss of the whole premium (and more, for short legs). No structure shown here guarantees a profit. Use the guide to understand the mechanics, then make your own assessment of the market and your situation.</p>
+  </div>
+  <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
+    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
+    <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
+    <div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
+    <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
+  </div>
+
+<footer>
+    <p>TradingAI provides market analysis and decision-support information. Options involve substantial risk, including loss of capital. No strategy guarantees profit. Verify lot sizes and premiums with your broker before trading.</p>
+  <p class="status" style="margin-top:0.6rem"><a href="/about.html">About</a> · <a href="/contact.html">Contact</a> · <a href="/privacy.html">Privacy</a> · <a href="/terms.html">Terms</a> · <a href="/disclaimer.html">Disclaimer</a> · <a href="/sitemap.xml">Sitemap</a></p></footer>
+</main>
+<script>
+var GUIDE=[
+{strategy:"Bull Call Spread",outlook:"Bullish",structure:"BUY ATM CALL + SELL 1-strike OTM CALL",maxProfit:"Strike width − net premium paid",maxLoss:"Net premium paid",breakeven:"Lower strike + net premium",use:"Moderately bullish: cheaper than naked call, capped upside.",risk:"Loss limited to premium; upside capped at higher strike."},
+{strategy:"Bull Put Spread",outlook:"Bullish",structure:"SELL OTM PUT + BUY further OTM PUT",maxProfit:"Net premium received",maxLoss:"Strike width − net premium",breakeven:"Higher strike − net premium",use:"Mildly bullish or neutral; premium credit with defined risk.",risk:"Loss if index falls below lower put strike."},
+{strategy:"Bear Put Spread",outlook:"Bearish",structure:"BUY ATM PUT + SELL 1-strike OTM PUT",maxProfit:"Strike width − net premium paid",maxLoss:"Net premium paid",breakeven:"Higher strike − net premium",use:"Moderately bearish: cheaper than naked put, capped profit.",risk:"Loss limited to premium; profit capped at lower strike."},
+{strategy:"Bear Call Spread",outlook:"Bearish",structure:"SELL OTM CALL + BUY further OTM CALL",maxProfit:"Net premium received",maxLoss:"Strike width − net premium",breakeven:"Lower strike + net premium",use:"Mildly bearish or neutral; premium credit with defined risk.",risk:"Loss if index rallies above higher call strike."},
+{strategy:"Iron Condor",outlook:"Range-bound",structure:"SELL OTM PUT spread + SELL OTM CALL spread (4 legs)",maxProfit:"Total net premium received",maxLoss:"Strike width − net premium",breakeven:"Wings ± net premium",use:"Index stuck between support and resistance into expiry.",risk:"Breakout either side beyond wings causes max loss."},
+{strategy:"Defined-risk premium selling",outlook:"High IV",structure:"SELL OTM PUT spread + SELL OTM CALL spread",maxProfit:"Total net premium received",maxLoss:"Strike width − net premium",breakeven:"Wings ± net premium",use:"Elevated IV with no clear direction; harvest time decay.",risk:"Volatility crush or sharp breakout hurts both sides."},
+{strategy:"Long Straddle",outlook:"Non-directional",structure:"BUY ATM CALL + BUY ATM PUT, same expiry",maxProfit:"Unlimited (either direction)",maxLoss:"Total premium paid",breakeven:"ATM ± total premium",use:"Big move expected, direction unknown (e.g. event day, low VIX).",risk:"Time decay kills both legs if index stays flat."},
+{strategy:"Long Strangle",outlook:"Non-directional",structure:"BUY 1-strike OTM CALL + BUY 1-strike OTM PUT",maxProfit:"Unlimited",maxLoss:"Total premium paid",breakeven:"Each strike ± its premium share",use:"Cheaper than straddle when VIX is normal; needs a bigger move.",risk:"Needs a larger move to profit; exits at 3:20 PM or 2% premium stop."},
+{strategy:"NO TRADE",outlook:"Unclear",structure:"No legs",maxProfit:"—",maxLoss:"—",breakeven:"—",use:"Conflicting signals, stale data, or extreme VIX. Capital protection is a position.",risk:"FOMO — trading anyway."}
+];
+(function(){
+var grid=document.getElementById('guide-grid');if(!grid)return;var html='';
+for(var i=0;i<GUIDE.length;i++){var g=GUIDE[i];
+html+='<div class="card"><h3>'+g.strategy+'</h3><div class="status">Outlook: '+g.outlook+'</div><div class="status"><strong>Structure:</strong> '+g.structure+'</div><div class="status">Max profit: '+g.maxProfit+'</div><div class="status">Max loss: '+g.maxLoss+'</div><div class="status">Breakeven: '+g.breakeven+'</div><div class="status"><strong>Use when:</strong> '+g.use+'</div><div class="status"><strong>Risk:</strong> '+g.risk+'</div></div>';}
+grid.innerHTML=html;
+})();
+function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}setInterval(tickClock,1000);tickClock();
+</script>
+<script src="/assets/js/consent.js" defer></script>
+<script>
+document.addEventListener('DOMContentLoaded',function(){
+  document.querySelectorAll('.card').forEach(function(c){
+    if(c.dataset.clickable==='1'||c.onclick)return;
+    var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
+    var url=null;
+    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/market.html';
+    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/market.html';
+    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/market.html';
+    else if(h.includes('AI MARKET OUTLOOK')||h.includes('AI INTRADAY'))url='/strategies.html';
+    else if(h.includes('OPTIONS INTELLIGENCE')||h.includes('OPTION CHAIN')||h.includes('PCR')||h.includes('IV')||h.includes('MAX PAIN'))url='/strategy-builder.html';
+    else if(h.includes('STRATEG')||h.includes('BUY')||h.includes('SELL')||h.includes('EXIT')||h.includes('HOLD'))url='/strategies.html';
+    else if(h.includes('KEY LEVELS')||h.includes('SUPPORT')||h.includes('RESISTANCE'))url='/scanner.html';
+    else if(h.includes('SCANNER')||h.includes('SCAN'))url='/scanner.html';
+    else if(h.includes('TODAY')||h.includes('TERMINAL'))url='/today/index.html';
+    else if(h.includes('BACKTEST'))url='/tools/backtest.html';
+    else if(h.includes('POSITION')||h.includes('SIZE'))url='/tools/position-size.html';
+    else if(h.includes('HOLDING')||h.includes('ETF'))url='/etfs/top-etfs.html';
+    if(!url)return;
+    c.dataset.clickable='1';c.style.cursor='pointer';
+    c.addEventListener('click',function(e){if(e.target.closest('a')||e.target.closest('button')||e.target.closest('table'))return;location.href=url;});
+  });
+});
+</script>
+</body>
+</html>
+

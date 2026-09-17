@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Trading Intelligence — TradingAI</title>
+<meta name="description" content="Personal trading intelligence from your recorded history: summary, instruments, strategies, regimes, behavior, mistakes, setup adherence.">
+<link rel="canonical" href="https://tradingai.in/tools/intelligence.html">
+<meta property="og:title" content="Trading Intelligence — TradingAI">
+<meta property="og:url" content="https://tradingai.in/tools/intelligence.html">
+<script>window.dataLayer=window.dataLayer||[];function gtag(){dataLayer.push(arguments);}</script>
+<script>gtag('consent', 'default', {ad_storage:'denied', analytics_storage:'denied', ad_user_data:'denied', ad_personalization:'denied'});</script>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script src="/assets/js/consent.js" defer></script>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #0a0e17; color: #e0e6f0; min-height: 100vh; padding: 16px; }
+.header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 24px; }
+.header h1 { font-size: 20px; font-weight: 600; }
+.badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; }
+.badge-consent { background: #1a3a5c; color: #5ba3f5; }
+.badge-insufficient { background: #2a2a0a; color: #fbbf24; }
+.badge-sufficient { background: #0a2a1a; color: #4ade80; }
+.card { background: #111827; border: 1px solid #1e293b; border-radius: 12px; padding: 16px; margin-bottom: 12px; }
+.card h2 { font-size: 15px; font-weight: 600; margin-bottom: 12px; color: #94a3b8; }
+.card h3 { font-size: 13px; font-weight: 500; margin-bottom: 8px; color: #64748b; }
+.card.loading { text-align: center; color: #64748b; padding: 24px; font-size: 13px; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.stat-box { background: #0a0e17; border-radius: 8px; padding: 12px; text-align: center; }
+.stat-value { font-size: 22px; font-weight: 700; }
+.stat-label { font-size: 11px; color: #64748b; margin-top: 2px; }
+.insufficient { background: #1a1a0a; border: 1px solid #3a3a1a; border-radius: 8px; padding: 16px; text-align: center; color: #b8a040; font-size: 14px; }
+.insufficient-icon { font-size: 28px; margin-bottom: 8px; }
+.metric { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
+.metric-label { color: #64748b; }
+.metric-value { font-weight: 500; }
+.section { margin-bottom: 24px; }
+.hidden { display: none; }
+.list-item { background: #0a0e17; border-radius: 8px; padding: 10px 12px; margin-bottom: 6px; font-size: 13px; }
+.list-item .label { color: #64748b; font-size: 11px; }
+.list-item .value { font-weight: 600; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+@media (max-width: 480px) { .stats-grid { grid-template-columns: 1fr 1fr; } .two-col { grid-template-columns: 1fr; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; animation: none !important; } }
+</style>
+</head>
+<body>
+
+<div class="header">
+<h1>Trading Intelligence</h1>
+<span class="badge badge-consent">CONSENT_REQUIRED</span>
+</div>
+
+<div id="summary-section" class="section">
+<div class="card">
+<div class="card loading" id="summary-loading">Loading summary…</div>
+<div id="summary-content" class="hidden"></div>
+</div>
+</div>
+
+<div id="instrument-section" class="section">
+<div class="card">
+<h2>By Instrument</h2>
+<div class="card loading" id="instrument-loading">Loading…</div>
+<div id="instrument-content" class="hidden"></div>
+</div>
+</div>
+
+<div id="strategy-section" class="section">
+<div class="card">
+<h2>By Strategy</h2>
+<div class="card loading" id="strategy-loading">Loading…</div>
+<div id="strategy-content" class="hidden"></div>
+</div>
+</div>
+
+<div id="regime-section" class="section">
+<div class="card">
+<h2>By Regime</h2>
+<div class="card loading" id="regime-loading">Loading…</div>
+<div id="regime-content" class="hidden"></div>
+</div>
+</div>
+
+<div id="behavior-section" class="section">
+<div class="card">
+<h2>Behavior &amp; Risk</h2>
+<div class="card loading" id="behavior-loading">Loading…</div>
+<div id="behavior-content" class="hidden"></div>
+</div>
+</div>
+
+<div id="mistakes-section" class="section">
+<div class="card">
+<h2>Mistakes</h2>
+<div class="card loading" id="mistakes-loading">Loading…</div>
+<div id="mistakes-content" class="hidden"></div>
+</div>
+</div>
+
+<div id="adherence-section" class="section">
+<div class="card">
+<h2>TradingAI Setup Adherence</h2>
+<div class="card loading" id="adherence-loading">Loading…</div>
+<div id="adherence-content" class="hidden"></div>
+</div>
+</div>
+
+<script>
+const API_BASE = '..';
+async function fetchJSON(path, options = {}) {
+  try { const r = await fetch(`${API_BASE}/api/${path}`, options); if (!r.ok) return null; return await r.json(); } catch(e) { return null; }
+}
+
+function dataStatusBadge(status) {
+  if (status === 'SUFFICIENT_DATA') return '<span class="badge badge-sufficient">SUFFICIENT DATA</span>';
+  return '<span class="badge badge-insufficient">INSUFFICIENT DATA</span>';
+}
+
+function insufficientMessage(sample, required) {
+  return `<div class="insufficient">
+    <div class="insufficient-icon">📊</div>
+    <strong>Not enough recorded history</strong><br>
+    <span style="font-size:12px;color:#94a3b8">Need ${required} trades. Have ${sample}.</span>
+  </div>`;
+}
+
+async function loadSummary() {
+  const result = await fetchJSON('intelligence/summary');
+  const loading = document.getElementById('summary-loading');
+  const content = document.getElementById('summary-content');
+  if (!result) { loading.textContent = 'Failed to load summary'; return; }
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  let html = dataStatusBadge(result.data_status) + ' ';
+  html += `<span style="font-size:12px;color:#64748b">Sample: ${result.sample_size}/${result.minimum_required}+</span>`;
+  if (result.data_status === 'SUFFICIENT_DATA') {
+    html += '<div class="stats-grid" style="margin-top:12px">';
+    html += `<div class="stat-box"><div class="stat-value">${result.total_trades}</div><div class="stat-label">Total Trades</div></div>`;
+    html += `<div class="stat-box"><div class="stat-value">${result.win_rate}%</div><div class="stat-label">Win Rate</div></div>`;
+    html += `<div class="stat-box"><div class="stat-value">${result.wins}</div><div class="stat-label">Wins</div></div>`;
+    html += `<div class="stat-box"><div class="stat-value">${result.losses}</div><div class="stat-label">Losses</div></div>`;
+    html += '</div>';
+    if (result.categories) {
+      html += '<div style="margin-top:12px"><h3>By Action</h3>';
+      if (result.categories.by_action) {
+        for (const [k, v] of Object.entries(result.categories.by_action)) {
+          html += `<div class="metric"><span class="metric-label">${k}</span><span class="metric-value">${typeof v === 'object' ? v.trades + ' trades, ' + v.win_rate + '% WR' : v}</span></div>`;
+        }
+      }
+      html += '</div>';
+    }
+  } else {
+    html += insufficientMessage(result.sample_size, result.minimum_required);
+  }
+  content.innerHTML = html;
+}
+
+async function loadInstrument(symbol) {
+  const result = await fetchJSON(`intelligence/instrument/${symbol}`);
+  const loading = document.getElementById('instrument-loading');
+  const content = document.getElementById('instrument-content');
+  if (!result) { loading.textContent = 'Failed to load'; return; }
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  let html = dataStatusBadge(result.data_status) + ' ';
+  html += `<span style="font-size:12px;color:#64748b">${symbol} — Sample: ${result.sample_size}/${result.minimum_required}+</span>`;
+  if (result.data_status === 'SUFFICIENT_DATA') {
+    if (result.by_regime) {
+      html += '<div style="margin-top:12px"><h3>By Regime</h3>';
+      for (const [k, v] of Object.entries(result.by_regime)) {
+        html += `<div class="metric"><span class="metric-label">${k}</span><span class="metric-value">${v.trades} trades, ${v.win_rate}% WR</span></div>`;
+      }
+      html += '</div>';
+    }
+    if (result.by_strategy) {
+      html += '<div style="margin-top:8px"><h3>By Strategy</h3>';
+      for (const [k, v] of Object.entries(result.by_strategy)) {
+        html += `<div class="metric"><span class="metric-label">${k}</span><span class="metric-value">${v.trades} trades, ${v.win_rate}% WR</span></div>`;
+      }
+      html += '</div>';
+    }
+  } else {
+    html += insufficientMessage(result.sample_size, result.minimum_required);
+  }
+  content.innerHTML = html;
+}
+
+async function loadStrategy(name) {
+  const result = await fetchJSON(`intelligence/strategy/${encodeURIComponent(name)}`);
+  const loading = document.getElementById('strategy-loading');
+  const content = document.getElementById('strategy-content');
+  if (!result) { loading.textContent = 'Failed to load'; return; }
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  let html = dataStatusBadge(result.data_status) + ' ';
+  html += `<span style="font-size:12px;color:#64748b">${name} — Sample: ${result.sample_size}/${result.minimum_required}+</span>`;
+  if (result.data_status === 'SUFFICIENT_DATA') {
+    if (result.by_instrument) {
+      html += '<div style="margin-top:12px">';
+      for (const [k, v] of Object.entries(result.by_instrument)) {
+        html += `<div class="list-item"><span class="label">${k}</span> — <span class="value">${v.trades} trades, ${v.win_rate}% WR</span></div>`;
+      }
+      html += '</div>';
+    }
+  } else {
+    html += insufficientMessage(result.sample_size, result.minimum_required);
+  }
+  content.innerHTML = html;
+}
+
+async function loadRegime(regime) {
+  const result = await fetchJSON(`intelligence/regime/${encodeURIComponent(regime)}`);
+  const loading = document.getElementById('regime-loading');
+  const content = document.getElementById('regime-content');
+  if (!result) { loading.textContent = 'Failed to load'; return; }
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  let html = dataStatusBadge(result.data_status) + ' ';
+  html += `<span style="font-size:12px;color:#64748b">${regime} — Sample: ${result.sample_size}/${result.minimum_required}+</span>`;
+  if (result.data_status === 'SUFFICIENT_DATA') {
+    if (result.by_strategy) {
+      html += '<div style="margin-top:12px">';
+      for (const [k, v] of Object.entries(result.by_strategy)) {
+        html += `<div class="list-item"><span class="label">${k}</span> — <span class="value">${v.trades} trades, ${v.win_rate}% WR</span></div>`;
+      }
+      html += '</div>';
+    }
+  } else {
+    html += insufficientMessage(result.sample_size, result.minimum_required);
+  }
+  content.innerHTML = html;
+}
+
+async function loadBehavior() {
+  const result = await fetchJSON('intelligence/behavior');
+  const loading = document.getElementById('behavior-loading');
+  const content = document.getElementById('behavior-content');
+  if (!result) { loading.textContent = 'Failed to load'; return; }
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  let html = dataStatusBadge(result.data_status) + ' ';
+  html += `<span style="font-size:12px;color:#64748b">Sample: ${result.sample_size}/${result.minimum_required}+</span>`;
+  if (result.data_status === 'SUFFICIENT_DATA') {
+    if (result.exit_type_distribution) {
+      html += '<div style="margin-top:12px"><h3>Exit Types</h3>';
+      for (const [k, v] of Object.entries(result.exit_type_distribution)) {
+        html += `<div class="metric"><span class="metric-label">${k}</span><span class="metric-value">${v} trades</span></div>`;
+      }
+      html += '</div>';
+    }
+    if (result.risk_distribution) {
+      html += '<div style="margin-top:8px"><h3>Risk Distribution</h3>';
+      for (const [k, v] of Object.entries(result.risk_distribution)) {
+        html += `<div class="metric"><span class="metric-label">${k}</span><span class="metric-value">${v} trades</span></div>`;
+      }
+      html += '</div>';
+    }
+  } else {
+    html += insufficientMessage(result.sample_size, result.minimum_required);
+  }
+  content.innerHTML = html;
+}
+
+async function loadMistakes() {
+  const result = await fetchJSON('intelligence/mistakes');
+  const loading = document.getElementById('mistakes-loading');
+  const content = document.getElementById('mistakes-content');
+  if (!result) { loading.textContent = 'Failed to load'; return; }
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  let html = dataStatusBadge(result.data_status) + ' ';
+  html += `<span style="font-size:12px;color:#64748b">Sample: ${result.sample_size}/${result.minimum_required}+</span>`;
+  if (result.data_status === 'SUFFICIENT_DATA') {
+    if (result.mistake_patterns && Object.keys(result.mistake_patterns).length > 0) {
+      html += '<div style="margin-top:12px">';
+      for (const [k, v] of Object.entries(result.mistake_patterns)) {
+        html += `<div class="list-item"><span class="label">${k}</span> — <span class="value">${v} occurrences</span></div>`;
+      }
+      html += '</div>';
+    } else {
+      html += '<p style="color:#64748b;font-size:13px;margin-top:8px">No recurring mistake patterns detected.</p>';
+    }
+  } else {
+    html += insufficientMessage(result.sample_size, result.minimum_required);
+  }
+  content.innerHTML = html;
+}
+
+async function loadAdherence() {
+  const result = await fetchJSON('intelligence/setup-adherence');
+  const loading = document.getElementById('adherence-loading');
+  const content = document.getElementById('adherence-content');
+  if (!result) { loading.textContent = 'Failed to load'; return; }
+  loading.classList.add('hidden');
+  content.classList.remove('hidden');
+  let html = dataStatusBadge(result.data_status) + ' ';
+  html += `<span style="font-size:12px;color:#64748b">Sample: ${result.sample_size}/${result.minimum_required}+</span>`;
+  if (result.data_status === 'SUFFICIENT_DATA') {
+    html += '<div style="margin-top:12px" class="stats-grid">';
+    html += `<div class="stat-box"><div class="stat-value">${result.ai_accuracy || '—'}</div><div class="stat-label">AI Accuracy</div></div>`;
+    html += `<div class="stat-box"><div class="stat-value">${result.ai_outcome_correct || '—'}</div><div class="stat-label">Outcome Correct</div></div>`;
+    html += `<div class="stat-box"><div class="stat-value">${result.ai_outcome_wrong || '—'}</div><div class="stat-label">Outcome Wrong</div></div>`;
+    html += '</div>';
+    if (result.traded_when_was_wait !== undefined) {
+      html += '<div style="margin-top:12px"><h3>Compliance</h3>';
+      html += `<div class="metric"><span class="metric-label">Traded when WAIT</span><span class="metric-value">${result.traded_when_was_wait}</span></div>`;
+      html += `<div class="metric"><span class="metric-label">Skipped valid setup</span><span class="metric-value">${result.skipped_valid_setup || '—'}</span></div>`;
+      html += `<div class="metric"><span class="metric-label">Traded after invalidation</span><span class="metric-value">${result.traded_after_invalidation || '—'}</span></div>`;
+      html += '</div>';
+    }
+  } else {
+    html += insufficientMessage(result.sample_size, result.minimum_required);
+  }
+  content.innerHTML = html;
+}
+
+loadSummary();
+loadInstrument('NIFTY');
+loadStrategy('Bull Put Spread');
+loadRegime('RANGING');
+loadBehavior();
+loadMistakes();
+loadAdherence();
+</script>
+</body>
+</html>

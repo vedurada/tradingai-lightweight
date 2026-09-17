@@ -1,0 +1,34 @@
+url,purpose,target_user,primary_data,primary_action,SEO_role,related_pages,keep_reason
+/404.html,Error page,General,Navigation help when page missing,Error recovery,UX,See internal links,Core trading terminal page
+/about.html,About TradingAI,General,Product description,Trust building,Brand SEO,See internal links,Core trading terminal page
+/contact.html,Contact TradingAI,General,Contact information,Communication,Trust,See internal links,Core trading terminal page
+/disclaimer.html,Disclaimer,General,Risk disclaimers,Legal compliance,Legal SEO,See internal links,Core trading terminal page
+/evidence/historical.html,Historical evidence for similar setups,Intraday trader,"Similar setups, outcomes",Evidence review,Evidence SEO,See internal links,Core trading terminal page
+/history.html,Trade history and journal,Intraday trader,"Past trades, outcomes",Trade review,Internal,See internal links,Core trading terminal page
+/history/replay.html,Historical AI replay at 5-minute resolution,Intraday trader,Timestamp-by-timestamp replay,Learning from past,Internal,See internal links,Core trading terminal page
+/index.html,Fast daily market decision summary for intraday index-options traders,Intraday trader,"Current prices, regime, AI outlook, trade status",Quick market check,Homepage SEO,See internal links,Core trading terminal page
+/indices/banknifty.html,Detailed BANKNIFTY instrument analysis with all indicators,Intraday BANKNIFTY options trader,"Price, indicators, outlook, strategy, options",BANKNIFTY analysis,BANKNIFTY intraday outlook SEO,See internal links,Core trading terminal page
+/indices/finnifty.html,FINNIFTY analysis with data availability notice,FINNIFTY trader,"Price, regime (with data state)",FINNIFTY analysis,FINNIFTY SEO,See internal links,Core trading terminal page
+/indices/nifty.html,Detailed NIFTY instrument analysis with all indicators,Intraday NIFTY options trader,"Price, indicators, outlook, strategy, options",NIFTY analysis,NIFTY intraday outlook SEO,See internal links,Core trading terminal page
+/indices/sensex.html,SENSEX market overview (secondary index),Intraday SENSEX options trader,"Price, regime, outlook",SENSEX context,SENSEX SEO,See internal links,Core trading terminal page
+/learn/cpr.html,CPR Strategy: Pivot Range Trading - TradingAI,Intraday index-options trader,Various,View page,Internal,See internal links,Core trading terminal page
+/learn/index.html,Learning hub for options and intraday trading,Learning trader,Links to educational content,Education entry,Learn options SEO,See internal links,Core trading terminal page
+/learn/option-chain.html,How to read an option chain,Learning trader,"Option chain anatomy, bidding",Learn option chain,Option chain education,See internal links,Core trading terminal page
+/learn/option-greeks.html,Option Greeks explained,Learning trader,"Delta, gamma, theta, vega",Learn Greeks,Greeks education,See internal links,Core trading terminal page
+/learn/pcr.html,Put-Call Ratio explained for intraday trading,Learning trader,"PCR interpretation, bullish/bearish",Learn PCR,PCR education,See internal links,Core trading terminal page
+/learn/vwap.html,VWAP explained for intraday trading,Learning trader,"VWAP calculation, usage",Learn VWAP,VWAP education,See internal links,Core trading terminal page
+/market.html,Broader market context for NIFTY/BANKNIFTY traders,Intraday trader,"Indices, VIX, breadth, volatility",Market context before trading,Market context SEO,See internal links,Core trading terminal page
+/market/outlook-nifty-2026-09-13.html,AI NIFTY Market Outlook — 13 September 2026,Intraday index-options trader,Various,View page,Internal,See internal links,Daily generated market report
+/options-mobile.html,Options Intelligence - TradingAI,Intraday index-options trader,Various,View page,Internal,See internal links,Mobile version merged into /options/pcr.html
+/options/pcr.html,"Options intelligence: PCR, OI, expected move, max pain",Intraday index-options trader,"PCR, OI, expiry, strikes, expected move",Options positioning,"NIFTY PCR SEO, options analysis",See internal links,Core trading terminal page
+/privacy.html,Privacy policy,General,Data privacy practices,Legal compliance,Legal SEO,See internal links,Core trading terminal page
+/strategies.html,Strategy decision support organized by market condition,Intraday options trader,Conditional strategies by regime,Strategy selection,Options strategy SEO,See internal links,Core trading terminal page
+/strategy-builder.html,Interactive options structure calculator,Intraday options trader,"Strikes, premiums, payoff, Greeks",Strategy calculation,Options calculator SEO,See internal links,Core trading terminal page
+/terms.html,Terms of service,General,Usage terms,Legal compliance,Legal SEO,See internal links,Core trading terminal page
+/today/index.html,Deep daily trading terminal with all market data and AI outlook,Intraday trader,"NIFTY/BANKNIFTY details, AI outlook, strategy, options",Daily trading workflow,High-intent trader search,See internal links,Core trading terminal page
+/tools/backtest.html,Historical backtest results and evidence,Research/validation,"Trades, win rate, P&L, equity curve",Evidence review,Backtest SEO,See internal links,Core trading terminal page
+/tools/intelligence.html,Trading Intelligence — TradingAI,Intraday index-options trader,Various,View page,Internal,See internal links,"Personal intelligence tool - user-specific, not public"
+/tools/journal.html,Trade Journal — TradingAI,Intraday index-options trader,Various,View page,Internal,See internal links,"Trade journal - user-specific, not public"
+/tools/position-size.html,Position sizing and risk calculator,Intraday options trader,"Capital, risk%, lot size, max risk",Risk management,Position sizing SEO,See internal links,Core trading terminal page
+/tools/walkforward.html,Walk-forward validation results,Researcher,"Validation metrics, coverage",Strategy validation,Research SEO,See internal links,Core trading terminal page
+/trade.html,Intraday trade setup detail,Intraday trader,"Entry, stop, target, strategy",Trade execution,Trade setup SEO,See internal links,Core trading terminal page
