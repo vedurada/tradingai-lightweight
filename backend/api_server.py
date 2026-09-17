@@ -1330,7 +1330,7 @@ def max_pain():
             "SELECT DISTINCT expiry FROM option_chain WHERE symbol=? ORDER BY expiry", (sym,)
         ).fetchall()
         sym_data = []
-        from backend.options import OptionsEngine
+        from options import OptionsEngine
         engine = OptionsEngine()
         for e in expiries:
             expiry = e["expiry"]
@@ -1402,7 +1402,7 @@ def oi_concentration(symbol):
         ).fetchall()
 
         contracts = [dict(r) for r in rows]
-        from backend.options import OptionsEngine
+        from options import OptionsEngine
         engine = OptionsEngine()
         concentration = engine.compute_oi_concentration(contracts)
 
@@ -1440,7 +1440,7 @@ def expected_move(symbol):
             (symbol, expiry)
         ).fetchall()
         contracts = [dict(r) for r in rows]
-        from backend.options import OptionsEngine
+        from options import OptionsEngine
         engine = OptionsEngine()
         result = engine.compute_expected_move(contracts, spot or 0, expiry)
         out["expected_moves"][expiry] = result["expected_move"]
@@ -1455,7 +1455,7 @@ def options_intelligence(symbol):
     symbol = symbol.upper()
     conn = get_db()
     try:
-        from backend.options import OptionsEngine
+        from options import OptionsEngine
         engine = OptionsEngine()
 
         spot = None
@@ -2819,7 +2819,7 @@ def trade_setup(symbol):
                 "SELECT strike, option_type, open_interest, implied_volatility FROM option_chain WHERE symbol=? ORDER BY strike",
                 (symbol,)).fetchall()
             if rows:
-                from backend.options_normalizer import build_options_state
+                from options_normalizer import build_options_state
                 chain = [dict(r) for r in rows]
                 options_state = build_options_state(symbol, chain, spot)
         except Exception:

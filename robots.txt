@@ -2,5 +2,4 @@ User-agent: *
 Allow: /
 Disallow: /api/
 Disallow: /data/
-
 Sitemap: https://tradingai.in/sitemap.xml

@@ -1,0 +1,11 @@
+url,reason,referenced_by,should_exist,should_redirect,should_remain_404,canonical_target
+/faq.html,"No FAQ page created; no reference in codebase navigation or content","No references in any HTML/JS file",no,yes,/about.html or content page,/about.html (content about tradingAI)
+/etfs/index.html,"ETFs section has /etfs/top-etfs.html and /etfs/holdings.html instead of index.html","No references in navigation",no,yes,/etfs/top-etfs.html,/etfs/top-etfs.html
+/sectors/index.html,"Sectors section has /sectors/top.html instead of index.html","No references in navigation",no,yes,/sectors/top.html,/sectors/top.html
+/global/index.html,"Global section has /global/markets.html instead of index.html","No references in navigation",no,yes,/global/markets.html,/global/markets.html
+/options/pcr-mobile.html,"Mobile PCR page was planned but not built; desktop /options/pcr.html exists","No references in navigation",no,yes,/options/pcr.html,/options/pcr.html
+/history/index.html,"History section has /history.html instead of index.html","No references in navigation",no,yes,/history.html,/history.html
+/about/index.html,"About page exists as /about.html instead of /about/index.html","No references in navigation",no,yes,/about.html,/about.html
+/contact/index.html,"Contact page exists as /contact.html instead of /contact/index.html","No references in navigation",no,yes,/contact.html,/contact.html
+/pricing.html,"Pricing page not created; not a trading feature for this platform","No references in navigation",no,no,yes,N/A
+/search.html,"Search page not implemented; no search functionality exists","No references in navigation",no,no,yes,N/A
