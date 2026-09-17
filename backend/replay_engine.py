@@ -325,4 +325,3 @@ def replay_day(symbol: str, date: str, candles: list[dict],
 
 if __name__ == "__main__":
     result = run_replay()
-    print(json.dumps(result, indent=2, default=str))
