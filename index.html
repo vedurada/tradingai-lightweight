@@ -95,6 +95,7 @@ try {
       </div>
     </div>
   </div>
+  <div style="font-size:0.72rem;color:#94a3b8;margin-top:0.3rem;margin-bottom:0.3rem">Data as of <span id="home-data-age">Checking…</span> IST · All data on this page is 1 minute delayed</div>
 
   <!-- AI MARKET OUTLOOK -->
   <div style="margin-top:1.5rem">
@@ -187,6 +188,8 @@ document.addEventListener('DOMContentLoaded',function(){
   function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
   setInterval(tickClock,1000);tickClock();
   setLastUpdated(null,true);
+  var _daEl=document.getElementById('home-data-age');
+  if(_daEl){var _d=new Date(new Date().toLocaleString('en-IN',{timeZone:'Asia/Kolkata'}));var _dd=String(_d.getDate()).padStart(2,'0');var _mo=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][_d.getMonth()];_daEl.textContent=_dd+' '+_mo+' '+_d.getFullYear();}
 
   (function(){fetch('/api/market').then(function(r){return r.json();}).then(function(d){if(d&&d.last_updated){var bar=document.getElementById('last-updated-bar');if(bar){bar.textContent='Data as of '+d.last_updated.slice(0,10)+' IST';}}}).catch(function(){})})();
 
