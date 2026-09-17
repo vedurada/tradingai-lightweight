@@ -352,6 +352,8 @@ class TradeQualificationEngine:
         result.reward_points = reward_points
         result.risk_reward = rr
 
+        _check(result, "risk_calculable", True, f"entry={entry_val}, stop={stop_val}, R:R={rr:.2f}")
+
         min_rr = self.risk_config.get("min_risk_reward", 1.5)
         _check(result, "risk_reward_acceptable", rr >= min_rr,
                f"R:R={rr:.2f}, min={min_rr}")
