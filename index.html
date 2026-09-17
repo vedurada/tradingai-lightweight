@@ -365,7 +365,7 @@ document.addEventListener('DOMContentLoaded',function(){
             '<h3 style="margin:0;font-size:0.85rem;font-weight:700">TRADE QUALIFICATION</h3>'+
             '<span style="padding:3px 10px;border-radius:4px;font-size:0.82rem;font-weight:800;background:'+sc+';color:#fff">'+st.replace(/_/g," ")+'</span></div>'+
             '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px">'+(qd.reason||"Loading…")+'</div>'+
-            '<div style="font-size:0.78rem;color:#64748b">Checks: '+pCnt+'/'+tCnt+' passed'+(qd.strategy?' | Strategy: <strong>'+qd.strategy+'</strong>':'')+(qd.direction?' | Direction: '+qd.direction:'')+'</div></div>';
+            '        <div style="font-size:0.78rem;color:#64748b">Checks: '+pCnt+'/'+tCnt+' passed'+(qd.strategy?' | Strategy: <strong>'+qd.strategy+'</strong>':'')+(qd.direction?' | Direction: '+qd.direction:'')+'</div></div>';
         }else{setEl("home-qualification",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification: Data unavailable</div>');}
       }
     }catch(e){setEl("home-qualification",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification unavailable</div>');}
