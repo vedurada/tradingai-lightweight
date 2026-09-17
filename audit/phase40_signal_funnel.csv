@@ -1,0 +1,3 @@
+timestamp,instrument,candle_valid,snapshot_stored,evidence_generated,directional_evidence,ai_outlook_generated,strategy_condition_met,trade_condition_met,skip_reason
+# Signal funnel per candle — populated during historical replay
+# Total candles → valid candles → evidence → directional → AI → strategy → trade

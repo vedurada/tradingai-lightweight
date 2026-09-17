@@ -1,0 +1,3 @@
+timestamp,instrument,signal,strength,availability,conflict,trend_signal,momentum_signal,structure_signal,volatility_signal,options_signal,confirmation_signal
+# Evidence distribution per candle — populated during historical replay
+# Each row = one 5-minute candle evaluation
