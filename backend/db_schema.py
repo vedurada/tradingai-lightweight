@@ -669,7 +669,67 @@ CREATE TABLE IF NOT EXISTS market_evidence_5m (
 );
 CREATE INDEX IF NOT EXISTS idx_evidence_sym_ts ON market_evidence_5m(instrument, candle_timestamp DESC);
 CREATE INDEX IF NOT EXISTS idx_evidence_overall ON market_evidence_5m(overall_signal);
+
+CREATE TABLE IF NOT EXISTS paper_trades (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trade_id TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    outlook_id TEXT,
+    evidence_id TEXT,
+    direction TEXT,
+    strategy TEXT,
+    status TEXT DEFAULT 'WAITING_ENTRY',
+    setup_fingerprint TEXT,
+    qualification_timestamp TEXT,
+    entry_condition TEXT,
+    invalidation TEXT,
+    entry_timestamp TEXT,
+    entry_underlying_price REAL,
+    entry_price REAL,
+    entry_option_price REAL,
+    stop_price REAL,
+    target_price REAL,
+    exit_timestamp TEXT,
+    exit_underlying_price REAL,
+    exit_option_price REAL,
+    exit_price REAL,
+    exit_reason TEXT,
+    quantity INTEGER DEFAULT 1,
+    max_loss REAL,
+    max_profit REAL,
+    risk_reward REAL,
+    pnl REAL,
+    pnl_percent REAL,
+    holding_minutes REAL,
+    holding_seconds REAL,
+    outcome TEXT,
+    data_quality TEXT DEFAULT 'LIVE',
+    option_legs_json TEXT DEFAULT '[]',
+    engine_version TEXT,
+    created_at TEXT,
+    updated_at TEXT,
+    UNIQUE(trade_id),
+    UNIQUE(setup_fingerprint)
+);
+CREATE INDEX IF NOT EXISTS idx_paper_sym ON paper_trades(instrument, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_paper_status ON paper_trades(status);
+CREATE INDEX IF NOT EXISTS idx_paper_outlook ON paper_trades(outlook_id);
+
+CREATE TABLE IF NOT EXISTS paper_trade_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trade_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    event TEXT NOT NULL,
+    reason TEXT,
+    price REAL,
+    instrument TEXT,
+    engine_version TEXT,
+    created_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_pte_trade ON paper_trade_events(trade_id);
+CREATE INDEX IF NOT EXISTS idx_pte_ts ON paper_trade_events(timestamp DESC);
  """
+
 
 def init_database(db_path: str = DB_PATH) -> None:
     os.makedirs(os.path.dirname(db_path), exist_ok=True)

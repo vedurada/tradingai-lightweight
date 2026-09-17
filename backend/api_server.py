@@ -3910,6 +3910,136 @@ def api_market_evidence_timeline(symbol):
         conn.close()
 
 
+@app.route("/api/trade-qualification", methods=["POST"])
+@limiter.limit("30/minute")
+def api_trade_qualification():
+    data = request.get_json(silent=True) or {}
+    instrument = data.get("instrument", "NIFTY")
+    snapshot = data.get("snapshot")
+    evidence = data.get("evidence")
+    market_state = data.get("market_state")
+    outlook = data.get("outlook")
+    options_data = data.get("options_data")
+    active_trade = data.get("active_trade")
+    risk_config = data.get("risk_config")
+
+    from trade_qualification_engine import qualify_trade
+    result = qualify_trade(
+        instrument, snapshot, evidence, market_state, outlook,
+        options_data=options_data, active_trade=active_trade, risk_config=risk_config,
+    )
+    return jsonify({"success": True, "data": result}), 200
+
+
+@app.route("/api/paper-trades", methods=["GET"])
+@limiter.limit("30/minute")
+def api_paper_trades():
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    instrument = request.args.get("instrument")
+    trades = engine.get_all_trades(instrument=instrument, limit=100)
+    return jsonify({"success": True, "data": {"trades": trades, "count": len(trades)}}), 200
+
+
+@app.route("/api/paper-trades/active", methods=["GET"])
+@limiter.limit("30/minute")
+def api_paper_trades_active():
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    instrument = request.args.get("instrument")
+    trades = engine.get_active_trades(instrument=instrument)
+    return jsonify({"success": True, "data": {"active_trades": trades, "count": len(trades)}}), 200
+
+
+@app.route("/api/paper-trades/<trade_id>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_paper_trade(trade_id):
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    trade = engine.get_trade(trade_id)
+    if not trade:
+        return jsonify({"success": False, "error": "Trade not found"}), 404
+    return jsonify({"success": True, "data": trade}), 200
+
+
+@app.route("/api/paper-trades/<trade_id>/events", methods=["GET"])
+@limiter.limit("30/minute")
+def api_paper_trade_events(trade_id):
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    events = engine.get_trade_events(trade_id)
+    return jsonify({"success": True, "data": {"events": events}}), 200
+
+
+@app.route("/api/paper-trades/timeline/<instrument>", methods=["GET"])
+@limiter.limit("30/minute")
+def api_paper_trade_timeline(instrument):
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    page = request.args.get("page", 1, type=int)
+    per_page = request.args.get("per_page", 20, type=int)
+    offset = (page - 1) * per_page
+    conn = sqlite3.connect(engine.db_path)
+    conn.row_factory = sqlite3.Row
+    try:
+        total = conn.execute(
+            "SELECT COUNT(*) FROM paper_trades WHERE instrument=?", (instrument,)
+        ).fetchone()[0]
+        rows = conn.execute(
+            "SELECT * FROM paper_trades WHERE instrument=? ORDER BY created_at DESC LIMIT ? OFFSET ?",
+            (instrument, per_page, offset),
+        ).fetchall()
+        trades = [dict(r) for r in rows]
+        return jsonify({"success": True, "data": {
+            "instrument": instrument, "trades": trades,
+            "pagination": {"page": page, "per_page": per_page, "total": total},
+        }}), 200
+    finally:
+        conn.close()
+
+
+@app.route("/api/paper-trades/qualify", methods=["POST"])
+@limiter.limit("30/minute")
+def api_paper_trade_qualify():
+    data = request.get_json(silent=True) or {}
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    qualification = data.get("qualification")
+    outlook = data.get("outlook")
+    snapshot = data.get("snapshot")
+    evidence = data.get("evidence")
+    options_data = data.get("options_data")
+    result = engine.qualify_trade(qualification, outlook, snapshot, evidence, options_data)
+    return jsonify({"success": True, "data": result}), 200
+
+
+@app.route("/api/paper-trades/entry", methods=["POST"])
+@limiter.limit("30/minute")
+def api_paper_trade_entry():
+    data = request.get_json(silent=True) or {}
+    trade_id = data.get("trade_id")
+    entry_price = data.get("entry_price")
+    timestamp = data.get("timestamp")
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    result = engine.trigger_entry(trade_id, entry_price, timestamp)
+    return jsonify({"success": result, "trade_id": trade_id}), 200 if result else 400
+
+
+@app.route("/api/paper-trades/exit", methods=["POST"])
+@limiter.limit("30/minute")
+def api_paper_trade_exit():
+    data = request.get_json(silent=True) or {}
+    trade_id = data.get("trade_id")
+    exit_reason = data.get("exit_reason")
+    exit_price = data.get("exit_price")
+    timestamp = data.get("timestamp")
+    from paper_trade_engine import PaperTradeEngine
+    engine = PaperTradeEngine()
+    result = engine.trigger_exit(trade_id, exit_reason, exit_price, timestamp)
+    return jsonify({"success": result, "trade_id": trade_id}), 200 if result else 400
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)
