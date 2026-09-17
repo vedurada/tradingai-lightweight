@@ -198,6 +198,7 @@
     var change = quote ? quote.change : null;
     var changePct = quote ? quote.change_pct : null;
     var verdict = outlook.decision ? outlook.decision.verdict : '—';
+    if (verdict === 'WAIT') verdict = 'NO TRADE';
     var vColor = verdict === 'TRADE' ? '#15803d' : '#a16207';
     var pColor = (change || 0) >= 0 ? '#22c55e' : '#ef4444';
     return '<div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:1rem;margin-bottom:1rem">' +
@@ -406,6 +407,7 @@
     var d = outlook.decision || {};
     var strats = outlook.strategies || [];
     var verdict = d.verdict || '—';
+    if (verdict === 'WAIT') verdict = 'NO TRADE';
     var regime = outlook.regime ? (outlook.regime.primary || '') : '';
     var vColor = verdict === 'TRADE' ? '#15803d' : '#a16207';
     if (regime.toUpperCase().includes('UNKNOWN')) {
