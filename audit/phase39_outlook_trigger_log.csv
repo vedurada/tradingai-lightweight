@@ -1,0 +1,3 @@
+timestamp,instrument,previous_outlook_id,current_regime,previous_regime,state_change,trigger_reason,ai_generation_required,ai_generation_result
+# Template populated during live operation
+# Each row = one 5-minute candle evaluation per symbol

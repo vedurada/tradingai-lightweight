@@ -1,0 +1,3 @@
+outlook_id,instrument,candle_timestamp,bias,confidence,market_regime,trade_state,material_change,trigger_reason,generation_result
+# Template populated during live operation
+# Each row = one AI outlook generation event

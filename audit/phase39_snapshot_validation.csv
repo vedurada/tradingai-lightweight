@@ -1,0 +1,3 @@
+symbol,candle_timestamp,has_snapshot,has_indicators,has_regime,trend_state,volatility_state,price_vs_vwap,data_state
+# Template populated during live operation
+# Each row = one 5-minute candle snapshot

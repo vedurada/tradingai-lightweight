@@ -1,0 +1,5 @@
+outlook_id,symbol,horizon_minutes,entry_price,reference_price,recorded_at,status,future_return_pct,correct,bias,evaluated_at
+# Template populated during live operation
+# Each row = one outcome evaluation
+# PENDING = insufficient future data
+# EVALUATED = complete evaluation
