@@ -1,0 +1,21 @@
+metric,count,percentage,interpretation
+total_transitions,1183,100%,Between consecutive trades
+same_direction_consecutive,1136,96.0%,Adjacent trades same direction
+diff_direction_consecutive,47,4.0%,Adjacent trades different direction
+reentry_within_5min,1031,87.2%,CRITICAL: 87% re-enter within 5min
+reentry_within_15min,1090,92.1%,92% re-enter within 15min
+reentry_within_30min,1124,95.0%,94% re-enter within 30min
+reentry_within_60min,1139,96.3%,94% re-enter within 60min
+avg_time_between_trades,44.0 min,,Average gap between trades
+median_time_between_trades,5.0 min,,Median gap
+min_time_between_trades,5.0 min,,Minimum gap
+max_time_between_trades,5395.0 min,,Maximum gap
+,,,
+classification,,,
+identical_fingerprints,NOT APPLICABLE,,Each trade has unique timestamp-based outlook_id
+duplicate_setup_count,0,,No exact duplicates detected (unique timestamps)
+repeated_setup_type,SEQUENTIAL,,Consecutive same-direction entries without cooldown
+root_cause,NO_DEDUP,,No time-based dedup; each candle = new setup
+root_cause_2,NO_ACTIVE_PROTECTION,,Each trade completes before next entry
+root_cause_3,HIGH_DIRECTIONAL_RATE,,61% of candles classified directional
+verdict,OVERLY_SENSITIVE,,Not legitimate new setups - sequential re-entries

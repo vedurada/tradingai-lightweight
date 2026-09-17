@@ -1,0 +1,40 @@
+metric,value,notes
+total_trades,1184,All trades in replay
+eligible_candles,1929,After 21 warm-up
+directional_candles,1184,BULLISH/BEARISH
+qualified_setups,1184,All directional passed
+trades_per_day_avg,45.54,Over 26 trading days
+trades_per_hour_avg,74.00,Over ~16 active hours
+trades_in_market_hours,138,Of 138 market candles
+max_trades_per_day,67,On 2026-09-08
+min_trades_per_day,21,On 2026-08-26
+pct_eligible_becoming_trade,61.4%,1184/1929 eligible candles
+punct_directional_becoming_trade,100.0%,ALL directional candles became trades
+unique_outlook_per_candle,1184,Timestamp-based outlook_id = no dedup
+active_trade_blocking,NONE,Each trade completes before next candle
+duplicate_setup_protection,NONE,Unique outlook_id per candle
+trades_hour_03,43,Hour 03:00-03:59
+trades_hour_04,223,Hour 04:00-04:59
+trades_hour_05,218,Hour 05:00-05:59
+trades_hour_06,192,Hour 06:00-06:59
+trades_hour_07,157,Hour 07:00-07:59
+trades_hour_08,175,Hour 08:00-08:59
+trades_hour_09,176,Hour 09:00-09:59
+,,
+Direction breakdown,,
+trades_bearish,903,76.3% of total
+trades_bullish,281,23.7% of total
+,,
+Outcome breakdown,,
+expired,67,5.7% of trades
+stopped,223,18.8% of trades
+target_hit,894,75.5% of trades
+,,
+Exit reason breakdown,,
+session_close,67,5.7% of trades
+stop_loss,223,18.8% of trades
+target_hit,894,75.5% of trades
+,,
+Skipped by evidence,,
+mixed,691,35.8% of eligible
+range,54,2.8% of eligible
