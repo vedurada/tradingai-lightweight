@@ -43,7 +43,7 @@ try {
 <body>
 <a href="#dashboard" class="skip-link">Skip to main content</a>
 <header>
-  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <div class="brand-row"><div><h1><a href="/"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div>
   <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/market.html" style="color:#475569;text-decoration:none">Market</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a><span id="live-clock" style="color:#94a3b8;margin-left:0.5rem"></span></nav></div>
 </header>
@@ -51,9 +51,9 @@ try {
   <div class="card" style="margin:0.5rem 0;padding:0.6rem 1rem;background:#fef2f2;border-left:4px solid #dc2626;font-size:0.82rem;color:#991b1b">
     <strong>Financial / Educational Disclaimer:</strong> TradingAI provides automated market analysis for informational and educational purposes only. Nothing here constitutes investment, financial, legal, or tax advice. All analysis is generated from publicly available NSE data and rule-based algorithms. Trading involves substantial risk, including loss of capital. Users must verify all data with their broker and make their own decisions. Past performance does not guarantee future results. SEBI does not endorse or review any content on this site.
   </div>
-  <div class="updated-bar"><span id="last-updated-bar">MARKET CLOSED</span> <span class="status" id="session-state" style="font-size:0.78rem">MARKET CLOSED</span></div>
-  <h3 style="margin:1.5rem 0 0.5rem 0">MARKET CLOSED</h3>
-  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span style="color:#64748b">Market closed · Last session 16 Sep 2026</span></div></div>
+  <div class="updated-bar"><span id="last-updated-bar">Loading market data…</span> <span class="status" id="session-state" style="font-size:0.78rem">Checking…</span></div>
+  <h3 style="margin:1.5rem 0 0.5rem 0" id="market-status-heading">MARKET STATUS</h3>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span style="color:#64748b">Loading market data…</span></div></div>
 
   <h3 style="margin:1.5rem 0 0.5rem 0">MARKET SNAPSHOT</h3>
   <!-- MARKET SNAPSHOT -->
@@ -63,28 +63,28 @@ try {
         <h3>NIFTY 50</h3>
         <div class="price" id="s-nifty-price">—</div>
         <div class="badge" style="display:none" id="s-nifty-badge">N/A</div>
-        <div style="display:none"><span id="s-nifty-trend">—</span><span id="s-nifty-vix">—</span></div>
+        <span id="s-nifty-trend">—</span><span id="s-nifty-vix">—</span>
         <div class="status" id="s-nifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/banknifty.html" data-clickable="1">
         <h3>BANKNIFTY</h3>
         <div class="price" id="s-banknifty-price">—</div>
         <div class="badge" style="display:none" id="s-banknifty-badge">N/A</div>
-        <div style="display:none"><span id="s-banknifty-trend">—</span><span id="s-banknifty-vix">—</span></div>
+        <span id="s-banknifty-trend">—</span><span id="s-banknifty-vix">—</span>
         <div class="status" id="s-banknifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/sensex.html" data-clickable="1">
         <h3>SENSEX</h3>
         <div class="price" id="s-sensex-price">—</div>
         <div class="badge" style="display:none" id="s-sensex-badge">N/A</div>
-        <div style="display:none"><span id="s-sensex-trend">—</span><span id="s-sensex-vix">—</span></div>
+        <span id="s-sensex-trend">—</span><span id="s-sensex-vix">—</span>
         <div class="status" id="s-sensex-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/finnifty.html" data-clickable="1">
         <h3>FINNIFTY</h3>
         <div class="price" id="s-finnifty-price">—</div>
         <div class="badge" style="display:none" id="s-finnifty-badge">N/A</div>
-        <div style="display:none"><span id="s-finnifty-trend">—</span><span id="s-finnifty-vix">—</span></div>
+        <span id="s-finnifty-trend">—</span><span id="s-finnifty-vix">—</span>
         <div class="status" id="s-finnifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
       </div>
     </div>
@@ -106,7 +106,7 @@ try {
   <!-- ADVANCE / DECLINE -->
   <div class="card" style="margin-top:1.5rem">
     <h3>ADVANCE / DECLINE</h3>
-    <div id="home-ad-bar"><span style="color:#64748b">Breadth: CLOSED</span></div>
+    <div id="home-ad-bar"><span style="color:#64748b">Loading breadth data…</span></div>
     <div style="font-size:0.75rem;color:#64748b;margin-top:0.5rem">Market breadth / tape</div>
     <script>(function(){ (async function(){ try{var r=await(await fetch('/api/index-breadth')).json();if(!r||!r.length){document.getElementById('home-ad-bar').innerHTML='<span style="color:#94a3b8;font-size:0.85rem">No breadth data</span>';return;}var a=0,d=0,u=0;for(var i=0;i<r.length;i++){a+=r[i].advances||0;d+=r[i].declines||0;u+=r[i].unchanged||0;}document.getElementById('home-ad-bar').innerHTML='<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;text-align:center;margin-top:0.5rem"><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Advances</div><div style="font-size:1.3rem;font-weight:800;color:#15803d">'+a+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Declines</div><div style="font-size:1.3rem;font-weight:800;color:#ef4444">'+d+'</div></div><div class="card" style="padding:0.8rem"><div style="font-size:0.8rem;color:#64748b;font-weight:600">Unchanged</div><div style="font-size:1.3rem;font-weight:800;color:#64748b">'+u+'</div></div></div>';}catch(e){document.getElementById('home-ad-bar').textContent='Breadth unavailable';}})(); })();</script>
   </div>
@@ -173,8 +173,8 @@ try {
 <script src="/assets/js/ai-outlook.js"></script>
 <script>
 document.addEventListener('DOMContentLoaded',function(){
-  renderOutlookDashboard('dashboard',{symbol:'NIFTY',api:'nifty',displayName:'NIFTY 50',step:50,lot:75,apiBase:'..'});
-  setInterval(function(){renderOutlookDashboard('dashboard',{symbol:'NIFTY',api:'nifty',displayName:'NIFTY 50',step:50,lot:75,apiBase:'..'});},30000);
+  renderOutlookDashboard('dashboard',{symbol:'NIFTY',api:'nifty',displayName:'NIFTY 50',step:50,lot:75,apiBase:''});
+  setInterval(function(){renderOutlookDashboard('dashboard',{symbol:'NIFTY',api:'nifty',displayName:'NIFTY 50',step:50,lot:75,apiBase:''});},30000);
 });
 </script>
 <script>
