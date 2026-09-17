@@ -62,6 +62,7 @@ try {
         <div class="badge" style="display:none" id="s-nifty-badge">N/A</div>
         <span id="s-nifty-trend">—</span><span id="s-nifty-vix">—</span>
         <div class="status" id="s-nifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
+        <div style="font-size:0.72rem;color:#eab308;margin-top:2px" id="s-nifty-stale"></div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/banknifty.html" data-clickable="1">
         <h3>BANKNIFTY</h3>
@@ -69,6 +70,7 @@ try {
         <div class="badge" style="display:none" id="s-banknifty-badge">N/A</div>
         <span id="s-banknifty-trend">—</span><span id="s-banknifty-vix">—</span>
         <div class="status" id="s-banknifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
+        <div style="font-size:0.72rem;color:#eab308;margin-top:2px" id="s-banknifty-stale"></div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/sensex.html" data-clickable="1">
         <h3>SENSEX</h3>
@@ -76,6 +78,7 @@ try {
         <div class="badge" style="display:none" id="s-sensex-badge">N/A</div>
         <span id="s-sensex-trend">—</span><span id="s-sensex-vix">—</span>
         <div class="status" id="s-sensex-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
+        <div style="font-size:0.72rem;color:#eab308;margin-top:2px" id="s-sensex-stale"></div>
       </div>
       <div class="card" style="min-height:120px;cursor:pointer" data-nav="/indices/finnifty.html" data-clickable="1">
         <h3>FINNIFTY</h3>
@@ -83,6 +86,7 @@ try {
         <div class="badge" style="display:none" id="s-finnifty-badge">N/A</div>
         <span id="s-finnifty-trend">—</span><span id="s-finnifty-vix">—</span>
         <div class="status" id="s-finnifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
+        <div style="font-size:0.72rem;color:#eab308;margin-top:2px" id="s-finnifty-stale"></div>
       </div>
     <div class="card" style="min-height:100px;cursor:pointer" data-nav="/market.html" data-clickable="1">
         <h3>INDIA VIX</h3>
@@ -139,7 +143,7 @@ try {
     <p style="font-size:0.78rem;color:#94a3b8;margin:0.5rem 0 0;font-style:italic">
       All figures are computed server-side from NSE data. Values show "—" when data is temporarily unavailable. Educational purposes only — not investment advice.
     </p>
-    <script>(function(){var syms=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];function fillCard(id,val){var el=document.getElementById(id);if(el&&el.textContent==='—'){el.textContent=val;}}function checkData(){var found=false;['options-pcr','options-maxpain','options-oi'].forEach(function(id){var el=document.getElementById(id);if(el&&el.textContent!=='—')found=true;});return found;}function unavailable(){['options-pcr','options-maxpain','options-oi'].forEach(function(id){var el=document.getElementById(id);if(el&&el.textContent==='—')el.textContent='Data unavailable';});}function allSettled(promises,cb){var c=0;if(promises.length===0){cb();return;}promises.forEach(function(){c++;});promises.forEach(function(p){p.then(function(){},function(){})['finally'](function(){c--;if(c===0)cb();});});}allSettled([fetch('/api/pcr').then(function(r){return r.json();}).then(function(d){syms.forEach(function(sym){if(d&&d[sym]&&d[sym].length&&d[sym][0].pcr!=null){fillCard('options-pcr',Number(d[sym][0].pcr).toFixed(2));}});}),fetch('/api/maxpain').then(function(r){return r.json();}).then(function(d){syms.forEach(function(sym){if(d&&d[sym]&&d[sym][0]&&d[sym][0].max_pain!=null){fillCard('options-maxpain',Number(d[sym][0].max_pain).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}));}});}),Promise.all(syms.map(function(sym){return fetch('/api/oi-top?symbol='+sym).then(function(r){return r.json();}).then(function(d){if(d&&d.length){var tc=d.find(function(x){return x.side==='CALL';});if(tc&&tc.open_interest!=null){fillCard('options-oi',tc.open_interest.toLocaleString('en-IN'));}};});})]).then(function(){if(!checkData())unavailable();}).catch(function(){if(!checkData())unavailable();});})();</script>
+    <script>(function(){var syms=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];function fillCard(id,val){var el=document.getElementById(id);if(el&&el.textContent==='—'){el.textContent=val;}}function checkData(){var found=false;['options-pcr','options-maxpain','options-oi','options-expmove'].forEach(function(id){var el=document.getElementById(id);if(el&&el.textContent!=='—')found=true;});return found;}function unavailable(id){var el=document.getElementById(id);if(el&&el.textContent==='—')el.textContent='Data unavailable';}function allSettled(promises,cb){var c=0;if(promises.length===0){cb();return;}promises.forEach(function(){c++;});promises.forEach(function(p){p.then(function(){},function(){})['finally'](function(){c--;if(c===0)cb();});});}allSettled([fetch('/api/pcr').then(function(r){return r.json();}).then(function(d){syms.forEach(function(sym){if(d&&d[sym]&&d[sym].length&&d[sym][0].pcr!=null){fillCard('options-pcr',Number(d[sym][0].pcr).toFixed(2));}});}),fetch('/api/maxpain').then(function(r){return r.json();}).then(function(d){syms.forEach(function(sym){if(d&&d[sym]&&d[sym][0]&&d[sym][0].max_pain!=null){fillCard('options-maxpain',Number(d[sym][0].max_pain).toLocaleString('en-IN',{minimumFractionDigits:0,maximumFractionDigits:0}));}});}).catch(function(){unavailable('options-maxpain');}),Promise.all(syms.map(function(sym){return fetch('/api/oi-top?symbol='+sym).then(function(r){return r.json();}).then(function(d){if(d&&d.length){var tc=d.find(function(x){return x.side==='CALL';});if(tc&&tc.open_interest!=null){fillCard('options-oi',tc.open_interest.toLocaleString('en-IN'));}};});})]).then(function(){var any=false;['options-pcr','options-maxpain','options-oi','options-expmove'].forEach(function(id){var el=document.getElementById(id);if(el&&el.textContent!=='—')any=true;});if(!any)['options-pcr','options-maxpain','options-oi','options-expmove'].forEach(function(id){unavailable(id);});}).catch(function(){['options-pcr','options-maxpain','options-oi','options-expmove'].forEach(function(id){unavailable(id);});});})();</script>
   </div>
 
   <div class="card content-card" style="margin-top:1.5rem">
@@ -218,6 +222,8 @@ document.addEventListener('DOMContentLoaded',function(){
         if(el&&inst&&inst.quote&&inst.quote.price!=null){
           el.textContent=Number(inst.quote.price).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});
           el.style.color='';
+          var stEl=document.getElementById('s-'+map[sym].toLowerCase()+'-stale');
+          if(stEl){stEl.textContent=(inst.data_quality==='STALE'||(inst.quote&&inst.quote.stale))?'STALE':'';stEl.style.color='#eab308';}
         }
         var td=document.getElementById('s-'+map[sym].toLowerCase()+'-trend-display');
         if(td&&inst&&inst.regime){td.textContent=regimeWord(inst.regime);td.style.color=regimeWord(inst.regime)==='BEARISH'?'#dc2626':regimeWord(inst.regime)==='BULLISH'?'#15803d':'#64748b';}
