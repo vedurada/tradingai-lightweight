@@ -130,6 +130,7 @@ function fp(v){return v!=null?Number(v).toLocaleString('en-IN',{minimumFractionD
 function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;return new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d)+' IST';}catch(e){return null;}}
 function setLastUpdated(ts){var bar=document.getElementById('last-updated-bar');if(!bar||!ts)return;var t=fmtIST(ts);if(t){bar.textContent='Data as of '+t;bar.style.color='';}else{bar.textContent='Last refreshed: —';bar.style.color='';}}
 function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.includes('BULLISH')||r==='BUY')return'#15803d';if(r.includes('BEARISH')||r==='EXIT'||r==='SELL')return'#dc2626';if(r.includes('RANGE')||r==='HOLD')return'#a16207';return'#64748b';}
+function regimeText(r){if(!r)return'—';r=r.toUpperCase();if(r.indexOf('BULL')>=0)return'BULLISH';if(r.indexOf('BEAR')>=0)return'BEARISH';if(r.indexOf('RANGE')>=0||r.indexOf('NEUTRAL')>=0)return'RANGE';return r;}
 function updateClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
 setInterval(updateClock,1000);updateClock();
 
