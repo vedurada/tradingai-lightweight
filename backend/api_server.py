@@ -599,7 +599,7 @@ def latest_price(symbol):
     price_1m_volume_zero = False
     if price_row:
         try:
-            if (price_row.get("volume") or 0) == 0:
+            if ((price_row["volume"] if hasattr(price_row, "__getitem__") else (price_row.get("volume") or 0)) or 0) == 0:
                 price_1m_volume_zero = True
         except Exception:
             pass
@@ -607,13 +607,13 @@ def latest_price(symbol):
     live_volume_zero = False
     if live_row:
         try:
-            if (live_row.get("volume") or 0) == 0:
+            if ((live_row["volume"] if hasattr(live_row, "__getitem__") else (live_row.get("volume") or 0)) or 0) == 0:
                 live_volume_zero = True
         except Exception:
             pass
     # fallback to price_1d if both empty (weekend / stale) OR if 1m AND live volume are zero (indices)
     if (not price_row and not live_row) or (price_1m_volume_zero and (not live_row or live_volume_zero)):
-        price_row = conn.execute("SELECT * FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (s,)).fetchone()
+        price_row = conn.execute("SELECT * FROM price_1d WHERE symbol=? AND volume > 0 ORDER BY timestamp DESC LIMIT 1", (s,)).fetchone()
         if price_row:
             # map price_1d row shape to price_row dict with close
             conn.close()
