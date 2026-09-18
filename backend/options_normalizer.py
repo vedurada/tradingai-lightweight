@@ -23,7 +23,7 @@ def _find_atm_strike(chain: List[Dict], spot: float) -> Optional[float]:
     """Find ATM strike (closest to spot)."""
     if not chain or spot <= 0:
         return None
-    valid = [c for c in chain if c.get("strike", 0) > 0]
+    valid = [c for c in chain if (c.get("strike") or 0) > 0]
     if not valid:
         return None
     return min(valid, key=lambda c: abs(c["strike"] - spot))["strike"]
@@ -34,9 +34,9 @@ def _build_chain_summary(chain: List[Dict], symbol: str) -> Dict[str, Any]:
     if not chain:
         return {"total_oi": 0, "strikes": 0, "max_oi_strike": None, "max_oi": 0}
     total_oi = sum(c.get("open_interest", 0) for c in chain)
-    strikes = len(set(c.get("strike", 0) for c in chain if c.get("strike", 0) > 0))
+    strikes = len(set(c.get("strike") or 0 for c in chain if (c.get("strike") or 0) > 0))
     by_oi = sorted(
-        [c for c in chain if c.get("open_interest", 0) > 0],
+        [c for c in chain if (c.get("open_interest") or 0) > 0],
         key=lambda c: c["open_interest"],
         reverse=True,
     )
@@ -72,11 +72,11 @@ def build_options_state(symbol: str, chain: List[Dict], spot: float,
     ce_chain = [c for c in chain if c.get("option_type") == "CE"]
     pe_chain = [c for c in chain if c.get("option_type") == "PE"]
 
-    ce_oi = sum(c.get("open_interest", 0) for c in ce_chain)
-    pe_oi = sum(c.get("open_interest", 0) for c in pe_chain)
+    ce_oi = sum(c.get("open_interest") or 0 for c in ce_chain)
+    pe_oi = sum(c.get("open_interest") or 0 for c in pe_chain)
     total_oi = ce_oi + pe_oi
 
-    pcr = engine.calculate_pcr(ce_oi, pe_oi) if ce_oi > 0 else None
+    pcr = engine.calculate_pcr(ce_oi, pe_oi) if (ce_oi or 0) > 0 else None
     max_pain_result = engine.calculate_max_pain(chain)
     max_pain = max_pain_result.get("max_pain") if isinstance(max_pain_result, dict) else None
     iv_stats = engine.calculate_iv_stats(chain)

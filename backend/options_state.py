@@ -130,13 +130,13 @@ def _describe_evidence(chain: List[Dict], symbol: str) -> List[str]:
     if not chain:
         return evidence
 
-    total_oi = sum(c.get("open_interest", 0) for c in chain if c.get("open_interest"))
-    if total_oi > 0:
+    total_oi = sum(c.get("open_interest") or 0 for c in chain)
+    if (total_oi or 0) > 0:
         evidence.append(f"Total {symbol} OI: {total_oi:,} across {len(chain)} strikes")
 
     # Identify highest OI strikes
     sorted_by_oi = sorted(
-        [c for c in chain if c.get("open_interest", 0) > 0],
+        [c for c in chain if (c.get("open_interest") or 0) > 0],
         key=lambda c: c["open_interest"],
         reverse=True,
     )
@@ -146,7 +146,7 @@ def _describe_evidence(chain: List[Dict], symbol: str) -> List[str]:
         evidence.append(f"Highest {side} OI at strike {top['strike']}: {top['open_interest']:,}")
 
     # IV evidence
-    ivs = [c.get("implied_volatility", 0) for c in chain if c.get("implied_volatility", 0) > 0]
+    ivs = [c.get("implied_volatility", 0) for c in chain if (c.get("implied_volatility") or 0) > 0]
     if ivs:
         avg_iv = sum(ivs) / len(ivs)
         evidence.append(f"ATM IV: {avg_iv:.2f}% across {len(ivs)} strikes with IV")

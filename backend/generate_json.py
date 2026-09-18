@@ -61,10 +61,31 @@ def generate_json() -> None:
         pivot_data = calculate_pivot(quote)
         cpr_data = calculate_cpr(pivot_data)
         options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
-        regime = regime_engine.evaluate(price=quote["price"], vwap=indicators.get("vwap", 0), prev_close=quote["previous_close"], rsi=indicators.get("rsi"), macd=indicators.get("macd"), adx=indicators.get("adx"), vix_price=vix["price"] if vix else 0, bollinger=indicators.get("bollinger_bands"), pivot=pivot_data, support_resistance=indicators.get("support_resistance"), pcr=options_analysis.get("pcr"), volume=quote.get("volume"), avg_volume=indicators.get("avg_volume"))
+        closes_ohlcv = [row.get("close", 0) for row in ohlcv] if ohlcv else []
+        sma20 = round(sum(closes_ohlcv[-20:]) / 20, 2) if len(closes_ohlcv) >= 20 else None
+        sma50 = round(sum(closes_ohlcv[-50:]) / 50, 2) if len(closes_ohlcv) >= 50 else None
+        market = {
+            "symbol": symbol,
+            "price": quote["price"],
+            "sma20": sma20,
+            "sma50": sma50,
+            "prev_close": quote.get("previous_close") or indicators.get("prev_day_close"),
+            "rsi": indicators.get("rsi"),
+            "macd": indicators.get("macd"),
+            "adx": indicators.get("adx"),
+            "vix_close": vix["price"] if vix else None,
+            "advances": None,
+            "declines": None,
+            "advance_decline_ratio": None,
+        }
+        options_input = {"pcr": None}
+        regime = regime_engine.evaluate(market, options_input)
         scenarios = scenario_engine.generate(regime["regime"], indicators.get("support_resistance", {}).get("support", []), indicators.get("support_resistance", {}).get("resistance", []), quote["price"])
         strategy = strategy_engine.select(regime["regime"], regime["confidence"], "GOOD" if ohlcv else "PARTIAL")
-        ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
+        try:
+            ai_outlook = ai_engine.generate(symbol, {**quote, **indicators, "vix": vix["price"] if vix else 0, "regime": regime["regime"], "options_unavailable": options_analysis.get("data_unavailable", False), "support_levels": indicators.get("support_resistance", {}).get("support", []), "resistance_levels": indicators.get("support_resistance", {}).get("resistance", [])})
+        except Exception:
+            ai_outlook = {"bias": "UNAVAILABLE", "confidence": 0, "regime": regime.get("regime", "UNKNOWN"), "summary": "AI outlook temporarily unavailable", "evidence": [], "watch_levels": [], "confirmation": [], "invalidation": [], "risk": [], "trade_state": "NO_TRADE", "expected_horizon_minutes": 30, "outlook_change_reason": "AI generation failed", "engine_version": "1.0"}
 
         strategy_name = strategy.get("strategies", [{}])[0].get("strategy", "") if strategy else ""
         save_outlook(symbol, ai_outlook, quote_price=quote.get("price", 0), strategy_name=strategy_name)

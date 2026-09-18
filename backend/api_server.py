@@ -3923,12 +3923,29 @@ def api_trade_qualification():
     active_trade = data.get("active_trade")
     risk_config = data.get("risk_config")
 
-    from trade_qualification_engine import qualify_trade
-    result = qualify_trade(
-        instrument, snapshot, evidence, market_state, outlook,
-        options_data=options_data, active_trade=active_trade, risk_config=risk_config,
-    )
-    return jsonify({"success": True, "data": result}), 200
+    if outlook and isinstance(outlook.get("bias"), dict):
+        outlook = {**outlook, "bias": outlook["bias"].get("label", "NEUTRAL")}
+    if outlook and isinstance(outlook.get("trade_state"), dict):
+        outlook = {**outlook, "trade_state": outlook["trade_state"].get("state", "NO_TRADE")}
+
+    try:
+        from trade_qualification_engine import qualify_trade
+        result = qualify_trade(
+            instrument, snapshot, evidence, market_state, outlook,
+            options_data=options_data, active_trade=active_trade, risk_config=risk_config,
+        )
+        return jsonify({"success": True, "data": result}), 200
+    except Exception as e:
+        logger.error(f"Trade qualification error: {e}")
+        return jsonify({
+            "success": False,
+            "data": {
+                "trade_status": "NO_TRADE",
+                "reason": "REQUIRED_DATA_UNAVAILABLE",
+                "checks": {},
+                "error": str(e),
+            },
+        }), 200
 
 
 @app.route("/api/paper-trades", methods=["GET"])

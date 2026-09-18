@@ -12,6 +12,7 @@ LOG_FILE = "/opt/tradingai/logs/monitor.log"
 STALE_MINUTES = 15
 DB_PATH = "/opt/tradingai/database/tradingai.db"
 
+
 def log(msg):
     ts = datetime.now(timezone.utc).isoformat()
     line = f"[{ts}] {msg}"
@@ -19,6 +20,7 @@ def log(msg):
     os.makedirs(os.path.dirname(LOG_FILE), exist_ok=True)
     with open(LOG_FILE, "a") as f:
         f.write(line + "\n")
+
 
 def check_db():
     try:
@@ -32,6 +34,7 @@ def check_db():
     except Exception as e:
         return False, f"DB error: {e}"
 
+
 def check_disk():
     try:
         usage = shutil.disk_usage("/")
@@ -40,6 +43,7 @@ def check_disk():
     except Exception as e:
         return False, f"disk error: {e}"
 
+
 def check_cron():
     try:
         result = subprocess.run(["crontab", "-l"], capture_output=True, text=True, timeout=5)
@@ -47,6 +51,7 @@ def check_cron():
         return has_cron, f"cron: {'configured' if has_cron else 'missing'}"
     except Exception as e:
         return False, f"cron error: {e}"
+
 
 def check_data_freshness():
     try:
@@ -61,6 +66,27 @@ def check_data_freshness():
         return True, "all data fresh"
     except Exception as e:
         return False, f"freshness error: {e}"
+
+
+def _is_market_hours():
+    now = datetime.now(timezone.utc)
+    ist = now + timedelta(hours=5, minutes=30)
+    mins = ist.hour * 60 + ist.minute
+    return 570 <= mins < 930
+
+
+def run_research_collection():
+    try:
+        sys.path.insert(0, "/opt/tradingai/backend")
+        from research_collector import ResearchCollector
+        rc = ResearchCollector(DB_PATH)
+        result = rc.collect()
+        log(f"Research collection: {json.dumps(result)}")
+        return result
+    except Exception as e:
+        log(f"Research collection failed: {e}")
+        return {"status": "ERROR", "error": str(e)}
+
 
 def check_health():
     checks = {
@@ -109,7 +135,12 @@ def check_health():
         json.dump(health, f, indent=2)
 
     log(f"Health check: {status}")
+
+    if _is_market_hours():
+        run_research_collection()
+
     return all_ok
+
 
 if __name__ == "__main__":
     ok = check_health()
