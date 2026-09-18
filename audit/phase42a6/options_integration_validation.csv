@@ -1,0 +1,3 @@
+instrument,option_chain_records,oi_top_strikes,pcr_history,iv_available,ce_oi_total,pe_oi_total,ce_pe_ratio,options_suitability,data_quality,notes
+NIFTY,1091,246,3,0,163374080,149904450,1.09,LIMITED,ADEQUATE,Options data available for expected movement suitability evaluation
+BANKNIFTY,438,82,3,0,12251730,9408720,1.302,LIMITED,LIMITED,Options data available for expected movement suitability evaluation

@@ -872,6 +872,79 @@ CREATE TABLE IF NOT EXISTS research_manifest (
     created_at TEXT,
     UNIQUE(dataset_name)
 );
+
+CREATE TABLE IF NOT EXISTS pre_market_scenarios (
+    scenario_id TEXT PRIMARY KEY,
+    symbol TEXT NOT NULL,
+    session_date TEXT NOT NULL,
+    scenario_type TEXT NOT NULL,
+    direction TEXT NOT NULL,
+    trigger REAL,
+    confirmation_conditions TEXT DEFAULT '{}',
+    invalidation TEXT DEFAULT '{}',
+    expected_movement_pct REAL,
+    expected_horizon_minutes INTEGER,
+    target_zone_low REAL,
+    target_zone_high REAL,
+    data_quality TEXT DEFAULT 'LIVE',
+    historical_sample_size INTEGER DEFAULT 0,
+    historical_probability REAL,
+    status TEXT DEFAULT 'ARMED',
+    state_transitions TEXT DEFAULT '[]',
+    activation_timestamp TEXT,
+    activation_price REAL,
+    market_state_at_activation TEXT,
+    positioning_state_at_activation TEXT,
+    liquidity_state_at_activation TEXT,
+    market_intent_snapshot TEXT,
+    late_activation_flag INTEGER DEFAULT 0,
+    late_activation_details TEXT,
+    created_at TEXT,
+    updated_at TEXT,
+    UNIQUE(symbol, session_date, scenario_type)
+);
+CREATE INDEX IF NOT EXISTS idx_pms_symbol_date ON pre_market_scenarios(symbol, session_date);
+CREATE INDEX IF NOT EXISTS idx_pms_status ON pre_market_scenarios(status);
+
+CREATE TABLE IF NOT EXISTS scenario_events (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scenario_id TEXT NOT NULL,
+    timestamp TEXT NOT NULL,
+    event_type TEXT NOT NULL,
+    price REAL,
+    conditions TEXT,
+    evidence TEXT,
+    created_at TEXT,
+    FOREIGN KEY (scenario_id) REFERENCES pre_market_scenarios(scenario_id)
+);
+CREATE INDEX IF NOT EXISTS idx_se_scenario ON scenario_events(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_se_timestamp ON scenario_events(timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS scenario_outcomes (
+    outcome_id INTEGER PRIMARY KEY AUTOINCREMENT,
+    scenario_id TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    session_date TEXT NOT NULL,
+    outcome_5m TEXT DEFAULT 'PENDING',
+    outcome_5m_return_pct REAL,
+    outcome_15m TEXT DEFAULT 'PENDING',
+    outcome_15m_return_pct REAL,
+    outcome_30m TEXT DEFAULT 'PENDING',
+    outcome_30m_return_pct REAL,
+    outcome_60m TEXT DEFAULT 'PENDING',
+    outcome_60m_return_pct REAL,
+    mfe REAL,
+    mae REAL,
+    target_reached INTEGER DEFAULT 0,
+    invalidation_reached INTEGER DEFAULT 0,
+    time_to_target REAL,
+    time_to_invalidation REAL,
+    status TEXT DEFAULT 'RECORDED',
+    created_at TEXT,
+    FOREIGN KEY (scenario_id) REFERENCES pre_market_scenarios(scenario_id)
+);
+CREATE INDEX IF NOT EXISTS idx_so_scenario ON scenario_outcomes(scenario_id);
+CREATE INDEX IF NOT EXISTS idx_so_instrument ON scenario_outcomes(instrument, session_date);
   """
 
 
@@ -944,6 +1017,89 @@ def init_database(db_path: str = DB_PATH) -> None:
         ai_cols = {row[1] for row in c.fetchall()}
         if "generated_success" not in ai_cols:
             c.execute("ALTER TABLE ai_outlooks_5m ADD COLUMN generated_success INTEGER DEFAULT 0")
+    except Exception:
+        pass
+
+    # Phase 42A.6 — Scenario Activation & Expected Movement tables
+    try:
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='pre_market_scenarios'")
+        if not c.fetchone():
+            c.execute("""CREATE TABLE IF NOT EXISTS pre_market_scenarios (
+                scenario_id TEXT PRIMARY KEY,
+                symbol TEXT NOT NULL,
+                session_date TEXT NOT NULL,
+                scenario_type TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                trigger REAL,
+                confirmation_conditions TEXT DEFAULT '{}',
+                invalidation TEXT DEFAULT '{}',
+                expected_movement_pct REAL,
+                expected_horizon_minutes INTEGER,
+                target_zone_low REAL,
+                target_zone_high REAL,
+                data_quality TEXT DEFAULT 'LIVE',
+                historical_sample_size INTEGER DEFAULT 0,
+                historical_probability REAL,
+                status TEXT DEFAULT 'ARMED',
+                state_transitions TEXT DEFAULT '[]',
+                activation_timestamp TEXT,
+                activation_price REAL,
+                market_state_at_activation TEXT,
+                positioning_state_at_activation TEXT,
+                liquidity_state_at_activation TEXT,
+                market_intent_snapshot TEXT,
+                late_activation_flag INTEGER DEFAULT 0,
+                late_activation_details TEXT,
+                created_at TEXT,
+                updated_at TEXT,
+                UNIQUE(symbol, session_date, scenario_type)
+            )""")
+            c.execute("CREATE INDEX IF NOT EXISTS idx_pms_symbol_date ON pre_market_scenarios(symbol, session_date)")
+            c.execute("CREATE INDEX IF NOT EXISTS idx_pms_status ON pre_market_scenarios(status)")
+
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='scenario_events'")
+        if not c.fetchone():
+            c.execute("""CREATE TABLE IF NOT EXISTS scenario_events (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                scenario_id TEXT NOT NULL,
+                timestamp TEXT NOT NULL,
+                event_type TEXT NOT NULL,
+                price REAL,
+                conditions TEXT,
+                evidence TEXT,
+                created_at TEXT,
+                FOREIGN KEY (scenario_id) REFERENCES pre_market_scenarios(scenario_id)
+            )""")
+            c.execute("CREATE INDEX IF NOT EXISTS idx_se_scenario ON scenario_events(scenario_id)")
+            c.execute("CREATE INDEX IF NOT EXISTS idx_se_timestamp ON scenario_events(timestamp DESC)")
+
+        c.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='scenario_outcomes'")
+        if not c.fetchone():
+            c.execute("""CREATE TABLE IF NOT EXISTS scenario_outcomes (
+                outcome_id INTEGER PRIMARY KEY AUTOINCREMENT,
+                scenario_id TEXT NOT NULL,
+                instrument TEXT NOT NULL,
+                session_date TEXT NOT NULL,
+                outcome_5m TEXT DEFAULT 'PENDING',
+                outcome_5m_return_pct REAL,
+                outcome_15m TEXT DEFAULT 'PENDING',
+                outcome_15m_return_pct REAL,
+                outcome_30m TEXT DEFAULT 'PENDING',
+                outcome_30m_return_pct REAL,
+                outcome_60m TEXT DEFAULT 'PENDING',
+                outcome_60m_return_pct REAL,
+                mfe REAL,
+                mae REAL,
+                target_reached INTEGER DEFAULT 0,
+                invalidation_reached INTEGER DEFAULT 0,
+                time_to_target REAL,
+                time_to_invalidation REAL,
+                status TEXT DEFAULT 'RECORDED',
+                created_at TEXT,
+                FOREIGN KEY (scenario_id) REFERENCES pre_market_scenarios(scenario_id)
+            )""")
+            c.execute("CREATE INDEX IF NOT EXISTS idx_so_scenario ON scenario_outcomes(scenario_id)")
+            c.execute("CREATE INDEX IF NOT EXISTS idx_so_instrument ON scenario_outcomes(instrument, session_date)")
     except Exception:
         pass
 

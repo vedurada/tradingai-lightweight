@@ -595,8 +595,16 @@ def latest_price(symbol):
     conn = get_db()
     price_row = conn.execute("SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (s,)).fetchone()
     live_row = _live_quote_row(conn, s)
-    # fallback to price_1d if both empty (weekend / stale)
-    if not price_row and not live_row:
+    # Check if price_1m volume is zero/unavailable (indices have volume=0 from yfinance)
+    price_1m_volume_zero = False
+    if price_row:
+        try:
+            if (price_row.get("volume") or 0) == 0:
+                price_1m_volume_zero = True
+        except Exception:
+            pass
+    # fallback to price_1d if both empty (weekend / stale) OR if 1m volume is zero but 1d has real volume
+    if (not price_row and not live_row) or (price_1m_volume_zero and not live_row):
         price_row = conn.execute("SELECT * FROM price_1d WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (s,)).fetchone()
         if price_row:
             # map price_1d row shape to price_row dict with close

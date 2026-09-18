@@ -1,0 +1,3 @@
+audit_date,scenario_id,symbol,session_date,scenario_type,direction,trigger_price,expected_movement_pct,expected_horizon_minutes,previous_state,new_state,is_valid_transition,late_activation_flag,late_activation_details,data_quality,evaluation_timestamp,no_lookahead_used,evidence_in_snapshot,state_transitions_count,audit_notes
+2026-09-18T14:37:01Z,VAL-000,NIFTY,2026-09-18,BULLISH_BREAKOUT,LONG,23200.0,0.5,60,ARMED,ARMED,True,False,,LIVE,2026-09-18T14:37:01Z,True,TRUE,2,PASS
+2026-09-18T14:37:01Z,VAL-001,NIFTY,2026-09-18,BEARISH_BREAKOUT,SHORT,23000.0,0.3,60,ARMED,ARMED,True,False,,LIVE,2026-09-18T14:37:01Z,,FALSE,0,PASS

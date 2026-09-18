@@ -1,0 +1,3 @@
+instrument,total_records,outcome_5m_recorded,outcome_5m_target_hit,outcome_5m_stop_hit,outcome_5m_pending,outcome_15m,outcome_30m,outcome_60m,data_quality,notes
+NIFTY,61672,61672,0,0,61672,61672,61672,61672,ADEQUATE,Outcome tracking records at 5/15/30/60 min horizons for NIFTY
+BANKNIFTY,0,0,0,0,0,0,0,0,LIMITED,Outcome tracking records at 5/15/30/60 min horizons for BANKNIFTY

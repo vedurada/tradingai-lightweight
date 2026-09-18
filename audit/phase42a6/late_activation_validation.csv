@@ -1,0 +1,3 @@
+instrument,activated_scenarios,avg_holding_seconds,late_activation_assessment,data_quality,notes
+NIFTY,963,N/A,REQUIRES_MANUAL_REVIEW,ADEQUATE,Late activation requires scenario_activation_engine data from live session
+BANKNIFTY,0,N/A,INSUFFICIENT_DATA,LIMITED,Late activation requires scenario_activation_engine data from live session

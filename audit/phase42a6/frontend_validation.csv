@@ -1,0 +1,11 @@
+check,status,notes
+pre_market_plan_visible,REQUIRED,Homepage must show TODAY'S MARKET SCENARIOS
+scenario_type_display,REQUIRED,"Scenario type, trigger, expected move, target, invalidation, status"
+live_status_display,REQUIRED,ARMED/PRE_TRIGGER/ACTIVATED/CONFIRMED/INVALIDATED states
+distance_to_trigger,REQUIRED,Current price distance to scenario trigger
+historical_probability_display,REQUIRED,NOT YET CALIBRATED when insufficient data
+trade_qualification,REQUIRED,ELIGIBLE/WAIT/NO_TRADE display
+no_fabricated_probabilities,PASS,Engine returns null for uncalibrated probability
+volume_unavailable_handling,PASS,VOLUME_UNAVAILABLE explicitly marked
+frontend_json_api,REQUIRED,Frontend consumes /api/scenarios and future scenario endpoints
+scenario_timeline,REQUIRED,Timeline from creation to outcome

@@ -1,0 +1,2 @@
+ram_total_mb,ram_available_mb,cpu_count,db_size_mb,disk_total_gb,expected_ram_gb,expected_cpu,scenario_engine_runtime_seconds,api_response_ms,status
+956,500,2,261.5,50,1,1,<5,<100,WITHIN_LIMITS

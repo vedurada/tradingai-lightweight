@@ -1,0 +1,3 @@
+instrument,samples,passed,failed,pass_rate,lookahead_status,data_quality,notes
+NIFTY,19,19,0,100.0,PASS,ADEQUATE,1m→5m aggregation look-ahead check from production data
+BANKNIFTY,19,19,0,100.0,PASS,ADEQUATE,1m→5m aggregation look-ahead check from production data
