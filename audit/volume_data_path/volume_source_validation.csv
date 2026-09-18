@@ -1,0 +1,10 @@
+endpoint,method,status,response_time_ms,volume_value,volume_source,notes
+/api/price/NIFTY,GET,200,~50,375346024,yfinance,Primary endpoint — NOW FIXED
+/api/price/BANKNIFTY,GET,200,~50,237801140,yfinance,Primary endpoint — NOW FIXED
+/api/price/FINNIFTY,GET,200,—,—,—,Verify after fix
+/api/price/SENSEX,GET,200,—,—,—,Verify after fix
+/api/vix,GET,200,~50,13.27,N/A,VIX unaffected by this bug
+/api/NIFTY,GET,200,~100,375346024,multiple,Data completeness all true
+/api/market,GET,200,~100,—,multiple,All instruments returning data
+/api/price/NIFTY/before_fix,GET,200,~50,0,UNKNOWN,Bug was returning 0
+/api/price/BANKNIFTY/before_fix,GET,200,~50,0,UNKNOWN,Bug was returning 0

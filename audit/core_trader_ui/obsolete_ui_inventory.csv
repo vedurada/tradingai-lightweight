@@ -1,0 +1,13 @@
+item,type,location,issue,recommendation,severity
+/options/pcr.html duplicate nav link,navigation,indices/nifty.html,Line 23: TWO /options/pcr.html links in nav (Options appears twice),Remove duplicate,LOW
+/options/pcr.html duplicate nav link,navigation,indices/banknifty.html,Line 23: TWO /options/pcr.html links in nav (Options appears twice),Remove duplicate,LOW
+/options/pcr.html duplicate nav link,navigation,indices/sensex.html,Line 23: TWO /options/pcr.html links in nav (Options appears twice),Remove duplicate,LOW
+/options/pcr.html duplicate nav link,navigation,indices/finnifty.html,Line 23: TWO /options/pcr.html links in nav (Options appears twice),Remove duplicate,LOW
+/assets/css/main.css,resource,89 HTML files,CSS file does not exist at /assets/css/main.css in workspace; resolves to /static/css/main.css,Verify nginx maps /assets/ to /static/ or create symlink,HIGH
+/today/index.html API refs,api,today/index.html,Lines 189/220/239 reference /api/key-levels /api/intraday-conditions /api/risk/NIFTY,All endpoints exist — no action needed,RESOLVED
+/today/index.html relative paths,mixed,today/index.html,Uses ../assets/css/main.css and API_BASE='..' for relative paths,Consistent with page depth,OK
+/home.html redirect,mixed,nginx config,301 redirect /home.html → /,WORKING,OK
+/market.html redirect,mixed,nginx config,301 redirect /market.html → /today/index.html,WORKING,OK
+/options/index.html,page,MISSING,No options hub page exists,Create new page,CRITICAL
+/ai-track-record.html,page,MISSING,No AI track record page exists,Create new page,CRITICAL
+/research/index.html,page,MISSING,No research hub page exists,Create new page,CRITICAL

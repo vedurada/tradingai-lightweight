@@ -1,0 +1,11 @@
+page_url,canonical,og_url,og_title,og_description,ld_json,status,notes
+/,https://tradingai.in/,https://tradingai.in/,AI Market Outlook - NIFTY BANKNIFTY FINNIFTY SENSEX - TradingAI,AI Market Outlook for Indian indices,Organization+WebSite,OK,"canonical correct; duplicate nav Options link; CSS path /assets/css/main.css"
+/today/index.html,https://tradingai.in/today/index.html,https://tradingai.in/today/,NIFTY Today — Live Intraday Terminal - TradingAI,Daily NIFTY terminal: session status,Market Snapshot AI Outlook Key Levels Options Intelligence,OK,"CSS path ../assets/css/main.css (relative); endpoints all valid; Loading states present"
+/indices/nifty.html,https://tradingai.in/indices/nifty.html,https://tradingai.in/indices/nifty.html,NIFTY 50 - AI Market Outlook - TradingAI,NIFTY 50 deep analysis,BreadcrumbList,OK,"DUPLICATE nav Options link; CSS path ../assets/css/main.css; Loading states present"
+/indices/banknifty.html,https://tradingai.in/indices/banknifty.html,https://tradingai.in/indices/banknifty.html,BANKNIFTY 50 - AI Market Outlook - TradingAI,BANKNIFTY 50 deep analysis,BreadcrumbList,OK,"DUPLICATE nav Options links (2x); CSS path ../assets/css/main.css"
+/options/index.html,MISSING,MISSING,MISSING,MISSING,MISSING,MISSING,"Must create with full SEO: canonical og:title og:description ld+json"
+/strategies.html,https://tradingai.in/strategies.html,https://tradingai.in/strategies.html,Strategy Intelligence - TradingAI,Index option strategy engine,Organization+BreadcrumbList,OK,"CSS path /assets/css/main.css; strategy engine functional"
+/tools/backtest.html,https://tradingai.in/tools/backtest.html,https://tradingai.in/tools/backtest.html,Backtest — Deterministic Strategy Performance,Entry/Exit simulator,NO,OK,"CSS path ../assets/css/main.css; well-structured; gtag consent present"
+/tools/walkforward.html,https://tradingai.in/tools/walkforward.html,https://tradingai.in/tools/walkforward.html,Walk-Forward — OOS Performance,Chronological walk-forward validation,NO,OK,"CSS path ../assets/css/main.css; good UX"
+/ai-track-record.html,MISSING,MISSING,MISSING,MISSING,MISSING,MISSING,"Must create with full SEO and historical accuracy display"
+/research/index.html,MISSING,MISSING,MISSING,MISSING,MISSING,MISSING,"Must create with full SEO and research content"

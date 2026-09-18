@@ -1,0 +1,13 @@
+line_range,function,file,code,artifact_type,bug_status,notes
+590-598,_live_quote_row / price_1m query,api_server.py,"SELECT * FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",DATA SOURCE,OK,Returns sqlite3.Row with most recent 1m candle
+599-601,_live_quote_row / _live_quote_row call,api_server.py,"live_row = _live_quote_row(conn, symbol)",DATA SOURCE,OK,Returns sqlite3.Row or None
+602-606,price_1m volume extraction,api_server.py,"if (price_row.get('volume') or 0) == 0:",PRIMARY BUG,FAIL,sqlite3.Row has no .get() in Python 3.10; AttributeError raised
+607-609,exception handler,api_server.py,"except Exception: pass",ERROR HANDLING,PROBLEM,Silently swallows AttributeError; masks bug
+610-614,live_row volume extraction,api_server.py,"if (live_row.get('volume') or 0) == 0:",PRIMARY BUG,FAIL,Same sqlite3.Row .get() bug
+615-622,fallback trigger,api_server.py,"if (not price_row and not live_row) or (price_1m_volume_zero and ...)",LOGIC,FAIL,Never triggers because price_1m_volume_zero is always False
+624-625,price_1m fallback,api_server.py,"price = price_row['close'] if price_row else None",DATA EXTRACTION,OK,Index-based access works correctly
+626-628,price_1m return,api_server.py,"return {'symbol':..., 'price':..., 'volume':...}",RETURN VALUE,FAIL,Always returns volume=0 due to failed extraction
+616,price_1d query,api_server.py,"SELECT * FROM price_1d WHERE symbol=? AND timestamp >= datetime('now','-24 hours')",DATA SOURCE,PROBLEM,Missing volume > 0 filter; returns midnight synthetic rows
+617-622,price_1d fallback block,api_server.py,"if price_1d_row:",FALLBACK LOGIC,FAIL,Never reached because fallback trigger is broken
+623-625,price_1d extraction,api_server.py,"price = price_1d_row['close'] if price_1d_row else None",DATA EXTRACTION,OK,Index-based access works correctly
+640,return statement,api_server.py,"return {...}",RETURN VALUE,FAIL,Contains volume=0 from failed extraction

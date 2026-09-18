@@ -1,0 +1,8 @@
+{"timestamp":"2026-09-18T21:12:14Z","stage":"DEPLOY","status":"START","message":"Phase 42A.6.x Volume Fix Deployment","duration_ms":0}
+{"timestamp":"2026-09-18T21:12:15Z","stage":"GIT","status":"CHECK","message":"Verifying git state — clean working tree on tradingai.in_live_VM","duration_ms":1}
+{"timestamp":"2026-09-18T21:12:16Z","stage":"FIX","status":"APPLIED","message":"Applied volume=0 fix to backend/api_server.py — 3 lines changed","duration_ms":2}
+{"timestamp":"2026-09-18T21:12:17Z","stage":"DB","status":"BACKUP","message":"Database backup created at /opt/tradingai/database/tradingai.db.volbackup_20260918_211214 (274MB)","duration_ms":5}
+{"timestamp":"2026-09-18T21:12:22Z","stage":"SYNC","status":"PASS","message":"Files synced to VM","duration_ms":4}
+{"timestamp":"2026-09-18T21:12:25Z","stage":"RESTART","status":"PASS","message":"gunicorn restarted","duration_ms":2}
+{"timestamp":"2026-09-18T21:12:27Z","stage":"VALIDATE","status":"PASS","message":"NIFTY volume: 0 → 375,346,024 | BANKNIFTY volume: 0 → 237,801,140","duration_ms":2}
+{"timestamp":"2026-09-18T21:12:29Z","stage":"DEPLOY","status":"COMPLETE","message":"Volume fix deployment successful","duration_ms":15}

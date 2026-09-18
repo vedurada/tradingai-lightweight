@@ -1,0 +1,13 @@
+check_id,check_type,target,query_or_method,result,details,status
+DB-001,integrity,main DB,"PRAGMA integrity_check",ok,"No corruption detected",PASS
+DB-002,table_exists,price_1m,"SELECT count(*) FROM price_1m",exists,"Table has data",PASS
+DB-003,table_exists,live_quotes,"SELECT count(*) FROM live_quotes",exists,"Table has data",PASS
+DB-004,table_exists,price_1d,"SELECT count(*) FROM price_1d",exists,"Table has data",PASS
+DB-005,volume_not_zero,price_1m NIFTY,"SELECT volume FROM price_1m WHERE symbol='NIFTY' ORDER BY timestamp DESC LIMIT 1",375346024,"Volume > 0",PASS
+DB-006,volume_not_zero,price_1m BANKNIFTY,"SELECT volume FROM price_1m WHERE symbol='BANKNIFTY' ORDER BY timestamp DESC LIMIT 1",237801140,"Volume > 0",PASS
+DB-007,midnight_rows,price_1d NIFTY,"SELECT count(*) FROM price_1d WHERE symbol='NIFTY' AND volume=0",present,"Midnight synthetic rows exist (expected)",INFO
+DB-008,fix_applied,api_server.py,"grep 'volume > 0' backend/api_server.py",found,"Fix in place",PASS
+DB-009,fix_applied,api_server.py,"grep 'price_row\[' backend/api_server.py",found,"Index-based access in place",PASS
+DB-010,WAL mode,database,"PRAGMA journal_mode",wal,"Write-Ahead Logging active",PASS
+DB-011,busy_timeout,database,"PRAGMA busy_timeout",10000,"10-second timeout",PASS
+DB-012,table_count,all_tables,"SELECT count(*) FROM sqlite_master WHERE type='table'",19,"19 tables populated",INFO

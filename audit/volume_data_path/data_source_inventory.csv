@@ -1,0 +1,4 @@
+source,table,columns,availability,volume_available,query_location,notes
+price_1m,price_1m,timestamp,symbol,open,high,low,close,volume,ALWAYS,YES,api_server.py:595-598,Most recent 1-minute candle; primary source; sqlite3.Row
+live_quotes,live_quotes,timestamp,symbol,price,volume,change_pct,ALWAYS (if live),YES,api_server.py:600-601,Real-time quote stream; may be stale or absent outside market hours
+price_1d,price_1d,date,symbol,open,high,low,close,volume,SAMPLE,YES,api_server.py:616,Daily candles; fallback source; contains midnight synthetic rows (volume=0)

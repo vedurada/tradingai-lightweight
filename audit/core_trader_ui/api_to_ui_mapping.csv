@@ -1,0 +1,28 @@
+api_endpoint,method,used_by,ui_sections,mapped_fields,status
+/api/market,GET,/,today/,nifty,banknifty,"MARKET SNAPSHOT (prices changes trends), TICKER TRACK",WORKING
+/api/price/<symbol>,GET,/,today/,nifty,banknifty,"MARKET SNAPSHOT (spot price), TICKER TRACK",WORKING
+/api/vix,GET,/,today/,nifty,banknifty,"MARKET SNAPSHOT (VIX), VIX REGIME",WORKING
+/api/market-outlook?symbol=X,GET,/today/,nifty,banknifty,"AI MARKET OUTLOOK (bias confidence reasoning)",WORKING
+/api/key-levels?symbol=X,GET,/today/,nifty,banknifty,"KEY LEVELS (support resistance opening range)",WORKING
+/api/intraday-conditions?symbol=X,GET,/today/,nifty,banknifty,"INTRADAY CONDITIONS (bullish bearish no-trade)",WORKING
+/api/options/state/<symbol>,GET,/today/,nifty,banknifty,"OPTIONS INTELLIGENCE (PCR OI max pain expected move)",WORKING
+/api/strategy/<symbol>,GET,/today/,nifty,banknifty,"AI STRATEGY / STRATEGY CANDIDATES",WORKING
+/api/risk/<symbol>,GET,/today/,nifty,banknifty,"RISK MANAGEMENT (max risk size warnings)",WORKING
+/api/session-timeline,GET,/today/,SESSION TIMELINE,WORKING
+/api/breadth,GET,/today/,Breadth,"ADVANCES DECLINES UNCHANGED",WORKING
+/api/index-breadth,GET,/,"ADVANCE/DECLINE section",WORKING
+/api/market-evidence/<symbol>,GET,/today/,nifty,banknifty,MARKET EVIDENCE (trend momentum structure volatility options confirmation),WORKING
+/api/trade-qualification,POST,/today/,nifty,banknifty,TRADE QUALIFICATION (checks status reason),WORKING
+/api/paper-trades,GET,/today/,nifty,banknifty,PAPER TRADE (status entry exit P&L),WORKING
+/api/regime/<symbol>,GET,nifty,banknifty,SNAPSHOT (regime confidence),WORKING
+/api/market,GET,/today/,MARKET SNAPSHOT,"instruments quote regime vix",WORKING
+/api/indicators/<symbol>,GET,nifty,banknifty,TECHNICAL STRUCTURE (VWAP EMA RSI MACD ADX CPR),WORKING
+/api/walkforward/<symbol>/<start>/<end>,GET,tools/walkforward,WINDOW SUMMARY OOS PERFORMANCE DATA COVERAGE,WORKING
+/api/evidence/<symbol>/<date>,GET,tools/walkforward,HISTORICAL EVIDENCE,WORKING
+/api/backtest,GET,tools/backtest,BACKTEST RESULTS,WORKING
+/api/backtest/<job_id>,GET,tools/backtest,BACKTEST RESULTS (poll),WORKING
+/api/market-outlooks?symbol=&from=&to>,GET,tools/backtest,AI OUTLOOK HISTORY,WORKING
+/api/journal,GET/POST,tools/journal,TRADE JOURNAL,WORKING
+/api/intelligence/summary,GET,tools/intelligence,INTELLIGENCE SUMMARY,WORKING
+/api/intelligence/summary,GET,ai-track-record,TRACK RECORD SUMMARY,WORKING
+/api/health,GET,all pages,HEALTH CHECK (implicit),WORKING

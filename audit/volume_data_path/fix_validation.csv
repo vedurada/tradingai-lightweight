@@ -1,0 +1,13 @@
+test_case,symbol,endpoint,field,before_fix,after_fix,status
+Volume extraction,NIFTY,/api/price/NIFTY,volume,0,375346024,PASS
+Volume extraction,BANKNIFTY,/api/price/BANKNIFTY,volume,0,237801140,PASS
+Volume source,NIFTY,/api/price/NIFTY,source,,yfinance,PASS
+Volume timestamp,NIFTY,/api/price/NIFTY,timestamp,,2026-09-18+00:00,PASS
+API status,NIFTY,/api/price/NIFTY,http_status,200,200,PASS
+API status,BANKNIFTY,/api/price/BANKNIFTY,http_status,200,200,PASS
+Data completeness,NIFTY,/api/NIFTY,data_completeness,all true,all true,PASS
+Data completeness,BANKNIFTY,/api/NIFTY/data_completeness,all true,all true,PASS
+DB integrity,main DB,integrity_check,status,ok,ok,PASS
+DB backup,backup file,tradingai.db.volbackup,integrity,ok,ok,PASS
+Fallback chain,NIFTY,price_1d_query,volume_filter,missing,volume > 0,PASS
+Python version,production,python3 --version,version,3.10.12,3.10.12,N/A (compatible fix)

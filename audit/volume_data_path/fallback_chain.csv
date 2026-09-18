@@ -1,0 +1,6 @@
+fallback_level,source_table,trigger_condition,actual_behavior,bug_impact,expected_behavior
+Level 1 — price_1m,price_1m,"price_row exists AND volume > 0",Extract volume from most recent 1m candle,NEVER REACHED (AttributeError on .get()),Return volume from latest 1m candle
+Level 2 — live_quotes,live_quotes,"live_row exists AND volume > 0",Extract volume from live quote,NEVER REACHED (AttributeError on .get()),Return volume from live quote
+Level 3 — price_1m with volume=0,price_1m,"price_row exists AND volume = 0",Trigger fallback to price_1d,NEVER REACHED (price_1m_volume_zero stuck False),Check price_1d for valid volume data
+Level 4 — price_1d fallback,price_1d,"price_1m_volume_zero=True AND (no live_row OR live_volume_zero)",Extract volume from price_1d,NEVER REACHED (fallback trigger broken),Return volume from last 24h daily candle
+Level 5 — return zero,return,"All fallbacks failed",Return volume=0 as last resort,ALWAYS REACHED (due to bug),Return volume=0 with quality flag

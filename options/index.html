@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Options Intelligence Hub — PCR, Max Pain, OI — TradingAI</title>
+<meta name="description" content="Live Put-Call Ratio, max pain, open interest concentration, expected move, and option chain intelligence for NIFTY, BANKNIFTY, FINNIFTY and SENSEX.">
+<link rel="canonical" href="https://tradingai.in/options/index.html">
+<meta property="og:title" content="Options Intelligence Hub — TradingAI">
+<meta property="og:description" content="PCR, Max Pain, OI Concentration, Expected Move, Option Chain — all in one hub.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/options/index.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"Options Intelligence","item":"https://tradingai.in/options/index.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="../assets/css/main.css">
+<script src="../assets/js/live-blink.js" defer></script>
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a></nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar">Loading options data…</span><span id="live-clock" style="margin-left:0.5rem"></span></div>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading market data…</span></div></div>
+
+  <div style="font-size:0.78rem;color:#64748b;margin-bottom:0.6rem"><a href="/index.html">Home</a> / <strong>Options Intelligence</strong></div>
+
+  <!-- Index Selector -->
+  <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:1rem">
+    <a href="../options/index.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer;background:#dcfce7;border-color:#15803d;font-weight:700">NIFTY</div></a>
+    <a href="../options/index.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">BANKNIFTY</div></a>
+    <a href="../options/index.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">FINNIFTY</div></a>
+    <a href="../options/index.html" style="text-decoration:none"><div class="card" style="padding:0.4rem 0.9rem;font-size:0.82rem;cursor:pointer">SENSEX</div></a>
+  </div>
+
+  <!-- OPTIONS SUMMARY CARDS -->
+  <h2>Options Summary</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));margin-bottom:1.5rem" id="options-summary">
+    <div class="card" style="text-align:center;min-height:80px" id="opt-pcr-card">
+      <h3 style="font-size:0.85rem">PCR</h3>
+      <div class="price" id="opt-pcr">Loading…</div>
+      <div class="status">Put/Call Ratio</div>
+    </div>
+    <div class="card" style="text-align:center;min-height:80px" id="opt-maxpain-card">
+      <h3 style="font-size:0.85rem">Max Pain</h3>
+      <div class="price" id="opt-maxpain">Loading…</div>
+      <div class="status">Price Trap Level</div>
+    </div>
+    <div class="card" style="text-align:center;min-height:80px" id="opt-oi-card">
+      <h3 style="font-size:0.85rem">OI Concentration</h3>
+      <div class="price" id="opt-oi">Loading…</div>
+      <div class="status">Top OI Strike</div>
+    </div>
+    <div class="card" style="text-align:center;min-height:80px" id="opt-expmove-card">
+      <h3 style="font-size:0.85rem">Expected Move</h3>
+      <div class="price" id="opt-expmove">Loading…</div>
+      <div class="status">ATR-Based Range</div>
+    </div>
+    <div class="card" style="text-align:center;min-height:80px" id="opt-iv-card">
+      <h3 style="font-size:0.85rem">IV Percentile</h3>
+      <div class="price" id="opt-iv">Loading…</div>
+      <div class="status">Implied Volatility</div>
+    </div>
+    <div class="card" style="text-align:center;min-height:80px" id="opt-atm-card">
+      <h3 style="font-size:0.85rem">ATM Straddle Cost</h3>
+      <div class="price" id="opt-atm">Loading…</div>
+      <div class="status">ATM Premium</div>
+    </div>
+  </div>
+
+  <!-- OPTION CHAIN -->
+  <h2>Option Chain</h2>
+  <div class="card" style="overflow-x:auto;margin-bottom:1.5rem;padding:0">
+    <table class="history-table" id="opt-chain-table">
+      <thead><tr><th>Strike</th><th>CE OI</th><th>CE IV</th><th>CE Δ</th><th>PE OI</th><th>PE IV</th><th>PE Δ</th><th>OI Change</th><th>PCR</th></tr></thead>
+      <tbody><tr><td colspan="9" class="status">Loading option chain…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- MAX PAIN HISTORY -->
+  <h2>Max Pain History (Last 5 Expiries)</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="maxpain-history">
+    <div class="status">Loading max pain history…</div>
+  </div>
+
+  <!-- STRATEGY RECOMMENDATIONS -->
+  <h2>Options Strategy Recommendations</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(280px,1fr));margin-bottom:1.5rem" id="opt-strategies">
+    <div class="card" style="border-left:4px solid #15803d"><h3 style="font-size:0.9rem">Bullish View</h3><div class="status">Loading…</div></div>
+    <div class="card" style="border-left:4px solid #dc2626"><h3 style="font-size:0.9rem">Bearish View</h3><div class="status">Loading…</div></div>
+    <div class="card" style="border-left:4px solid #a16207"><h3 style="font-size:0.9rem">Neutral / Range</h3><div class="status">Loading…</div></div>
+    <div class="card" style="border-left:4px solid #c2410c"><h3 style="font-size:0.9rem">High Volatility</h3><div class="status">Loading…</div></div>
+  </div>
+
+  <!-- INTEREST RATE ANALYSIS -->
+  <h2>OI &amp; PCR Trend</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(250px,1fr));margin-bottom:1.5rem">
+    <div class="card" id="opt-pcr-trend">
+      <h3>PCR Trend</h3>
+      <div class="status">Loading PCR trend…</div>
+    </div>
+    <div class="card" id="opt-oi-trend">
+      <h3>OI Concentration Trend</h3>
+      <div class="status">Loading OI trend…</div>
+    </div>
+  </div>
+
+  <div style="padding:8px 14px;background:#f8fafc;border-radius:8px;font-size:0.78rem;color:#64748b;border:1px solid #e2e8f0;margin-bottom:1rem">
+    Analysis generated from stored market data and NSE bhavcopy. Not a guarantee of direction or profitability. Options involve substantial risk — independently assess position size and risk before trading.
+  </div>
+
+<footer>
+  <p>TradingAI provides market analysis and decision-support information. Not financial advice.</p>
+  <p style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a> · <a href="/sitemap.xml">Sitemap</a></p>
+</footer>
+</main>
+<script>
+const API_BASE='..';
+async function fetchJSON(path){try{const r=await fetch(API_BASE+'/api/'+path);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
+function fp(v){return v!=null?Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function fmt(n){return n!=null?Number(n).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function fmt0(n){return n!=null?Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
+function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.indexOf('BULL')>=0)return'#15803d';if(r.indexOf('BEAR')>=0)return'#dc2626';if(r.indexOf('RANGE')>=0)return'#a16207';return'#64748b';}
+function updateTimestamp(ts){var bar=document.getElementById('last-updated-bar');if(!bar||!ts)return;try{var d=new Date(ts);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);bar.textContent='Data as of '+f+' IST';bar.style.color='';}catch(e){}}
+function setLoading(el){if(!el)return;el.textContent='Loading…';el.style.color='#64748b';}
+function setUnavailable(el,msg){if(!el)return;el.innerHTML='<div class="status" style="color:#64748b">'+(msg||'Data unavailable')+'</div>';}
+
+var CURRENT_SYMBOL='NIFTY';
+var CURRENT_API='nifty';
+
+async function loadOptionsData(){
+  var syms=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];
+  var apiMap={NIFTY:'nifty',BANKNIFTY:'banknifty',FINNIFTY:'finnifty',SENSEX:'sensex'};
+
+  try{
+    var m=await fetchJSON('market');
+    if(m&&m.instruments&&m.instruments[CURRENT_SYMBOL]){
+      var inst=m.instruments[CURRENT_SYMBOL];
+      var q=inst.quote||{};
+      updateTimestamp(m.last_updated);
+    }
+  }catch(e){}
+
+  // PCR
+  try{
+    var pcr=await fetchJSON('pcr');
+    if(pcr&&pcr[CURRENT_API]&&pcr[CURRENT_API].length){
+      var val=pcr[CURRENT_API][0].pcr;
+      var el=document.getElementById('opt-pcr');
+      if(el){el.textContent=val!=null?val.toFixed(2):'—';el.style.color=val>1?'#dc2626':val<1?'#15803d':'#64748b';}
+    }
+  }catch(e){}
+
+  // Max Pain
+  try{
+    var mp=await fetchJSON('maxpain');
+    if(mp&&mp[CURRENT_API]&&mp[CURRENT_API].length){
+      var val=mp[CURRENT_API][0].max_pain;
+      var el=document.getElementById('opt-maxpain');
+      if(el){el.textContent=val!=null?fmt0(val):'—';}
+    }
+  }catch(e){}
+
+  // OI Top
+  try{
+    var oi=await fetchJSON('oi-top?symbol='+CURRENT_SYMBOL);
+    if(oi&&oi.length){
+      var tc=oi.find(function(x){return x.side==='CALL';});
+      var putOi=oi.find(function(x){return x.side==='PUT';});
+      if(tc){var el=document.getElementById('opt-oi');if(el){el.textContent=fmt0(tc.open_interest);el.style.color=regimeColor(tc.change_pct);}}
+      // IV Percentile (mock from OI data)
+      if(tc&&tc.implied_volatility){var ivEl=document.getElementById('opt-iv');if(ivEl){ivEl.textContent=tc.implied_volatility.toFixed(1)+'%';}}
+      // ATM straddle cost
+      if(tc&&putOi){var atmEl=document.getElementById('opt-atm');if(atmEl){atmEl.textContent='₹'+fmt0(tc.premium+putOi.premium);}}
+    }
+  }catch(e){}
+
+  // Expected Move
+  try{
+    var em=await fetchJSON('expected-move/'+CURRENT_SYMBOL);
+    if(em){
+      var el=document.getElementById('opt-expmove');
+      if(el){el.textContent='±'+fp(em.expected_move||em.move||0);}
+    }
+  }catch(e){}
+
+  // Option Chain
+  try{
+    var chain=await fetchJSON('options/expiries/'+CURRENT_SYMBOL);
+    if(chain&&chain.expiries){
+      var ct=document.getElementById('opt-chain-table');
+      if(ct){
+        var html='<thead><tr><th>Strike</th><th>CE OI</th><th>CE IV</th><th>CE Δ</th><th>PE OI</th><th>PE IV</th><th>PE Δ</th><th>OI Change</th><th>PCR</th></tr></thead><tbody>';
+        var exp=chain.expiries[0];
+        if(exp&&exp.strikes){
+          exp.strikes.forEach(function(s){
+            var ce=exp.data.filter(function(d){return d.strike==s&&d.type==='CE';})[0];
+            var pe=exp.data.filter(function(d){return d.strike==s&&d.type==='PE';})[0];
+            html+='<tr>';
+            html+='<td>'+fp(s)+'</td>';
+            html+='<td>'+(ce?fmt0(ce.oi):'—')+'</td>';
+            html+='<td>'+(ce&&ce.iv!=null?ce.iv.toFixed(1)+'%':'—')+'</td>';
+            html+='<td>'+(ce&&ce.delta!=null?ce.delta.toFixed(2):'—')+'</td>';
+            html+='<td>'+(pe?fmt0(pe.oi):'—')+'</td>';
+            html+='<td>'+(pe&&pe.iv!=null?pe.iv.toFixed(1)+'%':'—')+'</td>';
+            html+='<td>'+(pe&&pe.delta!=null?pe.delta.toFixed(2):'—')+'</td>';
+            html+='<td>—</td>';
+            html+='<td>'+(ce&&pe&&pe.oi>0?(ce.oi/pe.oi).toFixed(2):'—')+'</td>';
+            html+='</tr>';
+          });
+        }
+        html+='</tbody>';
+        ct.innerHTML=html;
+      }
+    }
+  }catch(e){}
+
+  // Max Pain History
+  try{
+    var mpHist=await fetchJSON('maxpain');
+    if(mpHist&&mpHist[CURRENT_API]){
+      var el=document.getElementById('maxpain-history');
+      if(el){
+        var html='<div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:0.5rem">';
+        mpHist[CURRENT_API].slice(0,5).forEach(function(d){
+          html+='<div class="card" style="padding:0.6rem;border-left:3px solid '+(d.pcr>1?'#dc2626':'#15803d')+'"><div style="font-size:0.72rem;color:#64748b">'+d.date+'</div><div style="font-size:1rem;font-weight:700">'+fp(d.max_pain)+'</div><div class="status">PCR: '+(d.pcr!=null?d.pcr.toFixed(2):'—')+'</div></div>';
+        });
+        html+='</div>';
+        el.innerHTML=html;
+      }
+    }
+  }catch(e){}
+
+  // Strategy recommendations
+  try{
+    var strat=await fetchJSON('strategy/'+CURRENT_SYMBOL);
+    if(strat){
+      var el=document.getElementById('opt-strategies');
+      if(el){
+        var html='';
+        var views=[{name:'Bullish View',color:'#15803d',key:'buy'},{name:'Bearish View',color:'#dc2626',key:'sell'},{name:'Neutral / Range',color:'#a16207',key:'neutral'},{name:'High Volatility',color:'#c2410c',key:'vol'}];
+        views.forEach(function(v){
+          var recommendation=strat.strategies||[];
+          var match=recommendation.filter(function(s){return (s.views||[]).indexOf(v.name)>=0;});
+          html+='<div class="card" style="border-left:4px solid '+v.color+'"><h3 style="font-size:0.9rem">'+v.name+'</h3>';
+          if(match.length){
+            match.slice(0,2).forEach(function(s){
+              html+='<div class="status" style="font-size:0.82rem;margin-bottom:4px"><strong>'+s.name+'</strong>: '+s.entry+' → SL '+s.risk+' → Tgt '+s.target+'</div>';
+            });
+          }else{html+='<div class="status">No active strategy for this view</div>';}
+          html+='</div>';
+        });
+        el.innerHTML=html;
+      }
+    }
+  }catch(e){}
+
+  // PCR/OV Trends
+  try{
+    var pcrTrend=await fetchJSON('pcr');
+    if(pcrTrend&&pcrTrend[CURRENT_API]){
+      var el=document.getElementById('opt-pcr-trend');
+      if(el){
+        var vals=pcrTrend[CURRENT_API].slice(0,5);
+        var html='<div style="font-size:0.85rem">';
+        vals.forEach(function(d){html+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span style="color:#64748b">'+d.date+'</span><span style="font-weight:700;color:'+(d.pcr>1?'#dc2626':'#15803d')+'">'+d.pcr.toFixed(2)+'</span></div>';});
+        html+='</div>';
+        el.innerHTML=html;
+      }
+    }
+  }catch(e){}
+
+  // OI Trend
+  try{
+    var oiTrend=await fetchJSON('oi-top?symbol='+CURRENT_SYMBOL);
+    if(oiTrend&&oiTrend.length){
+      var el=document.getElementById('opt-oi-trend');
+      if(el){
+        var html='<div style="font-size:0.85rem">';
+        oiTrend.forEach(function(d){
+          var side=d.side==='CALL'?'CE':'PE';
+          html+='<div style="display:flex;justify-content:space-between;padding:2px 0"><span style="color:#64748b">'+fp(d.strike)+' '+side+'</span><span style="font-weight:700">'+fmt0(d.open_interest)+'</span></div>';
+        });
+        html+='</div>';
+        el.innerHTML=html;
+      }
+    }
+  }catch(e){}
+}
+
+document.addEventListener('DOMContentLoaded',function(){loadOptionsData();setInterval(loadOptionsData,60000);});
+</script>
+<script src="/assets/js/consent.js" defer></script>
+</body>
+</html>

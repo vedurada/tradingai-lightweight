@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Track Record — Prediction Accuracy — TradingAI</title>
+<meta name="description" content="TradingAI prediction accuracy: historical verdicts, regime predictions, trade qualification accuracy, and walk-forward evidence.">
+<link rel="canonical" href="https://tradingai.in/ai-track-record.html">
+<meta property="og:title" content="AI Track Record — Prediction Accuracy — TradingAI">
+<meta property="og:description" content="Historical AI prediction accuracy, verdict history, and walk-forward evidence.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://tradingai.in/ai-track-record.html">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","name":"TradingAI","url":"https://tradingai.in/"},{"@type":"BreadcrumbList","itemListElement":[{"@type":"ListItem","position":1,"name":"Home","item":"https://tradingai.in/"},{"@type":"ListItem","position":2,"name":"AI Track Record","item":"https://tradingai.in/ai-track-record.html"}]}]}</script>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/assets/css/main.css">
+<script src="/assets/js/keep-scroll.js" defer></script>
+<script src="/assets/js/live-blink.js" defer></script>
+</head>
+<body>
+<header>
+  <div class="brand-row"><div><h1><a href="/index.html"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
+  <p class="tagline">AI-Assisted Market Intelligence Platform</p></div><span id="live-clock"></span></div>
+  <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a></nav>
+</header>
+<main>
+  <div class="updated-bar"><span id="last-updated-bar"></span></div>
+  <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span>Loading AI track record data…</span></div></div>
+
+  <h2>AI TRACK RECORD</h2>
+  <div class="card" style="margin-bottom:1.5rem">
+    <div class="status" style="color:#64748b">Historical accuracy of TradingAI predictions. All metrics computed deterministically from journal data — AI is excluded from calculations.</div>
+  </div>
+
+  <!-- ACCURACY SUMMARY -->
+  <h2>Prediction Accuracy Summary</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));margin-bottom:1.5rem" id="ai-metrics">
+    <div class="card" style="text-align:center"><h3 style="font-size:0.85rem">Overall Accuracy</h3><div class="price" id="ai-overall">Loading…</div><div class="status">Correct Predictions</div></div>
+    <div class="card" style="text-align:center"><h3 style="font-size:0.85rem">Regime Accuracy</h3><div class="price" id="ai-regime">Loading…</div><div class="status">Bullish/Bearish/Sideways</div></div>
+    <div class="card" style="text-align:center"><h3 style="font-size:0.85rem">Trade GO Accuracy</h3><div class="price" id="ai-go">Loading…</div><div class="status">GO/WAIT/NO_SETUP</div></div>
+    <div class="card" style="text-align:center"><h3 style="font-size:0.85rem">Total Predictions</h3><div class="price" id="ai-total">Loading…</div><div class="status">All Verdicts</div></div>
+    <div class="card" style="text-align:center"><h3 style="font-size:0.85rem">Avg Confidence</h3><div class="price" id="ai-conf">Loading…</div><div class="status">Mean Confidence %</div></div>
+    <div class="card" style="text-align:center"><h3 style="font-size:0.85rem">Walk-Forward OOS</h3><div class="price" id="ai-oos">Loading…</div><div class="status">Out-of-Sample Win Rate</div></div>
+  </div>
+
+  <!-- VERDICT HISTORY -->
+  <h2>Verdict History</h2>
+  <div class="card" style="overflow-x:auto;margin-bottom:1.5rem;padding:0" id="ai-verdicts">
+    <table class="history-table" id="verdict-table">
+      <thead><tr><th>Date</th><th>Symbol</th><th>Regime</th><th>Verdict</th><th>Confidence</th><th>Trade State</th><th>Actual Outcome</th><th>Correct?</th></tr></thead>
+      <tbody><tr><td colspan="8" class="status">Loading verdict history…</td></tr></tbody>
+    </table>
+  </div>
+
+  <!-- ACCURACY BY SYMBOL -->
+  <h2>Accuracy by Symbol</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:1.5rem" id="ai-by-symbol">
+    <div class="card"><h3>NIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card"><h3>BANKNIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card"><h3>FINNIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card"><h3>SENSEX</h3><div class="status">Loading…</div></div>
+  </div>
+
+  <!-- ACCURACY BY REGIME -->
+  <h2>Accuracy by Market Regime</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:1.5rem" id="ai-by-regime">
+    <div class="card" style="border-left:4px solid #15803d"><h3>BULLISH</h3><div class="status">Loading…</div></div>
+    <div class="card" style="border-left:4px solid #dc2626"><h3>BEARISH</h3><div class="status">Loading…</div></div>
+    <div class="card" style="border-left:4px solid #a16207"><h3>RANGE</h3><div class="status">Loading…</div></div>
+    <div class="card" style="border-left:4px solid #64748b"><h3>SIDEWAYS</h3><div class="status">Loading…</div></div>
+  </div>
+
+  <!-- WALK-FORWARD EVIDENCE -->
+  <h2>Walk-Forward Evidence</h2>
+  <div class="card" style="margin-bottom:1.5rem" id="ai-walkforward">
+    <div class="status">Loading walk-forward evidence…</div>
+  </div>
+
+  <!-- AI vs NO-AI COMPARISON -->
+  <h2>AI vs No-AI Comparison</h2>
+  <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:1.5rem" id="ai-comparison">
+    <div class="card" style="border-left:4px solid #15803d"><h3>With AI Guidance</h3><div class="status">Loading…</div></div>
+    <div class="card" style="border-left:4px solid #64748b"><h3>Without AI Guidance</h3><div class="status">Loading…</div></div>
+  </div>
+
+  <div style="padding:8px 14px;background:#f8fafc;border-radius:8px;font-size:0.78rem;color:#64748b;border:1px solid #e2e8f0;margin-bottom:1rem">
+    All accuracy metrics computed from stored journal data and walk-forward validation results. AI is excluded from all calculations. Historical results do not guarantee future performance.
+  </div>
+
+  <!-- QUICK LINKS -->
+  <div style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:1.5rem 0">
+    <a href="/tools/walkforward.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">📈 Walk-Forward →</div></a>
+    <a href="/tools/journal.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">📓 Trade Journal →</div></a>
+    <a href="/tools/intelligence.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">🧠 Personal Intelligence →</div></a>
+    <a href="/today/index.html" style="text-decoration:none"><div class="card" style="padding:0.5rem 0.8rem;font-size:0.82rem;cursor:pointer">🕘 Today Terminal →</div></a>
+  </div>
+
+<footer>
+  <p>TradingAI provides market analysis and decision-support information. Not financial advice.</p>
+  <p style="margin-top:0.6rem"><a href="../about.html">About</a> · <a href="../contact.html">Contact</a> · <a href="../privacy.html">Privacy</a> · <a href="../terms.html">Terms</a> · <a href="../disclaimer.html">Disclaimer</a></p>
+</footer>
+</main>
+<script>
+const API_BASE='';
+async function fetchJSON(path){try{const r=await fetch(API_BASE+'/api/'+path);if(!r.ok)return null;return await r.json();}catch(e){return null;}}
+function fp(v){return v!=null?Number(v).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2}):'—';}
+function fmt0(n){return n!=null?Number(n).toLocaleString('en-IN',{maximumFractionDigits:0}):'—';}
+function fmtP(v){return v!=null?(v>=0?'+':'')+v.toFixed(2):'—';}
+function regimeColor(r){if(!r)return'#64748b';r=String(r).toUpperCase();if(r.indexOf('BULL')>=0)return'#15803d';if(r.indexOf('BEAR')>=0)return'#dc2626';if(r.indexOf('RANGE')>=0||r.indexOf('SIDEWAY')>=0)return'#a16207';return'#64748b';}
+function updateTimestamp(ts){var bar=document.getElementById('last-updated-bar');if(!bar||!ts)return;try{var d=new Date(ts);var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(d);bar.textContent='Data as of '+f+' IST';bar.style.color='';}catch(e){}}
+async function loadTrackRecord(){
+  try{updateTimestamp(new Date().toISOString());}catch(e){}
+
+  // Summary metrics from journal stats
+  try{
+    var stats=await fetchJSON('journal/stats');
+    if(stats&&stats.data){
+      var d=stats.data;
+      var el1=document.getElementById('ai-overall');
+      if(el1&&d.total_trades){el1.textContent=(d.win_rate||0).toFixed(1)+'%';el1.style.color=(d.win_rate||0)>=50?'#15803d':'#dc2626';}
+      var el2=document.getElementById('ai-total');
+      if(el2&&d.total_trades){el2.textContent=fmt0(d.total_trades);}
+      var el3=document.getElementById('ai-conf');
+      if(el3&&d.avg_confidence!=null){el3.textContent=d.avg_confidence.toFixed(1)+'%';}
+    }
+  }catch(e){}
+
+  // Verdict history from journal
+  try{
+    var journal=await fetchJSON('journal?limit=50');
+    if(journal&&journal.data&&journal.data.trades){
+      var table=document.getElementById('verdict-table');
+      if(table){
+        var html='<thead><tr><th>Date</th><th>Symbol</th><th>Regime</th><th>Verdict</th><th>Confidence</th><th>Trade State</th><th>Actual Outcome</th><th>Correct?</th></tr></thead><tbody>';
+        journal.data.trades.forEach(function(t){
+          var correct=t.correct_prediction;
+          if(correct===null||correct===undefined)correct='—';
+          else if(correct)correct='✓ YES';
+          else correct='✗ NO';
+          var col=correct==='✓ YES'?'#15803d':correct==='✗ NO'?'#dc2626':'#64748b';
+          html+='<tr>';
+          html+='<td>'+(t.entry_date||t.timestamp||'—').slice(0,10)+'</td>';
+          html+='<td>'+(t.symbol||'—')+'</td>';
+          html+='<td>'+(t.regime||'—')+'</td>';
+          html+='<td>'+(t.trade_state||t.verdict||'—')+'</td>';
+          html+='<td>'+(t.confidence!=null?t.confidence+'%':'—')+'</td>';
+          html+='<td>'+(t.trade_state||'—')+'</td>';
+          html+='<td>'+(t.exit_reason||t.outcome||'—')+'</td>';
+          html+='<td style="color:'+col+';font-weight:700">'+correct+'</td>';
+          html+='</tr>';
+        });
+        html+='</tbody>';
+        table.innerHTML=html;
+      }
+    }
+  }catch(e){}
+
+  // Accuracy by symbol from journal stats per instrument
+  try{
+    var perInstr=await fetchJSON('intelligence/instrument/NIFTY');
+    if(perInstr&&perInstr.data){
+      var symbols=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];
+      symbols.forEach(function(sym){
+        var el=document.querySelector('#ai-by-symbol [data-sym="'+sym+'"]');
+        if(!el)return;
+        // Use available data from journal
+        el.innerHTML='<div class="status" style="color:#64748b">'+sym+': see journal stats</div>';
+      });
+    }
+  }catch(e){}
+
+  // Walk-forward evidence
+  try{
+    var wf=await fetchJSON('walkforward/NIFTY/2026-06-01/2026-09-15');
+    if(wf&&wf.windows&&wf.windows.length){
+      var el=document.getElementById('ai-walkforward');
+      if(el){
+        var w=wf.windows[0];
+        var test=w.test_metrics||{};
+        var html='<div style="font-size:0.85rem">';
+        html+='<div style="margin-bottom:0.5rem"><strong>OOS Win Rate:</strong> '+(test.win_rate||'—')+'%</div>';
+        html+='<div style="margin-bottom:0.5rem"><strong>OOS Net P&L:</strong> '+fmtP(test.net_pnl)+'</div>';
+        html+='<div style="margin-bottom:0.5rem"><strong>Profit Factor:</strong> '+fmt(test.profit_factor)+'</div>';
+        html+='<div style="margin-bottom:0.5rem"><strong>Data Coverage:</strong> '+w.coverage.total_days+' days | '+w.coverage.earliest+' → '+w.coverage.latest+'</div>';
+        if(w.insufficient_data){html+='<div style="color:#dc2626;margin-bottom:0.5rem">'+w.message+'</div>';}
+        html+='<div style="color:#64748b;font-size:0.78rem">All metrics computed deterministically. AI excluded.</div>';
+        html+='</div>';
+        el.innerHTML=html;
+      }
+    }
+  }catch(e){}
+
+  // AI vs No-AI comparison from journal data
+  try{
+    var comp=await fetchJSON('journal/stats');
+    if(comp&&comp.data){
+      var el1=document.querySelector('#ai-comparison [data-col="ai"]');
+      var el2=document.querySelector('#ai-comparison [data-col="noai"]');
+      if(el1&&comp.data.trades_with_ai){el1.innerHTML='<div class="status">'+comp.data.trades_with_ai+' trades with AI guidance</div>';}
+      if(el2&&comp.data.trades_without_ai){el2.innerHTML='<div class="status">'+comp.data.trades_without_ai+' trades without AI</div>';}
+    }
+  }catch(e){}
+}
+document.addEventListener('DOMContentLoaded',function(){loadTrackRecord();setInterval(loadTrackRecord,300000);});
+</script>
+<script src="/assets/js/consent.js" defer></script>
+</body>
+</html>

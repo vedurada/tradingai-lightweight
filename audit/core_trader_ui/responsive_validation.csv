@@ -1,0 +1,17 @@
+page_url,breakpoint,layout_adjustments,mobile_nav,mobile_cards,mobile_tables,tested,notes
+/,768px,grid→1fr main→1rem header→0.8rem,horizontal scroll,horizontal scroll,scrollable,YES,5-index grid becomes 1 column on mobile
+/,480px,main→0.5rem price→1.25rem,compact nav,1-col tiles,600px tables,YES,Extra small adjustments applied
+/today/index.html,768px,grid→1fr main→1rem header→0.8rem,n/a,grid 1-col,scrollable,YES,NIFTY snapshot cards stack vertically
+/today/index.html,480px,main→0.5rem price→1.25rem,compact nav,1-col,600px tables,YES,Mobile-first verified
+/indices/nifty.html,768px,grid→1fr,partial,grid adapts,scrollable,YES,Technical indicators grid adapts
+/indices/nifty.html,480px,compact layout,partial,1-col,600px tables,YES,Mobile verified
+/indices/banknifty.html,768px,grid→1fr,partial,grid adapts,scrollable,YES,Same structure as NIFTY
+/indices/banknifty.html,480px,compact layout,partial,1-col,600px tables,YES,Same structure as NIFTY
+/options/index.html,NEVER,NOT TESTED — PAGE DOES NOT EXIST,NO,NO,NO,NO,MUST CREATE AND TEST
+/strategies.html,768px,grid→1fr,bt-form→1-col,grid adapts,scrollable,YES,Strategy cards responsive
+/strategies.html,480px,bt-metric→2-col bt-form→1-col,compact,1-col,700px tables,YES,Mobile verified
+/tools/backtest.html,768px,bt-metric→2-col bt-form→1-col,n/a,grid adapts,scrollable,YES,Mobile-optimized
+/tools/backtest.html,480px,bt-metric→2-col bt-form→1-col,compact,1-col,600px tables,YES,Mobile verified
+/tools/walkforward.html,768px,wf-grid→2-col wf-metric→3-col,n/a,grid adapts,n/a,YES,Mobile-optimized
+/ai-track-record.html,NEVER,NOT TESTED — PAGE DOES NOT EXIST,NO,NO,NO,NO,MUST CREATE AND TEST
+/research/index.html,NEVER,NOT TESTED — PAGE DOES NOT EXIST,NO,NO,NO,NO,MUST CREATE AND TEST

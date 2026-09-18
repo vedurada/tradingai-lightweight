@@ -1,0 +1,27 @@
+component,type,used_by,description,status
+nav_header,shared,all 9 pages,Sticky header with logo tagline live clock and navigation links,WORKING
+live_clock,js,all 9 pages,IST clock updating every second,WORKING
+consent_script,shared,all 9 pages,Google Tag Manager with consent-default-deny,WORKING
+skip_link,shared,all 9 pages,Skip to main content accessibility link,WORKING
+updated_bar,shared,all 9 pages,Last updated timestamp bar,WORKING
+ticker_track,shared,all 9 pages,Scrolling market ticker with prices and changes,WORKING
+market_snapshot,card,/,today/,nifty,banknifty,5-index grid with price change and trend,WORKING
+ai_outlook,section,/,today/,nifty,banknifty,AI market outlook with bias confidence and reasoning,WORKING
+trade_qualification,section,/today/,nifty,banknifty,Trade qualification with checks and status,WORKING
+paper_trade,section,/today/,nifty,banknifty,Paper trade status with P&L,WORKING
+market_evidence,section,/today/,nifty,banknifty,Evidence cards by category,WORKING
+options_intel,section,/today/,nifty,banknifty,Options data PCR OI max pain expected move,WORKING
+intraday_conditions,section,/today/,nifty,banknifty,Bullish bearish no-trade conditions,WORKING
+key_levels,section,/today/,nifty,banknifty,Support resistance opening range,WORKING
+data_status,section,/,Market open closed status,WORKING
+breadth,section,/today/,Advances declines unchanged,WORKING
+risk_management,section,/today/,Risk guidance max risk position size warnings,WORKING
+session_timeline,section,/today/,PRE_MARKET OPEN LIVE CLOSED timeline,WORKING
+strategy_candidates,section,/today/,AI strategy candidates list,WORKING
+strategy_engine,section,strategies,Options strategy cards with ACTIVE/CONDITIONAL labels,WORKING
+backtest_form,form,tools/backtest,Backtest parameters and run button,WORKING
+backtest_results,section,tools/backtest,Metrics equity curve ledger outlook history,WORKING
+walkforward_form,form,tools/walkforward,Walk-forward parameters and run button,WORKING
+cta_row,shared,all 9 pages,Call-to-action button row for navigation,WORKING
+disclaimer,shared,all 9 pages,Risk disclosure and educational purpose text,WORKING
+footer,shared,all 9 pages,Footer with links,WORKING

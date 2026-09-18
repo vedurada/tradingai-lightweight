@@ -1,0 +1,9 @@
+step,action,expected,actual,result,notes
+1,Query price_1m for NIFTY,Get latest 1m candle with volume,Get row with volume field,OK,Row exists in DB
+2,Call price_row.get('volume'),Get volume value,AttributeError: 'sqlite3.Row' object has no attribute 'get',FAIL,Python 3.10 sqlite3.Row has no .get()
+3,Exception caught by try/except,Exception logged,Exception silently swallowed,PROBLEM,no logging of AttributeError
+4,Check price_1m_volume_zero,Should be True (volume=0),Remains False (never set),FAIL,Bug prevents state change
+5,Check live_row.get('volume'),Get volume value,AttributeError,FAIL,Same bug pattern
+6,Evaluate fallback trigger,"(price_1m_volume_zero AND ...)","price_1m_volume_zero=False → False",FAIL,Trigger never fires
+7,Extract from price_1d,"Volume from daily candle","price_1d returns midnight row (volume=0)",IF FIXED,Missing volume > 0 filter
+8,Return volume,Correct volume,volume=0,FAIL,End user sees 0 volume
