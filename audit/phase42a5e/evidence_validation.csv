@@ -1,0 +1,2 @@
+evidence_id,instrument,candle_timestamp,generated_at,trend,momentum,structure,volatility,options,confirmation,overall_signal,data_quality,setup_id,notes
+N/A,N/A,N/A,N/A,UNAVAILABLE,UNAVAILABLE,UNAVAILABLE,UNAVAILABLE,UNAVAILABLE,UNAVAILABLE,NO_DATA,NO_DATA,N/A,market_evidence_5m table has 0 rows - evidence engine not populated

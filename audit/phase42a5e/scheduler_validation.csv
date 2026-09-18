@@ -1,0 +1,13 @@
+schedule,job,log_location,last_execution,exit_status,runtime,failure_count
+* 9-15 * * 1-5,data_fetcher_db.py,/opt/tradingai/logs/data_fetcher_db.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+*/15 9-15 * * 1-5,aggregate.py sweep,/opt/tradingai/logs/aggregate_sweep.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+*/5 9-15 * * 1-5,monitor.py,/opt/tradingai/logs/monitor.log,[2026-09-18T10:25:01.708991+00:00] Health check: healthy,LOGGED,UNKNOWN,0
+*/5 9-15 * * 1-5,pnl_tracker.py evaluate,/opt/tradingai/logs/pnl_tracker_evaluate.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+20 15 * * 1-5,pnl_tracker.py close,/opt/tradingai/logs/pnl_tracker_close.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+0 */2 9-15 * * 1-5,alert.py,/opt/tradingai/logs/alert.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+*/15 9-15 * * 1-5,generate_json.py,/opt/tradingai/logs/generate_json.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+30 9 * * 1-5,outlook.py,/opt/tradingai/logs/outlook.log,PATCHED,LOGGED,UNKNOWN,0
+35 9 * * 1-5,daily_page.py morning,/opt/tradingai/logs/daily_page_morning.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+35 15 * * 1-5,daily_page.py close,/opt/tradingai/logs/daily_page_close.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+35 18 * * 1-5,bhavcopy.py daily,/opt/tradingai/logs/bhavcopy_daily.log,NOT FOUND,UNKNOWN,UNKNOWN,0
+30 18 * * *,vm-backup.sh,/opt/tradingai/logs/vm-backup.sh.log,NOT FOUND,UNKNOWN,UNKNOWN,0

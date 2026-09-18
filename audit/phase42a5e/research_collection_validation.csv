@@ -1,0 +1,22 @@
+check_timestamp,instrument,check_type,status,detail,created_at
+2026-09-18T10:09:36Z,NIFTY,price_freshness,STALE,Price data age checked,2026-09-18T10:09:36Z
+2026-09-18T10:09:36Z,BANKNIFTY,price_freshness,STALE,Price data age checked,2026-09-18T10:09:36Z
+2026-09-18T10:09:36Z,,research_tables,VALID,research_setup_identity: 0 records,2026-09-18T10:09:36Z
+2026-09-18T10:07:37Z,NIFTY,price_freshness,STALE,Price data age checked,2026-09-18T10:07:37Z
+2026-09-18T10:07:37Z,BANKNIFTY,price_freshness,STALE,Price data age checked,2026-09-18T10:07:37Z
+2026-09-18T10:07:37Z,,research_tables,VALID,research_setup_identity: 0 records,2026-09-18T10:07:37Z
+2026-09-18T10:01:42Z,NIFTY,price_freshness,STALE,Price data age checked,2026-09-18T10:01:42Z
+2026-09-18T10:01:42Z,BANKNIFTY,price_freshness,STALE,Price data age checked,2026-09-18T10:01:42Z
+2026-09-18T10:01:42Z,,research_tables,VALID,research_setup_identity: 0 records,2026-09-18T10:01:42Z
+2026-09-18T09:51:23Z,BANKNIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:51:23Z
+2026-09-18T09:51:23Z,,research_tables,VALID,research_setup_identity: 0 records,2026-09-18T09:51:23Z
+2026-09-18T09:51:22Z,NIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:51:22Z
+2026-09-18T09:42:56Z,NIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:42:56Z
+2026-09-18T09:42:56Z,BANKNIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:42:56Z
+2026-09-18T09:42:56Z,,research_tables,VALID,research_setup_identity: 0 records,2026-09-18T09:42:56Z
+2026-09-18T09:37:07Z,NIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:37:07Z
+2026-09-18T09:37:07Z,BANKNIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:37:07Z
+2026-09-18T09:37:07Z,,research_tables,VALID,research_setup_identity: 0 records,2026-09-18T09:37:07Z
+2026-09-18T09:30:32Z,NIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:30:32Z
+2026-09-18T09:30:32Z,BANKNIFTY,price_freshness,STALE,Price data age checked,2026-09-18T09:30:32Z
+2026-09-18T10:09:36Z,ALL,MANIFEST,LIVE,"dataset=research_collection, rows=0",2026-09-18T04:00:05Z

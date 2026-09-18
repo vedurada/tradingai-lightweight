@@ -1,0 +1,3 @@
+symbol,completed_candles,missing_candles,duplicate_candles,coverage_pct,latest_candle,latest_is_completed,data_quality
+NIFTY,1588,0,0,100,2026-09-18T04:25:00+00:00,YES,STALE
+BANKNIFTY,1588,0,0,100,2026-09-18T04:25:00+00:00,YES,STALE
