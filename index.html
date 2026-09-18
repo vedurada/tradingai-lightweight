@@ -251,7 +251,7 @@ document.addEventListener('DOMContentLoaded',function(){
           if(stEl){stEl.textContent=(inst.data_quality==='STALE'||(inst.quote&&inst.quote.stale))?'STALE':'';stEl.style.color='#eab308';}
         }
         var td=document.getElementById('s-'+map[sym].toLowerCase()+'-trend-display');
-        if(td&&inst&&inst.regime){td.textContent=regimeWord(inst.regime);td.style.color=regimeWord(inst.regime)==='BEARISH'?'#dc2626':regimeWord(inst.regime)==='BULLISH'?'#15803d':'#64748b';}
+        if(td&&inst&&inst.regime){var _rw=inst.regime.regime||'';td.textContent=regimeWord(_rw);td.style.color=regimeWord(_rw)==='BEARISH'?'#dc2626':regimeWord(_rw)==='BULLISH'?'#15803d':'#64748b';}
       }
     }
     var syms=['NIFTY','BANKNIFTY','FINNIFTY','SENSEX'];

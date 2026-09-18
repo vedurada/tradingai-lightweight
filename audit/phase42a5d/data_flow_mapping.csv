@@ -1,0 +1,10 @@
+step_name,source,transform,result,status
+1 User opens index page, Browser loads static HTML from /var/www/tradingai.in/html/{page}.html, Browser executes inline script on DOMContentLoaded,PAGE LOADED,PASS
+2 Browser calls fetchJSON('market') → GET /api/market,API returns 200 with instruments.{SYM} containing quote,regime(dict),indicators(dict),DATA FRESH,PASS
+3 Script extracts inst = marketData.instruments.{SYM},inst = instruments.{SYM} dict,inst = instruments.{SYM} dict,PASS
+4 Script accesses inst.regime (dict: {regime:'BEARISH',trend:'BEARISH',...}),inst.regime = dict object (NOT string),dict received,PASS
+5 OLD CODE: regimeText(inst.regime) → regimeText receives dict → regimeText calls r.toUpperCase() on dict,regimeText receives dict,TYPEERROR: r.toUpperCase is not a function,FAIL → FIXED
+6 FIXED CODE: _rX = inst.regime?.regime || '' → extracts string 'BEARISH',_rX = 'BEARISH' (string),STRING EXTRACTED,PASS
+7 FIXED CODE: regimeText('BEARISH') → r.toUpperCase() → 'BEARISH' → matches BEAR → returns 'BEARISH',regimeText returns 'BEARISH',REGIME DISPLAYED,PASS
+8 FIXED CODE: regimeColor('BEARISH') → contains 'BEAR' → returns '#dc2626',regimeColor returns '#dc2626',COLOR APPLIED,PASS
+9 DOM updates: regEl.textContent='BEARISH', regEl.style.color='#dc2626',regEl updated with text and color,DOM UPDATED,PASS

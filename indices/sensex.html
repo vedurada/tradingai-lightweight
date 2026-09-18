@@ -187,7 +187,7 @@ async function loadNiftyData(){
       var vixRegEl=document.getElementById('sensex-vix-regime');
       if(vixRegEl&&m.vix&&m.vix.value!=null){var v=m.vix.value;var vr=v<11?'VERY LOW':v<13?'LOW':v<16?'NORMAL':v<20?'ELEVATED':v<25?'HIGH':'EXTREME';vixRegEl.textContent=vr;}
       var regEl=document.getElementById('sensex-regime');
-      if(regEl&&inst.regime){regEl.textContent=regimeText(inst.regime);regEl.style.color=regimeColor(inst.regime);}
+      if(regEl){var _rS=inst.regime&&inst.regime.regime||'';if(_rS){regEl.textContent=regimeText(_rS);regEl.style.color=regimeColor(_rS);}}
       var regDetEl=document.getElementById('sensex-regime-detail');
       if(regDetEl&&inst.tradeability){regDetEl.textContent='Tradeability: '+(inst.tradeability.score||'—')+'/100';}
       var confEl=document.getElementById('sensex-confidence');
