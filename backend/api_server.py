@@ -4040,6 +4040,14 @@ def api_paper_trade_exit():
     return jsonify({"success": result, "trade_id": trade_id}), 200 if result else 400
 
 
+# Phase 42A: Research API endpoints (read-only)
+try:
+    from research_api import register_research_routes
+    register_research_routes(app)
+except Exception as _e:
+    logger.warning(f"Research API not available: {_e}")
+
+
 if __name__ == "__main__":
     port = int(os.environ.get("API_PORT", 8000))
     app.run(host="0.0.0.0", port=port, debug=False)

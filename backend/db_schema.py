@@ -728,7 +728,151 @@ CREATE TABLE IF NOT EXISTS paper_trade_events (
 );
 CREATE INDEX IF NOT EXISTS idx_pte_trade ON paper_trade_events(trade_id);
 CREATE INDEX IF NOT EXISTS idx_pte_ts ON paper_trade_events(timestamp DESC);
- """
+
+CREATE TABLE IF NOT EXISTS research_setup_identity (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    setup_id TEXT NOT NULL,
+    setup_fingerprint TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    candle_timestamp TEXT NOT NULL,
+    trading_date TEXT NOT NULL,
+    direction TEXT,
+    regime TEXT,
+    trade_state TEXT,
+    strategy TEXT,
+    evidence_summary TEXT DEFAULT '{}',
+    ai_outlook_id TEXT,
+    qualification_id TEXT,
+    setup_type TEXT DEFAULT 'NEW',
+    is_duplicate_of TEXT,
+    previous_setup_id TEXT,
+    seconds_since_previous_same_direction INTEGER,
+    regime_changed INTEGER DEFAULT 0,
+    direction_changed INTEGER DEFAULT 0,
+    evidence_changed INTEGER DEFAULT 0,
+    outlook_changed INTEGER DEFAULT 0,
+    data_quality TEXT DEFAULT 'LIVE',
+    engine_version TEXT,
+    created_at TEXT,
+    UNIQUE(setup_id),
+    UNIQUE(setup_fingerprint, candle_timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_setup_sym_ts ON research_setup_identity(instrument, candle_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_setup_fp ON research_setup_identity(setup_fingerprint);
+
+CREATE TABLE IF NOT EXISTS research_reentry_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    trade_id TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    candle_timestamp TEXT NOT NULL,
+    setup_id TEXT NOT NULL,
+    previous_trade_id TEXT,
+    previous_exit_timestamp TEXT,
+    seconds_since_previous_exit INTEGER,
+    previous_direction TEXT,
+    current_direction TEXT,
+    previous_regime TEXT,
+    current_regime TEXT,
+    previous_setup_fingerprint TEXT,
+    current_setup_fingerprint TEXT,
+    same_setup_fingerprint INTEGER DEFAULT 0,
+    direction_changed INTEGER DEFAULT 0,
+    regime_changed INTEGER DEFAULT 0,
+    evidence_changed INTEGER DEFAULT 0,
+    outlook_changed INTEGER DEFAULT 0,
+    reentry_type TEXT DEFAULT 'UNKNOWN',
+    data_quality TEXT DEFAULT 'LIVE',
+    engine_version TEXT,
+    created_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_reentry_sym ON research_reentry_log(instrument, candle_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_reentry_trade ON research_reentry_log(trade_id);
+
+CREATE TABLE IF NOT EXISTS research_ai_call_log (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    call_timestamp TEXT NOT NULL,
+    instrument TEXT NOT NULL,
+    candle_timestamp TEXT,
+    trigger TEXT DEFAULT 'MATERIAL_CHANGE',
+    model TEXT,
+    provider TEXT,
+    prompt_version TEXT,
+    success INTEGER DEFAULT 0,
+    latency_ms INTEGER,
+    token_usage INTEGER,
+    error TEXT,
+    fallback_used INTEGER DEFAULT 0,
+    outlook_id TEXT,
+    data_version TEXT,
+    created_at TEXT,
+    UNIQUE(call_timestamp, instrument)
+);
+CREATE INDEX IF NOT EXISTS idx_ai_call_sym_ts ON research_ai_call_log(instrument, call_timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS research_outcome_tracking (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    outlook_id TEXT NOT NULL,
+    setup_id TEXT,
+    instrument TEXT NOT NULL,
+    candle_timestamp TEXT NOT NULL,
+    outcome_5m TEXT DEFAULT 'PENDING',
+    outcome_5m_timestamp TEXT,
+    outcome_5m_price REAL,
+    outcome_5m_return_pct REAL,
+    outcome_5m_direction TEXT,
+    outcome_15m TEXT DEFAULT 'PENDING',
+    outcome_15m_timestamp TEXT,
+    outcome_15m_price REAL,
+    outcome_15m_return_pct REAL,
+    outcome_15m_direction TEXT,
+    outcome_30m TEXT DEFAULT 'PENDING',
+    outcome_30m_timestamp TEXT,
+    outcome_30m_price REAL,
+    outcome_30m_return_pct REAL,
+    outcome_30m_direction TEXT,
+    outcome_60m TEXT DEFAULT 'PENDING',
+    outcome_60m_timestamp TEXT,
+    outcome_60m_price REAL,
+    outcome_60m_return_pct REAL,
+    outcome_60m_direction TEXT,
+    evaluated_at TEXT,
+    data_quality TEXT DEFAULT 'LIVE',
+    created_at TEXT,
+    UNIQUE(outlook_id, candle_timestamp)
+);
+CREATE INDEX IF NOT EXISTS idx_outcome_sym_ts ON research_outcome_tracking(instrument, candle_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_outcome_outlook ON research_outcome_tracking(outlook_id);
+
+CREATE TABLE IF NOT EXISTS research_data_health (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    check_timestamp TEXT NOT NULL,
+    instrument TEXT,
+    check_type TEXT NOT NULL,
+    status TEXT NOT NULL,
+    detail TEXT,
+    details_json TEXT DEFAULT '{}',
+    created_at TEXT
+);
+CREATE INDEX IF NOT EXISTS idx_health_ts ON research_data_health(check_timestamp DESC);
+CREATE INDEX IF NOT EXISTS idx_health_sym ON research_data_health(instrument, check_timestamp DESC);
+
+CREATE TABLE IF NOT EXISTS research_manifest (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    dataset_name TEXT NOT NULL,
+    schema_version TEXT NOT NULL,
+    source_tables TEXT NOT NULL,
+    row_count INTEGER DEFAULT 0,
+    earliest_timestamp TEXT,
+    latest_timestamp TEXT,
+    instruments TEXT DEFAULT '[]',
+    missingness TEXT DEFAULT '{}',
+    generated_timestamp TEXT,
+    engine_version TEXT,
+    data_quality TEXT DEFAULT 'LIVE',
+    created_at TEXT,
+    UNIQUE(dataset_name)
+);
+  """
 
 
 def init_database(db_path: str = DB_PATH) -> None:
@@ -774,6 +918,35 @@ def init_database(db_path: str = DB_PATH) -> None:
             c.execute("ALTER TABLE history_archive ADD COLUMN entry_outlook TEXT")
     except Exception:
         pass
+
+    # Phase 42A research instrumentation migrations
+    try:
+        c.execute("PRAGMA table_info(paper_trades)")
+        pt_cols = {row[1] for row in c.fetchall()}
+        if "previous_trade_id" not in pt_cols:
+            c.execute("ALTER TABLE paper_trades ADD COLUMN previous_trade_id TEXT")
+        if "seconds_since_previous_exit" not in pt_cols:
+            c.execute("ALTER TABLE paper_trades ADD COLUMN seconds_since_previous_exit INTEGER")
+        if "same_setup_fingerprint" not in pt_cols:
+            c.execute("ALTER TABLE paper_trades ADD COLUMN same_setup_fingerprint INTEGER DEFAULT 0")
+
+        c.execute("PRAGMA table_info(market_snapshots_5m)")
+        snap_cols = {row[1] for row in c.fetchall()}
+        if "setup_id" not in snap_cols:
+            c.execute("ALTER TABLE market_snapshots_5m ADD COLUMN setup_id TEXT")
+
+        c.execute("PRAGMA table_info(market_evidence_5m)")
+        ev_cols = {row[1] for row in c.fetchall()}
+        if "setup_id" not in ev_cols:
+            c.execute("ALTER TABLE market_evidence_5m ADD COLUMN setup_id TEXT")
+
+        c.execute("PRAGMA table_info(ai_outlooks_5m)")
+        ai_cols = {row[1] for row in c.fetchall()}
+        if "generated_success" not in ai_cols:
+            c.execute("ALTER TABLE ai_outlooks_5m ADD COLUMN generated_success INTEGER DEFAULT 0")
+    except Exception:
+        pass
+
     conn.commit()
     conn.close()
     print(f"Database initialized: {db_path}")
