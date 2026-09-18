@@ -3673,6 +3673,74 @@ def api_outlook_5m_changes(symbol):
         return jsonify({"success": False, "error": str(e)}), 500
 
 
+def _ai_outlook_from_legacy(conn, symbol):
+    row = conn.execute(
+        "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",
+        (symbol,),
+    ).fetchone()
+    if not row:
+        return None, None, []
+    llm = json.loads(row["outlook"]) if isinstance(row["outlook"], str) else row["outlook"]
+    current = {
+        "outlook_id": f"{symbol}-{row['timestamp']}",
+        "instrument": symbol,
+        "candle_timestamp": row["timestamp"],
+        "generated_at": row["timestamp"],
+        "model": "LLM",
+        "bias": llm.get("directional_bias", llm.get("market_regime", "NEUTRAL")),
+        "confidence": llm.get("confidence", 0),
+        "market_regime": llm.get("market_regime", "UNKNOWN"),
+        "summary": llm.get("market_summary", ""),
+        "evidence_json": json.dumps(llm.get("evidence_strength", {})),
+        "watch_levels_json": "[]",
+        "confirmation_json": "[]",
+        "invalidation_json": "[]",
+        "risk_json": "[]",
+        "trade_state": "ACTIVE",
+        "expected_horizon_minutes": 30,
+        "material_changes_json": "[]",
+        "data_state": "LIVE",
+        "created_at": row["timestamp"],
+    }
+    prev_row = conn.execute(
+        "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? AND timestamp < ? ORDER BY timestamp DESC LIMIT 1",
+        (symbol, row["timestamp"]),
+    ).fetchone()
+    previous = None
+    if prev_row:
+        pllm = json.loads(prev_row["outlook"]) if isinstance(prev_row["outlook"], str) else prev_row["outlook"]
+        previous = {
+            "outlook_id": f"{symbol}-{prev_row['timestamp']}",
+            "instrument": symbol,
+            "generated_at": prev_row["timestamp"],
+            "bias": pllm.get("directional_bias", pllm.get("market_regime", "NEUTRAL")),
+            "confidence": pllm.get("confidence", 0),
+            "market_regime": pllm.get("market_regime", "UNKNOWN"),
+            "trade_state": "ACTIVE",
+            "data_state": "DELAYED",
+            "created_at": prev_row["timestamp"],
+        }
+    timeline = []
+    tl_rows = conn.execute(
+        "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 20",
+        (symbol,),
+    ).fetchall()
+    for r in tl_rows:
+        tllm = json.loads(r["outlook"]) if isinstance(r["outlook"], str) else r["outlook"]
+        timeline.append({
+            "outlook_id": f"{symbol}-{r['timestamp']}",
+            "instrument": symbol,
+            "generated_at": r["timestamp"],
+            "bias": tllm.get("directional_bias", tllm.get("market_regime", "NEUTRAL")),
+            "confidence": tllm.get("confidence", 0),
+            "market_regime": tllm.get("market_regime", "UNKNOWN"),
+            "summary": tllm.get("market_summary", ""),
+            "data_state": "DELAYED",
+            "created_at": r["timestamp"],
+        })
+    return current, previous, timeline
+
+
 @app.route("/api/ai-outlook/<symbol>", methods=["GET"])
 @limiter.limit("30/minute")
 def api_ai_outlook(symbol):
@@ -3708,27 +3776,63 @@ def api_ai_outlook(symbol):
             else:
                 current["age_status"] = "FRESH"
         else:
+            current = None
+
+        if not current:
+            current, previous, timeline = _ai_outlook_from_legacy(conn, symbol)
+            if current:
+                generated_dt = datetime.fromisoformat(current["generated_at"].replace("Z", "+00:00"))
+                age_seconds = (datetime.now(timezone.utc) - generated_dt).total_seconds()
+                current["age_seconds"] = round(age_seconds)
+                current["age_minutes"] = round(age_seconds / 60)
+                if age_seconds > MAX_OUTLOOK_AGE_MINUTES * 60:
+                    current["age_status"] = "STALE"
+                elif age_seconds > OUTLOOK_AGE_WARN_MINUTES * 60:
+                    current["age_status"] = "AGING"
+                else:
+                    current["age_status"] = "FRESH"
+
+        if not current:
             current = {"data_state": "NO_OUTLOOK", "age_status": "NO_OUTLOOK"}
 
-        prev_row = conn.execute(
-            "SELECT * FROM ai_outlooks_5m WHERE instrument=? AND generated_at < ? ORDER BY generated_at DESC LIMIT 1",
-            (symbol, row["generated_at"] if row else "1970-01-01T00:00:00Z"),
-        ).fetchone()
-        previous = dict(prev_row) if prev_row else None
+        if not previous and not timeline:
+            prev_row = conn.execute(
+                "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? AND timestamp < (SELECT timestamp FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1) ORDER BY timestamp DESC LIMIT 1",
+                (symbol, symbol),
+            ).fetchone()
+            if prev_row:
+                pllm = json.loads(prev_row["outlook"]) if isinstance(prev_row["outlook"], str) else prev_row["outlook"]
+                previous = {
+                    "outlook_id": f"{symbol}-{prev_row['timestamp']}",
+                    "instrument": symbol,
+                    "generated_at": prev_row["timestamp"],
+                    "bias": pllm.get("directional_bias", pllm.get("market_regime", "NEUTRAL")),
+                    "confidence": pllm.get("confidence", 0),
+                    "market_regime": pllm.get("market_regime", "UNKNOWN"),
+                    "trade_state": "ACTIVE",
+                    "data_state": "DELAYED",
+                    "created_at": prev_row["timestamp"],
+                }
 
-        timeline = []
-        tl_rows = conn.execute(
-            "SELECT * FROM ai_outlooks_5m WHERE instrument=? ORDER BY generated_at DESC LIMIT 20",
-            (symbol,),
-        ).fetchall()
-        for r in tl_rows:
-            d = dict(r)
-            for f in ("evidence_json", "watch_levels_json", "confirmation_json", "invalidation_json", "risk_json"):
-                try:
-                    d[f] = json.loads(d.get(f) or "[]")
-                except (json.JSONDecodeError, TypeError):
-                    d[f] = []
-            timeline.append(d)
+        if not timeline and current and current.get("generated_at"):
+            tl_rows = conn.execute(
+                "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? AND timestamp < ? ORDER BY timestamp DESC LIMIT 20",
+                (symbol, current["generated_at"]),
+            ).fetchall()
+            timeline = []
+            for r in tl_rows:
+                tllm = json.loads(r["outlook"]) if isinstance(r["outlook"], str) else r["outlook"]
+                timeline.append({
+                    "outlook_id": f"{symbol}-{r['timestamp']}",
+                    "instrument": symbol,
+                    "generated_at": r["timestamp"],
+                    "bias": tllm.get("directional_bias", tllm.get("market_regime", "NEUTRAL")),
+                    "confidence": tllm.get("confidence", 0),
+                    "market_regime": tllm.get("market_regime", "UNKNOWN"),
+                    "summary": tllm.get("market_summary", ""),
+                    "data_state": "DELAYED",
+                    "created_at": r["timestamp"],
+                })
 
         data_state = market_status.get("session", "CLOSED")
         if not current or current.get("data_state") == "NO_OUTLOOK":
@@ -3770,24 +3874,50 @@ def api_ai_outlook_timeline(symbol):
         per_page = request.args.get("per_page", 20, type=int)
         offset = (page - 1) * per_page
 
-        total = conn.execute(
-            "SELECT COUNT(*) FROM ai_outlooks_5m WHERE instrument=?", (symbol,)
-        ).fetchone()[0]
-
         rows = conn.execute(
             "SELECT * FROM ai_outlooks_5m WHERE instrument=? ORDER BY generated_at DESC LIMIT ? OFFSET ?",
             (symbol, per_page, offset),
         ).fetchall()
+        total = conn.execute(
+            "SELECT COUNT(*) FROM ai_outlooks_5m WHERE instrument=?", (symbol,)
+        ).fetchone()[0]
 
-        outlooks = []
-        for r in rows:
-            d = dict(r)
-            for f in ("evidence_json", "watch_levels_json", "confirmation_json", "invalidation_json", "risk_json", "material_changes_json"):
-                try:
-                    d[f] = json.loads(d.get(f) or "[]")
-                except (json.JSONDecodeError, TypeError):
-                    d[f] = []
-            outlooks.append(d)
+        if not rows:
+            rows = conn.execute(
+                "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT ? OFFSET ?",
+                (symbol, per_page, offset),
+            ).fetchall()
+            total = conn.execute(
+                "SELECT COUNT(*) FROM ai_outlooks WHERE symbol=?", (symbol,)
+            ).fetchone()[0]
+            outlooks = []
+            for r in rows:
+                llm = json.loads(r["outlook"]) if isinstance(r["outlook"], str) else r["outlook"]
+                outlooks.append({
+                    "outlook_id": f"{symbol}-{r['timestamp']}",
+                    "instrument": symbol,
+                    "candle_timestamp": r["timestamp"],
+                    "generated_at": r["timestamp"],
+                    "model": "LLM",
+                    "bias": llm.get("directional_bias", llm.get("market_regime", "NEUTRAL")),
+                    "confidence": llm.get("confidence", 0),
+                    "market_regime": llm.get("market_regime", "UNKNOWN"),
+                    "summary": llm.get("market_summary", ""),
+                    "evidence_json": json.dumps(llm.get("evidence_strength", {})),
+                    "trade_state": "ACTIVE",
+                    "data_state": "DELAYED",
+                    "created_at": r["timestamp"],
+                })
+        else:
+            outlooks = []
+            for r in rows:
+                d = dict(r)
+                for f in ("evidence_json", "watch_levels_json", "confirmation_json", "invalidation_json", "risk_json", "material_changes_json"):
+                    try:
+                        d[f] = json.loads(d.get(f) or "[]")
+                    except (json.JSONDecodeError, TypeError):
+                        d[f] = []
+                outlooks.append(d)
 
         return jsonify({
             "success": True,
