@@ -3674,6 +3674,7 @@ def api_outlook_5m_changes(symbol):
 
 
 def _ai_outlook_from_legacy(conn, symbol):
+    from outlook_scheduler import MAX_OUTLOOK_AGE_MINUTES, OUTLOOK_AGE_WARN_MINUTES
     row = conn.execute(
         "SELECT outlook, timestamp FROM ai_outlooks WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",
         (symbol,),
@@ -3745,7 +3746,7 @@ def _ai_outlook_from_legacy(conn, symbol):
 @limiter.limit("30/minute")
 def api_ai_outlook(symbol):
     from db_schema import DB_PATH
-    from outlook_scheduler import is_market_open, get_current_candle_timestamp
+    from outlook_scheduler import is_market_open, get_current_candle_timestamp, MAX_OUTLOOK_AGE_MINUTES, OUTLOOK_AGE_WARN_MINUTES
     import sqlite3, json
     conn = sqlite3.connect(DB_PATH)
     conn.row_factory = sqlite3.Row
