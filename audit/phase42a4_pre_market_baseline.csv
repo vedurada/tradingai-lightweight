@@ -1,0 +1,56 @@
+timestamp,category,value,unit,notes
+2026-09-18T06:56:00+05:30,vm_hostname,webserver,,
+2026-09-18T06:56:00+05:30,vm_os,Ubuntu 22.04.5 LTS,,
+2026-09-18T06:56:00+05:30,python_version,3.10.12,,
+2026-09-18T06:56:00+05:30,market_state,PRE-MARKET,,session opens 09:15 IST
+2026-09-18T06:56:00+05:30,market_session_date,2026-09-18,,Friday
+2026-09-18T06:56:00+05:30,git_branch,html/h31-shell-core-pages,,
+2026-09-18T06:56:00+05:30,git_head,800c1b1,,Phase 42A
+2026-09-18T06:56:00+05:30,git_status,clean,,0 modified files
+2026-09-18T06:56:00+05:30,commits_ahead,1,,not pushed
+2026-09-18T06:56:00+05:30,db_path,/opt/tradingai/database/tradingai.db,,
+2026-09-18T06:56:00+05:30,db_size_bytes,185364480,,176.78 MB
+2026-09-18T06:56:00+05:30,db_size_mb,176.78,,
+2026-09-18T06:56:00+05:30,wal_size_bytes,6699152,,6.7 MB
+2026-09-18T06:56:00+05:30,db_tables,58,,
+2026-09-18T06:56:00+05:30,ram_total_mb,956,,
+2026-09-18T06:56:00+05:30,ram_used_mb,291,,
+2026-09-18T06:56:00+05:30,ram_available_mb,532,,
+2026-09-18T06:56:00+05:30,disk_total_gb,45,,
+2026-09-18T06:56:00+05:30,disk_used_gb,16,,35%
+2026-09-18T06:56:00+05:30,disk_free_gb,30,,
+2026-09-18T06:56:00+05:30,cpu_cores,2,,
+2026-09-18T06:56:00+05:30,gunicorn_processes,4,,3 workers + 1 transitional
+2026-09-18T06:56:00+05:30,nginx_status,active,,
+2026-09-18T06:56:00+05:30,api_health_status,degraded,,pre-existing stale data
+2026-09-18T06:56:00+05:30,research_setup_identity,0,,expected pre-market
+2026-09-18T06:56:00+05:30,research_reentry_log,0,,expected pre-market
+2026-09-18T06:56:00+05:30,research_ai_call_log,0,,expected pre-market
+2026-09-18T06:56:00+05:30,research_outcome_tracking,0,,expected pre-market
+2026-09-18T06:56:00+05:30,research_data_health,0,,expected pre-market
+2026-09-18T06:56:00+05:30,research_manifest,0,,expected pre-market
+2026-09-18T06:56:00+05:30,market_snapshots_5m,0,,expected pre-market
+2026-09-18T06:56:00+05:30,market_evidence_5m,0,,expected pre-market
+2026-09-18T06:56:00+05:30,ai_outlooks_5m,0,,expected pre-market
+2026-09-18T06:56:00+05:30,paper_trades_total,1188,,historical
+2026-09-18T06:56:00+05:30,paper_trades_nifty,1188,,
+2026-09-18T06:56:00+05:30,paper_trades_banknifty,0,,
+2026-09-18T06:56:00+05:30,paper_trades_active,0,,
+2026-09-18T06:56:00+05:30,paper_trades_completed,0,,all historical
+2026-09-18T06:56:00+05:30,price_5m_nifty_count,4350,,historical
+2026-09-18T06:56:00+05:30,price_5m_banknifty_count,4350,,historical
+2026-09-18T06:56:00+05:30,price_5m_sensex_count,4350,,historical
+2026-09-18T06:56:00+05:30,price_5m_finnifty_count,4350,,historical
+2026-09-18T06:56:00+05:30,price_5m_nifty_latest,2026-09-15 09:55:00,,3 days stale
+2026-09-18T06:56:00+05:30,price_5m_banknifty_latest,2026-09-15 09:55:00,,3 days stale
+2026-09-18T06:56:00+05:30,price_5m_sensex_latest,2026-09-15 09:55:00,,3 days stale
+2026-09-18T06:56:00+05:30,price_5m_finnifty_latest,2026-09-15 09:55:00,,3 days stale
+2026-09-18T06:56:00+05:30,ai_outlooks_latest,2026-09-17T15:31:23,,historical
+2026-09-18T06:56:00+05:30,frozen_regime_hash,08f42f6346501734abe412bc96ca189e4fa0407a,,unchanged
+2026-09-18T06:56:00+05:30,frozen_strategies_hash,c4b0704b6e94172fb81159c082eb66badf375cb0,,unchanged
+2026-09-18T06:56:00+05:30,frozen_indicators_hash,dd0209406c1ca224768f8252db2b852e20cc4656,,unchanged
+2026-09-18T06:56:00+05:30,frozen_options_hash,723e0ce411a3e730568fab78b20457b83e1e7673,,unchanged
+2026-09-18T06:56:00+05:30,frozen_outlook_hash,5e2e266988acdc9d218e65ddf0d06c29de621287,,unchanged
+2026-09-18T06:56:00+05:30,frozen_scenarios_hash,6694955f7bb808d82ad1fd7e319cb7bf2d5cba7a,,unchanged
+2026-09-18T06:56:00+05:30,frozen_ai_outlook_hash,3632a06ec1e109115b1d21da4de3b37d62a68dd6,,unchanged
+2026-09-18T06:56:00+05:30,frozen_backtest_hash,dd75a436c8d3b8bc371c466fc78bb12e1ec20692,,unchanged

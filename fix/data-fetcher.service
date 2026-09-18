@@ -1,0 +1,14 @@
+[Unit]
+Description=TradingAI Market Data Fetcher
+After=network.target tradingai-api.service
+Requires=tradingai-api.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/opt/tradingai/backend
+Environment=SKIP_LLM=1
+Environment=PYTHONPATH=/opt/tradingai/backend
+ExecStart=/usr/bin/python3 /opt/tradingai/backend/data_fetcher_db.py
+StandardOutput=append:/opt/tradingai/logs/data.log
+StandardError=append:/opt/tradingai/logs/data.log

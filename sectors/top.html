@@ -62,7 +62,7 @@ try {
       <p>Proxy reflects our coverage, and coverage can lag the exchange's official indices. The page is automatically built from public data for research, not advice. Use it to understand the day's leadership, then investigate the specific names yourself.</p>
   </div>
   <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
+    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
     <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
     <div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
     <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
@@ -125,9 +125,9 @@ document.addEventListener('DOMContentLoaded',function(){
     if(c.dataset.clickable==='1'||c.onclick)return;
     var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
     var url=null;
-    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/market.html';
-    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/market.html';
-    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/market.html';
+    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.html';
+    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/today/index.html';
+    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/today/index.html';
     else if(h.includes('AI MARKET OUTLOOK')||h.includes('AI INTRADAY'))url='/strategies.html';
     else if(h.includes('OPTIONS INTELLIGENCE')||h.includes('OPTION CHAIN')||h.includes('PCR')||h.includes('IV')||h.includes('MAX PAIN'))url='/strategy-builder.html';
     else if(h.includes('STRATEG')||h.includes('BUY')||h.includes('SELL')||h.includes('EXIT')||h.includes('HOLD'))url='/strategies.html';

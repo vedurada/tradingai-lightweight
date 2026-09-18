@@ -1,0 +1,14 @@
+[Unit]
+Description=TradingAI Monitor & Research Collector
+After=network.target tradingai-api.service
+Requires=tradingai-api.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+WorkingDirectory=/opt/tradingai/backend
+Environment=PYTHONPATH=/opt/tradingai/backend
+ExecStart=/usr/bin/python3 /opt/tradingai/backend/monitor.py
+SuccessExitStatus=0 1
+StandardOutput=append:/opt/tradingai/logs/monitor.log
+StandardError=append:/opt/tradingai/logs/monitor.log

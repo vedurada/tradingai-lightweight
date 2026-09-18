@@ -1,0 +1,39 @@
+timestamp,category,metric,value,status,notes
+2026-09-18T06:56:00+05:30,NIFTY_5m,count,0,PRE_MARKET,Market not open
+2026-09-18T06:56:00+05:30,NIFTY_5m,latest_timestamp,INSUFFICIENT_DATA,PRE_MARKET,No live data
+2026-09-18T06:56:00+05:30,BANKNIFTY_5m,count,0,PRE_MARKET,Market not open
+2026-09-18T06:56:00+05:30,BANKNIFTY_5m,latest_timestamp,INSUFFICIENT_DATA,PRE_MARKET,No live data
+2026-09-18T06:56:00+05:30,SENSEX_5m,count,0,PRE_MARKET,Market not open
+2026-09-18T06:56:00+05:30,SENSEX_5m,latest_timestamp,INSUFFICIENT_DATA,PRE_MARKET,No live data
+2026-09-18T06:56:00+05:30,FINNIFTY_5m,count,0,PRE_MARKET,Market not open
+2026-09-18T06:56:00+05:30,FINNIFTY_5m,latest_timestamp,INSUFFICIENT_DATA,PRE_MARKET,No live data
+2026-09-18T06:56:00+05:30,price_5m_NIFTY,historical_count,4350,OK,Historical data available
+2026-09-18T06:56:00+05:30,price_5m_BANKNIFTY,historical_count,4350,OK,Historical data available
+2026-09-18T06:56:00+05:30,price_5m_SENSEX,historical_count,4350,OK,Historical data available
+2026-09-18T06:56:00+05:30,price_5m_FINNIFTY,historical_count,4350,OK,Historical data available
+2026-09-18T06:56:00+05:30,price_5m_NIFTY,latest,2026-09-15T09:55:00,STALE,3 days old
+2026-09-18T06:56:00+05:30,price_5m_BANKNIFTY,latest,2026-09-15T09:55:00,STALE,3 days old
+2026-09-18T06:56:00+05:30,research_setup_identity,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,research_reentry_log,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,research_ai_call_log,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,research_outcome_tracking,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,research_data_health,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,research_manifest,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,market_snapshots_5m,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,market_evidence_5m,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,ai_outlooks_5m,count,0,EXPECTED,Pre-market
+2026-09-18T06:56:00+05:30,paper_trades,count,1188,OK,Historical
+2026-09-18T06:56:00+05:30,ai_calls,count,0,NO_TRIGGER,No trigger conditions met
+2026-09-18T06:56:00+05:30,ai_outlooks,count,0,NO_TRIGGER,No trigger conditions met
+2026-09-18T06:56:00+05:30,TRADE_qualification,count,0,PRE_MARKET,No evaluations
+2026-09-18T06:56:00+05:30,WAIT_qualification,count,0,PRE_MARKET,No evaluations
+2026-09-18T06:56:00+05:30,NO_TRADE_qualification,count,0,PRE_MARKET,No evaluations
+2026-09-18T06:56:00+05:30,5m_outcomes,count,0,PENDING,No trades
+2026-09-18T06:56:00+05:30,15m_outcomes,count,0,PENDING,No trades
+2026-09-18T06:56:00+05:30,30m_outcomes,count,0,PENDING,No trades
+2026-09-18T06:56:00+05:30,60m_outcomes,count,0,PENDING,No trades
+2026-09-18T06:56:00+05:30,unique_setup_fingerprints,count,0,PRE_MARKET,No live data
+2026-09-18T06:56:00+05:30,reentries,count,0,PRE_MARKET,No trades
+2026-09-18T06:56:00+05:30,cross_instrument_contamination,count,0,OK,None detected
+2026-09-18T06:56:00+05:30,fabricated_data,count,0,OK,None detected
+2026-09-18T06:56:00+05:30,look_ahead_violations,count,0,OK,None detected

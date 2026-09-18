@@ -1,0 +1,24 @@
+# Nginx Redirect Configuration — /market.html → /today/index.html
+# Add to /etc/nginx/sites-enabled/tradingai (VM)
+# This replaces any existing /market.html handling
+
+# Option A: HTTP 301 Redirect (RECOMMENDED) — preserves SEO, browser caches redirect
+location = /market.html {
+    return 301 /today/index.html;
+}
+
+# Option B: Internal Rewrite (transparent to user — URL stays /market.html but content is from /today/)
+# Uncomment if you want /market.html to remain in address bar while serving /today/index.html
+# location = /market.html {
+#     rewrite ^ /today/index.html last;
+# }
+
+# Ghost-path guard for any /market.html variants
+location = /indices/market.html {
+    return 301 /today/index.html;
+}
+
+# Also redirect any query-string variants
+location ~ ^/market\.html(.*)$ {
+    return 301 /today/index.html;
+}

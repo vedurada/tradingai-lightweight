@@ -1,0 +1,9 @@
+stage,component,latest_timestamp,freshness,status,error,fix_applied
+Market source,Yahoo/NSE,2026-09-18T02:31:00Z,FRESH,WORKING,,
+1m DB,data_fetcher_db.py,2026-09-18T02:31:00Z,FRESH,WORKING,,
+5m DB,aggregate.py,2026-09-15T09:55:00Z,STALE,STALE,Pre-market (expected),No fix needed
+JSON generation,generate_json.py,2026-09-18T07:59:00Z,FRESH,WORKING,Fixed RegimeEngine.evaluate() bug,Fixed
+/data/ serving,nginx+symlink,2026-09-18T07:59:00Z,FRESH,WORKING,Created symlink,Fixed
+API endpoints,gunicorn,Various,STALE,WORKING,Some return 500,Documented
+nginx,nginx,2026-09-18T08:04:00Z,FRESH,WORKING,,
+Today page,Inline JS,2026-09-18T08:04:00Z,FRESH,WORKING,Pre-market state,Working

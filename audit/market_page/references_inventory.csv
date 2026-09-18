@@ -1,0 +1,59 @@
+file,reference_type,line_number,context,severity,action_required,redirect_target
+index.html,nav_link,48,<a href="/market.html">Market</a>,MEDIUM,REMOVE → link to /today/index.html,/today/index.html
+index.html,card_nav,87,data-nav="/market.html" data-clickable=1,MEDIUM,REMOVE or redirect,/today/index.html
+index.html,js_redirect,317-319,MARKET PULSE/MARKET OVERVIEW → /market.html,HIGH,UPDATE redirect target,/today/index.html
+index.html,js_redirect,318-319,MARKET REGIME/TRADEABILITY → /market.html,HIGH,UPDATE redirect target,/today/index.html
+index.html,js_redirect,319,NIFTY/BANKNIFTY/SENSEX/FINNIFTY/VIX → /market.html,HIGH,UPDATE redirect target,/today/index.html
+today/index.html,nav_link,24,<a href="/market.html">Market</a>,MEDIUM,REMOVE,/today/index.html
+banknifty.html,nav_link,TBD,<a href="/market.html">Market</a>,MEDIUM,REMOVE,/today/index.html
+nifty.html,nav_link,TBD,<a href="/market.html">Market</a>,MEDIUM,REMOVE,/today/index.html
+finnifty.html,nav_link,TBD,<a href="/market.html">Market</a>,MEDIUM,REMOVE,/today/index.html
+sensex.html,nav_link,TBD,<a href="/market.html">Market</a>,MEDIUM,REMOVE,/today/index.html
+strategies.html,nav_link,TBD,<a href="/market.html">Market</a>,MEDIUM,REMOVE,/today/index.html
+etfs/holdings.html,cta_link,77,<a href="/market.html">Open →</a>,LOW,UPDATE redirect,/today/index.html
+etfs/holdings.html,js_redirect,136-138,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+etfs/top-etfs.html,cta_link,65,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+etfs/top-etfs.html,js_redirect,110-112,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stock.html,cta_link,60,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+stock.html,js_redirect,97-99,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+portfolio.html,cta_link,77,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+portfolio.html,js_redirect,154-156,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+news/index.html,cta_link,70,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+news/index.html,js_redirect,131-133,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+about.html,text_link,50,<a href="market.html">market dashboard</a>,LOW,UPDATE,/today/index.html
+about.html,js_redirect,87-89,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+contact.html,js_redirect,83-85,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+404.html,text_link,37,<a href="/market.html">Market</a>,LOW,UPDATE,/today/index.html
+queries/index.html,text_link,61,<a href="/market.html">Market breadth</a>,LOW,UPDATE,/today/index.html
+queries/index.html,text_link,63,<a href="/market.html">VWAP breaks</a>,LOW,UPDATE,/today/index.html
+queries/index.html,cta_link,78,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+queries/index.html,js_redirect,99-101,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+scanner.html,js_redirect,161,MARKET PULSE → /market.html,HIGH,UPDATE,/today/index.html
+global/markets.html,cta_link,65,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+global/markets.html,js_redirect,99-101,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+sectors/top.html,cta_link,65,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+sectors/top.html,js_redirect,128-130,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+etfs/holdings.html,js_redirect,136-138,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+alerts.html,cta_link,75,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+alerts.html,js_redirect,124-126,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stock-options.html,js_redirect,152,MARKET PULSE/TODAY → /market.html,HIGH,UPDATE,/today/index.html
+strategy-builder.html,cta_link,87,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+strategy-builder.html,js_redirect,174,MARKET PULSE → /market.html,HIGH,UPDATE,/today/index.html
+mutual-funds/index.html,cta_link,65,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+mutual-funds/index.html,js_redirect,112-114,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+privacy.html,js_redirect,114-116,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+disclaimer.html,js_redirect,92-94,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+terms.html,js_redirect,108-110,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stocks/top-performers.html,js_redirect,97-99,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stocks/52-week.html,js_redirect,108-110,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stocks/top-large-cap.html,js_redirect,107-109,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stocks/top-mid-small.html,js_redirect,107-109,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stocks/undervalued.html,js_redirect,97-99,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stocks/reliance.html,js_redirect,87-89,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+stocks/reliance.html,cta_link,51,<a href="/market.html">Open →</a>,LOW,UPDATE,/today/index.html
+stocks/top-stocks.html,js_redirect,TBD,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+market/outlook-*.html,js_redirect,88-90,MARKET PULSE/MKREGIME/Indices → /market.html,HIGH,UPDATE,/today/index.html
+ TOTAL_navigation_links,NA,2,index.html + today/index.html nav links removed,MEDIUM,REMOVE from both,/today/index.html
+ TOTAL_cta_links,NA,~14,CTA Open → links across pages,LOW,UPDATE to /today/index.html,/today/index.html
+ TOTAL_js_redirects,NA,~45,JS redirect rules across pages,HIGH,UPDATE all to /today/index.html,/today/index.html
+ TOTAL_sitemap_entry,NA,1,Sitemap URL entry,LOW,REMOVE,/today/index.html

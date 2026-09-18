@@ -79,7 +79,7 @@ try {
       <p>This is an educational tool, not financial advice. Brokers apply their own margins, penalties and lot rules; fees and slippage are real. Always size positions within what you can genuinely afford to lose, and never treat the tool's output as a guarantee.</p>
   </div>
   <div class="grid" style="margin-top:1.5rem;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))">
-    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/market.html">Open →</a></div></div>
+    <div class="card"><h3>📊 Market Grid</h3><div class="status">Full stock grid with VWAP/RSI/levels.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
     <div class="card"><h3>🔍 Scanner</h3><div class="status">Screen all tracked stocks: RSI, DMA, MACD presets.</div><div class="cta-row"><a class="cta cta-single" href="/scanner.html">Open →</a></div></div>
     <div class="card"><h3>📈 Backtest</h3><div class="status">Deterministic backtest. AI excluded.</div><div class="cta-row"><a class="cta cta-single" href="/tools/backtest.html">Open →</a></div></div>
     <div class="card"><h3>🕘 Today LIVE</h3><div class="status">Session pulse, news flow & sentiment.</div><div class="cta-row"><a class="cta cta-single" href="/today/index.html">Open →</a></div></div>
@@ -157,7 +157,7 @@ document.addEventListener('DOMContentLoaded',function(){
     else if(h.includes('KEY LEVELS')) url='/scanner.html';
     else if(h.includes('OPTIONS INTELLIGENCE')) url='/strategy-builder.html';
     else if(h.includes('MARKET INTERNALS')||h.includes('BREADTH')||h.includes('WHAT CHANGED')||h.includes('HISTORICAL STRATEGY')) url='/history.html';
-    else if(h.includes('TODAY')||h.includes('MARKET PULSE')) url='/market.html';
+    else if(h.includes('TODAY')||h.includes('MARKET PULSE')) url='/today/index.html';
     else if(h.includes('STOCK OPTIONS')||h.includes('POSITIONAL')) url='/stock-options.html';
     if(!url) return;
     c.dataset.clickable='1'; c.style.cursor='pointer';

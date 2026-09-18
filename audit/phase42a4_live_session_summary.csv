@@ -1,0 +1,28 @@
+timestamp,category,metric,value,status,notes
+2026-09-18T07:14:00Z,session,date,2026-09-18,,Friday
+2026-09-18T07:14:00Z,session,market_open_observed,NO,PRE-MARKET
+2026-09-18T07:14:00Z,session,completed_5m_candles,0,PRE-MARKET
+2026-09-18T07:14:00Z,NIFTY,5m_count,0,PRE-MARKET
+2026-09-18T07:14:00Z,BANKNIFTY,5m_count,0,PRE-MARKET
+2026-09-18T07:14:00Z,SENSEX,5m_count,0,PRE-MARKET
+2026-09-18T07:14:00Z,FINNIFTY,5m_count,0,PRE-MARKET
+2026-09-18T07:14:00Z,research_setup_identity,0,PRE-MARKET,Expected
+2026-09-18T07:14:00Z,research_reentry_log,0,PRE-MARKET,Expected
+2026-09-18T07:14:00Z,research_ai_call_log,0,PRE-MARKET,Expected
+2026-09-18T07:14:00Z,research_outcome_tracking,0,PRE-MARKET,Expected
+2026-09-18T07:14:00Z,research_data_health,0,PRE-MARKET,Expected
+2026-09-18T07:14:00Z,research_manifest,0,PRE-MARKET,Expected
+2026-09-18T07:14:00Z,paper_trades_new,0,PRE-MARKET,No trades
+2026-09-18T07:14:00Z,paper_trades_active,0,PRE-MARKET,No trades
+2026-09-18T07:14:00Z,outcome_5m,0,PENDING,No trades
+2026-09-18T07:14:00Z,outcome_15m,0,PENDING,No trades
+2026-09-18T07:14:00Z,outcome_30m,0,PENDING,No trades
+2026-09-18T07:14:00Z,outcome_60m,0,PENDING,No trades
+2026-09-18T07:14:00Z,unique_setup_fingerprints,0,PRE-MARKET,No data
+2026-09-18T07:14:00Z,reentries,0,PRE-MARKET,No trades
+2026-09-18T07:14:00Z,cross_instrument_contamination,0,OK,None
+2026-09-18T07:14:00Z,fabricated_data,0,OK,None
+2026-09-18T07:14:00Z,look_ahead_violations,0,OK,None
+2026-09-18T07:14:00Z,api_health,200,OK,Degraded
+2026-09-18T07:14:00Z,api_research,200,OK,All 8 endpoints
+2026-09-18T07:14:00Z,frozen_files_changed,0,OK,All unchanged

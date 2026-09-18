@@ -1,0 +1,25 @@
+timestamp,category,metric,value,status,notes
+2026-09-18T07:14:00Z,market,NIFTY_5m_count,0,PRE_MARKET,No candles yet
+2026-09-18T07:14:00Z,market,BANKNIFTY_5m_count,0,PRE_MARKET,No candles yet
+2026-09-18T07:14:00Z,market,SENSEX_5m_count,0,PRE_MARKET,No candles yet
+2026-09-18T07:14:00Z,market,FINNIFTY_5m_count,0,PRE_MARKET,No candles yet
+2026-09-18T07:14:00Z,market,NIFTY_5m_latest,2026-09-15T09:55:00,STALE,3 days old
+2026-09-18T07:14:00Z,market,BANKNIFTY_5m_latest,2026-09-15T09:55:00,STALE,3 days old
+2026-09-18T07:14:00Z,research,research_setup_identity,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,research,research_reentry_log,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,research,research_ai_call_log,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,research,research_outcome_tracking,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,research,research_data_health,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,research,research_manifest,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,market_data,market_snapshots_5m,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,market_data,market_evidence_5m,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,market_data,ai_outlooks_5m,0,EXPECTED,Pre-market
+2026-09-18T07:14:00Z,paper_trades,total,1188,OK,Historical
+2026-09-18T07:14:00Z,paper_trades,NIFTY,1188,OK,Historical
+2026-09-18T07:14:00Z,paper_trades,BANKNIFTY,0,OK,Historical
+2026-09-18T07:14:00Z,api,health,200,OK,Degraded pre-existing
+2026-09-18T07:14:00Z,api,research_endpoints,200,OK,All 8 responding
+2026-09-18T07:14:00Z,cross_instrument,contamination,0,OK,None detected
+2026-09-18T07:14:00Z,fabricated,data,0,OK,None detected
+2026-09-18T07:14:00Z,freshness,NIFTY_price,587,STALE,Pre-market
+2026-09-18T07:14:00Z,freshness,BANKNIFTY_price,587,STALE,Pre-market

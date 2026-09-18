@@ -1,0 +1,34 @@
+timestamp,category,metric,value,notes
+2026-09-18T07:14:00Z,session,date,2026-09-18,Friday
+2026-09-18T07:14:00Z,session,ist_time,07:14,PRE-MARKET
+2026-09-18T07:14:00Z,session,market_state,PRE-MARKET,Opens 09:15 IST
+2026-09-18T07:14:00Z,session,market_open_observed,NO,Pre-market
+2026-09-18T07:14:00Z,session,market_close_observed,NO,Pre-market
+2026-09-18T07:14:00Z,git,branch,html/h31-shell-core-pages,
+2026-09-18T07:14:00Z,git,HEAD,800c1b1,Phase 42A
+2026-09-18T07:14:00Z,vm,hostname,webserver,
+2026-09-18T07:14:00Z,vm,ram_used_mb,291,of 956
+2026-09-18T07:14:00Z,vm,disk_used_gb,16,of 45
+2026-09-18T07:14:00Z,vm,cpu_cores,2,
+2026-09-18T07:14:00Z,vm,gunicorn_processes,4,3 active + 1 transitional
+2026-09-18T07:14:00Z,vm,nginx_status,active,
+2026-09-18T07:14:00Z,vm,api_status,degraded,pre-existing stale data
+2026-09-18T07:14:00Z,database,size_mb,176.92,
+2026-09-18T07:14:00Z,database,tables,58,
+2026-09-18T07:14:00Z,research,research_setup_identity,0,expected pre-market
+2026-09-18T07:14:00Z,research,research_reentry_log,0,expected pre-market
+2026-09-18T07:14:00Z,research,research_ai_call_log,0,expected pre-market
+2026-09-18T07:14:00Z,research,research_outcome_tracking,0,expected pre-market
+2026-09-18T07:14:00Z,research,research_data_health,0,expected pre-market
+2026-09-18T07:14:00Z,research,research_manifest,0,expected pre-market
+2026-09-18T07:14:00Z,market_data,market_snapshots_5m,0,expected pre-market
+2026-09-18T07:14:00Z,market_data,market_evidence_5m,0,expected pre-market
+2026-09-18T07:14:00Z,market_data,ai_outlooks_5m,0,expected pre-market
+2026-09-18T07:14:00Z,paper_trades,total,1188,historical
+2026-09-18T07:14:00Z,paper_trades,NIFTY,1188,
+2026-09-18T07:14:00Z,paper_trades,BANKNIFTY,0,
+2026-09-18T07:14:00Z,paper_trades,active,0,
+2026-09-18T07:14:00Z,price_data,NIFTY_5m_count,4350,historical
+2026-09-18T07:14:00Z,price_data,BANKNIFTY_5m_count,4350,historical
+2026-09-18T07:14:00Z,price_data,SENSEX_5m_count,4350,historical
+2026-09-18T07:14:00Z,price_data,FINNIFTY_5m_count,4350,historical

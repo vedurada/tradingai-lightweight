@@ -1,0 +1,23 @@
+endpoint,method,http_status,freshness,status,error
+/api/health,GET,200,Degraded,WORKING,
+/api/price/NIFTY,GET,200,STALE,WORKING,Stale data (pre-market)
+/api/price/BANKNIFTY,GET,200,STALE,WORKING,Stale data (pre-market)
+/api/market,GET,200,STALE,WORKING,Data structure correct
+/api/market-outlook?symbol=NIFTY,GET,200,STALE,WORKING,Yesterday outlook
+/api/NIFTY,GET,200,STALE,WORKING,Has ai_outlook
+/api/BANKNIFTY,GET,200,STALE,WORKING,Has ai_outlook
+/api/breadth,GET,200,FRESH,WORKING,
+/api/key-levels?symbol=NIFTY,GET,200,FRESH,WORKING,Supports+Resistances
+/api/strategy/NIFTY,GET,200,FRESH,WORKING,Strategies available
+/api/risk/NIFTY,GET,200,FRESH,WORKING,
+/api/session-timeline,GET,200,FRESH,WORKING,PRE_MARKET
+/api/paper-trades/active,GET,200,FRESH,WORKING,count:0
+/api/options/state/NIFTY,GET,500,N/A,BROKEN,TypeError in ai_outlook.py (frozen)
+/api/options/state/BANKNIFTY,GET,500,N/A,BROKEN,Same issue
+/api/trade-qualification,POST,500,N/A,BROKEN,Internal error
+/api/market-evidence/NIFTY,GET,200,N/A,PARTIAL,NO_DATA (pre-market)
+/data/nifty.json,GET,200,FRESH,WORKING,Fixed
+/data/banknifty.json,GET,200,FRESH,WORKING,Fixed
+/data/sensex.json,GET,200,FRESH,WORKING,Fixed
+/data/finnifty.json,GET,200,FRESH,WORKING,Fixed
+/data/health.json,GET,200,FRESH,WORKING,Fixed

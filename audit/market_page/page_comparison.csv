@@ -1,0 +1,29 @@
+page,data_category,endpoint,dataset_present_on_market_html,also_on_other_pages,duplication_level,notes
+index.html,Index price cards,/api/market,YES,YES,HIGH,NIFTY/BANKNIFTY/SENSEX/VIX cards on both
+index.html,AI Market Outlook,/api/market-outlook,YES,YES,MEDIUM,ai-outlook.js dashboard
+index.html,Market Breadth,/api/index-breadth,YES,YES,MEDIUM,Different endpoint than /api/breadth
+index.html,Options Intelligence,/api/pcr /api/maxpain /api/oi-top,YES,YES,HIGH,PCR/Max Pain/OI cards unique to index.html
+index.html,Quick Actions,static,YES,YES,LOW,Navigation buttons
+index.html,Data Status,static,YES,YES,LOW,Session state badge
+today/index.html,Index price cards,/api/market,YES,YES,HIGH,Same 5 cards as market.html
+today/index.html,AI Market Outlook,/api/market-outlook?symbol=NIFTY,YES,YES,MEDIUM,Today's outlook with bias/confidence/primary_view
+today/index.html,Market Breadth,/api/breadth,YES,YES,MEDIUM,Same endpoint as market.html
+today/index.html,Key Levels,/api/key-levels,YES,YES,HIGH,BROKEN endpoint on both
+today/index.html,Intraday Conditions,/api/intraday-conditions,YES,YES,HIGH,BROKEN endpoint
+today/index.html,Risk Management,/api/risk/NIFTY,YES,YES,HIGH,BROKEN endpoint
+today/index.html,Session Timeline,/api/session-timeline,YES,YES,LOW,Only on today/
+today/index.html,Paper Trade,/api/paper-trades/active,YES,YES,LOW,Only on today/ and index.html
+today/index.html,Trade Qualification,/api/trade-qualification,YES,YES,LOW,Only on today/ and index.html
+indices/nifty.html,Index price cards,/api/market,YES,YES,HIGH,Same data as market.html
+indices/nifty.html,AI Market Outlook,/api/market-outlook,YES,YES,MEDIUM,Per-index outlook
+indices/nifty.html,Technical Structure,/api/market,YES,YES,HIGH,VWAP/EMA20/RSI/MACD/ADX/CPR
+indices/nifty.html,Options Intelligence,/api/options/state/NIFTY,YES,YES,HIGH,More detailed than index.html
+indices/nifty.html,Key Levels,/api/key-levels,YES,YES,HIGH,BROKEN endpoint
+market.html,Index price cards,/api/market,YES,YES,HIGH,Duplicate — same as /, /today/, /indices/*
+market.html,Index Grid,/api/market,YES,YES,HIGH,Clickable cards with regime+VWAP+Support/Resistance — also on other pages
+market.html,Market Breadth,/api/breadth,YES,YES,MEDIUM,Same as today/index.html
+market.html,Technical Snapshot,/api/market,YES,YES,MEDIUM,VWAP/RSI/ADX/MACD — subset of indices/nifty.html
+market.html,Sector & Market Condition,/api/sectors,YES,NO,UNIQUE — BUT BROKEN,404 consistently — NO WORKING UNIQUE VALUE
+market.html,Market Regime,/api/market,YES,YES,LOW,Also shown on index.html
+market.html,Index Deep Dives,static links,YES,NO,LOW,Navigation only — same links appear elsewhere
+market.html,AI Market Outlook,N/A,NO,N/A,N/A,NOT PRESENT on market.html — present on /, /today/, /indices/*

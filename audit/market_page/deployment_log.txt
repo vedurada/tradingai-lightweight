@@ -1,0 +1,73 @@
+# Deployment Log — /market.html Removal
+# Phase 42A.6.x
+# Date: 2026-09-18
+
+## Pre-Deployment State
+- /market.html exists on workspace and VM (md5: 06d096e9, 17,407 bytes)
+- /market.html referenced in 50+ places across 40+ HTML files
+- /market.html in sitemap.xml (priority 0.9)
+- /api/sectors returns 404 (broken — sole unique feature)
+- Gunicorn running on 127.0.0.1:8000 (4 processes)
+- Nginx active with SSL
+
+## Deployment Steps
+
+### Step 1: Archive /market.html
+[ ] cp /market.html audit/market_page/archive/market.html.YYYYMMDD_HHMMSS
+[ ] Verify archive file integrity
+
+### Step 2: Update sitemap.xml
+[ ] Remove <url> block for /market.html from sitemap.xml
+[ ] Verify sitemap is valid XML
+
+### Step 3: Update navigation (index.html, today/index.html)
+[ ] Remove <a href="/market.html">Market</a> from index.html nav (line 48)
+[ ] Remove <a href="/market.html">Market</a> from today/index.html nav (line 24)
+
+### Step 4: Update CTA links across pages
+[ ] Find all href="/market.html" references
+[ ] Replace with href="/today/index.html"
+[ ] Files affected: stock.html, etfs/holdings.html, etfs/top-etfs.html, portfolio.html, 
+    stock-options.html, alerts.html, queries/index.html, sectors/top.html, 
+    strategy-builder.html, mutual-funds/index.html, news/index.html, global/markets.html,
+    about.html, 404.html
+
+### Step 5: Update JS redirect rules across pages
+[ ] Find all redirect-to-/market.html patterns in inline JS
+[ ] Replace all /market.html references with /today/index.html
+[ ] Files affected: ~40+ HTML files with JS redirect logic
+
+### Step 6: Update text links
+[ ] about.html line 50: market dashboard link → /today/index.html
+[ ] queries/index.html lines 61, 63: Market breadth, VWAP breaks links → /today/index.html
+[ ] 404.html line 37: Market link → /today/index.html
+
+### Step 7: Deploy to VM
+[ ] rsync HTML files to VM: rsync -avz --delete /var/www/tradingai.in/html/ ubuntu@129.159.224.81:/var/www/tradingai.in/html/
+[ ] Upload nginx redirect config to VM
+[ ] Verify nginx config syntax: nginx -t
+[ ] Reload nginx: systemctl reload nginx
+[ ] Restart gunicorn: systemctl restart tradingai-api
+
+### Step 8: Validate on VM
+[ ] Test redirect: curl -I https://tradingai.in/market.html → 301 /today/index.html
+[ ] Test /today/index.html still works
+[ ] Test sitemap has no market.html entry
+[ ] Run test suite
+[ ] Check error logs
+
+## Post-Deployment Results
+[ ] To be filled after deployment
+
+## Rollback Triggers
+- [ ] 404 errors increase > 10%
+- [ ] /today/index.html returns errors after redirect flood
+- [ ] Test suite failures
+- [ ] User complaints about broken navigation
+
+## Rollback Actions
+1. Remove nginx redirect config
+2. Restore archived market.html
+3. Revert HTML changes (git checkout)
+4. Re-add sitemap entry
+5. Restart services

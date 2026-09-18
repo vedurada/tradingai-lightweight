@@ -37,11 +37,11 @@ class TestSoft404:
     def test_ghost_guard_intact(self):
         conf = read("ops/nginx-tradingai.conf")
         assert "location = /indices/market.html" in conf
-        assert "return 301 /market.html" in conf
+        assert "return 301 /today/index.html" in conf
 
     def test_404_page(self):
         t = read("404.html")
-        assert "noindex" in t and "/index.html" in t and "/market.html" in t
+        assert "noindex" in t and "/index.html" in t and "/today/index.html" in t
         assert "s-nifty-price" not in t  # no fake market content
 
 

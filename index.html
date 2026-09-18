@@ -45,7 +45,7 @@ try {
 <header>
   <div class="brand-row"><div><h1><a href="/"><img src="/favicon.svg" alt="" width="22" height="22" style="vertical-align:-3px;margin-right:6px;border-radius:6px">TradingAI</a></h1>
   <p class="tagline">AI-Assisted Market Intelligence Platform</p></div>
-  <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/market.html" style="color:#475569;text-decoration:none">Market</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a><span id="live-clock" style="color:#94a3b8;margin-left:0.5rem"></span></nav></div>
+  <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a><span id="live-clock" style="color:#94a3b8;margin-left:0.5rem"></span></nav></div>
 </header>
   <main>
   <div class="updated-bar"><span id="last-updated-bar">Loading market data…</span> <span class="status" id="session-state" style="font-size:0.78rem">Checking…</span></div>
@@ -84,7 +84,7 @@ try {
         <div class="status" id="s-finnifty-trend-display" style="font-size:0.85rem;font-weight:700;color:#64748b;text-transform:uppercase;letter-spacing:0.05em">—</div>
         <div style="font-size:0.72rem;color:#eab308;margin-top:2px" id="s-finnifty-stale"></div>
       </div>
-    <div class="card" style="min-height:100px;cursor:pointer" data-nav="/market.html" data-clickable="1">
+    <div class="card" style="min-height:100px;cursor:pointer" data-nav="/today/index.html" data-clickable="1">
         <h3>INDIA VIX</h3>
         <div class="price" id="s-vix-price">—</div>
         <div class="status">Change: <span id="s-vix-change">—</span></div>
@@ -314,9 +314,9 @@ document.addEventListener('DOMContentLoaded',function(){
     if(c.dataset.clickable==='1'||c.onclick)return;
     var h=((c.querySelector('h3')||{}).textContent||'').toUpperCase();
     var url=null;
-    if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/market.html';
-    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/market.html';
-    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/market.html';
+if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.html';
+	    else if(h.includes('MARKET REGIME')||h.includes('TRADEABILITY'))url='/today/index.html';
+	    else if(h.includes('NIFTY 50')||h.includes('BANKNIFTY')||h.includes('SENSEX')||h.includes('FINNIFTY')||h.includes('INDIA VIX'))url='/today/index.html';
     else if(h.includes('AI MARKET OUTLOOK')||h.includes('AI INTRADAY'))url='/strategies.html';
     else if(h.includes('OPTIONS INTELLIGENCE')||h.includes('OPTION CHAIN')||h.includes('PCR')||h.includes('IV')||h.includes('MAX PAIN'))url='/strategy-builder.html';
     else if(h.includes('STRATEG')||h.includes('BUY')||h.includes('SELL')||h.includes('EXIT')||h.includes('HOLD'))url='/strategies.html';

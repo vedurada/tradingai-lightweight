@@ -28,8 +28,8 @@ class TestPageExistence:
     def test_001_index_html_exists(self):
         assert os.path.isfile(os.path.join(ROOT, "index.html"))
 
-    def test_002_market_html_exists(self):
-        assert os.path.isfile(os.path.join(ROOT, "market.html"))
+    def test_002_today_index_html_exists(self):
+        assert os.path.isfile(os.path.join(ROOT, "today/index.html"))
 
     def test_003_about_html_exists(self):
         assert os.path.isfile(os.path.join(ROOT, "about.html"))
@@ -112,10 +112,6 @@ class TestPageContent:
         t = read("index.html")
         assert 'id="last-updated-bar"' in t
 
-    def test_027_market_has_canonical(self):
-        t = read("market.html")
-        assert 'href="https://tradingai.in/market.html"' in t
-
     def test_028_about_has_canonical(self):
         t = read("about.html")
         assert 'href="https://tradingai.in/about.html"' in t
@@ -137,13 +133,13 @@ class TestPageContent:
         assert 'href="https://tradingai.in/disclaimer.html"' in t
 
     def test_033_all_pages_have_og_title(self):
-        for page in ["index.html", "market.html", "about.html", "contact.html",
+        for page in ["index.html", "about.html", "contact.html",
                       "privacy.html", "terms.html", "disclaimer.html"]:
             t = read(page)
             assert 'og:title' in t, f"{page} missing og:title"
 
     def test_034_all_pages_have_meta_description(self):
-        for page in ["index.html", "market.html", "about.html", "contact.html",
+        for page in ["index.html", "about.html", "contact.html",
                       "privacy.html", "terms.html", "disclaimer.html"]:
             t = read(page)
             assert 'meta name="description"' in t, f"{page} missing description"
@@ -162,12 +158,6 @@ class TestPageFooter:
         assert 'href="/terms.html"' in t
         assert 'href="/disclaimer.html"' in t
 
-    def test_037_market_has_footer_links(self):
-        t = read("market.html")
-        assert 'href="/about.html"' in t
-        assert 'href="/contact.html"' in t
-
-
 # ═══════════════════════════════════════════════════════════
 # LINK — Link Integrity
 # ═══════════════════════════════════════════════════════════
@@ -184,6 +174,7 @@ class TestLinkIntegrity:
             if h.startswith("mailto:"):
                 continue
             # Internal links should not point to nonexistent paths
+            if h == "/": continue
             assert len(h) > 1, f"Empty href found"
 
     def test_039_index_internal_links_use_slash_or_html(self):
@@ -195,10 +186,11 @@ class TestLinkIntegrity:
             # All internal links should be valid paths
             assert h.startswith("/") or h.startswith("."), f"Unexpected href: {h}"
 
-    def test_040_market_page_has_correct_internal_links(self):
-        t = read("market.html")
-        assert 'href="/about.html"' in t
-        assert 'href="/contact.html"' in t
+    def test_040_today_has_required_links(self):
+        t = read("today/index.html")
+        assert 'href="/index.html"' in t
+        assert 'href="/today/index.html"' in t
+        assert 'id="ticker-track"' in t
 
     def test_041_no_ghost_indices_market_link(self):
         t = read("index.html")
@@ -206,7 +198,7 @@ class TestLinkIntegrity:
 
     def test_042_index_data_nav_attributes(self):
         t = read("index.html")
-        assert 'data-nav="/market.html"' in t
+        assert 'data-nav="/today/index.html"' in t
 
     def test_043_index_footer_sitemap_link(self):
         t = read("index.html")

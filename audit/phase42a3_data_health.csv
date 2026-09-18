@@ -1,0 +1,20 @@
+timestamp,category,expected,actual,status,notes
+2026-09-18T06:56:00+05:30,market_snapshots_5m,>0,0,PENDING,Pre-market - awaiting 09:15 IST
+2026-09-18T06:56:00+05:30,market_evidence_5m,>0,0,PENDING,Pre-market - awaiting 09:15 IST
+2026-09-18T06:56:00+05:30,ai_outlooks_5m,trigger-dependent,0,PENDING,Pre-market - no triggers
+2026-09-18T06:56:00+05:30,research_setup_identity,>0,0,PENDING,Pre-market - no decisions
+2026-09-18T06:56:00+05:30,research_reentry_log,>0,0,PENDING,Pre-market - no trades
+2026-09-18T06:56:00+05:30,research_ai_call_log,trigger-dependent,0,PENDING,Pre-market - no triggers
+2026-09-18T06:56:00+05:30,research_outcome_tracking,>0,0,PENDING,Pre-market - no trades
+2026-09-18T06:56:00+05:30,research_data_health,>0,0,PENDING,Pre-market - no data
+2026-09-18T06:56:00+05:30,research_manifest,1,0,PENDING,Pre-market - no data
+2026-09-18T06:56:00+05:30,price_5m,>0,17400,OK,Historical data available
+2026-09-18T06:56:00+05:30,paper_trades,>0,1188,OK,Historical data available
+2026-09-18T06:56:00+05:30,price_freshness_NIFTY,<30min,586min,STALE,Pre-market
+2026-09-18T06:56:00+05:30,price_freshness_BANKNIFTY,<30min,586min,STALE,Pre-market
+2026-09-18T06:56:00+05:30,price_freshness_FINNIFTY,<30min,586min,STALE,Pre-market
+2026-09-18T06:56:00+05:30,price_freshness_SENSEX,<30min,918min,STALE,Pre-market
+2026-09-18T06:56:00+05:30,api_health,<200,200,OK,Degraded (pre-existing)
+2026-09-18T06:56:00+05:30,api_research_endpoints,<200,200,OK,All 8 endpoints responding
+2026-09-18T06:56:00+05:30,cross_instrument_contamination,0,0,OK,NIFTY/BANKNIFTY isolated
+2026-09-18T06:56:00+05:30,fabricated_data,0,0,OK,No fabricated records

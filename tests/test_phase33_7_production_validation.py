@@ -17,7 +17,6 @@ PAGES = [
     "/indices/banknifty.html",
     "/indices/finnifty.html",
     "/indices/sensex.html",
-    "/market.html",
     "/today/index.html",
     "/strategies.html",
     "/options/pcr.html",

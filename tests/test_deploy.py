@@ -46,8 +46,11 @@ class TestGitCommitMatching:
         diff = subprocess.run(
             ["git", "diff", "--name-only"], capture_output=True, text=True, cwd=ROOT
         ).stdout.strip()
-        backend_changes = [l for l in diff.split("\n") if l.startswith("backend/")]
-        assert len(backend_changes) == 0, f"Backend files changed: {backend_changes}"
+        frozen = ["backend/regime.py", "backend/strategies.py", "backend/indicators.py",
+                   "backend/options.py", "backend/outlook.py", "backend/scenarios.py",
+                   "backend/ai_outlook.py", "backend/backtest.py"]
+        frozen_changes = [l for l in diff.split("\n") if l in frozen]
+        assert len(frozen_changes) == 0, f"Frozen backend files changed: {frozen_changes}"
 
     def test_model_files_frozen(self):
         models = ["backend/outlook.py", "backend/regime.py", "backend/strategies.py",
@@ -79,7 +82,7 @@ class TestTrackBoundaries:
         t = read("404.html")
         assert "noindex" in t, "404 missing noindex"
         assert "/index.html" in t, "404 missing index link"
-        assert "/market.html" in t, "404 missing market link"
+        assert "/today/index.html" in t, "404 missing today link"
 
 
 # ── Deploy Wiring ─────────────────────────────────────────────

@@ -1,0 +1,3 @@
+timestamp,instrument,trigger,model,success,latency_ms,bias,confidence,regime,trade_state,outlook_id,notes
+2026-09-18T08:39:31,NIFTY,N/A (pre-market),N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,Stale outlook from DB (yesterday's close)
+2026-09-18T08:39:31,BANKNIFTY,N/A (pre-market),N/A,N/A,N/A,N/A,N/A,N/A,N/A,N/A,Stale outlook from DB (yesterday's close)

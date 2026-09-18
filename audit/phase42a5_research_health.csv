@@ -1,0 +1,9 @@
+table,count,status,notes
+market_snapshots_5m,0,EMPTY,Pre-market - will populate at market open
+market_evidence_5m,0,EMPTY,Pre-market - will populate at market open
+research_setup_identity,0,EMPTY,Pre-market - will populate at market open
+research_reentry_log,0,EMPTY,Pre-market - will populate at market open
+research_ai_call_log,0,EMPTY,Pre-market - will populate at market open
+research_outcome_tracking,0,EMPTY,Pre-market - will populate at market open
+research_manifest,0,EMPTY,Pre-market - will populate at market open
+paper_trades,1188,ACTIVE,Unchanged from baseline

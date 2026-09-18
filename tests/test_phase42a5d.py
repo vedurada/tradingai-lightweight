@@ -198,9 +198,9 @@ class TestAllPagesConsistency:
                 f"{page}: still has buggy regimeColor(inst.regime)"
             )
 
-    def test_market_html_uses_correct_pattern(self):
-        """market.html already uses inst.regime?.regime - verify it's correct."""
-        html = _read_html("market.html")
-        assert "inst.regime?.regime" in html, (
-            "market.html: should use inst.regime?.regime pattern"
+    def test_today_has_indicators(self):
+        """today/index.html renders market data."""
+        html = _read_html("today/index.html")
+        assert "t-snapshot" in html, (
+            "today/index.html: should have snapshot container"
         )

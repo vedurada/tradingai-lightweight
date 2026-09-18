@@ -1,0 +1,6 @@
+timestamp,symbol,trigger,model,status,latency,error,outlook_id,bias,confidence
+2026-09-18T07:59:00Z,NIFTY,generate_json,Rule-based,SUCCESS,N/A,None,ai:nifty,UNAVAILABLE,0
+2026-09-18T07:59:00Z,BANKNIFTY,generate_json,Rule-based,SUCCESS,N/A,None,ai:banknifty,UNAVAILABLE,0
+2026-09-18T07:59:00Z,FINNIFTY,generate_json,Rule-based,SUCCESS,N/A,None,ai:finnifty,UNAVAILABLE,0
+2026-09-18T07:59:00Z,SENSEX,generate_json,Rule-based,SUCCESS,N/A,None,ai:sensex,UNAVAILABLE,0
+Note: All AI calls fell back to rule-based because Ollama was unavailable. External providers (Groq/DeepSeek/Gemini/OpenRouter) may have been attempted with timeouts. Rule-based fallback ensures market data continues to display.
