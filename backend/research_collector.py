@@ -413,13 +413,13 @@ class ResearchCollector:
     def _record_ai_from_outlooks(self, conn, result) -> int:
         try:
             outlooks = conn.execute(
-                "SELECT DISTINCT symbol, created_at FROM ai_outlooks_5m ORDER BY created_at DESC LIMIT 100"
+                "SELECT DISTINCT instrument, created_at FROM ai_outlooks_5m ORDER BY created_at DESC LIMIT 100"
             ).fetchall()
             count = 0
             for o in outlooks:
                 d = dict(o)
                 self.record_ai_call(
-                    instrument=d.get("symbol", ""),
+                    instrument=d.get("instrument", ""),
                     candle_timestamp=d.get("created_at", ""),
                     trigger="MATERIAL_CHANGE",
                     model="groq",
@@ -436,7 +436,7 @@ class ResearchCollector:
     def _record_data_health_checks(self, conn, result) -> int:
         try:
             checks = [
-                ("price_freshness", "STALE" if True else "VALID", "NIFTY", "Price data age checked"),
+                ("price_freshness", "STALE", "NIFTY", "Price data age checked"),
                 ("price_freshness", "STALE", "BANKNIFTY", "Price data age checked"),
                 ("research_tables", "VALID", "", f"research_setup_identity: {conn.execute('SELECT COUNT(*) FROM research_setup_identity').fetchone()[0]} records"),
             ]
