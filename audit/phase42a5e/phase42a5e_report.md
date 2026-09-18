@@ -107,6 +107,47 @@ Phase 42A.5E production pipeline validation completed on 2026-09-18 during post-
 - Total: 74/74 PASS
 - Pre-existing failures: 9 (confirmed unrelated to this fix)
 
+## Positioning Addendum (Phase 42A.5E)
+
+### Purpose
+Validated Market Intent / Liquidity / Positioning research layers using Oracle VM production data during market-closed hours (2026-09-18, 18:42 IST).
+
+### Data Constraints
+- Volume: 0 across all periods (1m, 5m)
+- Futures OI: Unavailable
+- IV: None in option chain
+- Options OI: Available (oi_top_strikes: 8,886 rows, option_chain: 18,674 rows)
+- Indicators: Full (39,002 rows)
+- AI Outlook: Available (206 records)
+
+### Positioning Engine Results
+
+| Instrument | State | Confidence | Price | vs VWAP | CE/PE | Intent |
+|------------|-------|------------|-------|---------|-------|--------|
+| NIFTY | POSITIONING_UNCLEAR | LOW | 23346 | BELOW | 1.278 | BEARISH_BIAS_UNCONFIRMED |
+| BANKNIFTY | POSITIONING_UNCLEAR | LOW | 56359 | BELOW | 1.343 | BEARISH_BIAS_UNCONFIRMED |
+
+Both instruments show BEARISH regime + BELOW VWAP + CE OI DOMINANT. Contradictions: RSI oversold (NIFTY=20.9), CE OI dominant contradicts bearish regime, VOLUME=0 no confirmation.
+
+### Liquidity Map Results
+- NIFTY: Support 23241.75, Resistance 23344.3 (price 2.1 pts below resistance — near breakout)
+- BANKNIFTY: Support 55920.38, Resistance 56344.28 (price 14.4 pts above resistance — testing breakout)
+- PCR: NIFTY avg 0.863, BANKNIFTY avg 0.824 (both neutral)
+
+### Market Intent Results
+Both instruments: BEARISH_CONTINUATION (LOW confidence, 5 bearish signals vs 0-1 bullish)
+Contradictions: OVERSOLD in bearish regime (NIFTY), CE OI dominant in bearish regime (BANKNIFTY), LOW VOLUME no confirmation
+
+### Outcome Tracking
+All positioning classifications: NOT_YET_OBSERVED (post-market classification, awaiting next session for retrospective validation)
+
+### Positioning Addendum Files
+- positioning_engine_validation.csv (2 rows)
+- positioning_outcome_observation.csv (2 rows)
+- liquidity_map_validation.csv (2 rows)
+- market_intent_validation.csv (2 rows)
+- market_intent_outcome_observation.csv (2 rows)
+
 ## Phase 42A.5D Fix
 
 - Root cause: regimeText/regimeColor/regimeWord received dict instead of string
