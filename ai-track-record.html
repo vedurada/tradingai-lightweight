@@ -55,10 +55,10 @@
   <!-- ACCURACY BY SYMBOL -->
   <h2>Accuracy by Symbol</h2>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:1.5rem" id="ai-by-symbol">
-    <div class="card"><h3>NIFTY</h3><div class="status">Loading…</div></div>
-    <div class="card"><h3>BANKNIFTY</h3><div class="status">Loading…</div></div>
-    <div class="card"><h3>FINNIFTY</h3><div class="status">Loading…</div></div>
-    <div class="card"><h3>SENSEX</h3><div class="status">Loading…</div></div>
+    <div class="card" data-sym="NIFTY"><h3>NIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card" data-sym="BANKNIFTY"><h3>BANKNIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card" data-sym="FINNIFTY"><h3>FINNIFTY</h3><div class="status">Loading…</div></div>
+    <div class="card" data-sym="SENSEX"><h3>SENSEX</h3><div class="status">Loading…</div></div>
   </div>
 
   <!-- ACCURACY BY REGIME -->
@@ -79,8 +79,8 @@
   <!-- AI vs NO-AI COMPARISON -->
   <h2>AI vs No-AI Comparison</h2>
   <div class="grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));margin-bottom:1.5rem" id="ai-comparison">
-    <div class="card" style="border-left:4px solid #15803d"><h3>With AI Guidance</h3><div class="status">Loading…</div></div>
-    <div class="card" style="border-left:4px solid #64748b"><h3>Without AI Guidance</h3><div class="status">Loading…</div></div>
+    <div class="card" data-col="ai" style="border-left:4px solid #15803d"><h3>With AI Guidance</h3><div class="status">Loading…</div></div>
+    <div class="card" data-col="noai" style="border-left:4px solid #64748b"><h3>Without AI Guidance</h3><div class="status">Loading…</div></div>
   </div>
 
   <div style="padding:8px 14px;background:#f8fafc;border-radius:8px;font-size:0.78rem;color:#64748b;border:1px solid #e2e8f0;margin-bottom:1rem">
