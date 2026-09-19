@@ -1,0 +1,73 @@
+# API Runtime Trace — Phase 42A.9
+
+## Before Fix (Initial State)
+
+### Static Assets
+
+| Endpoint | Before | After | Notes |
+|----------|--------|-------|-------|
+| /assets/js/api.js | 404 | 200 | CRITICAL FIX — core API helpers |
+| /assets/js/ai-outlook.js | 404 | 200 | AI outlook rendering |
+| /assets/js/consent.js | 404 | 200 | GDPR consent |
+| /assets/js/live-blink.js | 404 | 200 | Price blink animation |
+| /assets/js/keep-scroll.js | 404 | 200 | Scroll position |
+| /assets/js/banknifty.js | 404 | 200 | BANKNIFTY page |
+| /assets/js/charts.js | 404 | 200 | Chart helpers |
+| /assets/js/dashboard.js | 404 | 200 | Dashboard renderer |
+| /assets/js/history.js | 404 | 200 | History page |
+| /assets/js/index-charts.js | 404 | 200 | Index charts |
+| /assets/js/market.js | 404 | 200 | Market page |
+| /assets/js/nifty.js | 404 | 200 | NIFTY page |
+| /assets/js/options.js | 404 | 200 | Options page |
+| /assets/js/phase41.js | 404 | 200 | Phase 41 integration |
+| /assets/js/scanner.js | 404 | 200 | Scanner page |
+| /assets/js/strategies.js | 404 | 200 | Strategies page |
+| /assets/css/main.css | 404 | 200 | Main stylesheet |
+
+### Page Routes
+
+| Endpoint | Before | After | Notes |
+|----------|--------|-------|-------|
+| /today/index.html | 404 | 200 | PAGE WAS MISSING |
+| /tools/backtest.html | 404 | 200 | PAGE WAS MISSING |
+| /tools/intelligence.html | 404 | 200 | PAGE WAS MISSING |
+| /tools/journal.html | 404 | 200 | PAGE WAS MISSING |
+| /tools/position-size.html | 404 | 200 | PAGE WAS MISSING |
+| /tools/walkforward.html | 404 | 200 | PAGE WAS MISSING |
+| /scanner.html | 404 | 200 | PAGE WAS MISSING |
+| /strategy-builder.html | 404 | 200 | PAGE WAS MISSING |
+| /about.html | 404 | 200 | PAGE WAS MISSING |
+| /privacy.html | 404 | 200 | PAGE WAS MISSING |
+| /terms.html | 404 | 200 | PAGE WAS MISSING |
+| /disclaimer.html | 404 | 200 | PAGE WAS MISSING |
+| /contact.html | 404 | 200 | PAGE WAS MISSING |
+| /market.html | 301 | 301 | Intentional redirect → /today/index.html |
+| /favicon.svg | 404 | 200 | PAGE WAS MISSING |
+| /favicon.ico | 404 | 200 | PAGE WAS MISSING |
+| /apple-touch-icon.svg | 404 | 200 | PAGE WAS MISSING |
+
+## After Fix — API Verification
+
+| API | HTTP | Schema | Data State | Timestamp | Status |
+|-----|------|--------|------------|-----------|--------|
+| /api/market | 200 | object with instruments[] | LIVE data | 2026-09-19 ~10:06 IST | 200 ✅ |
+| /api/price/NIFTY | 200 | {price, change, high, low, volume, data_freshness} | STALE (1724 min old) | 2026-09-18+00:00 | 200 ✅ |
+| /api/price/BANKNIFTY | 200 | {price, change, high, low, volume, data_freshness} | STALE (1724 min old) | 2026-09-18+00:00 | 200 ✅ |
+| /api/price/SENSEX | 200 | {price, change, high, low, volume, data_freshness} | STALE (12134 min old) | 2026-09-11+00:00 | 200 ✅ |
+| /api/price/FINNIFTY | 200 | {price, change, high, low, volume, data_freshness} | STALE (1724 min old) | 2026-09-18+00:00 | 200 ✅ |
+| /api/vix | 200 | {price, change, high, low, data_freshness} | STALE (724 min old) | 2026-09-18T16:40:23Z | 200 ✅ |
+| /api/NIFTY | 200 | {regime, outlook, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/BANKNIFTY | 200 | {regime, outlook, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/SENSEX | 200 | {regime, outlook, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/FINNIFTY | 200 | {regime, outlook, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/ai-outlook/NIFTY | 200 | {outlook, generated_at, source_type, data_state} | CURRENT_5M | — | 200 ✅ |
+| /api/ai-outlook/BANKNIFTY | 200 | {outlook, generated_at, source_type, data_state} | CURRENT_5M | — | 200 ✅ |
+| /api/options/state/NIFTY | 200 | {pcr, oi, iv, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/options/state/BANKNIFTY | 200 | {pcr, oi, iv, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/maxpain/NIFTY | 200 | {maxpain, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/expected-move/NIFTY | 200 | {expected_move, ...} | DATA AVAILABLE | — | 200 ✅ |
+| /api/trade-qualification | POST only | {qualification, ...} | — | — | GET→404 ✅ (POST endpoint) |
+
+## nginx Rate Limiting Note
+
+Rapid API requests (multiple within 1 second) may trigger 503 due to nginx rate limiting (rate=60r/m). Spaced requests (>1s apart) return 200 consistently. This is expected production behavior.

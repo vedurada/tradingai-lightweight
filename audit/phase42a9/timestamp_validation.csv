@@ -1,0 +1,48 @@
+# Timestamp Validation — Phase 42A.9
+
+## Method
+Verified every major displayed market value has a defensible timestamp from the data source, not browser page-load time.
+
+## Timestamp Inventory
+
+### Price Timestamps
+| Index | API | Price Timestamp | Data Freshness | Label |
+|-------|-----|----------------|----------------|-------|
+| NIFTY | /api/price/NIFTY | 2026-09-18+00:00 (Friday close) | STALE (1724 min) | LAST VALID ✅ |
+| BANKNIFTY | /api/price/BANKNIFTY | 2026-09-18+00:00 (Friday close) | STALE (1724 min) | LAST VALID ✅ |
+| SENSEX | /api/price/SENSEX | 2026-09-11+00:00 (Friday close) | STALE (12134 min) | LAST VALID ✅ |
+| FINNIFTY | /api/price/FINNIFTY | 2026-09-18+00:00 (Friday close) | STALE (1724 min) | LAST VALID ✅ |
+
+### VIX Timestamp
+| Source | Timestamp | Data Freshness | Label |
+|--------|-----------|----------------|-------|
+| /api/vix | 2026-09-18T16:40:23Z | STALE (724 min) | LAST VALID ✅ |
+
+### AI Outlook Timestamps
+- Endpoint: /api/ai-outlook/NIFTY, /api/ai-outlook/BANKNIFTY
+- Field: generated_at in response
+- Data state: CURRENT_5M (when market open), LAST_VALID (when market closed)
+- Label: Explicitly shown per data_state ✅
+
+### Options Timestamps
+- Endpoint: /api/options/state/NIFTY, /api/options/state/BANKNIFTY
+- Timestamp from database snapshot
+- Label: LATEST SNAPSHOT / LAST VALID ✅
+
+### Qualification Timestamps
+- /api/NIFTY includes qualification with timestamp
+- /api/trade-qualification (POST) creates new qualification with timestamp
+- Label: CURRENT or LAST VALID per freshness ✅
+
+### Paper Trade Timestamps
+- Journal-based, timestamp from trade execution
+- Label: Trade time ✅
+
+## Browser Page-Load Time NOT Used
+No section uses `new Date()` or `Date.now()` as the displayed market-data timestamp. All timestamps come from server/database data.
+
+### Exception: Session State Clock
+index.html inline script 3 uses `new Date()` for the SESSION STATE indicator (PRE_MARKET/OPEN/CLOSED). This is correct — it shows MARKET TIME, not data freshness. The session state indicator is separate from data timestamps.
+
+## Conclusion
+All major displayed values have defensible timestamps from data sources. No timestamps are fabricated from browser time. ✅

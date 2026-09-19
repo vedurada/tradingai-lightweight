@@ -1,0 +1,50 @@
+# Loading Placeholder Inventory — Phase 42A.9
+
+## Method
+Searched all deployed public HTML pages for Loading/Pending/Waiting/Data unavailable/N/A/— placeholders. Classified each per Phase 42A.9 spec categories A-E.
+
+## Classification Key
+- A = Legitimate initial placeholder (replaced by JS at runtime)
+- B = Legitimate true-empty state (genuinely no data exists)
+- C = Historical/static content
+- D = Broken runtime placeholder (JavaScript failed to replace → MUST FIX)
+- E = Stale legacy code (should be removed/isolated)
+
+## Findings
+
+### BEFORE FIX (static assets 404)
+All Loading placeholders were Category D — JavaScript could not execute to replace them.
+
+### AFTER FIX (static assets 200)
+
+| Page | Loading Count | Classification | Notes |
+|------|--------------|----------------|-------|
+| / | 8 | A (initial) | Inline HTML placeholders, replaced by inline JS + external JS (now 200) |
+| /index.html | 8 | A (initial) | Same as / |
+| /trade.html | 4 | A (initial) | Inline placeholders, replaced by inline JS + external JS |
+| /strategies.html | 0 | N/A | Phase 42A.8 changed to "LAST VALID DATA" ✅ |
+| /today/index.html | 22 | A (initial) | Inline placeholders, replaced by inline JS (18K chars) |
+| /indices/nifty.html | 32 | A (initial) | Inline placeholders, replaced by external JS (now 200) |
+| /indices/banknifty.html | 25 | A (initial) | Inline placeholders, replaced by external JS (now 200) |
+| /indices/sensex.html | 21 | A (initial) | Inline placeholders, replaced by external JS (now 200) |
+| /indices/finnifty.html | 23 | A (initial) | Inline placeholders, replaced by external JS (now 200) |
+| /options/pcr.html | 8 | A (initial) | Inline placeholders, replaced by external JS (now 200) |
+
+### Category D (Before Fix — Now Resolved)
+All Loading placeholders across all pages were Category D because external JS files were 404. After deploying static assets, these are now Category A (legitimate initial placeholders that JavaScript replaces at runtime).
+
+### Category E Check
+No stale legacy code found in loading placeholders. The Phase 42A.8 fix changed strategies.html from "Waiting for market data…" to "LAST VALID DATA" ✅.
+
+### Hardcoded Values — VERIFICATION
+Per Rule 3 (no fabricated market data), verified that no Loading placeholder was replaced with hardcoded values. All data population comes from API responses or localStorage cache.
+
+### After Fix: Should JavaScript Fail, What Happens?
+- index.html: Phase 42A.8 inline cache code (LV, LR, applyCachedPrices, loadLive, restoreHomePhase41, loadHomePhase41) runs first, populates DOM from cache, THEN makes API calls. If API fails, DOM retains cached data. ✅
+- trade.html: showError() preserves existing data on API failure. ✅
+- indices: restoreAll() runs first, loads from cache. ✅
+- today/index.html: Inline JS (loadTodayData) runs with cache-first logic. ✅
+- strategies.html: LAST VALID DATA fallback in inline HTML. ✅
+
+## Verdict
+After Phase 42A.9 fix: NO Category D loading placeholders remain. All are Category A (legitimate runtime placeholders).

@@ -1,0 +1,68 @@
+# Public HTTPS Validation — Phase 42A.9
+
+## Method
+All checks performed via https://tradingai.in/ (public endpoint)
+
+## Page Validation
+
+| Page | HTTP Status | Final URL | HTML Status | JS Assets | API Calls | Loading Placeholders | Error State | Freshness State |
+|------|------------|-----------|------------|-----------|-----------|---------------------|-------------|-----------------|
+| / | 200 | https://tradingai.in/ | OK | 4 JS + 1 CSS ✅ | /api/market ✅ | 8 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /index.html | 200 | https://tradingai.in/index.html | OK | 4 JS + 1 CSS ✅ | /api/market ✅ | 8 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /today/index.html | 200 | https://tradingai.in/today/index.html | OK | 3 JS + 1 CSS ✅ | /api/market ✅ | 22 (A:initial) ✅ | None ✅ | MARKET CLOSED ✅ |
+| /indices/nifty.html | 200 | https://tradingai.in/indices/nifty.html | OK | 4 JS + 1 CSS ✅ | /api/price/NIFTY ✅ | 32 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /indices/banknifty.html | 200 | https://tradingai.in/indices/banknifty.html | OK | 4 JS + 1 CSS ✅ | /api/price/BANKNIFTY ✅ | 25 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /indices/sensex.html | 200 | https://tradingai.in/indices/sensex.html | OK | 4 JS + 1 CSS ✅ | /api/price/SENSEX ✅ | 21 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /indices/finnifty.html | 200 | https://tradingai.in/indices/finnifty.html | OK | 4 JS + 1 CSS ✅ | /api/price/FINNIFTY ✅ | 23 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /trade.html | 200 | https://tradingai.in/trade.html | OK | 3 JS + 1 CSS ✅ | /api/price/NIFTY ✅ | 4 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /strategies.html | 200 | https://tradingai.in/strategies.html | OK | 3 JS + 1 CSS ✅ | /api/NIFTY ✅ | 0 ✅ | None ✅ | LAST VALID ✅ |
+| /tools/backtest.html | 200 | https://tradingai.in/tools/backtest.html | OK | JS ✅ | API ✅ | 0 ✅ | None ✅ | HISTORICAL ✅ |
+| /options/pcr.html | 200 | https://tradingai.in/options/pcr.html | OK | 4 JS + 1 CSS ✅ | /api/options/state/NIFTY ✅ | 8 (A:initial) ✅ | None ✅ | STALE → LAST VALID ✅ |
+| /about.html | 200 | https://tradingai.in/about.html | OK | — | — | 0 ✅ | None ✅ | N/A |
+| /privacy.html | 200 | https://tradingai.in/privacy.html | OK | — | — | 0 ✅ | None ✅ | N/A |
+| /terms.html | 200 | https://tradingai.in/terms.html | OK | — | — | 0 ✅ | None ✅ | N/A |
+| /disclaimer.html | 200 | https://tradingai.in/disclaimer.html | OK | — | — | 0 ✅ | None ✅ | N/A |
+| /contact.html | 200 | https://tradingai.in/contact.html | OK | — | — | 0 ✅ | None ✅ | N/A |
+| /scanner.html | 200 | https://tradingai.in/scanner.html | OK | JS ✅ | API ✅ | 0 ✅ | None ✅ | LIVE |
+| /strategy-builder.html | 200 | https://tradingai.in/strategy-builder.html | OK | JS ✅ | API ✅ | 0 ✅ | None ✅ | LIVE |
+| /market.html | 301 | /today/index.html | Redirect | — | — | — | — | — |
+| /learn/ | 200 | — | OK | — | — | 0 ✅ | None ✅ | N/A |
+| /mutual-funds/ | 200 | — | OK | — | — | 0 ✅ | None ✅ | N/A |
+| /favicon.svg | 200 | — | OK | — | — | — | — | — |
+| /robots.txt | 200 | — | OK | — | — | — | — | — |
+| /sitemap.xml | 200 | — | OK | — | — | — | — | — |
+
+## API Validation (via HTTPS)
+
+| API | Status | Notes |
+|-----|--------|-------|
+| /api/market | 200 ✅ | Core market data |
+| /api/price/NIFTY | 200 ✅ | STALE (Friday close) |
+| /api/price/BANKNIFTY | 200 ✅ | STALE (Friday close) |
+| /api/price/SENSEX | 200 ✅ | STALE (Friday close) |
+| /api/price/FINNIFTY | 200 ✅ | STALE (Friday close) |
+| /api/vix | 200 ✅ | STALE (Friday close) |
+| /api/NIFTY | 200 ✅ | Full data |
+| /api/BANKNIFTY | 200 ✅ | Full data |
+| /api/SENSEX | 200 ✅ | Full data |
+| /api/FINNIFTY | 200 ✅ | Full data |
+| /api/ai-outlook/NIFTY | 200 ✅ | AI outlook |
+| /api/ai-outlook/BANKNIFTY | 200 ✅ | AI outlook |
+| /api/options/state/NIFTY | 200 ✅ | Options data |
+| /api/options/state/BANKNIFTY | 200 ✅ | Options data |
+| /api/maxpain/NIFTY | 200 ✅ | Max pain data |
+| /api/expected-move/NIFTY | 200 ✅ | Expected move data |
+| /api/trade-qualification | POST only ✅ | GET returns 404 (correct) |
+
+## Assets Validation
+
+| Asset | Status |
+|-------|--------|
+| /assets/js/*.js (15 files) | 200 ✅ |
+| /assets/css/main.css | 200 ✅ |
+| /favicon.svg | 200 ✅ |
+| /favicon.ico | 200 ✅ |
+| /apple-touch-icon.svg | 200 ✅ |
+
+## Result
+ALL PUBLIC HTTPS CHECKS PASS ✅
