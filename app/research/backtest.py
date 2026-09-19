@@ -19,7 +19,7 @@ class BacktestEngine:
 
     def run(self, instrument, date_start, date_end, scenario_filter=None, strategy_filter=None):
         run_id = f'BT-{str(uuid.uuid4())[:8].upper()}'
-        self.conn.execute('INSERT INTO backtest_runs (run_id, instrument, date_start, date_end, candle_timeframe, scenario_filter, strategy_filter, runs_at, status) VALUES (?,?,?,?,?,?,?,?)',
+        self.conn.execute('INSERT INTO backtest_runs (run_id, instrument, date_start, date_end, candle_timeframe, scenario_filter, strategy_filter, runs_at, status) VALUES (?,?,?,?,?,?,?,?,?)',
             (run_id, instrument, date_start, date_end, '5m', scenario_filter, strategy_filter, datetime.now(_IST).isoformat(), 'RUNNING'))
         self.conn.commit()
         candles = self._load_historical(instrument, date_start, date_end)
