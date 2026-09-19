@@ -1,0 +1,48 @@
+page,section,element_id,js_function,api_endpoint,json_field,backend_file,db_table,timestamp_field,symbol,freshness,fallback
+/,NIFTY Price,#s-nifty-price,tapeTick / indexJS,/api/price/NIFTY,"price,change",backend/api_server.py,price_5m,timestamp,NIFTY,PRE-RENDERED 18 Sep,Market opens 9:15 IST
+/,BANKNIFTY Price,#s-banknifty-price,tapeTick / indexJS,/api/price/BANKNIFTY,"price,change",backend/api_server.py,price_5m,timestamp,BANKNIFTY,PRE-RENDERED 18 Sep,Market opens 9:15 IST
+/,SENSEX Price,#s-sensex-price,tapeTick / indexJS,/api/price/SENSEX,"price,change",backend/api_server.py,price_5m,timestamp,SENSEX,PRE-RENDERED 18 Sep,Market opens 9:15 IST
+/,FINNIFTY Price,#s-finnifty-price,tapeTick / indexJS,/api/price/FINNIFTY,"price,change",backend/api_server.py,price_5m,timestamp,FINNIFTY,PRE-RENDERED 18 Sep,Market opens 9:15 IST
+/,VIX,#s-vix-price,tapeTick / indexJS,/api/vix,"value,change",backend/api_server.py,vix_data,timestamp,VIX,PRE-RENDERED 18 Sep,Market opens 9:15 IST
+/,AI Outlook Dashboard,#dashboard,renderOutlookDashboard,renderOutlookDashboard (external ai-outlook.js),"regime,bias,confidence",backend/ai_outlook.py / ai_outlook_5m.py,ai_outlooks / ai_outlooks_5m,generated_at,NIFTY,EXTERNAL_JS,No fallback
+/,Trade Qualification,#home-qualification,qualificationJS,/api/trade-qualification (POST),qualification state,backend/api_server.py,N/A (live calc),timestamp,NIFTY,Loading,No fallback
+/,Market Evidence,#home-evidence,evidenceJS,/api/market-evidence/NIFTY,evidence groups,backend/api_server.py,market_evidence_5m / market_evidence,candle_timestamp,NIFTY,Loading,No fallback
+/,Ticker Tape,#ticker-track,tapeTick,"/api/market, /api/index-breadth","instruments,advance,decline",backend/api_server.py,price_5m / market_regime,last_updated,ALL,Loading,Market opens 9:15 IST
+/today/index.html,NIFTY Spot,#t-nifty-price,loadData,/api/market → m.instruments.NIFTY.quote.price,price,backend/api_server.py,price_5m,timestamp,NIFTY,Loading,No pre-rendered
+/today/index.html,NIFTY AI Outlook,#t-outlook,loadData,/api/market-outlook?symbol=NIFTY,"bias,confidence,summary",backend/api_server.py,ai_outlooks_5m / ai_outlooks,generated_at,NIFTY,Loading,No pre-rendered
+/today/index.html,NIFTY Key Levels,#t-levels,loadData,/api/key-levels?symbol=NIFTY,"support,resistance,pivot",backend/api_server.py,N/A (computed),timestamp,NIFTY,Loading,No pre-rendered
+/today/index.html,NIFTY Options,"#t-pcr,#t-oi,#t-maxpain,#t-expmove",loadData,/api/options/state/NIFTY,"pcr,oi,maxpain,expmove",backend/api_server.py,option_chain / vix_data,timestamp,NIFTY,Loading,No pre-rendered
+/today/index.html,Intraday Conditions,"#t-bullish,#t-bearish,#t-notrade",loadData,/api/intraday-conditions?symbol=NIFTY,"bullish,bearish,no_trade",backend/api_server.py,N/A (computed),timestamp,NIFTY,Loading,No pre-rendered
+/today/index.html,Session Status,MARKET CLOSED (static),sessionClockJS,Client-side clock,N/A,N/A,N/A,Real-time,N/A,Real-time,MARKET CLOSED/OPEN
+/indices/nifty.html,NIFTY Spot,#nifty-spot,loadData,/api/market → m.instruments.NIFTY.quote.price,"price,change",backend/api_server.py,price_5m,timestamp,NIFTY,Loading,No pre-rendered
+/indices/nifty.html,NIFTY AI Outlook,#ai-outlook,loadData,/api/market-outlook?symbol=NIFTY,"bias,confidence,summary",backend/api_server.py,ai_outlooks_5m,generated_at,NIFTY,Loading,No pre-rendered
+/indices/nifty.html,NIFTY Technicals,"#nifty-vwap,#nifty-ema,#nifty-rsi,#nifty-macd,#nifty-adx,#nifty-cpr",loadData,/api/market → m.instruments.NIFTY.*,"vwap,ema,rsi,macd,adx,cpr",backend/api_server.py,market_regime / indicators,timestamp,NIFTY,Loading,No pre-rendered
+/indices/banknifty.html,BANKNIFTY Spot,#banknifty-spot,loadData,/api/market → m.instruments.BANKNIFTY.quote.price,"price,change",backend/api_server.py,price_5m,timestamp,BANKNIFTY,Loading,No pre-rendered
+/indices/banknifty.html,BANKNIFTY AI Outlook,#ai-outlook,loadData,/api/market-outlook?symbol=BANKNIFTY,"bias,confidence,summary",backend/api_server.py,ai_outlooks_5m,generated_at,BANKNIFTY,Loading,No pre-rendered
+/options/index.html,PCR,#opt-pcr,loadData,/api/pcr → pcr.nifty[0].pcr,pcr_value,backend/api_server.py,pcr_data,timestamp,NIFTY,Loading,No pre-rendered
+/options/index.html,Max Pain,#opt-maxpain,loadData,/api/maxpain → maxpain.nifty[0].max_pain,max_pain,backend/api_server.py,maxpain_data,timestamp,NIFTY,Loading,No pre-rendered
+/options/index.html,OI Concentration,#opt-oi,loadData,/api/oi-top?symbol=NIFTY,"call_oi,put_oi",backend/api_server.py,option_chain,timestamp,NIFTY,Loading,No pre-rendered
+/options/index.html,Expected Move,#opt-expmove,loadData,/api/expected-move/NIFTY,expected_move,backend/api_server.py,expected_move_data,timestamp,NIFTY,Loading,No pre-rendered
+/options-mobile.html,NIFTY Options,#opt-nifty,loadData,/api/options/state/NIFTY,"spot,pcr,atm,iv,maxpain",backend/api_server.py,option_chain / vix_data,timestamp,NIFTY,Loading,No pre-rendered
+/options-mobile.html,BANKNIFTY Options,#opt-banknifty,loadData,/api/options/state/BANKNIFTY,"spot,pcr,atm,iv,maxpain",backend/api_server.py,option_chain / vix_data,timestamp,BANKNIFTY,Loading,No pre-rendered
+/options-mobile.html,FINNIFTY Options,#opt-finnifty,loadData,/api/options/state/FINNIFTY,"spot,pcr,atm,iv,maxpain",backend/api_server.py,option_chain / vix_data,timestamp,FINNIFTY,Loading,No pre-rendered (404 per Phase 6)
+/options-mobile.html,SENSEX Options,#opt-sensex,loadData,/api/options/state/SENSEX,"spot,pcr,atm,iv,maxpain",backend/api_server.py,option_chain / vix_data,timestamp,SENSEX,Loading,No pre-rendered
+/ai-track-record.html,Prediction Accuracy,"#ai-overall,#ai-total,#ai-conf",loadData,/api/journal/stats,"accuracy,total_trades,avg_confidence",backend/api_server.py,trade_journal,timestamp,NIFTY,Loading,NEVER POPULATES (missing data-sym)
+/ai-track-record.html,Verdict History,#verdict-table tbody,loadData,/api/journal?limit=50,trade entries,backend/api_server.py,trade_journal,timestamp,NIFTY,Loading,No error fallback
+/ai-track-record.html,Accuracy by Symbol,#ai-by-symbol[data-sym=NIFTY],loadData,/api/intelligence/instrument/NIFTY,per_instrument_stats,backend/api_server.py,trade_journal,timestamp,NIFTY,NEVER POPULATES,data-sym attr MISSING from HTML
+/ai-track-record.html,AI vs No-AI,#ai-comparison,loadData,/api/journal/stats,"with_ai,without_ai",backend/api_server.py,trade_journal,timestamp,NIFTY,NEVER POPULATES,data-col attr MISSING from HTML
+/research/index.html,Technical Analysis,#research-tech,loadData,/api/indicators/NIFTY,"rsi,macd,adx,atr,vwap,pivot",backend/api_server.py,indicators,timestamp,NIFTY,Loading,No error fallback
+/research/index.html,Strategy Guides,#research-strategies,loadData,/api/strategy/NIFTY,strategy data,backend/api_server.py,N/A (computed),timestamp,NIFTY,Loading,No error fallback
+/research/index.html,Research Methodology,#research-methodology,populateMethodology(),None (static),pipeline description,N/A,N/A,N/A,N/A,Always populated,None
+/scanner.html,Scanner Table,#scanner-table,loadScanner,/api/symbols + /api/{symbol},"symbol,cap,price,change,regime,signal",backend/api_server.py,price_5m / market_regime,timestamp,ALL,Loading,Fallback symbol list (15 symbols)
+/scanner.html,Summary Hero,#scanner-summary,loadScanner,/api/market,"scan_count,buy_count,sell_count",backend/api_server.py,price_5m / market_regime,timestamp,ALL,Loading,No pre-rendered
+/stock.html,Stock AI Dashboard,#dashboard,renderOutlookDashboard (ai-outlook.js),/api/{symbol} (dynamic),"regime,bias,confidence,8-factor",backend/ai_outlook.py,ai_outlooks_5m,generated_at,RELIANCE (default),Loading,No pre-rendered
+/stock.html,Symbol Selector,URL param ?symbol=,loadStock,URL parameter,SYMBOL,N/A,N/A,N/A,RELIANCE/ADANIENT,URL-dependent,None
+/trade.html,Live Price,#t-spot,loadData,/api/trade-setup/{symbol},"price,change",backend/api_server.py,price_5m,timestamp,NIFTY,Loading,No pre-rendered
+/trade.html,Trade Setup,#t-setup,loadData,/api/trade-setup/{symbol},"GO/WAIT/NO_SETUP,entry,exit",backend/api_server.py,N/A (computed),timestamp,NIFTY,Loading,No pre-rendered
+/tools/backtest.html,Backtest Form,#backtest-form,runBacktest,/api/backtest?symbol=...&days=...,"metrics,equity,trades",backend/backtest.py / backtest_engine.py,price_5m / market_regime,timestamp,NIFTY,Async results,No pre-rendered
+/tools/walkforward.html,Walk-Forward,#walkforward-results,runWalkForward,/api/walkforward/{symbol}/{start}/{end},"dev,val,oos metrics",backend/walkforward.py,price_5m / market_regime,timestamp,NIFTY,On demand,Blank until run
+/tools/intelligence.html,Intelligence Summary,#intelligence-summary,loadData,/api/intelligence/summary,"total_trades,win_rate,categories",backend/personal_intelligence.py,trade_journal,timestamp,NIFTY,Loading,SUFFICIENT_DATA/INSUFFICIENT_DATA
+/tools/journal.html,Trade Entries,#journal-entries,loadData,/api/journal,"entries,filters",backend/api_server.py,trade_journal,timestamp,NIFTY,Loading,No pre-rendered
+/stock-options.html,Stock Options Table,#options-table,loadData,/api/nifty + /api/{symbol},"expiry,atm,structures",backend/api_server.py,option_chain,timestamp,RELIANCE etc,Loading,Fallback symbol list (15)
+/alerts.html,Alert Feed,#alerts-list,loadAlerts,/api/alerts?limit=100,"type,symbol,message,timestamp",backend/api_server.py,N/A (computed),timestamp,ALL,Loading,No pre-rendered
