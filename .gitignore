@@ -5,3 +5,6 @@ __pycache__/
 *.db-shm
 logs/*.log
 data/generated/*.json
+
+database/tradingai.db
+*.db
