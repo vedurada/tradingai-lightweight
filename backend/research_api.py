@@ -4,12 +4,17 @@ import json
 import os
 import sys
 import logging
-from datetime import datetime, timezone
+from datetime import datetime, timezone, timedelta
 from typing import Any, Dict, List, Optional
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
 logger = logging.getLogger("tradingai.research_api")
+
+_IST = timezone(timedelta(hours=5, minutes=30))
+
+def _research_now_iso():
+    return datetime.now(_IST).isoformat()
 
 
 def register_research_routes(app):
@@ -24,7 +29,7 @@ def register_research_routes(app):
         return {
             "status": "ok",
             "research_summary": summary,
-            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp": _research_now_iso(),
         }
 
     @app.route("/api/research/coverage", methods=["GET"])
@@ -38,7 +43,7 @@ def register_research_routes(app):
             "status": "ok",
             "coverage": summary,
             "datasets": datasets,
-            "timestamp": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "timestamp": _research_now_iso(),
         }
 
     @app.route("/api/research/ai-history", methods=["GET"])
