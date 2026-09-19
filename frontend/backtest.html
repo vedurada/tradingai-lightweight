@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NIFTY & BANKNIFTY Options Backtest Research | TradingAI</title>
+<meta name="description" content="Historical trade research and backtesting for NIFTY and BANKNIFTY options strategies.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,sans-serif;background:#0a0e17;color:#e0e0e0}header{background:#111827;padding:1rem 2rem;border-bottom:1px solid #1f2937}nav a{color:#9ca3af;text-decoration:none;margin-left:1.5rem;font-size:.9rem}.container{max-width:1200px;margin:0 auto;padding:1rem}h1{font-size:2rem;color:#60a5fa}.controls{background:#111827;padding:1.5rem;border-radius:8px;margin-bottom:1.5rem;border:1px solid #1f2937}button{background:#60a5fa;color:#0a0e17;border:none;padding:.6rem 1.5rem;border-radius:4px;cursor:pointer;font-weight:600}.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:1rem;margin:1.5rem 0}.metric{background:#111827;padding:1rem;border-radius:6px;border:1px solid #1f2937;text-align:center}.metric .value{font-size:1.5rem;font-weight:700;color:#60a5fa}.metric .label{font-size:.75rem;color:#9ca3af}.insufficient{color:#fbbf24;font-size:.85rem}.disclaimer{background:#7f1d1d;padding:1rem;border-radius:6px;margin:1.5rem 0;font-size:.85rem;color:#fca5a5}table{width:100%;border-collapse:collapse;margin:1rem 0}th,td{padding:.75rem;text-align:left;border-bottom:1px solid #1f2937;font-size:.85rem}th{color:#9ca3af}.footer{text-align:center;padding:2rem;color:#4b5563;font-size:.75rem;border-top:1px solid #1f2937;margin-top:2rem}</style>
+</head>
+<body>
+<header><h2 style="color:#60a5fa">TradingAI</h2><nav><a href="/index.html">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">BACKTEST</a></nav></header>
+<main class="container">
+<h1>RESEARCH</h1>
+<p style="color:#9ca3af">Historical trade research - not financial advice</p>
+<div class="disclaimer">Historical results do not guarantee future performance. Paper trades are simulations. Insufficient data must be shown explicitly.</div>
+<div class="controls">
+<select id="instrument"><option>NIFTY</option><option>BANKNIFTY</option></select>
+<select id="range"><option value="7">7 days</option><option value="30">30 days</option><option value="90">90 days</option></select>
+<button onclick="runBacktest()">RUN BACKTEST</button>
+</div>
+<div id="summary"><div class="insufficient"><div class="value">INSUFFICIENT SAMPLE</div></div></div>
+<table id="trades" style="display:none"><thead><tr><th>Date</th><th>Scenario</th><th>Strategy</th><th>Entry</th><th>Exit</th><th>Result</th><th>PnL</th><th>Reason</th></tr></thead><tbody id="body"></tbody></table>
+<div id="validation"></div>
+</main>
+<footer class="footer">TradingAI - Research tool.</footer>
+<script>
+function runBacktest() {
+var ins = document.getElementById("instrument").value;
+var rng = document.getElementById("range").value;
+document.getElementById("summary").innerHTML = '<div class="insufficient"><div class="value">RUNNING...</div></div>';
+fetch("/api/backtest/run", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({instrument:ins, date_start:getDate(-rng), date_end:getDate(0)})})
+.then(function(r){return r.json();}).then(function(d){
+var o = d.data.outcome || {};
+var html = '<div class="summary">';
+['Trades','Wins','Losses'].forEach(function(label,i){var v=[o.total_trades,o.wins,o.losses][i];html += '<div class="metric"><div class="value">'+v+'</div><div class="label">'+label+'</div></div>';});
+if(o.win_rate !== undefined){html += '<div class="metric"><div class="value">'+Math.round(o.win_rate*100)+'%</div><div class="label">Win Rate</div></div>';}
+html += '</div>';
+document.getElementById("summary").innerHTML = html;
+if(d.data.trades && d.data.trades.length > 0){
+document.querySelector("table").style.display = "";
+document.getElementById("body").innerHTML = d.data.trades.map(function(t){
+return '<tr><td>'+t.session_date+'</td><td>'+t.scenario+'</td><td>'+t.strategy+'</td><td>'+t.entry+'</td><td>'+t.exit+'</td><td>'+(t.paper_pnl>0?'WIN':t.paper_pnl<0?'LOSS':'BE')+'</td><td>'+t.paper_pnl+'</td><td>'+t.exit_reason+'</td></tr>';
+}).join('');
+}
+document.getElementById("validation").innerHTML = '<div class="metric" style="margin-top:1rem"><div class="value">'+d.data.lookahead_check+'</div><div class="label">No-Look-Ahead</div></div>';
+});
+}
+function getDate(n){var d=new Date();d.setDate(d.getDate()+n);return d.toISOString().slice(0,10);}
+</script>
+</body>
+</html>

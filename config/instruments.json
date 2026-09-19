@@ -1,0 +1,7 @@
+{
+  "instruments": [
+    {"instrument_id": "NIFTY", "symbol": "NIFTY", "name": "NIFTY 50", "exchange": "NSE", "instrument_type": "INDEX", "timezone": "Asia/Kolkata", "active": true},
+    {"instrument_id": "BANKNIFTY", "symbol": "BANKNIFTY", "name": "BANK NIFTY 50", "exchange": "NSE", "instrument_type": "INDEX", "timezone": "Asia/Kolkata", "active": true},
+    {"instrument_id": "INDIA_VIX", "symbol": "INDIA_VIX", "name": "India VIX", "exchange": "NSE", "instrument_type": "INDEX", "timezone": "Asia/Kolkata", "active": true}
+  ]
+}

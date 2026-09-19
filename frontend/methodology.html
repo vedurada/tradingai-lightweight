@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang=en>
+<head>
+<meta charset=UTF-8>
+<meta name=viewport content=width=device-width, initial-scale=1.0>
+<title>TradingAI Methodology | How We Analyze Markets</title>
+<meta name=description content=TradingAI methodology: historical scenario detection, deterministic qualification, and AI explanation for NIFTY and BANKNIFTY options.>
+<link rel=canonical href=https://tradingai.in/methodology.html>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#0a0e17;color:#e0e0e0;line-height:1.7}header{background:#111827;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}nav a{color:#9ca3af;text-decoration:none;margin-left:1.5rem;font-size:.9rem}.container{max-width:800px;margin:0 auto;padding:2rem 1rem}h1{font-size:2rem;color:#60a5fa;margin-bottom:1rem}h2{font-size:1.3rem;color:#e0e0e0;margin:2rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid #1f2937}p{color:#9ca3af;margin-bottom:1rem}.method-step{background:#111827;padding:1.5rem;border-radius:8px;margin-bottom:1rem;border:1px solid #1f2937}.method-step h3{color:#60a5fa;margin-bottom:.5rem}.method-step p{color:#9ca3af;font-size:.9rem;margin-bottom:0}.disclaimer{background:#7f1d1d;padding:1rem;border-radius:6px;margin:2rem 0;font-size:.85rem;color:#fca5a5}.footer{text-align:center;padding:2rem;color:#4b5563;font-size:.75rem;border-top:1px solid #1f2937;margin-top:2rem}
+</style>
+</head>
+<body>
+<header><h2 style=color:#60a5fa>TradingAI</h2><nav><a href=/>Home</a><a href=/indices/nifty.html>NIFTY</a><a href=/indices/banknifty.html>BANKNIFTY</a><a href=/backtest.html>BACKTEST</a></nav></header>
+<main class=container>
+<h1>Methodology</h1>
+<p>How TradingAI analyzes markets, identifies scenarios, and qualifies trades.</p>
+<h2>Pipeline</h2>
+<div class=method-step><h3>1. Historical Context</h3><p>Previous completed sessions are analyzed for price-action patterns, trends, volatility regimes, and structural characteristics.</p></div>
+<div class=method-step><h3>2. Scenario Generation</h3><p>Candidate scenarios (bullish continuation, range, breakout, etc.) are generated from historical features.</p></div>
+<div class=method-step><h3>3. Current Confirmation</h3><p>Today market data is matched against scenarios. A scenario confirms only after current conditions validate it.</p></div>
+<div class=method-step><h3>4. Options and Risk</h3><p>Valid options data is required. Risk engine evaluates entry, stop, target, and reward/risk ratio.</p></div>
+<div class=method-step><h3>5. Deterministic Qualification</h3><p>The deterministic engine decides QUALIFIED TRADE or NO TRADE. AI never overrides this decision.</p></div>
+<div class=method-step><h3>6. One Trade Per Day</h3><p>Server-side lock enforces maximum one qualified trade per day. After qualification, the lock is consumed.</p></div>
+<div class=method-step><h3>7. Paper Trading</h3><p>Every qualified trade becomes a paper trade. Monitoring, exit, and outcome tracking follow.</p></div>
+<div class=method-step><h3>8. AI Explanation</h3><p>AI explains why a scenario matched, why a trade qualified, and what risks exist. AI never changes the decision.</p></div>
+<h2>No-Look-Ahead</h2>
+<p>For every decision at timestamp T, only data available at or before T is used. Future candles, outcomes, and information are never used in any decision or backtest.</p>
+<h2>Limitations</h2>
+<p>Historical scenarios are observations, not predictions. Backtest results are research data, not guarantees. Paper trades are simulations. AI availability may vary.</p>
+<div class=disclaimer>TradingAI provides market analysis for educational purposes. Not financial advice. Users are responsible for their own trading decisions.</div>
+</main>
+<footer>TradingAI — Methodology documentation.</footer>
+</body>
+</html>
