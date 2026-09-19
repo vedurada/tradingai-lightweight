@@ -12,7 +12,19 @@ import hashlib
 import hmac
 import functools
 from datetime import datetime, timezone
+from zoneinfo import ZoneInfo as _ZoneInfo
 from typing import Optional
+
+_IST = _ZoneInfo("Asia/Kolkata")
+
+def now_ist():
+    return datetime.now(_IST)
+
+def now_ist_iso():
+    return datetime.now(_IST).isoformat()
+
+def now_ist_str(fmt="%Y-%m-%d %H:%M:%S"):
+    return datetime.now(_IST).strftime(fmt)
 
 assert os.environ.get("FLASK_DEBUG", "0") != "1", "FLASK_DEBUG must not be 1"
 
@@ -269,7 +281,7 @@ def metrics():
     summary = monitor.get_summary()
     alerts = monitor.check_alerts(ALERT_RULES)
     return jsonify({
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": now_ist_iso(),
         "uptime_seconds": monitor.get_uptime_seconds(),
         "request_counts": summary["counts"],
         "latency": summary["endpoints"],
@@ -385,7 +397,7 @@ def _record_fetch_result(source, success, error_msg=None):
     # nonexistent data_status columns and always rolled back.
     conn = get_db()
     try:
-        now = datetime.now(timezone.utc).isoformat()
+        now = now_ist_iso()
         if success:
             conn.execute(
                 "INSERT INTO fetch_health (source, success_count, error_count, consecutive_failures, last_error, last_ok_at)"
@@ -537,7 +549,7 @@ def health():
         db_size_mb = None
     return jsonify({
         "status": overall,
-        "timestamp": datetime.now(timezone.utc).isoformat(),
+        "timestamp": now_ist_iso(),
         "warnings": warnings,
         "data_freshness": freshness,
         "sources": sources,
@@ -851,7 +863,7 @@ def _live_quote_row(conn, symbol):
     d = row_to_dict(row)
     try:
         ts = datetime.fromisoformat(str(d.get("timestamp", "")).replace("Z", "+00:00"))
-        age_min = (datetime.now(timezone.utc) - ts).total_seconds() / 60
+        age_min = (now_ist() - ts).total_seconds() / 60
         if age_min > LIVE_QUOTE_MAX_AGE_MIN:
             return None
     except Exception:
@@ -937,7 +949,7 @@ def _ist_today():
         from zoneinfo import ZoneInfo
         return datetime.now(ZoneInfo("Asia/Kolkata")).strftime("%Y-%m-%d")
     except Exception:
-        return datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        return now_ist_str("%Y-%m-%d")
 
 
 def _locked_strategy(conn, symbol):
@@ -969,7 +981,7 @@ def _live_expiry(conn, symbol):
     try:
         today = _ist_today()
     except Exception:
-        today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+        today = now_ist_str("%Y-%m-%d")
     try:
         rows = conn.execute("SELECT expiry FROM option_expiries WHERE symbol=? AND expiry>=? ORDER BY expiry", (symbol, today)).fetchall()
     except Exception:
@@ -999,7 +1011,7 @@ def _live_expiry(conn, symbol):
         return {"expiry_date": d.isoformat(), "expiry_label": d.strftime("%d %b %Y"),
                 "expiry_weekday": day_label, "days_to_expiry": (d - _date.fromisoformat(today)).days,
                 "tenor": tenor, "expiry_day": day_label, "source": "NSE",
-                "timestamp": datetime.now(timezone.utc).isoformat()}
+                "timestamp": now_ist_iso()}
 
     monthlies = [d for d in dates if is_monthly(d)]
     weekly = next((d for d in dates if d not in monthlies), None)
@@ -1067,7 +1079,7 @@ def error_response(code, message, status_code=400):
         "error": {
             "code": code,
             "message": message,
-            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "timestamp": now_ist_iso(),
         }
     }), status_code
 
@@ -1159,7 +1171,7 @@ def _symbol_data(symbol):
             pass
         quote_ts = (result.get("quote") or {}).get("timestamp")
         result["last_updated"] = quote_ts
-        result["computed_at"] = datetime.now(timezone.utc).isoformat()
+        result["computed_at"] = now_ist_iso()
         result["data_quality"] = (result.get("ai_outlook") or {}).get("data_quality", "GOOD")
         result["data_completeness"] = _data_completeness(
             quote=bool(result.get("quote")),
@@ -1498,7 +1510,7 @@ def options_intelligence(symbol):
             "symbol": symbol,
             "spot": spot,
             "data_quality": "LIVE" if has_option_data else "DATA UNAVAILABLE",
-            "as_of": datetime.now(timezone.utc).isoformat(),
+            "as_of": now_ist_iso(),
             "pcr": None,
             "oi": None,
             "max_pain": None,
@@ -1804,7 +1816,7 @@ def portfolio_add():
             "INSERT INTO portfolio (user_id, symbol, strategy, entry_price, quantity, direction, entry_date,"
             "exit_price, exit_date, points, result, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,datetime('now'))",
             (user_id, sym, body.get("strategy", ""), body.get("entry_price"), body.get("quantity"),
-             direction, body.get("entry_date") or datetime.now(timezone.utc).date().isoformat(),
+             direction, body.get("entry_date") or now_ist().date().isoformat(),
              body.get("exit_price"), body.get("exit_date"), body.get("points"),
              (body.get("result") or "").upper()),
         )
@@ -1885,7 +1897,7 @@ def backtest():
 
     job_id = str(uuid.uuid4())[:12]
     with _jobs_lock:
-        _backtest_jobs[job_id] = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat()}
+        _backtest_jobs[job_id] = {"status": "running", "started_at": now_ist_iso()}
     thread = threading.Thread(
         target=_submit_backtest,
         args=(job_id, "run", body),
@@ -1910,7 +1922,7 @@ def backtest_vix_strangle():
 
     job_id = str(uuid.uuid4())[:12]
     with _jobs_lock:
-        _backtest_jobs[job_id] = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat()}
+        _backtest_jobs[job_id] = {"status": "running", "started_at": now_ist_iso()}
     thread = threading.Thread(
         target=_submit_backtest,
         args=(job_id, "run_vix_strangle", body),
@@ -1935,7 +1947,7 @@ def backtest_5m_real():
 
     job_id = str(uuid.uuid4())[:12]
     with _jobs_lock:
-        _backtest_jobs[job_id] = {"status": "running", "started_at": datetime.now(timezone.utc).isoformat()}
+        _backtest_jobs[job_id] = {"status": "running", "started_at": now_ist_iso()}
     thread = threading.Thread(
         target=_submit_backtest,
         args=(job_id, "run_5m_real", body),
@@ -2347,7 +2359,7 @@ def global_markets():
                 out[s] = {
                     "name": GLOBAL_SYMBOLS[s]["name"], "price": round(price, 2),
                     "change": round(change, 2), "change_pct": round(chg_pct, 2),
-                    "yf": s, "timestamp": datetime.now(timezone.utc).isoformat(),
+                    "yf": s, "timestamp": now_ist_iso(),
                 }
             except Exception:
                 continue
@@ -2461,7 +2473,7 @@ def mutual_funds():
         funds = [row_to_dict(r) for r in rows]
         buckets.append({"category": cat, "funds": funds, "schemes_tracked": counts.get(cat, 0)})
     conn.close()
-    return jsonify({"total_schemes": total, "last_updated": datetime.now(timezone.utc).isoformat(), "buckets": buckets})
+    return jsonify({"total_schemes": total, "last_updated": now_ist_iso(), "buckets": buckets})
 
 @app.route("/api/actions")
 @cache_page(5)
@@ -2566,7 +2578,7 @@ def chat_messages():
     text = "".join(c for c in text if c == "\n" or ord(c) >= 32)
     username = "".join(c for c in username if ord(c) >= 32)[:20]
     ch = str(data.get("channel") or channel).strip()[:20].lower() or "global"
-    ts = datetime.now(timezone.utc).isoformat()
+    ts = now_ist_iso()
     conn = get_db()
     try:
         cur = conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", (ch, username, text, kind, ts))
@@ -2605,7 +2617,7 @@ def _push_chat_alert(channel: str, text: str, username: str = "AI"):
     """Fire-and-forget system alert into chat_messages (used by outlook.py / pnl_tracker)."""
     try:
         conn = get_db()
-        ts = datetime.now(timezone.utc).isoformat()
+        ts = now_ist_iso()
         conn.execute("INSERT INTO chat_messages (channel, username, text, kind, created_at) VALUES (?,?,?,?,?)", (channel.strip()[:20].lower() or "alerts", username[:20], text[:500], "alert", ts))
         conn.execute("DELETE FROM chat_messages WHERE kind='alert' AND id NOT IN (SELECT id FROM chat_messages WHERE kind='alert' ORDER BY id DESC LIMIT 200)")
         conn.commit()
@@ -2631,7 +2643,7 @@ def market_state(symbol):
         result = state.to_dict()
         result["data_quality"] = DATA_QUALITY_LIVE
         result["data_freshness"] = {"age_minutes": 0, "stale": False}
-        result["computed_at"] = datetime.now(timezone.utc).isoformat()
+        result["computed_at"] = now_ist_iso()
         return jsonify(result)
     except Exception as e:
         return error_response("INTERNAL_ERROR", str(e), 500)
@@ -2844,7 +2856,7 @@ def trade_setup(symbol):
         timestamp = ""
         try:
             from datetime import datetime, timezone
-            timestamp = datetime.now(timezone.utc).isoformat()
+            timestamp = now_ist_iso()
         except Exception:
             pass
 
@@ -3530,7 +3542,7 @@ def session_timeline():
     Computed from market hours (9:30 AM - 3:30 PM IST). No external dependency.
     """
     from datetime import datetime, timezone, timedelta
-    now_utc = datetime.now(timezone.utc)
+    now_utc = now_ist()
     try:
         ist_now = now_utc + timedelta(hours=5, minutes=30)
     except Exception:
@@ -3769,7 +3781,7 @@ def api_ai_outlook(symbol):
                 except (json.JSONDecodeError, TypeError):
                     current[f] = []
             generated_dt = datetime.fromisoformat(current["generated_at"].replace("Z", "+00:00"))
-            age_seconds = (datetime.now(timezone.utc) - generated_dt).total_seconds()
+            age_seconds = (now_ist() - generated_dt).total_seconds()
             current["age_seconds"] = round(age_seconds)
             current["age_minutes"] = round(age_seconds / 60)
             if age_seconds > MAX_OUTLOOK_AGE_MINUTES * 60:
@@ -3785,7 +3797,7 @@ def api_ai_outlook(symbol):
             current, previous, timeline = _ai_outlook_from_legacy(conn, symbol)
             if current:
                 generated_dt = datetime.fromisoformat(current["generated_at"].replace("Z", "+00:00"))
-                age_seconds = (datetime.now(timezone.utc) - generated_dt).total_seconds()
+                age_seconds = (now_ist() - generated_dt).total_seconds()
                 current["age_seconds"] = round(age_seconds)
                 current["age_minutes"] = round(age_seconds / 60)
                 if age_seconds > MAX_OUTLOOK_AGE_MINUTES * 60:

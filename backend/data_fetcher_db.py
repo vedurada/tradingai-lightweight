@@ -6,7 +6,19 @@ import sys
 import logging
 import sqlite3
 from datetime import datetime, timezone, timedelta
+from zoneinfo import ZoneInfo as _ZoneInfo
 from typing import Any, Optional
+
+_IST = _ZoneInfo("Asia/Kolkata")
+
+def now_ist():
+    return datetime.now(_IST)
+
+def now_ist_iso():
+    return datetime.now(_IST).isoformat()
+
+def now_ist_str(fmt="%Y-%m-%d %H:%M:%S"):
+    return datetime.now(_IST).strftime(fmt)
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from retry import retry_with_backoff
@@ -99,7 +111,7 @@ def _fetch_yf_ohlcv_raw(yf_symbol: str, interval: str = "1m", period: str = "2d"
         ts = idx
         try:
             if hasattr(ts, "tzinfo") and ts.tzinfo is not None:
-                ts = ts.astimezone(timezone.utc)
+                ts = ts.astimezone(_IST)
         except Exception:
             pass
         data.append({
@@ -286,7 +298,7 @@ def store_extras(conn: sqlite3.Connection, symbol: str, extras: dict) -> dict:
     """Persist news + corporate actions; return mergeable fundamentals fragment."""
     if not extras:
         return {}
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist_iso()
     for d in extras.get("dividends", []) or []:
         try:
             conn.execute("INSERT OR IGNORE INTO corporate_actions (symbol, timestamp, action_type, value) VALUES (?, ?, 'DIVIDEND', ?)",
@@ -366,7 +378,7 @@ def fetch_nse_expiries(nse_symbol: str) -> list:
 
 def store_nse_expiries(conn: sqlite3.Connection, symbol: str, dates: list) -> int:
     from datetime import datetime as _dt
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist_iso()
     n = 0
     for ds in dates or []:
         try:
@@ -384,13 +396,13 @@ def store_option_chains(conn: sqlite3.Connection, symbol: str, options_data: dic
         return
     for chain in options_data["chains"]:
         expiry = chain["expiry"]
-        conn.execute("INSERT OR REPLACE INTO option_expiries (symbol, expiry, fetched_at) VALUES (?, ?, ?)", (symbol, expiry, datetime.now(timezone.utc).isoformat()))
+        conn.execute("INSERT OR REPLACE INTO option_expiries (symbol, expiry, fetched_at) VALUES (?, ?, ?)", (symbol, expiry, now_ist_iso()))
         for call in chain["calls"]:
             conn.execute("INSERT OR REPLACE INTO option_chain (symbol, expiry, strike, option_type, last_price, bid, ask, volume, open_interest, change_in_oi, implied_volatility, bid_size, ask_size, fetched_at) VALUES (?, ?, ?, 'CE', ?, ?, ?, ?, ?, 0, ?, 0, 0, ?)",
-                         (symbol, expiry, call["strike"], call["last_price"], call["bid"], call["ask"], call["volume"], call["open_interest"], call["implied_volatility"], datetime.now(timezone.utc).isoformat()))
+                         (symbol, expiry, call["strike"], call["last_price"], call["bid"], call["ask"], call["volume"], call["open_interest"], call["implied_volatility"], now_ist_iso()))
         for put in chain["puts"]:
             conn.execute("INSERT OR REPLACE INTO option_chain (symbol, expiry, strike, option_type, last_price, bid, ask, volume, open_interest, change_in_oi, implied_volatility, bid_size, ask_size, fetched_at) VALUES (?, ?, ?, 'PE', ?, ?, ?, ?, ?, 0, ?, 0, 0, ?)",
-                         (symbol, expiry, put["strike"], put["last_price"], put["bid"], put["ask"], put["volume"], put["open_interest"], put["implied_volatility"], datetime.now(timezone.utc).isoformat()))
+                         (symbol, expiry, put["strike"], put["last_price"], put["bid"], put["ask"], put["volume"], put["open_interest"], put["implied_volatility"], now_ist_iso()))
     conn.commit()
 
 
@@ -398,7 +410,7 @@ def store_fundamentals(conn: sqlite3.Connection, symbol: str, data: dict) -> Non
     if not data:
         return
     conn.execute("INSERT OR REPLACE INTO fundamentals (symbol, timestamp, data) VALUES (?, ?, ?)",
-                 (symbol, datetime.now(timezone.utc).isoformat(), json.dumps(data)))
+                 (symbol, now_ist_iso(), json.dumps(data)))
     conn.commit()
 
 
@@ -410,7 +422,7 @@ def get_daily_ohlcv(conn: sqlite3.Connection, fetcher, symbol: str, yf_symbol: s
         if row:
             try:
                 ts = datetime.fromisoformat(str(row["timestamp"]).replace("Z", "+00:00"))
-                if (datetime.now(timezone.utc) - ts).total_seconds() < 6 * 3600:
+                if (now_ist() - ts).total_seconds() < 6 * 3600:
                     fresh = True
             except Exception:
                 pass
@@ -447,7 +459,7 @@ def _quote_from_info(symbol: str, info: dict) -> Optional[dict]:
         "change_pct": round(change / prev * 100, 2) if prev else 0,
         "open": round(info.get("open", 0) or 0, 2), "high": round(info.get("dayHigh", 0) or 0, 2),
         "low": round(info.get("dayLow", 0) or 0, 2), "previous_close": round(prev, 2),
-        "volume": info.get("volume", 0) or 0, "timestamp": datetime.now(timezone.utc).isoformat(), "stale": False,
+        "volume": info.get("volume", 0) or 0, "timestamp": now_ist_iso(), "stale": False,
     }
 
 
@@ -466,7 +478,7 @@ def _quote_from_latest_1m(conn: sqlite3.Connection, symbol: str) -> Optional[dic
             "change_pct": round(change / prev * 100, 2) if prev else 0,
             "open": d.get("open", 0) or 0, "high": d.get("high", 0) or 0, "low": d.get("low", 0) or 0,
             "previous_close": round(prev, 2), "volume": d.get("volume", 0) or 0,
-            "timestamp": datetime.now(timezone.utc).isoformat(), "stale": False,
+            "timestamp": now_ist_iso(), "stale": False,
         }
     except Exception:
         return None
@@ -493,7 +505,7 @@ def _latest_ai_outlook(conn: sqlite3.Connection, symbol: str, max_age_s: int = A
         ts = row["timestamp"]
         if isinstance(ts, str):
             ts = ts.replace("Z", "+00:00")
-        age = (datetime.now(timezone.utc) - datetime.fromisoformat(ts)).total_seconds()
+        age = (now_ist() - datetime.fromisoformat(ts)).total_seconds()
     except Exception:
         age = max_age_s + 1
     try:
@@ -536,7 +548,7 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
         pivot_data = calculate_pivot(quote)
         cpr_data = calculate_cpr(pivot_data)
         options_analysis = {"data_unavailable": True, "message": "Options data unavailable"}
-        timestamp = datetime.now(timezone.utc).isoformat(timespec='milliseconds').replace('+00:00', 'Z')
+        timestamp = now_ist().isoformat(timespec='milliseconds').replace('+00:00', 'Z')
 
         closes_ohlcv = [row.get("close", 0) for row in ohlcv]
         sma20 = round(sum(closes_ohlcv[-20:]) / 20, 2) if len(closes_ohlcv) >= 20 else None
@@ -654,14 +666,14 @@ def store_regime_and_strategies(conn: sqlite3.Connection, symbol: str, info: dic
 
 
 def update_data_status(conn: sqlite3.Connection, symbol: str, interval_type: str) -> None:
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist_iso()
     conn.execute("INSERT OR REPLACE INTO data_status (symbol, last_fetch, last_1m_fetch, last_5m_fetch, last_15m_fetch, last_options_fetch, last_vix_fetch, status, error_count) VALUES (?, ?, ?, ?, ?, ?, ?, 'OK', 0)",
                  (symbol, now, now if interval_type == "1m" else "", now if interval_type == "5m" else "", now if interval_type == "15m" else "", now if interval_type == "options" else "", now if interval_type == "vix" else ""))
     conn.commit()
 
 
 def fetch_market_snapshot(conn: sqlite3.Connection) -> dict:
-    snapshot = {"timestamp": datetime.now(timezone.utc).isoformat()}
+    snapshot = {"timestamp": now_ist_iso()}
     for sym in ["NIFTY", "BANKNIFTY", "SENSEX", "VIX"]:
         c = conn.execute(f"SELECT close FROM price_1m WHERE symbol=? ORDER BY timestamp DESC LIMIT 1", (sym,))
         row = c.fetchone()
@@ -723,7 +735,7 @@ def store_investment_views(conn: sqlite3.Connection, symbol: str) -> None:
     short = short_term_view(closes, price)
     long_v = long_term_view(closes, fundamentals, price)
     lv = swing_levels(closes, price)
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist_iso()
     conn.execute(
         """INSERT INTO investment_views (symbol, date, horizon, rating, target_price, stop_price, fair_value, reason, confidence, score, created_at)
            VALUES (?, ?, 'SHORT', ?, ?, ?, NULL, ?, ?, ?, ?)
@@ -746,7 +758,7 @@ def fetch_all() -> None:
     conn = get_db()
     init_symbols(conn, config)
 
-    now = datetime.now(timezone.utc)
+    now = now_ist()
     is_market_hours = now.weekday() < 5 and 9 <= now.hour <= 15
     minute = now.minute
 
@@ -777,7 +789,7 @@ def fetch_all() -> None:
             has = conn.execute("SELECT COUNT(*) FROM price_1m WHERE symbol=? AND timestamp >= datetime('now', '-30 minutes')", (symbol,)).fetchone()[0]
             nq = nse_quotes.get(symbol)
             if not has and nq and nq.get("price"):
-                ts = datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:00")
+                ts = now_ist().strftime("%Y-%m-%d %H:%M:00")
                 store_price_data(conn, symbol, [synth_candle_from_quote(symbol, nq, ts)], "price_1m")
                 logger.info(f"  {symbol}: yfinance empty, NSE synth candle stored")
         except Exception as e:
@@ -788,7 +800,7 @@ def fetch_all() -> None:
         store_price_data(conn, "VIX", vix_data_1m, "price_1m")
         last = vix_data_1m[-1]
         prev = vix_data_1m[-2]["close"] if len(vix_data_1m) > 1 else last["close"]
-        store_vix_data(conn, datetime.now(timezone.utc).isoformat(), {
+        store_vix_data(conn, now_ist_iso(), {
             "open": last["open"], "high": last["high"], "low": last["low"], "close": last["close"],
             "change": last["close"] - prev, "change_pct": (last["close"] - prev) / prev * 100 if prev else 0,
         })
@@ -796,11 +808,11 @@ def fetch_all() -> None:
     nvix = nse_quotes.get("VIX")
     if nvix and nvix.get("price"):
         # NSE India VIX is fresher than Yahoo ^INDIAVIX: prefer it for vix_data too.
-        store_vix_data(conn, datetime.now(timezone.utc).isoformat(), {
+        store_vix_data(conn, now_ist_iso(), {
             "open": nvix.get("open", 0), "high": nvix.get("high", 0), "low": nvix.get("low", 0),
             "close": nvix.get("price", 0), "change": nvix.get("change", 0), "change_pct": nvix.get("change_pct", 0),
         })
-        store_price_data(conn, "VIX", [synth_candle_from_quote("VIX", nvix, datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:00"))], "price_1m")
+        store_price_data(conn, "VIX", [synth_candle_from_quote("VIX", nvix, now_ist().strftime("%Y-%m-%d %H:%M:00"))], "price_1m")
         update_data_status(conn, "VIX", "nse")
 
     for etf_sym, etf_yf in YF_ETFS.items():
@@ -924,7 +936,7 @@ def store_live_quotes(conn: sqlite3.Connection, quotes: dict) -> int:
                 """INSERT OR REPLACE INTO live_quotes
                    (symbol, timestamp, price, open, high, low, previous_close, change, change_pct, volume, source)
                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
-                (symbol, q.get("timestamp") or datetime.now(timezone.utc).isoformat(),
+                (symbol, q.get("timestamp") or now_ist_iso(),
                  q.get("price", 0), q.get("open", 0), q.get("high", 0), q.get("low", 0),
                  q.get("previous_close", 0), q.get("change", 0), q.get("change_pct", 0),
                  q.get("volume", 0), q.get("source", "NSE")))
@@ -955,7 +967,7 @@ def fetch_nse_index_breadth(conn: sqlite3.Connection) -> None:
     if not quotes:
         return
     nq = store_live_quotes(conn, quotes)
-    now = datetime.now(timezone.utc).isoformat()
+    now = now_ist_iso()
     n = 0
     for sym, q in quotes.items():
         try:
@@ -1002,7 +1014,7 @@ def build_breadth(conn: sqlite3.Connection) -> None:
             continue
     ratio = (adv / dec) if dec else float(adv)
     conn.execute("INSERT OR REPLACE INTO market_breadth (timestamp, advances, declines, unchanged, advance_decline_ratio, pct_above_ema20, pct_above_ema50, pct_above_ema200) VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
-                 (datetime.now(timezone.utc).isoformat(), adv, dec, unch, round(ratio, 2), 0, 0, 0))
+                 (now_ist_iso(), adv, dec, unch, round(ratio, 2), 0, 0, 0))
     conn.commit()
     logger.info(f"Breadth: adv={adv} dec={dec} unch={unch}")
 
@@ -1061,7 +1073,7 @@ def _validate_data_depth():
                             max_dt = datetime.strptime(max_str, "%Y-%m-%d").replace(tzinfo=timezone.utc)
                     if max_dt.tzinfo is None:
                         max_dt = max_dt.replace(tzinfo=timezone.utc)
-                    age_hours = (datetime.now(timezone.utc) - max_dt).total_seconds() / 3600
+                    age_hours = (now_ist() - max_dt).total_seconds() / 3600
                     if age_hours > config["max_age_hours"]:
                         issues.append(f"data_age {age_hours:.1f}h > max {config['max_age_hours']}h")
                         all_healthy = False
