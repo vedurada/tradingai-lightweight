@@ -3,14 +3,14 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>AI NIFTY Intraday Options Market Analysis | TradingAI</title>
-<meta name="description" content="Real-time NIFTY 50 intraday options analysis, scenario detection, and trade qualification by TradingAI.">
+<title>NIFTY 50 — AI Intraday Options Analysis | TradingAI</title>
+<meta name="description" content="Real-time NIFTY 50 intraday analysis, scenario detection, and trade qualification by TradingAI.">
 <link rel="canonical" href="https://tradingai.in/indices/nifty.html">
 <meta property="og:title" content="NIFTY Intraday Options Analysis | TradingAI">
 <meta property="og:description" content="AI-powered NIFTY 50 intraday market analysis, scenario detection, and paper trade tracking.">
+<meta property="og:type" content="website">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0e17;color:#e0e0e0}header{background:#111827;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}nav a{color:#9ca3af;text-decoration:none;margin-left:1.5rem;font-size:.9rem}.container{max-width:1200px;margin:0 auto;padding:1rem}.hero{text-align:center;padding:2rem 0}.price{font-size:3rem;font-weight:700;color:#60a5fa}.status{display:inline-block;padding:.25rem .75rem;border-radius:4px;font-size:.85rem;margin:.5rem 0}.live{background:#065f46;color:#6ee7b7}.stale{background:#92400e;color:#fbbf24}.card{background:#111827;border-radius:8px;padding:1.5rem;margin-bottom:1rem;border:1px solid #1f2937}.card h2{color:#60a5fa;font-size:1.1rem;margin-bottom:1rem;border-bottom:1px solid #1f2937;padding-bottom:.5rem}.decision{text-align:center;padding:2rem}.decision h1{font-size:2rem;margin-bottom:1rem}.no-trade{color:#f87171}.qualified{color:#6ee7b7}.trade-info{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:1rem;margin-top:1rem}.info-item{background:#1a2332;padding:1rem;border-radius:6px}.info-item label{display:block;color:#9ca3af;font-size:.8rem}.info-item .value{font-size:1.1rem;font-weight:600;margin-top:.25rem}.scenario-state{display:flex;gap:.5rem;margin:.5rem 0}.badge{padding:.2rem .6rem;border-radius:4px;font-size:.8rem}.watch{background:#92400e;color:#fbbf24}.confirmed{background:#065f46;color:#6ee7b7}.invalidated{background:#7f1d1d;color:#fca5a5}.waiting{background:#1e3a5f;color:#93c5fd}.empty{padding:2rem;text-align:center;color:#6b7280;font-style:italic}.footer{text-align:center;padding:2rem;color:#4b5563;font-size:.75rem;border-top:1px solid #1f2937;margin-top:2rem}
-</style>
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0e17;color:#e0e0e0;line-height:1.6}header{background:#111827;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}nav a{color:#9ca3af;text-decoration:none;margin-left:1.5rem;font-size:.9rem}.container{max-width:1200px;margin:2rem auto;padding:0 1rem}.hero{text-align:center;padding:2rem 0}.price{font-size:3rem;font-weight:700;color:#60a5fa}.status{display:inline-block;padding:.25rem .75rem;border-radius:4px;font-size:.85rem;margin:.5rem 0}.live{background:#065f46;color:#6ee7b7}.stale{background:#92400e;color:#fbbf24}.closed{background:#4b5563;color:#9ca3af}.card{background:#111827;border-radius:8px;padding:1.5rem;margin-bottom:1rem;border:1px solid #1f2937}.card h2{color:#60a5fa;font-size:1.1rem;margin-bottom:1rem;border-bottom:1px solid #1f2937;padding-bottom:.5rem}.badge{padding:.2rem .6rem;border-radius:4px;font-size:.8rem}.watch{background:#92400e;color:#fbbf24}.confirmed{background:#065f46;color:#6ee7b7}.invalidated{background:#7f1d1d;color:#fca5a5}.no-trade{color:#f87171}.qualified{color:#6ee7b7}.empty{padding:2rem;text-align:center;color:#6b7280;font-style:italic}.footer{text-align:center;padding:2rem;color:#4b5563;font-size:.75rem;border-top:1px solid #1f2937;margin-top:2rem}@media(max-width:768px){nav a{margin:.25rem .5rem}.hero .price{font-size:2rem}.card{padding:1rem}}</style>
 </head>
 <body>
 <header><h2 style="color:#60a5fa">TradingAI</h2><nav><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">BACKTEST</a></nav></header>
@@ -30,7 +30,23 @@
 </main>
 <footer>TradingAI — AI-assisted market intelligence. Historical results do not guarantee future performance. Paper trades are simulations.</footer>
 <script>
-function updateData(){fetch('/api/NIFTY/summary').then(r=>r.json()).then(d=>{if(d.data.price){document.getElementById('price').textContent=d.data.price.toFixed(2);document.getElementById('vix').textContent='India VIX: '+(d.data.vix||'---');document.getElementById('last-updated').textContent='Updated: '+new Date().toLocaleTimeString('en-IN',{timeZone:'Asia/Kolkata'})}}).catch(()=>{});fetch('/api/NIFTY/decision').then(r=>r.json()).then(d=>{document.getElementById('decision-content').innerHTML=d.data.decision?('<div class="'+d.data.decision.decision.toLowerCase().replace('_','-')+'"><h2>'+d.data.decision.decision.replace('_',' ')+'</h2></div>'):'<div class="empty">No decision</div>'}).catch(()=>{})}updateData();setInterval(updateData,30000);
+function updateData(){
+  fetch("/api/NIFTY/summary").then(r=>r.json()).then(d=>{
+    if(d.data&&d.data.price){
+      document.getElementById("price").textContent=d.data.price.toFixed(2);
+      document.getElementById("vix").textContent="India VIX: "+(d.data.vix||"---");
+      document.getElementById("last-updated").textContent="Updated: "+new Date().toLocaleTimeString("en-IN",{timeZone:"Asia/Kolkata"})
+    }
+  }).catch(()=>{});
+  fetch("/api/NIFTY/decision").then(r=>r.json()).then(d=>{
+    if(d.data&&d.data.decision){
+      var dc=d.data.decision;
+      var cls=dc.decision.toLowerCase().replace("_","-");
+      document.getElementById("decision-content").innerHTML="<div class=\""+cls+"\"><h2>"+dc.decision.replace("_"," ")+"</h2></div>";
+    }
+  }).catch(()=>{})
+}
+updateData();setInterval(updateData,30000);
 </script>
 </body>
 </html>

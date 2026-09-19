@@ -1,35 +1,76 @@
 <!DOCTYPE html>
-<html lang=en>
+<html lang="en">
 <head>
-<meta charset=UTF-8>
-<meta name=viewport content=width=device-width, initial-scale=1.0>
-<title>TradingAI Methodology | How We Analyze Markets</title>
-<meta name=description content=TradingAI methodology: historical scenario detection, deterministic qualification, and AI explanation for NIFTY and BANKNIFTY options.>
-<link rel=canonical href=https://tradingai.in/methodology.html>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Methodology — TradingAI</title>
+<meta name="description" content="How TradingAI works: market data, scenario detection, confirmation, risk qualification, paper trading, and backtesting methodology.">
+<link rel="canonical" href="https://tradingai.in/methodology.html">
+<meta property="og:title" content="Methodology | TradingAI">
+<meta property="og:description" content="Learn how TradingAI detects scenarios, qualifies trades, and manages risk for NIFTY and BANKNIFTY options.">
 <style>
-*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;background:#0a0e17;color:#e0e0e0;line-height:1.7}header{background:#111827;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}nav a{color:#9ca3af;text-decoration:none;margin-left:1.5rem;font-size:.9rem}.container{max-width:800px;margin:0 auto;padding:2rem 1rem}h1{font-size:2rem;color:#60a5fa;margin-bottom:1rem}h2{font-size:1.3rem;color:#e0e0e0;margin:2rem 0 1rem;padding-bottom:.5rem;border-bottom:1px solid #1f2937}p{color:#9ca3af;margin-bottom:1rem}.method-step{background:#111827;padding:1.5rem;border-radius:8px;margin-bottom:1rem;border:1px solid #1f2937}.method-step h3{color:#60a5fa;margin-bottom:.5rem}.method-step p{color:#9ca3af;font-size:.9rem;margin-bottom:0}.disclaimer{background:#7f1d1d;padding:1rem;border-radius:6px;margin:2rem 0;font-size:.85rem;color:#fca5a5}.footer{text-align:center;padding:2rem;color:#4b5563;font-size:.75rem;border-top:1px solid #1f2937;margin-top:2rem}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0e17;color:#e0e0e0;line-height:1.7}header{background:#111827;padding:1rem 2rem;border-bottom:1px solid #1f2937}nav a{color:#9ca3af;text-decoration:none;margin-left:1.5rem;font-size:.9rem}.container{max-width:900px;margin:2rem auto;padding:0 1rem}h1{font-size:2rem;color:#60a5fa;margin-bottom:1rem}h2{font-size:1.4rem;color:#e0e0e0;margin:2rem 0 1rem;border-bottom:1px solid #1f2937;padding-bottom:.5rem}p{margin-bottom:1rem;color:#b0b0b0}.flow{display:flex;flex-direction:column;gap:.5rem;margin:1.5rem 0}.flow-item{background:#111827;padding:1rem;border-radius:6px;border-left:3px solid #60a5fa;display:flex;align-items:center;gap:1rem}.flow-arrow{color:#4b5563;font-size:1.2rem}.state{display:inline-block;padding:.2rem .6rem;border-radius:4px;font-size:.8rem;margin:0 .2rem}.live{background:#065f46;color:#6ee7b7}.stale{background:#92400e;color:#fbbf24}.unavailable{background:#4b5563;color:#9ca3af}.confirmed{background:#065f46;color:#6ee7b7}.invalidated{background:#7f1d1d;color:#fca5a5}.watch{background:#92400e;color:#fbbf24}.disclaimer{background:#7f1d1d;padding:1rem;border-radius:6px;margin:2rem 0;font-size:.85rem;color:#fca5a5}footer{text-align:center;padding:2rem;color:#4b5563;font-size:.75rem;border-top:1px solid #1f2937;margin-top:3rem}@media(max-width:768px){.flow{flex-direction:column}.flow-arrow{transform:rotate(90deg)}}
 </style>
 </head>
 <body>
-<header><h2 style=color:#60a5fa>TradingAI</h2><nav><a href=/>Home</a><a href=/indices/nifty.html>NIFTY</a><a href=/indices/banknifty.html>BANKNIFTY</a><a href=/backtest.html>BACKTEST</a></nav></header>
-<main class=container>
+<header><h2 style="color:#60a5fa">TradingAI</h2><nav><a href="/index.html">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">BACKTEST</a></nav></header>
+<main class="container">
 <h1>Methodology</h1>
-<p>How TradingAI analyzes markets, identifies scenarios, and qualifies trades.</p>
-<h2>Pipeline</h2>
-<div class=method-step><h3>1. Historical Context</h3><p>Previous completed sessions are analyzed for price-action patterns, trends, volatility regimes, and structural characteristics.</p></div>
-<div class=method-step><h3>2. Scenario Generation</h3><p>Candidate scenarios (bullish continuation, range, breakout, etc.) are generated from historical features.</p></div>
-<div class=method-step><h3>3. Current Confirmation</h3><p>Today market data is matched against scenarios. A scenario confirms only after current conditions validate it.</p></div>
-<div class=method-step><h3>4. Options and Risk</h3><p>Valid options data is required. Risk engine evaluates entry, stop, target, and reward/risk ratio.</p></div>
-<div class=method-step><h3>5. Deterministic Qualification</h3><p>The deterministic engine decides QUALIFIED TRADE or NO TRADE. AI never overrides this decision.</p></div>
-<div class=method-step><h3>6. One Trade Per Day</h3><p>Server-side lock enforces maximum one qualified trade per day. After qualification, the lock is consumed.</p></div>
-<div class=method-step><h3>7. Paper Trading</h3><p>Every qualified trade becomes a paper trade. Monitoring, exit, and outcome tracking follow.</p></div>
-<div class=method-step><h3>8. AI Explanation</h3><p>AI explains why a scenario matched, why a trade qualified, and what risks exist. AI never changes the decision.</p></div>
-<h2>No-Look-Ahead</h2>
-<p>For every decision at timestamp T, only data available at or before T is used. Future candles, outcomes, and information are never used in any decision or backtest.</p>
+<p>TradingAI is a deterministic market-intelligence system. It does not predict markets or force trades. It analyzes historical and current data to identify scenarios and evaluate whether conditions support a trade.</p>
+
+<h2>Market Data</h2>
+<p>Market data is sourced from <span class="live">yfinance</span> for NIFTY 50, BANKNIFTY 50, and India VIX. All timestamps use <span class="live">Asia/Kolkata</span> timezone. Data freshness is tracked and stale data is flagged clearly. Unavailable data is never replaced with defaults.</p>
+
+<h2>Historical Scenario Analysis</h2>
+<p>Previous completed sessions are analyzed for price-action patterns. Candidate scenarios are generated based on defined rules:</p>
+<div class="flow">
+<div class="flow-item"><span>Study the Past</span><span class="arrow">→</span><span>Identify patterns</span></div>
+<div class="flow-item"><span>Generate candidates</span><span class="arrow">→</span><span>BULLISH_CONTINUATION, BEARISH_CONTINUATION, RANGE_PREMIUM_DECAY, BREAKOUT, BREAKOUT_FAILURE_REVERSAL</span></div>
+</div>
+
+<h2>Current-Day Confirmation</h2>
+<p>Historical similarity alone never creates a trade. Each scenario must be confirmed by current market data:</p>
+<div class="flow">
+<div class="flow-item"><span>Current 5m data</span><span class="arrow">→</span><span>Market state assessment</span></div>
+<div class="flow-item"><span>Scenario matching</span><span class="arrow">→</span><span>WATCH → PARTIALLY_MATCHED → CONFIRMED / INVALIDATED</span></div>
+<div class="flow-item"><span>Confirmation</span><span class="arrow">→</span><span>Only CONFIRMED scenarios proceed</span></div>
+</div>
+
+<h2>Options &amp; Strategy Selection</h2>
+<p>Once a scenario is confirmed, the strategy engine selects a strategy based on direction and volatility:</p>
+<div class="flow">
+<div class="flow-item"><span>BULLISH + HIGH vol</span><span class="arrow">→</span><span>Bull Call Spread</span></div>
+<div class="flow-item"><span>BULLISH + LOW vol</span><span class="arrow">→</span><span>Bull Put Spread</span></div>
+<div class="flow-item"><span>BEARISH + HIGH vol</span><span class="arrow">→</span><span>Bear Put Spread</span></div>
+<div class="flow-item"><span>RANGE</span><span class="arrow">→</span><span>Iron Condor</span></div>
+</div>
+<p>Options data must be validated before any trade. If unavailable: <span class="unavailable">NO TRADE</span>.</p>
+
+<h2>Risk Qualification</h2>
+<p>Every candidate must pass risk checks: entry/stop/target validity, minimum reward:risk ratio (1.5:1), maximum risk per trade (2%). All rejection reasons are stored and displayed.</p>
+
+<h2>One-Trade-Per-Day Lock</h2>
+<p>The database enforces a hard limit of one qualified trade per instrument per day. This is server-side only — frontend cannot bypass it.</p>
+
+<h2>Paper Trading</h2>
+<p>Qualified trades become paper trades monitored in real-time. Exit reasons include: TARGET, STOP, SCENARIO_INVALIDATED, TIME_EXIT, END_OF_DAY, RISK_EXIT, DATA_INVALID.</p>
+
+<h2>Backtesting</h2>
+<p>Historical replay runs in complete isolation from live data. Every decision enforces the no-look-ahead rule: <code>actual_latest_data ≤ decision_timestamp</code>. Results include full trade journal, outcome metrics, and validation status.</p>
+
+<h2>AI Explanation Layer</h2>
+<p>AI explains decisions but never makes them. Running with AI enabled vs disabled produces identical trade decisions. If AI is unavailable, the deterministic engine continues unchanged.</p>
+
 <h2>Limitations</h2>
-<p>Historical scenarios are observations, not predictions. Backtest results are research data, not guarantees. Paper trades are simulations. AI availability may vary.</p>
-<div class=disclaimer>TradingAI provides market analysis for educational purposes. Not financial advice. Users are responsible for their own trading decisions.</div>
+<ul>
+<li>Options data currently unavailable — options-dependent trades return NO TRADE</li>
+<li>yfinance data may have delays for Indian indices</li>
+<li>Backtest outcomes are simulated from candle data</li>
+<li>No live options chain data is available yet</li>
+</ul>
+
+<div class="disclaimer">TradingAI provides market analysis for educational and research purposes. Historical results do not guarantee future performance. Paper trades are simulations and are not broker executions. Users are responsible for their own trading decisions and risk.</div>
 </main>
-<footer>TradingAI — Methodology documentation.</footer>
+<footer>TradingAI — Methodology and research tool.</footer>
 </body>
 </html>
