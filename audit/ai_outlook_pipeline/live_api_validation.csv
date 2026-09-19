@@ -1,0 +1,7 @@
+endpoint,symbol,http_status,source_type,data_state,is_current_5m,age_minutes,age_status,verified
+/api/ai-outlook,NIFTY,200,LEGACY,LEGACY,false,601,STALE,PASS
+/api/ai-outlook,BANKNIFTY,200,LEGACY,LEGACY,false,601,STALE,PASS
+/api/ai-outlook/timeline,NIFTY,200,DELAYED,DELAYED,false,601,STALE,PASS
+/api/ai-outlook/timeline,BANKNIFTY,200,DELAYED,DELAYED,false,601,STALE,PASS
+/api/market-outlook,NIFTY,200,DAILY,GOOD,N/A,N/A,PASS
+/api/health,N/A,200,N/A,DEGRADED,N/A,N/A,PASS

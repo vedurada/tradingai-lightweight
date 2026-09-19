@@ -1,0 +1,5 @@
+symbol,candle_timestamp,run,snapshots_created,evidence_created,total_snapshots,total_evidence
+NIFTY,2026-09-18T04:25:00+00:00,first,1,1,1,1
+NIFTY,2026-09-18T04:25:00+00:00,second,0,0,1,1
+BANKNIFTY,2026-09-18T04:25:00+00:00,first,1,0,2,1
+BANKNIFTY,2026-09-18T04:25:00+00:00,second,0,0,2,1

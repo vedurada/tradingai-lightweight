@@ -1,0 +1,6 @@
+candle_timestamp,input_source,input_timestamp,violation,notes
+2026-09-18T04:25:00+00:00,snapshot,2026-09-18T04:25:00+00:00,PASS,snapshot at candle time
+2026-09-18T04:25:00+00:00,regime,2026-09-18T04:24:07+00:00,PASS,regime before candle
+2026-09-18T04:25:00+00:00,indicators,2026-09-18T04:24:07+00:00,PASS,indicators before candle
+2026-09-18T04:25:00+00:00,price_5m,2026-09-18T04:25:00+00:00,PASS,price at candle time
+2026-09-18T04:25:00+00:00,vix,2026-09-18T04:24:07+00:00,PASS,vix before candle

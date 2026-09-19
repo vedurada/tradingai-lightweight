@@ -1,0 +1,10 @@
+symbol,phase,timestamp,result,NIFTY_context,BANKNIFTY_context
+NIFTY,snapshot,2026-09-18T04:25:00+00:00,PASS,NIFTY snapshot created,N/A
+BANKNIFTY,snapshot,2026-09-18T04:25:00+00:00,PASS,N/A,BANKNIFTY snapshot created
+NIFTY,evidence,2026-09-18T04:25:00+00:00,PASS,NIFTY evidence BEARISH conf=75,N/A
+NIFTY,ai_input_symbol,2026-09-18T04:25:00+00:00,PASS,NIFTY,N/A
+NIFTY,ai_input_price,2026-09-18T04:25:00+00:00,PASS,23346.4,N/A
+BANKNIFTY,ai_input_symbol,2026-09-18T04:25:00+00:00,PASS,N/A,BANKNIFTY
+BANKNIFTY,ai_input_price,2026-09-18T04:25:00+00:00,PASS,N/A,56358.7
+NIFTY,api_source,2026-09-19T08:12:00+05:30,PASS,source_type=LEGACY,is_current_5m=false,N/A
+BANKNIFTY,api_source,2026-09-19T08:12:00+05:30,PASS,source_type=LEGACY,is_current_5m=false,N/A

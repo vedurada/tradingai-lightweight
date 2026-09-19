@@ -1,0 +1,5 @@
+table,row_count,has_records,immutable_check,duplicate_check,notes
+market_snapshots_5m,2,YES,PASS(idempotent),PASS(no dup),From Phase 42A replay
+market_evidence_5m,1,YES,PASS(idempotent),PASS(no dup),From Phase 42A replay
+ai_outlooks_5m,0,NO,N/A,N/A,No live generation yet
+research_ai_call_log,0,NO,N/A,N/A,No LLM calls yet

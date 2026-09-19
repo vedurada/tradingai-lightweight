@@ -1,0 +1,2 @@
+date,checkpoint,NIFTY_5m_data,BANKNIFTY_5m_data,snapshot,evidence,market_state,scheduler,AI_decision,LLM_status,outlook_insert,API_status,frontend_status,notes
+2026-09-19,pre_market_0812,PASS,PASS,PASS,PASS,PASS,PENDING,PENDING,CONFIGURED,PENDING,PASS,PASS,Saturday market closed - all live checks PENDING

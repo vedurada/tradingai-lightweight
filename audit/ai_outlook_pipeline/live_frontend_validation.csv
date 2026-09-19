@@ -1,0 +1,10 @@
+page,http_status,has_outlook_section,shows_legacy_correctly,no_fabrication,verified
+/,200,PASS,PASS,PASS,PASS
+/today/index.html,200,PASS,PASS,PASS,PASS
+/indices/nifty.html,200,PASS,PASS,PASS,PASS
+/indices/banknifty.html,200,PASS,PASS,PASS,PASS
+/options/index.html,200,PASS,PASS,PASS,PASS
+/strategies.html,200,PASS,PASS,PASS,PASS
+/ai-track-record.html,200,PASS,PASS,PASS,PASS
+/research/index.html,200,PASS,PASS,PASS,PASS
+/backtest.html,404,N/A,N/A,N/A,PAGE_NOT_FOUND
