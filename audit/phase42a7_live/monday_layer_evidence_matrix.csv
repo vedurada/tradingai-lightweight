@@ -1,0 +1,21 @@
+Layer,NIFTY,BANKNIFTY,Evidence,Status
+Market data,NOT EXERCISED,NOT EXERCISED,price_5m Friday 04:25,STALE
+Data quality,PASS,PASS,All labelled STALE,PASS
+5m snapshot,PASS,PASS,2 replay-verified records,REPLAY-VERIFIED
+Evidence,PASS,NOT EXERCISED,1 NIFTY record,REPLAY-VERIFIED
+Positioning,NOT EXERCISED,NOT EXERCISED,No live data,NOT EXERCISED
+Liquidity,NOT EXERCISED,NOT EXERCISED,No live data,NOT EXERCISED
+Market state,NOT EXERCISED,NOT EXERCISED,No live derivation,NOT EXERCISED
+Scenario,NOT EXERCISED,NOT EXERCISED,pre_market_scenarios=0,NOT EXERCISED
+Activation,NOT EXERCISED,NOT EXERCISED,No live activations,NOT EXERCISED
+AI scheduler,NOT EXERCISED,NOT EXERCISED,monitor.log=0 bytes,NOT EXERCISED
+AI generation,NOT EXERCISED,NOT EXERCISED,ai_outlooks_5m=0,NOT EXERCISED
+AI storage,PASS,PASS,ai_outlooks=39148,PASS
+API,PASS,PASS,All endpoints 200,PASS
+HTML,PASS,PASS,Freshness indicator works,PASS
+Qualification,NOT EXERCISED,NOT EXERCISED,No live qualification,NOT EXERCISED
+Strategy,NOT EXERCISED,NOT EXERCISED,No live strategy,NOT EXERCISED
+Paper trade,NOT EXERCISED,NOT EXERCISED,No new trades,NOT EXERCISED
+Outcome,NOT EXERCISED,NOT EXERCISED,No intraday outcomes,NOT EXERCISED
+Look-ahead,PASS,PASS,Code verified,PASS
+Resources,PASS,PASS,All within limits,PASS

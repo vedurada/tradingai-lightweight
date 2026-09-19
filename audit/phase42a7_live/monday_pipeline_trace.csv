@@ -1,0 +1,16 @@
+layer,check,result,evidence,state,note
+1. Market Data,1-min data arriving,NOT EXERCISED,price_5m stops at Friday 04:25,STALE,Saturday no new data
+2. Data Quality,Labels correct,PASS,All API data labelled STALE,STALE,Correct labelling
+3. 5m Candle,Completed candle used,PASS,04:25 candle used,REPLAY-VERIFIED,Replay run not live
+4. Snapshot,Created from candle,PASS,2 records,REPLAY-VERIFIED,Replay not live session
+5. Evidence,Created from snapshot,PASS,1 NIFTY record,REPLAY-VERIFIED,BEARISH conf=75
+6. Market State,Derived from evidence,NOT EXERCISED,No live derivation,NOT EXERCISED,Saturday closed
+7. Scenario,Generated,NOT EXERCISED,pre_market_scenarios=0,NOT EXERCISED,Saturday closed
+8. Activation,State transition,NOT EXERCISED,No live activations,NOT EXERCISED,Saturday closed
+9. Monitor,Executes scheduler,NOT EXERCISED,monitor.log=0 bytes,NOT EXERCISED,Cron Mon-Fri only
+10. Scheduler,Material change,NOT EXERCISED,No invocation,NOT EXERCISED,Saturday closed
+11. AI,Generates outlook,NOT EXERCISED,ai_outlooks_5m=0,NOT EXERCISED,No trigger
+12. API,Responds,PASS,All 200 degraded,STALE,Correct Saturday state
+13. JS,Renders data,PASS,Pages 200 JS loads,STALE,All fixes deployed
+14. HTML,Displays state,PASS,Freshness indicator present,STALE,STALE/MARKET CLOSED
+15. Trader,Sees correct state,PASS,No false LIVE claims,STALE,Honest display
