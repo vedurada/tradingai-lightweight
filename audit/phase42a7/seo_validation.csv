@@ -1,0 +1,12 @@
+page,title,canonical,robots,h1,has_canonical,status
+/,"AI Market Outlook – NIFTY, BANKNIFTY, FINNIFTY, SENSEX – TradingAI",https://tradingai.in/,"index, follow",H1 present,YES,GOOD
+/today/index.html,NIFTY Today — Live Intraday Terminal – TradingAI,https://tradingai.in/today/index.html,"index, follow",H1 present,YES,GOOD
+/indices/nifty.html,NIFTY 50 – AI Market Outlook – TradingAI,https://tradingai.in/indices/nifty.html,"index, follow",H1 present,YES,GOOD
+/indices/banknifty.html,BANKNIFTY 50 – AI Market Outlook – TradingAI,https://tradingai.in/indices/banknifty.html,"index, follow",H1 present,YES,GOOD
+/indices/finnifty.html,FINNIFTY 50 – AI Market Outlook – TradingAI,https://tradingai.in/indices/finnifty.html,"index, follow",H1 present,YES,GOOD
+/indices/sensex.html,SENSEX 50 – AI Market Outlook – TradingAI,https://tradingai.in/indices/sensex.html,"index, follow",H1 present,YES,GOOD
+/options/index.html,"Options Intelligence Hub – PCR, Max Pain, OI – TradingAI",https://tradingai.in/options/index.html,"index, follow",H1 present,YES,GOOD
+/research/index.html,Research Hub – Market Analysis & Education – TradingAI,https://tradingai.in/research/index.html,"index, follow",H1 present,YES,FAIL — canonical uses content= instead of href=
+/ai-track-record.html,AI Track Record – Prediction Accuracy – TradingAI,https://tradingai.in/ai-track-record.html,"index, follow",H1 present,YES,GOOD
+/tools/backtest.html,Backtest – Deterministic Strategy Performance – TradingAI,https://tradingai.in/tools/backtest.html,"index, follow",H1 present,YES,FAIL — no canonical tag
+/trade.html,TradingAI — Intraday Trade Setup,https://tradingai.in/trade.html,"index, follow",H1 present,YES,FAIL — no canonical tag

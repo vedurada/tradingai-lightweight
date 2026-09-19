@@ -1,0 +1,3 @@
+date,checkpoint,NIFTY_5m_data,BANKNIFTY_5m_data,snapshot,evidence,market_state,scheduler,AI_decision,LLM_status,outlook_insert,API_status,frontend_status,notes
+2026-09-19,pre_market_0816,PASS,PASS,PASS,PASS,PASS,PENDING,PENDING,CONFIGURED,PENDING,PASS,PASS,Saturday market closed — all live checks PENDING,pre-rendered snapshot/evidence validated via replay
+2026-09-19,pre_market_summary,PASS,PASS,PASS,PASS,PASS,N/A,N/A,N/A,N/A,PASS,PASS,All 4 Phase 42A fixes verified on VM,37 pages inventoried,8 core pages audited

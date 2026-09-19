@@ -1,0 +1,14 @@
+metric,value,threshold,status
+RAM_total_mb,956,N/A,N/A
+RAM_used_mb,252,N/A,N/A
+RAM_available_mb,571,N/A,N/A
+Disk_used_GB,19,45,N/A
+Disk_available_GB,27,N/A,N/A
+CPU_load_1min,0.63,1.0,N/A
+gunicorn_workers,4,N/A,N/A
+gunicorn_active,YES,N/A,PASS
+nginx_active,YES,N/A,PASS
+DB_size_mb,268,N/A,N/A
+DB_integrity,ok,N/A,PASS
+No_duplicate_scheduler,YES,N/A,PASS
+No_runaway_LLM,YES,N/A,PASS

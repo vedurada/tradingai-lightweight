@@ -1,0 +1,6 @@
+symbol,phase,timestamp,result,detail,context
+NIFTY,snapshot,2026-09-18T04:25:00+00:00,PASS,NIFTY snapshot created,NIFTY context
+BANKNIFTY,snapshot,2026-09-18T04:25:00+00:00,PASS,BANKNIFTY snapshot created,BANKNIFTY context
+NIFTY,evidence,2026-09-18T04:25:00+00:00,PASS,NIFTY evidence BEARISH conf=75,NIFTY context
+NIFTY,api_source,2026-09-19T08:16:00+05:30,PASS,source_type=LEGACY,NIFTY instrument
+BANKNIFTY,api_source,2026-09-19T08:16:00+05:30,PASS,source_type=LEGACY,BANKNIFTY instrument

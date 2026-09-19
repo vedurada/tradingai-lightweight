@@ -1,0 +1,7 @@
+candle_timestamp,input_source,input_timestamp,violation,notes
+2026-09-18T04:25:00+00:00,snapshot,2026-09-18T04:25:00+00:00,PASS,No violations detected in replay validation
+2026-09-18T04:25:00+00:00,regime,2026-09-18T04:24:07+00:00,PASS,Regime data before candle
+2026-09-18T04:25:00+00:00,indicators,2026-09-18T04:24:07+00:00,PASS,Indicators before candle
+2026-09-18T04:25:00+00:00,price_5m,2026-09-18T04:25:00+00:00,PASS,Price at candle time
+2026-09-18T04:25:00+00:00,vix,2026-09-18T04:24:07+00:00,PASS,VIX before candle
+TARGET,0 violations,N/A,PASS,Look-ahead audit passed

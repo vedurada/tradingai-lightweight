@@ -1,0 +1,22 @@
+source_page,target,context,http_status,result
+/,/about.html,Footer,200,OK
+/,/today/index.html,Nav,200,OK
+/,/strategies.html,Nav,200,OK
+/,/options/index.html,Nav,200,OK
+/,/indices/nifty.html,Nav,200,OK
+/,/ai-track-record.html,Nav,200,OK
+/,/research/index.html,Nav,200,OK
+/,/backtest.html,Nav,404,"BROKEN — /backtest.html 404, use /tools/backtest.html"
+/today/index.html,../about.html,Footer,200,OK (relative path from /today/)
+/today/index.html,../indices/nifty.html,Nav,200,OK
+/indices/nifty.html,../indices/banknifty.html,Index selector,200,OK (1st BANKNIFTY link)
+/indices/nifty.html,../indices/banknifty.html,Index selector,200,BROKEN — 2nd BANKNIFTY should be FINNIFTY
+/indices/nifty.html,N/A,Index selector,N/A,BROKEN — FINNIFTY link MISSING
+/indices/nifty.html,N/A,Index selector,N/A,BROKEN — SENSEX link MISSING
+/indices/banknifty.html,../indices/banknifty.html,Index selector,200,BROKEN — 1st BANKNIFTY link (duplicate)
+/indices/banknifty.html,../indices/banknifty.html,Index selector,200,BROKEN — 2nd BANKNIFTY link (duplicate)
+/indices/banknifty.html,N/A,Index selector,N/A,BROKEN — FINNIFTY link MISSING
+/indices/banknifty.html,N/A,Index selector,N/A,BROKEN — SENSEX link MISSING
+/market.html,/today/index.html,301 redirect,301,OK (intentional redirect)
+/home.html,/,301 redirect,301,OK (intentional redirect)
+/index.html,/,Duplicate,200,NEEDS REDIRECT to /

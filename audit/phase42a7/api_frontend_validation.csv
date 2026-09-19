@@ -1,0 +1,18 @@
+endpoint,status,data_returned,used_by,result,notes
+/api/market,200,All 4 symbols + VIX + regime,Used by 7+ pages,PASS,Returns stale data on weekend (expected)
+/api/price/NIFTY,200,NIFTY price/change,Homepage,PASS,Individual symbol price
+/api/vix,200,VIX quote,Homepage,PASS,VIX data
+/api/market-outlook?symbol=NIFTY,200,NIFTY outlook,Today/NIFTY/BANKNIFTY,PASS,Current outlook with bias/confidence
+/api/ai-outlook/NIFTY,200,NIFTY outlook (legacy fallback),API fallback,PASS,data_state=LEGACY correctly
+/api/ai-outlook/BANKNIFTY,200,BANKNIFTY outlook (legacy fallback),API fallback,PASS,data_state=LEGACY correctly
+/api/options/state/NIFTY,200,NIFTY PCR/OI/MaxPain,Today/NIFTY,PASS,Options data
+/api/options/state/FINNIFTY,404,FINNIFTY options,N/A,PASS,Correctly unavailable per Phase 6
+/api/pcr,200,PCR for all symbols,Homepage/Options,PASS,PCR data
+/api/maxpain,200,Max Pain for all symbols,Homepage/Options,PASS,Max Pain data
+/api/oi-top?symbol=NIFTY,200,OI top strikes,Homepage/Options,PASS,OI data
+/api/trade-qualification,200,Trade qualification,Homepage/Today,PASS,Qualification data
+/api/journal/stats,200,Journal stats,AI Track Record,PASS,Trade statistics
+/api/walkforward/NIFTY/2026-06-01/2026-09-15,200,Walk-forward results,AI Track Record,PASS,Walk-forward data
+/api/replay/NIFTY/2026-09-18,200,Replay snapshot,Replay page,PASS,Phase 5 replay data
+/api/evidence/NIFTY/2026-09-18,200,Historical evidence,Evidence page,PASS,Phase 8 evidence data
+/api/health,200,Health check,All,PASS,degraded (market closed — expected)

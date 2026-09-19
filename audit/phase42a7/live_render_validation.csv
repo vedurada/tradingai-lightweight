@@ -1,0 +1,12 @@
+page,page_name,element,status,detail,notes
+/,Homepage,Loading... (dashboard),PASS,Dashboard requires external ai-outlook.js; pre-rendered prices visible,No console errors detected in static HTML
+/,Homepage,Loading qualification...,PASS,Loading state acceptable — requires API call,No undefined or NaN in static HTML
+/today/index.html,Today,Loading market ticker...,PASS,All 13 sections Loading — expected for first load,MARKET CLOSED static text visible correctly
+/today/index.html,Today,Loading today's outlook...,PASS,Waiting for /api/market-outlook,No broken elements in static HTML
+/indices/nifty.html,NIFTY,Loading spot/change/regime...,PASS,All data Loading — no pre-rendered,Index selector shows NIFTY highlighted correctly
+/indices/banknifty.html,BANKNIFTY,Loading spot/change/regime...,PASS,All data Loading,CRITICAL: Index selector has 2 BANKNIFTY links
+/options/index.html,Options,Loading PCR/MaxPain/OI...,PASS,All sections Loading,Strategy cards show generic descriptions
+/ai-track-record.html,AI Track Record,Loading summary...,FAIL,Accuracy-by-symbol cards NEVER populate (missing data-sym attrs),Comparison cards NEVER populate (missing data-col attrs)
+/research/index.html,Research,Loading reports...,PARTIAL,14/18 sections Loading; methodology always shows,Canonical tag invalid (content= not href=)
+/tools/backtest.html,Backtest,Loading...,PASS,"Form visible, results on demand",No canonical tag
+/trade.html,Trade,Loading...,PASS,Hero and sections visible after JS,CRITICAL: duplicate loadData() function

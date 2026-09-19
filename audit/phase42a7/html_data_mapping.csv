@@ -1,0 +1,47 @@
+page,section,element,value,api_json,backend_source,db_table,timestamp,freshness,fallback,expected_symbol
+/,Market Snapshot – NIFTY 50 Price,#s-nifty-price,"23,346.40 (pre-rendered)",/api/price/NIFTY,prices table,price_5m / ai_outlooks,2026-09-18T16:40:20Z,PRE-RENDERED 18 Sep (stale),Market opens 9:15 AM IST (if all symbols are —),NIFTY
+/,Market Snapshot – BANKNIFTY 50 Price,#s-banknifty-price,"56,358.70 (pre-rendered)",/api/price/BANKNIFTY,prices table,price_5m / ai_outlooks,2026-09-18T16:40:21Z,PRE-RENDERED 18 Sep (stale),Market opens 9:15 AM IST,BANKNIFTY
+/,Market Snapshot – SENSEX,#s-sensex-price,"74,294.96 (pre-rendered)",/api/price/SENSEX,prices table,price_5m / ai_outlooks,2026-09-18T16:40:XXZ,PRE-RENDERED 18 Sep (stale),Market opens 9:15 AM IST,SENSEX
+/,Market Snapshot – FINNIFTY,#s-finnifty-price,"25,510.00 (pre-rendered)",/api/price/FINNIFTY,prices table,price_5m / ai_outlooks,2026-09-18T16:40:XXZ,PRE-RENDERED 18 Sep (stale),Market opens 9:15 AM IST,FINNIFTY
+/,India VIX,#s-vix-price,11.39 (pre-rendered),/api/vix,vix_data table,vix_data,2026-09-18T16:40:23Z,PRE-RENDERED 18 Sep (stale),Market opens 9:15 AM IST,N/A
+/,AI Market Outlook Dashboard,#dashboard,Loading...,renderOutlookDashboard() (external ai-outlook.js),ai_outlooks_5m / ai_outlooks,ai_outlooks_5m,N/A (JS-dependent),EXTERNAL_JS_DEPENDENT,No fallback if ai-outlook.js fails,NIFTY
+/,Trade Qualification,#home-qualification,Loading qualification...,/api/trade-qualification (POST),trade_qualification data,N/A,N/A,Loading (no fallback),None,NIFTY
+/,Paper Trade,#home-paper-trade,Loading...,/api/paper-trades,paper_trades table,N/A,N/A,Loading (no fallback),None,NIFTY
+/,Market Evidence,#home-evidence,Loading...,/api/market-evidence/NIFTY,market_evidence_5m / market_evidence,N/A,N/A,Loading (no fallback),None,NIFTY
+/,Advance/Decline,#home-ad-bar,Loading...,/api/index-breadth,index_breadth data,N/A,N/A,Populated by inline JS,None,N/A
+/,Ticker Tape,#ticker-track,Loading market data...,"/api/market, /api/index-breadth",price_5m / market_regime,N/A,N/A,Loading (no fallback),None,N/A
+/,Session State,#session-state,Checking... / MARKET CLOSED,Client-side clock,N/A,N/A,Real-time,Client-side clock,None,N/A
+/today/index.html,NIFTY Spot,#t-nifty-price,Loading...,/api/market → m.instruments.NIFTY.quote.price,price_5m,price_5m,Real-time,Loading (no pre-rendered),None,NIFTY
+/today/index.html,NIFTY Change,#t-nifty-change,Loading...,/api/market → m.instruments.NIFTY.quote.change,price_5m,price_5m,Real-time,Loading,None,NIFTY
+/today/index.html,NIFTY AI Outlook,#t-outlook,Loading today's outlook...,/api/market-outlook?symbol=NIFTY,ai_outlooks_5m / ai_outlooks,ai_outlooks_5m,Real-time,Loading,None,NIFTY
+/today/index.html,NIFTY Key Levels,#t-levels,Loading key levels...,/api/key-levels?symbol=NIFTY,key_levels data,N/A,Real-time,Loading,None,NIFTY
+/today/index.html,NIFTY Options (PCR/OI/MaxPain),"#t-pcr, #t-oi, #t-maxpain, #t-expmove",Loading...,/api/options/state/NIFTY,option_chain / vix_data,N/A,Real-time,Loading,None,NIFTY
+/today/index.html,Intraday Conditions (Bullish/Bearish/NoTrade),"#t-bullish, #t-bearish, #t-notrade",Loading...,/api/intraday-conditions?symbol=NIFTY,N/A,N/A,Real-time,Loading,None,NIFTY
+/today/index.html,Market Evidence,#t-evidence,Loading evidence...,/api/market-evidence/NIFTY,market_evidence_5m,N/A,Real-time,Loading,None,NIFTY
+/today/index.html,Trade Qualification,#t-qualification,Loading qualification...,/api/trade-qualification (POST),N/A,N/A,Real-time,Loading,None,NIFTY
+/today/index.html,Paper Trade,#t-paper-trade,Loading paper trade...,/api/paper-trades/active,paper_trades,N/A,Real-time,Loading,None,NIFTY
+/today/index.html,Session Status,MARKET CLOSED (static HTML),Static HTML → JS update,Client-side clock,N/A,N/A,Real-time,MARKET CLOSED (static),None,N/A
+/indices/nifty.html,NIFTY Spot,#nifty-spot,Loading...,/api/market → m.instruments.NIFTY.quote.price,price_5m,price_5m,Real-time,Loading,None,NIFTY
+/indices/nifty.html,NIFTY Change,#nifty-change,Loading...,/api/market → m.instruments.NIFTY.quote.change,price_5m,price_5m,Real-time,Loading,None,NIFTY
+/indices/nifty.html,NIFTY AI Outlook,#ai-outlook,Loading market outlook...,/api/market-outlook?symbol=NIFTY,ai_outlooks_5m,ai_outlooks_5m,Real-time,Loading,None,NIFTY
+/indices/nifty.html,NIFTY Technicals (VWAP/EMA/RSI/MACD/ADX/CPR),"#nifty-vwap, #nifty-ema9, #nifty-ema21, #nifty-rsi, #nifty-macd, #nifty-adx",Loading...,/api/market → m.instruments.NIFTY.*,market_regime / indicators,N/A,Real-time,Loading,None,NIFTY
+/indices/nifty.html,NIFTY Key Levels,#key-levels,Loading key levels...,/api/key-levels?symbol=NIFTY,key_levels,N/A,Real-time,Loading,None,NIFTY
+/indices/nifty.html,NIFTY Options,#options-intel,Loading options data...,/api/options/state/NIFTY,option_chain,N/A,Real-time,Loading,None,NIFTY
+/indices/banknifty.html,BANKNIFTY Spot,#banknifty-spot,Loading...,/api/market → m.instruments.BANKNIFTY.quote.price,price_5m,price_5m,Real-time,Loading,None,BANKNIFTY
+/indices/banknifty.html,BANKNIFTY AI Outlook,#ai-outlook,Loading market outlook...,/api/market-outlook?symbol=BANKNIFTY,ai_outlooks_5m,ai_outlooks_5m,Real-time,Loading,None,BANKNIFTY
+/indices/banknifty.html,BANKNIFTY Technicals,"#banknifty-vwap, etc.",Loading...,/api/market → m.instruments.BANKNIFTY.*,market_regime / indicators,N/A,Real-time,Loading,None,BANKNIFTY
+/options/index.html,PCR,#opt-pcr,Loading...,/api/pcr → pcr.nifty[0].pcr,pcr_data,N/A,Real-time,Loading,None,NIFTY
+/options/index.html,Max Pain,#opt-maxpain,Loading...,/api/maxpain → maxpain.nifty[0].max_pain,maxpain_data,N/A,Real-time,Loading,None,NIFTY
+/options/index.html,OI Concentration,#opt-oi,Loading...,/api/oi-top?symbol=NIFTY → CALL OI,option_chain,N/A,Real-time,Loading,None,NIFTY
+/options/index.html,Expected Move,#opt-expmove,Loading...,/api/expected-move/NIFTY,expected_move_data,N/A,Real-time,Loading,None,NIFTY
+/strategies.html,Strategy Engine Hero,#e-ai,Waiting for market data...,/api/nifty,market_regime / ai_outlooks,N/A,Real-time,Waiting,None,NIFTY
+/strategies.html,Strategy Cards,#e-groups,None (empty),/api/nifty + TPL templates,strategy_data,N/A,Real-time,Empty,None,NIFTY
+/strategies.html,Strategy Comparison Table,#e-comparison,Static HTML (generic values),None (static HTML),N/A,N/A,N/A,Static generic,None,N/A
+/ai-track-record.html,Prediction Accuracy Summary,"#ai-overall, #ai-total, #ai-conf",Loading...,/api/journal/stats,trade_journal,N/A,Real-time,Loading,None,NIFTY
+/ai-track-record.html,Verdict History,#verdict-table,Loading verdict history...,/api/journal?limit=50,trade_journal,N/A,Real-time,Loading (no error fallback),None,NIFTY
+/ai-track-record.html,Accuracy by Symbol (NIFTY/BANKNIFTY/FINNIFTY/SENSEX),#ai-by-symbol [data-sym=NIFTY],NEVER POPULATES,/api/intelligence/instrument/NIFTY,trade_journal,N/A,Real-time,NEVER POPULATES (data-sym attr missing from HTML),None,NIFTY
+/ai-track-record.html,Walk-Forward Evidence,#ai-walkforward,Loading walk-forward evidence...,/api/walkforward/NIFTY/2026-06-01/2026-09-15,walkforward_results,N/A,Hardcoded dates,Loading,None,NIFTY
+/research/index.html,Market Research Reports,#research-market,Loading... (4 cards),None (no API populates these),N/A,N/A,N/A,"Loading (no API, no fallback)",None,NIFTY
+/research/index.html,Technical Analysis (6 cards),#research-tech,Loading...,/api/indicators/NIFTY,indicators,N/A,Real-time,Loading (no error fallback),None,NIFTY
+/research/index.html,Strategy Guides,#research-strategies,Loading...,/api/strategy/NIFTY,strategy_data,N/A,Real-time,Loading (no error fallback),None,NIFTY
+/research/index.html,Research Methodology,#research-methodology,Pre-populated (static),None (static JS),N/A,N/A,N/A,Always populated (good),None,NIFTY

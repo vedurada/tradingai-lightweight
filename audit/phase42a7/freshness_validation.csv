@@ -1,0 +1,10 @@
+page,element,state,timestamp,age,status,notes
+/,NIFTY price,PRE-RENDERED,2026-09-18T22:11 IST,~20 hours stale,STALE,"Pre-rendered, overwritten by JS when API loads"
+/,BANKNIFTY price,PRE-RENDERED,2026-09-18T22:11 IST,~20 hours stale,STALE,"Pre-rendered, overwritten by JS when API loads"
+/,VIX price,PRE-RENDERED,2026-09-18T22:11 IST,~20 hours stale,STALE,"Pre-rendered, overwritten by JS when API loads"
+/,AI Dashboard,EXTERNAL_JS,N/A,Unknown — JS-dependent,EXTERNAL,Requires ai-outlook.js to load
+/today/index.html,All sections,LOADING,N/A,No pre-rendered data,LOADING,All sections start as Loading — no fallback
+/indices/nifty.html,All sections,LOADING,N/A,No pre-rendered data,LOADING,No pre-rendered market data
+/indices/banknifty.html,All sections,LOADING,N/A,No pre-rendered data,LOADING,No pre-rendered market data
+/indices/finnifty.html,FINNIFTY data,DELAYED,2026-09-18,yfinance fallback flagged,DELAYED,Stale-price magic number hack for FINNIFTY
+/ai-track-record.html,All sections,LOADING,N/A,Cards never populate,LOADING,data-sym and data-col attrs missing

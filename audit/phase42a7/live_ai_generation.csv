@@ -1,0 +1,3 @@
+symbol,timestamp,scheduler_status,ai_decision,llm_called,llm_success,outlook_inserted,classification,notes
+NIFTY,2026-09-19T08:30:00+05:30,PENDING,PENDING,NOT_CALLED,NOT_CALLED,NO,PRE_MARKET,Market closed Saturday
+BANKNIFTY,2026-09-19T08:30:00+05:30,PENDING,PENDING,NOT_CALLED,NOT_CALLED,NO,PRE_MARKET,Market closed Saturday

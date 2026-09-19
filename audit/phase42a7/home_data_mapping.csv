@@ -1,0 +1,10 @@
+page,section,value,api_source,db_table,timestamp,freshness,fallback
+/,NIFTY 50 Price Card,"Pre-rendered: 23,346.40",/api/price/NIFTY,price_5m,2026-09-18T16:40:20Z,STALE,Market opens 9:15 AM IST if all symbols are —
+/,BANKNIFTY 50 Price Card,"Pre-rendered: 56,358.70",/api/price/BANKNIFTY,price_5m,2026-09-18T16:40:21Z,STALE,Market opens 9:15 AM IST
+/,SENSEX Price Card,"Pre-rendered: 74,294.96",/api/price/SENSEX,price_5m,2026-09-18T16:40:XXZ,STALE,Market opens 9:15 AM IST
+/,FINNIFTY Price Card,"Pre-rendered: 25,510.00",/api/price/FINNIFTY,price_5m,2026-09-18T16:40:XXZ,STALE,Market opens 9:15 AM IST
+/,India VIX Card,Pre-rendered: 11.39,/api/vix,vix_data,2026-09-18T16:40:23Z,STALE,Market opens 9:15 AM IST
+/,AI Outlook Dashboard,Loading... (requires ai-outlook.js),renderOutlookDashboard() (external JS),ai_outlooks_5m,N/A,EXTERNAL_JS,No fallback if ai-outlook.js fails to load
+/,Data Status Timer,Deterministic IST clock,Client-side JS,N/A,Real-time,CLIENT_CLOCK,None
+/,Ticker Tape,Loading market data...,"/api/market, /api/index-breadth",price_5m,N/A,Loading,Refreshes every 60s
+/,Session State,MARKET CLOSED / Checking...,Client-side clock,N/A,Real-time,CLIENT_CLOCK,None

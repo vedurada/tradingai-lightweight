@@ -1,0 +1,38 @@
+page,purpose,audience,unique_value,live_data,correct_data,correct_placement,freshness,duplicate,broken,SEO_value,product_value,disposition,redirect,archive,notes
+/,Homepage entry point,All traders,High — market status + AI outlook entry,"YES (pre-rendered stale, JS-dependent)","YES (correct symbols, correct APIs)",YES,STALE (pre-rendered 18 Sep),NO,NO,HIGH,HIGH,KEEP,,,Fix stale pre-rendered data and external ai-outlook.js dependency
+/today/index.html,Trader command center,Active traders,High — full intraday terminal,YES (Loading states),"YES (all correct APIs, correct symbols)",YES,Real-time (when APIs load),NO,NO,HIGH,HIGH,KEEP,,,"Fix missing API endpoints (key-levels, intraday-conditions, risk noted in Phase 29)"
+/indices/nifty.html,NIFTY-specific outlook,NIFTY traders,High — NIFTY-only data,YES (Loading),YES (correct NIFTY APIs),YES,Real-time,NO,YES (index selector: 2 BANKNIFTY links),HIGH,HIGH,KEEP,,,"Fix index selector: replace 2nd BANKNIFTY link with FINNIFTY, 3rd with SENSEX"
+/indices/banknifty.html,BANKNIFTY-specific outlook,BANKNIFTY traders,High — BANKNIFTY-only data,YES (Loading),YES (correct BANKNIFTY APIs),YES,Real-time,NO,YES (index selector: 2 BANKNIFTY links),HIGH,HIGH,KEEP,,,"Fix index selector: replace 2nd BANKNIFTY link with FINNIFTY, 3rd with SENSEX"
+/indices/finnifty.html,FINNIFTY-specific outlook,FINNIFTY traders,Medium — FINNIFTY data delayed,"YES (Loading, delayed)",YES (correct FINNIFTY APIs),YES,DELAYED (yfinance),NO,NO,MEDIUM,MEDIUM,KEEP,,,Fix stale-price magic number hack; add proper stale detection
+/indices/sensex.html,SENSEX-specific outlook,SENSEX traders,Medium — SENSEX outlook,YES (Loading),YES (correct SENSEX APIs),YES,Real-time,NO,NO,MEDIUM,MEDIUM,KEEP,,,Add stale-data handling if SENSEX uses yfinance fallback
+/options/index.html,Options intelligence hub,Options traders,"High — PCR, Max Pain, OI, IV",YES (Loading),YES (correct options APIs),YES,Real-time,NO,YES (expected-move URL missing ?),HIGH,HIGH,KEEP,,,Fix expected-move endpoint URL; fix HTML nesting in strategy section
+/options/pcr.html,Options PCR & Max Pain detail,Options traders,Medium — PCR sentiment focus,YES (Loading),YES (correct APIs),YES,Real-time,NO,NO,MEDIUM,HIGH,KEEP,,,Fix duplicate gtag initialization
+/strategies.html,Strategy intelligence,Traders seeking setups,Medium — strategy comparison,YES (Loading),PARTIAL (static comparison table),YES,Real-time,NO,YES (stray </script>),MEDIUM,HIGH,KEEP,,,Fix stray </script>; make comparison table dynamic or clearly labeled static
+/tools/backtest.html,Rules-based backtest,Traders validating strategies,High — deterministic backtest,YES (async results),YES (correct methodology),YES,Real-time (when run),NO,NO,MEDIUM,HIGH,KEEP,,,Add canonical tag; distinguish rules-based from AI results
+/ai-track-record.html,AI historical accuracy,Research-oriented traders,High — AI prediction accuracy,YES (Loading),PARTIAL (cards never populate due to missing HTML attrs),YES,Real-time,NO,YES (data-sym and data-col attrs missing),HIGH,HIGH,KEEP,,,Fix data-sym and data-col HTML attributes so JS can populate cards
+/research/index.html,Research hub,Research-oriented traders,Medium — methodology + reports,PARTIAL (14/18 Loading),"PARTIAL (methodology OK, others Loading)",YES,Real-time,NO,"YES (canonical uses content=, SEI typo)",MEDIUM,MEDIUM,KEEP,,,Fix canonical tag; fix SEI→SEBI typo; add error fallbacks for Loading sections
+/learn/index.html,Educational navigation,Beginners,Low — link hub,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Supporting content — keep for user education
+/learn/option-chain.html,Educational: option chain,Beginners,Low — educational,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Supporting content
+/learn/option-greeks.html,Educational: Greeks,Beginners,Low — educational,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Supporting content
+/learn/pcr.html,Educational: PCR,Beginners,Low — educational,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Supporting content
+/learn/vwap.html,Educational: VWAP,Beginners,Low — educational,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Supporting content
+/learn/cpr.html,Educational: CPR,Beginners,Low — educational,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Supporting content
+/tools/position-size.html,Position size calculator,Traders,Low — utility tool,PARTIAL (ATR via API),YES,YES,Real-time (ATR only),NO,NO,LOW,MEDIUM,KEEP,,,Position size is client-side (correct); expected-move fires without loading state
+/tools/walkforward.html,Walk-forward validation,Research traders,Medium — OOS validation,YES (on demand),YES (correct methodology),YES,On demand,NO,NO,MEDIUM,MEDIUM,KEEP,,,Blank on load — consider default run
+/evidence/historical.html,Historical evidence,Research traders,Medium — similar setup evidence,YES (on demand),"YES (deterministic, AI-excluded)",YES,On demand,NO,NO,MEDIUM,HIGH,KEEP,,,Fix canonical tag (content= vs href=)
+/history/replay.html,Historical AI replay,Traders reviewing past sessions,High — timestamp-by-timestamp,YES (on demand),YES (strict no-lookahead),YES,Historical,NO,NO,MEDIUM,HIGH,KEEP,,,Efficient page; auto-loads NIFTY for today
+/history.html,P&L history,Traders tracking results,Medium — outcome tracking,YES (on demand),YES,YES,Real-time (market hours),NO,NO,LOW,HIGH,KEEP,,,Fix title consistency; consider removing Google favicon dependency
+/trade.html,Intraday trade setup,Active traders,HIGH — GO/WAIT/NO_SETUP,YES (live price),YES (correct lifecycle stages),YES,Real-time,NO,YES (duplicate loadData()),HIGH,CRITICAL,KEEP,,,"CRITICAL: Fix duplicate loadData() — second definition overwrites first, removing error/empty states"
+/strategy-builder.html,Options strategy builder,Traders building strategies,Low — payoff calculator,PARTIAL (live spot),YES,YES,Real-time (spot only),NO,YES (orphan pipe),LOW,MEDIUM,KEEP,,,Pure calculator — correct for educational tool
+/about.html,About TradingAI,New visitors,Low — company info,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Trust page — keep
+/contact.html,Contact,Users needing support,Low — contact info,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Trust page — keep
+/disclaimer.html,Disclaimer,Legal requirement,Low — legal,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Trust page — keep
+/privacy.html,Privacy policy,Legal requirement,Low — legal,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Trust page — keep
+/terms.html,Terms of service,Legal requirement,Low — legal,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Trust page — keep
+/404.html,404 error page,All users,Low — error handling,NO (static),YES,YES,N/A,NO,NO,LOW,LOW,KEEP,,,Error page — keep
+/options/,/options/,301,/options/index.html,,NO,N/A,N/A,YES (redirect),NO,LOW,LOW,REDIRECT,/options/index.html,,Directory redirect
+/today/,/today/,301,/today/index.html,,NO,N/A,N/A,YES (redirect),NO,LOW,LOW,REDIRECT,/today/index.html,,Directory redirect
+/research/,/research/,301,/research/index.html,,NO,N/A,N/A,YES (redirect),NO,LOW,LOW,REDIRECT,/research/index.html,,Directory redirect
+/market.html,/market.html,301,/today/index.html,,NO,N/A,N/A,YES (redirect),NO,LOW,LOW,REDIRECT,/today/index.html,,Removed per Phase 29
+/home.html,/home.html,301,/,,NO,N/A,N/A,YES (redirect),NO,LOW,LOW,REDIRECT,/,,Removed
+/index.html,/index.html,200,,NO,YES (same as /),YES,N/A,YES (duplicate of /),NO,LOW,LOW,REDIRECT,/,,Duplicate — redirect to /

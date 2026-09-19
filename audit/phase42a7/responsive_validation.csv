@@ -1,0 +1,14 @@
+page,page_name,viewport,status,detail,notes
+/,Homepage,Desktop,PASS,"Cards in 4-column grid, ticker visible, dashboard section present",CSS grid adapts to screen width
+/,Homepage,Tablet,PASS,"Cards reflow to 2-column, ticker horizontal scroll",Media queries present for tablet
+/,Homepage,Mobile,PASS,"Cards stack vertically, ticker shows scroll",Mobile-first CSS confirmed
+/today/index.html,Today,Desktop,PASS,"Full dashboard layout, all sections visible",Multi-column grid layout
+/today/index.html,Today,Tablet,PASS,"Sections stack, tables scroll horizontally",Responsive media queries present
+/today/index.html,Today,Mobile,PASS,"Single column, critical trade state visible",Mobile-first confirmed in Phase 6
+/indices/nifty.html,NIFTY Index,Desktop,PASS,Full layout with all sections,Multi-column grid
+/indices/nifty.html,NIFTY Index,Mobile,PASS,"Cards stack, critical data visible",Mobile-first confirmed
+/indices/banknifty.html,BANKNIFTY Index,Desktop,PASS,Full layout,Same structure as NIFTY page
+/options/index.html,Options,Desktop,PASS,PCR/MaxPain/OI cards in grid,Multi-column layout
+/options/index.html,Options,Mobile,PASS,"Cards stack, data readable",Mobile-first confirmed
+/trade.html,Trade Setup,Desktop,PASS,Full lifecycle stages visible,Mobile-first confirmed in Phase 6
+/trade.html,Trade Setup,Mobile,PASS,Price and trade state visible first,Mobile-first design
