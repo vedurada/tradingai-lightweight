@@ -18,9 +18,10 @@ class BacktestEngine:
         self.qualification = QualificationEngine()
 
     def run(self, instrument, date_start, date_end, scenario_filter=None, strategy_filter=None):
+        self.qualification.reset_research_locks()
         run_id = f'BT-{str(uuid.uuid4())[:8].upper()}'
-        self.conn.execute('INSERT INTO backtest_runs (run_id, instrument, date_start, date_end, candle_timeframe, scenario_filter, strategy_filter, runs_at, status) VALUES (?,?,?,?,?,?,?,?,?)',
-            (run_id, instrument, date_start, date_end, '5m', scenario_filter, strategy_filter, datetime.now(_IST).isoformat(), 'RUNNING'))
+        self.conn.execute('INSERT INTO backtest_runs (run_id, instrument, date_start, date_end, candle_timeframe, scenario_filter, strategy_filter, objective_filter, runs_at, status) VALUES (?,?,?,?,?,?,?,?,?,?)',
+            (run_id, instrument, date_start, date_end, '5m', scenario_filter, strategy_filter, 'ALL', datetime.now(_IST).isoformat(), 'RUNNING'))
         self.conn.commit()
         candles = self._load_historical(instrument, date_start, date_end)
         decisions = []
@@ -29,7 +30,7 @@ class BacktestEngine:
             decision = self._simulate_decision(instrument, candle, scenario_filter)
             decisions.append(decision)
             if decision['decision'] == 'QUALIFIED_TRADE':
-                trade = self._simulate_trade(decision, candle)
+                trade = self._simulate_trade(instrument, decision, candle)
                 trades.append(trade)
         outcome = self._calculate_outcomes(trades)
         self.conn.execute('INSERT INTO backtest_outcomes (outcome_id, run_id, total_trades, wins, losses, breakeven, win_rate, avg_outcome, median_outcome, profit_factor, max_drawdown, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
@@ -42,12 +43,14 @@ class BacktestEngine:
         return [dict(c) for c in c]
 
     def _simulate_decision(self, instrument, candle, scenario_filter):
+        trade_date = candle['timestamp'][:10]
         ms = {'trend': 'BULLISH', 'vwap_relation': 'ABOVE', 'momentum': 'POSITIVE', 'volatility': 'NORMAL', 'price': candle['close']}
-        decision = self.qualification.qualify(instrument, ms, options_valid=True, research=True)
-        return {'decision_id': str(uuid.uuid4())[:16].upper(), 'timestamp': candle['timestamp'], 'market_state': ms, 'decision': decision['decision'], 'reasons': decision.get('reasons', []), 'latest_allowed_data': candle['timestamp'], 'actual_latest_data': candle['timestamp'], 'lookahead_check': 'PASS'}
+        qual_result = self.qualification.qualify(instrument, ms, options_valid=True, research=True, trade_date=trade_date)
+        return {'decision_id': str(uuid.uuid4())[:16].upper(), 'timestamp': candle['timestamp'], 'market_state': ms, 'decision': qual_result['decision'], 'trade': qual_result.get('trade'), 'reasons': qual_result.get('reasons', []), 'latest_allowed_data': candle['timestamp'], 'actual_latest_data': candle['timestamp'], 'lookahead_check': 'PASS'}
 
-    def _simulate_trade(self, decision, candle):
-        return {'trade_id': str(uuid.uuid4())[:16].upper(), 'session_date': candle['timestamp'][:10], 'scenario': decision.get('trade', {}).get('scenario', 'N/A'), 'strategy': decision.get('trade', {}).get('strategy', 'N/A'), 'entry': decision.get('trade', {}).get('entry', 0), 'stop': decision.get('trade', {}).get('stop', 0), 'target': decision.get('trade', {}).get('target', 0), 'exit': candle['close'], 'exit_reason': 'EOD', 'paper_pnl': round((candle['close'] - decision.get('trade', {}).get('entry', 0)) * 50, 2), 'mfe': 0, 'mae': 0, 'holding_time': '1d'}
+    def _simulate_trade(self, instrument, decision, candle):
+        trade_data = decision.get('trade') or {}
+        return {'trade_id': str(uuid.uuid4())[:16].upper(), 'instrument': instrument, 'session_date': candle['timestamp'][:10], 'scenario': trade_data.get('scenario', 'N/A'), 'strategy': trade_data.get('strategy', 'N/A'), 'entry': trade_data.get('entry', 0), 'stop': trade_data.get('stop', 0), 'target': trade_data.get('target', 0), 'exit': candle['close'], 'exit_reason': 'EOD', 'paper_pnl': round((candle['close'] - trade_data.get('entry', 0)) * 50, 2), 'mfe': 0, 'mae': 0, 'holding_time': '1d'}
 
     def _calculate_outcomes(self, trades):
         if not trades: return {'total_trades': 0, 'wins': 0, 'losses': 0, 'breakeven': 0, 'win_rate': 0.0, 'avg_outcome': 0.0, 'median_outcome': 0.0, 'profit_factor': 0.0, 'max_drawdown': 0.0}
