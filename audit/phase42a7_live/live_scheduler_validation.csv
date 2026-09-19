@@ -1,2 +1,4 @@
 timestamp,symbol,scheduler_invoked,instrument,material_change,generate_reason,skip_reason,llm_call,outlook_id,live_session,note
-2026-09-19 09:10,NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,Market closed Saturday — cron scheduler inactive outside 9-15 Mon-Fri
+2026-09-19 09:15,NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Cron runs Mon-Fri only (1-5). monitor.log = 0 bytes.
+2026-09-19 09:15,BANKNIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Cron runs Mon-Fri only. monitor.py did NOT execute today.
+__INFO__,Cron schedule:*/5 9-15 * * 1-5 monitor.py,,,,,,,,LIVE,"Saturday is day 6, cron excludes it. Will execute Monday 09:15 IST."

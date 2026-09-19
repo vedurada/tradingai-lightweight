@@ -1,0 +1,21 @@
+layer,NIFTY,BANKNIFTY,evidence,status
+Market data,NOT EXERCISED,NOT EXERCISED,price_5m stops at 2026-09-18T04:40:00,STALE
+Completed 5m candle,PASS (replay),PASS (replay),Completed candle at 04:25 used,REPLAY-VERIFIED
+Snapshot,PASS (replay),PASS (replay),2 records in market_snapshots_5m,REPLAY-VERIFIED
+Evidence,PASS (replay),NOT EXERCISED,1 NIFTY evidence record,REPLAY-VERIFIED
+Positioning,NOT EXERCISED,NOT EXERCISED,No live positioning data,NOT EXERCISED
+Liquidity,NOT EXERCISED,NOT EXERCISED,No live liquidity data,NOT EXERCISED
+Market state,NOT EXERCISED,NOT EXERCISED,No live state derivation,NOT EXERCISED
+Scenario,NOT EXERCISED,NOT EXERCISED,pre_market_scenarios=0,NOT EXERCISED
+Activation,NOT EXERCISED,NOT EXERCISED,No live activations,NOT EXERCISED
+Scheduler,NOT EXERCISED,NOT EXERCISED,"monitor.log=0 bytes, cron Mon-Fri",NOT EXERCISED
+AI call,NOT EXERCISED,NOT EXERCISED,"ai_outlooks_5m=0, no LLM calls",NOT EXERCISED
+AI storage,PASS,PASS,ai_outlooks=39148 (legacy),PASS
+API,PASS,PASS,All endpoints 200 (degraded),PASS
+JavaScript,PASS,PASS,All 3 fixes deployed,PASS
+HTML,PASS,PASS,Freshness indicator works,PASS
+Qualification,NOT EXERCISED,NOT EXERCISED,No live qualification,NOT EXERCISED
+Strategy,NOT EXERCISED,NOT EXERCISED,No live strategy selection,NOT EXERCISED
+Paper trade,NOT EXERCISED,NOT EXERCISED,No new trades since Friday,NOT EXERCISED
+Outcome,NOT EXERCISED,NOT EXERCISED,No intraday outcomes,NOT EXERCISED
+Look-ahead,PASS,PASS,"Code verified, no live decisions",PASS

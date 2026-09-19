@@ -1,4 +1,4 @@
 symbol,timestamp,source,generated_success,outlook_state,evidence_refs,confirmation,invalidation,expected_horizon,provenance,live_session,note
-NIFTY,2026-09-18T16:40:59,LEGACY FALLBACK,N/A (historical),daily outlook,N/A,N/A,N/A,N/A,"source_type=LEGACY,is_current_5m=false",LIVE,Last daily outlook from Friday — no 5m generation on Saturday
-BANKNIFTY,2026-09-18T16:40:59,LEGACY FALLBACK,N/A (historical),daily outlook,N/A,N/A,N/A,N/A,"source_type=LEGACY,is_current_5m=false",LIVE,Last daily outlook from Friday
-NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,No CURRENT_5M outlook generated — market closed
+NIFTY,2026-09-18T16:40:59,LEGACY FALLBACK,N/A (historical),daily outlook,N/A,N/A,N/A,N/A,"source_type=LEGACY,is_current_5m=false",LIVE,Last daily outlook from Friday. No CURRENT_5M exists.
+BANKNIFTY,2026-09-18T16:40:59,LEGACY FALLBACK,N/A (historical),daily outlook,N/A,N/A,N/A,N/A,"source_type=LEGACY,is_current_5m=false",LIVE,Last daily outlook from Friday.
+NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,ai_outlooks_5m=0 — no live 5m generation

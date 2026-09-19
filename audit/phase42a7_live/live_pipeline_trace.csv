@@ -1,15 +1,18 @@
 layer,layer_num,check,result,timestamp,evidence,state,note
-MARKET DATA INGESTION,1,1-min market data available,PASS,2026-09-19 09:10,price_5m has data up to 2026-09-18T16:40,STALE,Friday close — Saturday no new data
-DATA NORMALIZATION & QUALITY,2,Data quality labels correct,PASS,2026-09-19 09:10,API returns STALE for all instruments,STALE,All data properly labelled stale
-COMPLETED 5-MINUTE SNAPSHOT,3,5m snapshot from completed candle,PASS,2026-09-18T04:25,market_snapshots_5m has 2 rows (replay-verified),REPLAY-VERIFIED,No live 5m candle on Saturday
-MARKET EVIDENCE,4,Evidence inserted,PASS,2026-09-18T04:25,market_evidence_5m has 1 row (replay-verified),REPLAY-VERIFIED,No live evidence on Saturday
-MARKET STATE / INTENT,5,Market state derived deterministically,NOT EXERCISED,2026-09-19 09:10,No live state derivation,NOT EXERCISED,Market closed Saturday
-PRE-MARKET SCENARIO,6,Pre-market scenarios generated,NOT EXERCISED,2026-09-19 09:10,No live scenarios,NOT EXERCISED,Market closed Saturday
-SCENARIO ACTIVATION,7,Scenario activation ARMED/WATCH/ACTIVATED,NOT EXERCISED,2026-09-19 09:10,No live activations,NOT EXERCISED,Market closed Saturday
-MONITOR.PY / SCHEDULER,8,monitor.py triggers AI scheduler,NOT EXERCISED,2026-09-19 09:10,monitor.service inactive (Saturday),NOT EXERCISED,Cron only runs Mon-Fri 9-15
-AI / HONEST FALLBACK,9,LLM generates outlook or honest fallback,NOT EXERCISED,2026-09-19 09:10,ai_outlooks_5m = 0,NOT EXERCISED,LLM configured but no live calls
-AI_OUTLOOKS_5M,10,5m AI records created,NOT EXERCISED,2026-09-19 09:10,ai_outlooks_5m = 0,NOT EXERCISED,No generation on Saturday
-API,11,API responds with current data,PASS,2026-09-19 09:10,All endpoints return 200 (degraded),STALE,APIs return stale Friday data correctly
-JAVASCRIPT,12,Frontend renders data,PASS,2026-09-19 09:10,"Pages return 200, JS loads",STALE,All 3 fixes deployed and verified
-HTML,13,HTML displays correct state,PASS,2026-09-19 09:10,Freshness indicator present,STALE,Homepage shows STALE/MARKET CLOSED
-TRADER DISPLAY,14,Trader sees correct market state,PASS,2026-09-19 09:10,"Pages show STALE, not LIVE",STALE,Honest stale display on Saturday
+1. MARKET DATA INGESTION,1,1-min market data arriving,NOT EXERCISED,2026-09-19 09:15,price_5m stops at 2026-09-18T04:25:00,STALE,Saturday — no new 1m data
+2. DATA NORMALIZATION & QUALITY,2,Data quality labels correct,PASS (stale data),2026-09-19 09:15,API returns STALE for NIFTY/BANKNIFTY,STALE,All data properly labelled stale
+3. COMPLETED 5-MINUTE CANDLE,3,Completed candle used as snapshot,PASS (replay),2026-09-18T04:25,market_snapshots_5m uses 04:25 candle,REPLAY-VERIFIED,No new completed candle today
+4. MARKET SNAPSHOT,4,Snapshot created from completed candle,PASS (replay),2026-09-19T02:22,2 snapshots (NIFTY+BANKNIFTY),REPLAY-VERIFIED,Created at 02:22/02:26 UTC — replay run
+5. MARKET EVIDENCE,5,Evidence created from snapshot,PASS (replay),2026-09-19T02:24,1 evidence record (NIFTY),REPLAY-VERIFIED,Regime=BEARISH conf=75
+6. MARKET STATE / INTENT,6,Market state derived from evidence,NOT EXERCISED,2026-09-19 09:15,No live state derivation,NOT EXERCISED,Market closed Saturday
+7. PRE-MARKET SCENARIO,7,Pre-market scenarios generated,NOT EXERCISED,2026-09-19 09:15,pre_market_scenarios=0,NOT EXERCISED,Market closed Saturday
+8. SCENARIO ACTIVATION,8,Scenario activation ARMED→WATCH→ACTIVATED,NOT EXERCISED,2026-09-19 09:15,No live activations,NOT EXERCISED,Market closed Saturday
+9. MONITOR.PY,9,monitor.py triggers scheduler,NOT EXERCISED,2026-09-19 09:15,"monitor.log=0 bytes, service inactive",NOT EXERCISED,Cron runs Mon-Fri only
+10. OUTLOOK SCHEDULER,10,Scheduler material-change detector,NOT EXERCISED,2026-09-19 09:15,No scheduler invocation,NOT EXERCISED,Cron runs Mon-Fri only
+11. MATERIAL CHANGE DETECTOR,11,Material change evaluated,NOT EXERCISED,2026-09-19 09:15,No scheduler invocation,NOT EXERCISED,Cron runs Mon-Fri only
+12. LLM / EXPLICIT FALLBACK,12,LLM generates outlook or honest fallback,NOT EXERCISED,2026-09-19 09:15,"ai_outlooks_5m=0, research_ai_call_log=0",NOT EXERCISED,LLM available but no trigger
+13. AI_OUTLOOKS_5M,13,5m AI records created,NOT EXERCISED,2026-09-19 09:15,ai_outlooks_5m=0,NOT EXERCISED,No generation on Saturday
+14. API,14,API responds with current data,PASS,2026-09-19 09:15,All endpoints 200 (degraded),STALE,APIs return stale Friday data correctly
+15. JAVASCRIPT,15,Frontend renders data,PASS,2026-09-19 09:15,"Pages 200, JS loads",STALE,All 3 fixes deployed and verified
+16. HTML,16,HTML displays correct state,PASS,2026-09-19 09:15,Freshness indicator present,STALE,Homepage shows STALE/MARKET CLOSED
+17. TRADER DISPLAY,17,Trader sees correct market state,PASS,2026-09-19 09:15,"Pages show STALE, not LIVE",STALE,Honest stale display on Saturday

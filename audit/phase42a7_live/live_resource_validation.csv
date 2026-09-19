@@ -1,9 +1,11 @@
 metric,value,threshold,state,note
-DB size (MB),268,<500,OK,Within resource limits
+Backup size,269MB,<300MB,OK,Backup created: tradingai_pre_live_validation_20260919_091530.db
+DB integrity,ok,ok,PASS,PRAGMA integrity_check passed
+DB size,269MB,<500MB,OK,Within resource limits
 price_5m rows,15960,N/A,OK,Growing normally
-market_regime rows,39124,N/A,OK,Growing normally
-ai_outlooks rows,39148,N/A,OK,39148 legacy daily outlooks
+ai_outlooks rows,39148,N/A,OK,Legacy daily outlooks
 ai_outlooks_5m rows,0,N/A,OK,No live generation — Saturday
+research_ai_call_log rows,0,N/A,OK,No live AI calls
 CPU cores,1,N/A,CONSTRAINED,VM limited to 1 CPU
 RAM (MB),956,N/A,CONSTRAINED,564MB available after system usage
 Disk (GB),45,N/A,OK,19GB used (42%)
@@ -13,4 +15,5 @@ Runaway processes,0,0,PASS,No runaway processes detected
 Duplicate schedulers,0,0,PASS,No duplicate processes detected
 Uncontrolled polling,0,0,PASS,All polling via cron intervals
 LLM API calls,0 (Saturday),Minimal,PASS,No live AI generation — market closed
-API latency,<100ms,<500ms,OK,All APIs responding
+API response time,<100ms,<500ms,OK,All APIs responding
+monitor.log size,0 bytes,N/A,INFO,"monitor.py did not run (Saturday, cron Mon-Fri only)"

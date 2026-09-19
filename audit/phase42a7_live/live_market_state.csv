@@ -1,3 +1,3 @@
 symbol,timestamp,state_type,state_value,evidence,deterministic,live_session,note
-NIFTY,NOT EXERCISED,Market State,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Market closed Saturday — no live state derived
-BANKNIFTY,NOT EXERCISED,Market State,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Market closed Saturday — no live state derived
+NIFTY,NOT EXERCISED,Market State,NOT EXERCISED,NOT EXERCISED,YES,LIVE,Market closed Saturday — no live state derivation
+BANKNIFTY,NOT EXERCISED,Market State,NOT EXERCISED,NOT EXERCISED,YES,LIVE,Market closed Saturday

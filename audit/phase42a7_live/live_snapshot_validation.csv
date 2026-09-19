@@ -1,3 +1,5 @@
-symbol,row_id,setup_id,timestamp,price,regime,data_quality,state,note
-N/A,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,No live session — market closed Saturday
-__INFO__,Live session: NOT EXERCISED,Reason: Saturday market closed,Live session: NOT EXERCISED,Live session: NOT EXERCISED,Live session: NOT EXERCISED,Live session: NOT EXERCISED,Live session: NOT EXERCISED,Pending Monday 2026-09-21 09:15 IST
+symbol,snapshot_id,candle_timestamp,snapshot_creation,price,indicators,regime,setup_id,data_quality,state,evidence,note
+NIFTY,EXISTS (replay-verified),2026-09-18T04:25:00+00:00,2026-09-19T02:22:00Z,23346.40,from snapshot,BEARISH,from snapshot,LIVE,REPLAY-VERIFIED,1 evidence record,"Snapshot created at 02:22 UTC — replay run, not live session"
+BANKNIFTY,EXISTS (replay-verified),2026-09-18T04:25:00+00:00,2026-09-19T02:26:04Z,56358.70,from snapshot,NEUTRAL,from snapshot,LIVE,REPLAY-VERIFIED,from snapshot,"Snapshot created at 02:26 UTC — replay run, not live session"
+__INFO__,NEW LIVE SNAPSHOTS,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,NOT EXERCISED,Market closed Saturday — no new 5m candles → no new snapshots
+__INFO__,Idempotency,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,NOT EXERCISED,Cannot verify idempotency without live session

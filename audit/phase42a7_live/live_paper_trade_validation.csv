@@ -1,2 +1,2 @@
-setup_id,qualification_timestamp,entry_timestamp,entry_price,strategy,invalidation,target,risk,outcome,live_session,note
-ERROR,unable to open database file,Live session: NOT EXERCISED,Market closed Saturday
+setup_id,qualification_timestamp,entry_timestamp,entry_price,direction,strategy,invalidation,target,risk,outcome_state,live_session,note
+__INFO__,1188 total paper trades in DB,Last: 2026-09-17 Friday,No new trades since Friday close,Market closed Saturday,LIVE,LIVE,No new paper trades — no qualified setups on Saturday

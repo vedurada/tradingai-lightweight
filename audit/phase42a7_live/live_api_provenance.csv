@@ -1,15 +1,17 @@
-endpoint,method,http_status,response_timestamp,data_timestamp,symbol,data_state,is_current_5m,provenance,live_session,note
-/api/price/NIFTY,GET,200,2026-09-18+00:00,2026-09-18+00:00,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/price/BANKNIFTY,GET,200,2026-09-18+00:00,2026-09-18+00:00,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/price/FINNIFTY,GET,200,2026-09-18+00:00,2026-09-18+00:00,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/price/SENSEX,GET,200,2026-09-11T00:00:00+05:30,2026-09-11T00:00:00+05:30,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/vix,GET,200,2026-09-18T16:40:23.816315+00:00,2026-09-18T16:40:23.816315+00:00,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/market,GET,200,2026-09-18T16:40:00+00:00,2026-09-18T16:40:00+00:00,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/ai-outlook/NIFTY,GET,200,N/A,N/A,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/ai-outlook/BANKNIFTY,GET,200,N/A,N/A,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/options/state/NIFTY,GET,200,,,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/options/state/BANKNIFTY,GET,200,,,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/ai-outlook/timeline/NIFTY,GET,200,N/A,N/A,N/A,N/A,N/A,API responded,LIVE,Degraded — market closed
-/api/journal/stats,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,N/A,N/A,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
-/api/market-evidence/NIFTY,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,N/A,N/A,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
-/api/walkforward/NIFTY/2026-06-01/2026-09-15,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,N/A,N/A,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
+endpoint,method,http_status,data_timestamp,symbol,data_state,is_current_5m,provenance,live_session,note
+/api/price/NIFTY,GET,200,2026-09-18+00:00,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/price/BANKNIFTY,GET,200,2026-09-18+00:00,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/price/FINNIFTY,GET,200,2026-09-18+00:00,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/price/SENSEX,GET,200,2026-09-11T00:00:00+05:30,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/vix,GET,200,2026-09-18T16:40:23.816315+00:00,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/market,GET,200,2026-09-18T16:40:00+00:00,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/ai-outlook/NIFTY,GET,200,N/A,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/ai-outlook/BANKNIFTY,GET,200,N/A,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/options/state/NIFTY,GET,200,,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/options/state/BANKNIFTY,GET,200,,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/market-outlook?symbol=NIFTY,GET,200,2026-09-18 22:10:51,N/A,STALE,false,API responded,LIVE,Degraded — market closed Saturday
+/api/journal/stats,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,UNAVAILABLE,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
+/api/market-evidence/NIFTY,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,UNAVAILABLE,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
+/api/walkforward/NIFTY/2026-06-01/2026-09-15,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,UNAVAILABLE,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
+/api/trade-qualification,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,UNAVAILABLE,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
+/api/paper-trades,GET,ERROR,HTTP Error 503: Service Temporarily Unavailable,N/A,UNAVAILABLE,N/A,HTTP Error 503: Service Temporarily Unavailable,LIVE,
