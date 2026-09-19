@@ -104,13 +104,47 @@ No more STALE+LIVE combinations. Every page shows exactly one freshness label:
 | Production VM verification | PENDING — deploy first |
 | Public HTTPS verification | PENDING — deploy first |
 
-## Deployment Required
+## Deployment
 
-1. Commit and push changes
-2. Deploy to VM via rsync
-3. Verify VM files
-4. Verify nginx, gunicorn, APIs, public HTTPS
-5. Verify every affected HTML page renders with cached data
+### Git
+- Commit: `82be1aa` — "Phase 42A.8: Last Valid Data First fix"
+- Branch: `html/h31-shell-core-pages`
+- Pushed: ✅
+
+### VM Deployment
+- Deployed: 2026-09-19 ~09:55 IST
+- Method: rsync + SSH copy
+- VM files verified via SSH and HTTPS
+
+### Verification Results
+| Check | Result |
+|-------|--------|
+| index.html (42187 bytes) | ✅ Match |
+| trade.html (13802 bytes) | ✅ Match |
+| strategies.html (29420 bytes) | ✅ Match |
+| indices/nifty.html (29893 bytes) | ✅ Match |
+| indices/banknifty.html (27552 bytes) | ✅ Match |
+| options/pcr.html (20065 bytes) | ✅ Match |
+| HTTPS — index | 200 ✅ |
+| HTTPS — trade | 200 ✅ |
+| HTTPS — all index pages | 200 ✅ |
+| HTTPS — /api/market | 200 ✅ |
+| HTTPS — /api/price/NIFTY | 200 ✅ |
+| HTTPS — /api/vix | 200 ✅ |
+| Cache code in index (function LV) | 1 ✅ |
+| Cache code in trade (prevHtml) | 1 ✅ |
+| Cache code in strategies (LAST VALID) | 3 ✅ |
+| Cache code in nifty (restoreAll) | 2 ✅ |
+| BANKNIFTY duplicate link | 1 (fixed) ✅ |
+| test_live_pages.py | 43 passed ✅ |
+| test_phase42a.py + repair | 41 passed, 1 skipped ✅ |
+
+### Remaining Limitations
+1. Live market data NOT EXERCISED (Saturday market closed)
+2. Monday 2026-09-21 09:15 IST — verify fresh data replaces cached (Test E)
+3. Pre-existing test failures unrelated to this change (9 tests)
+
+## Do NOT Start Phase 42B
 
 ## Remaining Limitations
 
