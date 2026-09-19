@@ -132,8 +132,7 @@ function populateIndicators(el, indicators) {
 let refreshInterval = null;
 
 function isMarketHours() {
-  const d = new Date(timestamp);
-  if (isNaN(d.getTime())) { bar.textContent = 'Last refreshed: —'; return; }
+  const now = new Date();
   const ist = now.toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
   const d = new Date(ist);
   const day = d.getDay();

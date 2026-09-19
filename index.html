@@ -297,10 +297,14 @@ document.addEventListener('DOMContentLoaded',function(){
     }).catch(function(){updateFreshness(null);syncSnapshotPrices(null);});
   });
 
-  var _origRender=render;
-  render=function(){
-    _origRender();
-  };
+  function render(){
+    try{
+      fetch('/api/market').then(function(r){return r.json();}).then(function(d){
+        if(d&&d.last_updated){updateFreshness(d.last_updated);}else{updateFreshness(null);}
+        if(d)syncSnapshotPrices(d);
+      }).catch(function(){updateFreshness(null);syncSnapshotPrices(null);});
+    }catch(e){}
+  }
 
   function switchTab(sym){
     if (!SYMBOLS[sym] || sym === current) return;
