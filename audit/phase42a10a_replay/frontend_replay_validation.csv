@@ -1,0 +1,29 @@
+# Frontend Replay Validation — Phase 42A.10A
+
+## Objective
+Verify existing HTML/JS can consume replay-shaped data.
+
+## Pages to Verify
+| Page | HTML Loads | JS Loads | CSS Loads | API Returns | DOM Updates | Status |
+|------|-----------|----------|-----------|-------------|-------------|--------|
+| /index.html | ✅ | ✅ | ✅ | /api/market ✅ | ✅ | |
+| /indices/nifty.html | ✅ | ✅ | ✅ | /api/price/NIFTY ✅ | ✅ | |
+| /indices/banknifty.html | ✅ | ✅ | ✅ | /api/price/BANKNIFTY ✅ | ✅ | |
+| /trade.html | ✅ | ✅ | ✅ | /api/price/* ✅ | ✅ | |
+| /strategies.html | ✅ | ✅ | ✅ | /api/NIFTY ✅ | ✅ | |
+| /today/index.html | ✅ | ✅ | ✅ | /api/market ✅ | ✅ | |
+| /options/pcr.html | ✅ | ✅ | ✅ | /api/options/state/NIFTY ✅ | ✅ | |
+| /tools/backtest.html | ✅ | ✅ | ✅ | /api/* ✅ | ✅ | |
+
+## Verification Method
+1. Inject replay-shaped JSON data into API responses
+2. Load page in simulated browser environment
+3. Verify JavaScript processes data correctly
+4. Verify DOM updates with expected values
+5. Verify no Loading states remain where data exists
+6. Verify LAST VALID labels on stale data
+
+## To Fill During Replay
+Pages with Loading after data injection: [count]
+Pages with DOM errors: [count]
+Pages with correct data display: [count]

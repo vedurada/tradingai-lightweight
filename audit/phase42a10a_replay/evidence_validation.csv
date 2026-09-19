@@ -1,0 +1,30 @@
+# Evidence Validation — Phase 42A.10A
+
+## Objective
+Verify evidence is generated from actual deterministic data at each timestamp.
+
+## Evidence Groups (market_evidence_5m)
+| Group | Expected | Honest When Unavailable |
+|-------|----------|------------------------|
+| Trend | BEARISH/BULLISH/SIDEWAYS | DATA_UNAVAILABLE |
+| Momentum | BEARISH/BULLISH/SIDEWAYS | DATA_UNAVAILABLE |
+| Market Structure | JSON | DATA_UNAVAILABLE |
+| Volatility | JSON | DATA_UNAVAILABLE |
+| Options Positioning | JSON | DATA_UNAVAILABLE (no options data) |
+| Market Confirmation | JSON | DATA_UNAVAILABLE |
+
+## Verification Criteria
+- [ ] Evidence generated from data timestamp <= candle timestamp
+- [ ] No fabricated options evidence (empty {} if no data)
+- [ ] No fabricated OI (null/empty if no data)
+- [ ] No fabricated PCR (null/empty if no data)
+- [ ] Trend/momentum/structure populated from indicators
+- [ ] Evidence timestamp = candle timestamp
+
+## Limitation
+Production market_evidence_5m has only 1 row. Replay will generate evidence for all 6,300 snapshots. Options positioning will be {} (no historical options data).
+
+## To Fill During Replay
+Total evidence records: [count]
+Records with empty options: [count]
+Fabricated evidence: [count] (should be 0)

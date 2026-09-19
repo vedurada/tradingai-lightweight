@@ -1,0 +1,28 @@
+# AI Input Validation — Phase 42A.10A
+
+## Objective
+Verify AI input payload contains NO future information. AI_REPLAY = OFF (no LLM calls).
+
+## Schema Verification (per candidate AI event)
+| Field | Expected | No Future? |
+|-------|----------|------------|
+| symbol | NIFTY/BANKNIFTY | — |
+| timestamp | = candle timestamp | ✅ |
+| market_state | regime/trend/momentum | All <= timestamp |
+| evidence | trend/momentum/structure | All <= timestamp |
+| scenario | trigger/confirmation/invalidation | All <= timestamp |
+| price | OHLC from candle | <= timestamp |
+| VIX | from vix_data | <= timestamp |
+| options availability | OI/PCR/IV | <= timestamp |
+
+## Verification Criteria
+- [ ] AI input contains no future data
+- [ ] All inputs have timestamp <= decision timestamp
+- [ ] NIFTY outlook → NIFTY (NOT hardcoded BANKNIFTY)
+- [ ] BANKNIFTY outlook → BANKNIFTY (NOT hardcoded NIFTY)
+- [ ] AI input does NOT trigger LLM call (AI_REPLAY=OFF)
+
+## To Fill During Replay
+Total AI candidates identified: [count]
+AI inputs with future data: [count] (must be 0)
+Symbol routing correct: [YES/NO]

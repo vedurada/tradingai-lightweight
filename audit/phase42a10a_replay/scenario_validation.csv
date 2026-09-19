@@ -1,0 +1,23 @@
+# Scenario Validation — Phase 42A.10A
+
+## Objective
+Verify scenarios are created before moves and activated when conditions occur.
+
+## Scenario States
+DRAFT → ARMED → WATCH → ACTIVATED → CONFIRMED/INVALIDATED/EXPIRED/COMPLETED
+
+## Verification Criteria
+- [ ] Scenarios created BEFORE market move
+- [ ] Activation at first candle where trigger/confirmation met
+- [ ] Activation timestamp >= all input timestamps (no look-ahead)
+- [ ] No forced scenarios
+- [ ] System may produce WAIT/NO TRADE/NO CLEAR INTENT
+- [ ] Each scenario has trigger, confirmation, invalidation
+
+## Limitation
+The replay will create scenarios based on historical conditions. Whether scenarios ACTIVATE depends on actual market data patterns. If conditions aren't met in replay data, scenarios remain DRAFT/ARMED/WATCH.
+
+## To Fill During Replay
+Total scenarios: [count]
+Activated scenarios: [count]
+Look-ahead violations: [count] (should be 0)

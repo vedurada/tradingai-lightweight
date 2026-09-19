@@ -1,0 +1,19 @@
+# Expected Movement Validation — Phase 42A.10A
+
+## Objective
+Verify expected movement engine produces honest output.
+
+## Criteria
+- [ ] If sufficient calibration data exists: expected_move, target_zone, invalidation, time_horizon
+- [ ] If insufficient: NOT_YET_CALIBRATED
+- [ ] No fabricated probabilities (70%, 85%, etc.)
+- [ ] No future outcome data used for probability
+- [ ] No +100 points expected without calibration
+
+## Limitation
+Expected movement engine requires historical calibration data. With limited historical data, output may be NOT_YET_CALIBRATED. This is acceptable and honest.
+
+## To Fill During Replay
+Expected movements generated: [count]
+NOT_YET_CALIBRATED count: [count]
+Fabricated probabilities: [count] (should be 0)

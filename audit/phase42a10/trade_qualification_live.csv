@@ -1,0 +1,41 @@
+# Trade Qualification Live — Phase 42A.10
+
+## Objective
+Verify current deterministic qualification operates during market hours.
+
+## Inputs
+- Current deterministic evidence
+- Current market state
+- Scenario activation status
+- Confirmation/invalidation status
+- Risk parameters
+- Options availability
+
+## Expected Outputs
+- TRADE (qualified)
+- WAIT (conditions forming)
+- NO_TRADE (no trade warranted)
+
+## Verification
+- [ ] Qualification from deterministic engine (NOT AI)
+- [ ] All required inputs available at qualification time
+- [ ] No forced TRADE result
+- [ ] Qualification timestamp = current time
+- [ ] If qualification = TRADE, verify all conditions met
+- [ ] Stale AI TRADE decision NOT displayed as current qualification
+
+## Stale AI Safety Test
+- [ ] Check if old AI outlook says TRADE
+- [ ] Check current qualification
+- [ ] If AI says TRADE but qualification says WAIT/NO_TRADE → UI shows CURRENT qualification
+- [ ] Old AI decision is visibly historical/last-valid
+- [ ] Old AI NEVER masquerades as CURRENT
+
+## to Fill Monday
+NIFTY qualification at 09:15: [TRADE/WAIT/NO_TRADE]
+NIFTY qualification at 09:30: [TRADE/WAIT/NO_TRADE]
+BANKNIFTY qualification at 09:15: [TRADE/WAIT/NO_TRADE]
+BANKNIFTY qualification at 09:30: [TRADE/WAIT/NO_TRADE]
+Stale AI TRADE displayed as current? [YES/NO]
+AI outlook says TRADE? [YES/NO]
+Qualification says WAIT/NO_TRADE? [YES/NO]

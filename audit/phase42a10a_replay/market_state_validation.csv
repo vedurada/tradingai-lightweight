@@ -1,0 +1,27 @@
+# Market State Validation — Phase 42A.10A
+
+## Objective
+Verify market state transitions correctly during replay.
+
+## Schema Verification
+| Field | Expected | Source |
+|-------|----------|--------|
+| regime | BEARISH/BULLISH/SIDEWAYS | indicators (RSI, MACD, ADX) |
+| trend | BEARISH/BULLISH/SIDEWAYS | price action |
+| momentum | BEARISH/BULLISH/SIDEWAYS | indicators |
+| structure | JSON | price action |
+| volatility | LOW/MEDIUM/HIGH | ATR, price range |
+| market intent | JSON | regime + trend + momentum |
+| timestamp | = candle timestamp | candle_timestamp |
+
+## Verification Criteria
+- [ ] State generated for every completed 5m candle
+- [ ] State transitions occur only when new information available
+- [ ] No state uses future data
+- [ ] State timestamp = candle timestamp
+- [ ] Regime consistent with underlying indicators
+
+## To Fill During Replay
+Total market states: [count]
+State transitions: [count]
+Look-ahead violations: [count] (should be 0)

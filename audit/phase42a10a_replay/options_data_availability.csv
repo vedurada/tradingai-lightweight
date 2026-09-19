@@ -1,0 +1,33 @@
+# Options Data Availability — Phase 42A.10A
+
+## Objective
+Document what historical options data exists.
+
+## Current State
+| Data Type | Availability | Source | Records | Date Range |
+|-----------|--------------|--------|---------|------------|
+| option_chain | Available | DB option_chain table | 18,674 | Limited dates |
+| oi_top_strikes | Available | DB oi_top_strikes table | 8,886 | Limited dates |
+| pcr_history | Limited | DB pcr_history table | 9 | Sep 15-17 |
+| price_5m | Available | DB price_5m | 15,960 | Aug 20 — Sep 18 |
+| Indicators | Available | DB indicators | 39,124 | Sep 15-18 |
+
+## Historical Options Data Assessment
+For replay period (Aug 20 — Sep 18):
+- Option chain data: LIMITED (mostly recent)
+- OI data: LIMITED (mostly recent)
+- PCR data: 9 records (Sep 15-17) — INSUFFICIENT for 21-day replay
+- No historical OI for NIFTY/BANKNIFTY during replay period
+
+## Handling
+Where historical options data does not exist:
+- Options positioning: DATA_UNAVAILABLE (empty {})
+- OI: NOT AVAILABLE (null/empty)
+- PCR: NOT AVAILABLE (null/empty)
+- IV: NOT AVAILABLE (null/empty)
+- Do NOT fabricate any values
+
+## To Fill During Replay
+Snapshots with options data: [count]
+Snapshots with DATA_UNAVAILABLE for options: [count]
+Fabricated options data: [count] (must be 0)

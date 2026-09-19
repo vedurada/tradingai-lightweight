@@ -1,0 +1,44 @@
+# Market Open Validation — Phase 42A.10
+
+## Timestamp: To be filled at Monday 09:15 IST
+
+## Pre-Market State (Friday Baseline)
+| Symbol | Price | Timestamp | State |
+|--------|-------|-----------|-------|
+| NIFTY | 23,346.40 | 2026-09-18 | STALE |
+| BANKNIFTY | 56,358.70 | 2026-09-18 | STALE |
+| VIX | 11.39 | 2026-09-18T16:40:23Z | STALE |
+
+## To Capture at 09:15 IST
+
+| Symbol | Server Price | Server Timestamp | JSON Timestamp | Freshness | Cache Timestamp | Browser Display | Status |
+|--------|-------------|-----------------|----------------|-----------|-----------------|-----------------|--------|
+| NIFTY | | | | | | | |
+| BANKNIFTY | | | | | | | |
+| SENSEX | | | | | | | |
+| FINNIFTY | | | | | | | |
+| VIX | | | | | | | |
+
+## Cache Transition Verification
+| Check | Before (Friday) | After (Monday) | Result |
+|-------|-----------------|-----------------|--------|
+| NIFTY cache ts | 2026-09-18 | | |
+| NIFTY cache price | 23,346.40 | | |
+| NIFTY server ts | 2026-09-18 | | |
+| NIFTY server price | 23,346.40 | | |
+| NIFTY freshness | STALE | | |
+| BANKNIFTY cache ts | 2026-09-18 | | |
+| BANKNIFTY cache price | 56,358.70 | | |
+| BANKNIFTY server ts | 2026-09-18 | | |
+| BANKNIFTY server price | 56,358.70 | | |
+| BANKNIFTY freshness | STALE | | |
+
+## Verification Criteria
+- [ ] NIFTY server price ≠ Friday price (fresh data arrived)
+- [ ] NIFTY server timestamp > Friday timestamp
+- [ ] NIFTY freshness = LIVE (during market hours)
+- [ ] NIFTY cache timestamp updated to Monday
+- [ ] BANKNIFTY server price ≠ Friday price
+- [ ] BANKNIFTY server timestamp > Friday timestamp
+- [ ] No page stuck at Loading where data exists
+- [ ] No stale data labeled LIVE

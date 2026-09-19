@@ -1,0 +1,85 @@
+# AI Live Validation — Phase 42A.10
+
+## Objective
+Verify the AI 5-minute pipeline operates during market hours.
+
+## Architecture Verification
+```text
+5m completed candle
+        ↓
+snapshot
+        ↓
+evidence
+        ↓
+market state
+        ↓
+material-change detector
+        ↓
+AI scheduler
+        ↓
+AI 5m generation
+```
+
+## Verification Points
+
+### AI Scheduler Trigger
+- [ ] Scheduler triggered by backend (NOT browser refresh)
+- [ ] Trigger reasons: material change, initial outlook, invalidated outlook
+- [ ] Browser refresh does NOT increase AI call count
+
+### AI Output Verification (NIFTY)
+| Field | Expected |
+|-------|----------|
+| ai_outlooks_5m count | Increases with each generation |
+| research_ai_call_log | New entry for each AI call |
+| data_state | CURRENT_5M (during market) |
+| is_current_5m | true |
+| symbol | NIFTY (NOT hardcoded BANKNIFTY) |
+| generated_at | Current time |
+| source_type | CURRENT_5M |
+
+### AI Output Verification (BANKNIFTY)
+| Field | Expected |
+|-------|----------|
+| ai_outlooks_5m count | Increases with each generation |
+| research_ai_call_log | New entry for each AI call |
+| data_state | CURRENT_5M (during market) |
+| is_current_5m | true |
+| symbol | BANKNIFTY (NOT hardcoded NIFTY) |
+| generated_at | Current time |
+| source_type | CURRENT_5M |
+
+### AI Symbol Routing Test
+| Test | Expected |
+|------|----------|
+| NIFTY outlook generated for NIFTY | ✅ |
+| BANKNIFTY outlook generated for BANKNIFTY | ✅ |
+| NIFTY context contains NIFTY data | ✅ |
+| BANKNIFTY context contains BANKNIFTY data | ✅ |
+
+### AI Call Protection
+- [ ] Count AI calls at 09:15
+- [ ] Refresh browser at 09:20
+- [ ] Count AI calls at 09:20 — should NOT increase from browser refresh alone
+- [ ] Verify scheduler triggered AI calls, not browser activity
+
+### AI Provenance
+- [ ] Every AI result has generated_at timestamp
+- [ ] Every AI result has source_type field
+- [ ] Every AI result has data_state field (CURRENT_5M/LAST_VALID/LEGACY/HISTORICAL/NEVER_AVAILABLE)
+- [ ] Every AI result has symbol field
+- [ ] Legacy AI NOT displayed as current trade decision
+
+### AI Failure Safety
+- [ ] If AI provider unavailable, deterministic pipeline continues
+- [ ] UI shows latest valid AI with provenance
+- [ ] No fabricated AI response
+
+## To Fill Monday
+NIFTY AI calls 09:15: [count]
+NIFTY AI calls 09:20: [count]
+NIFTY AI calls 09:30: [count]
+BANKNIFTY AI calls 09:15: [count]
+BANKNIFTY AI calls 09:20: [count]
+BANKNIFTY AI calls 09:30: [count]
+Browser refresh at 09:20 caused new AI call? [YES/NO]

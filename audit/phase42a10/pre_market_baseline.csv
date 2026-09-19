@@ -1,0 +1,6 @@
+symbol,price,timestamp,market_state,regime,vix,ai_outlook,ai_generated_at,ai_source_type,ai_data_state,qualification,scenario,paper_trade_state,options_state,options_timestamp,options_data_state,browser_visible,observed_at,observed_tz
+NIFTY,23346.40,2026-09-18T00:00:00Z,MARKET CLOSED,BEARISH,11.39,BEARISH bias confidence 70%,2026-09-18T16:40:21Z,LEGACY,LEGACY,NO_TRADE (REQUIRED_DATA_UNAVAILABLE),No qualifying event,No paper trade,PCR 0.987 OI unavailable IV unavailable,,NOT YET CALIBRATED,Loading (JS will replace),2026-09-19T04:58:27Z,IST
+BANKNIFTY,56358.70,2026-09-18T00:00:00Z,MARKET CLOSED,BEARISH,11.39,BEARISH bias confidence 70%,2026-09-18T16:40:21Z,LEGACY,LEGACY,NO_TRADE (REQUIRED_DATA_UNAVAILABLE),No qualifying event,No paper trade,PCR unavailable OI unavailable IV unavailable,,NOT YET CALIBRATED,Loading (JS will replace),2026-09-19T04:58:27Z,IST
+SENSEX,74781.76,2026-09-11T00:00:00Z,MARKET CLOSED,STALE,,N/A,N/A,N/A,N/A,N/A,No qualifying event,No paper trade,N/A,N/A,N/A,Loading (JS will replace),2026-09-19T04:58:27Z,IST
+FINNIFTY,27552.00,2026-09-18T00:00:00Z,MARKET CLOSED,STALE,,N/A,N/A,N/A,N/A,N/A,No qualifying event,No paper trade,N/A,N/A,N/A,Loading (JS will replace),2026-09-19T04:58:27Z,IST
+VIX,11.39,2026-09-18T16:40:23Z,MARKET CLOSED,,,,,,,,,,,STALE,Loading (JS will replace),2026-09-19T04:58:27Z,IST

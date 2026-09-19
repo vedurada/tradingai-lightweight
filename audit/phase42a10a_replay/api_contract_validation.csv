@@ -1,0 +1,31 @@
+# API Contract Validation — Phase 42A.10A
+
+## Objective
+Verify all APIs used by core pages return valid data in production schema.
+
+## APIs to Verify
+| API | HTTP | Schema | Timestamp | Symbol | Data State | Source Type |
+|-----|------|--------|-----------|--------|------------|-------------|
+| /api/market | 200 | object | server | all | LIVE/STALE | — |
+| /api/price/NIFTY | 200 | price object | candle | NIFTY | STALE | yfinance |
+| /api/price/BANKNIFTY | 200 | price object | candle | BANKNIFTY | STALE | yfinance |
+| /api/price/SENSEX | 200 | price object | candle | SENSEX | STALE | yfinance |
+| /api/price/FINNIFTY | 200 | price object | candle | FINNIFTY | STALE | yfinance |
+| /api/vix | 200 | vix object | candle | — | STALE | — |
+| /api/NIFTY | 200 | NIFTY object | candle | NIFTY | DATA AVAILABLE | — |
+| /api/BANKNIFTY | 200 | NIFTY object | candle | BANKNIFTY | DATA AVAILABLE | — |
+| /api/ai-outlook/NIFTY | 200 | outlook object | generated_at | NIFTY | LEGACY | LEGACY |
+| /api/ai-outlook/BANKNIFTY | 200 | outlook object | generated_at | BANKNIFTY | LEGACY | LEGACY |
+| /api/options/state/NIFTY | 200 | options object | candle | NIFTY | N/A | — |
+| /api/options/state/BANKNIFTY | 200 | options object | candle | BANKNIFTY | N/A | — |
+| /api/maxpain/NIFTY | 200 | maxpain object | candle | NIFTY | N/A | — |
+| /api/expected-move/NIFTY | 200 | move object | candle | NIFTY | UNAVAILABLE | — |
+| /api/trade-qualification | POST | qualification | server | — | N/A | — |
+
+## Verification
+- [ ] All APIs return 200
+- [ ] All JSON schemas match frontend expectations
+- [ ] All timestamps from server data (not browser time)
+- [ ] All symbol values correct (NIFTY→NIFTY, BANKNIFTY→BANKNIFTY)
+- [ ] data_state values valid (CURRENT_5M/LEGACY/HISTORICAL/LAST_VALID/NEVER_AVAILABLE)
+- [ ] source_type values valid

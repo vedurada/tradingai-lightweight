@@ -1,0 +1,23 @@
+# Look-ahead Validation — Phase 42A.10A
+
+## Objective
+Independently audit every replay decision for look-ahead violations.
+
+## Critical Rule
+For every decision at timestamp T:
+- ALL inputs must have timestamp <= T
+- NO future candle, high, low, option OI, outcome, market state
+
+## Verification Per Decision
+- [ ] decision_timestamp = T
+- [ ] All input_timestamps <= T
+- [ ] No input has timestamp > T
+- [ ] No future high/low used as trigger
+- [ ] No future option OI used
+- [ ] No future outcome used
+- [ ] No future market state used
+
+## To Fill During Replay
+Total decisions audited: [count]
+Look-ahead violations: [count] (must be 0)
+Violation details: [list]

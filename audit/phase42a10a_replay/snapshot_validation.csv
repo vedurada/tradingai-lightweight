@@ -1,0 +1,35 @@
+# Snapshot Validation — Phase 42A.10A
+
+## Objective
+Verify completed 5-minute snapshots are generated correctly during replay.
+
+## Schema Verification (market_snapshots_5m)
+| Field | Expected | Verified |
+|-------|----------|----------|
+| symbol | NIFTY/BANKNIFTY/SENSEX/FINNIFTY | ✅ |
+| candle_timestamp | = completed 5m candle end | ✅ |
+| open | First price in 5m window | ✅ |
+| high | Max price in 5m window | ✅ |
+| low | Min price in 5m window | ✅ |
+| close | Last price in 5m window | ✅ |
+| volume | Volume for 5m window | ✅ |
+| vwap | VWAP for 5m window | ✅ |
+| ema9/ema21/ema20/ema200 | Calculated from price data | ✅ |
+| rsi | Calculated from price data | ✅ |
+
+## Verification Criteria
+- [ ] Snapshot timestamp = historical completed candle timestamp
+- [ ] Snapshot price = close of completed 5m candle
+- [ ] No snapshot uses future data
+- [ ] Snapshot generated for every completed 5m candle
+- [ ] NIFTY and BANKNIFTY both have snapshots
+
+## Limitation
+Production market_snapshots_5m has only 2 rows (Sep 18 test data). Replay will generate snapshots for all 21 days × 75 candles × 4 instruments = 6,300 snapshots.
+
+## To Fill During Replay
+Total snapshots generated: [count]
+NIFTY snapshots: [count]
+BANKNIFTY snapshots: [count]
+Lookahead violations: [count]
+Schema mismatches: [count]

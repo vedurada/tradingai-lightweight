@@ -1,0 +1,28 @@
+# Loading Replay Validation — Phase 42A.10A
+
+## Objective
+Verify valid data does not regress into permanent Loading states during failure simulation.
+
+## Failure Simulation Test
+For selected timestamps:
+1. Simulate NIFTY API failure
+2. Verify BANKNIFTY still works
+3. Verify NIFTY retains last valid data (not Loading)
+4. Verify NIFTY shows LAST VALID label
+5. Verify other sections (regime, outlook, etc.) still work
+
+## Reverse Test
+1. Simulate BANKNIFTY API failure
+2. Verify NIFTY still works
+3. Verify BANKNIFTY retains last valid data
+
+## Criteria
+- [ ] No permanent Loading states where valid data exists
+- [ ] Failed sections show LAST VALID or NEVER AVAILABLE (not Loading)
+- [ ] Successful sections remain visible
+- [ ] No fabricated data shown as LIVE
+
+## To Fill During Replay
+Loading failures: [count]
+Failed sections handled correctly: [count]
+Sections remaining Loading: [count] (should be 0 where data exists)

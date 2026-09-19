@@ -1,0 +1,34 @@
+# Qualification Validation — Phase 42A.10A
+
+## Objective
+Verify deterministic qualification executes for every timestamp.
+
+## Schema Verification
+| Field | Expected |
+|-------|----------|
+| trade_status | TRADE/WAIT/NO_TRADE |
+| reason | string explaining decision |
+| scenario | linked scenario_id |
+| confirmation | confirmation conditions |
+| invalidation | invalidation conditions |
+| risk | risk parameters |
+| options_availability | boolean |
+| timestamp | = candle timestamp |
+
+## Verification Criteria
+- [ ] Qualification executes for every completed 5m candle
+- [ ] Result is deterministic (same input → same output)
+- [ ] No forced TRADE result
+- [ ] All required inputs available at qualification time
+- [ ] Timestamp = candle timestamp
+- [ ] If qualification = WAIT/NO_TRADE, reason is documented
+
+## Limitation
+Qualification requires trade_qualification_engine module. If module unavailable, qualification returns NO_TRADE with REQUIRED_DATA_UNAVAILABLE reason. This is honest.
+
+## To Fill During Replay
+Total qualifications: [count]
+TRADE: [count]
+WAIT: [count]
+NO_TRADE: [count]
+Deterministic (reproducible): [YES/NO]

@@ -1,0 +1,28 @@
+# Resource Validation — Phase 42A.10A
+
+## Objective
+Verify replay does not create runaway processes or excessive memory use on 1GB/1CPU VM.
+
+## Metrics
+| Metric | Before | During | After | Threshold |
+|--------|--------|--------|-------|-----------|
+| RAM usage | — | — | — | < 800MB |
+| CPU load | — | — | — | < 2.0 |
+| Disk usage | — | — | — | < 40GB |
+| SQLite size | 269MB | — | — | < 500MB |
+| gunicorn workers | 3 | — | — | 3 (unchanged) |
+| monitor process | running | — | — | running |
+| cron | active | — | — | active |
+
+## Processing Strategy
+- Process one trading day at a time (not entire dataset)
+- Avoid loading entire 15K+ candles into memory
+- Use streaming/chunked processing
+- Monitor memory between days
+
+## To Fill During Replay
+Peak RAM: [MB]
+Peak CPU: [load]
+Runtime: [seconds]
+Rows generated: [count]
+Runaway processes: [count] (should be 0)

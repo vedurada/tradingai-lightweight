@@ -1,0 +1,5 @@
+symbol,instrument,first_timestamp,last_timestamp,5m_candle_count,trading_days,missing_intervals,source
+NIFTY,NIFTY,2026-08-20 03:45:00,2026-09-18T04:25:00+00:00,1588,21,occasional gaps during non-trading hours,yfinance (production DB price_5m)
+BANKNIFTY,BANKNIFTY,2026-08-20 03:45:00,2026-09-18T04:25:00+00:00,1588,21,occasional gaps during non-trading hours,yfinance (production DB price_5m)
+SENSEX,SENSEX,2026-08-20 03:45:00,2026-09-18T04:25:00+00:00,1725,22,occasional gaps during non-trading hours,yfinance (production DB price_5m)
+FINNIFTY,FINNIFTY,2026-08-20 03:45:00,2026-09-18T04:25:00+00:00,1588,21,occasional gaps during non-trading hours,yfinance (production DB price_5m)

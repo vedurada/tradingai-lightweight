@@ -1,0 +1,21 @@
+# Scenario Activation Validation — Phase 42A.10A
+
+## Objective
+Verify scenario activation timestamps do not precede required inputs.
+
+## Critical Rule
+Activation timestamp >= timestamp of ALL inputs used for activation
+
+## Verification Per Activation
+- [ ] Completed 5m candle timestamp <= activation timestamp
+- [ ] Scenario trigger timestamp <= activation timestamp
+- [ ] Confirmation data timestamp <= activation timestamp
+- [ ] Invalidation data timestamp <= activation timestamp (if applicable)
+- [ ] No future candle used as trigger
+- [ ] No future high/low used as trigger
+- [ ] No future options data used as trigger
+
+## To Fill During Replay
+Total activations: [count]
+Look-ahead violations: [count] (must be 0)
+Violations detail: [list]

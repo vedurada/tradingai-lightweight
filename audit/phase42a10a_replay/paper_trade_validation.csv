@@ -1,0 +1,25 @@
+# Paper Trade Validation — Phase 42A.10A
+
+## Objective
+Verify paper trades are created only when qualification requirements are satisfied.
+
+## Criteria
+- [ ] Paper trade created ONLY when qualification = TRADE
+- [ ] Entry timestamp >= qualification timestamp
+- [ ] Entry price = underlying price at entry
+- [ ] Setup fingerprint is unique
+- [ ] Scenario linkage is valid
+- [ ] Qualification linkage is valid
+- [ ] No duplicate overlapping trades
+- [ ] Replay trades clearly marked as replay (NOT live)
+
+## Critical Safety
+DO NOT contaminate live production tables.
+All replay paper trades must use a separate replay_session_id or test mode.
+Production paper_trades table must NOT be modified by replay.
+
+## To Fill During Replay
+Replay paper trades created: [count] (may be 0 if no TRADE qualification)
+Trades without qualification: [count] (must be 0)
+Duplicate trades: [count] (must be 0)
+Production tables contaminated: [count] (must be 0)

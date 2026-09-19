@@ -1,0 +1,36 @@
+# Cache Replay Validation — Phase 42A.10A
+
+## Objective
+Simulate Phase 42A.8 cache behavior during replay.
+
+## Cache Simulation Per Day
+```text
+Day T data → save as valid (localStorage) → simulate API failure → page retains Day T data
+Day T+1 server data → must replace Day T cached data
+```
+
+## Verification
+- [ ] Cache save after successful data load
+- [ ] Cache restore on page load before API call
+- [ ] Failed API → DOM unchanged (retains cache)
+- [ ] Successful API → cache replaced with new data
+- [ ] Older cache CANNOT overwrite newer server data
+- [ ] Symbol isolation: NIFTY cache ≠ BANKNIFTY cache
+
+## Last-Valid Priority
+```text
+CURRENT VALID SERVER DATA
+        ↓
+LATEST VALID SERVER-SIDE DATA
+        ↓
+LAST VALID BROWSER CACHE
+        ↓
+TRUE EMPTY STATE ONLY IF NO VALID DATA HAS EVER EXISTED
+```
+
+## To Fill During Replay
+Cache saves: [count]
+Cache restores: [count]
+API failures handled: [count]
+Cache overwrites (should be 0): [count]
+Cross-contamination (should be 0): [count]

@@ -1,0 +1,34 @@
+# Scenario Activation Live — Phase 42A.10
+
+## Objective
+Verify the Phase 42A.6 scenario engine operates correctly in production.
+
+## Tables to Check
+| Table | Purpose |
+|-------|---------|
+| pre_market_scenarios | Scenario definitions and state |
+| scenario_events | Activation events |
+| scenario_outcomes | Outcome tracking |
+
+## Scenario States
+DRAFT → ARMED → WATCH → ACTIVATED → CONFIRMED/INVALIDATED/EXPIRED/COMPLETED
+
+## Verification
+- [ ] Scenarios created for NIFTY/BANKNIFTY based on market conditions
+- [ ] Activation timestamp ≥ all input timestamps (no look-ahead)
+- [ ] Each activation has: completed 5m candle + scenario trigger + confirmation + invalidation
+- [ ] No forced scenarios — system may produce WAIT/NO TRADE/NO CLEAR INTENT
+- [ ] Scenario state transitions are valid (DRAFT→ARMED→WATCH→...)
+
+## to Be Determined
+- [ ] Which scenarios activate? (depends on actual market conditions)
+- [ ] Do any scenarios reach ACTIVATED/CONFIRMED? (depends on market)
+- [ ] Is look-ahead protection maintained? (ALL inputs ≤ activation time)
+
+## To Fill Monday
+Scenarios found at 09:30: [count]
+Activated scenarios: [list]
+Activation timestamps: [list]
+Input timestamps for activated scenarios: [list]
+Look-ahead detected? [YES/NO]
+Scenario states observed: [list]

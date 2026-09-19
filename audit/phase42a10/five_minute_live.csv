@@ -1,0 +1,64 @@
+# Five Minute Live Data — Phase 42A.10
+
+## Objective
+Verify completed 5-minute snapshots and evidence are generated for NIFTY and BANKNIFTY.
+
+## Verification Points
+- 09:20 IST (first completed 5m candle: 09:15-09:20)
+- 09:25 IST (second completed 5m candle: 09:20-09:25)
+- 09:30 IST (third completed 5m candle: 09:25-09:30)
+
+## Schema Verification
+
+### market_snapshots_5m
+| Field | Expected |
+|-------|----------|
+| symbol | NIFTY or BANKNIFTY |
+| timestamp | 5m candle end time (e.g., 2026-09-21T09:20:00+05:30) |
+| price | Closing price of completed candle |
+| technical_state | JSON with indicators |
+| evidence | JSON with evidence groups |
+| setup_id | Unique setup identifier |
+| candle_open | First price in 5m window |
+| candle_close | Last price in 5m window |
+
+### market_evidence_5m
+| Field | Expected |
+|-------|----------|
+| symbol | NIFTY or BANKNIFTY |
+| timestamp | Same as snapshot |
+| trend | BEARISH/BULLISH/SIDEWAYS |
+| momentum | BEARISH/BULLISH/SIDEWAYS |
+| market_structure | JSON |
+| volatility | JSON |
+| options_positioning | JSON (may be empty if no data) |
+| market_confirmation | JSON |
+
+## Verification Criteria
+- [ ] Snapshot at 09:20 has timestamp = 09:20 (COMPLETED candle)
+- [ ] Snapshot price = close of 09:15-09:20 candle
+- [ ] Evidence groups populated from deterministic data
+- [ ] No fabricated options evidence
+- [ ] No fabricated OI or PCR
+- [ ] NIFTY and BANKNIFTY both have snapshots
+- [ ] Snapshots are idempotent (re-running collection doesn't duplicate)
+
+## To Fill at Each Time Point
+
+### 09:20 IST
+NIFTY snapshot: [to capture]
+NIFTY evidence: [to capture]
+BANKNIFTY snapshot: [to capture]
+BANKNIFTY evidence: [to capture]
+
+### 09:25 IST
+NIFTY snapshot: [to capture]
+NIFTY evidence: [to capture]
+BANKNIFTY snapshot: [to capture]
+BANKNIFTY evidence: [to capture]
+
+### 09:30 IST
+NIFTY snapshot: [to capture]
+NIFTY evidence: [to capture]
+BANKNIFTY snapshot: [to capture]
+BANKNIFTY evidence: [to capture]

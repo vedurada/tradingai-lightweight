@@ -1,0 +1,23 @@
+# Outcome Validation — Phase 42A.10A
+
+## Objective
+Verify outcomes use only candles AFTER entry timestamp.
+
+## Horizons
+5m, 15m, 30m, 60m (where enough future candles exist)
+
+## Criteria
+- [ ] Outcome 5m uses candle 5m after entry
+- [ ] Outcome 15m uses candle 15m after entry
+- [ ] Outcome 30m uses candle 30m after entry (if exists)
+- [ ] Outcome 60m uses candle 60m after entry (if exists)
+- [ ] No future outcome data at decision time
+- [ ] MFE, MAE, target reached, invalidation reached recorded
+
+## To Fill During Replay
+Total outcomes: [count]
+5m outcomes: [count]
+15m outcomes: [count]
+30m outcomes: [count]
+60m outcomes: [count]
+Future outcomes used: [count] (must be 0)

@@ -1,0 +1,41 @@
+# Research Collection Live — Phase 42A.10
+
+## Objective
+Verify monitor.py invokes research collector during market hours and records are idempotent.
+
+## Verification Points
+
+### monitor.py Execution
+- [ ] monitor.py runs every 5 minutes during market hours (cron: */5 9-15 * * 1-5)
+- [ ] monitor.log shows execution timestamps
+- [ ] Research collector invoked within monitor.py
+
+### Database Records
+| Table | Expected |
+|-------|----------|
+| market_snapshots_5m | New records every 5m for NIFTY/BANKNIFTY |
+| market_evidence_5m | Evidence records per snapshot |
+| research_data_health | Health check records |
+| research_ai_call_log | AI call records (if AI triggered) |
+| ai_outlooks_5m | AI outlook records (if AI generated) |
+
+### Idempotency Test
+- [ ] Run same collection cycle twice → NO duplicate records
+- [ ] Verify count in market_snapshots_5m matches number of unique 5m candles
+- [ ] No duplicate timestamps for same symbol
+
+### Data Quality
+- [ ] Each snapshot has valid timestamp (5m candle end)
+- [ ] Each snapshot has symbol (NIFTY/BANKNIFTY)
+- [ ] Each snapshot has price (closing price of completed candle)
+- [ ] Evidence records reference correct snapshot timestamps
+- [ ] No fabricated data
+
+## To Fill Monday
+monitor.py runs logged? [YES/NO]
+market_snapshots_5m count at 09:20: [count]
+market_snapshots_5m count at 09:30: [count]
+market_evidence_5m count at 09:20: [count]
+research_data_health entries at 09:30: [count]
+Duplicate records found? [YES/NO]
+Idempotency verified? [YES/NO]
