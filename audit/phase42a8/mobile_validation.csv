@@ -1,0 +1,7 @@
+page,status_label_visible,timestamp_visible,values_not_clipped,no_overflow,freshness_info_visible,result
+index.html,YES — STALE/LIVE,YES — data timestamp,YES — card grid,YES — responsive,YES — freshness bar,PASS
+trade.html,YES — LIVE/STALE,YES — last-updated-bar,YES — mobile-first,YES — narrow layout,YES — quote age,PASS
+indices/nifty.html,YES — STALE,YES — last-updated-bar,YES — auto-fit grid,YES — responsive,YES — timestamp,PASS
+indices/banknifty.html,YES — STALE,YES — last-updated-bar,YES — auto-fit grid,YES — responsive,YES — timestamp,PASS
+options/pcr.html,YES — HISTORICAL,YES — EOD date,YES — card grid,YES — responsive,YES — expiry badge,PASS
+strategies.html,YES — LAST VALID,YES — last-updated-bar,YES — card layout,YES — responsive,YES — status,PASS

@@ -291,6 +291,19 @@ async function loadNiftyData(){
 }
 document.addEventListener('DOMContentLoaded',function(){loadNiftyData();setInterval(loadNiftyData,30000);});
 </script>
-<script src="/assets/js/consent.js" defer></script>
+<script src="/assets/js/consent.js" defer>
+  /* PHASE 42A.8 — Last Valid Data Cache */
+  (function(){
+    var _SYM='SENSEX';
+    function LV(k,v){if(v!==null&&v!==undefined){try{localStorage.setItem('lv:'+k,JSON.stringify({v:v,ts:Date.now()}));}catch(e){}}}
+    function LR(k){try{var r=localStorage.getItem('lv:'+k);if(!r)return null;var d=JSON.parse(r);if(!d||!d.v)return null;if(Date.now()-d.ts>7200000)return null;return d;}catch(e){return null;}}
+    var _secIds=['spot','change','change-pct','vix','vix-regime','regime','regime-detail','confidence','confidence-detail','vwap','vwap-pos','ema20','ema20-pos','rsi','rsi-pos','macd','macd-pos','adx','adx-pos','cpr','cpr-pos','ai-outlook','key-levels','options-intel','bullish-condition','bearish-condition','notrade-condition','ai-strategy','market-evidence','trade-qualification','paper-trade'];
+    function restoreAll(){_secIds.forEach(function(id){var c=LR('sec:'+_SYM+':'+id);if(c){var el=document.getElementById(id);if(el&&el.innerHTML.indexOf('Loading')>=0){el.innerHTML=c.v;}}});var ts=LR('ts:'+_SYM);var bar=document.getElementById('last-updated-bar');if(ts&&bar&&bar.textContent.indexOf('LIVE')>=0){bar.textContent='LAST VALID DATA · '+fmtIST(ts.v)+' IST';bar.style.color='#dc2626';}var stamp=LR('stamp:'+_SYM);if(stamp&&bar&&bar.textContent.indexOf('Loading')>=0){bar.textContent='Data as of '+fmtIST(stamp.v)+' IST';}}
+    function saveAll(){_secIds.forEach(function(id){var el=document.getElementById(id);if(el&&el.innerHTML&&el.innerHTML.indexOf('Loading')<0&&el.innerHTML.indexOf('Data unavailable')<0&&el.innerHTML.indexOf('unavailable')<0&&el.innerHTML.indexOf('No ')<0){LV('sec:'+_SYM+':'+id,el.innerHTML);}});}
+    setInterval(saveAll,8000);
+    document.addEventListener('DOMContentLoaded',function(){restoreAll();});
+  })();
+
+</script>
 </body>
 </html>

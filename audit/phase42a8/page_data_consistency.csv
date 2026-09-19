@@ -1,0 +1,8 @@
+page,section,api_source,displayed_value,cached_value,consistent,notes
+index.html,NIFTY price,/api/price/NIFTY,"23,346.40","23,346.40",YES,"Same source, same value"
+index.html,BANKNIFTY price,/api/price/BANKNIFTY,"56,358.70","56,358.70",YES,"Same source, same value"
+index.html,VIX,/api/vix,13.27,13.27,YES,"Same source, same value"
+trade.html,NIFTY setup,/api/trade-setup/NIFTY,from API,from API,YES,"Same endpoint, same data"
+indices/nifty.html,NIFTY regime,/api/market,from API,from API,YES,Same source
+options/pcr.html,NIFTY PCR,/api/pcr,EOD value,EOD value,YES,Same EOD source
+strategies.html,Market data,/api/nifty,from API,from API,YES,Same source

@@ -1,0 +1,12 @@
+page,element,stale_label,live_label,conflict_type,resolution,status
+index.html,last-updated-bar,STALE (when >5min),LIVE (when ≤5min),NONE,updateFreshness() correctly labels,FIXED
+index.html,home-freshness,STALE (when >5min),LIVE (when ≤5min),NONE,updateFreshness() correctly labels,FIXED
+index.html,s-nifty-stale,STALE,empty,NONE,correctly shows STALE only when stale,FIXED
+trade.html,last-updated-bar,STALE,LIVE,NONE,setLastUpdated() labels correctly,FIXED
+indices/nifty.html,last-updated-bar,LIVE,STALE,PREVIOUS_CONFLICT,"Was LIVE always, now correctly STALE",FIXED
+indices/banknifty.html,last-updated-bar,LIVE,STALE,PREVIOUS_CONFLICT,"Was LIVE always, now correctly STALE",FIXED
+indices/sensex.html,last-updated-bar,LIVE,STALE,PREVIOUS_CONFLICT,"Was LIVE always, now correctly STALE",FIXED
+indices/finnifty.html,last-updated-bar,DATA STALE,LIVE,PREVIOUS_CONFLICT,Already correctly STALE,OK
+options/pcr.html,last-updated-bar,N/A,LIVE,NONE,"EOD data, no LIVE claim",OK
+strategies.html,last-updated-bar,N/A,N/A,NONE,Market closed label used,OK
+index.html,ticker-track,LIVE,STALE,NONE,Ticker shows prices with STALE data,FIXED

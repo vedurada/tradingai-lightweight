@@ -1,0 +1,20 @@
+page,element,original_text,after_fix,classification,notes
+index.html,last-updated-bar,Loading market data…,Last data available,LAST_VALID_FALLBACK,Replaced with cached timestamp
+index.html,ticker-track,Loading market data…,Cached data or Market closed,LAST_VALID_FALLBACK,Ticker restores from cache first
+index.html,home-qualification,Loading qualification…,Cached or Qualification unavailable,LAST_VALID_FALLBACK,restoreHomePhase41() before load
+index.html,home-paper-trade,Loading…,Cached or No active paper trade,LAST_VALID_FALLBACK,Cached on failure
+index.html,home-evidence,Loading…,Cached or Evidence unavailable,LAST_VALID_FALLBACK,Cached on failure
+index.html,home-ad-bar,Loading breadth data…,No breadth data,VALID_EMPTY_STATE,No breadth data exists
+index.html,options-pcr/MaxPain/OI/ExpMove,—,Data unavailable or value,VALID_EMPTY_STATE,No options data = explicit empty
+trade.html,t-hero,Loading NIFTY setup…,Cached or Error,LAST_VALID_FALLBACK,showError() preserves data
+indices/nifty.html,nifty-spot/change/etc,Loading…,Restored from cache,LAST_VALID_FALLBACK,restoreAll() on DOMContentLoaded
+indices/banknifty.html,banknifty-*,Loading…,Restored from cache,LAST_VALID_FALLBACK,restoreAll() on DOMContentLoaded
+indices/sensex.html,sensex-*,Loading…,Restored from cache,LAST_VALID_FALLBACK,restoreAll() on DOMContentLoaded
+indices/finnifty.html,finnifty-*,Loading…,Restored from cache,LAST_VALID_FALLBACK,restoreAll() on DOMContentLoaded
+indices/finnifty.html,finnifty-spot,DATA UNAVAILABLE,DATA UNAVAILABLE,VALID_EMPTY_STATE,FINNIFTY data is DELAYED by design
+options/pcr.html,pcr-nifty/banknifty/finnifty,Loading…,Cached EOD data,LAST_VALID_FALLBACK,Cache restore on load
+options/pcr.html,top-oi-body,Loading…,No OI data or cached,LAST_VALID_FALLBACK,Cached on failure
+options/pcr.html,chain-body,Loading…,No chain data or cached,LAST_VALID_FALLBACK,Cached on failure
+strategies.html,e-ai,Waiting for market data…,LAST VALID DATA or cached,LAST_VALID_FALLBACK,Cache restore before loadEngine()
+strategies.html,e-perf,Performance data: waiting…,Cached performance,LAST_VALID_FALLBACK,Cache restore on failure
+trade.html,t-hero (on error),Error,Last valid data + note,LAST_VALID_FALLBACK,showError() preserves existing

@@ -48,7 +48,7 @@ try {
   <nav style="margin-left:auto;display:flex;gap:1rem;align-items:center;font-size:0.85rem"><a href="/" style="color:#475569;text-decoration:none">Home</a><a href="/today/index.html" style="color:#475569;text-decoration:none">Today</a><a href="/options/pcr.html" style="color:#475569;text-decoration:none">Options</a><a href="/strategies.html" style="color:#475569;text-decoration:none">Strategies</a><a href="/strategy-builder.html" style="color:#475569;text-decoration:none">Tools</a><a href="/learn/" style="color:#475569;text-decoration:none">Learn</a><span id="live-clock" style="color:#94a3b8;margin-left:0.5rem"></span></nav></div>
 </header>
   <main>
-  <div class="updated-bar"><span id="last-updated-bar">Loading market data…</span> <span class="status" id="session-state" style="font-size:0.78rem">Checking…</span></div>
+  <div class="updated-bar"><span id="last-updated-bar">Last data available</span> <span class="status" id="session-state" style="font-size:0.78rem">Checking…</span></div>
   <h3 style="margin:1.5rem 0 0.5rem 0" id="market-status-heading">MARKET STATUS</h3>
   <div class="ticker-wrap"><div class="ticker-track" id="ticker-track"><span style="color:#64748b">Loading market data…</span></div></div>
 
@@ -205,8 +205,11 @@ document.addEventListener('DOMContentLoaded',function(){
 <script>
 (function(){
   var _lastDataTs=null;
+  function LV(cacheKey, val, ts){ if(val!==null&&val!==undefined){ try{localStorage.setItem('lv:'+cacheKey, JSON.stringify({v:val,ts:ts||Date.now()}));}catch(e){} } }
+  function LR(cacheKey){ try{var raw=localStorage.getItem('lv:'+cacheKey);if(!raw)return null;var d=JSON.parse(raw);if(!d||!d.v)return null;if(Date.now()-d.ts>7200000)return null;return d;}catch(e){return null;} }
   function fmtIST(ts){try{if(ts==null||ts==='')return null;var d=new Date(ts);if(isNaN(d.getTime()))return null;var f=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false});var p={};f.formatToParts(d).forEach(function(x){p[x.type]=x.value;});return p.day+' '+p.month+' '+p.year+', '+p.hour+':'+p.minute+':'+p.second;}catch(e){return null;}}
-  function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | Data as of '+show+' IST'):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
+  function lastValidLabel(ts){var l=fmtIST(ts);return l?'LAST VALID DATA · '+l:'LAST VALID DATA';}
+  function setLastUpdated(timestamp,ok){var bar=document.getElementById('last-updated-bar');if(!bar)return;if(timestamp){_lastDataTs=timestamp;}var show=fmtIST(_lastDataTs);if(ok===false){bar.style.color='#dc2626';bar.textContent='Update failed — retrying'+(show?(' | '+lastValidLabel(_lastDataTs)):'');return;}bar.style.color='';if(!show){bar.textContent='Last refreshed: —';return;}bar.textContent='Data as of '+show+' IST';}
   function tickClock(){var el=document.getElementById('live-clock');if(!el)return;try{el.textContent=new Intl.DateTimeFormat('en-GB',{timeZone:'Asia/Kolkata',hour:'2-digit',minute:'2-digit',second:'2-digit',hour12:false}).format(new Date())+' IST';}catch(e){}}
   setInterval(tickClock,1000);tickClock();
   setLastUpdated(null,true);
@@ -359,6 +362,15 @@ if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.h
   function setEl(id,html){var el=document.getElementById(id);if(el)el.innerHTML=html;}
   function fmtP(v){return v!=null?v.toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2}):"—";}
 
+  function restoreHomePhase41(){
+    var qc=LR('qualification');
+    if(qc){var qel=document.getElementById("home-qualification");if(qel&&qel.innerHTML.indexOf('Loading')>=0){qel.innerHTML=qc.v;}}
+    var pc=LR('paper-trade');
+    if(pc){var pel=document.getElementById("home-paper-trade");if(pel&&pel.innerHTML.indexOf('Loading')>=0){pel.innerHTML=pc.v;}}
+    var ec=LR('evidence');
+    if(ec){var eel=document.getElementById("home-evidence");if(eel&&eel.innerHTML.indexOf('Loading')>=0){eel.innerHTML=ec.v;}}
+  }
+
   async function loadHomePhase41(){
     try{
       var qual=await fetchAPI("/trade-qualification","POST",{instrument:"NIFTY",snapshot:{close:0},evidence:{overall:{}},market_state:{},outlook:{bias:"NEUTRAL",trade_state:"NO_TRADE"}});
@@ -372,15 +384,21 @@ if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.h
           var checks=qd.checks||{};
           var pCnt=0,tCnt=0;
           for(var k in checks){tCnt++;if(checks[k].passed)pCnt++;}
-          qel.innerHTML='<div style="border:2px solid '+sc+';border-radius:8px;padding:10px 14px;background:'+sb+'">'+
+          var html='<div style="border:2px solid '+sc+';border-radius:8px;padding:10px 14px;background:'+sb+'">'+
             '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:4px">'+
             '<h3 style="margin:0;font-size:0.85rem;font-weight:700">TRADE QUALIFICATION</h3>'+
             '<span style="padding:3px 10px;border-radius:4px;font-size:0.82rem;font-weight:800;background:'+sc+';color:#fff">'+st.replace(/_/g," ")+'</span></div>'+
-            '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px">'+(qd.reason||"Loading…")+'</div>'+
+            '<div style="font-size:0.78rem;color:#64748b;margin-bottom:4px">'+(qd.reason||"No trade signal")+'</div>'+
             '        <div style="font-size:0.78rem;color:#64748b">Checks: '+pCnt+'/'+tCnt+' passed'+(qd.strategy?' | Strategy: <strong>'+qd.strategy+'</strong>':'')+(qd.direction?' | Direction: '+qd.direction:'')+'</div></div>';
-        }else{setEl("home-qualification",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification: Data unavailable</div>');}
+          qel.innerHTML=html;
+          LV('qualification', html);
+        }else{
+          var saved=LR('qualification');
+          if(saved){qel.innerHTML=saved.v;setLastUpdated(null,false);}
+          else{setEl("home-qualification",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification: Data unavailable</div>');}
+        }
       }
-    }catch(e){setEl("home-qualification",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification unavailable</div>');}
+    }catch(e){var saved=LR('qualification');var qel=document.getElementById("home-qualification");if(saved&&qel){qel.innerHTML=saved.v;setLastUpdated(null,false);}else if(qel){qel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Qualification unavailable</div>';}}
 
     try{
       var pt=await fetchAPI("/paper-trades");
@@ -391,13 +409,18 @@ if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.h
           var pnl=t.pnl;
           var pnlStr=pnl!=null?(pnl>=0?"+":"")+pnl.toFixed(2):"—";
           var pnlColor=pnl>0?"#15803d":pnl<0?"#dc2626":"#64748b";
-          ptel.innerHTML='<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;background:#fff;font-size:0.78rem;color:#64748b">'+
+          var html='<div style="border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;background:#fff;font-size:0.78rem;color:#64748b">'+
             '<div style="font-weight:700;color:#0f172a;margin-bottom:2px">PAPER TRADE — '+((t.status||"ACTIVE")+'</div>'+
             '<div>P&L: <span style="color:'+pnlColor+';font-weight:700">'+pnlStr+'</span> | Entry: '+fmtP(t.entry_price)+' | Exit: '+fmtP(t.exit_price)+'</div>'+
             '<div style="font-size:0.72rem;color:#94a3b8;margin-top:4px">NO BROKER ORDER PLACED</div></div>';
-        }else{ptel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">No active paper trade</div>';}
+          ptel.innerHTML=html;
+          LV('paper-trade', html);
+        }else{
+          var savedP=LR('paper-trade');
+          if(savedP&&ptel){ptel.innerHTML=savedP.v;}else{ptel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">No active paper trade</div>';}
+        }
       }
-    }catch(e){setEl("home-paper-trade",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Paper trade unavailable</div>');}
+    }catch(e){var savedP=LR('paper-trade');var ptel=document.getElementById("home-paper-trade");if(savedP&&ptel){ptel.innerHTML=savedP.v;}else if(ptel){ptel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Paper trade unavailable</div>';}}
 
     try{
       var ev=await fetchAPI("/market-evidence/NIFTY");
@@ -419,12 +442,13 @@ if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.h
           }
           html+='</div>';
           eel.innerHTML=html;
+          LV('evidence', html);
         }else if(ev&&ev.error){eel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence: '+ev.error+'</div>';}
-        else{eel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence: unavailable</div>';}
+        else{var savedE=LR('evidence');if(savedE&&eel){eel.innerHTML=savedE.v;}else{eel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence: unavailable</div>';}}
       }
-    }catch(e){setEl("home-evidence",'<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence unavailable</div>');}
+    }catch(e){var savedE=LR('evidence');var eel=document.getElementById("home-evidence");if(savedE&&eel){eel.innerHTML=savedE.v;}else if(eel){eel.innerHTML='<div style="padding:8px;color:#94a3b8;font-size:0.85rem">Evidence unavailable</div>';}}
   }
-  document.addEventListener("DOMContentLoaded",loadHomePhase41);
+  document.addEventListener("DOMContentLoaded",function(){restoreHomePhase41();loadHomePhase41();});
   setInterval(loadHomePhase41,60000);
 })();
 </script>
@@ -467,16 +491,44 @@ if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.h
     heroCards.forEach(function(hc){if(hc.textContent.indexOf('—')>=0){hc.textContent=formatted;}});
   }
 
+  function applyCachedPrices(){
+    var cached=LR('prices');
+    if(!cached)return;
+    var d=cached.v;
+    if(d&&d.timestamp){updateFreshness(d.timestamp);}
+    if(d&&d.prices){
+      for(var sym in d.prices){
+        var el=document.getElementById('s-'+sym.toLowerCase()+'-price');
+        if(el&&el.textContent==='—'||el.textContent===''){el.textContent=Number(d.prices[sym]).toLocaleString('en-IN',{minimumFractionDigits:2,maximumFractionDigits:2});el.style.color='';}
+        var td=document.getElementById('s-'+sym.toLowerCase()+'-trend-display');
+        if(td&&d.regimes&&d.regimes[sym]){td.textContent=d.regimes[sym];td.style.color=d.regimes[sym]==='BEARISH'?'#dc2626':d.regimes[sym]==='BULLISH'?'#15803d':'#64748b';}
+        var st=document.getElementById('s-'+sym.toLowerCase()+'-stale');
+        if(st&&d.quality&&d.quality[sym]){st.textContent=d.quality[sym];st.style.color='#eab308';}
+      }
+    }
+    if(d&&d.vix){updateVix(d.vix);}
+    var bar=document.getElementById('last-updated-bar');
+    if(bar&&d&&d.timestamp){bar.textContent='Data as of '+fmtIST(d.timestamp)+' IST';bar.style.color='#dc2626';}
+  }
+
   function loadLive(){
     var pending=SYMBOLS.length+1;
+    var prices={};var regimes={};var quality={};var ts=null;var vix=null;
     SYMBOLS.forEach(function(sym){
       fetch('/api/price/'+sym).then(function(r){return r.json();}).then(function(d){
-        if(d&&d.price!=null){updatePrice(sym,d.price,d.change_pct);if(sym==='NIFTY')updateHeroPrice(sym,d.price);}
+        if(d&&d.price!=null){prices[sym]=d.price;if(d.change_pct!=null)regimes[sym]=d.change_pct>=0?'BULLISH':'BEARISH';if(d.data_quality)quality[sym]=d.data_quality;ts=d.timestamp||ts;}
       }).catch(function(){})
-       .finally(function(){pending--;if(pending===0)updateTimestamp();});
+       .finally(function(){pending--;if(pending===0){
+         if(Object.keys(prices).length){
+           LV('prices',{prices:prices,regimes:regimes,quality:quality,timestamp:ts,vix:vix},ts);
+           for(var s in prices){updatePrice(s,prices[s],regimes[s]||null);var st=document.getElementById('s-'+s.toLowerCase()+'-stale');if(st&&quality[s]){st.textContent=quality[s]==='STALE'?'STALE':'';st.style.color='#eab308';}}
+           if(ts)updateFreshness(ts);
+         }else{applyCachedPrices();updateFreshness(null);}
+       }});
     });
-    fetch('/api/vix').then(function(r){return r.json();}).then(function(d){updateVix(d);}).catch(function(){})
-      .finally(function(){pending--;if(pending===0)updateTimestamp();});
+    fetch('/api/vix').then(function(r){return r.json();}).then(function(d){if(d&&(d.close||d.price)){vix={close:d.close||d.price,change_pct:d.change_pct};LV('prices',{prices:prices,regimes:regimes,quality:quality,timestamp:ts,vix:vix},ts);updateVix(vix);}})
+      .catch(function(){})
+      .finally(function(){pending--;if(pending===0){if(Object.keys(prices).length||vix){if(!ts)LV('prices',{prices:prices,regimes:regimes,quality:quality,timestamp:ts,vix:vix},ts);}else{applyCachedPrices();updateFreshness(null);}}});
   }
 
   function updateTimestamp(){
@@ -490,6 +542,7 @@ if(h.includes('MARKET PULSE')||h.includes('MARKET OVERVIEW'))url='/today/index.h
   }
 
   document.addEventListener('DOMContentLoaded',function(){
+    applyCachedPrices();
     loadLive();
     setInterval(loadLive,30000);
     setTimeout(function(){loadLive();},3000);

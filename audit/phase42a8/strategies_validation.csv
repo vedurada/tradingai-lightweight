@@ -1,0 +1,8 @@
+test,expected,actual,result,notes
+Load with market open,strategy cards shown,Cards displayed,PASS,Market data loaded
+Load with market closed,LAST VALID DATA,e-ai shows LAST VALID,PASS,Cache restore works
+Waiting for market data,NOT Loading,Waiting → LAST VALID,PASS,Changed to LAST VALID fallback
+No strategies match,NO TRADE card,NO TRADE shown,PASS,Deterministic rendering
+Performance data,cached,Cached performance shown,PASS,lv:strat-perf cache
+API failure,cached data,LAST VALID DATA label,PASS,Cache restore + label
+No fabricated data,real values,Values from API,PASS,No hardcoded strategy data

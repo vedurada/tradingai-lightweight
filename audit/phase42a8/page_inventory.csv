@@ -1,0 +1,36 @@
+page,url,type,dynamic_sections,api_endpoints,cache_implemented,status,notes
+index.html,/,homepage,"market_snapshot,ai_outlook,trade_qualification,paper_trade,evidence,advance_decline,options_intel,data_status","/api/market,/api/price/*,/api/vix,/api/trade-qualification,/api/paper-trades,/api/market-evidence/*,/api/index-breadth,/api/pcr,/api/maxpain,/api/oi-top",YES,FIXED,Last valid data cache for all sections
+trade.html,/trade.html,intraday,"hero,bias,gap,evidence,readiness,setup,options,uncertainty","/api/trade-setup/*,/api/quote/track/*",YES,FIXED,showError() no longer erases data
+indices/nifty.html,/indices/nifty.html,index_deep,"snapshot,ai_outlook,technical,key_levels,options,intraday,strategy,evidence,qualification,paper_trade","/api/market,/api/market-outlook?symbol=NIFTY,/api/key-levels?symbol=NIFTY,/api/options/state/NIFTY,/api/intraday-conditions?symbol=NIFTY,/api/strategy/NIFTY,/api/market-evidence/NIFTY,/api/trade-qualification,/api/paper-trades",YES,FIXED,Cache restores all sections from localStorage
+indices/banknifty.html,/indices/banknifty.html,index_deep,"snapshot,ai_outlook,technical,key_levels,options,intraday,strategy,evidence,qualification,paper_trade","/api/market,/api/market-outlook?symbol=BANKNIFTY,/api/key-levels?symbol=BANKNIFTY,/api/options/state/BANKNIFTY,/api/intraday-conditions?symbol=BANKNIFTY,/api/strategy/BANKNIFTY,/api/market-evidence/BANKNIFTY,/api/trade-qualification,/api/paper-trades",YES,FIXED,Cache + duplicate link fixed
+indices/sensex.html,/indices/sensex.html,index_deep,"snapshot,ai_outlook,technical,key_levels,options,intraday,strategy","/api/market,/api/market-outlook?symbol=SENSEX,/api/key-levels?symbol=SENSEX,/api/options/state/SENSEX,/api/intraday-conditions?symbol=SENSEX,/api/strategy/SENSEX",YES,FIXED,Cache restores all sections
+indices/finnifty.html,/indices/finnifty.html,index_deep,"snapshot,ai_outlook,technical,key_levels,options,intraday,strategy","/api/market,/api/market-outlook?symbol=FINNIFTY,/api/key-levels?symbol=FINNIFTY,/api/options/state/FINNIFTY,/api/intraday-conditions?symbol=FINNIFTY,/api/strategy/FINNIFTY",YES,FIXED,"FINNIFTY data is DELAYED, always LAST VALID"
+options/pcr.html,/options/pcr.html,options,"pcr,expiry_selector,maxpain,top_oi,option_chain","/api/pcr,/api/maxpain,/api/oi-top,*,/api/options/*?expiry=*",YES,FIXED,"EOD data labelled HISTORICAL, cache restore"
+strategies.html,/strategies.html,strategy,"ai_panel,strategy_cards,performance","/api/nifty,/api/banknifty,/api/finnifty,/api/sensex,/api/vix,/api/history",YES,FIXED,"Waiting→LAST VALID fallback, perf caching"
+today/index.html,/today/index.html,today_terminal,"session_pulse,news,ai_intraday,top_move","/api/today/*,/api/news/*,/api/ai-intraday/*",YES,NO CHANGE,No Loading states observed
+about.html,/about.html,static,none,none,N/A,NO CHANGE,"Static page, no dynamic data"
+contact.html,/contact.html,static,none,none,N/A,NO CHANGE,"Static page, no dynamic data"
+privacy.html,/privacy.html,static,none,none,N/A,NO CHANGE,"Static page, no dynamic data"
+terms.html,/terms.html,static,none,none,N/A,NO CHANGE,"Static page, no dynamic data"
+disclaimer.html,/disclaimer.html,static,none,none,N/A,NO CHANGE,"Static page, no dynamic data"
+404.html,/404.html,static,none,none,N/A,NO CHANGE,"Error page, no dynamic data"
+strategies-guide.html,/strategies-guide.html,static,none,none,N/A,NO CHANGE,"Static page, no dynamic data"
+scanner.html,/scanner.html,scan,stock_grid,/api/scan/*,YES,NO CHANGE,Already has loading states
+alerts.html,/alerts.html,alert,alerts_list,/api/alerts/*,YES,NO CHANGE,Already has loading states
+portfolio.html,/portfolio.html,portfolio,portfolio_data,/api/portfolio/*,YES,NO CHANGE,"Private page, auth required"
+stock.html,/stock.html,stock,stock_detail,/api/stock/*,YES,NO CHANGE,Dynamic page
+ai-track-record.html,/ai-track-record.html,ai,"accuracy_summary,verdict_history",/api/ai-track/*,YES,NO CHANGE,Already has loading states
+evidence/historical.html,/evidence/historical.html,evidence,evidence_search,/api/evidence/*,YES,NO CHANGE,Interactive search page
+history/replay.html,/history/replay.html,replay,replay_timeline,/api/replay/*,YES,NO CHANGE,"Replay page, data-specific"
+history.html,/history.html,history,historical_chart,/api/history/*,YES,NO CHANGE,Historical data page
+tools/walkforward.html,/tools/walkforward.html,tool,walkforward_results,/api/walkforward/*,YES,NO CHANGE,Tool page
+tools/journal.html,/tools/journal.html,tool,journal_entries,/api/journal/*,YES,NO CHANGE,Private page
+tools/backtest.html,/tools/backtest.html,tool,backtest_results,/api/backtest/*,YES,NO CHANGE,"Deterministic, no fabrication risk"
+tools/intelligence.html,/tools/intelligence.html,tool,intelligence,/api/intelligence/*,YES,NO CHANGE,Personal intelligence page
+tools/position-size.html,/tools/position-size.html,tool,position_size,/api/position/*,YES,NO CHANGE,Calculator page
+learn/index.html,/learn/index.html,learn,none,none,N/A,NO CHANGE,Static learn landing
+learn/option-greeks.html,/learn/option-greeks.html,learn,none,none,N/A,NO CHANGE,Static educational
+learn/option-chain.html,/learn/option-chain.html,learn,none,none,N/A,NO CHANGE,Static educational
+learn/pcr.html,/learn/pcr.html,learn,none,none,N/A,NO CHANGE,Static educational
+learn/cpr.html,/learn/cpr.html,learn,none,none,N/A,NO CHANGE,Static educational
+market/outlook-*.html,/market/outlook-*,outlook,outlook_content,/api/ai-outlook/*,N/A,NO CHANGE,Historical outlook pages

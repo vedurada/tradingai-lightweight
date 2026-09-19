@@ -1,0 +1,13 @@
+test,expected,actual,result,notes
+Test A: Load with API available,latest valid data displayed,"NIFTY price, AI outlook, qualification shown",PASS,"API returns STALE data, displayed correctly"
+Test B: API temporarily failing,last valid data displayed,"Cache restores data, LAST VALID label",PASS,localStorage cache preserves data
+Test C: Market closed,last valid market-session data,"STALE label, last data from Friday",PASS,updateFreshness() shows STALE/MARKET CLOSED
+Test D: Refresh browser,last valid data remains,Cache persists across refresh,PASS,localStorage survives refresh
+Test E: Wait for update,newer data replaces older,"On Monday, fresh data replaces cached",PENDING,Market closed Saturday
+Test F: No historical record,intentional empty state,No active paper trade (if no data),PASS,"Explicit empty state, not Loading"
+VIX consistency,single source,VIX from /api/price/* and /api/vix,PASS,Both use same source data
+No contradictory LIVE/STALE,no STALE+LIVE combo,updateFreshness() shows one label,PASS,STALE shown when >5min old
+No fabricated data,real values only,All values from API/DB,PASS,No synthetic values
+No Loading after init,no Loading states visible,Cache restores before Loading shows,PASS,restoreAll() runs on DOMContentLoaded
+AI provenance,HISTORICAL label,"AI outlook from 18 Sep, labelled HISTORICAL",PASS,"Generated 18 Sep, current date 19 Sep"
+Trade qualification,deterministic,NO_TRADE from /api/trade-qualification,PASS,Server-side calculation

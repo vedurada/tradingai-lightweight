@@ -1,0 +1,8 @@
+test,expected,actual,result,notes
+PCR EOD data,HISTORICAL label,PCR shows HISTORICAL EOD,PASS,expiry badge shows current/last + HISTORICAL EOD
+Max Pain EOD data,HISTORICAL label,Max Pain shows cached,PASS,Cache restores on load
+Option chain,EOD data,Chain shows EOD data,PASS,EOD context shown
+API failure,cached data,Cache restores PCR,PASS,localStorage cache
+No Loading after init,no Loading,Cache restores sections,PASS,DOMContentLoaded restore
+Refresh browser,data persists,Cache survives,PASS,localStorage persists
+Mobile viewport,sections visible,Responsive works,PASS,CSS grid responsive

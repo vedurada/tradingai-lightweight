@@ -1,0 +1,5 @@
+test,expected,actual,result,notes
+Completed backtest,results shown,Results displayed,PASS,Backtest results deterministic
+No backtest for config,intentional empty state,No completed backtest message,PASS,"Not Loading, explicit empty"
+No fabrication,deterministic only,No cache for backtest,PASS,"Backtest not cached, deterministic"
+AI vs deterministic,separation maintained,AI history separate from backtest,PASS,Different endpoints

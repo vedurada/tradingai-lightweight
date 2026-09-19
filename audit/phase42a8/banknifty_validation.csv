@@ -1,0 +1,11 @@
+test,expected,actual,result,notes
+Load with API available,all sections show data,BANKNIFTY data displayed,PASS,BANKNIFTY API returns data
+API failure,cached data + LAST VALID,Cache restores BANKNIFTY data,PASS,localStorage cache implemented
+Market closed,LAST VALID DATA + timestamp,BANKNIFTY shows STALE + timestamp,PASS,updateFreshness() called
+Refresh browser,data persists,Cache survives refresh,PASS,localStorage persists
+No Loading after init,no Loading visible,BANKNIFTY sections restored from cache,PASS,restoreAll() on DOMContentLoaded
+No fabricated data,real values only,BANKNIFTY values from API,PASS,No hardcoded values
+Cache key isolation,lv:sec:BANKNIFTY:*,Only BANKNIFTY data in cache,PASS,Symbol-specific cache keys
+Timestamp visible,data timestamp shown,last-updated-bar shows timestamp,PASS,updateTimestamp() called
+Data provenance,STALE/LAST VALID label,BANKNIFTY shows correct freshness,PASS,updateFreshness() labels correctly
+Mobile viewport,sections visible,Responsive grid works,PASS,CSS grid responsive

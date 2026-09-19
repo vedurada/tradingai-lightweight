@@ -1,0 +1,23 @@
+page,data_element,data_source,api_endpoint,cache_key,current_state,fallback_behavior
+index.html,NIFTY price,/api/price/NIFTY,/api/price/NIFTY,lv:prices,STALE,Show cached price + LAST VALID DATA
+index.html,BANKNIFTY price,/api/price/BANKNIFTY,/api/price/BANKNIFTY,lv:prices,STALE,Show cached price + LAST VALID DATA
+index.html,FINNIFTY price,/api/price/FINNIFTY,/api/price/FINNIFTY,lv:prices,DELAYED,Show cached price + LAST VALID DATA
+index.html,SENSEX price,/api/price/SENSEX,/api/price/SENSEX,lv:prices,STALE,Show cached price + LAST VALID DATA
+index.html,VIX,/api/vix,/api/vix,lv:prices,STALE,Show cached VIX + LAST VALID DATA
+index.html,AI outlook,/api/market-outlook?symbol=NIFTY,/api/market-outlook?symbol=NIFTY,N/A (external),HISTORICAL,Show cached outlook + HISTORICAL label
+index.html,Trade qualification,/api/trade-qualification,/api/trade-qualification,lv:qualification,NO_TRADE,Show cached qualification + LAST VALID
+index.html,Paper trade,/api/paper-trades,/api/paper-trades,lv:paper-trade,ACTIVE,Show cached paper trade + LAST VALID
+index.html,Evidence,/api/market-evidence/NIFTY,/api/market-evidence/NIFTY,lv:evidence,STALE,Show cached evidence + LAST VALID
+index.html,Options (PCR/MaxPain/OI/ExpMove),"/api/pcr,/api/maxpain,/api/oi-top","/api/pcr,/api/maxpain,/api/oi-top",N/A,STALE,Show Data unavailable → LAST VALID when data exists
+trade.html,Trade setup,/api/trade-setup/*,/api/trade-setup/*,lv:trade-{symbol},STALE,Keep existing data + LAST VALID label
+trade.html,Quote tracker,/api/quote/track/*,/api/quote/track/*,N/A,STALE,Keep existing quote + STALE indicator
+indices/nifty.html,All sections,/api/market + various,/api/*,lv:sec:NIFTY:*,STALE,Restore from cache + LAST VALID DATA label
+indices/banknifty.html,All sections,/api/market + various,/api/*,lv:sec:BANKNIFTY:*,STALE,Restore from cache + LAST VALID DATA label
+indices/sensex.html,All sections,/api/market + various,/api/*,lv:sec:SENSEX:*,STALE,Restore from cache + LAST VALID DATA label
+indices/finnifty.html,All sections,/api/market + various,/api/*,lv:sec:FINNIFTY:*,DELAYED,Restore from cache + LAST VALID DATA label
+options/pcr.html,PCR data,/api/pcr,/api/pcr,lv:pcr-{symbol},EOD,Show LAST VALID EOD data
+options/pcr.html,Max Pain,/api/maxpain,/api/maxpain,lv:mp-{symbol},EOD,Show LAST VALID EOD data
+options/pcr.html,Option Chain,/api/options/*,/api/options/*,N/A,EOD,Show EOD data
+strategies.html,Market data,/api/nifty,/api/nifty,lv:strat-NIFTY,STALE,Show LAST VALID DATA label
+strategies.html,Strategy cards,/api/market,/api/market,lv:strat-NIFTY,STALE,Show cached strategies
+strategies.html,Performance,/api/history,/api/history,lv:strat-perf,HISTORICAL,Show cached performance + LAST VALID

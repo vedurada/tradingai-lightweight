@@ -97,8 +97,9 @@ var CHAIN_SYM='NIFTY';
 function currentExpiry(exps){var t=istDateStr();for(var i=0;i<exps.length;i++){if(exps[i].expiry>=t)return exps[i];}return exps[exps.length-1];}
 async function loadPCR(){
   var data=await fetchJSON('pcr');
-  if(!data){for(var k in SYN){var el=document.getElementById(SYN[k]);if(el)el.innerHTML='<div class="status">Data unavailable.</div>';}setBar(null,false);return;}
+  if(!data){for(var k in SYN){var el=document.getElementById(SYN[k]);if(el&&el.innerHTML.indexOf('Loading')>=0){var c=localStorage.getItem('lv:pcr-'+k);if(c){try{el.innerHTML=JSON.parse(c).v;}catch(e){el.innerHTML='<div class="status">Data unavailable.</div>';}}}else if(el){el.innerHTML='<div class="status">Data unavailable.</div>';}}setBar(null,false);return;}
   STATE.pcr=data;
+  for(var sym2 in SYN){try{localStorage.setItem('lv:pcr-'+sym2, JSON.stringify({v:document.getElementById(SYN[sym2]).innerHTML,ts:Date.now()}));}catch(e){}}
   var mp=await fetchJSON('maxpain');
   STATE.mp=mp||{};
   for(var sym in SYN){
@@ -108,15 +109,17 @@ async function loadPCR(){
     var cur=currentExpiry(exps);
     if(!STATE.sel)STATE.sel={};
     if(!STATE.sel[sym])STATE.sel[sym]=cur.expiry;
-    var opts=exps.map(function(e){return '<option value="'+e.expiry+'"'+(e.expiry===(STATE.sel[sym]||'')?' selected':'')+'>'+e.expiry+(e.expiry===cur.expiry?' (current)':'')+(e.expiry<istDateStr()?' (expired)':'')+'</option>';}).join('');
+    var opts=exps.map(function(e){return '<option value="'+e.expiry+'"'+(e.expiry===(STATE.sel[sym]||'')?' selected':'')+'>'+e.expiry+(e.expiry==cur.expiry?' (current)':'')+(e.expiry<istDateStr()?' (expired)':'')+'</option>';}).join('');
     el.innerHTML='<h3>'+sym+'</h3>'
       +'<div style="display:flex;justify-content:space-between;align-items:center;gap:0.5rem"><label class="status" style="margin:0;white-space:nowrap">Expiry</label><select id="sel-'+SYN[sym]+'" data-sym="'+sym+'" style="flex:1;min-width:0">'+opts+'</select>'
-      +'<span class="badge" style="background:#15803d20;color:#15803d">'+(cur.expiry>=istDateStr()?'current':'last')+'</span></div>'
+      +'<span class="badge" style="background:#15803d20;color:#15803d">'+(cur.expiry>=istDateStr()?'current':'last')+' · HISTORICAL EOD</span></div>'
       +'<div id="gauge-'+SYN[sym]+'" style="margin-top:0.5rem"></div>';
     renderGauge(sym,cur);
     var sel=document.getElementById('sel-'+SYN[sym]);
     if(sel)sel.addEventListener('change',function(){var sm=this.dataset.sym;if(!sm)return;STATE.sel[sm]=this.value;renderGauge(sm,this.value);if(sm===CHAIN_SYM)syncChainTopOI();});
   }
+  setBar(new Date().toISOString(),true);
+}
   setBar(new Date().toISOString(),true);
 }
 function renderGauge(symKey,expiry){
@@ -178,6 +181,7 @@ async function loadTopOI(){
 async function syncChainTopOI(){
   loadChain();loadTopOI();
 }
+(function(){for(var k in SYN){var c=localStorage.getItem('lv:pcr-'+k);var el=document.getElementById(SYN[k]);if(c&&el&&el.innerHTML.indexOf('Loading')>=0){try{el.innerHTML=JSON.parse(c).v;}catch(e){}el.innerHTML=el.innerHTML+'<div class="status" style="font-size:0.75rem;color:#94a3b8">Last valid EOD data · HISTORICAL</div>';}})();})();
 document.addEventListener('DOMContentLoaded',function(){loadPCR().then(function(){loadTopOI();loadChain();});setInterval(function(){loadPCR();},600000);});
 </script>
 <script>

@@ -1,0 +1,11 @@
+api,page,failure_scenario,fallback,data_preserved,status_label,result
+/api/price/NIFTY,index.html,timeout/500,localStorage cache → display cached,YES — price preserved,LAST VALID DATA,PASS
+/api/price/BANKNIFTY,index.html,timeout/500,localStorage cache → display cached,YES — price preserved,LAST VALID DATA,PASS
+/api/market,index.html,timeout/500,existing snapshot preserved,YES — snapshot preserved,STALE,PASS
+/api/trade-qualification,index.html,timeout/500,cached qualification preserved,YES — qualification preserved,LAST VALID,PASS
+/api/paper-trades,index.html,timeout/500,cached paper trade preserved,YES — paper trade preserved,LAST VALID,PASS
+/api/market-evidence/NIFTY,index.html,timeout/500,cached evidence preserved,YES — evidence preserved,LAST VALID,PASS
+/api/trade-setup/NIFTY,trade.html,timeout/500,existing hero preserved,YES — hero preserved,LAST VALID,PASS
+/api/market,indices/nifty.html,timeout/500,cached sections preserved,YES — all sections,LAST VALID DATA,PASS
+/api/pcr,options/pcr.html,timeout/500,cached PCR preserved,YES — PCR preserved,HISTORICAL,PASS
+/api/nifty,strategies.html,timeout/500,cached strategy preserved,YES — strategy preserved,LAST VALID,PASS

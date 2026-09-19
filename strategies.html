@@ -140,7 +140,13 @@ function atmOf(spot,step){return Math.round(spot/step)*step;}
 async function loadEngine(){
   var sym=ST.index,meta=IDX[sym];
   var data=await fetchJSON(meta.api);
-  if(!data||!data.quote){setLastUpdated(null,false);return;}
+  if(!data||!data.quote){
+    var saved=localStorage.getItem('lv:strat-'+sym);
+    var eai=document.getElementById('e-ai');
+    if(saved&&eai&&eai.textContent.indexOf('Waiting')>=0){eai.innerHTML='<div class="status" style="font-size:0.85rem;color:#94a3b8">LAST VALID DATA · '+saved+'</div>';}
+    setLastUpdated(null,false);return;
+  }
+  try{localStorage.setItem('lv:strat-'+sym, fmt(data.quote?data.quote.price:0)+' @ '+new Date().toISOString());}catch(e){}
   ST.data=data;
   var vx=await fetchJSON('vix');ST.vix=vx?(vx.price!=null?vx.price:vx.close):null;
   var spot=data.quote.price;
@@ -228,17 +234,20 @@ function renderAll(){
 }
 async function loadPerf(){
   var el=document.getElementById('e-perf');if(!el)return;
-  var hd=await fetchJSON('history');if(!hd){el.textContent='No history yet.';return;}
+  var hd=await fetchJSON('history');
+  if(!hd){var saved=localStorage.getItem('lv:strat-perf');if(saved&&el&&el.textContent.indexOf('waiting')>=0){el.innerHTML='<div class="status" style="font-size:0.85rem;color:#94a3b8">LAST VALID DATA · '+saved+'</div>';}else{el.textContent='No history yet.';}return;}
   var byName={};
   Object.keys(hd).forEach(function(sym){(hd[sym]||[]).forEach(function(e){if(e.points==null||!e.strategy)return;var n=e.strategy;byName[n]=byName[n]||{trades:0,wins:0,gw:0,gl:0,pts:0};var b=byName[n];b.trades++;b.pts+=e.points;if(e.result==='WIN'){b.wins++;gw0(b,e);}else if(e.points<0){b.gl+=Math.abs(e.points);}function gw0(bb,ee){bb.gw+=ee.points;}});});
   var names=Object.keys(byName).sort();if(!names.length){el.textContent='No settled strategy trades yet.';return;}
-  var html='<table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Win rate</th><th>Total pts</th><th>Profit factor</th></tr></thead><tbody>';
+  var html='<table class="history-table" style="width:100%;border-collapse:collapse"><thead><tr><th>Strategy</th><th>Trades</th><th>Wins</th><th>Win rate</th><th>Total pts</th><th>Profit factor</th></thead><tbody>';
   for(var i=0;i<names.length;i++){var b=byName[names[i]];var wr=(b.wins/b.trades*100).toFixed(1);var pf=b.gl>0?(b.gw/b.gl).toFixed(2):'∞';var tc=b.pts>=0?'#15803d':'#dc2626';html+='<tr><td>'+names[i]+'</td><td>'+b.trades+'</td><td>'+b.wins+'</td><td>'+wr+'%</td><td style="color:'+tc+';font-weight:bold">'+(b.pts>=0?'+':'')+b.pts.toFixed(2)+'</td><td>'+pf+'</td></tr>';}
   html+='</tbody></table>    <div class="status">Deterministic backtest only. <a href="/tools/backtest.html">View complete history →</a></div>';
   el.innerHTML=html;
+  try{localStorage.setItem('lv:strat-perf', html);}catch(e){}
 }
 document.getElementById('e-index').addEventListener('change',function(){ST.index=this.value;ST.tenor='W';ST.viewOverride=null;loadEngine();});
 document.querySelectorAll('#e-views button').forEach(function(b){b.addEventListener('click',function(){ST.viewOverride=b.dataset.view;renderAll();});});
+(function(){var saved=localStorage.getItem('lv:strat-NIFTY');var eai=document.getElementById('e-ai');if(saved&&eai&&eai.textContent.indexOf('Waiting')>=0){eai.innerHTML='<div class="status" style="font-size:0.85rem;color:#94a3b8">LAST VALID DATA · '+saved+'</div>';}})();
 document.addEventListener('DOMContentLoaded',function(){var q=new URLSearchParams(location.search);var s=(q.get('symbol')||'NIFTY').toUpperCase();if(IDX[s]){ST.index=s;document.getElementById('e-index').value=s;}loadEngine();loadPerf();setInterval(loadEngine,60000);});
 </script>
 <script>

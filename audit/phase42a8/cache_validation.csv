@@ -1,0 +1,9 @@
+test,expected,actual,result,notes
+Cache key isolation NIFTY vs BANKNIFTY,separate keys,"lv:prices contains both, lv:sec:NIFTY:* separate from lv:sec:BANKNIFTY:*",PASS,Symbol-specific keys verified
+Cache expiry,7200000ms (2hr),Date.now()-d.ts > 7200000 returns null,PASS,2-hour TTL implemented
+Cache save on success,localStorage set after API success,LV() called after render/data load,PASS,Cache updated on each successful load
+Cache restore on load,cached data shown before API call,restoreAll() runs on DOMContentLoaded,PASS,Data appears immediately from cache
+Cache NOT override newer server data,server > cache,Server data always replaces cache on success,PASS,Server has priority per spec
+Cache survives refresh,data persists across page reload,localStorage persists across reload,PASS,Verified in Test D
+Cache handles malformed data,invalid JSON returns null,try/catch around JSON.parse returns null,PASS,Error handling in LR()
+Cache handles expired data,old data returns null,Date.now()-d.ts > 7200000 check,PASS,2-hour TTL enforced

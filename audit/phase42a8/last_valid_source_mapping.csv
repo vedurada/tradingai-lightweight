@@ -1,0 +1,13 @@
+page,section,source_priority,cache_key,fallback_to,timestamp_format
+index.html,Market snapshot,SERVER(current)→SERVER(last_valid)→CACHE→NEVER_AVAILABLE,lv:prices,NEVER_AVAILABLE,IST from data timestamp
+index.html,AI outlook,SERVER(current)→CACHE→NEVER_AVAILABLE,N/A (not cached),CACHE (external),Generated timestamp
+index.html,Trade qualification,SERVER(current)→CACHE→NEVER_AVAILABLE,lv:qualification,NEVER_AVAILABLE,qualification_timestamp
+index.html,Paper trade,SERVER(current)→CACHE→NEVER_AVAILABLE,lv:paper-trade,NEVER_AVAILABLE,created_at
+index.html,Evidence,SERVER(current)→CACHE→NEVER_AVAILABLE,lv:evidence,NEVER_AVAILABLE,N/A
+index.html,Options,SERVER(current)→CACHE→NEVER_AVAILABLE,N/A (not cached),Data unavailable,API response
+trade.html,All sections,SERVER(current)→CACHE→NEVER_AVAILABLE,lv:trade-{symbol},NEVER_AVAILABLE,Server timestamp
+indices/{sym}.html,All sections,SERVER(current)→CACHE→NEVER_AVAILABLE,lv:sec:{SYM}:*,NEVER_AVAILABLE,last_updated from /api/market
+options/pcr.html,PCR,SERVER(EOD)→CACHE→NEVER_AVAILABLE,lv:pcr-{symbol},NEVER_AVAILABLE,EOD date
+options/pcr.html,Max Pain,SERVER(EOD)→CACHE→NEVER_AVAILABLE,lv:mp-{symbol},NEVER_AVAILABLE,EOD date
+strategies.html,Market data,SERVER(current)→CACHE→NEVER_AVAILABLE,lv:strat-{symbol},NEVER_AVAILABLE,last_updated
+strategies.html,Performance,SERVER(current)→CACHE→NEVER_AVAILABLE,lv:strat-perf,NEVER_AVAILABLE,backtest date
