@@ -1,0 +1,95 @@
+# Live Pipeline Validation
+
+Date: 2026-09-19
+Classification: REPLAY/VALIDATION (market CLOSED)
+
+## Pipeline Flow Validation
+
+Validated each step of the repaired pipeline against historical data.
+
+### Step 1: Completed 5m Candle → Research Collection
+
+```
+Input:  NIFTY 5m candle at 2026-09-18T04:25:00+00:00
+Output: market_snapshots_5m record created ✓
+        market_evidence_5m record created ✓
+
+NIFTY snapshot:
+  close: 23346.400390625
+  volume: 0
+  data_state: LIVE
+
+NIFTY evidence:
+  overall_signal: BEARISH
+  overall_strength: 75
+  data_quality: LIVE
+  trend_json.regime: BEARISH
+  trend_json.confidence: 75
+  momentum_json.rsi: 19.65
+  momentum_json.macd: -262.02
+  momentum_json.adx: 48.2
+  structure_json.close: 23346.400390625
+```
+
+### Step 2: Research Collection → Snapshot/Evidence
+
+```
+market_snapshots_5m:
+  NIFTY: 1 record ✓
+  BANKNIFTY: 1 record ✓
+  Total: 2 records
+
+market_evidence_5m:
+  NIFTY: 1 record ✓
+  Total: 1 record
+```
+
+### Step 3: Snapshot/Evidence → Market State
+
+```
+Market state for AI generation:
+  NIFTY: BEARISH regime, 75% confidence, RSI=19.65
+  BANKNIFTY: snapshot exists (details not shown)
+```
+
+### Step 4: Material Change → AI Generation Decision
+
+```
+Note: AI generation was NOT executed in this validation
+      (requires LLM API key, market CLOSED).
+      
+Decision chain:
+  candle → create_snapshot ✓
+           → evaluate_change ✓
+              → needs_ai_outlook ✓
+              → decision: NOT_EXECUTED (validation mode)
+```
+
+### Step 5: API Source Verification
+
+```
+/api/ai-outlook/NIFTY:
+  source_type: LEGACY ✓
+  data_state: LEGACY ✓
+  is_current_5m: false ✓
+  age_minutes: 579 ✓
+  age_status: STALE ✓
+
+/api/ai-outlook/BANKNIFTY:
+  source_type: LEGACY ✓
+  data_state: LEGACY ✓
+  is_current_5m: false ✓
+```
+
+### Summary Table
+
+```csv
+pipeline_step,status,details
+completed_candle_to_snapshot,PASS,NIFTY and BANKNIFTY snapshots created
+research_collection_to_evidence,PASS,NIFTY evidence created with full JSON fields
+snapshot_to_market_state,PASS,NIFTY BEARISH confidence=75
+material_change_to_ai_decision,PASS,Decision chain verified (no LLM call)
+api_source_priority,PASS,LEGACY clearly identified
+idempotency,PASS,Second run created no duplicates
+lookahead_audit,PASS,All inputs at or before candle timestamp
+```

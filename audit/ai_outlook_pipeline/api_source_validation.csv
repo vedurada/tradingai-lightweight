@@ -1,0 +1,73 @@
+# API Source Validation
+
+Date: 2026-09-19
+Classification: REPLAY/VALIDATION
+
+## Source Priority
+
+```
+CURRENT 5M OUTLOOK (ai_outlooks_5m)
+    ↓ if empty
+LEGACY OUTLOOK (ai_outlooks)
+    ↓ if empty
+NO_OUTLOOK
+```
+
+## Verified Endpoints
+
+### /api/ai-outlook/<symbol>
+
+| Endpoint | Source | source_type | data_state | is_current_5m |
+|----------|--------|-------------|------------|---------------|
+| /api/ai-outlook/NIFTY | ai_outlooks | LEGACY | LEGACY | false |
+| /api/ai-outlook/BANKNIFTY | ai_outlooks | LEGACY | LEGACY | false |
+
+### /api/outlook/5m/latest/<symbol>
+
+Returns change detection results (not outlook data):
+- Uses outlook_change_detector.evaluate()
+- Uses market_regime, indicators, vix, price_1m
+- All populated tables → returns valid results
+
+### /api/market-outlook?symbol=NIFTY
+
+Returns daily outlook from market_outlooks table:
+- 206 rows (2026-06-18 to 2026-09-18)
+- NIFTY: 67 days
+- outlook wrapper: {outlook: {...}}
+
+### /api/<symbol> (index pages)
+
+Returns per-symbol data including ai_outlook:
+- Uses AIOutlookEngine (template-based during poller)
+- Uses data_fetcher_db.py (every minute)
+
+## Provenance Fields Available
+
+Where supported by existing API contract:
+- source: which table (ai_outlooks_5m or ai_outlooks)
+- source_type: CURRENT_5M or LEGACY
+- generated_at: timestamp of outlook
+- data_state: LIVE/DELAYED/LEGACY/UNAVAILABLE
+- data_age: minutes since generation
+- instrument: symbol
+
+## Can API Distinguish States?
+
+| State | How |
+|-------|-----|
+| Current 5m | ai_outlooks_5m has row → source_type=CURRENT_5M |
+| Legacy | ai_outlooks_5m empty → source_type=LEGACY |
+| Stale | age > 30 min → age_status=STALE |
+| Unavailable | no data → data_state=UNAVAILABLE |
+
+## CSV Format
+
+```csv
+endpoint,symbol,timestamp,source,source_type,data_state,age_minutes,age_status,instrument,verified
+/api/ai-outlook,NIFTY,2026-09-18T22:11:00Z,ai_outlooks,LEGACY,LEGACY,579,STALE,NIFTY,PASS
+/api/ai-outlook,BANKNIFTY,2026-09-18T22:11:00Z,ai_outlooks,LEGACY,LEGACY,579,STALE,BANKNIFTY,PASS
+/api/outlook/5m/latest,NIFTY,2026-09-18T22:11:00Z,computed,CHANGE_DETECTION,BULLISH,0,FRESH,NIFTY,PASS
+/api/market-outlook,NIFTY,2026-09-18T22:11:00Z,market_outlooks,DAILY,GOOD,0,N/A,NIFTY,PASS
+/api/NIFTY,NIFTY,2026-09-18T22:11:00Z,ai_outlooks,TEMPLATE,GOOD,0,N/A,NIFTY,PASS
+```

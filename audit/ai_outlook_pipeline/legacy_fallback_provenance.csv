@@ -1,0 +1,72 @@
+# Legacy Fallback Provenance
+
+Date: 2026-09-19
+Classification: REPLAY/VALIDATION
+
+## Test: Legacy Fallback Must Never Claim LIVE
+
+Validated that when `ai_outlooks_5m` is empty, the API fallback to `ai_outlooks` (legacy) correctly identifies itself as LEGACY data.
+
+### Method
+
+Called `_ai_outlook_from_legacy()` directly with mocked database, then verified via live API endpoint `/api/ai-outlook/NIFTY`.
+
+### Results (API Verification)
+
+#### /api/ai-outlook/NIFTY (Live API, market CLOSED)
+
+| Field | Before Fix | After Fix |
+|-------|-----------|-----------|
+| current.data_state | LIVE | LEGACY |
+| current.source_type | (missing) | LEGACY |
+| current.is_current_5m | (missing) | false |
+| data.data_state | DELAYED | DELAYED |
+| current.age_minutes | 579 | 579 |
+| current.age_status | STALE | STALE |
+| current.market_regime | BEARISH | BEARISH |
+| current.bias | BEARISH | BEARISH |
+
+### Key Fix
+
+`backend/api_server.py` — `_ai_outlook_from_legacy()` line 3703:
+
+Before:
+```python
+"data_state": "LIVE",  # WRONG — legacy data should not claim LIVE
+```
+
+After:
+```python
+"data_state": "LEGACY",
+"source_type": "LEGACY",
+"is_current_5m": False,
+```
+
+### Can Any Legacy Outlook Still Appear as LIVE?
+
+No. The fallback always sets:
+- `data_state`: "LEGACY"
+- `source_type`: "LEGACY"
+- `is_current_5m`: false
+
+The top-level `data_state` field is correctly set by the outer function:
+- Market open → "CLOSED" (or current 5m data state)
+- Market closed → "DELAYED"
+
+### CSV Format
+
+```csv
+endpoint,symbol,timestamp,data_state,source_type,is_current_5m,age_minutes,age_status
+api_ai_outlook,NIFTY,2026-09-18T22:11:00Z,LEGACY,LEGACY,false,579,STALE
+api_ai_outlook,BANKNIFTY,2026-09-18T22:11:00Z,LEGACY,LEGACY,false,579,STALE
+api_ai_outlook,NIFTY,2026-09-18T10:00:00Z,LEGACY,LEGACY,false,30,AGING
+```
+
+### Backward Compatibility
+
+Frontend consumers should continue to work because:
+- `current.bias` still present
+- `current.market_regime` still present
+- `current.trade_state` still present
+- `current.summary` still present
+- New fields (source_type, is_current_5m) are additive, not breaking

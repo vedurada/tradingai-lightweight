@@ -75,6 +75,18 @@ def _is_market_hours():
     return 570 <= mins < 930
 
 
+def run_scheduler():
+    try:
+        sys.path.insert(0, "/opt/tradingai/backend")
+        from outlook_scheduler import run_scheduler as _run
+        result = _run(dry_run=False)
+        log(f"Outlook scheduler: {json.dumps(result)}")
+        return result
+    except Exception as e:
+        log(f"Outlook scheduler failed: {e}")
+        return {"status": "ERROR", "error": str(e)}
+
+
 def run_research_collection():
     try:
         sys.path.insert(0, "/opt/tradingai/backend")
@@ -138,6 +150,7 @@ def check_health():
 
     if _is_market_hours():
         run_research_collection()
+        run_scheduler()
 
     return all_ok
 

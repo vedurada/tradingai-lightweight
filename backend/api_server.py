@@ -3700,7 +3700,9 @@ def _ai_outlook_from_legacy(conn, symbol):
         "trade_state": "ACTIVE",
         "expected_horizon_minutes": 30,
         "material_changes_json": "[]",
-        "data_state": "LIVE",
+        "data_state": "LEGACY",
+        "source_type": "LEGACY",
+        "is_current_5m": False,
         "created_at": row["timestamp"],
     }
     prev_row = conn.execute(

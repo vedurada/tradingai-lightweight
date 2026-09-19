@@ -1,0 +1,78 @@
+# AI Generation Validation
+
+Date: 2026-09-19
+Classification: REPLAY/VALIDATION (LLM call SKIPPED)
+
+## AI Generation Decision Chain
+
+The AI generation is controlled by the material-change detector. In this validation, LLM calls were NOT executed (no API key). The decision chain was verified step by step.
+
+### Decision Flow
+
+```
+Completed 5m candle
+    ↓
+research_collector.collect() → creates snapshot + evidence
+    ↓
+OutlookScheduler.run() (triggered by monitor.py during market hours)
+    ↓
+For each primary symbol:
+    ↓
+_get_current_candle_timestamp() → returns candle if in CRANDLE_BOUNDARIES
+    ↓
+_is_duplicate() → checks market_snapshots_5m
+    ↓
+create_snapshot(symbol, candle_timestamp) → reads price_5m, creates snapshot
+    ↓
+evaluate_change(symbol) → material change detection
+    ↓
+needs_ai_outlook(symbol) → checks if AI generation needed
+    ↓
+IF needs_ai:
+    _generate_ai_outlook() → AIOutlookGenerator5m.generate()
+        → _prepare_ai_input() → maps data
+        → _call_llm(prompt, symbol, market_state) → engine.generate(symbol, ai_input)
+        → _validate() → clamp values
+        → _store_outlook() → INSERT into ai_outlooks_5m
+        → record_ai_call() → log AI call
+    ELSE:
+        SKIP_NO_MATERIAL_CHANGE
+```
+
+### Generation Decision Validation
+
+For NIFTY at 2026-09-18T04:25:00+00:00:
+- Snapshot exists: YES
+- Evidence exists: YES
+- Material change: depends on previous snapshot
+- AI needed: depends on `needs_ai_outlook()` result
+- LLM call: SKIPPED (validation mode)
+
+### Immutability Validation
+
+- Each AI outlook gets a unique outlook_id: `OUTLOOK-{symbol}-{timestamp}`
+- INSERT (not INSERT OR REPLACE) into ai_outlooks_5m
+- Timeline preserves: 09:20, 09:25, 09:40, 10:15, etc.
+- Only generated when required (material change)
+
+### Data Honesty
+
+- AI receives only data available at candle timestamp
+- No future data in prompt
+- Options data marked UNAVAILABLE if not available
+- Fallback explicitly marked RULE_BASED_FALLBACK
+
+### CSV Format
+
+```csv
+symbol,candle_timestamp,snapshot_exists,evidence_exists,material_change,ai_needed,llm_called,outlook_stored,classification
+NIFTY,2026-09-18T04:25:00+00:00,YES,YES,UNKNOWN,UNKNOWN,NO,NO,REPLAY_VALIDATION
+BANKNIFTY,2026-09-18T04:25:00+00:00,YES,NO,UNKNOWN,UNKNOWN,NO,NO,REPLAY_VALIDATION
+```
+
+### No Fabrication
+
+- No synthetic AI outlooks generated
+- No synthetic market data used
+- All records based on real price_5m data
+- All timestamps from real data

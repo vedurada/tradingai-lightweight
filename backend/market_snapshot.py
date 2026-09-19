@@ -36,7 +36,29 @@ def create_snapshot(
     regime: str = None,
     data_state: str = "LIVE",
     data_timestamp: str = None,
+    db_conn=None,
 ) -> Optional[dict]:
+    if ohlcv is None:
+        try:
+            if db_conn is None:
+                from db_schema import DB_PATH
+                db_conn = sqlite3.connect(DB_PATH)
+                db_conn.row_factory = sqlite3.Row
+            row = db_conn.execute(
+                "SELECT * FROM price_5m WHERE symbol=? AND timestamp=?",
+                (symbol, candle_timestamp),
+            ).fetchone()
+            if row:
+                d = dict(row)
+                ohlcv = [{
+                    "open": d.get("open"),
+                    "high": d.get("high"),
+                    "low": d.get("low"),
+                    "close": d.get("close"),
+                    "volume": d.get("volume"),
+                }]
+        except Exception:
+            pass
     try:
         indicators = calculate_all_indicators(ohlcv or [], quote or {})
     except Exception as e:

@@ -86,7 +86,7 @@ class AIOutlookGenerator5m:
         outlook_id = f"OUTLOOK-{symbol}-{timestamp.replace(':', '')}"
 
         prompt = self._build_prompt(symbol, market_state, material_changes or [], evidence)
-        ai_response = self._call_llm(prompt)
+        ai_response = self._call_llm(prompt, symbol, market_state)
         validated = self._validate(ai_response, symbol, timestamp)
 
         data_state = "LIVE"
@@ -153,9 +153,31 @@ class AIOutlookGenerator5m:
             }
         return summary
 
-    def _call_llm(self, prompt: str) -> dict:
+    def _prepare_ai_input(self, market_state: dict) -> dict:
+        return {
+            "price": market_state.get("close") or market_state.get("price"),
+            "previous_close": market_state.get("open") or market_state.get("previous_close"),
+            "rsi": market_state.get("rsi"),
+            "macd": market_state.get("macd"),
+            "adx": market_state.get("adx"),
+            "atr": market_state.get("atr"),
+            "vwap": market_state.get("vwap"),
+            "pivot": market_state.get("pivot"),
+            "cpr": market_state.get("cpr_upper") or market_state.get("cpr"),
+            "vix": market_state.get("vix"),
+            "volume": market_state.get("volume"),
+            "regime": market_state.get("regime") or market_state.get("market_regime"),
+            "support_levels": market_state.get("support") or market_state.get("support_levels", []),
+            "resistance_levels": market_state.get("resistance") or market_state.get("resistance_levels", []),
+            "options_unavailable": True,
+            "symbol": market_state.get("symbol") or market_state.get("instrument"),
+            "data_quality": market_state.get("data_state") or market_state.get("data_quality", "UNAVAILABLE"),
+        }
+
+    def _call_llm(self, prompt: str, symbol: str, market_state: dict) -> dict:
         try:
-            result = self.engine.generate("NIFTY", {}, use_llm=True)
+            ai_input = self._prepare_ai_input(market_state)
+            result = self.engine.generate(symbol, ai_input, use_llm=True)
             return result
         except Exception as e:
             logger.error(f"LLM call failed: {e}")

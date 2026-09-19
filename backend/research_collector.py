@@ -279,7 +279,7 @@ class ResearchCollector:
                 return False
 
             d = dict(row)
-            data_quality = "LIVE" if d.get("close") else "UNAVAILABLE"
+            data_state = "LIVE" if d.get("close") else "UNAVAILABLE"
 
             snapshot = {
                 "candle_timestamp": ts,
@@ -289,14 +289,15 @@ class ResearchCollector:
                 "low": d.get("low"),
                 "close": d.get("close"),
                 "volume": d.get("volume"),
-                "data_quality": data_quality,
-                "engine_version": ENGINE_VERSION,
+                "data_state": data_state,
                 "created_at": _now_utc(),
             }
             conn.execute(
-                "INSERT OR IGNORE INTO market_snapshots_5m "
-                "(candle_timestamp, symbol, open, high, low, close, volume, data_quality, engine_version, created_at) "
-                "VALUES (:candle_timestamp, :symbol, :open, :high, :low, :close, :volume, :data_quality, :engine_version, :created_at)",
+                """INSERT OR IGNORE INTO market_snapshots_5m
+                   (candle_timestamp, symbol, open, high, low, close, volume,
+                    data_state, created_at)
+                   VALUES (:candle_timestamp, :symbol, :open, :high, :low, :close,
+                           :volume, :data_state, :created_at)""",
                 snapshot,
             )
             conn.commit()
@@ -307,14 +308,144 @@ class ResearchCollector:
 
     def _record_evidence(self, conn, result, symbol, ts) -> bool:
         try:
-            row = conn.execute(
-                "SELECT * FROM market_evidence_5m WHERE symbol=? AND timestamp=?",
+            existing = conn.execute(
+                "SELECT 1 FROM market_evidence_5m WHERE instrument=? AND candle_timestamp=?",
                 (symbol, ts),
             ).fetchone()
-            if not row:
-                return False
-            return True  # evidence already exists
-        except Exception:
+            if existing:
+                return True
+
+            regime_row = conn.execute(
+                "SELECT * FROM market_regime WHERE symbol=? AND timestamp <= ? ORDER BY timestamp DESC LIMIT 1",
+                (symbol, ts),
+            ).fetchone()
+            ind_row = conn.execute(
+                "SELECT * FROM indicators WHERE symbol=? AND timestamp <= ? ORDER BY timestamp DESC LIMIT 1",
+                (symbol, ts),
+            ).fetchone()
+            vix_row = conn.execute(
+                "SELECT * FROM vix_data WHERE timestamp <= ? ORDER BY timestamp DESC LIMIT 1",
+                (ts,),
+            ).fetchone()
+            price_row = conn.execute(
+                "SELECT * FROM price_5m WHERE symbol=? AND timestamp=?",
+                (symbol, ts),
+            ).fetchone()
+
+            trend_json = {}
+            if regime_row:
+                r = dict(regime_row)
+                trend_json = {
+                    "regime": r.get("regime"),
+                    "confidence": r.get("confidence"),
+                    "trend": r.get("trend"),
+                    "momentum": r.get("momentum"),
+                    "volatility": r.get("volatility"),
+                    "breadth": r.get("breadth"),
+                    "vix_regime": r.get("vix_regime"),
+                    "timestamp": r.get("timestamp"),
+                }
+
+            momentum_json = {}
+            if ind_row:
+                ind = dict(ind_row)
+                momentum_json = {
+                    "rsi": ind.get("rsi"),
+                    "macd": ind.get("macd"),
+                    "adx": ind.get("adx"),
+                    "volume": ind.get("volume"),
+                    "timestamp": ind.get("timestamp"),
+                }
+
+            structure_json = {}
+            if price_row:
+                p = dict(price_row)
+                structure_json = {
+                    "open": p.get("open"),
+                    "high": p.get("high"),
+                    "low": p.get("low"),
+                    "close": p.get("close"),
+                    "volume": p.get("volume"),
+                    "timestamp": p.get("timestamp"),
+                }
+
+            volatility_json = {}
+            if ind_row:
+                ind = dict(ind_row)
+                volatility_json = {
+                    "atr": ind.get("atr"),
+                    "adx": ind.get("adx"),
+                }
+            if vix_row:
+                v = dict(vix_row)
+                volatility_json["vix"] = v.get("close")
+
+            options_json = {}
+            try:
+                pcr_row = conn.execute(
+                    "SELECT pcr FROM option_chain WHERE symbol=? ORDER BY timestamp DESC LIMIT 1",
+                    (symbol,),
+                ).fetchone()
+                if pcr_row:
+                    options_json["pcr"] = pcr_row[0]
+            except Exception:
+                pass
+
+            overall_signal = "INSUFFICIENT_DATA"
+            overall_strength = "NONE"
+            if trend_json and trend_json.get("confidence"):
+                if trend_json.get("regime") in ("BULLISH",):
+                    overall_signal = "BULLISH"
+                elif trend_json.get("regime") in ("BEARISH",):
+                    overall_signal = "BEARISH"
+                elif trend_json.get("regime") in ("RANGE", "SIDEWAYS"):
+                    overall_signal = "RANGE"
+                overall_strength = str(int(trend_json.get("confidence", 0)))
+
+            data_state = "LIVE"
+            if price_row and not dict(price_row).get("close"):
+                data_state = "UNAVAILABLE"
+
+            evidence_id = f"EVID-{symbol}-{ts}"
+            record = {
+                "evidence_id": evidence_id,
+                "instrument": symbol,
+                "candle_timestamp": ts,
+                "generated_at": _now_utc(),
+                "trend_json": json.dumps(trend_json),
+                "momentum_json": json.dumps(momentum_json),
+                "structure_json": json.dumps(structure_json),
+                "volatility_json": json.dumps(volatility_json),
+                "options_json": json.dumps(options_json),
+                "confirmation_json": "[]",
+                "overall_signal": overall_signal,
+                "overall_strength": overall_strength,
+                "conflict_json": "{}",
+                "data_quality": data_state,
+                "data_state": data_state,
+                "engine_version": ENGINE_VERSION,
+                "created_at": _now_utc(),
+            }
+            conn.execute(
+                """INSERT OR IGNORE INTO market_evidence_5m (
+                    evidence_id, instrument, candle_timestamp, generated_at,
+                    trend_json, momentum_json, structure_json, volatility_json,
+                    options_json, confirmation_json, overall_signal, overall_strength,
+                    conflict_json, data_quality, data_state, engine_version, created_at
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                (
+                    record["evidence_id"], record["instrument"], record["candle_timestamp"],
+                    record["generated_at"], record["trend_json"], record["momentum_json"],
+                    record["structure_json"], record["volatility_json"], record["options_json"],
+                    record["confirmation_json"], record["overall_signal"], record["overall_strength"],
+                    record["conflict_json"], record["data_quality"], record["data_state"],
+                    record["engine_version"], record["created_at"],
+                ),
+            )
+            conn.commit()
+            return True
+        except Exception as e:
+            logger.error(f"Evidence error for {symbol} {ts}: {e}")
             return False
 
     def _record_setup_from_trade(self, conn, result, symbol, ts) -> bool:

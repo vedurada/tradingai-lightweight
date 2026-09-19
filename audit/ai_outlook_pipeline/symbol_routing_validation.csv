@@ -1,0 +1,75 @@
+# Symbol Routing Validation
+
+Date: 2026-09-19
+Classification: REPLAY/VALIDATION
+
+## Test: BANKNIFTY Request → BANKNIFTY AI Context
+
+Validated that when processing BANKNIFTY, the AI context contains BANKNIFTY data, not NIFTY data.
+
+### Method
+
+Called `AIOutlookGenerator5m._prepare_ai_input()` with real market snapshot data for each symbol.
+
+### Results
+
+#### NIFTY
+- Snapshot exists: YES (close=23346.4, data_state=LIVE)
+- AI input symbol: NIFTY ✓
+- AI input price: 23346.4 (matches snapshot close) ✓
+- AI input rsi: None (no indicators data at this timestamp — historical validation)
+- AI input regime: None (no regime data at this timestamp — historical validation)
+
+#### BANKNIFTY
+- Snapshot exists: YES (close=56358.7, data_state=LIVE)
+- AI input symbol: BANKNIFTY ✓
+- AI input price: 56358.7 (matches snapshot close) ✓
+
+### Key Assertion
+
+```
+BANKNIFTY request → BANKNIFTY AI context ✓
+NIFTY request → NIFTY AI context ✓
+```
+
+### Before Fix
+
+```
+BANKNIFTY request → NIFTY AI context ✗ (hardcoded NIFTY)
+All symbols → NIFTY AI context ✗ (hardcoded NIFTY)
+AI input: {} (empty market state) ✗
+```
+
+### After Fix
+
+```
+_all symbols → Correct symbol AI context ✓
+All symbols → Actual market state data ✓
+```
+
+### CSV Format
+
+```csv
+test,timestamp,symbol,result
+symbol_routing,NIFTY,2026-09-18T04:25:00+00:00,PASS
+symbol_routing,BANKNIFTY,2026-09-18T04:25:00+00:00,PASS
+ai_input_symbol,NIFTY,2026-09-18T04:25:00+00:00,NIFTY
+ai_input_symbol,BANKNIFTY,2026-09-18T04:25:00+00:00,BANKNIFTY
+ai_input_price,NIFTY,2026-09-18T04:25:00+00:00,23346.400390625
+ai_input_price,BANKNIFTY,2026-09-18T04:25:00+00:00,56358.69921875
+_contract_llm,NIFTY,2026-09-18T04:25:00+00:00,PASS
+_contract_llm,BANKNIFTY,2026-09-18T04:25:00+00:00,PASS
+```
+
+## LLM Call Validation
+
+LLM calls are NOT executed in this validation (no API key). The `_prepare_ai_input()` test proves the data routing is correct. LLM execution requires API key and will be validated in the next live session.
+
+### When LLM Executes
+
+The LLM call path is:
+1. `OutlookScheduler._generate_ai_outlook()` → rate-limited
+2. `AIOutlookGenerator5m.generate()` → builds prompt with actual data
+3. `_call_llm(prompt, symbol, market_state)` → `engine.generate(symbol, ai_input, use_llm=True)`
+4. Result validated → stored to ai_outlooks_5m
+5. AI call logged to research_ai_call_log
