@@ -32,8 +32,8 @@ class BacktestEngine:
                 trade = self._simulate_trade(decision, candle)
                 trades.append(trade)
         outcome = self._calculate_outcomes(trades)
-        self.conn.execute('INSERT INTO backtest_outcomes (outcome_id, run_id, total_trades, wins, losses, breakeven, win_rate, avg_outcome, profit_factor, max_drawdown, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
-            (f'OUT-{run_id}', run_id, len(trades), sum(1 for t in trades if t.get('paper_pnl', 0) > 0), sum(1 for t in trades if t.get('paper_pnl', 0) < 0), sum(1 for t in trades if t.get('paper_pnl', 0) == 0), 0.0 if len(trades) == 0 else sum(1 for t in trades if t.get('paper_pnl', 0) > 0) / len(trades), 0.0, 0.0, 0.0, datetime.now(_IST).isoformat()))
+        self.conn.execute('INSERT INTO backtest_outcomes (outcome_id, run_id, total_trades, wins, losses, breakeven, win_rate, avg_outcome, median_outcome, profit_factor, max_drawdown, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
+            (f'OUT-{run_id}', run_id, len(trades), sum(1 for t in trades if t.get('paper_pnl', 0) > 0), sum(1 for t in trades if t.get('paper_pnl', 0) < 0), sum(1 for t in trades if t.get('paper_pnl', 0) == 0), 0.0 if len(trades) == 0 else sum(1 for t in trades if t.get('paper_pnl', 0) > 0) / len(trades), 0.0, 0.0, 0.0, 0.0, datetime.now(_IST).isoformat()))
         self.conn.commit()
         return {'run_id': run_id, 'decisions': decisions, 'trades': trades, 'outcome': outcome, 'lookahead_check': 'PASS', 'status': 'COMPLETED'}
 
@@ -43,7 +43,7 @@ class BacktestEngine:
 
     def _simulate_decision(self, instrument, candle, scenario_filter):
         ms = {'trend': 'BULLISH', 'vwap_relation': 'ABOVE', 'momentum': 'POSITIVE', 'volatility': 'NORMAL', 'price': candle['close']}
-        decision = self.qualification.qualify(instrument, ms, options_valid=True)
+        decision = self.qualification.qualify(instrument, ms, options_valid=True, research=True)
         return {'decision_id': str(uuid.uuid4())[:16].upper(), 'timestamp': candle['timestamp'], 'market_state': ms, 'decision': decision['decision'], 'reasons': decision.get('reasons', []), 'latest_allowed_data': candle['timestamp'], 'actual_latest_data': candle['timestamp'], 'lookahead_check': 'PASS'}
 
     def _simulate_trade(self, decision, candle):

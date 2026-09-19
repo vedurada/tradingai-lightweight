@@ -16,7 +16,7 @@ class QualificationEngine:
         self.strategy = StrategyEngine()
         self.risk = RiskEngine(settings) if settings else RiskEngine()
 
-    def qualify(self, instrument_id, market_state, options_valid=True):
+    def qualify(self, instrument_id, market_state, options_valid=True, research=False):
         reasons = []
         daily_lock = self.conn.execute(
             'SELECT * FROM daily_trade_locks WHERE instrument_id=? AND date=?',
@@ -31,13 +31,12 @@ class QualificationEngine:
         if not match:
             return {'decision': 'NO_TRADE', 'reasons': ['scenario_not_matched'], 'trade': None}
         if match['match_state'] not in ('CONFIRMED',):
-            return {'decision': 'NO_TRADE', 'reasons': [f'scenario_{match["match_state"].lower()}'], 'trade': None}
+            return {'decision': 'NO_TRADE', 'reasons': [f'scenario_{match[match_state].lower()}'], 'trade': None}
         strategy_info = self.strategy.select_strategy(
             active['candidate']['scenario_type'],
             market_state.get('trend', 'NEUTRAL'),
             market_state.get('volatility', 'NORMAL'),
-            options_valid
-        )
+            options_valid)
         if strategy_info.get('status') == 'NO_TRADE':
             return {'decision': 'NO_TRADE', 'reasons': [strategy_info['reason']], 'trade': None}
         entry = market_state.get('price', 0) * 0.995
@@ -54,11 +53,12 @@ class QualificationEngine:
             return {'decision': 'NO_TRADE', 'reasons': risk_reasons, 'trade': None}
         if not options_valid:
             return {'decision': 'NO_TRADE', 'reasons': ['options_data_unavailable'], 'trade': None}
-        trade_id = str(uuid.uuid4())[:16].upper()
-        date_str = datetime.now(_IST).strftime('%Y-%m-%d')
-        self.conn.execute('INSERT INTO qualified_trades (trade_id, instrument_id, date, timestamp, scenario, strategy, objective, direction, entry, stop, target, max_risk, expected_reward, risk_reward, qualification_evidence, status, daily_lock_consumed, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
-            (trade_id, instrument_id, date_str, datetime.now(_IST).isoformat(), candidate['scenario'], strategy_info['strategy'], strategy_info['objective'], strategy_info['direction'], candidate['entry'], candidate['stop'], candidate['target'], candidate['max_risk'], candidate['expected_reward'], candidate['risk_reward'], json.dumps(market_state), 'QUALIFIED', 0, datetime.now(_IST).isoformat()))
-        self.conn.execute('INSERT OR REPLACE INTO daily_trade_locks (lock_id, instrument_id, date, status, trade_id, locked_at, consumed_at, created_at) VALUES (?,?,?,?,?,?,?,?)',
-            (f'LCK-{instrument_id}-{date_str}', instrument_id, date_str, 'CONSUMED', trade_id, datetime.now(_IST).isoformat(), datetime.now(_IST).isoformat(), datetime.now(_IST).isoformat()))
-        self.conn.commit()
-        return {'decision': 'QUALIFIED_TRADE', 'trade_id': trade_id, 'trade': candidate, 'reasons': []}
+        if not research:
+            trade_id = str(uuid.uuid4())[:16].upper()
+            date_str = datetime.now(_IST).strftime('%Y-%m-%d')
+            self.conn.execute('INSERT INTO qualified_trades (trade_id, instrument_id, date, timestamp, scenario, strategy, objective, direction, entry, stop, target, max_risk, expected_reward, risk_reward, qualification_evidence, status, daily_lock_consumed, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                (trade_id, instrument_id, date_str, datetime.now(_IST).isoformat(), candidate['scenario'], strategy_info['strategy'], strategy_info['objective'], strategy_info['direction'], candidate['entry'], candidate['stop'], candidate['target'], candidate['max_risk'], candidate['expected_reward'], candidate['risk_reward'], json.dumps(market_state), 'QUALIFIED', 0, datetime.now(_IST).isoformat()))
+            self.conn.execute('INSERT OR REPLACE INTO daily_trade_locks (lock_id, instrument_id, date, status, trade_id, locked_at, consumed_at, created_at) VALUES (?,?,?,?,?,?,?,?)',
+                (f'LCK-{instrument_id}-{date_str}', instrument_id, date_str, 'CONSUMED', trade_id, datetime.now(_IST).isoformat(), datetime.now(_IST).isoformat(), datetime.now(_IST).isoformat()))
+            self.conn.commit()
+        return {'decision': 'QUALIFIED_TRADE', 'trade_id': None if research else str(uuid.uuid4())[:16].upper(), 'trade': candidate, 'reasons': []}

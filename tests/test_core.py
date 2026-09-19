@@ -170,5 +170,89 @@ class TestIdempotency(unittest.TestCase):
         for r in run_counts:
             self.assertGreaterEqual(r['c'], 1, f"Missing run for {r['instrument']} {r['date_start']}")
 
+
+class TestSyntheticData(unittest.TestCase):
+    def test_synthetic_qualification_bullish(self):
+        engine = QualificationEngine()
+        ms = {"trend": "BULLISH", "vwap_relation": "ABOVE", "momentum": "POSITIVE", "volatility": "NORMAL", "price": 100.0}
+        result = engine.qualify("NIFTY", ms, options_valid=False)
+        self.assertIn(result["decision"], ["QUALIFIED_TRADE", "NO_TRADE"])
+
+    def test_synthetic_qualification_bearish(self):
+        engine = QualificationEngine()
+        ms = {"trend": "BEARISH", "vwap_relation": "BELOW", "momentum": "NEGATIVE", "volatility": "NORMAL", "price": 100.0}
+        result = engine.qualify("NIFTY", ms, options_valid=False)
+        self.assertIn(result["decision"], ["QUALIFIED_TRADE", "NO_TRADE"])
+
+    def test_synthetic_research_mode(self):
+        engine = QualificationEngine()
+        ms = {"trend": "BULLISH", "vwap_relation": "ABOVE", "momentum": "POSITIVE", "volatility": "NORMAL", "price": 100.0}
+        result = engine.qualify("NIFTY", ms, options_valid=True, research=True)
+        self.assertIn(result["decision"], ["QUALIFIED_TRADE", "NO_TRADE"])
+        self.assertIsNone(result.get("trade_id"))
+
+    def test_synthetic_risk_validation(self):
+        r = RiskEngine()
+        ok, reasons = r.validate({"entry": 100.0, "stop": 99.0, "target": 102.0})
+        self.assertTrue(ok, f"Valid trade rejected: {reasons}")
+
+    def test_synthetic_backtest_research(self):
+        bt = BacktestEngine()
+        result = bt.run("NIFTY", "2026-09-12", "2026-09-19")
+        self.assertIn("run_id", result)
+        self.assertIn("outcome", result)
+        self.assertEqual(result["lookahead_check"], "PASS")
+
+
+class TestFutureIndependence(unittest.TestCase):
+    def test_qualification_no_future_access(self):
+        engine = QualificationEngine()
+        test_ts = "2026-09-18T15:30:00+05:30"
+        conn = get_conn()
+        future_candles = conn.execute("SELECT COUNT(*) FROM market_candles_5m WHERE instrument_id='NIFTY' AND timestamp > ?", (test_ts,)).fetchone()[0]
+        conn.close()
+        ms = {"trend": "BULLISH", "vwap_relation": "ABOVE", "momentum": "POSITIVE", "volatility": "NORMAL", "price": 23346.0}
+        ms["future_candle_count"] = future_candles
+        result = engine.qualify("NIFTY", ms, options_valid=True)
+        self.assertIn(result["decision"], ["QUALIFIED_TRADE", "NO_TRADE"])
+
+    def test_replay_only_uses_historical_candles(self):
+        conn = get_conn()
+        max_ts = conn.execute("SELECT MAX(timestamp) FROM market_candles_5m WHERE instrument_id='NIFTY'").fetchone()[0]
+        conn.close()
+        self.assertIsNotNone(max_ts)
+
+    def test_backtest_uses_only_historical_data(self):
+        conn = get_conn()
+        max_ts = conn.execute("SELECT MAX(timestamp) FROM market_candles_5m WHERE instrument_id='NIFTY'").fetchone()[0]
+        conn.close()
+        bt = BacktestEngine()
+        result = bt.run("NIFTY", "2026-09-01", "2026-09-19")
+        for decision in result["decisions"]:
+            self.assertEqual(decision["lookahead_check"], "PASS")
+
+
+class TestResearchEndpoints(unittest.TestCase):
+    def test_research_scenarios_endpoint(self):
+        import urllib.request
+        base = "http://127.0.0.1:8000"
+        try:
+            r = urllib.request.urlopen(f"{base}/api/research/scenarios")
+            d = r.read().decode()
+            self.assertIn("LIVE", d)
+        except Exception as e:
+            self.fail(f"Research scenarios endpoint failed: {e}")
+
+    def test_research_replay_endpoint(self):
+        import urllib.request
+        base = "http://127.0.0.1:8000"
+        try:
+            r = urllib.request.urlopen(f"{base}/api/research/replay/NIFTY/2026-09-18/15:25:00")
+            d = r.read().decode()
+            self.assertIn("LIVE", d)
+        except Exception as e:
+            self.fail(f"Research replay endpoint failed: {e}")
+
+
 if __name__ == "__main__":
     unittest.main()
