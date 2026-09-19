@@ -1,0 +1,3 @@
+symbol,timestamp,trade_state,qualification_reason,confidence,evidence_count,options_available,scenario_state,activation_state,live_session,note
+NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Market closed Saturday — no qualification generated
+BANKNIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Market closed Saturday — no qualification generated

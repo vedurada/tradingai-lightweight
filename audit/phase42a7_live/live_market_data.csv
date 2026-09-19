@@ -1,0 +1,5 @@
+symbol,timestamp,price,volume,data_source,data_quality,freshness,state
+NIFTY,N/A,N/A,N/A,N/A,N/A,N/A,UNAVAILABLE
+BANKNIFTY,N/A,N/A,N/A,N/A,N/A,N/A,UNAVAILABLE
+FINNIFTY,N/A,N/A,N/A,N/A,N/A,N/A,UNAVAILABLE
+SENSEX,N/A,N/A,N/A,N/A,N/A,N/A,UNAVAILABLE

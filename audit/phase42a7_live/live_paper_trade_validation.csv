@@ -1,0 +1,2 @@
+setup_id,qualification_timestamp,entry_timestamp,entry_price,strategy,invalidation,target,risk,outcome,live_session,note
+ERROR,unable to open database file,Live session: NOT EXERCISED,Market closed Saturday

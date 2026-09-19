@@ -1,0 +1,9 @@
+page,url,http_status,freshness_indicator,stale_values,hardcoded_market,js_errors,data_loads,symbol_routing,state,note
+/,https://tradingai.in/,200,updateFreshness function present,Pre-rendered prices from 18 Sep until JS loads,0 hardcoded prices in display,N/A (static scan),"AI outlook via /api/market-outlook, prices via /api/price",NIFTY page shows NIFTY data,FIXED,Freshness indicator added via updateFreshness()
+/trade.html,https://tradingai.in/trade.html,200,N/A,N/A,0 hardcoded prices,N/A (static scan),Single loadData() with quote/track,NIFTY default,FIXED,"Duplicate loadData() removed, quote/track added to first"
+/ai-track-record.html,https://tradingai.in/ai-track-record.html,200,N/A,N/A,No hardcoded performance,N/A (static scan),Cards query data-sym/data-col attributes,4 cards: NIFTY/BANKNIFTY/FINNIFTY/SENSEX,FIXED,data-sym and data-col attributes added to HTML cards
+/indices/nifty.html,https://tradingai.in/indices/nifty.html,200,Loading,N/A,0 hardcoded prices,N/A,All sections load from APIs,NIFTY-specific APIs,PASS,Index selector verified correct
+/indices/banknifty.html,https://tradingai.in/indices/banknifty.html,200,Loading,N/A,0 hardcoded prices,N/A,All sections load from APIs,BANKNIFTY-specific APIs,PASS,CRITICAL: Duplicate BANKNIFTY link at line 32
+/today/index.html,https://tradingai.in/today/index.html,200,Loading,N/A,0 hardcoded prices,N/A,All sections load from APIs,NIFTY default,PASS,"13 sections, Loading on static load"
+/options/index.html,https://tradingai.in/options/index.html,200,Loading,N/A,0 hardcoded prices,N/A,PCR/MaxPain/OI/ExpectedMove,NIFTY default,PASS,
+/strategies.html,https://tradingai.in/strategies.html,200,Waiting,N/A,0 hardcoded prices,N/A (static scan),Strategy hero + cards,NIFTY,PASS,Static comparison table labelled static

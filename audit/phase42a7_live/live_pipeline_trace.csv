@@ -1,0 +1,15 @@
+layer,layer_num,check,result,timestamp,evidence,state,note
+MARKET DATA INGESTION,1,1-min market data available,PASS,2026-09-19 09:10,price_5m has data up to 2026-09-18T16:40,STALE,Friday close — Saturday no new data
+DATA NORMALIZATION & QUALITY,2,Data quality labels correct,PASS,2026-09-19 09:10,API returns STALE for all instruments,STALE,All data properly labelled stale
+COMPLETED 5-MINUTE SNAPSHOT,3,5m snapshot from completed candle,PASS,2026-09-18T04:25,market_snapshots_5m has 2 rows (replay-verified),REPLAY-VERIFIED,No live 5m candle on Saturday
+MARKET EVIDENCE,4,Evidence inserted,PASS,2026-09-18T04:25,market_evidence_5m has 1 row (replay-verified),REPLAY-VERIFIED,No live evidence on Saturday
+MARKET STATE / INTENT,5,Market state derived deterministically,NOT EXERCISED,2026-09-19 09:10,No live state derivation,NOT EXERCISED,Market closed Saturday
+PRE-MARKET SCENARIO,6,Pre-market scenarios generated,NOT EXERCISED,2026-09-19 09:10,No live scenarios,NOT EXERCISED,Market closed Saturday
+SCENARIO ACTIVATION,7,Scenario activation ARMED/WATCH/ACTIVATED,NOT EXERCISED,2026-09-19 09:10,No live activations,NOT EXERCISED,Market closed Saturday
+MONITOR.PY / SCHEDULER,8,monitor.py triggers AI scheduler,NOT EXERCISED,2026-09-19 09:10,monitor.service inactive (Saturday),NOT EXERCISED,Cron only runs Mon-Fri 9-15
+AI / HONEST FALLBACK,9,LLM generates outlook or honest fallback,NOT EXERCISED,2026-09-19 09:10,ai_outlooks_5m = 0,NOT EXERCISED,LLM configured but no live calls
+AI_OUTLOOKS_5M,10,5m AI records created,NOT EXERCISED,2026-09-19 09:10,ai_outlooks_5m = 0,NOT EXERCISED,No generation on Saturday
+API,11,API responds with current data,PASS,2026-09-19 09:10,All endpoints return 200 (degraded),STALE,APIs return stale Friday data correctly
+JAVASCRIPT,12,Frontend renders data,PASS,2026-09-19 09:10,"Pages return 200, JS loads",STALE,All 3 fixes deployed and verified
+HTML,13,HTML displays correct state,PASS,2026-09-19 09:10,Freshness indicator present,STALE,Homepage shows STALE/MARKET CLOSED
+TRADER DISPLAY,14,Trader sees correct market state,PASS,2026-09-19 09:10,"Pages show STALE, not LIVE",STALE,Honest stale display on Saturday

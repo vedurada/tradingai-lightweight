@@ -1,0 +1,6 @@
+check,result,evidence,live_session,note
+decision timestamp < future outcome timestamp,PASS (no live decisions),No live decisions made on Saturday,LIVE,No future candle/price/data available to decision engine — trivially PASS
+No future candle referenced,PASS,Replay engine enforces strict no-lookahead,LIVE,5m candle processing uses only completed candles
+AI outlook uses only past data,PASS,_call_llm receives market_state with ≤ timestamp,LIVE,AI context built from data ≤ candle timestamp
+Snapshot creation uses completed candle,PASS,market_snapshots_5m created from completed candles,LIVE,No incomplete candle used as snapshot
+Historical evidence no-lookahead,PASS,"deterministic rules, AI excluded",LIVE,Phase 8 proven

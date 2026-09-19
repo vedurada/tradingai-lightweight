@@ -1,0 +1,2 @@
+timestamp,symbol,scheduler_invoked,instrument,material_change,generate_reason,skip_reason,llm_call,outlook_id,live_session,note
+2026-09-19 09:10,NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,Market closed Saturday — cron scheduler inactive outside 9-15 Mon-Fri

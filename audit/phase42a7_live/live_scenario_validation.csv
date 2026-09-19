@@ -1,0 +1,3 @@
+symbol,scenario_id,scenario_type,initial_state,trigger,confirmation,invalidation,expected_move,target_zone,time_horizon,calibration,live_session,note
+NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Market closed Saturday — no live scenarios generated
+BANKNIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LIVE,Market closed Saturday — no live scenarios generated

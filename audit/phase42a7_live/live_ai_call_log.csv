@@ -1,0 +1,3 @@
+timestamp,symbol,model,provider,prompt_version,success,failure,latency,tokens,fallback,outlook_id,live_session,note
+2026-09-19,NIFTY,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,NOT EXERCISED,LLM_AVAILABLE,NOT EXERCISED,LIVE,No live AI generation — market closed Saturday
+__INFO__,"LLM is configured (groq.env exists, env vars set)",but no live calls attempted on Saturday,deterministic pipeline=PASS,live LLM generation=NOT EXERCISED,Pending Monday 2026-09-21
