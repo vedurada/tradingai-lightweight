@@ -281,7 +281,7 @@ async function load(){
   drawChart(candles,c,live?d.price:null);
   var tl=[];
   tl.push(['09:15','Session open'+(d.session==='PREMARKET'?' (scheduled)':'')]);
-  if(d.completed_candle){tl.push([String(d.completed_candle).slice(11,16),'Latest completed 5-minute candle']);}
+  if(d.completed_candle){var sess0=d.session||d.engine_state||'';var closed0=(sess0==='WEEKEND'||sess0==='MARKET_CLOSED'||sess0==='HOLIDAY');tl.push([String(d.completed_candle).slice(11,16),closed0?'Latest completed 5-minute slot (as of)':'Latest completed 5-minute candle']);}
   if(d.quote_timestamp){tl.push([String(d.quote_timestamp).slice(11,16),'Latest market quote']);}
   tl.push([String(d.timestamp).slice(11,19),'Decision updated']);
   $('timeline').innerHTML=tl.map(function(e){return '<div><b>'+esc(e[0])+'</b> — '+esc(e[1])+'</div>';}).join('');

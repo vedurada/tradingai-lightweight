@@ -249,6 +249,8 @@ def build_decision(instrument, now=None):
         regime = scen.get('scenario_type') or 'UNAVAILABLE'
 
     # --- lifecycle: active paper trade (read-only) ---
+    # DISPLAY RULE (owner-ordered): a trade shows ACTIVE only when it was
+    # generated today (IST). Stale/test rows from prior days never surface.
     active_trade = None
     try:
         pt = conn.execute(
@@ -256,7 +258,9 @@ def build_decision(instrument, now=None):
             'FROM paper_trades WHERE instrument_id=? AND status IN (\'ACTIVE\',\'OPEN\') '
             'ORDER BY entry_time DESC LIMIT 1', (inst,)).fetchone()
         if pt:
-            active_trade = dict(pt)
+            today = datetime.now(_IST).date().isoformat()
+            if str(pt['entry_time'])[:10] == today:
+                active_trade = dict(pt)
     except Exception:
         active_trade = None
     try:
