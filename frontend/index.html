@@ -37,7 +37,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @keyframes pulse{50%{opacity:.4}}
 .live-pill{background:#64748b;color:#fff;font-weight:700;font-size:.72rem;padding:.15rem .6rem;border-radius:999px}
 .live-pill.on{background:#22c55e}.live-pill.stale{background:#d97706}
-nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}@media(max-width:640px){nav.main{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:.85rem;font-size:.78rem;padding:.5rem .7rem;justify-content:flex-start;scrollbar-width:none;}nav.main::-webkit-scrollbar{display:none;}nav.main a{white-space:nowrap;flex:0 0 auto;}}
 nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
 .wrap{max-width:1400px;margin:0 auto;padding:1rem}
 .statusbar{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:.6rem 1.2rem;margin-bottom:1rem;display:flex;gap:1rem;flex-wrap:wrap;align-items:center;font-size:.85rem}
@@ -116,7 +116,7 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Market Insights &nbsp;|&nbsp; Smart Setups &nbsp;|&nbsp; Better Trades</span></div>
 <div class="live" role="status" aria-live="polite"><span class="live-dot" id="liveDot"></span><span id="marketState">—</span>&nbsp;IST <span id="clock">--:--:--</span>&nbsp;<span class="live-pill" id="livePill">…</span></div>
 </div>
-<nav class="main" aria-label="Primary"><a class="active" href="/" aria-current="page">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/methodology.html">Methodology</a><a href="/paper.html">Paper</a></nav>
+<nav class="main" aria-label="Primary"><a class="active" href="/" aria-current="page">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/paper.html">Paper</a></nav>
 <div class="wrap">
 <div class="statusbar" role="status" aria-live="polite"><span id="globalStatus">● Loading market status…</span><span class="fresh" id="globalFresh"></span></div>
 <div class="focus"><div><h2>🎯 Today's Focus</h2><p>Follow the recommended strategy based on current market structure, CPR levels and price action.</p></div><div class="flow">Market → Structure → Positioning → Liquidity → Intent → Confirmation → <b>Trade / Wait</b> → Risk → Outcome</div></div>
@@ -192,7 +192,7 @@ function renderSide(p,d){
   }
 }
 var candleCache={NIFTY:[],BANKNIFTY:[],INDIA_VIX:[]}, candleDay='';
-function drawMiniChart(cvId,candles,cpr,livePrice,todayStr){
+function drawMiniChart(cvId,candles,cpr,livePrice,todayStr,mark){
   var cv=$(cvId);if(!cv)return;
   var dpr=window.devicePixelRatio||1;
   var box=cv.parentNode.getBoundingClientRect();
@@ -242,6 +242,22 @@ function drawMiniChart(cvId,candles,cpr,livePrice,todayStr){
     g.fillStyle='#0f172a';g.fillRect(pL+pW+2,py-9,Math.max(1,tw),16);
     g.fillStyle='#fff';g.fillText(tag,pL+pW+7,py+3);
   }
+  if(mark&&mark.price!=null&&!isNaN(Number(mark.price))){
+    var mi=-1;for(var k=0;k<rows.length;k++){if(String(rows[k].timestamp).slice(0,16)===String(mark.ts).slice(0,16)){mi=k;break;}}
+    if(mi>=0){
+      var bull=(mark.dir!=='BEAR'),mx0=X(mi,n),my0=Y(Number(mark.price)),col=bull?'#16a34a':'#dc2626';
+      g.fillStyle=col;g.strokeStyle=col;g.lineWidth=1.5;
+      g.beginPath();g.arc(mx0,my0,3.5,0,7);g.fill();
+      g.beginPath();
+      if(bull){var ay=Math.min(H-16,my0+18);g.moveTo(mx0,ay-9);g.lineTo(mx0-6,ay+1);g.lineTo(mx0+6,ay+1);}
+      else{var ay2=Math.max(16,my0-18);g.moveTo(mx0,ay2+9);g.lineTo(mx0-6,ay2-1);g.lineTo(mx0+6,ay2-1);}
+      g.closePath();g.fill();
+      g.font='bold 9px -apple-system,Segoe UI,Roboto,sans-serif';
+      var et='ENTRY '+fmt(Number(mark.price)),ex=mx0+10;
+      if(ex+g.measureText(et).width>W-4)ex=mx0-g.measureText(et).width-10;
+      g.fillText(et,ex,my0+3);
+    }
+  }
   g.fillStyle='#64748b';
   var step=Math.max(1,Math.ceil(n/6));
   for(var ti=0;ti<n;ti+=step){g.fillText(String(rows[ti].timestamp).slice(11,16),X(ti,n)-12,H-6);}
@@ -256,7 +272,8 @@ function renderChart(p,sym,d){
     if(lbl){lbl.textContent='CPR: '+fmt(c.bc)+' – '+fmt(c.tc)+' ('+c.cpr_type+')';}
   }else if(lbl){lbl.textContent='CPR: DATA UNAVAILABLE';}
   var todayStr=d&&d.timestamp?String(d.timestamp).slice(0,10):candleDay;
-  drawMiniChart(cvId,candleCache[sym]||[],c,price,todayStr);
+  var mk=(d&&d.decision==='TRADE'&&d.trade&&d.trade.entry!=null&&d.decision_timestamp)?{ts:d.decision_timestamp,price:d.trade.entry,dir:d.trade.direction||d.strategy_direction||''}:null;
+  drawMiniChart(cvId,candleCache[sym]||[],c,price,todayStr,mk);
 }
 function renderStrat(p,d,dec){
   var pill=$(p+'Pill'),name=$(p+'StratName'),st=$(p+'Status'),why=$(p+'Why'),box=$(p+'Strat');

@@ -30,7 +30,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
 .brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
 .tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
-nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}@media(max-width:640px){nav.main{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:.85rem;font-size:.78rem;padding:.5rem .7rem;justify-content:flex-start;scrollbar-width:none;}nav.main::-webkit-scrollbar{display:none;}nav.main a{white-space:nowrap;flex:0 0 auto;}}
 nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
 .wrap{max-width:1000px;margin:0 auto;padding:1rem}
 .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.2rem;margin-bottom:1rem}
@@ -50,7 +50,7 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <body>
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">CPR trigger backtest</h1>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Backtest</span></div></div>
-<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html" class="active" aria-current="page">Backtest</a><a href="/methodology.html">Methodology</a><a href="/paper.html">Paper</a></nav>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html" class="active" aria-current="page">Backtest</a><a href="/paper.html">Paper</a></nav>
 <div class="wrap">
 <section class="card"><h2>CPR Trigger Backtest</h2><p class="note">Base trigger strategy (Plain variant): bull on S2/S1/PDL touch or close above TC; bear on R2/R1/PDH touch or close below BC. Aligned adds the weekly-CPR gate and is the default view. First trigger per session, entry at next open in [09:20,15:10), 0.5% stop / 2% target evaluated at subsequent opens (stop first), flat 15:10 open. Sub-30pt (NIFTY) / sub-60pt (BANKNIFTY) adverse drifts count as decay wins. Read-only over stored candles; paper days append below as they accumulate.</p>
 <form id="f2"><label for="inst2">Instrument</label><select id="inst2"><option>NIFTY</option><option>BANKNIFTY</option></select>

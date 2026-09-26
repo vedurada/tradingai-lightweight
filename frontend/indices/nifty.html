@@ -37,7 +37,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 @keyframes pulse{50%{opacity:.4}}
 .live-pill{background:#64748b;color:#fff;font-weight:700;font-size:.72rem;padding:.15rem .6rem;border-radius:999px}
 .live-pill.on{background:#22c55e}.live-pill.stale{background:#d97706}
-nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}@media(max-width:640px){nav.main{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:.85rem;font-size:.78rem;padding:.5rem .7rem;justify-content:flex-start;scrollbar-width:none;}nav.main::-webkit-scrollbar{display:none;}nav.main a{white-space:nowrap;flex:0 0 auto;}}
 nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
 .wrap{max-width:1000px;margin:0 auto;padding:1rem}
 .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.2rem;margin-bottom:1rem}
@@ -90,7 +90,7 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">NIFTY 50 Decision</span></div>
 <div class="live" role="status" aria-live="polite"><span class="live-dot" id="liveDot"></span><span id="marketState">—</span>&nbsp;IST <span id="clock">--:--:--</span>&nbsp;<span class="live-pill" id="livePill">…</span></div>
 </div>
-<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html" id="navNifty">Nifty</a><a href="/indices/banknifty.html" id="navBank">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/methodology.html">Methodology</a><a href="/paper.html">Paper</a></nav>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html" id="navNifty">Nifty</a><a href="/indices/banknifty.html" id="navBank">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/paper.html">Paper</a></nav>
 <div class="wrap">
 <section class="card" aria-label="Instrument and live status"><div class="hero"><div><h2>NIFTY 50 <span id="sessLbl" style="font-size:.75rem;color:#64748b"></span></h2><div><span class="price" id="price">—</span><span class="chg flat" id="chg"></span></div><div class="sub" id="sub">Connecting…</div></div><div style="text-align:right"><span class="dir-pill" id="bias">—</span><div class="sub" id="regime"></div></div></div></section>
 <section class="card" aria-label="Current decision"><h2>CURRENT DECISION</h2><div class="dec-big" id="decBig">—</div><div class="sub" id="decWhy">Connecting…</div></section>
@@ -124,8 +124,8 @@ function tick(){try{var d=new Date(new Date().toLocaleString('en-US',{timeZone:'
 setInterval(tick,1000);tick();
 (document.getElementById(INST==='NIFTY'?'navNifty':'navBank')||{}).className='active';
 function row(k,v){return '<dt>'+esc(k)+'</dt><dd>'+esc(v)+'</dd>';}
-var lastCandles=[],lastCpr=null,lastToday='';
-function drawChart(candles,cpr,livePrice){
+var lastCandles=[],lastCpr=null,lastToday='',lastMark=null;
+function drawChart(candles,cpr,livePrice,mark){
   var cv=$('chart');if(!cv)return;
   var dpr=window.devicePixelRatio||1;
   var box=cv.parentNode.getBoundingClientRect();
@@ -168,6 +168,22 @@ function drawChart(candles,cpr,livePrice){
     var yO=Y(cd.open),yC=Y(cd.close);
     g.fillRect(x-bw/2,Math.min(yO,yC),bw,Math.max(1,Math.abs(yC-yO)));
   });
+  if(mark&&mark.price!=null&&!isNaN(Number(mark.price))){
+    var mi=-1;for(var k=0;k<rows.length;k++){if(String(rows[k].timestamp).slice(0,16)===String(mark.ts).slice(0,16)){mi=k;break;}}
+    if(mi>=0){
+      var bull=(mark.dir!=='BEAR'),mx0=X(mi,n),my0=Y(Number(mark.price)),col=bull?'#16a34a':'#dc2626';
+      g.fillStyle=col;g.strokeStyle=col;g.lineWidth=1.5;
+      g.beginPath();g.arc(mx0,my0,3.5,0,7);g.fill();
+      g.beginPath();
+      if(bull){var ay=Math.min(H-18,my0+20);g.moveTo(mx0,ay-9);g.lineTo(mx0-6,ay+1);g.lineTo(mx0+6,ay+1);}
+      else{var ay2=Math.max(18,my0-20);g.moveTo(mx0,ay2+9);g.lineTo(mx0-6,ay2-1);g.lineTo(mx0+6,ay2-1);}
+      g.closePath();g.fill();
+      g.font='bold 9px -apple-system,Segoe UI,Roboto,sans-serif';
+      var et='ENTRY '+fmt(Number(mark.price)),ex=mx0+10;
+      if(ex+g.measureText(et).width>W-4)ex=mx0-g.measureText(et).width-10;
+      g.fillText(et,ex,my0+3);
+    }
+  }
   g.fillStyle='#64748b';
   var step=Math.max(1,Math.ceil(n/6));
   for(var ti=0;ti<n;ti+=step){g.fillText(String(rows[ti].timestamp).slice(11,16),X(ti,n)-12,H-6);}
@@ -202,7 +218,7 @@ async function tickPrice(){
     var q=(await r.json()).data||null;
     if(!q||q.price==null)return;
     paintPrice(q.price,q.change,q.change_pct,q.timestamp,q.state);
-    drawChart(lastCandles,lastCpr,q.price);
+    drawChart(lastCandles,lastCpr,q.price,lastMark);
   }catch(e){}
 }
 function fetchT(url,ms){var c=new AbortController();var t=setTimeout(function(){c.abort();},ms||10000);return fetch(url,{cache:'no-store',signal:c.signal}).then(function(r){clearTimeout(t);return r;},function(e){clearTimeout(t);throw e;});}
@@ -278,7 +294,8 @@ async function load(){
       tb.appendChild(tr);});
   }else{tb.innerHTML='<tr><td colspan="5">No completed 5-minute candles yet today.</td></tr>';}
   lastCandles=candles;lastCpr=c;lastToday=String(d.timestamp||'').slice(0,10);
-  drawChart(candles,c,live?d.price:null);
+  lastMark=(d&&d.decision==='TRADE'&&d.trade&&d.trade.entry!=null&&d.decision_timestamp)?{ts:d.decision_timestamp,price:d.trade.entry,dir:d.trade.direction||''}:null;
+  drawChart(candles,c,live?d.price:null,lastMark);
   var tl=[];
   tl.push(['09:15','Session open'+(d.session==='PREMARKET'?' (scheduled)':'')]);
   if(d.completed_candle){var sess0=d.session||d.engine_state||'';var closed0=(sess0==='WEEKEND'||sess0==='MARKET_CLOSED'||sess0==='HOLIDAY');tl.push([String(d.completed_candle).slice(11,16),closed0?'Latest completed 5-minute slot (as of)':'Latest completed 5-minute candle']);}
