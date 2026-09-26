@@ -242,6 +242,7 @@ function drawMiniChart(cvId,candles,cpr,livePrice,todayStr,mark){
     g.fillStyle='#0f172a';g.fillRect(pL+pW+2,py-9,Math.max(1,tw),16);
     g.fillStyle='#fff';g.fillText(tag,pL+pW+7,py+3);
   }
+  var sigT=null;
   if(mark&&mark.price!=null&&!isNaN(Number(mark.price))){
     var mi=-1;for(var k=0;k<rows.length;k++){if(String(rows[k].timestamp).slice(0,16)===String(mark.ts).slice(0,16)){mi=k;break;}}
     if(mi>=0){
@@ -256,11 +257,13 @@ function drawMiniChart(cvId,candles,cpr,livePrice,todayStr,mark){
       var et='ENTRY '+fmt(Number(mark.price)),ex=mx0+10;
       if(ex+g.measureText(et).width>W-4)ex=mx0-g.measureText(et).width-10;
       g.fillText(et,ex,my0+3);
+      sigT={x:mx0,t:String(mark.ts).slice(11,16),c:col};
     }
   }
   g.fillStyle='#64748b';
   var step=Math.max(1,Math.ceil(n/6));
   for(var ti=0;ti<n;ti+=step){g.fillText(String(rows[ti].timestamp).slice(11,16),X(ti,n)-12,H-6);}
+  if(sigT){g.fillStyle=sigT.c;g.font='bold 10px -apple-system,Segoe UI,Roboto,sans-serif';g.fillText(sigT.t,sigT.x-12,H-6);}
 }
 function renderChart(p,sym,d){
   var cvId=p==='nifty'?'niftyChart':(p==='bank'?'bankChart':'vixChart');
