@@ -11,3 +11,11 @@ without the EXPLICIT authorization of the owner (Satya) for each change.
 Unlock → change → verify → relock applies to every authorized change.
 Live database, logs, and research outputs are runtime data, not code,
 and are excluded from this freeze.
+
+CRON-MANAGED OUTPUTS (exception, 2026-09-26):
+The 15:45 Mon-Fri paper_confluence topup regenerates these data outputs;
+they stay writable (644) and WILL show as modified after cron runs:
+- frontend/paper.html, frontend/backtest.html
+- research/cpr_trade_ledger_*.csv, cpr_strategy_results_*.csv,
+  cpr_integrity_report_*.json, cpr_daily_signals_*.csv
+This is pipeline output churn, not code change. All other files stay 444/555.
