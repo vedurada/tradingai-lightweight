@@ -120,6 +120,28 @@ def do_morning():
     print('morning sent:', r.get('ok'))
 
 
+def resolve_reason(direction, entry, stop, target, price, now):
+    """Infer how a fired trade resolved. Pure function (no I/O)."""
+    try:
+        entry, stop, target, price = float(entry), float(stop), float(target), float(price)
+    except (TypeError, ValueError):
+        return 'FLAT'
+    bull = (direction != 'BEAR')
+    if now.hour > 15 or (now.hour == 15 and now.minute >= 10):
+        return 'EOD-FLAT'
+    if bull:
+        if price >= target:
+            return 'TARGET'
+        if price <= stop:
+            return 'STOP'
+    else:
+        if price <= target:
+            return 'TARGET'
+        if price >= stop:
+            return 'STOP'
+    return 'FLAT'
+
+
 def do_watch():
     st = state()
     today = datetime.now(IST).date().isoformat()
@@ -137,8 +159,9 @@ def do_watch():
             continue
         bull = (t.get('direction') != 'BEAR')
         emoji = '🟢' if bull else '🔴'
+        sig_at = datetime.now(IST).strftime('%H:%M')
         text = (f"{emoji} TRADE SIGNAL — {inst} ({t.get('direction') or ''})\n"
-                f"Entry {fmt(t.get('entry'))} | Stop {fmt(t.get('stop'))} | Target {fmt(t.get('target'))}\n"
+                f"Signal {sig_at} IST | Entry {fmt(t.get('entry'))} | Stop {fmt(t.get('stop'))} | Target {fmt(t.get('target'))}\n"
                 f"Strategy: {t.get('strategy') or '—'}\n"
                 f"Full levels: https://tradingai.in/indices/{sym}.html\n"
                 f"Educational research only — not financial advice.")
@@ -146,10 +169,42 @@ def do_watch():
         r = tg('sendPhoto', {'chat_id': CHANNEL, 'caption': text[:1024]}, photo=img)
         if r.get('ok'):
             st.setdefault('fired', []).append(key)
+            st.setdefault('open', {})[key] = {'inst': inst, 'sym': sym,
+                                              'direction': t.get('direction'), 'entry': t.get('entry'),
+                                              'stop': t.get('stop'), 'target': t.get('target'),
+                                              'strategy': t.get('strategy'), 'fired_at': sig_at,
+                                              'date': today}
             save_state(st)
             print(f'signal sent for {key}')
         else:
             print(f'signal FAILED for {key}: {str(r)[:150]}')
+    # exit sweep: previously fired trades no longer in the same TRADE
+    now = datetime.now(IST)
+    for key, o in list(st.get('open', {}).items()):
+        if o.get('date') != today:
+            st['open'].pop(key, None)
+            continue
+        try:
+            d = api(f"/api/decision/{o['sym']}")
+        except Exception as e:
+            print(f"exit poll {key} failed: {e}")
+            continue
+        t2 = d.get('trade') if d.get('decision') == 'TRADE' else None
+        same = bool(t2 and t2.get('direction') == o.get('direction')
+                    and str(t2.get('entry')) == str(o.get('entry')))
+        if same:
+            continue
+        reason = resolve_reason(o.get('direction'), o.get('entry'), o.get('stop'),
+                                o.get('target'), d.get('price'), now)
+        em = '🔴' if reason == 'STOP' else ('🟢' if reason == 'TARGET' else '⚪')
+        text = (f"{em} TRADE CLOSED — {o['inst']} ({o.get('direction') or ''})\n"
+                f"Entry {fmt(o.get('entry'))} @ {o.get('fired_at')} IST → {reason} @ {now.strftime('%H:%M')} IST\n"
+                f"Strategy: {o.get('strategy') or '—'}\n"
+                f"Educational research only — not financial advice.")
+        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
+        st['open'].pop(key, None)
+        save_state(st)
+        print(f"exit sent for {key}: {reason} ok={r.get('ok')}")
 
 
 def do_eod():
