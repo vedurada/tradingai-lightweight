@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtest — TradingAI.in</title>
+<meta name="description" content="Run historical backtests on validated 5-minute data with no-lookahead checks.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:1000px;margin:0 auto;padding:1rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.2rem;margin-bottom:1rem}
+.card h2{font-size:1.1rem;margin-bottom:.6rem}
+label{font-size:.82rem;color:#334155;display:block;margin:.4rem 0 .15rem}
+input,select{font-size:.9rem;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;max-width:280px}
+button{font-size:.88rem;font-weight:700;background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:.5rem 1.1rem;margin-top:.7rem;cursor:pointer}
+button:disabled{background:#94a3b8;cursor:wait}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.6rem}
+th,td{text-align:left;padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;font-variant-numeric:tabular-nums}
+th{color:#64748b}
+.note{font-size:.8rem;color:#475569;margin-top:.5rem}
+.ok{color:#15803d;font-weight:700}.bad{color:#b91c1c;font-weight:700}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+</style>
+</head>
+<body>
+<div class="topbar"><div><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Backtest</span></div></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html" class="active" aria-current="page">Backtest</a><a href="/methodology.html">Methodology</a></nav>
+<div class="wrap">
+<section class="card"><h2>Run Backtest</h2><p class="note">Historical 5-minute replay with no-lookahead validation. Results depend on stored session data.</p>
+<form id="f"><label for="inst">Instrument</label><select id="inst"><option>NIFTY</option><option>BANKNIFTY</option></select>
+<label for="ds">From</label><input id="ds" type="date" value="2026-09-01">
+<label for="de">To</label><input id="de" type="date" value="2026-09-19">
+<br><button id="go" type="submit">Run backtest</button></form><p class="note" id="status"></p></section>
+<section class="card" id="resCard" hidden><h2>Result <span id="runId" style="font-size:.75rem;color:#64748b"></span></h2><div id="out"></div><h2 style="margin-top:1rem">No-lookahead validation</h2><div id="val"></div>
+<h2 style="margin-top:1rem">Trades</h2><div style="overflow-x:auto"><table id="trades"><thead><tr><th>Date</th><th>Dir</th><th>Entry</th><th>Exit</th><th>Result</th><th>R</th></tr></thead><tbody></tbody></table></div></section>
+</div>
+<footer>TradingAI.in · Smarter Analysis. Disciplined Trading.</footer>
+<script>
+(function(){
+function $(id){return document.getElementById(id);}
+$('f').addEventListener('submit',async function(e){
+  e.preventDefault();
+  var go=$('go');go.disabled=true;$('status').textContent='Running…';
+  try{
+    var r=await fetch('/api/backtest/run',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:$('inst').value,date_start:$('ds').value,date_end:$('de').value})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var d=(await r.json()).data||{};
+    $('resCard').hidden=false;$('runId').textContent=d.run_id||'';
+    var o=d.outcome||{};
+    $('out').innerHTML='<table><tbody>'
+      +'<tr><th>Total trades</th><td>'+(o.total_trades==null?'0':o.total_trades)+'</td></tr>'
+      +'<tr><th>Wins / Losses / Breakeven</th><td>'+(o.wins||0)+' / '+(o.losses||0)+' / '+(o.breakeven||0)+'</td></tr>'
+      +'<tr><th>Win rate</th><td>'+(o.win_rate==null?'—':(o.win_rate*100).toFixed(1)+'%')+'</td></tr>'
+      +'<tr><th>Avg outcome</th><td>'+(o.avg_outcome==null?'—':o.avg_outcome)+'</td></tr>'
+      +'<tr><th>Lookahead check</th><td>'+(d.lookahead_check||'—')+'</td></tr></tbody></table>'
+      +((o.total_trades||0)===0?'<p class="note">No trades in range — no qualifying sessions in stored data. This is an honest empty result, not an error.</p>':'');
+    var v=await (await fetch('/api/backtest/validation/'+d.run_id)).json();
+    $('val').innerHTML='Violations: <b>'+v.data.lookahead_violations+'</b> — <span class="'+(v.data.result==='PASS'?'ok':'bad')+'">'+v.data.result+'</span>';
+    var tb=$('trades').querySelector('tbody');tb.innerHTML='';
+    (d.trades||[]).forEach(function(t){
+      var tr=document.createElement('tr');
+      [t.trade_date||t.date||'',t.direction||'',t.entry||'',t.exit||'',t.result||t.outcome||'',t.r_multiple==null?'':Number(t.r_multiple).toFixed(2)].forEach(function(v){
+        var td=document.createElement('td');td.textContent=v;tr.appendChild(td);});
+      tb.appendChild(tr);});
+    if(!(d.trades||[]).length){tb.innerHTML='<tr><td colspan="6">No trades.</td></tr>';}
+    $('status').textContent='Completed '+d.run_id;
+  }catch(err){$('status').textContent='Backtest temporarily unavailable ('+err.message+').';}
+  go.disabled=false;
+});
+})();
+</script>
+</body>
+</html>

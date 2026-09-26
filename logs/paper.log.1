@@ -1,0 +1,12 @@
+topup NIFTY: fetched=225 valid=225
+topup BANKNIFTY: fetched=225 valid=225
+paper rows processed=82 (new inserts only; history frozen)
+fade rows processed=80 (new inserts only; history frozen)
+page written: 9 signals, 82 rows
+backtest page refreshed: 47 trades (0 appended live)
+Traceback (most recent call last):
+  File "/opt/tradingai/scripts/paper_confluence.py", line 378, in <module>
+    topup()
+  File "/opt/tradingai/scripts/paper_confluence.py", line 64, in topup
+    conn.executemany(
+sqlite3.IntegrityError: FOREIGN KEY constraint failed

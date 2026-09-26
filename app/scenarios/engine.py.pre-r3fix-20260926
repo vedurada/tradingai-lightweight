@@ -1,0 +1,78 @@
+import json, sqlite3, os
+from datetime import datetime, timezone
+from zoneinfo import ZoneInfo
+from app.core.db import get_conn
+
+_IST = ZoneInfo('Asia/Kolkata')
+
+SCENARIO_TYPES = {
+    'BULLISH_CONTINUATION': {'direction': 'BULLISH', 'objective': 'DIRECTIONAL'},
+    'BEARISH_CONTINUATION': {'direction': 'BEARISH', 'objective': 'DIRECTIONAL'},
+    'RANGE_PREMIUM_DECAY': {'direction': 'NEUTRAL', 'objective': 'THETA_DECAY'},
+    'BREAKOUT': {'direction': 'BULLISH', 'objective': 'HYBRID'},
+    'BREAKOUT_FAILURE_REVERSAL': {'direction': 'BEARISH', 'objective': 'HYBRID'},
+}
+
+class ScenarioEngine:
+    def __init__(self):
+        self.conn = get_conn()
+
+    def generate_candidates(self, instrument_id, session_id, historical_features):
+        candidates = []
+        for stype, cfg in SCENARIO_TYPES.items():
+            candidate_id = f'SC-{instrument_id}-{stype}-{datetime.now(_IST).strftime("%Y%m%d%H%M%S")}'
+            candidates.append({
+                'candidate_id': candidate_id, 'instrument_id': instrument_id,
+                'session_id': session_id, 'scenario_type': stype,
+                'historical_context': json.dumps(historical_features),
+                'required_conditions': json.dumps({'trend': cfg['direction'], 'volatility': 'NORMAL'}),
+                'confirmation_conditions': json.dumps({'trend_continuity': True, 'volume_confirmation': True}),
+                'invalidation_conditions': json.dumps({'trend_reversal': True, 'level_break': True}),
+                'status': 'NOT_ACTIVE', 'confidence': 0.0,
+                'created_at': datetime.now(_IST).isoformat()
+            })
+        self.conn.executemany(
+            'INSERT INTO scenario_candidates (candidate_id, instrument_id, session_id, scenario_type, historical_context, required_conditions, confirmation_conditions, invalidation_conditions, status, confidence, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?)',
+            [(c['candidate_id'], c['instrument_id'], c['session_id'], c['scenario_type'], c['historical_context'], c['required_conditions'], c['confirmation_conditions'], c['invalidation_conditions'], c['status'], c['confidence'], c['created_at']) for c in candidates]
+        )
+        self.conn.commit()
+        return candidates
+
+    def evaluate_match(self, instrument_id, market_state, scenario):
+        match_state = 'WATCH'
+        evidence = []
+        if market_state.get('trend') == scenario.get('direction'):
+            match_state = 'PARTIALLY_MATCHED'
+            evidence.append('Trend direction matches')
+        if market_state.get('vwap_relation') == 'ABOVE' and scenario.get('direction') == 'BULLISH':
+            match_state = 'PARTIALLY_MATCHED'
+            evidence.append('Price above VWAP confirming bullish')
+        if market_state.get('momentum') == 'POSITIVE' and scenario.get('direction') == 'BULLISH':
+            match_state = 'CONFIRMED'
+            evidence.append('Positive momentum confirms bullish')
+        if market_state.get('momentum') == 'NEGATIVE' and scenario.get('direction') == 'BULLISH':
+            match_state = 'INVALIDATED'
+            evidence.append('Negative momentum invalidates bullish')
+        return {'match_state': match_state, 'evidence': evidence, 'timestamp': datetime.now(_IST).isoformat()}
+
+    def get_scenario_for_timestamp(self, instrument_id, timestamp):
+        """Point-in-time scenario lookup: latest candidate created at or before
+        `timestamp` (deterministic tiebreak on candidate_id), plus its latest
+        match at or before `timestamp`. Never reads future state."""
+        c = self.conn.execute(
+            'SELECT * FROM scenario_candidates WHERE instrument_id=? AND created_at <= ? '
+            'ORDER BY created_at DESC, candidate_id ASC LIMIT 1',
+            (instrument_id, timestamp)).fetchone()
+        if not c:
+            return None
+        m = self.conn.execute(
+            'SELECT * FROM scenario_matches WHERE candidate_id=? AND timestamp <= ? '
+            'ORDER BY timestamp DESC LIMIT 1',
+            (c['candidate_id'], timestamp)).fetchone()
+        return {'candidate': dict(c), 'match': dict(m) if m else None}
+
+    def get_active_scenario(self, instrument_id):
+        c = self.conn.execute('SELECT * FROM scenario_candidates WHERE instrument_id=? ORDER BY created_at DESC LIMIT 1', (instrument_id,)).fetchone()
+        if not c: return None
+        m = self.conn.execute('SELECT * FROM scenario_matches WHERE candidate_id=? ORDER BY timestamp DESC LIMIT 1', (c['candidate_id'],)).fetchone()
+        return {'candidate': dict(c), 'match': dict(m) if m else None}

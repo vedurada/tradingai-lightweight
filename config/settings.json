@@ -1,0 +1,9 @@
+{
+  "market": {"timezone": "Asia/Kolkata", "open": "09:15", "close": "15:30", "refresh_seconds": 30},
+  "database": {"path": "/opt/tradingai/database/tradingai.db"},
+  "data": {"freshness_threshold_min": 30, "stale_threshold_min": 60, "source": "yfinance"},
+  "MAX_QUALIFIED_TRADES_PER_DAY": 1,
+  "strategies": {"directional": ["Bull Put Spread", "Bull Call Spread", "Bear Call Spread", "Bear Put Spread"], "theta": ["Iron Condor"], "hybrid": []},
+  "ai": {"enabled": true, "provider": "groq", "model": "mixtral", "fallback": true},
+  "risk": {"max_risk_pct": 2.0, "min_reward_risk": 1.5, "max_holding_hours": 4}
+}

@@ -1,0 +1,149 @@
+"""Live API monitoring and resource monitoring.
+
+Lightweight monitoring of:
+- API health/latency/errors
+- System resources (RAM, CPU, disk)
+- Service status (gunicorn, nginx)
+No excessive logging. One measurement per check.
+"""
+import os
+import subprocess
+import time
+import urllib.request
+import json
+from datetime import datetime
+
+API_BASE = 'http://127.0.0.1:8000'
+
+
+def monitor_api(endpoint: str, timeout: int = 5) -> dict:
+    """Monitor a single API endpoint. Returns {status, latency_ms, timestamp, state, error}."""
+    start = time.time()
+    ts = datetime.now().isoformat()
+    try:
+        req = urllib.request.urlopen(f"{API_BASE}{endpoint}", timeout=timeout)
+        body = json.loads(req.read().decode())
+        latency = round((time.time() - start) * 1000, 1)
+        data = body.get('data', {})
+        return {
+            'endpoint': endpoint,
+            'status': req.status,
+            'latency_ms': latency,
+            'timestamp': ts,
+            'state': data.get('state'),
+            'error': None,
+        }
+    except Exception as e:
+        latency = round((time.time() - start) * 1000, 1)
+        return {
+            'endpoint': endpoint,
+            'status': 0,
+            'latency_ms': latency,
+            'timestamp': ts,
+            'state': None,
+            'error': str(e),
+        }
+
+
+def monitor_apis(endpoints: list = None) -> list:
+    """Monitor multiple API endpoints. Returns list of results."""
+    if endpoints is None:
+        endpoints = [
+            '/api/health',
+            '/api/NIFTY/decision',
+            '/api/BANKNIFTY/decision',
+            '/api/NIFTY/candles',
+            '/api/BANKNIFTY/candles',
+            '/api/options/NIFTY',
+            '/api/options/NIFTY/strategy',
+        ]
+    results = []
+    for ep in endpoints:
+        results.append(monitor_api(ep))
+        time.sleep(0.1)
+    return results
+
+
+def monitor_resources() -> dict:
+    """Record system resource snapshot. Lightweight, one measurement."""
+    snapshot = {'timestamp': datetime.now().isoformat()}
+    try:
+        with open('/proc/meminfo') as f:
+            mem = {}
+            for line in f:
+                parts = line.split()
+                if len(parts) >= 2:
+                    mem[parts[0].rstrip(':')] = int(parts[1])
+        total_kb = mem.get('MemTotal', 0)
+        avail_kb = mem.get('MemAvailable', 0)
+        used_kb = total_kb - avail_kb
+        snapshot['ram_total_mb'] = round(total_kb / 1024, 1)
+        snapshot['ram_used_mb'] = round(used_kb / 1024, 1)
+        snapshot['ram_available_mb'] = round(avail_kb / 1024, 1)
+        snapshot['ram_usage_pct'] = round(used_kb / total_kb * 100, 1) if total_kb else 0
+    except Exception as e:
+        snapshot['ram_error'] = str(e)
+
+    try:
+        with open('/proc/stat') as f:
+            cpu_line = f.readline()
+        parts = cpu_line.split()
+        idle = int(parts[4])
+        total = sum(int(x) for x in parts[1:])
+        snapshot['cpu_total'] = total
+        snapshot['cpu_idle'] = idle
+    except Exception as e:
+        snapshot['cpu_error'] = str(e)
+
+    try:
+        df = subprocess.run(['df', '-h', '/opt/tradingai_new'], capture_output=True, text=True, timeout=5)
+        lines = df.stdout.strip().split('\n')
+        if len(lines) >= 2:
+            parts = lines[1].split()
+            snapshot['disk_total'] = parts[1]
+            snapshot['disk_used'] = parts[2]
+            snapshot['disk_available'] = parts[3]
+            snapshot['disk_usage_pct'] = parts[4]
+    except Exception as e:
+        snapshot['disk_error'] = str(e)
+
+    try:
+        db_size = os.path.getsize('/opt/tradingai_new/database/tradingai.db') if os.path.exists('/opt/tradingai_new/database/tradingai.db') else 0
+        snapshot['sqlite_size_bytes'] = db_size
+        snapshot['sqlite_size_mb'] = round(db_size / (1024 * 1024), 2)
+    except Exception:
+        pass
+
+    try:
+        ps = subprocess.run(['pgrep', '-c', 'gunicorn'], capture_output=True, text=True, timeout=5)
+        snapshot['gunicorn_workers'] = int(ps.stdout.strip()) if ps.stdout.strip().isdigit() else 0
+    except Exception:
+        pass
+
+    try:
+        ps = subprocess.run(['pgrep', '-c', 'nginx'], capture_output=True, text=True, timeout=5)
+        snapshot['nginx_processes'] = int(ps.stdout.strip()) if ps.stdout.strip().isdigit() else 0
+    except Exception:
+        pass
+
+    try:
+        err = subprocess.run(
+            ['tail', '-n', '50', '/opt/tradingai_new/logs/gunicorn-error.log'],
+            capture_output=True, text=True, timeout=5
+        )
+        snapshot['recent_errors'] = err.stdout.strip().split('\n') if err.stdout.strip() else []
+    except Exception:
+        snapshot['recent_errors'] = []
+
+    return snapshot
+
+
+def monitor_api_status_only(endpoints: list = None) -> dict:
+    """Lightweight: just HTTP status for each endpoint."""
+    if endpoints is None:
+        endpoints = ['/api/health', '/api/NIFTY/decision', '/api/BANKNIFTY/decision']
+    statuses = {}
+    for ep in endpoints:
+        r = monitor_api(ep)
+        statuses[ep] = {'status': r['status'], 'state': r['state'], 'error': r['error']}
+    return statuses

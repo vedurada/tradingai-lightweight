@@ -1,0 +1,114 @@
+"""Unit tests for the no-filter CPR trigger engine (pure functions, no DB I/O)."""
+import sys
+sys.path.insert(0, '/opt/tradingai')
+
+from app.research.cpr_trigger_engine import (
+    day_levels, bull_trigger, bear_trigger, first_trigger, exit_trade,
+    aligned_ok, exits_opens, run_opens_range)
+
+
+def lv():
+    # prev H=100, L=90, C=95 -> pp=95, bc=95, tc=95, r1=100, s1=90, r2=105, s2=85
+    return day_levels(100, 90, 95)
+
+
+def test_day_levels_math():
+    L = lv()
+    assert L['pp'] == 95 and L['tc'] == 95 and L['bc'] == 95
+    assert L['r1'] == 100 and L['s1'] == 90
+    assert L['r2'] == 105 and L['s2'] == 85
+    assert L['pdh'] == 100 and L['pdl'] == 90
+
+
+def test_day_levels_rejects_garbage():
+    assert day_levels(0, 0, 0) is None
+    assert day_levels(None, 90, 95) is None
+    assert day_levels(90, 100, 95) is None  # high < low
+
+
+def test_bull_triggers_priority():
+    L = lv()
+    assert bull_trigger({'low': 84, 'close': 94}, L) == 'S2'
+    assert bull_trigger({'low': 89, 'close': 94}, L) == 'S1'
+    assert bull_trigger({'low': 91, 'close': 94}, L) is None  # above S1/PDL, at/below TC
+    assert bull_trigger({'low': 96, 'close': 96}, L) == 'ABOVE_CPR'
+
+
+def test_bear_triggers_priority():
+    L = lv()
+    assert bear_trigger({'high': 106, 'close': 94}, L) == 'R2'
+    assert bear_trigger({'high': 101, 'close': 94}, L) == 'R1'
+    assert bear_trigger({'high': 94, 'close': 94}, L) == 'BELOW_CPR'
+    assert bear_trigger({'high': 94, 'close': 96}, L) is None
+
+
+def test_first_trigger_bear_wins_tie():
+    L = lv()
+    day = [{'timestamp': 't1', 'low': 95, 'high': 95, 'close': 95},
+           {'timestamp': 't2', 'low': 96, 'high': 106, 'close': 95}]
+    sig = first_trigger(day, L)
+    assert sig['direction'] == 'BEAR' and sig['level'] == 'R2' and sig['index'] == 1
+
+
+def test_first_trigger_none():
+    L = lv()
+    day = [{'timestamp': 't1', 'low': 95, 'high': 95, 'close': 95}]
+    assert first_trigger(day, L) is None
+
+
+def test_exit_bull_target():
+    r, px, how = exit_trade('BULL', 100.0,
+                            [{'high': 103, 'low': 99.5, 'close': 102}])
+    assert r == 2.0 and how == 'TARGET'
+
+
+def test_exit_bear_stop():
+    r, px, how = exit_trade('BEAR', 100.0,
+                            [{'high': 102, 'low': 99, 'close': 101}])
+    assert r == -1.0 and how == 'STOP'
+
+
+def test_exit_same_candle_conservative():
+    r, px, how = exit_trade('BULL', 100.0,
+                            [{'high': 103, 'low': 98, 'close': 101}])
+    assert r == -1.0 and 'both' in how
+
+
+def test_exit_eod_flat():
+    r, px, how = exit_trade('BULL', 100.0,
+                            [{'high': 101, 'low': 99.5, 'close': 100.5},
+                             {'high': 101, 'low': 99.5, 'close': 101.0}])
+    assert how == 'EOD' and abs(r - 1.0) < 1e-9
+
+
+def test_aligned_ok_gates():
+    wlv = {'tc': 102.0, 'bc': 98.0}
+    assert aligned_ok('BULL', 103.0, wlv) is True
+    assert aligned_ok('BULL', 101.0, wlv) is False
+    assert aligned_ok('BEAR', 97.0, wlv) is True
+    assert aligned_ok('BEAR', 99.0, wlv) is False
+    assert aligned_ok('BULL', 103.0, None) is False
+    assert aligned_ok('BULL', None, wlv) is False
+    assert aligned_ok('SIDEWAYS', 103.0, wlv) is False
+
+
+def test_exits_opens_stop_first():
+    r, px, how, xt = exits_opens('BEAR', 100.0, 0.005, 0.02,
+                                 [('t1', 100.6), ('t2', 97.0)])
+    assert r == -1.0 and how == 'STOP' and xt == 't1'
+
+
+def test_exits_opens_target():
+    r, px, how, xt = exits_opens('BEAR', 100.0, 0.005, 0.02,
+                                 [('t1', 99.0), ('t2', 97.5)])
+    assert r == 4.0 and how == 'TARGET' and xt == 't2'
+
+
+def test_exits_opens_skips_equal():
+    assert exits_opens('BULL', 100.0, 0.005, 0.02, [('t1', 100.0)]) is None
+    assert exits_opens('BULL', 100.0, 0.005, 0.02, []) is None
+
+
+def test_run_opens_range_rejects_without_db():
+    assert run_opens_range('SENSEX', '2026-09-01', '2026-09-02') == {'error': 'UNKNOWN_INSTRUMENT'}
+    assert run_opens_range('NIFTY', '2026-09-01', '2026-09-02', 'silly') == {'error': 'UNKNOWN_VARIANT'}

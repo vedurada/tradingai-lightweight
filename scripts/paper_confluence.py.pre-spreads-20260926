@@ -1,0 +1,613 @@
+#!/usr/bin/env python3
+"""Paper-traded pivot-bounce feed (EXPERIMENTAL, informational only).
+
+Single strategy: LONG on the S1 touch, SHORT on the R1 touch, anytime during
+the day, targeting PP. Stops past S2/R2, flat by 3:15 PM, NSE lots (NIFTY 65 / BANKNIFTY 30; VIX research default 50).
+
+Daily: tops up recent 5m candles, runs the production backtest, logs one row
+per session per instrument into paper_pivot, regenerates paper.html and
+refreshes backtest.html. Idempotent via INSERT OR IGNORE -- safe for cron.
+
+  python3 paper_confluence.py --topup     # cron: ingest last 3d + log + pages
+  python3 paper_confluence.py --backfill  # one-off: log all history, no guard
+"""
+import sys, os, argparse, sqlite3, importlib.util
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+sys.path.insert(0, "/opt/tradingai")
+_IST = ZoneInfo("Asia/Kolkata")
+
+spec = importlib.util.spec_from_file_location(
+    "ing", "/opt/tradingai/scripts/ingest_historical.py")
+ing = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(ing)
+from app.core.db import get_conn
+from app.research.cpr_strategy_engine import run_multi_session_backtest
+import pandas as pd
+
+PAGE = "/opt/tradingai/frontend/paper.html"
+BT_PAGE = "/opt/tradingai/frontend/backtest.html"
+RDIR = "/opt/tradingai/research"
+
+
+def ensure_table():
+    conn = get_conn()
+    conn.execute("""CREATE TABLE IF NOT EXISTS paper_pivot (
+        session_date TEXT NOT NULL, instrument_id TEXT NOT NULL,
+        state TEXT NOT NULL, direction TEXT,
+        entry_price REAL, stop_price REAL, target_price REAL,
+        exit_price REAL, exit_reason TEXT, net_pnl REAL, result TEXT,
+        gap_direction TEXT, note TEXT,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (session_date, instrument_id))""")
+    conn.commit()
+    conn.close()
+
+
+def topup(days=3):
+    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        try:
+            candles = ing.fetch_candles_yfinance(inst, days=days)
+        except Exception as e:
+            print(f"topup {inst} fetch failed: {e}", flush=True)
+            continue
+        seen, valid = set(), []
+        for c in candles:
+            ts = ing.normalize_timestamp(c["timestamp"])
+            c["timestamp"] = ts
+            if ing.validate_candle(c) or ts in seen:
+                continue
+            seen.add(ts)
+            valid.append(c)
+        conn = get_conn()
+        conn.executemany(
+            """INSERT OR IGNORE INTO market_candles_5m
+            (candle_id, instrument_id, timestamp, open, high, low, close, volume,
+             source, data_state, ingested_at, is_complete)
+            VALUES (?,?,?,?,?,?,?,?,?,?,?,?)""",
+            [(f"C-{inst}-{c['timestamp']}", inst, c["timestamp"], c["open"], c["high"],
+              c["low"], c["close"], c["volume"], c["source"], c["data_state"],
+              datetime.now(_IST).isoformat(), 1) for c in valid])
+        conn.commit()
+        conn.close()
+        print(f"topup {inst}: fetched={len(candles)} valid={len(valid)}", flush=True)
+
+
+def session_complete(df, date_str, today_str):
+    if date_str < today_str:
+        return True
+    day = df[df["timestamp"].dt.tz_localize(None).dt.strftime("%Y-%m-%d") == date_str]
+    if day.empty:
+        return False
+    last = pd.to_datetime(day["timestamp"].max())
+    try:
+        last_ist = last.tz_convert(_IST) if last.tzinfo else last.tz_localize("UTC").tz_convert(_IST)
+    except Exception:
+        return False
+    return last_ist.hour * 60 + last_ist.minute >= 15 * 60 + 15
+
+
+def log_pivot(backfill=False):
+    from datetime import datetime as dt
+    today = dt.now(_IST).strftime("%Y-%m-%d")
+    now = dt.now(_IST).isoformat()
+    conn = get_conn()
+    total = 0
+    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        rows = conn.execute(
+            'SELECT open,high,low,close,timestamp FROM market_candles_5m WHERE instrument_id=? ORDER BY timestamp',
+            (inst,)).fetchall()
+        df = pd.DataFrame(rows, columns=["open", "high", "low", "close", "timestamp"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        result = run_multi_session_backtest(df, inst)
+        by_date = {t["session_date"]: t for t in result.get("trades", [])}
+        for s in result.get("signals", []):
+            d = s["date"]
+            if not backfill and not session_complete(df, d, today):
+                continue
+            t = by_date.get(d)
+            if t and t.get("strategy") == "PIVOT_BOUNCE":
+                row = (d, inst, "SIGNAL", t["direction"], t["entry_price"],
+                       t["stop_price"], t["target_price"], t["exit_price"],
+                       t["exit_reason"], t["net_pnl"], t["result"],
+                       t.get("gap_direction"), "pivot-bounce paper trade", now)
+            else:
+                reason = f"no signal: {s.get('state')}" if not t else "no fill"
+                row = (d, inst, "NO_TRADE", None, None, None, None, None, None,
+                       0.0, "SKIP", None, reason, now)
+            conn.execute(
+                """INSERT OR IGNORE INTO paper_pivot
+                (session_date, instrument_id, state, direction, entry_price, stop_price,
+                 target_price, exit_price, exit_reason, net_pnl, result, gap_direction, note, created_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", row)
+            total += 1
+    conn.commit()
+    conn.close()
+    print(f"pivot rows processed={total} (new inserts only; history frozen)", flush=True)
+
+
+def money(x):
+    x = float(x or 0)
+    return ("+" if x > 0 else "-" if x < 0 else "") + f"{abs(x):,.2f}"
+
+
+def ensure_align_table():
+    conn = get_conn()
+    conn.execute("""CREATE TABLE IF NOT EXISTS paper_align (
+        session_date TEXT NOT NULL, instrument_id TEXT NOT NULL,
+        variant TEXT NOT NULL DEFAULT 'aligned',
+        state TEXT NOT NULL, direction TEXT, level TEXT,
+        entry_time TEXT, entry_price REAL, stop_price REAL, target_price REAL,
+        exit_time TEXT, exit_price REAL, exit_reason TEXT,
+        r_multiple REAL, result TEXT, created_at TEXT NOT NULL,
+        PRIMARY KEY (session_date, instrument_id, variant))""")
+    conn.commit()
+    conn.close()
+
+
+def log_align(backfill=False):
+    """Log approved-spec (opens execution) trigger results per variant.
+
+    One row/session/instrument/variant. Idempotent via INSERT OR IGNORE.
+    Incomplete today skipped unless backfill. Covers plain + aligned.
+    result stores the shared decay_win() label (not raw sign), so paper.html
+    and the API agree by construction."""
+    from app.research.cpr_trigger_engine import run_opens_range, decay_win
+    from datetime import datetime as dt
+    ensure_align_table()
+    today = dt.now(_IST).strftime("%Y-%m-%d")
+    now = dt.now(_IST).isoformat()
+    conn = get_conn()
+    total = 0
+    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        for variant in ("plain", "aligned"):
+            try:
+                res = run_opens_range(inst, "2000-01-01", "2100-01-01", variant)
+            except Exception as e:
+                print(f"align {inst}/{variant} failed: {e}", flush=True)
+                continue
+            for t in res.get("trades", []):
+                if not backfill and t["trade_date"] >= today:
+                    continue
+                dr = t["direction"]
+                entry = t["entry"]
+                stop = entry * (0.995 if dr == "BULL" else 1.005)
+                tgt = entry * (1.02 if dr == "BULL" else 0.98)
+                r = t["r_multiple"]
+                row = (t["trade_date"], inst, variant, "SIGNAL", dr, t["level"],
+                       t.get("entry_time"), entry, round(stop, 2), round(tgt, 2),
+                       t.get("exit_time"), t["exit"], t["exit_reason"], r,
+                       decay_win(dr, entry, t["exit"], r, inst), now)
+                conn.execute(
+                    """INSERT OR IGNORE INTO paper_align
+                    (session_date, instrument_id, variant, state, direction, level,
+                     entry_time, entry_price, stop_price, target_price, exit_time,
+                     exit_price, exit_reason, r_multiple, result, created_at)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""", row)
+                total += 1
+    conn.commit()
+    conn.close()
+    print(f"align rows processed={total} (new inserts only; history frozen)", flush=True)
+
+
+def ensure_trigger_table():
+    conn = get_conn()
+    conn.execute("""CREATE TABLE IF NOT EXISTS paper_trigger (
+        session_date TEXT NOT NULL, instrument_id TEXT NOT NULL,
+        state TEXT NOT NULL, direction TEXT, level TEXT,
+        entry_price REAL, stop_price REAL, target_price REAL,
+        exit_price REAL, exit_reason TEXT, r_multiple REAL, result TEXT,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (session_date, instrument_id))""")
+    conn.commit()
+    conn.close()
+
+
+def log_trigger(backfill=False):
+    """Log no-filter CPR trigger results (one row/session/instrument, R units).
+
+    Same triggers as /api/backtest/cpr-triggers. Idempotent via
+    INSERT OR IGNORE -- safe for cron. Incomplete today skipped unless backfill."""
+    from app.research.cpr_trigger_engine import day_levels, first_trigger, exit_trade
+    from datetime import datetime as dt
+    ensure_trigger_table()
+    today = dt.now(_IST).strftime("%Y-%m-%d")
+    now = dt.now(_IST).isoformat()
+    conn = get_conn()
+    total = 0
+    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        rows = conn.execute(
+            'SELECT open,high,low,close,timestamp FROM market_candles_5m WHERE instrument_id=? ORDER BY timestamp',
+            (inst,)).fetchall()
+        by_day = {}
+        for r in rows:
+            by_day.setdefault(r['timestamp'][:10], []).append(dict(r))
+        for d in sorted(by_day):
+            if not backfill and d >= today:
+                continue
+            prev_days = sorted(x for x in by_day if x < d)
+            if not prev_days:
+                continue
+            pc = by_day[prev_days[-1]]
+            lv = day_levels(max(c['high'] for c in pc), min(c['low'] for c in pc), pc[-1]['close'])
+            day = by_day[d]
+            if not lv or not day:
+                continue
+            sig = first_trigger(day, lv)
+            if not sig:
+                row = (d, inst, "NO_TRADE", None, None, None, None, None,
+                       None, None, 0.0, "SKIP", now)
+            else:
+                entry = float(day[sig['index']]['close'])
+                stop = entry * (0.99 if sig['direction'] == 'BULL' else 1.01)
+                tgt = entry * (1.02 if sig['direction'] == 'BULL' else 0.98)
+                r, xp, how = exit_trade(sig['direction'], entry, day[sig['index'] + 1:])
+                res = 'WIN' if r > 0 else ('LOSS' if r < 0 else 'FLAT')
+                row = (d, inst, "SIGNAL", sig['direction'], sig['level'], entry,
+                       stop, tgt, xp, how, r, res, now)
+            conn.execute(
+                """INSERT OR IGNORE INTO paper_trigger
+                (session_date, instrument_id, state, direction, level, entry_price, stop_price,
+                 target_price, exit_price, exit_reason, r_multiple, result, created_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""", row)
+            total += 1
+    conn.commit()
+    conn.close()
+    print(f"trigger rows processed={total} (new inserts only; history frozen)", flush=True)
+
+
+def maxdd(pnls):
+    peak, dd, cum = 0.0, 0.0, 0.0
+    for p in pnls:
+        cum += float(p)
+        peak = max(peak, cum)
+        dd = min(dd, cum - peak)
+    return dd
+
+
+def render_page():
+    conn = get_conn()
+    cur = conn.execute("SELECT * FROM paper_pivot ORDER BY session_date, instrument_id")
+    cols = [d[0] for d in cur.description]
+    recs = [dict(zip(cols, r)) for r in cur.fetchall()]
+    cur2 = conn.execute("SELECT * FROM paper_trigger ORDER BY session_date, instrument_id")
+    cols2 = [d[0] for d in cur2.description]
+    trigs = [dict(zip(cols2, r)) for r in cur2.fetchall()]
+    try:
+        cur3 = conn.execute("SELECT * FROM paper_align ORDER BY session_date, instrument_id, variant")
+        cols3 = [d[0] for d in cur3.description]
+        aligns = [dict(zip(cols3, r)) for r in cur3.fetchall()]
+    except Exception:
+        aligns = []
+    conn.close()
+    sigs = [r for r in recs if r["state"] == "SIGNAL"]
+
+    def card(title, ts):
+        n = len(ts)
+        w = sum(1 for t in ts if (t["net_pnl"] or 0) > 0)
+        l = sum(1 for t in ts if (t["net_pnl"] or 0) < 0)
+        pnl = sum(t["net_pnl"] or 0 for t in ts)
+        wr = w / n * 100 if n else 0
+        exp = pnl / n if n else 0
+        return (f'<div class="card"><h3>{title}</h3><div class="kv">'
+                f'<dt>Paper trades</dt><dd>{n}</dd>'
+                f'<dt>Wins / Losses</dt><dd><span class="win">{w}</span> / <span class="loss">{l}</span></dd>'
+                f'<dt>Win rate</dt><dd class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</dd>'
+                f'<dt>Net P&amp;L</dt><dd class="{("win" if pnl > 0 else "loss" if pnl < 0 else "")}">{money(pnl)}</dd>'
+                f'<dt>Expectancy</dt><dd>{money(exp)}</dd></div></div>')
+
+    cum, pts = 0.0, []
+    for r in sorted(sigs, key=lambda x: (x["session_date"], x["instrument_id"])):
+        cum += r["net_pnl"] or 0
+        pts.append(cum)
+    if pts:
+        wpx, hpx = 600, 160
+        mn, mx = min(0, min(pts)), max(0, max(pts))
+        span = (mx - mn) or 1.0
+        step = wpx / max(len(pts) - 1, 1)
+        path = " ".join(f"{i * step:.1f},{hpx - 10 - (v - mn) / span * (hpx - 20):.1f}"
+                        for i, v in enumerate(pts))
+        curve = (f'<svg viewBox="0 0 {wpx} {hpx}" style="width:100%;background:#111827;border:1px solid #1f2937;border-radius:8px">'
+                 f'<polyline points="{path}" fill="none" stroke="#60a5fa" stroke-width="2"/></svg>')
+    else:
+        curve = "<p>No paper signals logged yet.</p>"
+
+    def trig_card(title, ts):
+        ts = [t for t in ts if t["state"] == "SIGNAL"]
+        n = len(ts)
+        w = sum(1 for t in ts if (t["r_multiple"] or 0) > 0)
+        l = sum(1 for t in ts if (t["r_multiple"] or 0) < 0)
+        tot = sum(t["r_multiple"] or 0 for t in ts)
+        wr = w / n * 100 if n else 0
+        return (f'<div class="card"><h3>{title} (trigger)</h3><div class="kv">'
+                f'<dt>Signals</dt><dd>{n}</dd>'
+                f'<dt>Wins / Losses</dt><dd><span class="win">{w}</span> / <span class="loss">{l}</span></dd>'
+                f'<dt>Win rate</dt><dd class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</dd>'
+                f'<dt>Total R</dt><dd class="{("win" if tot > 0 else "loss" if tot < 0 else "")}">{tot:+.2f}R</dd>'
+                f'<dt>Avg R</dt><dd>{(tot / n if n else 0):+.3f}R</dd></div></div>')
+
+    def trig_ledger():
+        out = []
+        for r in sorted(trigs, key=lambda x: (x["session_date"], x["instrument_id"]), reverse=True):
+            if r["state"] == "SIGNAL":
+                d = "bull" if r["direction"] == "LONG" or r["direction"] == "BULL" else "bear"
+                out.append(
+                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td><td>SIGNAL</td>'
+                    f'<td class="{d}">{r["direction"]}</td><td>{r["level"] or ""}</td>'
+                    f'<td>{r["entry_price"]:.2f}</td><td>{r["exit_price"]:.2f}</td>'
+                    f'<td class="{("win" if (r["r_multiple"] or 0) > 0 else "loss")}">{(r["r_multiple"] or 0):+.2f}R</td>'
+                    f'<td>{r["exit_reason"]}</td></tr>')
+            else:
+                out.append(
+                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td>'
+                    f'<td class="bear">NO TRADE</td><td colspan="5">no trigger</td><td>-</td></tr>')
+        return "\n".join(out)
+
+    def align_card(title, ts):
+        ts = [t for t in ts if t["state"] == "SIGNAL"]
+        n = len(ts)
+        w = sum(1 for t in ts if (t.get("result") or '') == 'WIN')
+        l = sum(1 for t in ts if (t.get("result") or '') == 'LOSS')
+        tot = sum(t["r_multiple"] or 0 for t in ts)
+        wr = w / n * 100 if n else 0
+        return (f'<div class="card"><h3>{title} (align)</h3><div class="kv">'
+                f'<dt>Signals</dt><dd>{n}</dd>'
+                f'<dt>Wins / Losses</dt><dd><span class="win">{w}</span> / <span class="loss">{l}</span></dd>'
+                f'<dt>Win rate</dt><dd class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</dd>'
+                f'<dt>Total R</dt><dd class="{("win" if tot > 0 else "loss" if tot < 0 else "")}">{tot:+.2f}R</dd></div></div>')
+
+    def align_ledger():
+        out = []
+        for r in sorted(aligns, key=lambda x: (x["session_date"], x["instrument_id"]), reverse=True):
+            if r["state"] == "SIGNAL":
+                d = "bull" if r["direction"] == "BULL" else "bear"
+                out.append(
+                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td><td>{r["variant"]}</td>'
+                    f'<td class="{d}">{r["direction"]}</td><td>{r["level"] or ""}</td>'
+                    f'<td>{(r["entry_time"] or "")[11:16]}</td><td>{r["entry_price"]:.2f}</td>'
+                    f'<td>{(r["exit_time"] or "")[11:16]}</td><td>{r["exit_price"]:.2f}</td>'
+                    f'<td class="{("win" if (r.get("result") or "") == "WIN" else "loss")}">{(r["r_multiple"] or 0):+.2f}R</td>'
+                    f'<td>{r["exit_reason"]}</td></tr>')
+            else:
+                out.append(
+                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td><td>{r["variant"]}</td>'
+                    f'<td class="bear">NO TRADE</td><td colspan="6">no trigger</td><td>-</td></tr>')
+        return "\n".join(out)
+
+    def ledger(inst):
+        out = []
+        rows = sorted([r for r in recs if r["instrument_id"] == inst],
+                      key=lambda x: x["session_date"], reverse=True)
+        for r in rows:
+            if r["state"] == "SIGNAL":
+                d = "bull" if r["direction"] == "LONG" else "bear"
+                out.append(
+                    f'<tr><td>{r["session_date"]}</td><td>SIGNAL</td>'
+                    f'<td class="{d}">{r["direction"]}</td>'
+                    f'<td>{r["entry_price"]:.2f}</td><td>{r["exit_price"]:.2f}</td>'
+                    f'<td class="{("win" if (r["net_pnl"] or 0) > 0 else "loss")}">{money(r["net_pnl"])}</td>'
+                    f'<td>{r["exit_reason"]}</td></tr>')
+            else:
+                out.append(
+                    f'<tr><td>{r["session_date"]}</td>'
+                    f'<td class="bear">NO TRADE</td><td colspan="4">{r["note"]}</td><td>-</td></tr>')
+        return "\n".join(out)
+
+    html = f"""<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - Paper-Traded Pivot Bounce</title>
+<style>
+*{{margin:0;padding:0;box-sizing:border-box}}
+body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#0a0e17;color:#e0e0e0;line-height:1.6}}
+header{{background:#111827;padding:1rem 2rem;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid #1f2937}}
+nav a{{color:#9ca3af;text-decoration:none;margin-left:1.5rem;font-size:.9rem}}
+nav a:hover{{color:#60a5fa}}
+main{{max-width:1400px;margin:2rem auto;padding:0 1rem}}
+h1{{font-size:2rem;background:linear-gradient(135deg,#60a5fa,#a78bfa);-webkit-background-clip:text;-webkit-text-fill-color:transparent}}
+h2{{color:#60a5fa;margin:2rem 0 1rem;font-size:1.3rem;border-bottom:1px solid #1f2937;padding-bottom:.5rem}}
+.grid{{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1.5rem;margin:1.5rem 0}}
+.card{{background:#111827;padding:1.5rem;border-radius:8px;border:1px solid #1f2937}}
+.kv{{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem}}.kv dt{{color:#9ca3af}}.kv dd{{text-align:right}}
+table{{width:100%;border-collapse:collapse;font-size:.85rem;margin:.5rem 0}}
+th{{background:#1f2937;padding:.5rem;text-align:left;color:#9ca3af}}
+td{{padding:.4rem .5rem;border-bottom:1px solid #1f2937}}
+.win{{color:#10b981}}.loss{{color:#ef4444}}.bear{{color:#ef4444}}.bull{{color:#10b981}}
+.ok{{background:#0a1c10;border:1px solid #10b98140;padding:1rem;border-radius:6px;margin:1rem 0}}
+footer{{text-align:center;padding:2rem;color:#4b5563;font-size:.75rem;border-top:1px solid #1f2937;margin-top:3rem}}
+</style>
+</head>
+<body>
+<header>
+<h2>TradingAI</h2>
+<nav><a href="/">Dashboard</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">Backtest</a><a href="/paper.html">Paper Trading</a></nav>
+</header>
+<main>
+<h1>Paper-Traded Pivot Bounce <span style="font-size:1rem;color:#a78bfa">EXPERIMENTAL</span></h1>
+<div class="ok"><h3>What this is</h3><p>One paper trade per day per instrument. LONG when the market touches S1
+(support bounce toward PP); SHORT when it touches R1 (rejection toward PP). First touch of the day
+decides. Stops past S2/R2 (+/-10pts), flat by 3:15 PM, NSE lots (NIFTY 65 / BANKNIFTY 30; VIX uses research default lot 50). Rows are
+frozen once logged. No real money. Informational only -- not financial advice.</p></div>
+<h2>Track Record</h2>
+<div class="grid">
+{card("NIFTY", [t for t in sigs if t["instrument_id"] == "NIFTY"])}
+{card("BANKNIFTY", [t for t in sigs if t["instrument_id"] == "BANKNIFTY"])}
+{card("INDIA_VIX", [t for t in sigs if t["instrument_id"] == "INDIA_VIX"])}
+{card("COMBINED", sigs)}
+</div>
+<h2>Equity Curve (paper P&amp;L)</h2>
+{curve}
+<h2>NIFTY Paper Ledger</h2>
+<table><thead><tr><th>Date</th><th>State</th><th>Dir</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Exit / Note</th></tr></thead>
+<tbody>
+{ledger("NIFTY")}
+</tbody></table>
+<h2>BANKNIFTY Paper Ledger</h2>
+<table><thead><tr><th>Date</th><th>State</th><th>Dir</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Exit / Note</th></tr></thead>
+<tbody>
+{ledger("BANKNIFTY")}
+</tbody></table>
+<h2>INDIA_VIX Paper Ledger</h2>
+<table><thead><tr><th>Date</th><th>State</th><th>Dir</th><th>Entry</th><th>Exit</th><th>P&amp;L</th><th>Exit / Note</th></tr></thead>
+<tbody>
+{ledger("INDIA_VIX")}
+</tbody></table>
+<h2>CPR Trigger Paper (no-filter levels, R multiples)</h2>
+<div class="grid">
+{trig_card("NIFTY", [t for t in trigs if t["instrument_id"] == "NIFTY"])}
+{trig_card("BANKNIFTY", [t for t in trigs if t["instrument_id"] == "BANKNIFTY"])}
+{trig_card("INDIA_VIX", [t for t in trigs if t["instrument_id"] == "INDIA_VIX"])}
+</div>
+<h2>CPR Trigger Ledger</h2>
+<table><thead><tr><th>Date</th><th>Inst</th><th>State</th><th>Dir</th><th>Level</th><th>Entry</th><th>Exit</th><th>R</th><th>Exit reason</th></tr></thead>
+<tbody>
+{trig_ledger()}
+</tbody></table>
+<h2>CPR Align Paper (opens execution, weekly gate)</h2>
+<div class="grid">
+{align_card("NIFTY", [t for t in aligns if t["instrument_id"] == "NIFTY" and t["variant"] == "aligned"])}
+{align_card("BANKNIFTY", [t for t in aligns if t["instrument_id"] == "BANKNIFTY" and t["variant"] == "aligned"])}
+{align_card("INDIA_VIX", [t for t in aligns if t["instrument_id"] == "INDIA_VIX" and t["variant"] == "aligned"])}
+</div>
+<h2>CPR Align Ledger</h2>
+<table><thead><tr><th>Date</th><th>Inst</th><th>Variant</th><th>Dir</th><th>Level</th><th>Entry</th><th>Exit</th><th>R</th><th>Exit reason</th></tr></thead>
+<tbody>
+{align_ledger()}
+</tbody></table>
+</main>
+<footer>TradingAI - Research tool. Not financial advice. Paper feed is experimental.</footer>
+</body>
+</html>"""
+    with open(PAGE, "w") as f:
+        f.write(html)
+    print(f"page written: {len(sigs)} signals, {len(recs)} rows", flush=True)
+
+
+def swap_tbody(html, heading, rows):
+    h = html.find("<h2>" + heading + "</h2>")
+    assert h >= 0, heading
+    tb = html.find("<tbody>", h) + len("<tbody>")
+    te = html.find("</tbody>", tb)
+    return html[:tb] + "\n" + "\n".join(rows) + "\n" + html[te:]
+
+
+def bt_row(t):
+    d = "bull" if t["direction"] == "LONG" else "bear"
+    cp = (t.get("cpr_classification") or "").lower()
+    cp = cp if cp in ("narrow", "wide") else "normal"
+    lad = {"ASCENDING": "ASC", "DESCENDING": "DESC"}.get(t.get("ladder") or "", "NEU")
+    return (f'<tr><td>{t["session_date"]}</td><td>{t["strategy"]}</td><td class="{d}">{t["direction"]}</td>'
+            f'<td><span class="pill {cp}">{t.get("cpr_classification") or "NORMAL"}</span></td><td>{lad}</td>'
+            f'<td>{float(t["entry_price"]):.2f}</td><td>{float(t["exit_price"]):.2f}</td>'
+            f'<td class="{("win" if float(t["net_pnl"] or 0) > 0 else "loss")}">{money(t["net_pnl"])}</td>'
+            f'<td>{t.get("exit_reason") or ""}</td></tr>')
+
+
+def refresh_backtest():
+    """Rebuild backtest.html from research CSVs + appended live paper SIGNAL days."""
+    import csv as _csv
+    led, raw = {}, {}
+    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        try:
+            with open(f"{RDIR}/cpr_trade_ledger_{inst}.csv") as f:
+                for r in _csv.DictReader(f):
+                    led.setdefault(inst, {})[r["session_date"]] = r
+            with open(f"{RDIR}/cpr_daily_signals_{inst}.csv") as f:
+                for r in _csv.DictReader(f):
+                    raw[r.get("selected_strategy") or "UNKNOWN"] = \
+                        raw.get(r.get("selected_strategy") or "UNKNOWN", 0) + 1
+        except FileNotFoundError:
+            continue
+    conn = get_conn()
+    paper = conn.execute(
+        "SELECT session_date, instrument_id, direction, entry_price, stop_price, target_price,"
+        " exit_price, exit_reason, net_pnl, result, gap_direction FROM paper_pivot WHERE state='SIGNAL'"
+        " ORDER BY session_date").fetchall()
+    conn.close()
+    n_appended = 0
+    csv_max = max((d for ts in led.values() for d in ts), default="")
+    for d, inst, direc, ep, sp, tp, xp, xr, pnl, res, gap in paper:
+        if d in led.get(inst, {}) or d <= csv_max:
+            continue
+        led.setdefault(inst, {})[d] = {
+            "session_date": d, "strategy": "PIVOT_BOUNCE", "direction": direc,
+            "cpr_classification": "", "ladder": "", "entry_price": str(ep),
+            "exit_price": str(xp), "net_pnl": str(pnl), "exit_reason": xr or "",
+            "result": res}
+        n_appended += 1
+
+    all_tr = [t for ts in led.values() for t in ts.values()]
+    strats = sorted({t["strategy"] for t in all_tr})
+    research = []
+    for st in strats:
+        tr = [t for t in all_tr if t["strategy"] == st]
+        n = len(tr)
+        w = sum(1 for t in tr if float(t["net_pnl"]) > 0)
+        l = sum(1 for t in tr if float(t["net_pnl"]) < 0)
+        wr = w / n * 100 if n else 0
+        pnl = sum(float(t["net_pnl"]) for t in tr)
+        avg = pnl / n if n else 0
+        gp = sum(float(t["net_pnl"]) for t in tr if float(t["net_pnl"]) > 0)
+        gl = abs(sum(float(t["net_pnl"]) for t in tr if float(t["net_pnl"]) < 0))
+        pf = f"{gp / gl:.2f}" if gl > 0 else ("inf" if gp > 0 else "N/A")
+        dd = maxdd([float(t["net_pnl"]) for t in sorted(tr, key=lambda x: x["session_date"])])
+        research.append(
+            f'<tr><td><span class="pill normal">{st}</span></td><td>{raw.get(st, n)}</td><td>{n}</td><td>{w}</td><td>{l}</td>'
+            f'<td class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</td><td>{money(avg)}</td><td>{money(avg)}</td>'
+            f'<td>{pf}</td><td>{dd:,.0f}</td><td class="{("win" if pnl > 0 else "loss" if pnl < 0 else "")}">{money(pnl)}</td></tr>')
+
+    mon = {}
+    for inst, ts in led.items():
+        for t in ts.values():
+            mon.setdefault((inst, t["session_date"][:7]), []).append(t)
+    monthly = []
+    for (inst, ym) in sorted(mon):
+        ts = mon[(inst, ym)]
+        n = len(ts)
+        w = sum(1 for t in ts if float(t["net_pnl"]) > 0)
+        l = sum(1 for t in ts if float(t["net_pnl"]) < 0)
+        wr = w / n * 100 if n else 0
+        pnl = sum(float(t["net_pnl"]) for t in ts)
+        dd = maxdd([float(t["net_pnl"]) for t in sorted(ts, key=lambda x: x["session_date"])])
+        monthly.append(
+            f'<tr><td>{inst}</td><td>{ym}</td><td>{n}</td><td class="win">{w}</td><td class="loss">{l}</td>'
+            f'<td class="{"win" if wr >= 50 else "bear"}">{wr:.2f}%</td>'
+            f'<td class="{("win" if pnl > 0 else "loss" if pnl < 0 else "")}">{money(pnl)}</td><td>{dd:,.0f}</td></tr>')
+
+    with open(BT_PAGE) as f:
+        html = f.read()
+    html = swap_tbody(html, "CPR Strategy Research", research)
+    html = swap_tbody(html, "Monthly Breakdown", monthly)
+    html = swap_tbody(html, "NIFTY Full Trade Ledger",
+                      [bt_row(t) for t in sorted(led.get("NIFTY", {}).values(), key=lambda x: x["session_date"])])
+    html = swap_tbody(html, "BANKNIFTY Full Trade Ledger",
+                      [bt_row(t) for t in sorted(led.get("BANKNIFTY", {}).values(), key=lambda x: x["session_date"])])
+    if "INDIA_VIX Full Trade Ledger" in html:
+        html = swap_tbody(html, "INDIA_VIX Full Trade Ledger",
+                          [bt_row(t) for t in sorted(led.get("INDIA_VIX", {}).values(), key=lambda x: x["session_date"])])
+    note = ("<p>Backtest record includes live paper-traded days from the pivot-bounce feed "
+            "(same execution rules); new paper days append automatically.</p>")
+    if "live paper-traded days" not in html:
+        anchor = "<h2>Integrity Report</h2>"
+        html = html.replace(anchor, note + "\n" + anchor, 1)
+    with open(BT_PAGE, "w") as f:
+        f.write(html)
+    print(f"backtest page refreshed: {len(all_tr)} trades ({n_appended} appended live)", flush=True)
+
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--topup", action="store_true")
+    ap.add_argument("--backfill", action="store_true")
+    a = ap.parse_args()
+    ensure_table()
+    if a.topup:
+        topup()
+    log_pivot(backfill=a.backfill)
+    log_trigger(backfill=a.backfill)
+    log_align(backfill=a.backfill)
+    render_page()
+    refresh_backtest()

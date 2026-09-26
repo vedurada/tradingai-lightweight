@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Methodology — TradingAI.in</title>
+<meta name="description" content="How TradingAI works: market data, CPR, structure, confirmation, risk, paper trading and backtesting methodology.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.7}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:900px;margin:0 auto;padding:1rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.4rem;margin-bottom:1rem}
+h1{font-size:1.6rem;margin-bottom:.4rem}h2{font-size:1.15rem;margin:1.2rem 0 .4rem;color:#0b1e3a}
+p,li{font-size:.92rem;color:#334155}ul{margin-left:1.2rem}
+code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.85em}
+.flow{background:#eff6ff;border:1px solid #dbeafe;border-radius:8px;padding:.8rem 1rem;font-size:.85rem;margin:.8rem 0}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+</style>
+</head>
+<body>
+<div class="topbar"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Methodology</span></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/methodology.html" class="active" aria-current="page">Methodology</a></nav>
+<div class="wrap"><div class="card">
+<h1>Methodology</h1>
+<p>TradingAI is a deterministic, rules-based intraday decision aid for NIFTY and BANKNIFTY options. It does not predict markets. It classifies structure and permits at most one qualified setup per instrument per day.</p>
+<div class="flow"><b>Workflow:</b> Market → Structure → Positioning → Liquidity → Intent → Confirmation → Trade / Wait / No Trade → Risk → Outcome → Research</div>
+<h2>1. Market data</h2>
+<ul><li>Free intraday source (yfinance), 5-minute candles in Asia/Kolkata.</li>
+<li>Only <b>completed</b> candles are used: at time T, the latest usable candle is <code>floor_5m(T − 5 min)</code>. The forming candle never triggers decisions.</li>
+<li>Quotes older than the freshness threshold are labelled <b>STALE</b> and never presented as live.</li></ul>
+<h2>2. CPR &amp; levels (previous session only)</h2>
+<ul><li>Pivot <code>(H+L+C)/3</code>, BC <code>(H+L)/2</code>, TC <code>2·Pivot − BC</code>; width <code>(TC−BC)/Pivot</code> → NARROW (&lt;0.15%), NORMAL, WIDE (&gt;0.30%).</li>
+<li>Floor pivots: R1 <code>2·P−L</code>, S1 <code>2·P−H</code>, R2 <code>P+range</code>, S2 <code>P−range</code>.</li>
+<li>Computed strictly from the previous session's OHLC — never from the current or a future session.</li></ul>
+<h2>3. Session &amp; freshness gates</h2>
+<ul><li>PREMARKET (&lt;09:15), LIVE (09:15–15:30 with data), MARKET_CLOSED, WEEKEND, plus STALE / NO_DATA feed states (NSE holiday calendar encoded).</li>
+<li>Candle integrity: rejects duplicates, out-of-order, future-dated and invalid-OHLC data instead of repairing it.</li></ul>
+<h2>4. Scenarios &amp; confirmation</h2>
+<ul><li>Scenario types: bullish/bearish continuation, range premium decay, breakout, breakout-failure reversal.</li>
+<li>Matches progress WATCH → PARTIALLY_MATCHED → CONFIRMED / INVALIDATED. Only CONFIRMED scenarios can qualify.</li>
+<li>Point-in-time rule: historical decisions see only scenarios known at that timestamp (no lookahead).</li></ul>
+<h2>5. Strategy selection</h2>
+<ul><li>Bullish → Bull Put/Call Spread by volatility; Bearish → Bear Call/Put Spread; Neutral → Iron Condor. Unavailable options data → NO_TRADE.</li>
+<li>Entry ≈ 0.5% below signal price; stop 1%; target 2%; reward:risk ≥ 1.5 and risk ≤ 2% or the setup is rejected.</li></ul>
+<h2>6. One trade per day</h2>
+<ul><li>Maximum one qualified trade per instrument per day, enforced by persistent locks (race-safe across workers). Repeats report <code>DAILY_TRADE_LIMIT_REACHED</code>.</li></ul>
+<h2>7. Paper trading &amp; backtests</h2>
+<ul><li>Qualified setups are tracked to stop/target exits in paper trades — no broker connection exists.</li>
+<li>Backtests replay stored 5-minute sessions with the same gates; every run carries a no-lookahead validation result.</li></ul>
+<h2>8. What the site will not claim</h2>
+<ul><li>No win-rate, accuracy or profitability statements appear unless backed by the validated historical record shown on the Backtest page. Absence of data is shown as such — never filled in.</li></ul>
+</div></div>
+<footer>TradingAI.in · Smarter Analysis. Disciplined Trading.</footer>
+</body>
+</html>

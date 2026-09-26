@@ -1,0 +1,19 @@
+{
+  "instrument": "BANKNIFTY",
+  "future_data_used": false,
+  "duplicate_trade_count": 0,
+  "overlapping_trade_count": 0,
+  "max_daily_trades": 1,
+  "impossible_fill_count": 0,
+  "invalid_timestamp_count": 0,
+  "strategy_summary": {
+    "PIVOT_BOUNCE": {
+      "setups": 0,
+      "trades": 46,
+      "wins": 26,
+      "losses": 20,
+      "pnl": 13308.960000000012
+    }
+  },
+  "options_mode": "UNAVAILABLE"
+}

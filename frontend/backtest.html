@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Backtest — TradingAI.in</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/favicon-180.png">
+<meta name="description" content="Run historical backtests on validated 5-minute data with no-lookahead checks.">
+<link rel="canonical" href="https://tradingai.in/backtest.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TradingAI.in">
+<meta property="og:url" content="https://tradingai.in/backtest.html">
+<meta property="og:description" content="Run historical backtests on validated 5-minute data with no-lookahead checks.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Backtest — TradingAI.in">
+<meta name="twitter:description" content="Run historical backtests on validated 5-minute data with no-lookahead checks.">
+<meta property="og:title" content="Backtest — TradingAI.in">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:1000px;margin:0 auto;padding:1rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.2rem;margin-bottom:1rem}
+.card h2{font-size:1.1rem;margin-bottom:.6rem}
+label{font-size:.82rem;color:#334155;display:block;margin:.4rem 0 .15rem}
+input,select{font-size:.9rem;padding:.45rem .6rem;border:1px solid #cbd5e1;border-radius:6px;width:100%;max-width:280px}
+button{font-size:.88rem;font-weight:700;background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:.5rem 1.1rem;margin-top:.7rem;cursor:pointer}
+button:disabled{background:#94a3b8;cursor:wait}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin-top:.6rem}
+th,td{text-align:left;padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;font-variant-numeric:tabular-nums}
+th{color:#64748b}
+.note{font-size:.8rem;color:#475569;margin-top:.5rem}
+.ok{color:#15803d;font-weight:700}.bad{color:#b91c1c;font-weight:700}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+</style>
+</head>
+<body>
+<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">CPR trigger backtest</h1>
+<div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Backtest</span></div></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html" class="active" aria-current="page">Backtest</a><a href="/methodology.html">Methodology</a><a href="/paper.html">Paper</a></nav>
+<div class="wrap">
+<section class="card"><h2>CPR Trigger Backtest</h2><p class="note">Base trigger strategy (Plain variant): bull on S2/S1/PDL touch or close above TC; bear on R2/R1/PDH touch or close below BC. Aligned adds the weekly-CPR gate and is the default view. First trigger per session, entry at next open in [09:20,15:10), 0.5% stop / 2% target evaluated at subsequent opens (stop first), flat 15:10 open. Sub-30pt (NIFTY) / sub-60pt (BANKNIFTY) adverse drifts count as decay wins. Read-only over stored candles; paper days append below as they accumulate.</p>
+<form id="f2"><label for="inst2">Instrument</label><select id="inst2"><option>NIFTY</option><option>BANKNIFTY</option></select>
+<label for="var2">Variant</label><select id="var2"><option value="aligned">Aligned (weekly CPR gate)</option><option value="plain">Plain (no filter)</option></select>
+<label for="ds2">From</label><input id="ds2" type="date" value="2026-07-29">
+<label for="de2">To</label><input id="de2" type="date" value="2026-09-25">
+<br><button id="go2" type="submit">Run CPR trigger backtest</button></form><p class="note" id="status2"></p></section>
+<section class="card" id="resCard2" hidden><h2>CPR Trigger Result</h2><div id="out2"></div>
+<h2 style="margin-top:1rem">By level</h2><div style="overflow-x:auto"><table id="bylvl"><thead><tr><th>Side/Level</th><th>Signals</th><th>Wins</th></tr></thead><tbody></tbody></table></div>
+<h2 style="margin-top:1rem">Trades</h2><div style="overflow-x:auto"><table id="trades2"><thead><tr><th>Date</th><th>Dir</th><th>Level</th><th>Entry time</th><th>Entry</th><th>Exit time</th><th>Exit</th><th>Points</th><th>Win/Loss</th><th>Exit reason</th></tr></thead><tbody></tbody></table></div></section>
+</div>
+<footer>TradingAI.in · Smarter Analysis. Disciplined Trading. · <a href="/privacy.html" style="color:#94a3b8">Privacy</a> · <a href="/contact.html" style="color:#94a3b8">Contact</a> · <a href="/terms.html" style="color:#94a3b8">Terms</a></footer>
+<script>
+(function(){
+function $(id){return document.getElementById(id);}
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+$('f2').addEventListener('submit',async function(e){
+  e.preventDefault();
+  var go=$('go2');go.disabled=true;$('status2').textContent='Running…';
+  function num(v){return (v===null||v===undefined||!isFinite(Number(v)))?'—':Number(v).toLocaleString('en-IN',{maximumFractionDigits:2});}
+  try{
+    var r=await fetch('/api/backtest/cpr-triggers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:$('inst2').value,variant:$('var2').value,date_start:$('ds2').value,date_end:$('de2').value})});
+    if(!r.ok)throw new Error('HTTP '+r.status);
+    var d=(await r.json()).data||{};
+    $('resCard2').hidden=false;
+    $('out2').innerHTML='<table><tbody>'
+      +'<tr><th>Sessions</th><td>'+esc(d.days)+'</td></tr>'
+      +'<tr><th>Signals / No-signal days</th><td>'+esc(d.signals)+' / '+esc(d.no_signal_days)+'</td></tr>'
+      +'<tr><th>Wins / Losses</th><td>'+esc(d.wins)+' / '+esc(d.losses)+'</td></tr>'
+      +'<tr><th>Win rate</th><td>'+esc(d.win_rate)+'%</td></tr></tbody></table>'
+      +(d.signals===0?'<p class="note">No triggers in range — no stored sessions matched. Honest empty result.</p>':'');
+    var tb=$('bylvl').querySelector('tbody');tb.innerHTML='';
+    Object.keys(d.by_level||{}).sort().forEach(function(k){
+      var v=d.by_level[k],tr=document.createElement('tr');
+      [k,v.n,v.wins].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+      tb.appendChild(tr);});
+    if(!Object.keys(d.by_level||{}).length){tb.innerHTML='<tr><td colspan="3">No levels.</td></tr>';}
+    var tb2=$('trades2').querySelector('tbody');tb2.innerHTML='';
+    function trow(t,paper){
+      var tr=document.createElement('tr');
+      var en=(t.entry!=null?t.entry:t.entry_price), ex=(t.exit!=null?t.exit:t.exit_price);
+      var pts=(t.points!=null?t.points:((en!=null&&ex!=null)?(t.direction=='BULL'?(ex-en):(en-ex)):null));
+      var wl=(t.win_loss||(t.r_multiple==null?'—':(t.r_multiple>0?'WIN':(t.r_multiple<0?'LOSS':'FLAT'))));
+      [(t.trade_date||''),(t.direction||''),(t.level||''),(t.entry_time||'').slice(11,16),(en==null?'—':en),(t.exit_time||'').slice(11,16),(ex==null?'—':ex),(pts==null?'—':((pts>0?'+':'')+num(pts))),wl,String(t.exit_reason||'').replace('EOD-1510','EOD')].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+      var pill=tr.childNodes[9];pill.className=(wl==='WIN'?'ok':(wl==='LOSS'?'bad':''));
+      if(paper){tr.style.background='#eff6ff';}
+      tb2.appendChild(tr);}
+    (d.paper_trades||[]).slice().reverse().forEach(function(t){trow(t,true);});
+    (d.trades||[]).slice().reverse().forEach(function(t){trow(t,false);});
+    if(!(d.trades||[]).length&&!(d.paper_trades||[]).length){tb2.innerHTML='<tr><td colspan="10">No trades.</td></tr>';}
+    else if(d.paper_appended){$('status2').textContent+=' + '+d.paper_appended+' paper day(s) appended';}
+    $('status2').textContent='Completed '+d.instrument+' '+(d.variant||'')+' '+d.date_start+' → '+d.date_end;
+  }catch(err){$('status2').textContent='CPR trigger backtest unavailable ('+err.message+').';}
+  go.disabled=false;
+});
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - Paper Trades</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:1400px;margin:0 auto;padding:1rem}
+h1{font-size:1.6rem;color:#0f172a;margin-bottom:.4rem}
+h1 .exp{font-size:1rem;color:#a78bfa}
+h2{color:#0b1e3a;margin:1.2rem 0 .6rem;font-size:1.15rem}
+h3{font-size:1rem;color:#0f172a}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:1rem;margin:1rem 0}
+.card{background:#fff;padding:1.2rem;border-radius:12px;border:1px solid #e2e8f0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:.3rem 1rem}.kv dt{color:#64748b}.kv dd{text-align:right;font-variant-numeric:tabular-nums}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin:.5rem 0}
+th{color:#64748b;font-weight:700;text-align:left;padding:.35rem .5rem;border-bottom:1px solid #e2e8f0}
+td{padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;font-variant-numeric:tabular-nums}
+.win{color:#15803d;font-weight:700}.loss{color:#b91c1c;font-weight:700}.bear{color:#b91c1c}.bull{color:#15803d}
+.ok{background:#f0fdf4;border:1px solid #bbf7d0;padding:1rem;border-radius:8px;margin:1rem 0}
+.ok h3,.ok p{color:#334155}
+.pill{font-size:.72rem;font-weight:700;padding:.1rem .5rem;border-radius:999px;background:#eff6ff;color:#2563eb}
+.pill.normal{background:#f8fafc;color:#334155;border:1px solid #e2e8f0}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+</style>
+</head>
+<body>
+<div class="topbar"><div><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Paper Trades</span></div></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/methodology.html">Methodology</a><a href="/paper.html" class="active" aria-current="page">Paper</a></nav>
+<div class="wrap">
+<h1>Paper Trades <span class="exp">EXPERIMENTAL</span></h1>
+<div class="ok"><h3>What this is</h3><p>One paper trade per day per instrument from the CPR trigger system (same math as the Backtest page): first trigger per session, entry at next open in [09:20,15:10), 0.5% stop / 2% target evaluated at subsequent opens, flat 15:10 open. Weekly-gated variant shown by default. Rows are frozen once logged. No real money. Informational only -- not financial advice.</p></div>
+<h2>CPR Align Paper (opens execution, weekly gate)</h2>
+<div class="grid">
+<div class="card"><h3>NIFTY (align)</h3><div class="kv"><dt>Signals</dt><dd>48</dd><dt>Wins / Losses</dt><dd><span class="win">35</span> / <span class="loss">13</span></dd><dt>Win rate</dt><dd class="win">72.9%</dd></div></div>
+<div class="card"><h3>BANKNIFTY (align)</h3><div class="kv"><dt>Signals</dt><dd>45</dd><dt>Wins / Losses</dt><dd><span class="win">30</span> / <span class="loss">15</span></dd><dt>Win rate</dt><dd class="win">66.7%</dd></div></div>
+</div>
+<h2>CPR Align Ledger</h2>
+<table><thead><tr><th>Date</th><th>Inst</th><th>Variant</th><th>Dir</th><th>Level</th><th>Entry</th><th>Exit</th><th>R</th><th>Exit reason</th></tr></thead>
+<tbody>
+<tr><td>2026-09-25</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23074.00</td><td>15:10</td><td>23107.90</td><td class="loss">-0.29R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-25</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:40</td><td>55477.05</td><td>15:10</td><td>55459.15</td><td class="win">+0.07R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-24</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23226.95</td><td>15:10</td><td>23089.95</td><td class="win">+1.18R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-24</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>55655.85</td><td>15:10</td><td>55539.65</td><td class="win">+0.42R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-23</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:20</td><td>23406.35</td><td>15:10</td><td>23418.00</td><td class="win">+0.10R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-23</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:35</td><td>56392.90</td><td>15:10</td><td>56495.20</td><td class="win">+0.36R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-22</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:25</td><td>23447.75</td><td>13:05</td><td>23325.10</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-09-22</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:20</td><td>56572.55</td><td>11:40</td><td>56263.85</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-09-21</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>10:20</td><td>23374.65</td><td>15:10</td><td>23437.65</td><td class="win">+0.54R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-21</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:25</td><td>56451.35</td><td>15:10</td><td>56531.65</td><td class="win">+0.28R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-18</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R1</td><td>09:20</td><td>23323.45</td><td>15:10</td><td>23343.75</td><td class="win">-0.17R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-18</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>10:40</td><td>56134.15</td><td>14:20</td><td>56420.95</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-09-17</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>PDH</td><td>09:35</td><td>23285.15</td><td>15:10</td><td>23283.00</td><td class="win">+0.02R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-17</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R1</td><td>09:35</td><td>56497.60</td><td>15:10</td><td>56119.50</td><td class="win">+1.34R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-16</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:40</td><td>23150.65</td><td>11:05</td><td>23272.35</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-09-16</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:30</td><td>55983.10</td><td>10:55</td><td>56270.05</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-09-15</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>PDH</td><td>09:45</td><td>23447.85</td><td>15:10</td><td>23173.25</td><td class="win">+2.34R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-15</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>PDH</td><td>09:25</td><td>56564.65</td><td>15:10</td><td>55899.45</td><td class="win">+2.35R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-11</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23259.00</td><td>14:00</td><td>23385.85</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-09-11</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>55777.05</td><td>11:15</td><td>56202.30</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-09-10</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:25</td><td>23428.60</td><td>15:10</td><td>23391.80</td><td class="win">+0.31R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-10</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>10:10</td><td>56365.75</td><td>15:10</td><td>56256.30</td><td class="win">+0.39R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-09</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23500.35</td><td>15:10</td><td>23470.00</td><td class="win">+0.26R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-09</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>56495.50</td><td>15:10</td><td>56399.10</td><td class="win">+0.34R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-08</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23693.60</td><td>15:10</td><td>23646.00</td><td class="win">+0.40R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-08</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>56932.00</td><td>15:10</td><td>56778.30</td><td class="win">+0.54R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-07</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23859.35</td><td>15:10</td><td>23741.55</td><td class="win">+0.99R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-07</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57221.80</td><td>15:10</td><td>57065.80</td><td class="win">+0.55R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-04</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R1</td><td>11:10</td><td>23972.70</td><td>15:10</td><td>23937.00</td><td class="win">+0.30R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-04</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57426.05</td><td>15:10</td><td>57455.15</td><td class="win">-0.10R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-03</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R2</td><td>09:20</td><td>23968.65</td><td>15:10</td><td>23887.50</td><td class="win">+0.68R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-03</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R2</td><td>11:10</td><td>57490.90</td><td>15:10</td><td>57416.50</td><td class="win">+0.26R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-02</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23824.35</td><td>15:10</td><td>23862.00</td><td class="loss">-0.32R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-02</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>56951.90</td><td>15:10</td><td>57075.25</td><td class="loss">-0.43R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-01</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24042.55</td><td>15:10</td><td>23970.70</td><td class="win">+0.60R</td><td>EOD-1510</td></tr>
+<tr><td>2026-09-01</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57501.90</td><td>15:10</td><td>57233.60</td><td class="win">+0.93R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-31</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24067.20</td><td>15:10</td><td>24068.30</td><td class="win">-0.01R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-31</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:30</td><td>57427.45</td><td>15:10</td><td>57409.25</td><td class="win">+0.06R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-28</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24113.00</td><td>15:10</td><td>24122.30</td><td class="win">-0.08R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-28</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:25</td><td>57360.35</td><td>15:10</td><td>57430.30</td><td class="loss">-0.24R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-27</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>10:05</td><td>24192.05</td><td>15:10</td><td>24143.90</td><td class="win">+0.40R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-27</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:35</td><td>57820.20</td><td>15:10</td><td>57602.30</td><td class="loss">-0.75R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-26</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>10:25</td><td>24302.45</td><td>15:10</td><td>24275.45</td><td class="win">-0.22R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-25</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24185.50</td><td>15:10</td><td>24247.05</td><td class="loss">-0.51R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-25</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>13:05</td><td>57377.65</td><td>15:10</td><td>57429.10</td><td class="win">-0.18R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-24</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>10:00</td><td>24268.65</td><td>15:10</td><td>24174.50</td><td class="loss">-0.78R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-24</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:45</td><td>57743.55</td><td>11:10</td><td>57449.45</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-08-21</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R1</td><td>09:20</td><td>24237.55</td><td>15:10</td><td>24234.00</td><td class="win">+0.03R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-21</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:25</td><td>57505.10</td><td>15:10</td><td>57648.00</td><td class="loss">-0.50R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-20</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R1</td><td>09:20</td><td>24191.80</td><td>15:10</td><td>24215.95</td><td class="win">-0.20R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-20</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R2</td><td>09:25</td><td>57512.65</td><td>15:10</td><td>57470.20</td><td class="win">+0.15R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-19</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24119.75</td><td>15:10</td><td>24040.00</td><td class="win">+0.66R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-19</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57156.20</td><td>15:10</td><td>57177.45</td><td class="win">-0.07R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-18</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24239.60</td><td>15:10</td><td>24196.50</td><td class="win">+0.36R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-18</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:25</td><td>57410.30</td><td>15:10</td><td>57360.75</td><td class="win">+0.17R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-17</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24306.05</td><td>15:10</td><td>24349.40</td><td class="loss">-0.36R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-17</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57290.85</td><td>13:05</td><td>57619.50</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-08-14</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24323.70</td><td>15:10</td><td>24371.15</td><td class="loss">-0.39R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-14</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57544.25</td><td>15:10</td><td>57503.65</td><td class="win">+0.14R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-13</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24344.90</td><td>15:10</td><td>24348.45</td><td class="win">-0.03R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-13</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:35</td><td>57566.85</td><td>15:10</td><td>57596.00</td><td class="win">-0.10R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-12</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24407.15</td><td>15:10</td><td>24356.50</td><td class="win">+0.41R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-12</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57336.50</td><td>09:30</td><td>57708.20</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-08-11</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24503.50</td><td>15:10</td><td>24454.35</td><td class="win">+0.40R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-11</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57339.95</td><td>15:10</td><td>57369.30</td><td class="win">-0.10R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-10</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:20</td><td>24602.85</td><td>15:10</td><td>24555.35</td><td class="loss">-0.39R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-10</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:30</td><td>57715.10</td><td>15:10</td><td>57575.20</td><td class="win">+0.48R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-06</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:20</td><td>24627.00</td><td>15:10</td><td>24628.65</td><td class="win">+0.01R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-06</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:20</td><td>57753.75</td><td>15:10</td><td>58016.90</td><td class="win">+0.91R</td><td>EOD-1510</td></tr>
+<tr><td>2026-08-05</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:25</td><td>24626.10</td><td>13:45</td><td>24502.95</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-08-05</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:20</td><td>57859.95</td><td>12:50</td><td>57560.60</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-07-31</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:40</td><td>24310.30</td><td>15:10</td><td>24399.00</td><td class="win">+0.73R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-31</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:55</td><td>57224.60</td><td>15:10</td><td>57297.20</td><td class="win">+0.25R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-30</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>09:20</td><td>24266.45</td><td>15:10</td><td>24321.35</td><td class="win">+0.45R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-30</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:40</td><td>56864.10</td><td>15:10</td><td>57162.80</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-07-28</td><td>NIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>10:15</td><td>23985.60</td><td>15:10</td><td>23966.00</td><td class="win">-0.16R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-28</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:50</td><td>56872.75</td><td>15:10</td><td>56697.90</td><td class="win">+0.61R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-24</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23751.70</td><td>15:10</td><td>23757.35</td><td class="win">-0.05R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-24</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>56314.20</td><td>12:30</td><td>56692.60</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-07-23</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>23915.35</td><td>15:10</td><td>23868.95</td><td class="win">+0.39R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-23</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>56776.65</td><td>15:10</td><td>56574.75</td><td class="win">+0.71R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-22</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24096.60</td><td>15:10</td><td>23998.35</td><td class="win">+0.81R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-22</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57481.40</td><td>15:10</td><td>57127.20</td><td class="win">+1.23R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-21</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>10:40</td><td>24176.90</td><td>15:10</td><td>24185.75</td><td class="win">-0.07R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-20</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:35</td><td>24182.00</td><td>15:10</td><td>24236.70</td><td class="loss">-0.45R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-20</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>57830.25</td><td>15:10</td><td>57946.30</td><td class="loss">-0.40R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-16</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>13:40</td><td>24072.10</td><td>15:10</td><td>24074.75</td><td class="win">-0.02R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-16</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>13:25</td><td>57552.15</td><td>15:10</td><td>57595.85</td><td class="win">-0.15R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-15</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>R1</td><td>09:20</td><td>24147.65</td><td>15:10</td><td>24072.50</td><td class="win">+0.62R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-14</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24109.55</td><td>15:10</td><td>24067.50</td><td class="win">+0.35R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-14</td><td>BANKNIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:50</td><td>57507.55</td><td>15:10</td><td>57512.00</td><td class="win">-0.01R</td><td>EOD-1510</td></tr>
+<tr><td>2026-07-13</td><td>NIFTY</td><td>aligned</td><td class="bear">BEAR</td><td>BELOW_CPR</td><td>09:20</td><td>24027.45</td><td>10:35</td><td>24154.75</td><td class="loss">-1.00R</td><td>STOP</td></tr>
+<tr><td>2026-07-13</td><td>BANKNIFTY</td><td>aligned</td><td class="bull">BULL</td><td>ABOVE_CPR</td><td>10:30</td><td>58016.20</td><td>15:10</td><td>58152.20</td><td class="win">+0.47R</td><td>EOD-1510</td></tr>
+</tbody></table>
+<h2>Live Paper Spreads (verticals, auto-refresh)</h2>
+<div class="grid" id="liveSpreads"><div class="card"><h3>Live</h3><div class="kv"><dt>Status</dt><dd>Connecting…</dd></div></div></div>
+<h2>Spread Payoff at Expiry</h2>
+<div class="grid">
+<div class="card"><h3>NIFTY payoff</h3><canvas id="payNifty" style="width:100%;height:220px;display:block" role="img" aria-label="NIFTY spread payoff chart"></canvas><div class="kv" id="payNiftyMeta"></div></div>
+<div class="card"><h3>BANKNIFTY payoff</h3><canvas id="payBank" style="width:100%;height:220px;display:block" role="img" aria-label="BANKNIFTY spread payoff chart"></canvas><div class="kv" id="payBankMeta"></div></div>
+</div>
+<h2>Paper Spreads Ledger</h2>
+<table><thead><tr><th>Date</th><th>Inst</th><th>Strategy</th><th>Expiry</th><th>Legs</th><th>Credit</th><th>State</th><th>Spot R</th><th>Exit</th></tr></thead>
+<tbody>
+
+</tbody></table>
+</div>
+<footer>TradingAI.in · Smarter Analysis. Disciplined Trading. · Paper feed is experimental.</footer>
+<script>
+(function(){
+function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function drawPayoff(cvId, curve, spot){
+  var cv=document.getElementById(cvId);if(!cv||!curve||!curve.spots)return;
+  var dpr=window.devicePixelRatio||1;
+  var W=Math.max(280,cv.parentNode.getBoundingClientRect().width-8),H=220;
+  cv.width=W*dpr;cv.height=H*dpr;cv.style.height=H+'px';
+  var g=cv.getContext('2d');g.setTransform(dpr,0,0,dpr,0,0);g.clearRect(0,0,W,H);
+  var xs=curve.spots,ys=curve.pnls;
+  var mn=Math.min.apply(null,ys.concat([0])),mx=Math.max.apply(null,ys.concat([0]));
+  var pad=(mx-mn)*0.1||1;mn-=pad;mx+=pad;
+  var pL=8,pR=64,pT=10,pB=18,pW=W-pL-pR,pH=H-pT-pB;
+  function X(i){return pL+i*pW/Math.max(1,xs.length-1);}
+  function Y(v){return pT+(mx-v)/(mx-mn)*pH;}
+  g.font='10px -apple-system,Segoe UI,Roboto,sans-serif';
+  g.strokeStyle='#e2e8f0';g.fillStyle='#64748b';g.lineWidth=1;
+  var zy=Math.round(Y(0))+0.5;
+  g.beginPath();g.moveTo(pL,zy);g.lineTo(pL+pW,zy);g.stroke();
+  g.strokeStyle=curve.live_credit?'#16a34a':'#d97706';g.lineWidth=2;g.beginPath();
+  xs.forEach(function(_,i){var x=X(i),y=Y(ys[i]);if(i===0)g.moveTo(x,y);else g.lineTo(x,y);});
+  g.stroke();
+  if(curve.breakeven!=null){
+    var be=curve.breakeven;
+    var bi=0,bd=1e18;xs.forEach(function(x,i){var d=Math.abs(x-be);if(d<bd){bd=d;bi=i;}});
+    g.strokeStyle='#2563eb';g.setLineDash([4,4]);g.beginPath();g.moveTo(X(bi),pT);g.lineTo(X(bi),pT+pH);g.stroke();g.setLineDash([]);
+    g.fillStyle='#2563eb';g.fillText('BE '+be,pL+2,pT+10);
+  }
+  if(spot!=null&&!isNaN(Number(spot))){
+    var si=0,sd=1e18;xs.forEach(function(x,i){var d=Math.abs(x-Number(spot));if(d<sd){sd=d;si=i;}});
+    g.strokeStyle='#0f172a';g.setLineDash([5,4]);g.beginPath();g.moveTo(X(si),pT);g.lineTo(X(si),pT+pH);g.stroke();g.setLineDash([]);
+  }
+  g.fillStyle=curve.live_credit?'#16a34a':'#d97706';
+  g.fillText(curve.live_credit?'live credit':'AWAITING LIVE PREMIUMS',pL+2,H-6);
+}
+async function loadLive(){
+  var box=document.getElementById('liveSpreads');
+  try{
+    var cards='';
+    for(const inst of ['NIFTY','BANKNIFTY']){
+      const cvId=inst==='NIFTY'?'payNifty':'payBank';
+      const metaId=inst==='NIFTY'?'payNiftyMeta':'payBankMeta';
+      let r=await fetch('/api/paper/spread/today?instrument='+inst.toLowerCase(),{cache:'no-store'});
+      if(!r.ok)continue;
+      const d=(await r.json()).data||{};
+      const tg=d.trigger||{}, sp=d.spread||{}, pay=d.payoff||{};
+      const legs=(sp.legs||[]).map(l=>esc(l.side)+' '+esc(l.type)+' '+esc(l.strike)).join(' / ')||'—';
+      cards+='<div class="card"><h3>'+inst+' live</h3><div class="kv">'
+        +'<dt>Signal</dt><dd>'+esc(tg.state||'—')+' '+(tg.direction?esc(tg.direction)+' '+esc(tg.level||''):'' )+'</dd>'
+        +'<dt>Strategy</dt><dd>'+esc(sp.strategy||'—')+'</dd>'
+        +'<dt>Expiry</dt><dd>'+esc(sp.expiry||pay.expiry||'—')+'</dd>'
+        +'<dt>Legs</dt><dd>'+legs+'</dd>'
+        +'<dt>Credit</dt><dd>'+(d.credit==null?'awaiting live premiums':esc(d.credit)+' pts')+'</dd></div></div>';
+      drawPayoff(cvId,pay,sp.spot_ref);
+      const meta=document.getElementById(metaId);
+      if(meta){meta.innerHTML='<dt>Max profit</dt><dd>'+esc(pay.max_profit_pts)+'</dd><dt>Max loss</dt><dd>'+esc(pay.max_loss_pts)+'</dd><dt>Breakeven</dt><dd>'+esc(pay.breakeven)+'</dd>';}
+    }
+    if(cards)box.innerHTML=cards;
+  }catch(e){box.innerHTML='<div class="card"><h3>Live</h3><div class="kv"><dt>Status</dt><dd>Feed unreachable — retrying</dd></div></div>';}
+}
+loadLive();setInterval(loadLive,60000);
+})();
+</script>
+</body>
+</html>

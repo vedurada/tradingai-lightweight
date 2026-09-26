@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /*frozen*
+Disallow: /*pre-*
+Disallow: /*backup*
+Disallow: /*removed-*
+Sitemap: https://tradingai.in/sitemap.xml

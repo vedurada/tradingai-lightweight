@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI.in — Market Insights | Smart Setups | Better Trades</title>
+<meta name="description" content="Decision-first trading dashboard: NIFTY & BANKNIFTY direction, CPR levels, S1/S2/R1/R2, recommended strategy and Trade/Wait signal.">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+.live{font-size:.8rem;display:flex;align-items:center;gap:.5rem}
+.live-dot{width:9px;height:9px;border-radius:50%;background:#22c55e;display:inline-block;animation:pulse 1.5s infinite}
+@keyframes pulse{50%{opacity:.4}}
+.live-pill{background:#22c55e;color:#fff;font-weight:700;font-size:.72rem;padding:.15rem .6rem;border-radius:999px}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:1400px;margin:0 auto;padding:1rem}
+.focus{background:#e8f1fd;border:1px solid #dbeafe;border-radius:10px;padding:1rem 1.2rem;display:flex;justify-content:space-between;gap:1rem;flex-wrap:wrap;margin-bottom:1rem}
+.focus h2{font-size:1.05rem}.focus p{font-size:.85rem;color:#475569}
+.flow{font-size:.78rem;color:#475569;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.banner{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem;display:flex;justify-content:space-around;gap:1rem;flex-wrap:wrap;text-align:center}
+.banner h3{font-size:.8rem;letter-spacing:.08em;color:#64748b}
+.banner .sig{font-size:1.25rem;font-weight:800}
+.bull{color:#15803d}.bear{color:#b91c1c}.neutral{color:#b45309}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+@media(max-width:900px){.grid{grid-template-columns:1fr}}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.2rem}
+.card-head{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:.3rem}
+.card-head h2{font-size:1.3rem}.idx{font-size:.68rem;font-weight:700;background:#eff6ff;color:#2563eb;padding:.15rem .5rem;border-radius:5px;margin-left:.4rem;vertical-align:middle}
+.dir{text-align:right;font-size:.75rem;color:#475569}
+.dir-pill{display:inline-block;font-weight:800;font-size:.78rem;color:#fff;background:#16a34a;border-radius:999px;padding:.25rem .8rem;margin-bottom:.2rem}
+.price{font-size:1.8rem;font-weight:800}.chg{font-size:1rem;font-weight:700;color:#16a34a;margin-left:.5rem}
+.sub{font-size:.8rem;color:#475569;margin:.3rem 0 1rem}
+.levels{border:1px solid #eef2f7;border-radius:8px;padding:.8rem 1rem;margin-bottom:1rem}
+.levels .lvl-head{display:flex;justify-content:space-between;font-size:.85rem;font-weight:700;color:#334155;margin-bottom:.5rem}
+.lvl{display:flex;align-items:center;gap:.6rem;padding:.22rem 0;font-size:.9rem}
+.lvl .lbl{width:78px;font-weight:700;font-size:.82rem}
+.lvl .line{flex:1;height:2px;border-radius:2px}
+.lvl .val{width:70px;text-align:right;font-weight:700;font-variant-numeric:tabular-nums}
+.r2 .lbl,.r2 .val{color:#dc2626}.r2 .line{background:#fca5a5}
+.r1 .lbl,.r1 .val{color:#dc2626}.r1 .line{background:#fecaca}
+.cpr .lbl,.cpr .val{color:#2563eb}.cpr .line{background:#60a5fa}
+.s .lbl,.s .val{color:#16a34a}.s .line{background:#86efac}
+.cur{border-top:1px dashed #cbd5e1;margin-top:.5rem;padding-top:.5rem;font-weight:700}
+.cur .lbl{color:#0f172a}.cur .val{color:#0f172a}
+.strat{background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:1rem;margin-top:.5rem}
+.strat h4{font-size:.85rem;display:flex;align-items:center;gap:.5rem;margin-bottom:.4rem}
+.trade-pill{font-size:.7rem;font-weight:800;padding:.15rem .6rem;border-radius:999px;background:#16a34a;color:#fff}
+.wait-pill{background:#d97706}.notrade-pill{background:#dc2626}
+.strat .name{font-size:1.05rem;font-weight:800;margin:.2rem 0}
+.strat .meta{font-size:.85rem;color:#334155}
+.strat .why{font-size:.82rem;color:#475569;margin:.4rem 0}
+.btn{display:inline-block;margin-top:.5rem;border:1px solid #16a34a;color:#15803d;text-decoration:none;font-size:.82rem;font-weight:700;padding:.4rem .9rem;border-radius:6px}
+.btn:hover{background:#16a34a;color:#fff}
+.struct{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1rem 1.2rem;margin-top:1rem}
+.struct h3{font-size:1rem;margin-bottom:.5rem}
+.chips{display:flex;gap:.5rem;flex-wrap:wrap;font-size:.8rem}
+.chip{border:1px solid #e2e8f0;background:#f8fafc;border-radius:999px;padding:.3rem .8rem}
+.chip b{color:#0f172a}
+.links{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-top:1rem}
+@media(max-width:900px){.links{grid-template-columns:1fr 1fr}}
+.link-card{background:#fff;border:1px solid #e2e8f0;border-radius:10px;padding:1rem;text-decoration:none;color:#0f172a;display:block}
+.link-card:hover{border-color:#38bdf8}
+.link-card span{font-size:.78rem;color:#64748b}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+</style>
+</head>
+<body>
+<div class="topbar">
+<div><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Market Insights &nbsp;|&nbsp; Smart Setups &nbsp;|&nbsp; Better Trades</span></div>
+<div class="live"><span class="live-dot"></span> IST <span id="clock">09:32:00</span> &nbsp;<span class="live-pill">Live</span></div>
+</div>
+<nav class="main"><a class="active" href="/index.html">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/methodology.html">Methodology</a></nav>
+<div class="wrap">
+<div class="focus"><div><h2>🎯 Today's Focus</h2><p>Follow the recommended strategy based on current market structure, CPR levels and price action.</p></div><div class="flow">Market → Structure → Positioning → Liquidity → Intent → Confirmation → <b>Trade / Wait</b> → Risk → Outcome</div></div>
+<div class="banner"><div><h3>TODAY'S MARKET</h3><div class="sig">NIFTY 50: <span class="bull">BULLISH ▲</span></div></div><div><h3>&nbsp;</h3><div class="sig">BANKNIFTY: <span class="bull">BULLISH ▲</span></div></div></div>
+<div class="grid">
+<section class="card"><div class="card-head"><div><h2>NIFTY 50 <span class="idx">INDEX</span></h2><div><span class="price">24,861.35</span><span class="chg">+182.60 (+0.74%) ▲</span></div><div class="sub">High 24,890.20 &nbsp;|&nbsp; Low 24,712.15 &nbsp;|&nbsp; Open 24,730.40</div></div><div class="dir"><span class="dir-pill">🟢 BULLISH</span><br>Market Direction ↗</div></div>
+<div class="levels"><div class="lvl-head"><span>Key Levels (CPR + S1/S2/R1/R2)</span><span>CPR: 24,742 – 24,768</span></div>
+<div class="lvl r2"><span class="lbl">R2</span><span class="line"></span><span class="val">24,892</span></div>
+<div class="lvl r1"><span class="lbl">R1</span><span class="line"></span><span class="val">24,830</span></div>
+<div class="lvl cpr"><span class="lbl">CPR High</span><span class="line"></span><span class="val">24,768</span></div>
+<div class="lvl cpr"><span class="lbl">CPR Low</span><span class="line"></span><span class="val">24,742</span></div>
+<div class="lvl s"><span class="lbl">S1</span><span class="line"></span><span class="val">24,680</span></div>
+<div class="lvl s"><span class="lbl">S2</span><span class="line"></span><span class="val">24,618</span></div>
+<div class="lvl cur"><span class="lbl">▶ Current Price</span><span class="line" style="background:transparent"></span><span class="val">24,861.35</span></div></div>
+<div class="strat"><h4>🐂 Recommended Strategy <span class="trade-pill">BULLISH · TRADE</span></h4><div class="name">Call Credit Spread — Near CPR</div><div class="meta">Trade / Wait: <b>TRADE</b></div><p class="why"><b>Why:</b> Price above CPR, positive momentum, higher highs, strong OI build-up. Price vs CPR bullish, momentum confirms.</p><a class="btn" href="/indices/nifty.html">View Details →</a></div></section>
+<section class="card"><div class="card-head"><div><h2>BANKNIFTY <span class="idx">INDEX</span></h2><div><span class="price">54,321.75</span><span class="chg">+412.30 (+0.77%) ▲</span></div><div class="sub">High 54,608.65 &nbsp;|&nbsp; Low 53,987.40 &nbsp;|&nbsp; Open 54,012.20</div></div><div class="dir"><span class="dir-pill">🟢 BULLISH</span><br>Market Direction ↗</div></div>
+<div class="levels"><div class="lvl-head"><span>Key Levels (CPR + S1/S2/R1/R2)</span><span>CPR: 54,112 – 54,268</span></div>
+<div class="lvl r2"><span class="lbl">R2</span><span class="line"></span><span class="val">54,742</span></div>
+<div class="lvl r1"><span class="lbl">R1</span><span class="line"></span><span class="val">54,512</span></div>
+<div class="lvl cpr"><span class="lbl">CPR High</span><span class="line"></span><span class="val">54,268</span></div>
+<div class="lvl cpr"><span class="lbl">CPR Low</span><span class="line"></span><span class="val">54,112</span></div>
+<div class="lvl s"><span class="lbl">S1</span><span class="line"></span><span class="val">53,882</span></div>
+<div class="lvl s"><span class="lbl">S2</span><span class="line"></span><span class="val">53,652</span></div>
+<div class="lvl cur"><span class="lbl">▶ Current Price</span><span class="line" style="background:transparent"></span><span class="val">54,321.75</span></div></div>
+<div class="strat"><h4>🐂 Recommended Strategy <span class="trade-pill">BULLISH · TRADE</span></h4><div class="name">Call Credit Spread — Near CPR</div><div class="meta">Trade / Wait: <b>TRADE</b></div><p class="why"><b>Why:</b> Trading above CPR, positive bias, strong Call writing at higher strikes. Structure supports bullish continuation.</p><a class="btn" href="/indices/banknifty.html">View Details →</a></div></section>
+</div>
+<div class="struct"><h3>Market Structure</h3><div class="chips"><span class="chip">Price vs CPR: <b>Above</b></span><span class="chip">VWAP: <b>Bullish</b></span><span class="chip">ATR: <b>Normal</b></span><span class="chip">VIX: <b>12.48 (-2.85%)</b></span><span class="chip">OI: <b>Call writing high</b></span><span class="chip">PCR: <b>1.12</b></span><span class="chip">Gap: <b>Up +0.4%</b></span><span class="chip">5m Price Action: <b>Higher highs</b></span></div></div>
+<div class="links"><a class="link-card" href="/indices/nifty.html"><b>📄 NIFTY Analysis</b><br><span>Detailed levels, OI, PCR, setup</span></a><a class="link-card" href="/indices/banknifty.html"><b>📄 BANKNIFTY Analysis</b><br><span>Detailed levels, OI, PCR, setup</span></a><a class="link-card" href="/backtest.html"><b>🕘 Backtest</b><br><span>Check past performance</span></a><a class="link-card" href="/methodology.html"><b>📘 Methodology</b><br><span>Our strategy &amp; approach</span></a></div>
+</div>
+<footer>TradingAI.in &nbsp;·&nbsp; Smarter Analysis. Disciplined Trading. &nbsp;·&nbsp; NIFTY 50 | BANKNIFTY | SENSEX &nbsp;·&nbsp; <span style="color:#22c55e">●</span> Live Market Data</footer>
+<script>function t(){try{const d=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));document.getElementById('clock').textContent=d.toTimeString().slice(0,8);}catch(e){}}setInterval(t,1000);t();</script>
+</body>
+</html>

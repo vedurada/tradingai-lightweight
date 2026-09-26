@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Methodology — TradingAI.in</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/favicon-180.png">
+<meta name="description" content="How TradingAI works, explained for new traders: signals, entries, exits, CPR levels, backtests, paper trades and options spreads.">
+<link rel="canonical" href="https://tradingai.in/methodology.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TradingAI.in">
+<meta property="og:url" content="https://tradingai.in/methodology.html">
+<meta property="og:description" content="How TradingAI works, explained for new traders: signals, entries, exits, CPR levels, backtests, paper trades and options spreads.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Methodology — TradingAI.in">
+<meta name="twitter:description" content="How TradingAI works, explained for new traders: signals, entries, exits, CPR levels, backtests, paper trades and options spreads.">
+<meta property="og:title" content="Methodology — TradingAI.in">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.7}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:900px;margin:0 auto;padding:1rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.4rem;margin-bottom:1rem}
+h1{font-size:1.6rem;margin-bottom:.4rem}h2{font-size:1.15rem;margin:1.2rem 0 .4rem;color:#0b1e3a}h3{font-size:1rem;margin:.9rem 0 .3rem;color:#0b1e3a}
+p,li{font-size:.92rem;color:#334155}ul,ol{margin-left:1.2rem}
+code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.85em}
+.flow{background:#eff6ff;border:1px solid #dbeafe;border-radius:8px;padding:.8rem 1rem;font-size:.85rem;margin:.8rem 0}
+.example{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.8rem 1rem;font-size:.86rem;margin:.8rem 0}
+table{width:100%;border-collapse:collapse;font-size:.84rem;margin:.6rem 0}
+th,td{text-align:left;padding:.35rem .5rem;border-bottom:1px solid #e2e8f0}
+th{color:#64748b}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+</style>
+</head>
+<body>
+<div class="topbar"><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Methodology</span></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/methodology.html" class="active" aria-current="page">Methodology</a><a href="/paper.html">Paper</a></nav>
+<div class="wrap"><div class="card">
+<h1>How TradingAI works — a guide for new traders</h1>
+<p>TradingAI is a <b>rules-based intraday decision aid</b> for NIFTY, BANKNIFTY and INDIA VIX. It does not predict markets and it is not a tip service. It watches price structure all day, and only when a precise, pre-defined setup appears does it say <b>TRADE</b> — otherwise it says <b>WAIT</b> or <b>NO TRADE</b>. At most one setup per instrument per day.</p>
+<div class="flow"><b>The journey of a signal:</b> previous session → CPR levels → 09:15 open → first trigger → entry at next open → stop/target working → exit by 15:10 → logged to Paper.</div>
+
+<h2>1. Market data — what the site sees</h2>
+<ul><li>Prices come from a free intraday feed (yfinance) as <b>5-minute candles</b> in India time (IST).</li>
+<li>Only <b>completed</b> candles are used: at 10:04 the latest usable candle is the 09:55–10:00 one. The candle still forming is never used — a signal always comes from a closed candle, and entry happens at the <b>next candle's open (09:20 at the earliest)</b>.</li>
+<li>Stale quotes (older than the freshness limit) are labelled <b>STALE</b>; off-hours show <b>MARKET CLOSED / WEEKEND / PREMARKET</b> instead of pretending to be live.</li></ul>
+
+<h2>2. CPR and levels — the map for the day</h2>
+<p>Every morning the previous session's high, low and close are converted into today's map. The central zone (CPR) is where yesterday was undecided; S1/S2 below and R1/R2 above are where reactions are expected:</p>
+<ul><li>Pivot <code>(H+L+C)/3</code>, BC <code>(H+L)/2</code>, TC <code>2·Pivot − BC</code>; width <code>(TC−BC)/Pivot</code> → NARROW (&lt;0.15%), NORMAL, WIDE (&gt;0.30%). Narrow days chop; wide days run.</li>
+<li>Floor pivots: R1 <code>2·P−L</code>, S1 <code>2·P−H</code>, R2 <code>P+range</code>, S2 <code>P−range</code>; plus PDH/PDL (previous day high/low).</li>
+<li>Computed strictly from the previous session — never from today or the future.</li></ul>
+
+<h2>3. How a strategy enters — the exact rules</h2>
+<ol><li><b>Scan:</b> from the 09:15 candle, each completed candle is checked. Bearish triggers: high touches R2/R1/PDH, or close below BC. Bullish triggers: low touches S2/S1/PDL, or close above TC. The <b>first trigger of the day wins</b> (a same-candle tie goes to the bear side).</li>
+<li><b>Gate (default view):</b> the trigger must agree with the <b>weekly</b> CPR — bulls only above weekly TC, bears only below weekly BC.</li>
+<li><b>Entry:</b> at the <b>next candle's open</b>, between 09:20 and 15:10. No chasing, no market-on-close entries.</li>
+<li><b>Risk:</b> 0.5% stop, 2% target, checked at subsequent opens (stop first). Anything still open exits at the <b>15:10 open</b> — no overnight positions, ever.</li>
+<li><b>One per day:</b> after entry the day is done for that instrument.</li>
+<li><b>Credit spreads only:</b> every signal becomes a premium-collecting vertical — Bullish → <b>Bull Put Spread</b>, Bearish → <b>Bear Call Spread</b> (sideways markets take no spread; the Iron Condor exists only in the selection engine, not on the Paper page). Never debit spreads or naked options: option premiums decay every day (faster into expiry), so passing time pays a credit holder and punishes a premium buyer.</li></ol>
+<div class="example"><b>Worked example:</b> NIFTY gaps below BC at 09:15 and closes there → BEAR/BELOW_CPR signal → short at the 09:20 open near 24,285 → price drifts to 23,883 by 15:10 → exit +401 points. If price had rallied through the 0.5% stop instead, the loss would be capped near −120 points. Winners ride the day's drift; losers are cut small — that asymmetry is the whole edge.</div>
+
+<h2>4. Reading the Home page</h2>
+<ul><li><b>Price + change:</b> live quote vs the previous trading day's close (not vs the last 5-minute bar).</li>
+<li><b>Direction pill:</b> BULLISH / BEARISH only when a setup qualified; MARKET CLOSED off-hours; AWAITING SETUP while scanning; DATA STALE when the feed lags during market hours.</li>
+<li><b>5-min CPR chart:</b> today's completed candles with CPR lines and the live-price line.</li>
+<li><b>Recommended Strategy + Decision detail:</b> the engine's verdict with entry, stop, target and the evidence codes behind it.</li></ul>
+
+<h2>5. Reading an instrument page (Nifty / BankNifty)</h2>
+<ul><li><b>Bias &amp; Regime:</b> which side qualified and which market character drove it (continuation, range, breakout…). Empty on quiet days — that is information, not an error.</li>
+<li><b>CPR strip + 5-minute chart + candle table</b> (latest first), <b>Gap</b> (open vs prev close), <b>Session timeline</b>, and <b>Why this decision</b> with check-marked evidence codes.</li></ul>
+
+<h2>6. Reading the Backtest page</h2>
+<ul><li>Pick instrument, variant (Aligned = weekly gate, Plain = no filter) and dates → every historical trigger with entry/exit times, points, R and Win/Loss.</li>
+<li><b>Win/Loss uses decay logic:</b> tiny adverse drifts (under 30 NIFTY / 60 BANKNIFTY points) count as wins, because a short-option position's daily time-decay outweighs them. Full stops stay losses. Spot R is never rewritten.</li>
+<li>Paper rows appended below the research rows (blue tint) are live logged days newer than your range — the table grows every session.</li></ul>
+
+<h2>7. Reading the Paper page</h2>
+<ul><li><b>Align cards + ledger:</b> the same approved math, logged daily — one row per day per instrument. Totals here and on the Backtest page always agree.</li>
+<li><b>Live Paper Spreads:</b> when today triggers, the signal becomes a planned vertical spread (bear-call above spot / bull-put below, NIFTY 200pt / BANKNIFTY 400pt wide) on the true strike grid for the coming expiry — NIFTY weekly every Tuesday, BANKNIFTY monthly on the last Tuesday.</li>
+<li><b>Payoff display:</b> no live option premiums exist, so the page shows structure only — legs, width and expiry. No profit/loss curve, no max profit/loss, no breakeven is shown or implied anywhere.</li></ul>
+
+<h2>8. Options spreads in 60 seconds (for novices)</h2>
+<ul><li>A <b>credit vertical spread</b> sells one option and buys a further-out-of-the-money one: premium is collected on entry, risk is strictly defined, and cost is a fraction of outright options.</li>
+<li><b>OTM short leg:</b> the sold strike sits away from price, so small moves don't hurt — and each passing day's decay works for you, which is why sub-threshold drift days still count as wins here.</li>
+<li><b>DTE matters:</b> NIFTY weeklies (Tuesday) and BANKNIFTY monthlies (last Tuesday) are chosen so positions live inside healthy time-decay territory; nothing is held into expiry-day chaos.</li>
+<li><b>Width &amp; lot:</b> 200pt (NIFTY) / 400pt (BANKNIFTY) between strikes; NSE lots 65 / 30 convert points to rupees.</li></ul>
+
+<h2>9. How a trader benefits — and the risks</h2>
+<ul><li><b>Benefit:</b> a fixed plan replaces impulse — entries, stops, exits and position sizing decided before the market opens; small defined losses fund occasional big trend days; paper history shows every outcome, good and bad.</li>
+<li><b>Risks:</b> backtests exclude brokerage, taxes and slippage; short-premium positions can lose fast in gaps; past drift (e.g. a falling quarter) may not repeat. Never trade money you cannot lose.</li></ul>
+
+<h2>10. Quick answers</h2>
+<ul><li><b>Why NO TRADE today?</b> No first trigger, a gated-out trigger, an incomplete feed, or the market is closed.</li>
+<li><b>Why do two pages show different numbers?</b> They shouldn't anymore — Backtest and Paper share one rulebook. The legacy qualification path (homepage strategy block) uses different levels by design.</li>
+<li><b>What does FLAT / EOD / STOP / TARGET mean?</b> How the trade ended: flat (no move), time exit at 15:10, stop hit, target hit.</li></ul>
+</div></div>
+<footer>TradingAI.in · Smarter Analysis. Disciplined Trading. · <a href="/privacy.html" style="color:#94a3b8">Privacy</a> · <a href="/contact.html" style="color:#94a3b8">Contact</a> · <a href="/terms.html" style="color:#94a3b8">Terms</a></footer>
+</body>
+</html>

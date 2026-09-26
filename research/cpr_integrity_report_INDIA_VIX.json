@@ -1,0 +1,19 @@
+{
+  "instrument": "INDIA_VIX",
+  "future_data_used": false,
+  "duplicate_trade_count": 0,
+  "overlapping_trade_count": 0,
+  "max_daily_trades": 1,
+  "impossible_fill_count": 0,
+  "invalid_timestamp_count": 0,
+  "strategy_summary": {
+    "PIVOT_BOUNCE": {
+      "setups": 0,
+      "trades": 27,
+      "wins": 18,
+      "losses": 9,
+      "pnl": 161.0
+    }
+  },
+  "options_mode": "UNAVAILABLE"
+}
