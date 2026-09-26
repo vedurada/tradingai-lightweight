@@ -120,6 +120,11 @@ def do_morning():
     print('morning sent:', r.get('ok'))
 
 
+def spread_name(direction):
+    """Credit-spread expression of the call (matches options engine mapping)."""
+    return 'Bear Call Spread' if direction == 'BEAR' else 'Bull Put Spread'
+
+
 def resolve_reason(direction, entry, stop, target, price, now):
     """Infer how a fired trade resolved. Pure function (no I/O)."""
     try:
@@ -162,14 +167,14 @@ def do_watch():
         sig_at = datetime.now(IST).strftime('%H:%M')
         text = (f"{emoji} {inst} ({t.get('direction') or ''})\n"
                 f"Entry {fmt(t.get('entry'))} | Stop {fmt(t.get('stop'))}\n"
-                f"Strategy: {t.get('strategy') or '—'}")
+                f"Strategy: {spread_name(t.get('direction'))}")
         r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
         if r.get('ok'):
             st.setdefault('fired', []).append(key)
             st.setdefault('open', {})[key] = {'inst': inst, 'sym': sym,
                                               'direction': t.get('direction'), 'entry': t.get('entry'),
                                               'stop': t.get('stop'), 'target': t.get('target'),
-                                              'strategy': t.get('strategy'), 'fired_at': sig_at,
+                                              'strategy': spread_name(t.get('direction')), 'fired_at': sig_at,
                                               'date': today}
             save_state(st)
             print(f'signal sent for {key}')
