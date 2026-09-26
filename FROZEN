@@ -1,0 +1,13 @@
+# FROZEN — TradingAI.in production code
+
+Date: 2026-09-26
+Scope: entire repository (application, frontend, strategies, configs tracked here).
+
+Status: READ-ONLY. All files are permission-locked (444/555).
+
+Rule: NO update, patch, edit, or deployment may be made to this code
+without the EXPLICIT authorization of the owner (Satya) for each change.
+
+Unlock → change → verify → relock applies to every authorized change.
+Live database, logs, and research outputs are runtime data, not code,
+and are excluded from this freeze.

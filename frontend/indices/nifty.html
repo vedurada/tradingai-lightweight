@@ -197,7 +197,7 @@ function paintPrice(price,ch,cp,quoteTs,quoteState){
 }
 async function tickPrice(){
   try{
-    var r=await fetch('/api/quote/'+INST.toLowerCase(),{cache:'no-store'});
+    var r=await fetchT('/api/quote/'+INST.toLowerCase(),10000);
     if(r.status===429||!r.ok)return;
     var q=(await r.json()).data||null;
     if(!q||q.price==null)return;
@@ -205,16 +205,19 @@ async function tickPrice(){
     drawChart(lastCandles,lastCpr,q.price);
   }catch(e){}
 }
+function fetchT(url,ms){var c=new AbortController();var t=setTimeout(function(){c.abort();},ms||10000);return fetch(url,{cache:'no-store',signal:c.signal}).then(function(r){clearTimeout(t);return r;},function(e){clearTimeout(t);throw e;});}
+var loadRunning=false,loadRetry=null;
 async function load(){
+  if(loadRunning)return;loadRunning=true;
   var d=null, candles=[];
   try{
-    var r=await fetch('/api/decision/'+INST.toLowerCase(),{cache:'no-store'});
-    if(r.status===429){d=lastGood;if(!d){$('sub').textContent='Refresh delayed by rate limit — retrying on next cycle.';return;}}
+    var r=await fetchT('/api/decision/'+INST.toLowerCase(),10000);
+    if(r.status===429){d=lastGood;if(!d){$('sub').textContent='Refresh delayed by rate limit — retrying shortly.';loadRunning=false;if(loadRetry)clearTimeout(loadRetry);loadRetry=setTimeout(function(){loadRetry=null;load();},10000);return;}}
     else{if(!r.ok)throw 0;d=(await r.json()).data||null;lastGood=d;}
   }catch(e){d=null;}
-  if(!d){$('sub').textContent='Market data temporarily unavailable.';setFoot(null,null,false);return;}
+  if(!d){$('sub').textContent='Market data temporarily unavailable — retrying shortly.';setFoot(null,null,false);loadRunning=false;if(loadRetry)clearTimeout(loadRetry);loadRetry=setTimeout(function(){loadRetry=null;load();},10000);return;}
   try{
-    var rc=await fetch('/api/'+INST+'/candles?n=80',{cache:'no-store'});
+    var rc=await fetchT('/api/'+INST+'/candles?n=80',10000);
     if(rc.ok){var jc=await rc.json();candles=((jc.data||{}).candles)||[];}
   }catch(e){candles=[];}
   var live=paintPrice(d.price,d.change,d.change_pct,d.quote_timestamp,d.quote_state||d.data_status);
@@ -289,6 +292,7 @@ async function load(){
   $('codes').textContent='Raw codes: '+(codes.join(' · ')||'—');
   $('sessKv').innerHTML=row('Session',d.session||'—')+row('Decision updated',(d.timestamp||'').slice(0,19).replace('T',' ')+' IST')+row('Market data updated',(d.quote_timestamp||'—').slice(0,19).replace('T',' ')+' IST')+row('Data status',d.data_status||'—')+row('One-trade/day lock',d.daily_lock_consumed?'CONSUMED':'open')+row('Paper trade',d.active_paper_trade?d.active_paper_trade.trade_id+' ('+d.active_paper_trade.status+')':'none active');
   setFoot(d.session||d.engine_state,(d.quote_state==='STALE'||d.data_status==='STALE'),true);
+  loadRunning=false;if(loadRetry){clearTimeout(loadRetry);loadRetry=null;}
 }
 load();setInterval(load,300000);setInterval(tickPrice,60000);setTimeout(tickPrice,15000);
 })();

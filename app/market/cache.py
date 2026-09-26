@@ -23,13 +23,26 @@ from app.core.db import DB_PATH
 _TTL = {'quote': 45, 'candles': 90}
 
 
+# PERF (no logic change): table created ONCE at import. Previously every
+# get()/put() ran CREATE TABLE + commit — a write transaction on the read
+# path that forced fsync/lock contention under parallel requests.
 def _conn():
-    c = sqlite3.connect(DB_PATH, timeout=10)
-    c.execute('CREATE TABLE IF NOT EXISTS provider_cache ('
-              'cache_key TEXT PRIMARY KEY, payload TEXT NOT NULL, '
-              'data_ts TEXT, fetch_ts REAL NOT NULL, state TEXT NOT NULL)')
-    c.commit()
-    return c
+    return sqlite3.connect(DB_PATH, timeout=10)
+
+
+def _ensure():
+    try:
+        c = sqlite3.connect(DB_PATH, timeout=10)
+        c.execute('CREATE TABLE IF NOT EXISTS provider_cache ('
+                  'cache_key TEXT PRIMARY KEY, payload TEXT NOT NULL, '
+                  'data_ts TEXT, fetch_ts REAL NOT NULL, state TEXT NOT NULL)')
+        c.commit()
+        c.close()
+    except Exception:
+        pass
+
+
+_ensure()
 
 
 def cache_key(symbol, kind):

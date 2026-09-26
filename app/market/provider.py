@@ -18,6 +18,7 @@ Phase 11 hardening:
   substitution); every error path logs once via logging (no secrets).
 """
 import logging
+import threading
 import time
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
 from datetime import datetime, timezone
@@ -26,6 +27,7 @@ from zoneinfo import ZoneInfo
 import yfinance as yf
 
 from app.market import cache as _cache
+from app.market import flight as _flight
 
 _IST = ZoneInfo('Asia/Kolkata')
 _STALE_QUOTE_S = 3600
@@ -33,6 +35,15 @@ _FETCH_TIMEOUT_S = 12
 _MAX_ATTEMPTS = 2  # 1 initial + 1 bounded retry
 
 log = logging.getLogger('tradingai.provider')
+
+
+def _quote_touch(hit):
+    """Recompute age/STALE on a cached quote payload at serve time."""
+    hit['age_seconds'] = round(
+        (datetime.now(_IST) - datetime.fromisoformat(hit['timestamp'])).total_seconds(), 1)
+    if hit['age_seconds'] >= _STALE_QUOTE_S:
+        hit['state'] = 'STALE'
+    return hit
 
 
 def _to_ist_iso(ts):
@@ -77,13 +88,33 @@ class MarketDataProvider:
         if use_cache:
             hit, _ = _cache.get(symbol, 'quote')
             if hit is not None:
-                hit['age_seconds'] = round(
-                    (datetime.now(_IST) - datetime.fromisoformat(hit['timestamp'])).total_seconds(), 1)
-                if hit['age_seconds'] >= _STALE_QUOTE_S:
-                    hit['state'] = 'STALE'
-                return hit
+                return _quote_touch(hit)
+        leader, ev = _flight.begin(('quote', symbol))
         try:
-            hist = _fetch_history(symbol, '2d', '5m')
+            if not leader:
+                hit, _ = _cache.get(symbol, 'quote')
+                if hit is not None:
+                    return _quote_touch(hit)
+                # leader failed/timed out: fetch ourselves below
+            return self._fetch_quote(symbol)
+        finally:
+            if leader:
+                _flight.end(('quote', symbol), ev)
+
+    def _fetch_quote(self, symbol):
+        # 5m + daily bars fetched CONCURRENTLY (was sequential); same data,
+        # same fallbacks: daily failure -> prev_close None, price still served.
+        try:
+            with ThreadPoolExecutor(max_workers=2) as ex:
+                f5 = ex.submit(_fetch_history, symbol, '2d', '5m')
+                f1 = ex.submit(_fetch_history, symbol, '5d', '1d')
+                hist = f5.result()
+                try:
+                    daily = f1.result()
+                except Exception as e:  # noqa - change stays None
+                    log.warning('quote prev_close FAILED symbol=%s err=%s',
+                                symbol, str(e)[:120])
+                    daily = None
         except Exception as e:
             state = _classify_error(e)
             log.warning('quote FAILED symbol=%s state=%s', symbol, state)
@@ -105,16 +136,15 @@ class MarketDataProvider:
         # never vs the previous 5-minute bar (that showed a ~5-min move
         # like +12.40 instead of the true day move like +77.40).
         prev_close = None
-        try:
-            daily = _fetch_history(symbol, '5d', '1d')
-            closes = [float(c) for c in daily['Close'].tolist() if c and float(c) > 0]
-            if len(closes) >= 2:
-                prev_close = closes[-2]
-            elif len(closes) == 1 and float(daily['Close'].iloc[-1]) != price:
-                prev_close = float(daily['Close'].iloc[-1])
-        except Exception as e:  # noqa - change stays None, price still served
-            log.warning('quote prev_close FAILED symbol=%s err=%s', symbol, str(e)[:120])
-            prev_close = None
+        if daily is not None:
+            try:
+                closes = [float(c) for c in daily['Close'].tolist() if c and float(c) > 0]
+                if len(closes) >= 2:
+                    prev_close = closes[-2]
+                elif len(closes) == 1 and float(daily['Close'].iloc[-1]) != price:
+                    prev_close = float(daily['Close'].iloc[-1])
+            except Exception:  # noqa - change stays None, price still served
+                prev_close = None
         if prev_close:
             change = float(price - prev_close)
             change_pct = float(change / prev_close * 100)
@@ -139,6 +169,19 @@ class MarketDataProvider:
             hit, _ = _cache.get(symbol, 'candles')
             if hit is not None:
                 return hit
+        leader, ev = _flight.begin(('candles', symbol))
+        try:
+            if not leader:
+                hit, _ = _cache.get(symbol, 'candles')
+                if hit is not None:
+                    return hit
+                # leader failed/timed out: fetch ourselves below
+            return self._fetch_candles(symbol, periods)
+        finally:
+            if leader:
+                _flight.end(('candles', symbol), ev)
+
+    def _fetch_candles(self, symbol, periods):
         try:
             hist = _fetch_history(symbol, '10d', '5m')
         except Exception as e:

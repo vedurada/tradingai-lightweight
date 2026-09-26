@@ -322,43 +322,49 @@ function renderStruct(list){
 }
 var failures=0;
 var lastGood={};
+function fetchT(url,ms){var c=new AbortController();var t=setTimeout(function(){c.abort();},ms||10000);return fetch(url,{cache:'no-store',signal:c.signal}).then(function(r){clearTimeout(t);return r;},function(e){clearTimeout(t);throw e;});}
+var loadRunning=false,loadRetry=null;
 async function tickPrice(){
   var syms=['NIFTY','BANKNIFTY','INDIA_VIX'],sides=['nifty','bank','vix'];
-  for(var i=0;i<3;i++){
-    try{
-      var r=await fetch('/api/quote/'+syms[i].toLowerCase(),{cache:'no-store'});
-      if(!r.ok)continue;
-      var q=(await r.json()).data||null;
-      if(!q||q.price==null||!lastGood[syms[i]])continue;
+  await Promise.all(syms.map(function(sym,i){
+    return fetchT('/api/quote/'+sym.toLowerCase(),10000).then(function(r){
+      if(!r.ok)return null;
+      return r.json();
+    }).then(function(j){
+      var q=(j&&j.data)||null;
+      if(!q||q.price==null||!lastGood[sym])return;
       var d={};
-      for(var k in lastGood[syms[i]]){d[k]=lastGood[syms[i]][k];}
+      for(var k in lastGood[sym]){d[k]=lastGood[sym][k];}
       d.live_price=q.price;d.price=q.price;d.change=q.change;d.change_pct=q.change_pct;
       d.quote_timestamp=q.timestamp;d.quote_state=q.state;
-      renderSide(sides[i],d);renderChart(sides[i],syms[i],d);
-    }catch(e){}
-  }
+      renderSide(sides[i],d);renderChart(sides[i],sym,d);
+    }).catch(function(){});
+  }));
 }
 async function load(){
+  if(loadRunning)return;loadRunning=true;
   var out={};var limited=[];
-  for(var i=0;i<3;i++){
-    var sym=i===0?'NIFTY':(i===1?'BANKNIFTY':'INDIA_VIX');
-    try{
-      var r2=await fetch('/api/decision/'+sym.toLowerCase(),{cache:'no-store'});
+  var syms3=['NIFTY','BANKNIFTY','INDIA_VIX'];
+  await Promise.all(syms3.map(function(sym){
+    return fetchT('/api/decision/'+sym.toLowerCase(),10000).then(function(r2){
       if(r2.status===429){
         limited.push(sym);
         if(lastGood[sym]){out[sym]=lastGood[sym];out[sym+'_DEC']=lastGood[sym+'_DEC'];}
         else{out[sym]=null;out[sym+'_DEC']=null;}
-        continue;
+        return null;
       }
       if(!r2.ok)throw new Error('HTTP '+r2.status);
-      var j2=await r2.json();out[sym+'_DEC']=j2.data||null;out[sym]=j2.data||null;
+      return r2.json();
+    }).then(function(j2){
+      if(!j2)return;
+      out[sym+'_DEC']=j2.data||null;out[sym]=j2.data||null;
       lastGood[sym]=out[sym];lastGood[sym+'_DEC']=out[sym+'_DEC'];
-    }catch(e){out[sym]=null;out[sym+'_DEC']=null;}
-  }
+    }).catch(function(){out[sym]=null;out[sym+'_DEC']=null;});
+  }));
   var n=out.NIFTY,b=out.BANKNIFTY,v=out.INDIA_VIX;
   if(!n&&!b&&!v){
     failures++;
-    $('globalStatus').textContent='⛔ DATA TEMPORARILY UNAVAILABLE — engine unreachable (attempt '+failures+'). Retrying on next cycle.';
+    $('globalStatus').textContent='⛔ DATA TEMPORARILY UNAVAILABLE — engine unreachable (attempt '+failures+'). Retrying shortly.';
     $('globalFresh').textContent='';
     $('marketState').textContent='OFFLINE';$('livePill').textContent='DOWN';setFoot(null,null,false);
     $('liveDot').className='live-dot';$('livePill').className='live-pill';
@@ -367,9 +373,13 @@ async function load(){
     renderStrat('nifty',null,null);renderStrat('bank',null,null);
     renderDetail('nifty',null);renderDetail('bank',null);
     $('structChips').innerHTML='<span class="chip">Engine unreachable — <b>DATA TEMPORARILY UNAVAILABLE</b></span>';
+    loadRunning=false;
+    if(loadRetry)clearTimeout(loadRetry);
+    loadRetry=setTimeout(function(){loadRetry=null;load();},10000);
     return;
   }
   failures=0;
+  if(loadRetry){clearTimeout(loadRetry);loadRetry=null;}
   var now=n&&n.now_ist?n.now_ist:((b&&b.now_ist)?b.now_ist:((v&&v.now_ist)?v.now_ist:''));
   var sess=(n&&n.session)||(b&&b.session)||(v&&v.session)||'—';
   var stale=((n&&n.quote_state)==='STALE')||((b&&b.quote_state)==='STALE')||((v&&v.quote_state)==='STALE');
@@ -389,12 +399,14 @@ async function load(){
   else{$('globalFresh').textContent='Updated '+(now?now.slice(11,19)+' IST':'—')+' · NIFTY quote '+age(n)+' · BANKNIFTY quote '+age(b)+' · VIX quote '+age(v);}
   renderSide('nifty',n);renderSide('bank',b);renderSide('vix',v);
   try{
-    var cn=await fetch('/api/nifty/candles?n=75',{cache:'no-store'});
-    if(cn.ok){var jn=await cn.json();candleCache.NIFTY=((jn.data||{}).candles)||[];}
-    var cb=await fetch('/api/banknifty/candles?n=75',{cache:'no-store'});
-    if(cb.ok){var jb=await cb.json();candleCache.BANKNIFTY=((jb.data||{}).candles)||[];}
-    var cv=await fetch('/api/india_vix/candles?n=75',{cache:'no-store'});
-    if(cv.ok){var jv=await cv.json();candleCache.INDIA_VIX=((jv.data||{}).candles)||[];}
+    var cdl=await Promise.all([
+      fetchT('/api/nifty/candles?n=75',10000).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+      fetchT('/api/banknifty/candles?n=75',10000).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;}),
+      fetchT('/api/india_vix/candles?n=75',10000).then(function(r){return r.ok?r.json():null;}).catch(function(){return null;})
+    ]);
+    if(cdl[0]){candleCache.NIFTY=(((cdl[0]||{}).data||{}).candles)||[];}
+    if(cdl[1]){candleCache.BANKNIFTY=(((cdl[1]||{}).data||{}).candles)||[];}
+    if(cdl[2]){candleCache.INDIA_VIX=(((cdl[2]||{}).data||{}).candles)||[];}
     candleDay=String((n&&n.timestamp)||(b&&b.timestamp)||(v&&v.timestamp)||'').slice(0,10);
   }catch(e){}
   renderChart('nifty','NIFTY',n);renderChart('bank','BANKNIFTY',b);renderChart('vix','INDIA_VIX',v);
@@ -405,6 +417,7 @@ async function load(){
   }
   renderStruct([{session:(n&&n.session)||'—',state:(n&&n.state)||'NO_DATA'},{session:(b&&b.session)||'—',state:(b&&b.state)||'NO_DATA'},{session:(v&&v.session)||'—',state:(v&&v.state)||'NO_DATA'}]);
   setFoot(sess,stale,true);
+  loadRunning=false;
 }
 load();setInterval(load,300000);setInterval(tickPrice,60000);
 })();

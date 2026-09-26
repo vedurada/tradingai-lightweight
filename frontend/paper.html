@@ -179,22 +179,27 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <script>
 (function(){
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function fetchT(url,ms){var c=new AbortController();var t=setTimeout(function(){c.abort();},ms||10000);return fetch(url,{cache:'no-store',signal:c.signal}).then(function(r){clearTimeout(t);return r;},function(e){clearTimeout(t);throw e;});}
 async function loadLive(){
   var box=document.getElementById('liveSpreads');
   try{
-    var cards='';
-    for(const inst of ['NIFTY','BANKNIFTY']){
-      let r=await fetch('/api/paper/spread/today?instrument='+inst.toLowerCase(),{cache:'no-store'});
-      if(!r.ok)continue;
-      const d=(await r.json()).data||{};
-      const tg=d.trigger||{}, sp=d.spread||{};
-      const legs=(sp.legs||[]).map(l=>esc(l.side)+' '+esc(l.type)+' '+esc(l.strike)).join(' / ')||'—';
-      cards+='<div class="card"><h3>'+inst+' live</h3><div class="kv">'
-        +'<dt>Signal</dt><dd>'+esc(tg.state||'—')+' '+(tg.direction?esc(tg.direction)+' '+esc(tg.level||''):'' )+'</dd>'
-        +'<dt>Strategy</dt><dd>'+esc(sp.strategy||'—')+'</dd>'
-        +'<dt>Expiry</dt><dd>'+esc(sp.expiry||'—')+'</dd>'
-        +'<dt>Legs</dt><dd>'+legs+'</dd></div></div>';
-    }
+    var parts=await Promise.all(['NIFTY','BANKNIFTY'].map(function(inst){
+      return fetchT('/api/paper/spread/today?instrument='+inst.toLowerCase(),10000).then(function(r){
+        if(!r.ok)return '';
+        return r.json();
+      }).then(function(j){
+        if(!j)return '';
+        const d=j.data||{};
+        const tg=d.trigger||{}, sp=d.spread||{};
+        const legs=(sp.legs||[]).map(l=>esc(l.side)+' '+esc(l.type)+' '+esc(l.strike)).join(' / ')||'—';
+        return '<div class="card"><h3>'+inst+' live</h3><div class="kv">'
+          +'<dt>Signal</dt><dd>'+esc(tg.state||'—')+' '+(tg.direction?esc(tg.direction)+' '+esc(tg.level||''):'' )+'</dd>'
+          +'<dt>Strategy</dt><dd>'+esc(sp.strategy||'—')+'</dd>'
+          +'<dt>Expiry</dt><dd>'+esc(sp.expiry||'—')+'</dd>'
+          +'<dt>Legs</dt><dd>'+legs+'</dd></div></div>';
+      }).catch(function(){return '';});
+    }));
+    var cards=parts.join('');
     if(cards)box.innerHTML=cards;
   }catch(e){box.innerHTML='<div class="card"><h3>Live</h3><div class="kv"><dt>Status</dt><dd>Feed unreachable — retrying</dd></div></div>';}
 }
