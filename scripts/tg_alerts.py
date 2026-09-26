@@ -160,13 +160,10 @@ def do_watch():
         bull = (t.get('direction') != 'BEAR')
         emoji = '🟢' if bull else '🔴'
         sig_at = datetime.now(IST).strftime('%H:%M')
-        text = (f"{emoji} TRADE SIGNAL — {inst} ({t.get('direction') or ''})\n"
-                f"Signal {sig_at} IST | Entry {fmt(t.get('entry'))} | Stop {fmt(t.get('stop'))} | Target {fmt(t.get('target'))}\n"
-                f"Strategy: {t.get('strategy') or '—'}\n"
-                f"Full levels: https://tradingai.in/indices/{sym}.html\n"
-                f"Educational research only — not financial advice.")
-        img = shot(f'https://tradingai.in/indices/{sym}.html', f'/tmp/tg_sig_{sym}.png')
-        r = tg('sendPhoto', {'chat_id': CHANNEL, 'caption': text[:1024]}, photo=img)
+        text = (f"{emoji} {inst} ({t.get('direction') or ''})\n"
+                f"Entry {fmt(t.get('entry'))} | Stop {fmt(t.get('stop'))}\n"
+                f"Strategy: {t.get('strategy') or '—'}")
+        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
         if r.get('ok'):
             st.setdefault('fired', []).append(key)
             st.setdefault('open', {})[key] = {'inst': inst, 'sym': sym,
@@ -197,10 +194,9 @@ def do_watch():
         reason = resolve_reason(o.get('direction'), o.get('entry'), o.get('stop'),
                                 o.get('target'), d.get('price'), now)
         em = '🔴' if reason == 'STOP' else ('🟢' if reason == 'TARGET' else '⚪')
-        text = (f"{em} TRADE CLOSED — {o['inst']} ({o.get('direction') or ''})\n"
-                f"Entry {fmt(o.get('entry'))} @ {o.get('fired_at')} IST → {reason} @ {now.strftime('%H:%M')} IST\n"
-                f"Strategy: {o.get('strategy') or '—'}\n"
-                f"Educational research only — not financial advice.")
+        text = (f"{em} {o['inst']} ({o.get('direction') or ''}) CLOSED — {reason}\n"
+                f"Entry {fmt(o.get('entry'))}\n"
+                f"Strategy: {o.get('strategy') or '—'}")
         r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
         st['open'].pop(key, None)
         save_state(st)
