@@ -8,3 +8,4 @@ data/generated/*.json
 
 database/tradingai.db
 *.db
+.tg_env
