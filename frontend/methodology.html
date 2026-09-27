@@ -55,7 +55,7 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 
 <h2>1. Market data — what the site sees</h2>
 <ul><li>Prices come from a free intraday feed (yfinance) as <b>5-minute candles</b> in India time (IST).</li>
-<li>Only <b>completed</b> candles are used: at 10:04 the latest usable candle is the 09:55–10:00 one. The candle still forming is never used — a signal always comes from a closed candle, and entry happens at the <b>next candle's open (09:20 at the earliest)</b>.</li>
+<li>Only <b>finished</b> 5-minute candles are used. E.g. at 10:04 the latest usable one is the 09:55 candle (covering 09:55–10:00); the 10:00 candle still forming is ignored. A signal always comes from a finished candle, and entry is at the <b>next candle's open</b> — 09:20 at the earliest (when the first 09:15 candle closes).</li>
 <li>Stale quotes (older than the freshness limit) are labelled <b>STALE</b>; off-hours show <b>MARKET CLOSED / WEEKEND / PREMARKET</b> instead of pretending to be live.</li></ul>
 
 <h2>2. CPR and levels — the map for the day</h2>
@@ -99,6 +99,44 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <li><b>DTE matters:</b> NIFTY weeklies (Tuesday) and BANKNIFTY monthlies (last Tuesday) are chosen so positions live inside healthy time-decay territory; nothing is held into expiry-day chaos.</li>
 <li><b>Width &amp; lot:</b> 200pt (NIFTY) / 400pt (BANKNIFTY) between strikes; NSE lots 65 / 30 convert points to rupees.</li></ul>
 
+<div class="example"><b>Payoff example — Bear Call Spread (illustrative premiums, not live):</b> NIFTY spot ~24,285 → Sell 24400 CE / Buy 24600 CE, 200pt wide (= 4 × 50 steps; NIFTY strikes sit on the 50-grid, BANKNIFTY on the 100-grid), net credit 60 pts, lot 65. Max profit +₹3,900 at/below 24400 · Breakeven 24460 · Max loss −₹9,100 at/above 24600.
+<svg viewBox="0 0 600 250" style="width:100%;height:auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-top:.5rem" role="img" aria-label="Bear call spread payoff: profit above breakeven 24460, loss below">
+<polygon points="50,86.7 50,36.7 315,36.7 354.8,86.7" fill="#dcfce7"/>
+<polygon points="354.8,86.7 447.5,203.3 580,203.3 580,86.7" fill="#fee2e2"/>
+<line x1="50" y1="86.7" x2="580" y2="86.7" stroke="#94a3b8" stroke-width="1"/>
+<polyline points="50,36.7 315,36.7 354.8,86.7 447.5,203.3 580,203.3" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+<circle cx="354.8" cy="86.7" r="4" fill="#0f172a"/>
+<text x="50" y="28" font-size="12" fill="#16a34a" font-weight="bold">PROFIT +60 (+₹3,900)</text>
+<text x="450" y="222" font-size="12" fill="#dc2626" font-weight="bold">LOSS −140 (−₹9,100)</text>
+<text x="340" y="104" font-size="11" fill="#0f172a">BE 24460</text>
+<text x="300" y="238" font-size="11" fill="#64748b">24400 sell</text>
+<text x="432" y="238" font-size="11" fill="#64748b">24600 buy</text>
+<text x="50" y="238" font-size="11" fill="#64748b">24000</text>
+<text x="555" y="238" font-size="11" fill="#64748b">24800</text>
+<text x="50" y="80" font-size="11" fill="#64748b">0</text>
+</svg>
+<div style="font-size:.8rem;color:#475569;margin-top:.3rem"><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px"></span> profit zone &nbsp; <span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px"></span> loss zone &nbsp;· Strikes on NIFTY 50-grid / BANKNIFTY 100-grid · Educational illustration only.</div></div>
+
+<div class="example"><b>Payoff example — Bull Put Spread (illustrative premiums, not live):</b> NIFTY spot ~24,285 → Sell 24200 PE / Buy 24000 PE, 200pt wide (= 4 × 50 steps; NIFTY strikes sit on the 50-grid, BANKNIFTY on the 100-grid), net credit 55 pts, lot 65. Max profit +₹3,575 at/above 24200 · Breakeven 24145 · Max loss −₹9,425 at/below 24000.
+<svg viewBox="0 0 600 250" style="width:100%;height:auto;background:#fff;border:1px solid #e2e8f0;border-radius:8px;margin-top:.5rem" role="img" aria-label="Bull put spread payoff: profit above breakeven 24145, loss below">
+<polygon points="278.6,82.5 315,36.7 580,36.7 580,82.5" fill="#dcfce7"/>
+<polygon points="50,82.5 50,203.3 182.5,203.3 278.6,82.5" fill="#fee2e2"/>
+<line x1="50" y1="82.5" x2="580" y2="82.5" stroke="#94a3b8" stroke-width="1"/>
+<polyline points="50,203.3 182.5,203.3 278.6,82.5 315,36.7 580,36.7" fill="none" stroke="#0f172a" stroke-width="2.5"/>
+<circle cx="278.6" cy="82.5" r="4" fill="#0f172a"/>
+<text x="400" y="28" font-size="12" fill="#16a34a" font-weight="bold">PROFIT +55 (+₹3,575)</text>
+<text x="50" y="222" font-size="12" fill="#dc2626" font-weight="bold">LOSS −145 (−₹9,425)</text>
+<text x="225" y="100" font-size="11" fill="#0f172a">BE 24145</text>
+<text x="150" y="238" font-size="11" fill="#64748b">24000 buy</text>
+<text x="295" y="238" font-size="11" fill="#64748b">24200 sell</text>
+<text x="50" y="238" font-size="11" fill="#64748b">23800</text>
+<text x="555" y="238" font-size="11" fill="#64748b">24600</text>
+<text x="50" y="76" font-size="11" fill="#64748b">0</text>
+</svg>
+<div style="font-size:.8rem;color:#475569;margin-top:.3rem"><span style="display:inline-block;width:10px;height:10px;background:#16a34a;border-radius:2px"></span> profit zone &nbsp; <span style="display:inline-block;width:10px;height:10px;background:#dc2626;border-radius:2px"></span> loss zone &nbsp;· Strikes on NIFTY 50-grid / BANKNIFTY 100-grid · Educational illustration only.</div></div>
+
+
+
 <h2>9. How a trader benefits — and the risks</h2>
 <ul><li><b>Benefit:</b> a fixed plan replaces impulse — entries, stops, exits and position sizing decided before the market opens; small defined losses fund occasional big trend days; paper history shows every outcome, good and bad.</li>
 <li><b>Risks:</b> backtests exclude brokerage, taxes and slippage; short-premium positions can lose fast in gaps; past drift (e.g. a falling quarter) may not repeat. Never trade money you cannot lose.</li></ul>
@@ -107,6 +145,14 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <ul><li><b>Why NO TRADE today?</b> No first trigger, a gated-out trigger, an incomplete feed, or the market is closed.</li>
 <li><b>Why do two pages show different numbers?</b> They shouldn't anymore — Backtest and Paper share one rulebook. The legacy qualification path (homepage strategy block) uses different levels by design.</li>
 <li><b>What does FLAT / EOD / STOP / TARGET mean?</b> How the trade ended: flat (no move), time exit at 15:10, stop hit, target hit.</li></ul>
+
+
+<h2>11. Telegram alerts — what you get automatically</h2>
+<ul><li><b>Channel:</b> <a href="https://t.me/tradingai_cpr" target="_blank" rel="noopener">t.me/tradingai_cpr</a> (also via Join Telegram above) — entry and exit alerts post here; the Paper/Backtest ledger updates separately at 15:45.</li>
+<li><b>Entry alert (within ~5 min):</b> when a decision flips to TRADE during market hours (Mon–Fri, 09:15–15:00 poll), e.g. BANKNIFTY (BEAR) — Entry / Stop / Strategy (Bear Call Spread or Bull Put Spread). One message per signal per day, no repeats.</li>
+<li><b>Exit alert:</b> when the trade closes — CLOSED — STOP / TARGET / FLAT / EOD-FLAT with entry and strategy.</li>
+<li><b>Quiet days:</b> NO TRADE days post nothing intraday; the EOD state is visible on Home/Paper instead.</li></ul>
+
 </div></div>
 <footer>TradingAI.in · Smarter Analysis. Disciplined Trading. · <a href="/privacy.html" style="color:#94a3b8">Privacy</a> · <a href="/contact.html" style="color:#94a3b8">Contact</a> · <a href="/terms.html" style="color:#94a3b8">Terms</a> · <a href="/disclaimer.html" style="color:#94a3b8">Disclaimer</a></footer>
 </body>

@@ -81,7 +81,7 @@ Paper Trade (monitoring and exit)
 | NIFTY | /indices/nifty.html | NIFTY live market and trade intelligence |
 | BANKNIFTY | /indices/banknifty.html | BANKNIFTY live market and trade intelligence |
 | Backtest | /backtest.html | Historical research and replay |
-| Methodology | /methodology.html | How TradingAI works |
+| Methodology | /methodology.html | How TradingAI works: finished-candle rule, CPR levels, entry rules, page guides, credit-spread payoff examples (50/100 strike grid), Telegram entry/exit alerts |
 
 ## API
 
