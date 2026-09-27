@@ -338,13 +338,13 @@ def test_live_pit_regression():
     st = eng.evaluate('NIFTY', now=ist(f'{WED}T14:21:00+05:30'), dry_run=True)
     assert st['state'] == 'QUALIFIED', st
     assert st['decision_timestamp'] == '2026-09-16T14:15:00+05:30'
-    conn = get_conn()
-    n = conn.execute(
-        "SELECT COUNT(*) FROM scenario_candidates WHERE instrument_id='NIFTY' "
-        "AND scenario_type=? AND created_at <= '2026-09-16T14:15:00+05:30'",
-        (st['trade']['scenario'],)).fetchone()[0]
-    conn.close()
-    assert n > 0
+    # Unified rulebook: CPR-book trade (same math as backtest/paper).
+    tr = st['trade']
+    assert tr['direction'] == 'BEAR', tr
+    assert tr['strategy'] == 'Bear Call Spread', tr
+    assert tr['stop'] == round(tr['entry'] * 1.005, 2), tr
+    assert tr['target'] == round(tr['entry'] * 0.98, 2), tr
+    assert tr['max_risk'] == 0.5 and tr['expected_reward'] == 2.0, tr
 
 
 # ---------- 21-23. locks: GET read-only, concurrent claim, independence ----------

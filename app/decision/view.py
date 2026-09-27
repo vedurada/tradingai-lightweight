@@ -3,8 +3,9 @@
 Reuses validated engines, creates no new calculations and performs zero
 DB writes:
 - LiveEngine.evaluate(dry_run=True): session gate, completed-5m-candle
-  PIT rule, freshness gate, candle integrity, scenario+strategy+lock
-  qualification (existing Trade/Wait/No-Trade semantics).
+  PIT rule, freshness gate, candle integrity, unified CPR-book firing
+  (same trigger math as backtest/paper; existing Trade/Wait/No-Trade
+  semantics).
 - CPR research fns (calculate_cpr, pivot_levels, classify_cpr,
   classify_gap, is_virgin_cpr) over STORED candles only, previous
   session only (never current/future session).
@@ -13,8 +14,7 @@ DB writes:
 Engine-state -> decision mapping (deterministic, documented):
 - QUALIFIED (+trade)            -> TRADE
 - LIVE-session NO_TRADE with developing structure
-  (no_active_scenario, scenario_not_matched, scenario_watch,
-   scenario_partially_matched)  -> WAIT
+  (no_cpr_trigger, entry_at_next_open)  -> WAIT
 - DAILY_TRADE_LIMIT_REACHED, risk/options failures,
   STALE/NO_DATA/CLOSED/WEEKEND/PREMARKET -> NO TRADE (+status context)
 
@@ -39,7 +39,7 @@ LATE_SESSION_FROM = '15:00'
 
 WAIT_REASONS = frozenset({
     'no_active_scenario', 'scenario_not_matched', 'scenario_watch',
-    'scenario_partially_matched',
+    'scenario_partially_matched', 'entry_at_next_open',
 })
 
 
@@ -243,7 +243,7 @@ def build_decision(instrument, now=None):
         strategy = trade.get('strategy') or 'NONE'
         entry, stop, target = trade.get('entry'), trade.get('stop'), trade.get('target')
         risk, reward = trade.get('max_risk'), trade.get('expected_reward')
-        if strat_dir in ('BULLISH', 'BEARISH'):
+        if strat_dir in ('BULLISH', 'BEARISH', 'BULL', 'BEAR'):
             codes.append(f'STRUCTURE_{strat_dir}')
     elif scen and scen.get('match_state') == 'CONFIRMED':
         regime = scen.get('scenario_type') or 'UNAVAILABLE'
@@ -272,7 +272,7 @@ def build_decision(instrument, now=None):
     trigger = confirmation = entry_zone = invalidation = None
     if decision == 'TRADE' and trade:
         trigger = f"5-minute candle closes toward {strategy} entry {entry}"
-        confirmation = f"Price holds beyond trigger; scenario {regime} CONFIRMED at {completed}"
+        confirmation = f"CPR trigger {regime} (weekly-gate aligned) at {completed}"
         entry_zone = f"After confirmation near {entry}"
         invalidation = f"5-minute close beyond stop {stop}"
     elif decision == 'WAIT':

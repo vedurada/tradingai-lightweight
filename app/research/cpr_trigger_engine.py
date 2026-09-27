@@ -223,6 +223,34 @@ OPEN_TARGET_PCT = 0.02
 COST_R_PER_TRADE = 0.10
 
 
+def book_scan(candles, lv, wlv, variant='aligned'):
+    """First CPR trigger over a candle list. Pure shared core.
+
+    Same rules as run_opens_range/today_state: bear checked before bull
+    (same-candle tie -> BEAR), weekly gate when variant='aligned'.
+    Returns (direction, level, index) or None. No I/O."""
+    if not lv:
+        return None
+    for i, c in enumerate(candles or []):
+        try:
+            b = bear_trigger(c, lv)
+            u = bull_trigger(c, lv)
+        except (KeyError, TypeError, ValueError):
+            continue
+        t = b or u
+        if not t:
+            continue
+        dr = 'BEAR' if b else 'BULL'
+        try:
+            cl = c.get('close')
+        except AttributeError:
+            cl = None
+        if variant == 'aligned' and not aligned_ok(dr, cl, wlv):
+            continue
+        return dr, t, i
+    return None
+
+
 def today_state(instrument, now_ist=None, variant='aligned'):
     """Today's trigger state from stored candles so far (opens execution).
 
@@ -257,18 +285,7 @@ def today_state(instrument, now_ist=None, variant='aligned'):
     if not candles:
         return {'instrument': inst, 'variant': variant, 'date': day_iso,
                 'state': 'WATCH', 'levels': lv, 'reason': 'NO_CANDLES_YET'}
-    sig = None
-    for i, c in enumerate(candles):
-        b = bear_trigger(c, lv)
-        u = bull_trigger(c, lv)
-        t = b or u
-        if not t:
-            continue
-        dr = 'BEAR' if b else 'BULL'
-        if variant == 'aligned' and not aligned_ok(dr, c['close'], wlv):
-            continue
-        sig = (dr, t, i)
-        break
+    sig = book_scan(candles, lv, wlv, variant)
     if not sig:
         return {'instrument': inst, 'variant': variant, 'date': day_iso,
                 'state': 'WATCH', 'levels': lv,

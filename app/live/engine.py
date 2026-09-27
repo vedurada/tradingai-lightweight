@@ -19,13 +19,15 @@ Rules:
 - Session: PREMARKET (< 09:15), LIVE (09:15..15:30 on a day with data),
   MARKET_CLOSED (after 15:30, holiday, or no-data day), WEEKEND (Sat/Sun),
   with STALE/NO_DATA feed states.
-- Qualification reuses QualificationEngine.qualify with explicit trade_date
-  and as_of=completed_ts (same PIT contract as Phase 8 replay/live_sim).
+- Firing uses the unified CPR book (_cpr_book_signal: first trigger,
+  bear priority, weekly gate, next-open entry) — same math as
+  backtest/paper. A trigger on the latest completed candle waits for
+  that open (ENTRY pending, no lookahead).
   Live mode persists the one-trade-day lock in daily_trade_locks so it is
   shared across gunicorn workers; dry-run mode uses in-memory locks only.
 - Structured logging: one line per evaluation state CHANGE per instrument
   (plus every error state), so 30s browser polls do not spam logs.
-- Strategy math unchanged (entry x0.995, stop x0.99, target x1.02).
+- Book math: next-open entry in [09:20, 15:10), 0.5% stop / 2% target, flat 15:10 open.
 """
 import logging
 from datetime import datetime, time, timedelta
@@ -217,6 +219,95 @@ def build_market_state(price, candles=None):
     return out
 
 
+def _cpr_book_signal(instrument, candles, completed):
+    """CPR-book signal over live completed candles (unified rulebook).
+
+    Same trigger math as backtest/paper (book_scan first trigger, bear
+    priority, weekly gate); entry at next candle OPEN when that candle
+    exists, else entry pending (no lookahead). Returns
+    {'trade': dict|None, 'reasons': [...]}. Read-only (SELECTs only)."""
+    from app.core.db import get_conn
+    from app.research.cpr_trigger_engine import (
+        book_scan, day_levels, prev_session_ohlc, weekly_levels, monday_of,
+        OPEN_MIN, OPEN_EOD, OPEN_STOP_PCT, OPEN_TARGET_PCT)
+    day_iso = completed.date().isoformat()
+    conn = get_conn()
+    try:
+        prev = prev_session_ohlc(conn, instrument, day_iso)
+        if not prev:
+            return {'trade': None, 'reasons': ['CPR_DATA_UNAVAILABLE']}
+        lv = day_levels(prev['high'], prev['low'], prev['close'])
+        wlv = weekly_levels(conn, instrument, monday_of(day_iso))
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+    if not lv:
+        return {'trade': None, 'reasons': ['CPR_DATA_UNAVAILABLE']}
+    if not wlv:
+        return {'trade': None, 'reasons': ['weekly_gate_missing']}
+    feed = [c for c in (candles or [])
+            if str(c.get('timestamp', ''))[:10] == day_iso
+            and str(c.get('timestamp', '')) <= completed.isoformat()]
+    sig = book_scan(feed, lv, wlv, 'aligned')
+    if not sig:
+        return {'trade': None, 'reasons': ['no_cpr_trigger']}
+    dr, t, i = sig
+    if i + 1 >= len(feed):
+        return {'trade': None, 'reasons': ['entry_at_next_open']}
+    nt = str(feed[i + 1].get('timestamp', ''))
+    if not (OPEN_MIN <= nt[11:16] < OPEN_EOD):
+        return {'trade': None, 'reasons': ['entry_window_closed']}
+    try:
+        entry = round(float(feed[i + 1]['open']), 2)
+    except (KeyError, TypeError, ValueError):
+        return {'trade': None, 'reasons': ['bad_entry_candle']}
+    if dr == 'BEAR':
+        stop = round(entry * (1 + OPEN_STOP_PCT), 2)
+        tgt = round(entry * (1 - OPEN_TARGET_PCT), 2)
+    else:
+        stop = round(entry * (1 - OPEN_STOP_PCT), 2)
+        tgt = round(entry * (1 + OPEN_TARGET_PCT), 2)
+    trade = {'entry': entry, 'stop': stop, 'target': tgt,
+             'max_risk': round(OPEN_STOP_PCT * 100, 4),
+             'expected_reward': round(OPEN_TARGET_PCT * 100, 4),
+             'strategy': 'Bear Call Spread' if dr == 'BEAR' else 'Bull Put Spread',
+             'objective': 'DIRECTIONAL', 'direction': dr, 'scenario': t}
+    return {'trade': trade, 'reasons': [f'CPR_TRIGGER_{t}', 'WEEKLY_GATE_PASS']}
+
+
+def _consume_daily_lock(instrument, day_iso):
+    """Persist one-trade-a-day lock (live mode only). False if already taken."""
+    import sqlite3
+    import uuid
+    from datetime import datetime as _dt
+    from zoneinfo import ZoneInfo as _ZI
+    from app.core.db import get_conn
+    now = _dt.now(_ZI('Asia/Kolkata')).isoformat()
+    conn = get_conn()
+    try:
+        conn.execute(
+            'INSERT INTO daily_trade_locks (lock_id, instrument_id, date, status,'
+            ' trade_id, locked_at, consumed_at, created_at)'
+            ' VALUES (?,?,?,?,?,?,?,?)',
+            (f'LCK-{instrument}-{day_iso}', instrument, day_iso, 'CONSUMED',
+             str(uuid.uuid4())[:16].upper(), now, now, now))
+        conn.commit()
+        return True
+    except sqlite3.IntegrityError:
+        try:
+            conn.rollback()
+        except Exception:
+            pass
+        return False
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 class LiveEngine:
     """Production decision path. Inject fns for tests/dry-run."""
 
@@ -314,22 +405,21 @@ class LiveEngine:
         price = float(usable['close'])
         base.update(decision_price=price, decision_timestamp=completed.isoformat())
         ms = build_market_state(price, candles)
-        if dry_run:
-            q = self.qualification.qualify(
-                instrument, ms, options_valid=True, research=True,
-                trade_date=completed.date().isoformat(),
-                as_of=completed.isoformat())
-        else:
-            q = self.qualification.qualify(
-                instrument, ms, options_valid=True, research=False,
-                trade_date=completed.date().isoformat(),
-                as_of=completed.isoformat())
-        if q['decision'] == 'QUALIFIED_TRADE':
-            base.update(state=ST_QUALIFIED, qualification=q['decision'],
-                        reasons=q.get('reasons', []), trade=q.get('trade'),
+        # Unified rulebook: CPR-trigger book (same math as backtest/paper).
+        book = _cpr_book_signal(instrument, candles, completed)
+        trade = book.get('trade')
+        if trade is not None and not dry_run:
+            if not _consume_daily_lock(instrument, completed.date().isoformat()):
+                base.update(state=ST_NO_TRADE, qualification='NO_TRADE',
+                            reasons=['DAILY_TRADE_LIMIT_REACHED'], market_state=ms)
+                _log_state(base)
+                return base
+        if trade is not None:
+            base.update(state=ST_QUALIFIED, qualification='QUALIFIED_TRADE',
+                        reasons=book.get('reasons', []), trade=trade,
                         market_state=ms)
         else:
-            base.update(state=ST_NO_TRADE, qualification=q['decision'],
-                        reasons=q.get('reasons', []), market_state=ms)
+            base.update(state=ST_NO_TRADE, qualification='NO_TRADE',
+                        reasons=book.get('reasons', []), market_state=ms)
         _log_state(base)
         return base
