@@ -17,8 +17,12 @@ DECISION_SOURCE = 'simulated_live'
 
 
 def build_market_state(candle):
-    return {'trend': 'BULLISH', 'vwap_relation': 'ABOVE', 'momentum': 'POSITIVE',
-            'volatility': 'NORMAL', 'price': candle['close']}
+    # FIXALL: no hardcoded BULLISH template; NEUTRAL-or-NO_DATA fail-closed.
+    price = candle.get('close')
+    if not isinstance(price, (int, float)) or not (price and price > 0):
+        return {'trend': 'NO_DATA', 'price': price}
+    return {'trend': 'NEUTRAL', 'vwap_relation': 'UNKNOWN', 'momentum': 'UNKNOWN',
+            'volatility': 'UNKNOWN', 'price': price}
 
 
 class SimulatedLive:
@@ -30,12 +34,15 @@ class SimulatedLive:
         """Return per-candle decisions in chronological order."""
         self.qualification.reset_research_locks()
         candles = [dict(c) for c in self.conn.execute(
-            'SELECT * FROM market_candles_5m WHERE instrument_id=? AND timestamp BETWEEN ? AND ? ORDER BY timestamp',
+            'SELECT * FROM market_candles_5m WHERE instrument_id=? AND timestamp BETWEEN ? AND ? AND is_complete=1 ORDER BY timestamp LIMIT 5000',
             (instrument, date_start, date_end)).fetchall()]
         out = []
         for c in candles:
             day = c['timestamp'][:10]
             lock_before = (instrument, day) in self.qualification.research_daily_locks
+            # SPOT-R LIMITATION: no historical options chain; research forces
+            # options_valid=True as spot-proxy. Live must compute via
+            # app.options.engine.is_options_data_valid.
             d = self.qualification.qualify(
                 instrument, build_market_state(c), options_valid=True,
                 research=True, trade_date=day, as_of=c['timestamp'])

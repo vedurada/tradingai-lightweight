@@ -46,6 +46,46 @@ def _quote_touch(hit):
     return hit
 
 
+_STALE_CANDLE_S = 900  # 15 min without a fresh 5m close -> STALE (mirrors live STALE_AFTER_MIN)
+
+
+def _candles_touch(hit):
+    """Recompute is_complete + LIVE/STALE on a cached candle payload at serve time.
+
+    Cached rows store is_complete from fetch time; the forming candle completes
+    while cached. Recompute per candle from now so a stale cache never serves
+    a verbatim stale is_complete or a perpetual LIVE.
+    """
+    try:
+        now_ist = datetime.now(_IST)
+        for c in hit.get('candles', []):
+            try:
+                cdt = datetime.fromisoformat(c['timestamp'])
+                c['is_complete'] = (now_ist - cdt).total_seconds() >= 5 * 60
+            except Exception:
+                continue
+        data_ts = None
+        try:
+            data_ts = hit.get('candles')[-1]['timestamp'] if hit.get('candles') else None
+        except Exception:
+            data_ts = None
+        if data_ts:
+            try:
+                age = (now_ist - datetime.fromisoformat(data_ts)).total_seconds()
+                hit['state'] = 'STALE' if age >= _STALE_CANDLE_S else 'LIVE'
+                hit['age_seconds'] = round(age, 1)
+            except Exception:
+                hit['state'] = 'STALE'
+        else:
+            hit['state'] = 'STALE'
+    except Exception:
+        try:
+            hit['state'] = 'STALE'
+        except Exception:
+            pass
+    return hit
+
+
 def _to_ist_iso(ts):
     dt = ts.to_pydatetime() if hasattr(ts, 'to_pydatetime') else ts
     if dt.tzinfo is None:
@@ -168,13 +208,13 @@ class MarketDataProvider:
         if use_cache:
             hit, _ = _cache.get(symbol, 'candles')
             if hit is not None:
-                return hit
+                return _candles_touch(hit)
         leader, ev = _flight.begin(('candles', symbol))
         try:
             if not leader:
                 hit, _ = _cache.get(symbol, 'candles')
                 if hit is not None:
-                    return hit
+                    return _candles_touch(hit)
                 # leader failed/timed out: fetch ourselves below
             return self._fetch_candles(symbol, periods)
         finally:

@@ -27,14 +27,18 @@ SYMBOL_MAP = {"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "INDIA_VIX": "^INDIAVIX
 
 
 def get_completed_cutoff(now_ist):
-    fc = now_ist.replace(minute=(now_ist.minute // 5) * 5, second=0, microsecond=0)
-    earliest = now_ist.replace(hour=9, minute=15, second=0, microsecond=0)
-    if fc < earliest:
+    """Latest completed 5m OPEN. First candle 09:15 completes at 09:20.
+
+    FIX: cutoff was 09:10 at 09:15 (nonexistent candle). Now None until 09:20.
+    """
+    day_start = now_ist.replace(hour=9, minute=20, second=0, microsecond=0)
+    if now_ist < day_start:
         return None
+    fc = now_ist.replace(minute=(now_ist.minute // 5) * 5, second=0, microsecond=0)
     return fc - timedelta(minutes=5)
 
 
-def collect_instrument(instrument_id, provider=None):
+def collect_instrument(instrument_id, provider=None, backfill=False, target_date=None):
     if instrument_id not in SYMBOL_MAP:
         return 0, 'UNKNOWN_INSTRUMENT:' + instrument_id
     symbol = SYMBOL_MAP[instrument_id]
@@ -45,8 +49,11 @@ def collect_instrument(instrument_id, provider=None):
         return 0, None
     if provider is None:
         provider = MarketDataProvider()
+    # Bounded fetch: reuse provider _fetch_history (12s executor timeout + 1 retry).
+    # Never raw yf.Ticker().history without timeout (hangs gunicorn/cron).
     try:
-        hist = yf.Ticker(symbol).history(period='10d', interval='5m')
+        from app.market.provider import _fetch_history as _bounded_fetch
+        hist = _bounded_fetch(symbol, '10d', '5m')
     except Exception as e:
         log.error('collector instrument=%s fetch_error err=%s', instrument_id, str(e)[:160])
         return 0, 'FETCH_ERROR:' + str(e)[:120]
@@ -57,7 +64,7 @@ def collect_instrument(instrument_id, provider=None):
     conn = get_conn()
     stored = 0
     cutoff_str = cutoff.isoformat()
-    day = now_ist.date().isoformat()
+    day = target_date or now_ist.date().isoformat()
 
     for idx, row in hist.iterrows():
         ts_utc = idx
@@ -68,8 +75,17 @@ def collect_instrument(instrument_id, provider=None):
         ts_str = ts_ist.isoformat()
         if ts_str > cutoff_str:
             continue
-        if ts_ist.date().isoformat() != day:
-            continue
+        # Backfill: when backfill=True (or target_date set) collect any past
+        # session date <= cutoff; default (live cron) collects today only.
+        if not backfill and target_date is None:
+            if ts_ist.date().isoformat() != day:
+                continue
+        elif target_date is not None:
+            if ts_ist.date().isoformat() != day:
+                continue
+        else:
+            if ts_ist.date().isoformat() > day:
+                continue
         try:
             o = float(row['Open'])
             h = float(row['High'])
@@ -102,7 +118,7 @@ def collect_instrument(instrument_id, provider=None):
     return stored, None
 
 
-def collect_all():
+def collect_all(backfill=False, target_date=None):
     total = 0
     errors = []
     for inst in instruments:
@@ -111,7 +127,7 @@ def collect_all():
         inst_id = inst.get('instrument_id', inst.get('symbol', ''))
         if inst_id not in SYMBOL_MAP:
             continue
-        stored, err = collect_instrument(inst_id)
+        stored, err = collect_instrument(inst_id, backfill=backfill, target_date=target_date)
         total += stored
         if err:
             errors.append(inst_id + ':' + err)
@@ -123,7 +139,12 @@ def collect_all():
 if __name__ == '__main__':
     sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     logging.basicConfig(level=logging.INFO, format='%(asctime)s %(name)s %(levelname)s %(message)s')
-    total, errors = collect_all()
+    import argparse as _ap
+    _par = _ap.ArgumentParser()
+    _par.add_argument('--backfill', action='store_true', help='collect past sessions, not just today')
+    _par.add_argument('--date', default=None, help='target YYYY-MM-DD (implies backfill for that day)')
+    _a = _par.parse_args()
+    total, errors = collect_all(backfill=(_a.backfill or bool(_a.date)), target_date=_a.date)
     print('Collected ' + str(total) + ' candles')
     if errors:
         print('Errors: ' + str(errors))

@@ -86,9 +86,13 @@ def _cpr_block(conn, instrument, today_iso, ref_price):
     piv = pivot_levels(prev['high'], prev['low'], cpr['pp'])
     ctype = classify_cpr(cpr['width_pct'])
     codes = [f'CPR_{ctype}']
+    day_open_px = _day_open(conn, instrument, today_iso)
     gap_pts, gap_dir = None, None
-    if ref_price:
-        gap_pts = round(float(ref_price) - prev['close'], 2)
+    # FIX 2026-09-28: overnight gap is day-open vs prev close (fixed after open).
+    # Live-price drift is day-change, not gap. Fall back to live price pre-open.
+    gap_base = day_open_px if day_open_px is not None else (float(ref_price) if ref_price else None)
+    if gap_base is not None:
+        gap_pts = round(float(gap_base) - prev['close'], 2)
         gap_dir = classify_gap(gap_pts)
         codes.append(f'GAP_{gap_dir}' if gap_dir in ('BULLISH', 'BEARISH') else 'GAP_FLAT')
     pos, pos_code = None, None
@@ -121,7 +125,7 @@ def _cpr_block(conn, instrument, today_iso, ref_price):
             'prev_high': prev['high'], 'prev_low': prev['low'],
             'prev_close': prev['close'], 'gap_points': gap_pts,
             'gap_direction': gap_dir, 'price_position': pos,
-            'virgin': virgin, 'day_open': _day_open(conn, instrument, today_iso)}, codes
+            'virgin': virgin, 'day_open': day_open_px}, codes
 
 
 def _scenario_conditions(conn, instrument, as_of_ts):
@@ -197,8 +201,8 @@ def build_decision(instrument, now=None):
     # --- data status (LIVE/RECENT/STALE/UNAVAILABLE) ---
     if state in (ST_CLOSED, ST_WEEKEND):
         data_status = 'UNAVAILABLE'
-    elif state == ST_STALE or (st.get('quote_state') == 'STALE' and state != 'QUALIFIED'):
-        data_status = 'STALE'
+    elif state == ST_STALE or st.get('quote_state') == 'STALE':
+        data_status = 'STALE'  # STALE quote is STALE always, even when QUALIFIED (never LIVE)
     elif state in (ST_NO_DATA,) or price is None:
         data_status = 'UNAVAILABLE'
     elif state == ST_PREMARKET:
@@ -219,6 +223,14 @@ def build_decision(instrument, now=None):
 
     decision, map_codes = map_decision(state, session, reasons, trade is not None, lock_consumed)
     codes.extend(map_codes)
+    # FAIL-CLOSED: a STALE quote never serves TRADE/LIVE. Data status is
+    # STALE always; a QUALIFIED engine state with a stale quote degrades
+    # to NO TRADE + DATA_STALE (frontend must say STALE, never LIVE).
+    if st.get('quote_state') == 'STALE':
+        data_status = 'STALE'
+        if decision == 'TRADE':
+            decision, map_codes = 'NO TRADE', ['DATA_STALE']
+            codes = [c for c in codes if c != 'SETUP_QUALIFIED'] + map_codes
 
     # --- CPR block (previous session only) ---
     try:

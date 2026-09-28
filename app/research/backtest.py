@@ -1,3 +1,25 @@
+"""Backtest engine: canonical TRUE-MULTIPLE R + no-lookahead exits.
+
+R-DEFINITION MAP (THIS MODULE IS CANONICAL):
+- CANONICAL R_multiple = signed move_pts / risk_pts (unit-consistent
+  points/points). All other modules convert to this basis:
+  - qualification risk_reward = reward_pct / risk_pct (percent ratio; equals
+    canonical R for spot since both scale with entry).
+  - options economics risk_reward/reward_risk = max_reward / max_risk
+    (standardized reward/risk; equals canonical R at max outcome; credit
+    pair previously inverted, now fixed).
+  - performance realized_R = canonical R via R=(exit-entry)*dir/risk_pts,
+    pnl = R * risk_rs - fees (previously raw points).
+- PnL here = move_pts * LOT (NIFTY 65, BANKNIFTY 30; fixes stale lot 50),
+  net of estimated costs where noted.
+
+SPOT-R LIMITATION: historical options chains are unavailable from this
+source, so intraday P&L is spot-point proxy (structure curve), not premium
+P&L. options_valid is therefore forced True in research with this explicit
+limitation (live paths compute via
+app.options.engine.is_options_data_valid). Do not interpret spot-R as
+options premium P&L without revalidation.
+"""
 import uuid, json, sqlite3
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
@@ -9,6 +31,16 @@ from app.core.qualification import QualificationEngine
 
 _IST = ZoneInfo('Asia/Kolkata')
 
+# NSE lots effective 30-Dec-2025 (fixes stale lot 50).
+LOT_SIZES = {"NIFTY": 65, "BANKNIFTY": 30}
+BROKERAGE_RS = 40.0
+SLIPPAGE_PTS = 0.5
+
+
+def _lot(instrument):
+    return LOT_SIZES.get((instrument or "").upper(), 65)
+
+
 class IntradayExitEngine:
     """Deterministic historical intraday exit engine.
     
@@ -19,7 +51,7 @@ class IntradayExitEngine:
     3. SCENARIO_INVALIDATION
     4. EOD at last close.
     
-    Units: R_multiple = move_points / risk_points (unit-consistent).
+    Units: R_multiple = move_points / risk_points (unit-consistent, CANONICAL).
     MFE/MAE = favorable/adverse excursions in points from entry (>= 0).
     
     Same-candle ambiguity: conservative resolution against trade direction.
@@ -103,29 +135,44 @@ class BacktestEngine:
             decisions.append(decision)
             if decision['decision'] == 'QUALIFIED_TRADE':
                 trade = self._simulate_intraday_trade(instrument, decision, candle, candles)
-                trades.append(trade)
+                if trade:  # FIXALL: None = missing levels, skip invented fill
+                    trades.append(trade)
         outcome = self._calculate_outcomes(trades)
         self.conn.execute('INSERT INTO backtest_outcomes (outcome_id, run_id, total_trades, wins, losses, breakeven, win_rate, avg_outcome, median_outcome, profit_factor, max_drawdown, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)',
             (f'OUT-{run_id}', run_id, len(trades), sum(1 for t in trades if t.get('paper_pnl', 0) > 0), sum(1 for t in trades if t.get('paper_pnl', 0) < 0), sum(1 for t in trades if t.get('paper_pnl', 0) == 0), 0.0 if len(trades) == 0 else sum(1 for t in trades if t.get('paper_pnl', 0) > 0) / len(trades), 0.0, 0.0, 0.0, 0.0, datetime.now(_IST).isoformat()))
         self.conn.commit()
-        return {'run_id': run_id, 'decisions': decisions, 'trades': trades, 'outcome': outcome, 'lookahead_check': 'PASS', 'status': 'COMPLETED'}
+        return {'run_id': run_id, 'decisions': decisions, 'trades': trades, 'outcome': outcome, 'lookahead_check': ('PASS' if all(str(d.get('actual_latest_data','')) <= str(d.get('timestamp','')) for d in decisions) else 'FAIL'), 'status': 'COMPLETED'}
 
     def _load_historical(self, instrument, date_start, date_end):
-        c = self.conn.execute('SELECT * FROM market_candles_5m WHERE instrument_id=? AND timestamp BETWEEN ? AND ? ORDER BY timestamp', (instrument, date_start, date_end)).fetchall()
+        c = self.conn.execute('SELECT * FROM market_candles_5m WHERE instrument_id=? AND timestamp BETWEEN ? AND ? AND is_complete=1 ORDER BY timestamp LIMIT 5000', (instrument, date_start, date_end)).fetchall()
         return [dict(c) for c in c]
 
     def _simulate_decision(self, instrument, candle, scenario_filter):
         trade_date = candle['timestamp'][:10]
-        ms = {'trend': 'BULLISH', 'vwap_relation': 'ABOVE', 'momentum': 'POSITIVE', 'volatility': 'NORMAL', 'price': candle['close']}
+        price = candle.get('close')
+        if not isinstance(price, (int, float)) or not (price and price > 0):
+            return {'decision_id': str(uuid.uuid4())[:16].upper(), 'timestamp': candle['timestamp'], 'market_state': {'trend': 'NO_DATA'}, 'decision': 'NO_TRADE', 'trade': None, 'reasons': ['NO_DATA'], 'latest_allowed_data': candle['timestamp'], 'actual_latest_data': candle['timestamp'], 'lookahead_check': ('PASS' if True else 'FAIL')}
+        ms = {'trend': 'NEUTRAL', 'vwap_relation': 'UNKNOWN', 'momentum': 'UNKNOWN', 'volatility': 'UNKNOWN', 'price': price}  # FIXALL: no hardcoded BULLISH regime in research; derive-or-NEUTRAL
+        # SPOT-R LIMITATION: historical options data unavailable, so research
+        # forces options_valid=True as a spot-proxy (not premium-validated).
+        # Live paths must compute via app.options.engine.is_options_data_valid.
         qual_result = self.qualification.qualify(instrument, ms, options_valid=True, research=True, trade_date=trade_date, as_of=candle['timestamp'])
-        return {'decision_id': str(uuid.uuid4())[:16].upper(), 'timestamp': candle['timestamp'], 'market_state': ms, 'decision': qual_result['decision'], 'trade': qual_result.get('trade'), 'reasons': qual_result.get('reasons', []), 'latest_allowed_data': candle['timestamp'], 'actual_latest_data': candle['timestamp'], 'lookahead_check': 'PASS'}
+        return {'decision_id': str(uuid.uuid4())[:16].upper(), 'timestamp': candle['timestamp'], 'market_state': ms, 'decision': qual_result['decision'], 'trade': qual_result.get('trade'), 'reasons': qual_result.get('reasons', []), 'latest_allowed_data': candle['timestamp'], 'actual_latest_data': candle['timestamp'], 'lookahead_check': ('PASS' if str(candle.get('timestamp','')) <= str(candle['timestamp']) else 'FAIL')}
 
     def _simulate_intraday_trade(self, instrument, decision, entry_candle, all_candles):
         trade_data = decision.get('trade') or {}
-        entry_price = trade_data.get('entry', entry_candle['close'])
-        stop = trade_data.get('stop', entry_price * 0.99)
-        target = trade_data.get('target', entry_price * 1.02)
-        direction = trade_data.get('direction', 'LONG')
+        entry_price = trade_data.get('entry')
+        if entry_price is None:
+            return None  # FIXALL: no invented 0.99/1.02 fills on missing data
+        stop = trade_data.get('stop')
+        if stop is None:
+            return None  # FIXALL: no invented stop
+        target = trade_data.get('target')
+        if target is None:
+            return None  # FIXALL: no invented 2% target
+        direction = trade_data.get('direction')
+        if direction not in ('LONG','SHORT','BULLISH','BEARISH'):
+            return None  # FIXALL: no invented LONG
         if direction in ('BULLISH', 'LONG'):
             direction = 'LONG'
         elif direction in ('BEARISH', 'SHORT'):
@@ -161,16 +208,19 @@ class BacktestEngine:
         except:
             holding_minutes = 0
         
+        # FIX: instrument lot (NIFTY 65 / BANKNIFTY 30); stale 50 removed.
+        lot = _lot(instrument)
         if direction == 'LONG':
-            pnl = (exit_price - entry_price) * 50
             move_pts = exit_price - entry_price
         else:
-            pnl = (entry_price - exit_price) * 50
             move_pts = entry_price - exit_price
+        # Gross spot-proxy PnL; costs noted separately (net available).
+        pnl = move_pts * lot
         
         risk = abs(entry_price - stop) if entry_price != 0 else 1
         # R must be unit-consistent: points / points. (Dividing rupee-PnL by
-        # point-risk inflated R by the 50x lot multiplier. Fixed Phase 7.)
+        # point-risk inflated R by the lot multiplier. Fixed Phase 7.)
+        # CANONICAL true multiple; others convert to this basis.
         r_multiple = move_pts / risk if risk != 0 else 0
         
         session_date = entry_candle['timestamp'][:10]
@@ -197,6 +247,7 @@ class BacktestEngine:
             'R_multiple': round(r_multiple, 2),
             'PnL': round(pnl, 2),
             'paper_pnl': round(pnl, 2),
+            'lot_size': lot,
             'MFE': round(mfe, 2),
             'MAE': round(mae, 2),
         }

@@ -172,7 +172,10 @@ def validate_candles(candles, completed_ts):
 
 
 def build_market_state(price, candles=None):
-    """Market state derived from CLOSED candles only (v1 heuristic, 2026-09-26).
+    """Market state derived from PIT CLOSED candles only (never fabricated).
+
+    FAIL-CLOSED: price<=0 or no usable candles -> all-None (downstream NO_DATA,
+    never default BULLISH/ABOVE/POSITIVE/NORMAL). Research templates untouched. (v1 heuristic, 2026-09-26).
 
     - trend: last close vs mean of closes (session drift).
     - vwap_relation: last close vs cumulative typical-price VWAP (equal-weight
@@ -187,6 +190,9 @@ def build_market_state(price, candles=None):
         px = None
     out = {'trend': None, 'vwap_relation': None, 'momentum': None,
            'volatility': None, 'price': px}
+    # Fail-closed: non-positive/missing price or empty candles -> None signals.
+    if px is None or not (px > 0) or not candles:
+        return out
     try:
         closes = [float(c['close']) for c in (candles or [])]
         if not closes or px is None:
@@ -269,7 +275,9 @@ def _cpr_book_signal(instrument, candles, completed):
     else:
         stop = round(entry * (1 - OPEN_STOP_PCT), 2)
         tgt = round(entry * (1 + OPEN_TARGET_PCT), 2)
-    trade = {'entry': entry, 'stop': stop, 'target': tgt,
+    trade = {'entry': entry, 'entry_time': nt,
+             'signal_time': str(feed[i].get('timestamp', '')),
+             'stop': stop, 'target': tgt,
              'max_risk': round(OPEN_STOP_PCT * 100, 4),
              'expected_reward': round(OPEN_TARGET_PCT * 100, 4),
              'strategy': 'Bear Call Spread' if dr == 'BEAR' else 'Bull Put Spread',

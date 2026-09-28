@@ -1,12 +1,12 @@
 from flask import Flask, jsonify, request
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
+from werkzeug.middleware.proxy_fix import ProxyFix
 from app.core.db import get_conn, DB_PATH
 from app.core.config import settings, instruments
 from app.market.provider import MarketDataProvider
 from app.core.qualification import QualificationEngine
 from app.paper_trade.engine import PaperTradeEngine
-from app.research.backtest import BacktestEngine
 from app.ai.explanation import AIExplanation
 from app.scenarios.engine import ScenarioEngine
 from app.live.engine import LiveEngine
@@ -23,17 +23,27 @@ from app.options.contract import OptionsFreshness as OF, VALID_INSTRUMENTS
 from app.options.cache import recompute_age
 
 app = Flask(__name__)
-def _client_key():
-    """Per-visitor rate-limit key behind the nginx reverse proxy.
+# Trust exactly one hop (nginx on this host). Cloudflare/frontend IPs arrive
+# via X-Forwarded-For set by OUR nginx; ProxyFix with x_for=1 exposes the
+# nginx-verified client IP as remote_addr. Never trust client-supplied XFF
+# directly (spoofable) for rate-limit keys.
+# NOTE: Flask-Limiter default storage is in-memory PER-WORKER (gunicorn x2
+# means 2x effective budget and no shared state). Production needs
+# Redis: Limiter(..., storage_uri="redis://127.0.0.1:6379"). Documented;
+# single-host fix below at least keys correctly per visitor.
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=0, x_prefix=0)
 
-    get_remote_address alone sees 127.0.0.1 for every public visitor
-    (nginx proxies to 127.0.0.1:8000), which would put all traders in one
-    shared bucket. nginx sets X-Forwarded-For, so prefer its first entry.
+
+def _client_key():
+    """Per-visitor rate-limit key behind the trusted nginx proxy.
+
+    Uses X-Real-IP (set by our nginx from the verified connection) else
+    ProxyFix-resolved remote_addr. X-Forwarded-For is NOT trusted (spoofable).
     """
     try:
-        fwd = request.headers.get('X-Forwarded-For', '')
-        if fwd:
-            return fwd.split(',')[0].strip()
+        real = request.headers.get('X-Real-IP', '').strip()
+        if real:
+            return real
     except Exception:
         pass
     return get_remote_address()
@@ -43,7 +53,6 @@ limiter = Limiter(app=app, key_func=_client_key, default_limits=["60 per minute"
 market = MarketDataProvider()
 qual = QualificationEngine(settings)
 paper = PaperTradeEngine()
-backtest = BacktestEngine()
 ai = AIExplanation()
 scenario_engine = ScenarioEngine()
 live_engine = LiveEngine()
@@ -100,11 +109,9 @@ def decision(symbol):
         st["read_only"] = True
         st["claim"] = f"/api/{inst}/decision/claim"
         return jsonify({"state": st["state"], "timestamp": st["now_ist"], "data": st})
-    quote = market.get_quote(symbol)
-    ms = {"trend": "BULLISH", "vwap_relation": "ABOVE", "momentum": "POSITIVE", "volatility": "NORMAL", "price": quote.get("price", 0)}
-    result = qual.qualify(symbol, ms, options_valid=True)
-    ai_expl = ai.explain(result) if result.get("decision") != "NO_TRADE" else {"status": "AI_DISABLED", "agreement": "UNKNOWN"}
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(), "data": {"decision": result, "market_state": ms, "ai": ai_expl}})
+    # Unknown symbols: 404, never fabricate a BULLISH market_state/qualify path.
+    return jsonify({"state": "NO_DATA", "timestamp": None,
+                    "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
 
 _QUOTE_MAP = {"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "INDIA_VIX": "^INDIAVIX"}
 
@@ -181,7 +188,11 @@ def candles(symbol):
                         "data": {"instrument": inst, "candles": [],
                                  "reasons": ["NO_COMPLETED_CANDLES"],
                                  "completed_candle": completed.isoformat() if completed else None}})
-    n = max(1, min(75, int(request.args.get("n", 12))))
+    try:
+        n = int(request.args.get("n", 12))
+    except (TypeError, ValueError):
+        n = 12
+    n = max(1, min(80, n))  # bounded: 80 max (forming candle excluded below)
     done = [c for c in res.get("candles", [])
             if c.get("timestamp", "") <= completed.isoformat() and c.get("is_complete")]
     return jsonify({"state": "LIVE", "timestamp": now_ist.isoformat(),
@@ -268,12 +279,9 @@ def paper_spread_today():
                     "data": {"trigger": st, "spread": sp, "credit": credit,
                              "payoff": payoff_curve(sp, credit)}})
 
-@app.route("/api/backtest/run", methods=["POST"])
-@limiter.limit("5 per minute")
-def run_backtest():
-    body = request.get_json() or {}
-    result = backtest.run(body.get("instrument", "NIFTY"), body.get("date_start", "2026-09-01"), body.get("date_end", "2026-09-19"))
-    return jsonify({"state": "COMPLETED", "data": result})
+# REMOVED 2026-09-28: POST /api/backtest/run (BacktestEngine simulator) had 0 callers
+# (no frontend/cron). Use POST /api/backtest/cpr-triggers (opens-spec, mirrors live).
+# IntradayExitEngine in app/research/backtest.py is still live-shared via replay.py.
 
 @app.route("/api/backtest/cpr-triggers", methods=["POST"])
 @limiter.limit("5 per minute")
@@ -578,14 +586,25 @@ def options_strategy(instrument):
 @app.route("/api/research/replay/<instrument>/<date>/<timestamp>", methods=["GET"])
 @limiter.limit("30 per minute")
 def research_replay(instrument, date, timestamp):
+    import re as _re
+    inst = (instrument or "").upper()
+    if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
+    if not _re.fullmatch(r"\d{4}-\d{2}-\d{2}", date or ""):
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": ["INVALID_DATE"]}}), 400
+    if not _re.fullmatch(r"\d{2}:\d{2}(:\d{2})?", timestamp or ""):
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": ["INVALID_TIMESTAMP"]}}), 400
     conn = get_conn()
-    candles = conn.execute("SELECT * FROM market_candles_5m WHERE instrument_id=? AND timestamp <= ? ORDER BY timestamp", (instrument, f"{date}T{timestamp}")).fetchall()
-    scenarios = conn.execute("SELECT * FROM scenario_candidates WHERE instrument_id=? AND created_at <= ? ORDER BY created_at DESC", (instrument, f"{date}T{timestamp}")).fetchall()
+    candles = conn.execute("SELECT candle_id, instrument_id, timestamp, open, high, low, close, volume FROM market_candles_5m WHERE instrument_id=? AND timestamp <= ? ORDER BY timestamp LIMIT 500", (inst, f"{date}T{timestamp}")).fetchall()
+    scenarios = conn.execute("SELECT candidate_id, instrument_id, scenario_type, status, created_at FROM scenario_candidates WHERE instrument_id=? AND created_at <= ? ORDER BY created_at DESC LIMIT 100", (inst, f"{date}T{timestamp}")).fetchall()
     conn.close()
     return jsonify({
         "state": "LIVE",
         "data": {
-            "instrument": instrument,
+            "instrument": inst,
             "date": date,
             "timestamp": timestamp,
             "candles_available_at_decision": [dict(c) for c in candles],
@@ -694,8 +713,10 @@ def cpr_strategy():
     cpr["s2"] = cpr["pp"] - (prev_h - prev_l)
     classification = cls_cpr(cpr["width_pct"])
 
-    # Get gap from previous day close vs current live price
-    live_quote = provider.get_quote({"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "INDIA_VIX": "^INDIAVIX"}[instrument], use_cache=False)
+    # Gap from previous close vs CACHED quote close only (45s TTL shared cache).
+    # Never bypasses cache (no use_cache=False) and never uses a forming-tick:
+    # today_candles below are filtered to completed candles (<= completed cutoff).
+    live_quote = provider.get_quote({"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "INDIA_VIX": "^INDIAVIX"}[instrument])
     gift_change = (live_quote.get("price", 0) - prev_c) if live_quote.get("price") else 0
     gap = cls_gap(gift_change)
 

@@ -13,7 +13,11 @@ import urllib.request
 import json
 from datetime import datetime
 
-API_BASE = 'http://127.0.0.1:8000'
+import os as _os
+API_BASE = _os.environ.get('TRADINGAI_API_BASE', 'http://127.0.0.1:8000')
+BASE = _os.environ.get('TRADINGAI_BASE', '/opt/tradingai')
+DB_PATH = _os.environ.get('TRADINGAI_DB_PATH', _os.path.join(BASE, 'database/tradingai.db'))
+LOG_PATH = _os.path.join(BASE, 'logs/gunicorn-error.log')
 
 
 def monitor_api(endpoint: str, timeout: int = 5) -> dict:
@@ -98,7 +102,7 @@ def monitor_resources() -> dict:
         snapshot['cpu_error'] = str(e)
 
     try:
-        df = subprocess.run(['df', '-h', '/opt/tradingai_new'], capture_output=True, text=True, timeout=5)
+        df = subprocess.run(['df', '-h', BASE], capture_output=True, text=True, timeout=5)
         lines = df.stdout.strip().split('\n')
         if len(lines) >= 2:
             parts = lines[1].split()
@@ -110,7 +114,7 @@ def monitor_resources() -> dict:
         snapshot['disk_error'] = str(e)
 
     try:
-        db_size = os.path.getsize('/opt/tradingai_new/database/tradingai.db') if os.path.exists('/opt/tradingai_new/database/tradingai.db') else 0
+        db_size = os.path.getsize(DB_PATH) if os.path.exists(DB_PATH) else 0
         snapshot['sqlite_size_bytes'] = db_size
         snapshot['sqlite_size_mb'] = round(db_size / (1024 * 1024), 2)
     except Exception:
@@ -130,7 +134,7 @@ def monitor_resources() -> dict:
 
     try:
         err = subprocess.run(
-            ['tail', '-n', '50', '/opt/tradingai_new/logs/gunicorn-error.log'],
+            ['tail', '-n', '50', LOG_PATH],
             capture_output=True, text=True, timeout=5
         )
         snapshot['recent_errors'] = err.stdout.strip().split('\n') if err.stdout.strip() else []

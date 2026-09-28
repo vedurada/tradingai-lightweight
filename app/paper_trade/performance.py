@@ -1,5 +1,12 @@
 """Live paper-trade performance ledger for TradingAI.
 
+R-DEFINITION MAP (canonical = app/research/backtest.py true multiple):
+- CANONICAL R = signed move_pts / risk_pts (unit-consistent points/points).
+- This module converts: R=(exit-entry)*dir/risk_pts, pnl=R*risk_rs-fees.
+  Previously stored raw point difference as both realized_R and pnl.
+- qualification risk_reward (reward_pct/risk_pct) equals canonical R for spot.
+- options economics risk_reward (reward/risk) equals canonical R at max outcome.
+
 Records completed paper trades exactly once when they close.
 Monitoring calls do NOT create duplicate records.
 """
@@ -12,12 +19,31 @@ from app.core.db import get_conn
 _IST = ZoneInfo('Asia/Kolkata')
 log = logging.getLogger('tradingai.performance')
 
+# NSE lots effective 30-Dec-2025 (fixes stale lot 50).
+LOT_SIZES = {"NIFTY": 65, "BANKNIFTY": 30}
+BROKERAGE_RS = 40.0  # round-trip retail estimate
+SLIPPAGE_PTS = 0.5
+# NOTE: STT varies by venue/leg; modelled inside flat brokerage estimate.
+# Gross pnl = move_pts * lot; net pnl = gross - (brokerage + slippage*lot).
+
+
+def _lot(instrument):
+    return LOT_SIZES.get((instrument or "").upper(), 65)
+
+
+def _direction_sign(direction):
+    d = (direction or "").upper()
+    if d in ("SHORT", "BEARISH", "BEAR"):
+        return -1
+    return 1
+
 
 def record_performance(trade_id):
     """Record a closed paper trade in the performance ledger.
 
     Idempotent: if a record already exists for this trade_id,
     it is NOT updated and NOT duplicated. Returns the record id.
+    R = signed_move_pts / risk_pts; pnl = R * risk_rs - fees.
     """
     conn = get_conn()
     try:
@@ -35,9 +61,26 @@ def record_performance(trade_id):
             return None
 
         t = dict(trade)
-        realized_r = (t.get('exit_price', 0) or 0) - (t.get('entry', 0) or 0)
-        pnl = realized_r
-        conn.execute('''INSERT INTO live_trade_performance
+        entry = t.get('entry', 0) or 0
+        stop = t.get('stop', 0) or 0
+        exit_px = t.get('exit_price', 0) or 0
+        direction = t.get('direction') or 'LONG'
+        sign = _direction_sign(direction)
+        lot = _lot(t.get('instrument_id'))
+        try:
+            risk_pts = abs(float(entry) - float(stop))
+        except (TypeError, ValueError):
+            risk_pts = 0.0
+        try:
+            move_pts = (float(exit_px) - float(entry)) * sign
+        except (TypeError, ValueError):
+            move_pts = 0.0
+        # Canonical true-multiple R (fixes raw-points-as-R).
+        realized_r = round(move_pts / risk_pts, 4) if risk_pts > 0 else 0.0
+        risk_rs = risk_pts * lot
+        fees = BROKERAGE_RS + SLIPPAGE_PTS * lot
+        pnl = round(realized_r * risk_rs - fees, 2) if risk_pts > 0 else round(move_pts * lot - fees, 2)
+        cur = conn.execute('''INSERT INTO live_trade_performance
             (trade_id, instrument_id, trade_date, scenario, strategy, objective,
              direction, entry_time, entry_price, stop_price, target_price,
              exit_time, exit_price, exit_reason, status, risk_amount,
@@ -57,15 +100,21 @@ def record_performance(trade_id):
                 datetime.now(_IST).isoformat(),
                 datetime.now(_IST).isoformat(),
             ))
+        # Fetch lastrowid BEFORE close (fixes use-after-close).
+        new_id = cur.lastrowid
         conn.commit()
-        log.info('performance recorded trade_id=%s instrument=%s', trade_id, t.get('instrument_id'))
-        conn.close()
-        return conn.execute(
-            'SELECT id FROM live_trade_performance WHERE trade_id=?',
-            (trade_id,)).fetchone()['id']
+        log.info('performance recorded trade_id=%s instrument=%s R=%s pnl=%s', trade_id, t.get('instrument_id'), realized_r, pnl)
+        try:
+            conn.close()
+        except Exception:
+            pass
+        return new_id
     except Exception as e:
         log.error('performance error trade_id=%s err=%s', trade_id, str(e)[:160])
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
         return None
 
 
@@ -74,12 +123,12 @@ def get_performance(instrument_id=None):
     conn = get_conn()
     try:
         if instrument_id:
-            rows = conn.execute(
+            rows = [dict(r) for r in conn.execute(
                 'SELECT * FROM live_trade_performance WHERE instrument_id=? AND status="CLOSED"',
-                (instrument_id,)).fetchall()
+                (instrument_id,)).fetchall()]
         else:
-            rows = conn.execute(
-                'SELECT * FROM live_trade_performance WHERE status="CLOSED"').fetchall()
+            rows = [dict(r) for r in conn.execute(
+                'SELECT * FROM live_trade_performance WHERE status="CLOSED"').fetchall()]
 
         if not rows:
             return {
@@ -109,7 +158,10 @@ def get_performance(instrument_id=None):
             open_t = conn.execute(
                 'SELECT COUNT(*) FROM paper_trades WHERE instrument_id=? AND status IN ("ACTIVE","OPEN")',
                 (instrument_id,)).fetchone()[0]
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
         return {
             'instrument': instrument_id or 'ALL',
             'total_trades': len(rows),
@@ -125,5 +177,8 @@ def get_performance(instrument_id=None):
         }
     except Exception as e:
         log.error('performance get error instrument=%s err=%s', instrument_id, str(e)[:160])
-        conn.close()
+        try:
+            conn.close()
+        except Exception:
+            pass
         return None

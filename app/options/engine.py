@@ -1,5 +1,21 @@
 """Phase 15: options strategy engine with data gate and index signal gate.
 
+R-DEFINITION MAP (canonical = app/research/backtest.py true multiple
+R = signed move_pts / risk_pts): economics risk_reward/reward_risk here is
+standardized reward/risk = max_reward/max_risk, equal to canonical R at max
+outcome. Qualification percent-ratio and performance realized_R convert to
+the same canonical basis.
+
+CREDIT-ONLY POLICY: CREDIT_ONLY=True (default) gates debit dispatch
+(BULL_CALL_SPREAD / BEAR_PUT_SPREAD -> NO_TRADE CREDIT_ONLY_DEBIT_BLOCKED).
+Debit calculators remain in app/options/economics.py for research but are
+not reachable live. IRON_CONDOR is WIRED (dispatched below and reachable
+via RANGE / non-directional selection in app/strategies/engine.py).
+
+SPOT-R LIMITATION: when no validated options chain exists, spread P&L falls
+back to spot-bar proxies elsewhere (structure curve, not premium P&L).
+This engine never invents premiums: NO_TRADE when data gate fails.
+
 Flow: INDEX MARKET ENGINE → SCENARIO → QUALIFICATION → OPTIONS DATA GATE → STRATEGY
 
 If any gate fails, NO_TRADE with explicit reason.
@@ -24,10 +40,35 @@ STRATEGY_REQUIRED_FIELDS = {"instrument", "expiry", "strike",
                             "option_type", "last_price", "bid",
                             "ask", "volume", "open_interest"}
 
-# Liquidity gates
+# Owner credit-only policy: debit spreads blocked in live dispatch.
+CREDIT_ONLY = True
+_DEBIT_STRATEGIES = {StrategyType.BULL_CALL_SPREAD, StrategyType.BEAR_PUT_SPREAD}
+
+# Liquidity gates (FIX: mid-based spread + absolute premium cap).
+# Old (ask-bid)/strike never fired (strike ~25k => pct ~1e-4).
 MIN_VOLUME = 1
 MIN_OPEN_INTEREST = 50
-MAX_SPREAD_WIDTH_PCT = 0.10  # 10% of strike
+MAX_SPREAD_MID_PCT = 0.20  # 20% of mid-price (bid+ask)/2
+MAX_SPREAD_ABS = 15.0  # absolute premium cap in points per leg
+# Backward-compat alias (deprecated: strike-based, do not use).
+MAX_SPREAD_WIDTH_PCT = 0.10  # 10% of strike (legacy, superseded by mid-based)
+
+
+def is_options_data_valid(instrument):
+    """Compute options_valid from the live data gate (fixes hardcoded True).
+
+    Returns True only when the provider chain is fresh with contracts.
+    Research paths with no historical options chain use this helper with
+    research=True semantics documented at call sites (spot-R proxy):
+    they intentionally pass True with an explicit limitation comment
+    instead of calling this live check.
+    """
+    try:
+        eng = OptionsStrategyEngine()
+        ok, _, _ = eng.validate_data_gate(instrument)
+        return bool(ok)
+    except Exception:
+        return False
 
 
 class OptionsStrategyEngine:
@@ -108,21 +149,28 @@ class OptionsStrategyEngine:
         return strikes, None
 
     def validate_liquidity(self, contract):
-        """Check liquidity gates for a contract."""
+        """Check liquidity gates for a contract.
+
+        FIX: spread measured vs mid-price (bid+ask)/2 with absolute premium
+        cap, not vs strike (which never fired at index levels).
+        """
         errors = []
         vol = contract.get("volume")
         oi = contract.get("open_interest")
         bid = contract.get("bid")
         ask = contract.get("ask")
-        strike = contract.get("strike", 0)
         if vol is not None and vol < MIN_VOLUME:
             errors.append(f"INSUFFICIENT_VOLUME:{vol}")
         if oi is not None and oi < MIN_OPEN_INTEREST:
             errors.append(f"INSUFFICIENT_OI:{oi}")
         if bid is not None and ask is not None and bid > 0 and ask > 0:
-            spread_pct = (ask - bid) / strike
-            if spread_pct > MAX_SPREAD_WIDTH_PCT:
+            mid = (bid + ask) / 2.0
+            width = ask - bid
+            spread_pct = width / mid if mid > 0 else float("inf")
+            if spread_pct > MAX_SPREAD_MID_PCT:
                 errors.append(f"SPREAD_TOO_WIDE:{spread_pct:.4f}")
+            if width > MAX_SPREAD_ABS:
+                errors.append(f"SPREAD_PREMIUM_CAP:{width:.2f}>{MAX_SPREAD_ABS:.2f}")
         return errors
 
     def build_strategy(self, instrument, strategy_type, legs,
@@ -201,13 +249,22 @@ class OptionsStrategyEngine:
                                errors=liquidity_errors)
 
         # Gate 6: Strategy-specific construction
+        try:
+            st = StrategyType(strategy_type) if isinstance(strategy_type, str) else strategy_type
+        except Exception:
+            st = None
+        # Credit-only gate: debit calculators retained but not dispatched live.
+        if CREDIT_ONLY and st in _DEBIT_STRATEGIES:
+            return TradeResult(status="NO_TRADE",
+                               reason="CREDIT_ONLY_DEBIT_BLOCKED",
+                               errors=["CREDIT_ONLY_DEBIT_BLOCKED"])
         strategy_fn = {
             StrategyType.BULL_PUT_SPREAD: calc_bull_put_spread,
             StrategyType.BULL_CALL_SPREAD: calc_bull_call_spread,
             StrategyType.BEAR_CALL_SPREAD: calc_bear_call_spread,
             StrategyType.BEAR_PUT_SPREAD: calc_bear_put_spread,
             StrategyType.IRON_CONDOR: calc_iron_condor,
-        }.get(StrategyType(strategy_type) if isinstance(strategy_type, str) else strategy_type)
+        }.get(st)
 
         if strategy_fn is None:
             return TradeResult(status="NO_TRADE",

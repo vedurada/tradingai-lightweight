@@ -1,3 +1,11 @@
+"""Qualification engine.
+
+R-DEFINITION MAP: canonical backtest true-multiple R.
+- THIS module risk_reward = expected_reward/max_risk, equals canonical R.
+- options economics reward/risk standardized to canonical R at max outcome.
+- performance realized_R converted to canonical R.
+- backtest R_multiple is canonical.
+"""
 import json, sqlite3, uuid
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -11,7 +19,8 @@ MAX_TRADES_PER_DAY = 1
 
 class QualificationEngine:
     def __init__(self, settings=None):
-        self.conn = get_conn()
+        # No shared conn: per-request connections only (WAL/timeout in get_conn).
+        # self.conn intentionally absent; qualify() opens+closes its own conn.
         self.scenario = ScenarioEngine()
         self.strategy = StrategyEngine()
         self.risk = RiskEngine(settings) if settings else RiskEngine()
@@ -74,17 +83,28 @@ class QualificationEngine:
             # Cross-worker race guard: UNIQUE(instrument_id, date) means a
             # concurrent worker may persist first; the loser sees
             # IntegrityError and must report daily-limit (never a 500).
+            # Atomic plain INSERT (never OR REPLACE) + per-request conn
+            # (timeout=10, WAL) + always close.
+            _conn = get_conn()
             try:
                 trade_id = str(uuid.uuid4())[:16].upper()
                 date_str = trade_date
-                self.conn.execute('INSERT INTO qualified_trades (trade_id, instrument_id, date, timestamp, scenario, strategy, objective, direction, entry, stop, target, max_risk, expected_reward, risk_reward, qualification_evidence, status, daily_lock_consumed, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+                _conn.execute('INSERT INTO qualified_trades (trade_id, instrument_id, date, timestamp, scenario, strategy, objective, direction, entry, stop, target, max_risk, expected_reward, risk_reward, qualification_evidence, status, daily_lock_consumed, created_at) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
                     (trade_id, instrument_id, date_str, datetime.now(_IST).isoformat(), candidate['scenario'], strategy_info['strategy'], strategy_info['objective'], strategy_info['direction'], candidate['entry'], candidate['stop'], candidate['target'], candidate['max_risk'], candidate['expected_reward'], candidate['expected_reward'] / candidate['max_risk'] if candidate['max_risk'] else 0, json.dumps(market_state), 'QUALIFIED', 0, datetime.now(_IST).isoformat()))
-                self.conn.execute('INSERT OR REPLACE INTO daily_trade_locks (lock_id, instrument_id, date, status, trade_id, locked_at, consumed_at, created_at) VALUES (?,?,?,?,?,?,?,?)',
+                _conn.execute('INSERT INTO daily_trade_locks (lock_id, instrument_id, date, status, trade_id, locked_at, consumed_at, created_at) VALUES (?,?,?,?,?,?,?,?)',
                     (f'LCK-{instrument_id}-{date_str}', instrument_id, date_str, 'CONSUMED', trade_id, datetime.now(_IST).isoformat(), datetime.now(_IST).isoformat(), datetime.now(_IST).isoformat()))
-                self.conn.commit()
+                _conn.commit()
             except sqlite3.IntegrityError:
-                self.conn.rollback()
+                try:
+                    _conn.rollback()
+                except Exception:
+                    pass
                 self.research_daily_locks.add(daily_lock_key)
                 return {'decision': 'NO_TRADE', 'reasons': ['DAILY_TRADE_LIMIT_REACHED'], 'trade': None}
+            finally:
+                try:
+                    _conn.close()
+                except Exception:
+                    pass
         self.research_daily_locks.add(daily_lock_key)
         return {'decision': 'QUALIFIED_TRADE', 'trade_id': None if research else str(uuid.uuid4())[:16].upper(), 'trade': candidate, 'reasons': []}

@@ -29,7 +29,7 @@ class RegimeClassifier:
         # Get last 20 sessions before this date
         sessions = self.conn.execute(
             "SELECT DISTINCT substr(timestamp,1,10) as d FROM market_candles_5m "
-            "WHERE instrument_id=? AND substr(timestamp,1,10) <= ? ORDER BY d DESC LIMIT 20",
+            "WHERE instrument_id=? AND substr(timestamp,1,10) < ? ORDER BY d DESC LIMIT 20",
             (instrument_id, session_date)
         ).fetchall()
         

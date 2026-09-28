@@ -39,23 +39,29 @@ class ScenarioEngine:
         return candidates
 
     def evaluate_match(self, instrument_id, market_state, scenario):
+        # CONFIRMED requires trend + VWAP + momentum alignment (never momentum alone).
         match_state = 'WATCH'
         evidence = []
-        if market_state.get('trend') == scenario.get('direction'):
+        direction = scenario.get('direction')
+        trend_ok = market_state.get('trend') == direction
+        if trend_ok:
             match_state = 'PARTIALLY_MATCHED'
             evidence.append('Trend direction matches')
-        if market_state.get('vwap_relation') == 'ABOVE' and scenario.get('direction') == 'BULLISH':
-            match_state = 'PARTIALLY_MATCHED'
-            evidence.append('Price above VWAP confirming bullish')
-        if market_state.get('vwap_relation') == 'BELOW' and scenario.get('direction') == 'BEARISH':
-            match_state = 'PARTIALLY_MATCHED'
-            evidence.append('Price below VWAP confirming bearish')
-        if market_state.get('momentum') == 'POSITIVE' and scenario.get('direction') == 'BULLISH':
-            match_state = 'CONFIRMED'
-            evidence.append('Positive momentum confirms bullish')
-        if market_state.get('momentum') == 'NEGATIVE' and scenario.get('direction') == 'BEARISH':
-            match_state = 'CONFIRMED'
-            evidence.append('Negative momentum confirms bearish')
+        vwap_ok = ((market_state.get('vwap_relation') == 'ABOVE' and direction == 'BULLISH')
+                   or (market_state.get('vwap_relation') == 'BELOW' and direction == 'BEARISH'))
+        if vwap_ok:
+            if match_state == 'WATCH':
+                match_state = 'PARTIALLY_MATCHED'
+            evidence.append('Price vs VWAP confirming' + (' bullish' if direction == 'BULLISH' else ' bearish'))
+        mom_ok = ((market_state.get('momentum') == 'POSITIVE' and direction == 'BULLISH')
+                  or (market_state.get('momentum') == 'NEGATIVE' and direction == 'BEARISH'))
+        if mom_ok:
+            evidence.append(('Positive' if direction == 'BULLISH' else 'Negative') + ' momentum aligns')
+            if trend_ok and vwap_ok:
+                match_state = 'CONFIRMED'
+                evidence.append(('Positive momentum confirms bullish' if direction == 'BULLISH' else 'Negative momentum confirms bearish') + ' (trend+VWAP+momentum)')
+            elif match_state == 'WATCH':
+                match_state = 'PARTIALLY_MATCHED'
         if market_state.get('momentum') == 'NEGATIVE' and scenario.get('direction') == 'BULLISH':
             match_state = 'INVALIDATED'
             evidence.append('Negative momentum invalidates bullish')

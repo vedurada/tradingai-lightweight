@@ -58,6 +58,9 @@ class SequentialReplay:
                 scen = self.scenario.get_scenario_for_timestamp(instrument, ts)
                 ms = {'trend': 'BULLISH', 'vwap_relation': 'ABOVE', 'momentum': 'POSITIVE',
                       'volatility': 'NORMAL', 'price': candle['close']}
+                # SPOT-R LIMITATION: no historical options chain; research forces
+                # options_valid=True as spot-proxy. Live must compute via
+                # app.options.engine.is_options_data_valid.
                 q = self.qualification.qualify(instrument, ms, options_valid=True,
                                                research=True, trade_date=day, as_of=ts)
                 lock_after = (instrument, day) in self.qualification.research_daily_locks
@@ -97,10 +100,21 @@ class SequentialReplay:
         return {'traces': traces, 'trades': trades, 'daily': daily}
 
     def _build_trade(self, instrument, entry_candle, all_candles, entry_idx, trade_data):
-        entry_price = round(trade_data.get('entry', entry_candle['close']), 2)
-        stop = round(trade_data.get('stop', entry_price * 0.99), 2)
-        target = round(trade_data.get('target', entry_price * 1.02), 2)
-        direction = trade_data.get('direction', 'LONG')
+        entry_price = trade_data.get('entry')
+        if entry_price is None:
+            return None  # FIXALL: no invented fills
+        entry_price = round(entry_price, 2)
+        stop = trade_data.get('stop')
+        if stop is None:
+            return None  # FIXALL
+        stop = round(stop, 2)
+        target = trade_data.get('target')
+        if target is None:
+            return None  # FIXALL
+        target = round(target, 2)
+        direction = trade_data.get('direction')
+        if direction not in ('LONG','SHORT','BULLISH','BEARISH'):
+            return None  # FIXALL
         direction = 'LONG' if direction in ('BULLISH', 'LONG') else ('SHORT' if direction in ('BEARISH', 'SHORT') else 'LONG')
         day = entry_candle['timestamp'][:10]
         after = [c for c in all_candles[entry_idx + 1:] if c['timestamp'][:10] == day]

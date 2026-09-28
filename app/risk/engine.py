@@ -1,3 +1,13 @@
+"""Risk engine: unconditional 2% risk cap + 1.5 RR floor.
+
+R-DEFINITION MAP (canonical = app/research/backtest.py true multiple
+R = signed move_pts / risk_pts):
+- THIS module validates via percent ratio rr = reward_pct / risk_pct, which
+  equals canonical R for spot trades (both scale with entry). risk_reward
+  stored on candidate is canonical-compatible.
+- R4 nested-config fix VERIFIED: settings.json nests under risk:{...};
+  both shapes accepted (cfg.get('risk', cfg)). Do not regress to top-level-only.
+"""
 from zoneinfo import ZoneInfo
 _IST = ZoneInfo('Asia/Kolkata')
 
@@ -5,7 +15,7 @@ class RiskEngine:
     def __init__(self, settings=None):
         # settings.json nests these under risk:{...}; accept both shapes so
         # config stays effective (previously top-level lookup always missed
-        # and silently fell back to literals).
+        # and silently fell back to literals). R4 fix verified intact.
         cfg = (settings or {})
         rk = cfg.get('risk', cfg) if isinstance(cfg, dict) else {}
         if not isinstance(rk, dict):
@@ -39,7 +49,17 @@ class RiskEngine:
         if rr < self.min_reward_risk - 1e-4:
             reasons.append(f'reward_risk_insufficient ({rr:.2f} < {self.min_reward_risk})')
             return False, reasons
-        if max_risk_pct > 0 and risk_pct > max_risk_pct + 1e-4:
-            reasons.append(f'risk_exceeds_max ({risk_pct:.4f}% > {max_risk_pct}%)')
+        # FIX: enforce risk cap UNCONDITIONALLY (previously `max_risk_pct > 0`
+        # guard meant max_risk=0/missing skipped the 2% cap entirely).
+        # Effective limit = tighter of engine cap and candidate limit (when given).
+        limit = self.max_risk_pct
+        try:
+            cand_limit = float(max_risk_pct) if max_risk_pct else 0.0
+        except (TypeError, ValueError):
+            cand_limit = 0.0
+        if cand_limit and cand_limit > 0:
+            limit = min(limit, cand_limit)
+        if risk_pct > limit + 1e-4:
+            reasons.append(f'risk_exceeds_max ({risk_pct:.4f}% > {limit}%)')
             return False, reasons
         return True, reasons

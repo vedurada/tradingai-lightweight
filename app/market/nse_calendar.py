@@ -1,5 +1,14 @@
 """NSE trading calendar (explicit, no heavy dependency).
 
+COVERAGE: 2026 ONLY (weekday holidays encoded from NSE circular CMTR71775).
+Years beyond 2026 are NOT encoded yet — extend this table every December from
+the NSE holiday circular + nseindia.com. FAIL-SAFE: unknown years return
+None for holiday_name (weekday rule applies); absence of feed data still
+yields NO_DATA/MARKET_CLOSED downstream, never a trade. Do NOT trade on the
+assumption that "no listed holiday = session" without feed confirmation.
+CALENDAR_LAST_VERIFIED=2026-09-28; CALENDAR_COVERAGE_END=2026-12-31.
+
+
 Source: NSE circular CMTR71775 (2025-12-12) + nseindia.com holiday list for
 calendar year 2026, Equity/Equity-Derivatives segments. Only weekday holidays
 are encoded (weekend entries need no rule — Saturday/Sunday are never
@@ -9,6 +18,13 @@ limitation. Unknown future years: no holidays known -> weekday rule applies;
 absence of feed data still yields NO_DATA/MARKET_CLOSED, never a trade.
 """
 from datetime import date
+
+# Fail-safe coverage marker: holidays encoded only for SUPPORTED_YEARS.
+# holiday_name() returns None for any other year (fail-open to weekday
+# rule, fail-closed downstream via NO_DATA when no feed). Update yearly.
+SUPPORTED_YEARS = (2026,)
+CALENDAR_COVERAGE_END = '2026-12-31'
+CALENDAR_LAST_VERIFIED = '2026-09-28'
 
 # 2026 weekday trading holidays (ISO dates). Verified against NSE circular.
 NSE_HOLIDAYS_2026 = frozenset({
@@ -48,8 +64,17 @@ def is_weekend(day):
     return day.weekday() >= 5
 
 
+def is_calendar_covered(year):
+    """True only for years with an explicitly encoded NSE holiday table."""
+    return year in SUPPORTED_YEARS
+
+
 def holiday_name(day):
-    """Holiday name if `day` is an explicitly listed NSE holiday, else None."""
+    """Holiday name if `day` is an explicitly listed NSE holiday, else None.
+
+    Years outside SUPPORTED_YEARS have no table: returns None (unknown).
+    Callers must treat uncovered dates fail-safe (feed-gated NO_DATA, never a trade).
+    """
     table = _HOLIDAYS_BY_YEAR.get(day.year)
     if not table:
         return None

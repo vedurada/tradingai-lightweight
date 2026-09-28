@@ -162,9 +162,9 @@ def detect_scenario(features, prev_state=STATE_NONE):
             if features.get('price', 0) > (ref_high if ref_high else 0):
                 state = STATE_CANDIDATE
                 reason.append(f'close_above_ref_high_{ref_high}')
-            if state == STATE_CANDIDATE:
-                state = STATE_CONFIRMED
-                reason.append('confirmed_breakout')
+            # FIXALL: same-tick CANDIDATE->CONFIRMED removed (was instant-CONFIRMED).
+            # Confirmation requires a later candle ts>signal_ts (handled by
+            # populate_scenario_matches time-separated WATCH->CONFIRMED).
 
         elif stype == 'BREAKOUT_FAILURE_REVERSAL':
             ref_high = features.get('prev_high')
@@ -246,8 +246,9 @@ def generate_scenarios(instrument_id, start_date=None, end_date=None):
 
     # Delete existing scenarios for idempotency
     conn = get_conn()
+    # FIXALL: delete matches FIRST (was candidates-first leaving orphans).
+    conn.execute('DELETE FROM scenario_matches WHERE instrument_id=?', (instrument_id,))
     conn.execute('DELETE FROM scenario_candidates WHERE instrument_id=?', (instrument_id,))
-    conn.execute('DELETE FROM scenario_matches WHERE instrument_id IN (SELECT instrument_id FROM scenario_candidates WHERE instrument_id=?)', (instrument_id,))
     conn.commit()
     conn.close()
 

@@ -193,8 +193,14 @@ def run_range(instrument, date_start, date_end):
                            'signal_time': sig.get('timestamp')})
     finally:
         conn.close()
+    # FIXALL R3: legacy path had no win_loss col; derive single-label wins/losses
+    # from decay label when present else raw sign (matches opens-path semantics).
+    def _w(tr):
+        wl = tr.get('win_loss')
+        if wl in ('WIN', 'LOSS'): return wl
+        return 'WIN' if tr.get('r_multiple', 0) > 0 else ('LOSS' if tr.get('r_multiple', 0) < 0 else 'BREAKEVEN')
     rs = [t['r_multiple'] for t in trades]
-    w = sum(1 for r in rs if r > 0)
+    w = sum(1 for tr in trades if _w(tr) == 'WIN')
     n = len(rs)
     by_level = {}
     for t in trades:
@@ -202,12 +208,12 @@ def run_range(instrument, date_start, date_end):
         e = by_level.setdefault(k, {'n': 0, 'wins': 0, 'R': 0.0})
         e['n'] += 1
         e['R'] = round(e['R'] + t['r_multiple'], 2)
-        if t['r_multiple'] > 0:
+        if _w(t) == 'WIN':
             e['wins'] += 1
     return {'instrument': inst, 'date_start': date_start, 'date_end': date_end,
             'days': len(trades) + no_signal, 'signals': n,
             'no_signal_days': no_signal, 'wins': w,
-            'losses': sum(1 for r in rs if r < 0),
+            'losses': sum(1 for tr in trades if _w(tr) == 'LOSS'),
             'win_rate': round(100 * w / n, 1) if n else 0,
             'total_R': round(sum(rs), 2) if n else 0,
             'avg_R': round(sum(rs) / n, 3) if n else 0,
@@ -294,9 +300,10 @@ def today_state(instrument, now_ist=None, variant='aligned'):
     dr, t, i = sig
     if i + 1 < len(candles):
         entry = float(candles[i + 1]['open'])
+        entry_time = candles[i + 1]['timestamp']
         note = None
     else:
-        entry, note = None, 'ENTRY_AT_NEXT_OPEN'
+        entry, entry_time, note = None, None, 'ENTRY_AT_NEXT_OPEN'
     if entry is not None:
         if dr == 'BULL':
             stop, tgt = entry * (1 - OPEN_STOP_PCT), entry * (1 + OPEN_TARGET_PCT)
@@ -308,7 +315,7 @@ def today_state(instrument, now_ist=None, variant='aligned'):
     return {'instrument': inst, 'variant': variant, 'date': day_iso,
             'state': 'SIGNAL', 'direction': dr, 'level': t,
             'signal_time': candles[i]['timestamp'],
-            'entry': entry, 'stop': stop, 'target': tgt, 'levels': lv,
+            'entry': entry, 'entry_time': entry_time, 'stop': stop, 'target': tgt, 'levels': lv,
             'note': note, 'candles_so_far': len(candles),
             'last_candle': candles[-1]['timestamp']}
 

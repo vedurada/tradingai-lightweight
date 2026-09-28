@@ -40,11 +40,10 @@ CREATE TABLE IF NOT EXISTS {OBS_TABLE} (
 )
 """
 
-CLEANUP_SQL = f"""
-DELETE FROM {OBS_TABLE}
-WHERE session_state NOT IN ('PREMARKET', 'LIVE', 'MARKET_CLOSED', 'WEEKEND', 'HOLIDAY')
-   OR created_at < datetime('now', '-7 days')
-"""
+# Retention: time-based ONLY (30d). All states retained (NO_DATA/STALE/WAIT/TRADE
+# are audit evidence, never deleted by state). IST-aware: created_at is IST ISO;
+# never compare against SQLite datetime('now') (UTC) — cutoff computed in Python.
+RETENTION_DAYS = 30
 
 
 def ensure_table():
@@ -57,10 +56,17 @@ def ensure_table():
 def record_observation(observation: dict) -> str:
     """Record a single decision observation. Returns observation_id."""
     ensure_table()
-    obs_id = observation.get('observation_id') or f"OBV-{datetime.now(_IST).strftime('%Y%m%d%H%M%S%f')}"
+    import uuid as _uuid
+    obs_id = observation.get('observation_id') or f"OBV-{datetime.now(_IST).strftime('%Y%m%d%H%M%S%f')}-{_uuid.uuid4().hex[:6].upper()}"
+    # Version the id so retries never collide on UNIQUE(instrument, decision_as_of):
+    # on conflict we keep the FIRST row (audit), never overwrite.
+    try:
+        _base, _ts = obs_id.rsplit('-', 1)
+    except ValueError:
+        pass
     conn = get_conn()
     conn.execute(
-        f"""INSERT OR REPLACE INTO {OBS_TABLE}
+        f"""INSERT OR IGNORE INTO {OBS_TABLE}
         (observation_id, instrument, market_timestamp, completed_candle_timestamp,
          decision_as_of, index_price, scenario, scenario_timestamp, index_signal,
          options_data_state, strategy_qualification, final_decision_state,
@@ -96,11 +102,18 @@ def record_observation(observation: dict) -> str:
 
 
 def cleanup():
-    """Remove stale observations to keep DB small."""
+    """Time-based retention only (30d, IST-aware). Retains ALL states."""
+    from datetime import timedelta as _td
+    cutoff = (datetime.now(_IST) - _td(days=RETENTION_DAYS)).isoformat()
     conn = get_conn()
-    conn.execute(CLEANUP_SQL)
-    conn.commit()
-    conn.close()
+    try:
+        conn.execute(f"DELETE FROM {OBS_TABLE} WHERE created_at < ?", (cutoff,))
+        conn.commit()
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
 
 
 def get_observations(instrument=None, since=None, limit=100):
@@ -145,8 +158,15 @@ def record_observations_from_evaluation(instrument: str, evaluation: dict, optio
     Lightweight: extracts only the required fields, no deep inspection.
     """
     trade = evaluation.get('trade') or {}
+    if not isinstance(trade, dict):
+        trade = {}
     qualification = evaluation.get('qualification') or {}
-    obs_id = f"OBV-{instrument}-{evaluation.get('now_ist', datetime.now(_IST).isoformat())[:19]}"
+    if isinstance(qualification, str):
+        qualification = {'decision': qualification}
+    elif not isinstance(qualification, dict):
+        qualification = {}
+    import uuid as _uuid2
+    obs_id = f"OBV-{instrument}-{evaluation.get('now_ist', datetime.now(_IST).isoformat())[:19]}-{_uuid2.uuid4().hex[:6].upper()}"
     observation = {
         'observation_id': obs_id,
         'instrument': instrument,
@@ -156,11 +176,11 @@ def record_observations_from_evaluation(instrument: str, evaluation: dict, optio
         'index_price': evaluation.get('live_price') or evaluation.get('decision_price'),
         'scenario': (trade or {}).get('scenario'),
         'scenario_timestamp': evaluation.get('scenario_timestamp') if isinstance(evaluation.get('scenario_timestamp'), str) else None,
-        'index_signal': (evaluation.get('market_state') or {}).get('trend'),
+        'index_signal': (evaluation.get('market_state') if isinstance(evaluation.get('market_state'), dict) else {}).get('trend'),
         'options_data_state': options_state,
         'strategy_qualification': qualification.get('decision'),
         'final_decision_state': evaluation.get('state'),
-        'rejection_reason': '; '.join(evaluation.get('reasons', [])),
+        'rejection_reason': '; '.join(evaluation.get('reasons', [])) if isinstance(evaluation.get('reasons'), list) else str(evaluation.get('reasons') or ''),
         'data_age_minutes': evaluation.get('completed_age_minutes'),
         'provider_state': evaluation.get('quote_state'),
         'quote_age_seconds': evaluation.get('quote_age_seconds'),

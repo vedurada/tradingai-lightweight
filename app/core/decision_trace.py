@@ -53,7 +53,8 @@ def build_decision_trace(
         if daily_lock and daily_lock.get("status") == "CONSUMED":
             trace["final_trader_facing_state"] = "QUALIFIED"
         elif daily_lock and daily_lock.get("status") == "PENDING":
-            trace["final_trader_facing_state"] = "QUALIFIED"
+            # PENDING lock is NOT consumed: never QUALIFIED. Only CONSUMED->QUALIFIED.
+            trace["final_trader_facing_state"] = "NO_TRADE"
         else:
             trace["final_trader_facing_state"] = "NO_TRADE"
             trace["qualification_reasons"].append("DAILY_TRADE_LIMIT_REACHED")

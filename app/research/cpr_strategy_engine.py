@@ -93,8 +93,12 @@ def qualify_signals(cpr_info, gap_direction, ladder, virgin, df, confirmation):
     signals = []
     if df is None or df.empty: return []
     if cpr.get("r1") is None or cpr.get("s1") is None: return []
+    conf_ts = str((confirmation or {}).get("timestamp", "")) if isinstance(confirmation, dict) else ""
     for _, row in df.iterrows():
         ts = str(row["timestamp"])
+        # FIXALL: confirmation param was ignored; suppress bars at/before confirmation.
+        if conf_ts and ts <= conf_ts:
+            continue
         hi, lo, op = float(row["high"]), float(row["low"]), float(row["open"])
         hit_r1 = hi >= cpr["r1"]
         hit_s1 = lo <= cpr["s1"]
@@ -201,7 +205,7 @@ def create_trade_record(instrument, session_date, strategy, direction, signal_ts
                         gap_dir, cpr_class, ladder, virgin, all_qual_strats, selection_reason, df):
     risk = abs(entry_price - stop) if stop else 0
     reward = risk * 2 if risk > 0 else 0
-    lot = LOT_SIZES.get(instrument, 50)
+    lot = LOT_SIZES.get(instrument, 65)  # FIX stale lot 50 removed
     pts = (exit_price - entry_price) if direction=="LONG" else (entry_price - exit_price)
     gross_pnl = pts * lot
     net_pnl = gross_pnl
@@ -308,9 +312,8 @@ def resolve_target(target_ref, direction, entry, cpr, pivots, prev_high, prev_lo
             pool = [cpr["pp"]]
         beyond = [x for x in pool if x is not None and x == x and abs(x) != float("inf") and x < entry]
         if beyond: return float(max(beyond))
-    stop_guess = cpr["bc"] if direction == "LONG" else cpr["tc"]
-    px = entry + abs(entry - stop_guess) * 2 if direction == "LONG" else entry - abs(entry - stop_guess) * 2
-    return float(px)
+    # FIXALL: no invented 2R target; caller must treat None as NO_TRADE.
+    return None
 
 def run_day_backtest(day_df, instrument, today_cpr, prev_cpr, gap_points=0, virgin=False, prev_high=None, prev_low=None):
     """Backtest one session. today_cpr MUST be formed from the previous session's
