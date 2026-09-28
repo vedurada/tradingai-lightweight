@@ -22,6 +22,17 @@ IST = ZoneInfo('Asia/Kolkata')
 API = 'http://127.0.0.1:8000'
 CHANNEL = '@tradingai_cpr'
 
+NAV_MARKUP = __import__('json').dumps({
+    "inline_keyboard": [
+        [{"text": "Home", "url": "https://tradingai.in/"},
+         {"text": "Nifty", "url": "https://tradingai.in/indices/nifty.html"},
+         {"text": "BankNifty", "url": "https://tradingai.in/indices/banknifty.html"}],
+        [{"text": "Backtest", "url": "https://tradingai.in/backtest.html"},
+         {"text": "Paper", "url": "https://tradingai.in/paper.html"}],
+        [{"text": "Join Telegram", "url": "https://t.me/tradingai_cpr"}]
+    ]
+})
+
 
 def token():
     with open(os.path.join(BASE, '.tg_env')) as f:
@@ -87,7 +98,7 @@ def save_state(s):
 
 
 def do_test():
-    r = tg('sendMessage', {'chat_id': CHANNEL,
+    r = tg('sendMessage', {'chat_id': CHANNEL, 'reply_markup': NAV_MARKUP,
                            'text': '🔧 TradingAI alerts online. Morning levels, intraday TRADE signals and EOD recaps will land here. (Educational research only — not financial advice.)'})
     print('test sent:', r.get('ok'))
 
@@ -116,7 +127,7 @@ def do_morning():
             + '\nLive decisions from 09:15 → https://tradingai.in'
             + '\nEducational research only — not financial advice.')
     img = shot('https://tradingai.in/index.html', '/tmp/tg_morning.png')
-    r = tg('sendPhoto', {'chat_id': CHANNEL, 'caption': text[:1024]}, photo=img)
+    r = tg('sendPhoto', {'chat_id': CHANNEL, 'caption': text[:1024], 'reply_markup': NAV_MARKUP}, photo=img)
     print('morning sent:', r.get('ok'))
 
 
@@ -168,7 +179,7 @@ def do_watch():
         text = (f"{emoji} {inst} ({t.get('direction') or ''})\n"
                 f"Entry {fmt(t.get('entry'))} | Stop {fmt(t.get('stop'))}\n"
                 f"Strategy: {spread_name(t.get('direction'))}")
-        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
+        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text, 'reply_markup': NAV_MARKUP})
         if r.get('ok'):
             st.setdefault('fired', []).append(key)
             st.setdefault('open', {})[key] = {'inst': inst, 'sym': sym,
@@ -202,7 +213,7 @@ def do_watch():
         text = (f"{em} {o['inst']} ({o.get('direction') or ''}) CLOSED — {reason}\n"
                 f"Entry {fmt(o.get('entry'))}\n"
                 f"Strategy: {o.get('strategy') or '—'}")
-        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
+        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text, 'reply_markup': NAV_MARKUP})
         st['open'].pop(key, None)
         save_state(st)
         print(f"exit sent for {key}: {reason} ok={r.get('ok')}")
@@ -220,7 +231,7 @@ def do_eod():
     text = (f"🔔 EOD {now.strftime('%a %d %b').upper()}\n" + '\n'.join(parts)
             + '\nFull ledger → https://tradingai.in/paper.html'
             + '\nPosted win or lose. Educational research only — not financial advice.')
-    r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
+    r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text, 'reply_markup': NAV_MARKUP})
     print('eod sent:', r.get('ok'))
 
 
