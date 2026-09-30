@@ -11,19 +11,19 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Privacy Policy — TradingAI.in</title>
-<meta name="description" content="TradingAI.in privacy policy: what data is collected, cookies, third parties and contact.">
-<link rel="canonical" href="https://tradingai.in/privacy.html">
+<title>Option Chain &amp; Open Interest Guide for NIFTY &amp; BANKNIFTY — TradingAI.in</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/favicon-180.png">
-<meta property="og:type" content="website">
+<meta name="description" content="Read NIFTY and BANKNIFTY option chains: Call/Put OI, change in OI, OI concentration, and how positioning maps to support and resistance. Educational guide.">
+<link rel="canonical" href="https://tradingai.in/option-chain-guide.html">
+<meta property="og:type" content="article">
 <meta property="og:site_name" content="TradingAI.in">
-<meta property="og:url" content="https://tradingai.in/privacy.html">
-<meta property="og:title" content="Privacy Policy — TradingAI.in">
-<meta property="og:description" content="TradingAI.in privacy policy: what data is collected, cookies, third parties and contact.">
+<meta property="og:url" content="https://tradingai.in/option-chain-guide.html">
+<meta property="og:title" content="Option Chain &amp; Open Interest Guide for NIFTY &amp; BANKNIFTY — TradingAI.in">
+<meta property="og:description" content="Option chains decoded: OI, change in OI and concentration for Indian index-options traders. Educational guide.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Privacy Policy — TradingAI.in">
-<meta name="twitter:description" content="TradingAI.in privacy policy: what data is collected, cookies, third parties and contact.">
+<meta name="twitter:title" content="Option Chain &amp; Open Interest Guide for NIFTY &amp; BANKNIFTY — TradingAI.in">
+<meta name="twitter:description" content="Option chains decoded: OI, change in OI and concentration for Indian index-options traders. Educational guide.">
 <style>
 
 *{margin:0;padding:0;box-sizing:border-box}
@@ -33,44 +33,39 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
 nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}@media(max-width:640px){nav.main{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:.85rem;font-size:.78rem;padding:.5rem .7rem;justify-content:flex-start;scrollbar-width:none;}nav.main::-webkit-scrollbar{display:none;}nav.main a{white-space:nowrap;flex:0 0 auto;}}
 nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
 .wrap{max-width:900px;margin:0 auto;padding:1rem}
 .card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.4rem;margin-bottom:1rem}
 h1{font-size:1.6rem;margin-bottom:.4rem}h2{font-size:1.15rem;margin:1.2rem 0 .4rem;color:#0b1e3a}
-p,li{font-size:.92rem;color:#334155}ul{margin-left:1.2rem}
+p,li{font-size:.92rem;color:#334155}ul,ol{margin-left:1.2rem}
+code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.85em}
+.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.8rem;margin:.8rem 0}
 footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
 footer a{color:#94a3b8}
 nav.main{align-items:center}nav.main a{background:#1e3a5f;color:#e2e8f0;text-decoration:none;padding:.45rem 1rem;border-radius:8px;border:1px solid #2d4a73;font-weight:600;display:inline-block}nav.main a:hover{background:#2563eb;border-color:#38bdf8;color:#fff}nav.main a.active{background:#2563eb;border-color:#38bdf8;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4)}.card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:16px;padding:1.4rem;box-shadow:0 4px 16px rgba(11,30,58,.08);transition:transform .2s ease,box-shadow .2s ease;position:relative;overflow:hidden}.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(11,30,58,.14)}.card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2563eb,#38bdf8,#22d3ee)}.card h2{color:#0b1e3a;font-size:1.2rem;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:2px solid #e0f2fe}.card table{border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(11,30,58,.06)}.card th{background:linear-gradient(180deg,#eff6ff,#dbeafe);color:#1e3a8a}.card tbody tr:hover{background:#f0f9ff}.card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(37,99,235,.18);border-color:#93c5fd}.card:hover::before{height:6px}.card a{transition:color .2s ease}.card a:hover{color:#1d4ed8}table tbody tr{transition:background .15s ease}table tbody tr:hover{background:#eff6ff}.tool,.feature-card,.stat{transition:transform .2s ease,box-shadow .2s ease}.tool:hover,.feature-card:hover,.stat:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(11,30,58,.12)}@media(max-width:768px){.wrap{padding:.7rem}nav.main{gap:.25rem;padding:.4rem .5rem;flex-wrap:wrap}nav.main a{order:2;flex:1 1 22%;min-width:0;padding:.5rem .1rem;font-size:clamp(.65rem,3.4vw,.9rem);font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.topbar{flex-direction:column;align-items:flex-start;gap:.3rem}h1{font-size:1.3rem}.card{padding:1rem;border-radius:12px}table{font-size:.75rem}th,td{padding:.3rem .4rem;white-space:normal;word-break:break-word}.px{order:1;flex:1 1 28%;min-width:0;font-size:.62rem;padding:.15rem .2rem;overflow:hidden}footer{font-size:.72rem}}</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Option Chain &amp; Open Interest Guide for NIFTY &amp; BANKNIFTY \u2014 TradingAI.in", "description": "Read NIFTY and BANKNIFTY option chains: Call/Put OI, change in OI, OI concentration, and how positioning maps to support and resistance. Educational guide.", "mainEntityOfPage": "https://tradingai.in/option-chain-guide.html", "publisher": {"@type": "Organization", "name": "TradingAI.in", "url": "https://tradingai.in/"}}</script>
 </head>
 <body>
-<div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Privacy Policy</span></div></div>
+<div class="topbar"><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Option Chain Guide</span></div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">Historical Analysis</a></nav>
 <div class="wrap"><div class="card">
-<h1>Privacy Policy</h1>
-<p>Last updated: 26 September 2026. TradingAI.in is an educational market analytics platform. This policy explains what information is collected when you use it.</p>
-<h2>Information we collect</h2>
-<ul><li><b>No accounts, no tracking profiles.</b> The site offers no login and sets no advertising or analytics cookies of its own (third-party analytics/advertising cookies are described below).</li>
-<li><b>Server logs.</b> Like nearly every website, the server records standard technical entries (requested page, time, approximate network origin) for security and reliability. Logs are rotated and not sold or shared.</li>
-<li><b>Market data.</b> Price displays come from public market-data providers; requesting a page causes the server to fetch public quotes on your behalf. No personal data is sent to those providers.</li></ul>
-<h2>Cookies and analytics</h2>
-<ul><li>The site uses <b>Google Analytics (GA4)</b> to understand aggregate usage (pages viewed, approximate region, device type). Google sets cookies such as <code>_ga</code> and <code>_ga_*</code> for this purpose; data is processed under Google's privacy policy and retained per the property's settings.</li>
-<li>You can opt out with Google's <a href="https://tools.google.com/dlpage/gaoptout">analytics opt-out add-on</a> or by blocking third-party cookies in your browser.</li></ul>
-<h2>Advertising</h2>
-<ul><li>This site may display ads served by <b>Google AdSense</b> and its partners. Google uses cookies (including the DoubleClick cookie) to serve ads based on your prior visits to this and other sites, which may include personalized advertising.</li>
-<li>You can opt out of personalized advertising at <a href="https://www.google.com/settings/ads">Google Ad Settings</a> or <a href="https://www.aboutads.info/choices/">aboutads.info</a>. See also <a href="https://policies.google.com/technologies/ads">how Google uses data from partner sites</a>.</li></ul>
-<h2>How information is used</h2>
-<ul><li>Operating, securing and improving the dashboard; diagnosing errors; complying with legal obligations. Information is never sold.</li></ul>
-<h2>Data retention and security</h2>
-<ul><li>Server logs are kept only as long as operationally needed. Market data shown is public and contains no personal information.</li></ul>
-<h2>User accounts</h2>
-<ul><li>The site currently offers no user accounts or login. Journal notes on the Tools page are stored only in your own browser (localStorage) and are never transmitted to our servers.</li></ul>
-<h2>Payments</h2>
-<ul><li>No payments are collected at this time. If paid tools are introduced, payment details will be processed by a third-party payment processor; we will not store card numbers. [Placeholder — processor name, data flows and retention to be documented before launch, and reviewed by a qualified professional.]</li></ul>
-<h2>Your rights</h2>
-<ul><li>You may request access to, correction of, or deletion of any personal information we hold about you via the <a href="/contact.html">contact page</a>. [Placeholder — rights procedure and timelines to be confirmed under applicable Indian law.]</li></ul>
-<h2>Children</h2>
-<ul><li>TradingAI.in is a general-audience financial-education tool and is not directed at children under 13.</li></ul>
-<h2>Changes and contact</h2>
-<ul><li>Material changes to this policy will be noted here with a new date. Questions: <a href="/contact.html">contact page</a>.</li></ul>
+<h1>Option Chain &amp; Open Interest Guide for NIFTY &amp; BANKNIFTY</h1>
+<p>An <b>option chain</b> lists every strike's calls and puts with their open interest (OI), volume and premiums. For NIFTY and BANKNIFTY traders it is the positioning map: where the market has placed its biggest bets. TradingAI reads chain contracts through a validated data layer whenever the exchange feed is reachable.</p>
+<div class="notice">Educational guide only. Metrics are analytical references, not personalised investment advice. Options involve substantial risk; see the <a href="/disclaimer.html">Disclaimer</a>.</div>
+<h2>1. Call OI, Put OI and change in OI</h2>
+<ul><li><b>Open Interest</b> = outstanding contracts not yet closed — a stock of positioning. <b>Volume</b> = contracts traded today — a flow.</li><li><b>Change in OI</b> shows where positions were <i>added</i> today: rising OI with rising premium suggests fresh writing/buying conviction; rising OI with falling premium often means writers pressing.</li><li>Always read OI together with price: OI without price action is just inventory.</li></ul>
+<h2>2. OI concentration</h2>
+<ul><li>Concentration = a few strikes holding most of the chain's OI. Concentrated strikes act as gravitational zones into expiry.</li><li>Concentration that <b>shifts</b> intraday (writers defending a new strike) matters more than static totals.</li></ul>
+<h2>3. Call concentration vs put concentration</h2>
+<ul><li>Heavy <b>call OI</b> above spot often marks a supply zone (resistance); heavy <b>put OI</b> below spot often marks a demand zone (support).</li><li>These are positioning references for <a href="/nifty-support-resistance.html">support &amp; resistance</a>, complementing CPR levels — not guarantees that levels will hold.</li></ul>
+<h2>4. Support/resistance interpretation</h2>
+<ul><li>Confluence counts: a CPR level (<a href="/cpr-guide.html">CPR guide</a>) sitting on top of heavy OI concentration is a stronger reference than either alone.</li><li>Watch for OI <i>unwinding</i> (falling OI into a level break) — it often confirms the break better than the break itself.</li></ul>
+<h2>5. Limitations</h2>
+<ul><li>OI does not reveal direction of the holder (long vs short) or motive (hedge vs speculation).</li><li>Weekly-expiry rolls, event hedging and intraday squaring can redraw the map within hours.</li><li>Stale chains mislead: TradingAI validates contracts and marks freshness; unavailable data is shown as unavailable, never zero-filled.</li></ul>
+<h2>6. Option chains on TradingAI.in</h2>
+<ul><li>Chain contracts feed the validated options layer behind model structures; live market context sits on <a href="/indices/nifty.html">NIFTY Today</a> and <a href="/indices/banknifty.html">BANKNIFTY Today</a>.</li></ul>
+<h2>7. Related topics</h2>
+<ul><li><a href="/pcr-guide.html">PCR</a> · <a href="/max-pain-guide.html">Max Pain</a> · <a href="/expected-move-guide.html">Expected Move</a> · <a href="/credit-spreads.html">Credit spreads</a></li></ul>
 </div></div>
 <footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a><a href="/paper.html">Observations Journal</a><a href="/alerts.html">Alerts Archive</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
 </body>

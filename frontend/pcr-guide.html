@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PCR Explained for NIFTY &amp; BANKNIFTY Options (Put-Call Ratio) — TradingAI.in</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/favicon-180.png">
+<meta name="description" content="Put-Call Ratio (PCR) explained for NIFTY and BANKNIFTY options: what PCR measures, how to interpret it with price action and OI, and why it must never be used alone.">
+<link rel="canonical" href="https://tradingai.in/pcr-guide.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="TradingAI.in">
+<meta property="og:url" content="https://tradingai.in/pcr-guide.html">
+<meta property="og:title" content="PCR Explained for NIFTY &amp; BANKNIFTY Options (Put-Call Ratio) — TradingAI.in">
+<meta property="og:description" content="PCR explained: definition, interpretation, and limitations for Indian index-options traders. Educational guide.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="PCR Explained for NIFTY &amp; BANKNIFTY Options (Put-Call Ratio) — TradingAI.in">
+<meta name="twitter:description" content="PCR explained: definition, interpretation, and limitations for Indian index-options traders. Educational guide.">
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.7}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}@media(max-width:640px){nav.main{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:.85rem;font-size:.78rem;padding:.5rem .7rem;justify-content:flex-start;scrollbar-width:none;}nav.main::-webkit-scrollbar{display:none;}nav.main a{white-space:nowrap;flex:0 0 auto;}}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:900px;margin:0 auto;padding:1rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.4rem;margin-bottom:1rem}
+h1{font-size:1.6rem;margin-bottom:.4rem}h2{font-size:1.15rem;margin:1.2rem 0 .4rem;color:#0b1e3a}
+p,li{font-size:.92rem;color:#334155}ul,ol{margin-left:1.2rem}
+code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.85em}
+.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.8rem;margin:.8rem 0}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+footer a{color:#94a3b8}
+nav.main{align-items:center}nav.main a{background:#1e3a5f;color:#e2e8f0;text-decoration:none;padding:.45rem 1rem;border-radius:8px;border:1px solid #2d4a73;font-weight:600;display:inline-block}nav.main a:hover{background:#2563eb;border-color:#38bdf8;color:#fff}nav.main a.active{background:#2563eb;border-color:#38bdf8;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4)}.card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:16px;padding:1.4rem;box-shadow:0 4px 16px rgba(11,30,58,.08);transition:transform .2s ease,box-shadow .2s ease;position:relative;overflow:hidden}.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(11,30,58,.14)}.card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2563eb,#38bdf8,#22d3ee)}.card h2{color:#0b1e3a;font-size:1.2rem;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:2px solid #e0f2fe}.card table{border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(11,30,58,.06)}.card th{background:linear-gradient(180deg,#eff6ff,#dbeafe);color:#1e3a8a}.card tbody tr:hover{background:#f0f9ff}.card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(37,99,235,.18);border-color:#93c5fd}.card:hover::before{height:6px}.card a{transition:color .2s ease}.card a:hover{color:#1d4ed8}table tbody tr{transition:background .15s ease}table tbody tr:hover{background:#eff6ff}.tool,.feature-card,.stat{transition:transform .2s ease,box-shadow .2s ease}.tool:hover,.feature-card:hover,.stat:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(11,30,58,.12)}@media(max-width:768px){.wrap{padding:.7rem}nav.main{gap:.25rem;padding:.4rem .5rem;flex-wrap:wrap}nav.main a{order:2;flex:1 1 22%;min-width:0;padding:.5rem .1rem;font-size:clamp(.65rem,3.4vw,.9rem);font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.topbar{flex-direction:column;align-items:flex-start;gap:.3rem}h1{font-size:1.3rem}.card{padding:1rem;border-radius:12px}table{font-size:.75rem}th,td{padding:.3rem .4rem;white-space:normal;word-break:break-word}.px{order:1;flex:1 1 28%;min-width:0;font-size:.62rem;padding:.15rem .2rem;overflow:hidden}footer{font-size:.72rem}}</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "PCR Explained for NIFTY &amp; BANKNIFTY Options (Put-Call Ratio) \u2014 TradingAI.in", "description": "Put-Call Ratio (PCR) explained for NIFTY and BANKNIFTY options: what PCR measures, how to interpret it with price action and OI, and why it must never be used alone.", "mainEntityOfPage": "https://tradingai.in/pcr-guide.html", "publisher": {"@type": "Organization", "name": "TradingAI.in", "url": "https://tradingai.in/"}}</script>
+</head>
+<body>
+<div class="topbar"><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">PCR Guide</span></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">Historical Analysis</a></nav>
+<div class="wrap"><div class="card">
+<h1>PCR Explained for NIFTY &amp; BANKNIFTY Options</h1>
+<p>The <b>Put-Call Ratio (PCR)</b> compares open interest in puts against open interest in calls for an index option chain. On TradingAI.in it is one of the positioning references recorded in <b>NIFTY and BANKNIFTY options snapshots</b> whenever the exchange feed is reachable.</p>
+<div class="notice">Educational guide only. Metrics are analytical references, not personalised investment advice. Options involve substantial risk; see the <a href="/disclaimer.html">Disclaimer</a>.</div>
+<h2>1. What PCR is</h2>
+<ul><li>Conceptually <code>PCR = total Put OI ÷ total Call OI</code> across the chain (or a chosen expiry).</li><li>PCR above 1 means more put open interest than call open interest; below 1 means the reverse.</li><li>It is a <b>positioning snapshot</b>, not a price forecast — it describes where traders have placed bets, not where the index must go.</li></ul>
+<h2>2. How traders interpret PCR</h2>
+<ul><li>Very high PCR is often read as heavy put writing/hedging (sometimes contrarian-bullish); very low PCR as heavy call exposure.</li><li>The informative movement is usually the <b>change</b> in PCR through the session, read together with price action — rising PCR while price holds support differs from rising PCR while price breaks down.</li><li>There is no universal threshold: a PCR above any fixed number is <b>not</b> automatically bullish, and no level guarantees direction.</li></ul>
+<h2>3. Why PCR must not be used alone</h2>
+<ul><li>PCR says nothing about <b>who</b> holds the positions (writers vs buyers) or <b>why</b> (hedge vs speculation).</li><li>Expiry-day unwinds, rollovers and event hedging can distort PCR without any directional meaning.</li><li>Always combine PCR with price location (CPR levels), OI concentration by strike, VIX context and the market regime.</li></ul>
+<h2>4. PCR with price action, OI and VIX</h2>
+<ul><li><b>PCR + price:</b> PCR extreme at a CPR support/resistance level is more interesting than the number alone — see the <a href="/nifty-support-resistance.html">support &amp; resistance guide</a>.</li><li><b>PCR + OI concentration:</b> check <i>which strikes</i> carry the OI in the <a href="/option-chain-guide.html">option chain guide</a>; a lopsided PCR driven by one far strike means little.</li><li><b>PCR + VIX:</b> PCR extremes during volatility expansions often reflect hedging demand rather than conviction — see the <a href="/india-vix-guide.html">India VIX guide</a>.</li></ul>
+<h2>5. PCR on TradingAI.in</h2>
+<ul><li>TradingAI records PCR in its options snapshots when the exchange feed is reachable. When it is not, the interface shows an unavailable state instead of a number — a missing PCR is never replaced with 0 or a neutral reading.</li><li>Live market context: <a href="/indices/nifty.html">NIFTY Today</a> and <a href="/indices/banknifty.html">BANKNIFTY Today</a>; rules: <a href="/methodology.html">methodology</a>.</li></ul>
+<h2>6. Related topics</h2>
+<ul><li><a href="/option-chain-guide.html">Option chain &amp; open interest</a> · <a href="/max-pain-guide.html">Max Pain</a> · <a href="/expected-move-guide.html">Expected Move</a> · <a href="/cpr-guide.html">CPR guide</a></li></ul>
+</div></div>
+<footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a><a href="/paper.html">Observations Journal</a><a href="/alerts.html">Alerts Archive</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
+</body>
+</html>

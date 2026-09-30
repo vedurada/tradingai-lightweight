@@ -292,8 +292,8 @@ def run_cpr_trigger_backtest():
       R2/R1/PDH touch or close below BC.
     variant aligned: same triggers gated by weekly CPR (bull needs close
       above weekly TC, bear below weekly BC).
-    First trigger/session, entry at next open in [09:20,15:10), 0.5% stop /
-    2% target evaluated at subsequent opens (stop first), flat 15:10 open.
+    First trigger/session, entry at next open in [09:20,15:20), 0.5% stop /
+    2% target evaluated at subsequent opens (stop first), flat 15:20 open.
     Read-only. Paper rows newer than date_end are appended (source='paper')
     so the table grows day by day with live paper trading."""
     from app.research.cpr_trigger_engine import run_opens_range, VARIANTS
@@ -760,6 +760,40 @@ def cpr_strategy():
                          day_candles=day_candles)
     return jsonify({"state": "LIVE", "timestamp": now.isoformat(), "data": signal})
 
+
+
+@app.route("/api/alerts/status", methods=["GET"])
+@limiter.limit("30 per minute")
+def alerts_status():
+    """Read-only Telegram alert lifecycle for today (fired / still open / closed).
+
+    Homepage cards use this to show a record only while its alert is live:
+    visible once fired, hidden after STOP or EOD exit. Zero DB writes."""
+    import json as _json
+    import os as _os
+    base = _os.environ.get('TRADINGAI_BASE', '/opt/tradingai')
+    try:
+        with open(_os.path.join(base, 'data', 'tg_state.json')) as _f:
+            st = _json.load(_f)
+    except Exception:
+        st = {}
+    today = datetime.now(_IST).date().isoformat()
+    try:
+        open_all = (st.get('open') or {})
+        open_today = {k: v for k, v in open_all.items() if str(k).startswith(today + '|')}
+    except Exception:
+        open_today = {}
+    try:
+        closed_today = [c for c in (st.get('closed') or []) if str((c or {}).get('date')) == today]
+    except Exception:
+        closed_today = []
+    try:
+        fired_today = [k for k in (st.get('fired') or []) if str(k).startswith(today + '|')]
+    except Exception:
+        fired_today = []
+    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
+                    "data": {"date": today, "open": open_today,
+                             "closed": closed_today, "fired": fired_today}})
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)

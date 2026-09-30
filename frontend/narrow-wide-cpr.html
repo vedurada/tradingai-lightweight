@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Narrow vs Wide CPR Strategy for Intraday Trading (NIFTY &amp; BANKNIFTY) — TradingAI.in</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/favicon-180.png">
+<meta name="description" content="Narrow CPR vs wide CPR intraday strategy for NIFTY and BANKNIFTY: what CPR width means, breakout vs rotation behaviour, and how TradingAI labels and models each day. Educational guide.">
+<link rel="canonical" href="https://tradingai.in/narrow-wide-cpr.html">
+<meta property="og:type" content="article">
+<meta property="og:site_name" content="TradingAI.in">
+<meta property="og:url" content="https://tradingai.in/narrow-wide-cpr.html">
+<meta property="og:title" content="Narrow vs Wide CPR Strategy for Intraday Trading — TradingAI.in">
+<meta property="og:description" content="What narrow and wide CPR days mean for NIFTY & BANKNIFTY intraday structure: breakout expansion vs rotation, with model examples.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Narrow vs Wide CPR Strategy for NIFTY & BANKNIFTY — TradingAI.in">
+<meta name="twitter:description" content="Narrow vs wide CPR days: breakout vs rotation behaviour and how the TradingAI model treats each. Educational guide.">
+<style>
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.7}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:1.5rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap}@media(max-width:640px){nav.main{flex-wrap:nowrap;overflow-x:auto;-webkit-overflow-scrolling:touch;gap:.85rem;font-size:.78rem;padding:.5rem .7rem;justify-content:flex-start;scrollbar-width:none;}nav.main::-webkit-scrollbar{display:none;}nav.main a{white-space:nowrap;flex:0 0 auto;}}
+nav.main a{color:#cbd5e1;text-decoration:none}nav.main a.active,nav.main a:hover{color:#fff;border-bottom:2px solid #38bdf8;padding-bottom:2px}
+.wrap{max-width:900px;margin:0 auto;padding:1rem}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:1.4rem;margin-bottom:1rem}
+h1{font-size:1.6rem;margin-bottom:.4rem}h2{font-size:1.15rem;margin:1.2rem 0 .4rem;color:#0b1e3a}
+p,li{font-size:.92rem;color:#334155}ul,ol{margin-left:1.2rem}
+code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.85em}
+.example{background:#f8fafc;border:1px solid #e2e8f0;border-radius:8px;padding:.8rem 1rem;font-size:.86rem;margin:.8rem 0}
+.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.8rem;margin:.8rem 0}
+table{width:100%;border-collapse:collapse;font-size:.84rem;margin:.6rem 0}
+th,td{text-align:left;padding:.35rem .5rem;border-bottom:1px solid #e2e8f0}
+th{color:#64748b}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
+footer a{color:#94a3b8}
+nav.main{align-items:center}nav.main a{background:#1e3a5f;color:#e2e8f0;text-decoration:none;padding:.45rem 1rem;border-radius:8px;border:1px solid #2d4a73;font-weight:600;display:inline-block}nav.main a:hover{background:#2563eb;border-color:#38bdf8;color:#fff}nav.main a.active{background:#2563eb;border-color:#38bdf8;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4)}.card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:16px;padding:1.4rem;box-shadow:0 4px 16px rgba(11,30,58,.08);transition:transform .2s ease,box-shadow .2s ease;position:relative;overflow:hidden}.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(11,30,58,.14)}.card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2563eb,#38bdf8,#22d3ee)}.card h2{color:#0b1e3a;font-size:1.2rem;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:2px solid #e0f2fe}.card table{border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(11,30,58,.06)}.card th{background:linear-gradient(180deg,#eff6ff,#dbeafe);color:#1e3a8a}.card tbody tr:hover{background:#f0f9ff}.card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(37,99,235,.18);border-color:#93c5fd}.card:hover::before{height:6px}.card a{transition:color .2s ease}.card a:hover{color:#1d4ed8}table tbody tr{transition:background .15s ease}table tbody tr:hover{background:#eff6ff}.tool,.feature-card,.stat{transition:transform .2s ease,box-shadow .2s ease}.tool:hover,.feature-card:hover,.stat:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(11,30,58,.12)}@media(max-width:768px){.wrap{padding:.7rem}nav.main{gap:.25rem;padding:.4rem .5rem;flex-wrap:wrap}nav.main a{order:2;flex:1 1 22%;min-width:0;padding:.5rem .1rem;font-size:clamp(.65rem,3.4vw,.9rem);font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.topbar{flex-direction:column;align-items:flex-start;gap:.3rem}h1{font-size:1.3rem}.card{padding:1rem;border-radius:12px}table{font-size:.75rem}th,td{padding:.3rem .4rem;white-space:normal;word-break:break-word}.px{order:1;flex:1 1 28%;min-width:0;font-size:.62rem;padding:.15rem .2rem;overflow:hidden}footer{font-size:.72rem}}</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Article", "headline": "Narrow vs Wide CPR Strategy for Intraday Trading (NIFTY &amp; BANKNIFTY) \u2014 TradingAI.in", "description": "Narrow CPR vs wide CPR intraday strategy for NIFTY and BANKNIFTY: what CPR width means, breakout vs rotation behaviour, and how TradingAI labels and models each day. Educational guide.", "mainEntityOfPage": "https://tradingai.in/narrow-wide-cpr.html", "publisher": {"@type": "Organization", "name": "TradingAI.in", "url": "https://tradingai.in/"}}</script>
+</head>
+<body>
+<div class="topbar"><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">CPR Width Guide</span></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">Historical Analysis</a></nav>
+<div class="wrap"><div class="card">
+<h1>Narrow vs Wide CPR Strategy for Intraday Trading</h1>
+<p>CPR width — the distance between the Top Central Pivot (TC) and Bottom Central Pivot (BC) relative to price — describes how undecided the previous NIFTY or BANKNIFTY session was. Narrow and wide CPR days tend to produce different intraday behaviour: <b>breakout expansion</b> versus <b>rotation inside the range</b>. This guide explains both and how the TradingAI model treats each day.</p>
+<div class="notice">Educational guide only — analytical references, not personalised investment advice. Options involve substantial risk; see the <a href="/disclaimer.html">Disclaimer</a>.</div>
+<h2>1. How CPR width is classified</h2>
+<p>Width <code>(TC−BC)/Pivot</code>: <b>narrow</b> below 0.15%, <b>normal</b> between 0.15% and 0.30%, <b>wide</b> above 0.30%. TradingAI computes this every morning from the previous session and labels the day on the <a href="/indices/nifty.html">NIFTY</a> and <a href="/indices/banknifty.html">BANKNIFTY</a> model pages. The full calculation is in the <a href="/cpr-guide.html">CPR guide</a>.</p>
+<h2>2. Narrow CPR days: breakout behaviour</h2>
+<ul><li>A tight TC/BC zone means yesterday balanced on a narrow range — stored energy that often releases as a directional move once price closes outside the zone.</li><li>Commonly watched sequence: price pushes above TC or below BC, then a completed 5-minute candle closes outside the zone (confirmation), which is the region the classification rules evaluate most closely.</li><li>Risk note: narrow days also produce false starts — price pokes out and falls back inside. That is why the model requires a finished-candle close, not a wick touch, for TC/BC breaks.</li></ul>
+<h2>3. Wide CPR days: rotation behaviour</h2>
+<ul><li>A broad undecided zone often acts as a magnet: price rotates between its edges, reacting at TC from below and BC from above.</li><li>S1/S2 and R1/R2 outside the zone become the extension references if rotation fails and range breaks.</li><li>On wide days the model frequently outputs WAIT or NO TRADE while price stays inside — that restraint is part of the design, visible across the <a href="/paper.html">historical model observations</a>.</li></ul>
+<h2>4. Side-by-side comparison</h2>
+<table><thead><tr><th></th><th>Narrow CPR</th><th>Wide CPR</th></tr></thead><tbody>
+<tr><th>Prior session</th><td>Tight balance</td><td>Broad indecision</td></tr>
+<tr><th>Typical behaviour</th><td>Breakout expansion</td><td>Rotation within range</td></tr>
+<tr><th>Key references</th><td>TC/BC breaks + closes</td><td>TC/BC edges, then S/R levels</td></tr>
+<tr><th>Common failure</th><td>False poke-out and snap-back</td><td>Premature breakout entries mid-rotation</td></tr>
+</tbody></table>
+<h2>5. Illustrative example</h2>
+<div class="example"><b>Illustrative example:</b> NIFTY prints a narrow CPR (TC/BC 0.08% apart). Price opens flat, pushes above TC at 10:00 and a 5-minute candle closes above it — an upward-leaning observation of the type the classification rules evaluate. Contrast a wide day (0.45% apart) where price oscillates between TC and BC until noon with no classified observation — a day typically recorded as having no classified session. See the <a href="/methodology.html">methodology</a> for the exact classification rules.</div>
+<h2>6. Checking width live and historically</h2>
+<ul><li>Live width and type appear each morning on the model pages and the home dashboard.</li><li>The <a href="/backtest.html">historical backtest</a> lets you replay how classification rules behaved across narrow and wide regimes (hypothetical results; past behaviour does not guarantee future performance).</li><li>Related: <a href="/how-to-use-cpr-intraday.html">how to use CPR for intraday trading</a>, <a href="/nifty-support-resistance.html">CPR-based support &amp; resistance</a>.</li></ul>
+</div></div>
+<footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a><a href="/paper.html">Observations Journal</a><a href="/alerts.html">Alerts Archive</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
+</body>
+</html>

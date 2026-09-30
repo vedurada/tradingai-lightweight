@@ -27,6 +27,10 @@ from app.research.cpr_strategy_engine import run_multi_session_backtest
 import pandas as pd
 
 PAGE = "/opt/tradingai/frontend/paper.html"
+
+FILTER_HTML = r"""<div class="card" id="dateFilter"><label for="dateSel"><b>Filter by session date:</b></label> <select id="dateSel" style="padding:.4rem .6rem;border-radius:8px;border:1px solid #cbd5e1;font-size:.9rem;max-width:100%"><option value="">All dates</option></select> <span class="meta" id="dateCount"></span></div>"""
+FILTER_JS = r"""<script>(function(){var sel=document.getElementById('dateSel');if(!sel)return;var dates=[];var rows=document.querySelectorAll('table tbody tr');rows.forEach(function(tr){var c=tr.cells[0];var d=c?c.textContent.trim():'';if(/^\d{4}-\d{2}-\d{2}$/.test(d)&&dates.indexOf(d)<0)dates.push(d);});dates.sort().reverse();dates.forEach(function(d){var o=document.createElement('option');o.value=d;o.textContent=d;sel.appendChild(o);});function apply(){var v=sel.value,n=0;rows.forEach(function(tr){var c=tr.cells[0];var d=c?c.textContent.trim():'';var show=!v||d===v;tr.style.display=show?'':'none';if(show)n++;});var el=document.getElementById('dateCount');if(el)el.textContent=v?('Showing '+n+' of '+rows.length+' rows'):(''+rows.length+' rows');}sel.addEventListener('change',apply);apply();})();</script>"""
+
 BT_PAGE = "/opt/tradingai/frontend/backtest.html"
 RDIR = "/opt/tradingai/research"
 
@@ -86,6 +90,26 @@ def session_complete(df, date_str, today_str):
     except Exception:
         return False
     return last_ist.hour * 60 + last_ist.minute >= 15 * 60 + 15
+
+
+def day_complete_ts(max_ts):
+    """True if a session's last candle is at/after 15:15 IST (day closed).
+
+    Lets the EOD cron log a completed today instead of waiting one extra day,
+    while still skipping genuinely incomplete sessions (pre-market/mid-day)."""
+    if not max_ts:
+        return False
+    try:
+        t = datetime.fromisoformat(str(max_ts))
+        if t.tzinfo is None:
+            t = t.replace(tzinfo=ZoneInfo("UTC"))
+        t = t.astimezone(_IST)
+        return t.hour * 60 + t.minute >= 15 * 60 + 15
+    except Exception:
+        try:
+            return int(str(max_ts)[11:13]) * 60 + int(str(max_ts)[14:16]) >= 15 * 60 + 15
+        except (ValueError, IndexError):
+            return False
 
 
 def log_pivot(backfill=False):
@@ -196,7 +220,7 @@ def log_spreads():
 
 
 def mark_spreads():
-    """Close OPEN spreads on spot stop/target (opens execution) or 15:10 EOD.
+    """Close OPEN spreads on spot stop/target (opens execution) or 15:20 EOD.
 
     Premiums unknown while NSE unreachable, so exits follow the approved
     spot trigger levels; r_spot is informational until live revaluation."""
@@ -239,11 +263,11 @@ def mark_spreads():
                 closed = (c["timestamp"], o, "TARGET")
                 break
         if closed is None:
-            eod = [c for c in candles if c["timestamp"][11:16] == "15:10"]
+            eod = [c for c in candles if c["timestamp"][11:16] == "15:20"]
             if not eod:
                 continue
             last = float(eod[0]["open"])
-            closed = (eod[0]["timestamp"], last, "EOD-1510")
+            closed = (eod[0]["timestamp"], last, "EOD-1520")
         xt, xp, how = closed
         risk = abs(entry * sp)
         move = (xp - entry) if dr == "BULL" else (entry - xp)
@@ -287,6 +311,9 @@ def log_align(backfill=False):
     conn = get_conn()
     total = 0
     for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        day_max = {d: m for d, m in conn.execute(
+            "SELECT substr(timestamp,1,10), max(timestamp) FROM market_candles_5m "
+            "WHERE instrument_id=? GROUP BY substr(timestamp,1,10)", (inst,))}
         for variant in ("plain", "aligned"):
             try:
                 res = run_opens_range(inst, "2000-01-01", "2100-01-01", variant)
@@ -294,7 +321,8 @@ def log_align(backfill=False):
                 print(f"align {inst}/{variant} failed: {e}", flush=True)
                 continue
             for t in res.get("trades", []):
-                if not backfill and t["trade_date"] >= today:
+                if not backfill and (t["trade_date"] > today or (
+                        t["trade_date"] == today and not day_complete_ts(day_max.get(today)))):
                     continue
                 dr = t["direction"]
                 entry = t["entry"]
@@ -350,7 +378,8 @@ def log_trigger(backfill=False):
         for r in rows:
             by_day.setdefault(r['timestamp'][:10], []).append(dict(r))
         for d in sorted(by_day):
-            if not backfill and d >= today:
+            if not backfill and (d > today or (
+                    d == today and not day_complete_ts(max(c["timestamp"] for c in by_day[d])))):
                 continue
             prev_days = sorted(x for x in by_day if x < d)
             if not prev_days:
@@ -424,8 +453,8 @@ def render_page():
         exp = pnl / n if n else 0
         return (f'<div class="card"><h3>{title}</h3><div class="kv">'
                 f'<dt>Paper trades</dt><dd>{n}</dd>'
-                f'<dt>Wins / Losses</dt><dd><span class="win">{w}</span> / <span class="loss">{l}</span></dd>'
-                f'<dt>Win rate</dt><dd class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</dd>'
+                f'<dt>Above / below reference</dt><dd>{w} / {l}</dd>'
+                f'<dt>Share above reference (hypothetical)</dt><dd >{wr:.1f}%</dd>'
                 f'<dt>Net P&amp;L</dt><dd class="{("win" if pnl > 0 else "loss" if pnl < 0 else "")}">{money(pnl)}</dd>'
                 f'<dt>Expectancy</dt><dd>{money(exp)}</dd></div></div>')
 
@@ -453,9 +482,9 @@ def render_page():
         tot = sum(t["r_multiple"] or 0 for t in ts)
         wr = w / n * 100 if n else 0
         return (f'<div class="card"><h3>{title} (trigger)</h3><div class="kv">'
-                f'<dt>Signals</dt><dd>{n}</dd>'
-                f'<dt>Wins / Losses</dt><dd><span class="win">{w}</span> / <span class="loss">{l}</span></dd>'
-                f'<dt>Win rate</dt><dd class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</dd>'
+                f'<dt>Classified sessions</dt><dd>{n}</dd>'
+                f'<dt>Above / below reference</dt><dd>{w} / {l}</dd>'
+                f'<dt>Share above reference (hypothetical)</dt><dd >{wr:.1f}%</dd>'
                 f'<dt>Total R</dt><dd class="{("win" if tot > 0 else "loss" if tot < 0 else "")}">{tot:+.2f}R</dd>'
                 f'<dt>Avg R</dt><dd>{(tot / n if n else 0):+.3f}R</dd></div></div>')
 
@@ -463,10 +492,10 @@ def render_page():
         out = []
         for r in sorted(trigs, key=lambda x: (x["session_date"], x["instrument_id"]), reverse=True):
             if r["state"] == "SIGNAL":
-                d = "bull" if r["direction"] == "LONG" or r["direction"] == "BULL" else "bear"
+                d = ""
                 out.append(
                     f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td><td>SIGNAL</td>'
-                    f'<td class="{d}">{r["direction"]}</td><td>{r["level"] or ""}</td>'
+                    f'<td>{"Upward" if r["direction"] in ("BULL","LONG") else "Downward"}</td><td>{r["level"] or ""}</td>'
                     f'<td>{r["entry_price"]:.2f}</td><td>{r["exit_price"]:.2f}</td>'
                     f'<td class="{("win" if (r["r_multiple"] or 0) > 0 else "loss")}">{(r["r_multiple"] or 0):+.2f}R</td>'
                     f'<td>{r["exit_reason"]}</td></tr>')
@@ -484,9 +513,9 @@ def render_page():
         tot = sum(t["r_multiple"] or 0 for t in ts)
         wr = w / n * 100 if n else 0
         return (f'<div class="card"><h3>{title} (align)</h3><div class="kv">'
-                f'<dt>Signals</dt><dd>{n}</dd>'
-                f'<dt>Wins / Losses</dt><dd><span class="win">{w}</span> / <span class="loss">{l}</span></dd>'
-                f'<dt>Win rate</dt><dd class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</dd></div></div>')
+                f'<dt>Classified sessions</dt><dd>{n}</dd>'
+                f'<dt>Above / below reference</dt><dd>{w} / {l}</dd>'
+                f'<dt>Share above reference (hypothetical)</dt><dd >{wr:.1f}%</dd></div></div>')
 
     def align_ledger(inst=None):
         out = []
@@ -497,19 +526,19 @@ def render_page():
                  and (inst is None or x["instrument_id"] == inst)]
         for r in sorted(shown, key=lambda x: (x["session_date"], x["instrument_id"]), reverse=True):
             if r["state"] == "SIGNAL":
-                d = "bull" if r["direction"] == "BULL" else "bear"
+                d = ""
                 wl = (r.get("result") or "")
                 out.append(
-                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td><td>{r["variant"]}</td>'
-                    f'<td class="{d}">{r["direction"]}</td><td>{r["level"] or ""}</td>'
+                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td>'
+                    f'<td>{"Upward" if r["direction"] in ("BULL","LONG") else "Downward"}</td><td>{r["level"] or ""}</td>'
                     f'<td>{(r["entry_time"] or "")[11:16]}</td><td>{r["entry_price"]:.2f}</td>'
                     f'<td>{(r["exit_time"] or "")[11:16]}</td><td>{r["exit_price"]:.2f}</td>'
-                    f'<td class="{("win" if wl == "WIN" else "loss")}">{wl or "—"}</td>'
-                    f'<td>{(r["exit_reason"] or "").replace("EOD-1510", "EOD")}</td></tr>')
+                    f'<td>{"Above reference" if wl == "WIN" else ("Below reference" if wl == "LOSS" else "—")}</td>'
+                    f'<td>{(r["exit_reason"] or "").replace("EOD-1520", "EOD").replace("EOD-1510", "EOD")}</td></tr>')
             else:
                 out.append(
-                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td><td>{r["variant"]}</td>'
-                    f'<td class="bear">NO TRADE</td><td colspan="6">no trigger</td><td>-</td></tr>')
+                    f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td>'
+                    f'<td>No classified session</td><td colspan="6">no classified observation</td><td>-</td></tr>')
         return "\n".join(out)
 
     def ledger(inst):
@@ -570,7 +599,7 @@ def render_page():
                 f'<tr><td>{r["session_date"]}</td><td>{r["instrument_id"]}</td>'
                 f'<td>{r.get("strategy") or ""}</td><td>{r.get("expiry") or ""}</td>'
                 f'<td>{ltxt}</td><td>{r.get("state")}</td>'
-                f'<td>{(r.get("exit_reason") or "").replace("EOD-1510", "EOD")}</td></tr>')
+                f'<td>{(r.get("exit_reason") or "").replace("EOD-1520", "EOD").replace("EOD-1510", "EOD")}</td></tr>')
         return "\n".join(out)
 
     html = f"""<!DOCTYPE html>
@@ -586,19 +615,20 @@ def render_page():
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradingAI - Paper Trades</title>
+<title>Historical Model Observations (Hypothetical) | TradingAI.in</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/favicon-180.png">
-<meta name="description" content="Paper-traded CPR trigger signals and vertical-spread paper trading for NIFTY and BANKNIFTY, logged daily.">
+<meta name="description" content="A dated journal of hypothetical rule-based market observations for NIFTY and BANKNIFTY, recorded for study. Historical and hypothetical — not investment advice.">
 <link rel="canonical" href="https://tradingai.in/paper.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TradingAI.in">
 <meta property="og:url" content="https://tradingai.in/paper.html">
-<meta property="og:title" content="TradingAI - Paper Trades">
-<meta property="og:description" content="Paper-traded CPR trigger signals and vertical-spread paper trading for NIFTY and BANKNIFTY, logged daily.">
+<meta property="og:title" content="Historical Model Observations (Hypothetical) | TradingAI.in">
+<meta property="og:description" content="A dated journal of hypothetical rule-based market observations for NIFTY and BANKNIFTY, recorded for study. Historical and hypothetical — not investment advice.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="TradingAI - Paper Trades">
-<meta name="twitter:description" content="Paper-traded CPR trigger signals and vertical-spread paper trading for NIFTY and BANKNIFTY, logged daily.">
+<meta name="twitter:title" content="Historical Model Observations (Hypothetical) | TradingAI.in">
+<meta name="twitter:description" content="A dated journal of hypothetical rule-based market observations for NIFTY and BANKNIFTY, recorded for study. Historical and hypothetical — not investment advice.">
+<script type="application/ld+json">{{"@context": "https://schema.org", "@type": "WebPage", "name": "Historical Model Observations (Hypothetical) | TradingAI.in", "url": "https://tradingai.in/paper.html", "description": "A dated journal of hypothetical rule-based market observations for NIFTY and BANKNIFTY, recorded for study. Historical and hypothetical — not investment advice.", "isPartOf": {{"@type": "WebSite", "name": "TradingAI.in", "url": "https://tradingai.in/"}}}}</script>
 <style>
 *{{margin:0;padding:0;box-sizing:border-box}}
 body{{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5}}
@@ -628,68 +658,38 @@ footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padd
 </style>
 </head>
 <body>
-<div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Paper Trades</span></div></div>
-<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html">Backtest</a><a href="/methodology.html">Methodology</a><a href="/paper.html" class="active" aria-current="page">Paper</a></nav>
+<div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a></nav>
 <div class="wrap">
-<h1>Paper Trades <span class="exp">EXPERIMENTAL</span></h1>
-<p class="note">Snapshot rendered {datetime.now(_IST).strftime('%Y-%m-%d %H:%M')} IST — ledger rows are frozen history; live spreads above refresh every 60s.</p>
-<div class="ok"><h3>What this is</h3><p>One paper trade per day per instrument from the CPR trigger system (same math as the Backtest page): first trigger per session, entry at next open in [09:20,15:10), 0.5% stop / 2% target evaluated at subsequent opens, flat 15:10 open. Weekly-gated variant shown by default. Rows are frozen once logged. No real money. Informational only -- not financial advice.</p></div>
-<h2>Live Paper Spreads (verticals, auto-refresh)</h2>
-<div class="grid" id="liveSpreads"><div class="card"><h3>Live</h3><div class="kv"><dt>Status</dt><dd>Connecting…</dd></div></div></div>
-<h2>Spread Payoff at Expiry</h2>
-<div class="card"><p class="note">Payoff charts need live option premiums, currently unavailable — legs and expiries below are from the real strike grid; no P&amp;L is shown or implied.</p></div>
-<h2>CPR Align Paper (opens execution, weekly gate)</h2>
+<h1>Historical Model Observations <span class="exp">HYPOTHETICAL</span></h1>
+<p class="note">Snapshot rendered {datetime.now(_IST).strftime('%Y-%m-%d %H:%M')} IST — rows below are frozen historical records for study.</p>
+<div class="ok"><h3>What this is</h3><p>One hypothetical observation per day per instrument from the CPR classification system (same rules as the <a href="/backtest.html">historical scenario analysis</a>): first classified observation per session, reference observation at the next open in [09:20,15:20), assumed reference bounds 0.5% / 2% evaluated at subsequent opens, session reference close at the 15:20 open. Rows are frozen once recorded. No real money, no positions, no instructions — study material only.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/learn.html">learn</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+<h2>Spread structures studied (educational reference)</h2>
+<div class="card"><p class="note">Structures below were studied hypothetically in past sessions. Legs and expiries reference the strike grid at the time; no profit or loss is shown or implied, and nothing suggests using any structure on any day.</p></div>
+<h2>Recorded observations by session (hypothetical)</h2>
 <div class="grid">
 {align_card("NIFTY", [t for t in aligns if t["instrument_id"] == "NIFTY" and t["variant"] == "aligned"])}
 {align_card("BANKNIFTY", [t for t in aligns if t["instrument_id"] == "BANKNIFTY" and t["variant"] == "aligned"])}
 </div>
-<h2>NIFTY Align Ledger</h2>
-<table><thead><tr><th>Date</th><th>Instrument</th><th>Variant</th><th>Direction</th><th>Level</th><th>Entry Time</th><th>Entry Price</th><th>Exit Time</th><th>Exit Price</th><th>Win/Loss</th><th>Exit Reason</th></tr></thead>
+{FILTER_HTML}
+<h2>NIFTY observations journal</h2>
+<table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
 {align_ledger("NIFTY")}
 </tbody></table>
-<h2>BANKNIFTY Align Ledger</h2>
-<table><thead><tr><th>Date</th><th>Instrument</th><th>Variant</th><th>Direction</th><th>Level</th><th>Entry Time</th><th>Entry Price</th><th>Exit Time</th><th>Exit Price</th><th>Win/Loss</th><th>Exit Reason</th></tr></thead>
+<h2>BANKNIFTY observations journal</h2>
+<table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
 {align_ledger("BANKNIFTY")}
 </tbody></table>
-<h2>Paper Spreads Ledger</h2>
-<table><thead><tr><th>Date</th><th>Instrument</th><th>Strategy</th><th>Expiry</th><th>Legs</th><th>State</th><th>Exit Reason</th></tr></thead>
+<h2>Structures journal (hypothetical reference)</h2>
+<table><thead><tr><th>Date</th><th>Instrument</th><th>Structure studied</th><th>Reference expiry</th><th>Legs recorded</th><th>Record state</th><th>Session-close basis</th></tr></thead>
 <tbody>
 {spread_ledger()}
 </tbody></table>
 </div>
-<footer>TradingAI.in · Smarter Analysis. Disciplined Trading. · Paper feed is experimental. · <a href="/privacy.html" style="color:#94a3b8">Privacy</a> · <a href="/contact.html" style="color:#94a3b8">Contact</a> · <a href="/terms.html" style="color:#94a3b8">Terms</a> · <a href="/disclaimer.html" style="color:#94a3b8">Disclaimer</a></footer>
-<script>
-(function(){{
-function esc(s){{return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}}
-function fetchT(url,ms){{var c=new AbortController();var t=setTimeout(function(){{c.abort();}},ms||10000);return fetch(url,{{cache:'no-store',signal:c.signal}}).then(function(r){{clearTimeout(t);return r;}},function(e){{clearTimeout(t);throw e;}});}}
-async function loadLive(){{
-  var box=document.getElementById('liveSpreads');
-  try{{
-    var parts=await Promise.all(['NIFTY','BANKNIFTY'].map(function(inst){{
-      return fetchT('/api/paper/spread/today?instrument='+inst.toLowerCase(),10000).then(function(r){{
-        if(!r.ok)return '';
-        return r.json();
-      }}).then(function(j){{
-        if(!j)return '';
-        const d=j.data||{{}};
-        const tg=d.trigger||{{}}, sp=d.spread||{{}};
-        const legs=(sp.legs||[]).map(l=>esc(l.side)+' '+esc(l.type)+' '+esc(l.strike)).join(' / ')||'—';
-        return '<div class="card"><h3>'+inst+' live</h3><div class="kv">'
-          +'<dt>Signal</dt><dd>'+esc(tg.state||'—')+' '+(tg.direction?esc(tg.direction)+' '+esc(tg.level||''):'' )+'</dd>'
-          +'<dt>Strategy</dt><dd>'+esc(sp.strategy||'—')+'</dd>'
-          +'<dt>Expiry</dt><dd>'+esc(sp.expiry||'—')+'</dd>'
-          +'<dt>Legs</dt><dd>'+legs+'</dd></div></div>';
-      }}).catch(function(){{return '';}});
-    }}));
-    var cards=parts.join('');
-    if(cards)box.innerHTML=cards;
-  }}catch(e){{box.innerHTML='<div class="card"><h3>Live</h3><div class="kv"><dt>Status</dt><dd>Feed unreachable — retrying</dd></div></div>';}}
-}}
-loadLive();setInterval(loadLive,60000);
-}})();
-</script>
+<footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
+{FILTER_JS}
 </body>
 </html>"""
     with open(PAGE, "w") as f:
@@ -768,7 +768,7 @@ def refresh_backtest():
         dd = maxdd([float(t["net_pnl"]) for t in sorted(tr, key=lambda x: x["session_date"])])
         research.append(
             f'<tr><td><span class="pill normal">{st}</span></td><td>{raw.get(st, n)}</td><td>{n}</td><td>{w}</td><td>{l}</td>'
-            f'<td class="{"win" if wr >= 50 else "bear"}">{wr:.1f}%</td><td>{money(avg)}</td><td>{money(avg)}</td>'
+            f'<td >{wr:.1f}%</td><td>{money(avg)}</td><td>{money(avg)}</td>'
             f'<td>{pf}</td><td>{dd:,.0f}</td><td class="{("win" if pnl > 0 else "loss" if pnl < 0 else "")}">{money(pnl)}</td></tr>')
 
     mon = {}
@@ -786,7 +786,7 @@ def refresh_backtest():
         dd = maxdd([float(t["net_pnl"]) for t in sorted(ts, key=lambda x: x["session_date"])])
         monthly.append(
             f'<tr><td>{inst}</td><td>{ym}</td><td>{n}</td><td class="win">{w}</td><td class="loss">{l}</td>'
-            f'<td class="{"win" if wr >= 50 else "bear"}">{wr:.2f}%</td>'
+            f'<td >{wr:.2f}%</td>'
             f'<td class="{("win" if pnl > 0 else "loss" if pnl < 0 else "")}">{money(pnl)}</td><td>{dd:,.0f}</td></tr>')
 
     with open(BT_PAGE) as f:

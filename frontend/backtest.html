@@ -11,21 +11,21 @@
 </script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Backtest — TradingAI.in</title>
+<title>Historical Scenario Analysis — Hypothetical Backtest Explorer | TradingAI.in</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/favicon-180.png">
-<meta name="description" content="Run historical backtests on validated 5-minute data with no-lookahead checks.">
+<meta name="description" content="Explore hypothetical historical scenarios for NIFTY and BANKNIFTY rule-based classifications on stored 5-minute data. Historical results are hypothetical and do not predict future outcomes.">
 <link rel="canonical" href="https://tradingai.in/backtest.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TradingAI.in">
 <meta property="og:url" content="https://tradingai.in/backtest.html">
-<meta property="og:description" content="Run historical backtests on validated 5-minute data with no-lookahead checks.">
+<meta property="og:description" content="Explore hypothetical historical scenarios for NIFTY and BANKNIFTY rule-based classifications on stored 5-minute data. Historical results are hypothetical and do not predict future outcomes.">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:title" content="Backtest — TradingAI.in">
-<meta name="twitter:description" content="Run historical backtests on validated 5-minute data with no-lookahead checks.">
-<meta property="og:title" content="Backtest — TradingAI.in">
+<meta name="twitter:title" content="Historical Scenario Analysis — Hypothetical Backtest Explorer | TradingAI.in">
+<meta name="twitter:description" content="Explore hypothetical historical scenarios for NIFTY and BANKNIFTY rule-based classifications on stored 5-minute data. Historical results are hypothetical and do not predict future outcomes.">
+<meta property="og:title" content="Historical Scenario Analysis — Hypothetical Backtest Explorer | TradingAI.in">
 <style>
-.tg-join{background:#229ED9!important;color:#fff!important;padding:3px 14px!important;border-radius:20px!important;font-weight:700!important;border-bottom:none!important;animation:tgBlink 1.1s infinite!important;display:inline-block}nav.main a.tg-join:hover{color:#fff!important}@keyframes tgBlink{0%,100%{background:#229ED9;box-shadow:0 0 0 0 rgba(34,158,217,.7);transform:scale(1)}50%{background:#ff3b3b;box-shadow:0 0 12px 4px rgba(255,59,59,.8);transform:scale(1.06)}}
+
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5}
 .topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
@@ -46,26 +46,29 @@ th{color:#64748b}
 .note{font-size:.8rem;color:#475569;margin-top:.5rem}
 .ok{color:#15803d;font-weight:700}.bad{color:#b91c1c;font-weight:700}
 footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}
-</style>
+nav.main{align-items:center}nav.main a{background:#1e3a5f;color:#e2e8f0;text-decoration:none;padding:.45rem 1rem;border-radius:8px;border:1px solid #2d4a73;font-weight:600;display:inline-block}nav.main a:hover{background:#2563eb;border-color:#38bdf8;color:#fff}nav.main a.active{background:#2563eb;border-color:#38bdf8;color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.4)}.card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:16px;padding:1.4rem;box-shadow:0 4px 16px rgba(11,30,58,.08);transition:transform .2s ease,box-shadow .2s ease;position:relative;overflow:hidden}.card:hover{transform:translateY(-2px);box-shadow:0 8px 28px rgba(11,30,58,.14)}.card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2563eb,#38bdf8,#22d3ee)}.card h2{color:#0b1e3a;font-size:1.2rem;margin-bottom:.6rem;padding-bottom:.4rem;border-bottom:2px solid #e0f2fe}.card table{border-radius:10px;overflow:hidden;box-shadow:0 2px 8px rgba(11,30,58,.06)}.card th{background:linear-gradient(180deg,#eff6ff,#dbeafe);color:#1e3a8a}.card tbody tr:hover{background:#f0f9ff}.card:hover{transform:translateY(-4px);box-shadow:0 12px 32px rgba(37,99,235,.18);border-color:#93c5fd}.card:hover::before{height:6px}.card a{transition:color .2s ease}.card a:hover{color:#1d4ed8}table tbody tr{transition:background .15s ease}table tbody tr:hover{background:#eff6ff}.tool,.feature-card,.stat{transition:transform .2s ease,box-shadow .2s ease}.tool:hover,.feature-card:hover,.stat:hover{transform:translateY(-3px);box-shadow:0 8px 20px rgba(11,30,58,.12)}@media(max-width:768px){.wrap{padding:.7rem}nav.main{gap:.25rem;padding:.4rem .5rem;flex-wrap:wrap}nav.main a{order:2;flex:1 1 22%;min-width:0;padding:.5rem .1rem;font-size:clamp(.65rem,3.4vw,.9rem);font-weight:700;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.topbar{flex-direction:column;align-items:flex-start;gap:.3rem}h1{font-size:1.3rem}.card{padding:1rem;border-radius:12px}table{font-size:.75rem}th,td{padding:.3rem .4rem;white-space:normal;word-break:break-word}.px{order:1;flex:1 1 28%;min-width:0;font-size:.62rem;padding:.15rem .2rem;overflow:hidden}footer{font-size:.72rem}}</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebPage","name":"Historical Scenario Analysis — Hypothetical Backtest Explorer | TradingAI.in","url":"https://tradingai.in/backtest.html","description":"Historical backtest of the CPR model on validated 5-minute data. Hypothetical results; not a guarantee of future performance.","isPartOf":{"@type":"WebSite","name":"TradingAI.in","url":"https://tradingai.in/"}}</script>
 </head>
 <body>
-<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">CPR trigger backtest</h1>
-<div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Backtest</span></div></div>
-<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">Nifty</a><a href="/indices/banknifty.html">BankNifty</a><a href="/backtest.html" class="active" aria-current="page">Backtest</a><a href="/paper.html">Paper</a><a href="https://t.me/tradingai_cpr" target="_blank" rel="noopener" class="tg-join">🔔 Join Telegram</a></nav>
+<h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Historical Scenario Analysis — Hypothetical Backtest Explorer</h1>
+<div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Historical Analysis</span></div></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html" class="active" aria-current="page">Historical Analysis</a></nav>
 <div class="wrap">
-<section class="card"><h2>CPR Trigger Backtest</h2><p class="note">Base trigger strategy (Plain variant): bull on S2/S1/PDL touch or close above TC; bear on R2/R1/PDH touch or close below BC. Aligned adds the weekly-CPR gate and is the default view. First trigger per session, entry at next open in [09:20,15:10), 0.5% stop / 2% target evaluated at subsequent opens (stop first), flat 15:10 open. Sub-30pt (NIFTY) / sub-60pt (BANKNIFTY) adverse drifts count as decay wins. Read-only over stored candles; paper days append below as they accumulate.</p>
+<section class="card"><h2>Historical Scenario Analysis</h2><p class="note"><b>Historical/backtested results are hypothetical and do not guarantee future results. Actual option execution, premiums, liquidity, brokerage, slippage and market conditions can materially differ.</b> Underlying/index-based model backtest — not an actual historical option-premium P&amp;L record.</p><p class="note">Reference classification rules (Plain variant): sessions classified upward on S2/S1/PDL touch or close above TC, downward on R2/R1/PDH touch or close below BC; the aligned view adds the weekly-CPR gate. Assumed observation point: next open in [09:20,15:20); assumed reference bounds: 0.5% / 2% evaluated at subsequent opens; session reference close: 15:20 open. Small adverse drifts within tolerance (sub-30pt NIFTY / sub-60pt BANKNIFTY) are recorded per the decay methodology. Read-only over stored candles. These are analytical assumptions for study — not instructions.</p>
 <form id="f2"><label for="inst2">Instrument</label><select id="inst2"><option>NIFTY</option><option>BANKNIFTY</option></select>
 <label for="var2">Variant</label><select id="var2"><option value="aligned">Aligned (weekly CPR gate)</option><option value="plain">Plain (no filter)</option></select>
 <label for="ds2">From</label><input id="ds2" type="date" value="2026-07-29">
 <label for="de2">To</label><input id="de2" type="date" value="2026-09-25">
-<br><button id="go2" type="submit">Run CPR trigger backtest</button></form><p class="note" id="status2"></p></section>
-<section class="card" id="resCard2" hidden><h2>CPR Trigger Result</h2><div id="out2"></div>
-<h2 style="margin-top:1rem">By level</h2><div style="overflow-x:auto"><table id="bylvl"><thead><tr><th>Side/Level</th><th>Signals</th><th>Wins</th></tr></thead><tbody></tbody></table></div>
-<h2 style="margin-top:1rem">Trades</h2><div style="overflow-x:auto"><table id="trades2"><thead><tr><th>Date</th><th>Dir</th><th>Level</th><th>Entry time</th><th>Entry</th><th>Exit time</th><th>Exit</th><th>Points</th><th>Win/Loss</th><th>Exit reason</th></tr></thead><tbody></tbody></table></div></section>
+<br><button id="go2" type="submit">Explore historical scenarios</button></form><p class="note" id="status2"></p></section>
+<section class="card" id="resCard2" hidden><h2>Scenario outcomes (hypothetical)</h2><div id="out2"></div>
+<h2 style="margin-top:1rem">By level</h2><div style="overflow-x:auto"><table id="bylvl"><thead><tr><th>Side/Level</th><th>Classified sessions</th><th>Above reference</th></tr></thead><tbody></tbody></table></div>
+<p class="note">Reference outcomes below use the published decay methodology on underlying/index moves; see <a href="/methodology.html">methodology</a>. “Above reference” means the session closed beyond the assumed bound in the classified direction. Historical results do not predict future performance.</p><h2 style="margin-top:1rem">Historical Model Trades</h2><div style="overflow-x:auto"><table id="trades2"><thead><tr><th>Date</th><th>Classified direction</th><th>Level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Points vs reference</th><th>Reference outcome</th><th>Session close reason</th></tr></thead><tbody></tbody></table></div></section>
+<section class="card" aria-label="Related research"><h2>Related Research</h2><p class="note">Reproduce any historical run with the <a href="/free-backtesting-tool.html">free NIFTY &amp; BANKNIFTY backtesting tool</a>; the rules are documented in <a href="/methodology.html">model methodology</a>, live hypothetical fills accumulate in the <a href="/paper.html">historical model observations</a>, and spread structures are explained in <a href="/credit-spreads.html">credit spreads</a>.</p></section>
 </div>
-<footer>TradingAI.in · Smarter Analysis. Disciplined Trading. · <a href="/privacy.html" style="color:#94a3b8">Privacy</a> · <a href="/contact.html" style="color:#94a3b8">Contact</a> · <a href="/terms.html" style="color:#94a3b8">Terms</a> · <a href="/disclaimer.html" style="color:#94a3b8">Disclaimer</a></footer>
+<div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div><footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a><a href="/paper.html">Observations Journal</a><a href="/alerts.html">Alerts Archive</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
 <script>
 (function(){
+try{var tdy=new Date(new Date().toLocaleString('en-US',{timeZone:'Asia/Kolkata'}));var iso=tdy.getFullYear()+'-'+String(tdy.getMonth()+1).padStart(2,'0')+'-'+String(tdy.getDate()).padStart(2,'0');var de=document.getElementById('de2');if(de)de.value=iso;}catch(e){}
 function $(id){return document.getElementById(id);}
 function esc(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
 $('f2').addEventListener('submit',async function(e){
@@ -79,10 +82,10 @@ $('f2').addEventListener('submit',async function(e){
     $('resCard2').hidden=false;
     $('out2').innerHTML='<table><tbody>'
       +'<tr><th>Sessions</th><td>'+esc(d.days)+'</td></tr>'
-      +'<tr><th>Signals / No-signal days</th><td>'+esc(d.signals)+' / '+esc(d.no_signal_days)+'</td></tr>'
-      +'<tr><th>Wins / Losses</th><td>'+esc(d.wins)+' / '+esc(d.losses)+'</td></tr>'
-      +'<tr><th>Win rate</th><td>'+esc(d.win_rate)+'%</td></tr></tbody></table>'
-      +(d.signals===0?'<p class="note">No triggers in range — no stored sessions matched. Honest empty result.</p>':'');
+      +'<tr><th>Classified / unclassified sessions</th><td>'+esc(d.signals)+' / '+esc(d.no_signal_days)+'</td></tr>'
+      +'<tr><th>Above / below reference</th><td>'+esc(d.wins)+' / '+esc(d.losses)+'</td></tr>'
+      +'<tr><th>Share above reference (hypothetical; not a success rate)</th><td>'+esc(d.win_rate)+'%</td></tr></tbody></table>'
+      +(d.signals===0?'<p class="note">No classified sessions in range — no stored sessions matched these filters. Try widening the date range or choosing fewer filters.</p>':'');
     var tb=$('bylvl').querySelector('tbody');tb.innerHTML='';
     Object.keys(d.by_level||{}).sort().forEach(function(k){
       var v=d.by_level[k],tr=document.createElement('tr');
@@ -92,19 +95,20 @@ $('f2').addEventListener('submit',async function(e){
     var tb2=$('trades2').querySelector('tbody');tb2.innerHTML='';
     function trow(t,paper){
       var tr=document.createElement('tr');
-      var en=(t.entry!=null?t.entry:t.entry_price), ex=(t.exit!=null?t.exit:t.exit_price);
-      var pts=(t.points!=null?t.points:((en!=null&&ex!=null)?(t.direction=='BULL'?(ex-en):(en-ex)):null));
-      var wl=(t.win_loss||(t.r_multiple==null?'—':(t.r_multiple>0?'WIN':(t.r_multiple<0?'LOSS':'FLAT'))));
-      [(t.trade_date||''),(t.direction||''),(t.level||''),(t.entry_time||'').slice(11,16),(en==null?'—':en),(t.exit_time||'').slice(11,16),(ex==null?'—':ex),(pts==null?'—':((pts>0?'+':'')+num(pts))),wl,String(t.exit_reason||'').replace('EOD-1510','EOD')].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
-      var pill=tr.childNodes[9];pill.className=(wl==='WIN'?'ok':(wl==='LOSS'?'bad':''));
+      var ob=(t.entry!=null?t.entry:t.entry_price), cx=(t.exit!=null?t.exit:t.exit_price);
+      var pts=(t.points!=null?t.points:((ob!=null&&cx!=null)?(t.direction=='BULL'?(cx-ob):(ob-cx)):null));
+      var raw=(t.win_loss||(t.r_multiple==null?'—':(t.r_multiple>0?'WIN':(t.r_multiple<0?'LOSS':'FLAT'))));
+      var wl=(raw==='WIN'?'Above reference':(raw==='LOSS'?'Below reference':(raw==='FLAT'?'Within tolerance':'—')));
+      [(t.trade_date||''),(t.direction||''),(t.level||''),(t.entry_time||'').slice(11,16),(ob==null?'—':ob),(t.exit_time||'').slice(11,16),(cx==null?'—':cx),(pts==null?'—':((pts>0?'+':'')+num(pts))),wl,String(t.exit_reason||'').replace('EOD-1520','EOD').replace('EOD-1510','EOD')].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+      var pill=tr.childNodes[9];pill.className=(wl==='Above reference'?'ok':(wl==='Below reference'?'bad':''));
       if(paper){tr.style.background='#eff6ff';}
       tb2.appendChild(tr);}
     (d.paper_trades||[]).slice().reverse().forEach(function(t){trow(t,true);});
     (d.trades||[]).slice().reverse().forEach(function(t){trow(t,false);});
-    if(!(d.trades||[]).length&&!(d.paper_trades||[]).length){tb2.innerHTML='<tr><td colspan="10">No trades.</td></tr>';}
-    else if(d.paper_appended){$('status2').textContent+=' + '+d.paper_appended+' paper day(s) appended';}
-    $('status2').textContent='Completed '+d.instrument+' '+(d.variant||'')+' '+d.date_start+' → '+d.date_end;
-  }catch(err){$('status2').textContent='CPR trigger backtest unavailable ('+err.message+').';}
+    if(!(d.trades||[]).length&&!(d.paper_trades||[]).length){tb2.innerHTML='<tr><td colspan="10">No classified sessions in range.</td></tr>';}
+    else if(d.paper_appended){$('status2').textContent+=' + '+d.paper_appended+' recorded observation day(s) included';}
+    $('status2').textContent='Completed '+d.instrument+' '+(d.variant||'')+' '+d.date_start+' → '+d.date_end;try{var mx='';(d.trades||[]).concat(d.paper_trades||[]).forEach(function(t){var s=t.trade_date||t.session_date||t.date||String(t.signal_time||t.entry_time||'').slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(s)&&s>mx)mx=s;});if(mx)document.getElementById('de2').value=mx;}catch(e){}
+  }catch(err){$('status2').textContent='Historical scenarios unavailable ('+err.message+').';}
   go.disabled=false;
 });
 })();
