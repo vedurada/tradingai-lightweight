@@ -1,0 +1,103 @@
+{
+ "fired": [
+  "2026-09-28|NIFTY|BEAR|22949.5",
+  "2026-09-28|BANKNIFTY|BEAR|54941.4",
+  "2026-09-29|NIFTY|BEAR|22683.75",
+  "2026-09-29|BANKNIFTY|BEAR|54245.6",
+  "2026-09-30|BANKNIFTY|BEAR|54431.4",
+  "2026-09-30|NIFTY|BEAR|22754.8",
+  "2026-10-01|NIFTY|BEAR|22556.05",
+  "2026-10-01|BANKNIFTY|BEAR|54494.8"
+ ],
+ "open": {},
+ "closed": [
+  {
+   "inst": "NIFTY",
+   "sym": "nifty",
+   "direction": "BEAR",
+   "entry": 22949.5,
+   "exit": 22784.0,
+   "reason": "EOD-FLAT",
+   "points": 165.5,
+   "strategy": "Bear Call Spread",
+   "date": "2026-09-28"
+  },
+  {
+   "inst": "BANKNIFTY",
+   "sym": "banknifty",
+   "direction": "BEAR",
+   "entry": 54941.4,
+   "exit": 54478.8515625,
+   "reason": "EOD-FLAT",
+   "points": 462.55,
+   "strategy": "Bear Call Spread",
+   "date": "2026-09-28"
+  },
+  {
+   "inst": "NIFTY",
+   "sym": "nifty",
+   "direction": "BEAR",
+   "entry": 22683.75,
+   "exit": 22716.19921875,
+   "reason": "EOD-FLAT",
+   "points": -32.44921875,
+   "strategy": "Bear Call Spread",
+   "date": "2026-09-29"
+  },
+  {
+   "inst": "BANKNIFTY",
+   "sym": "banknifty",
+   "direction": "BEAR",
+   "entry": 54245.6,
+   "exit": 54259.94921875,
+   "reason": "EOD-FLAT",
+   "points": -14.349218750001455,
+   "strategy": "Bear Call Spread",
+   "date": "2026-09-29"
+  },
+  {
+   "inst": "BANKNIFTY",
+   "sym": "banknifty",
+   "direction": "BEAR",
+   "entry": 54431.4,
+   "exit": 54720.05078125,
+   "reason": "STOP",
+   "points": -288.65078124999854,
+   "strategy": "Bear Call Spread",
+   "date": "2026-09-30"
+  },
+  {
+   "inst": "NIFTY",
+   "sym": "nifty",
+   "direction": "BEAR",
+   "entry": 22754.8,
+   "exit": 22614.30078125,
+   "reason": "EOD EXIT",
+   "points": 140.49921874999927,
+   "strategy": "Bear Call Spread",
+   "date": "2026-09-30"
+  },
+  {
+   "inst": "NIFTY",
+   "sym": "nifty",
+   "direction": "BEAR",
+   "entry": 22556.05,
+   "exit": 22445.599609375,
+   "reason": "EOD EXIT",
+   "points": 110.45039062499927,
+   "strategy": "Bear Call Spread",
+   "date": "2026-10-01"
+  },
+  {
+   "inst": "BANKNIFTY",
+   "sym": "banknifty",
+   "direction": "BEAR",
+   "entry": 54494.8,
+   "exit": 54565.1015625,
+   "reason": "EOD EXIT",
+   "points": -70.30156249999709,
+   "strategy": "Bear Call Spread",
+   "date": "2026-10-01"
+  }
+ ]
+}

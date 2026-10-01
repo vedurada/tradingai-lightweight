@@ -323,7 +323,7 @@ def do_watch():
         except Exception:
             _datetxt = today
         try:
-            _hm = str(_tr.get('signal_time') or _tr.get('entry_time') or '')[11:16]
+            _hm = str(_tr.get('entry_time') or _tr.get('signal_time') or t.get('entry_time') or t.get('signal_time') or '')[11:16]
             _hh, _mm = _hm.split(':')
             _H = int(_hh); _ap = 'PM' if _H >= 12 else 'AM'
             _h12 = _H % 12 or 12
@@ -385,26 +385,19 @@ def do_watch():
             _pts_txt = f"{_pts:+,.2f} pts"
         except (TypeError, ValueError):
             _pts_txt = '—'
-        if reason == 'STOP':
-            headline = 'Model Status: CLOSED — STOP LOSS HIT'
-            why = ('Model SL: ' + fmt(o.get('stop'))
-                   + ' (reference level reached before the session boundary)')
-        elif reason == 'EOD EXIT':
-            headline = 'Model Status: CLOSED — EOD EXIT'
-            why = ('Session boundary 15:15 IST reached with the model record still active; '
-                   'closed at the session close reference')
-        else:
-            headline = f'Model Status: CLOSED — {reason}'
-            why = f'Record closed by the model at the {reason} reference'
-        text = (f"TRADINGAI MODEL UPDATE\nInstrument: {o['inst']}\n"
-                f"{headline}\n{why}\n"
-                f"Model Outcome: {reason} vs Model Trigger {fmt(o.get('entry'))}\n"
-                f"Exit Reference: {fmt((d or {}).get('price'))}\n"
-                f"Points: {_pts_txt}\n"
-                f"Model Strategy Structure: {o.get('strategy') or '—'}\n"
-                f"Alert archive: https://tradingai.in/alerts.html\n" +
-                f"\nHypothetical/model output for research purposes. Not personalised investment advice.")
-        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text, 'reply_markup': NAV_MARKUP})
+        try:
+            _dp = str(today).split('-')
+            _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+            _datetxt = f"{_dp[2]} {_months[int(_dp[1])-1]} {_dp[0]}" if len(_dp) == 3 else today
+        except Exception:
+            _datetxt = today
+        text = (f"{o['inst']}\n{_datetxt}\n"
+                f"Direction: {(o.get('direction') or '').upper() or '—'}\n"
+                f"Entry (ref): {fmt(o.get('entry'))}\n"
+                f"Exit (ref): {fmt((d or {}).get('price'))}\n"
+                f"Result: {reason} ({_pts_txt})\n"
+                f"{o.get('strategy') or '—'}")
+        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
         st['open'].pop(key, None)
         try:
             _exit_f = float((d or {}).get('price'))
@@ -446,24 +439,26 @@ def do_eod():
             recs.append({'inst': o.get('inst'), 'direction': o.get('direction'),
                          'entry': o.get('entry'), 'exit': None, 'reason': 'OPEN',
                          'points': None, 'strategy': o.get('strategy')})
-    parts = []
-    for sym, inst in (('nifty', 'NIFTY'), ('banknifty', 'BANKNIFTY')):
-        mine = [c for c in recs if c.get('inst') == inst]
-        if mine:
-            for c in mine:
-                parts.append(f"{inst} ({c.get('direction') or '—'}): {c.get('reason')} "
-                             f"Entry {fmt(c.get('entry'))} → Exit {fmt(c.get('exit'))} "
-                             f"({_fmt_pts(c.get('points'))}) [{c.get('strategy') or '—'}]")
-        else:
-            try:
-                d = api(f'/api/decision/{sym}')
-                parts.append(f"{inst}: NO MODEL TRADE today ({d.get('session') or ''})")
-            except Exception:
-                parts.append(f'{inst}: feed unreachable')
-    text = (f"🔔 TRADINGAI MODEL EOD {now.strftime('%a %d %b').upper()}\n" + '\n'.join(parts)
-            + '\nFull hypothetical ledger → https://tradingai.in/paper.html'
-            + '\nPosted win or lose. Hypothetical/model output for research purposes. Not personalised investment advice.')
-    r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text, 'reply_markup': NAV_MARKUP})
+    if not recs:
+        recs = [{'inst': 'NO MODEL TRADE today', 'direction': '—',
+                 'entry': None, 'exit': None, 'reason': '', 'points': None, 'strategy': ''}]
+    try:
+        _dp = str(today).split('-')
+        _months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec']
+        _datetxt = f"{_dp[2]} {_months[int(_dp[1])-1]} {_dp[0]}" if len(_dp) == 3 else today
+    except Exception:
+        _datetxt = today
+    crisp = []
+    for c in recs:
+        crisp.append(f"{c.get('inst')}\nDirection: {(c.get('direction') or '').upper() or '—'}\n"
+                     f"Entry (ref): {fmt(c.get('entry'))}\n"
+                     f"Exit (ref): {fmt(c.get('exit'))}\n"
+                     f"Result: {c.get('reason')} ({_fmt_pts(c.get('points'))})\n"
+                     f"{c.get('strategy') or '—'}")
+    if not crisp:
+        crisp = ['NO MODEL TRADE today']
+    text = (f"EOD\n{_datetxt}\n\n" + "\n\n".join(crisp))
+    r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
     if r.get('ok'):
         log_alert({'type': 'eod', 'inst': 'NIFTY + BANKNIFTY',
                    'explanation': 'Daily recap of every model record closed in the session '

@@ -1,0 +1,35 @@
+signal sent for 2026-09-30|BANKNIFTY|BEAR|54431.4
+Traceback (most recent call last):
+  File "/opt/tradingai/scripts/build_alerts_page.py", line 318, in <module>
+    out, n = build()
+  File "/opt/tradingai/scripts/build_alerts_page.py", line 305, in build
+    fd, tmp = tempfile.mkstemp(dir=d, prefix='.alerts-', suffix='.html')
+  File "/usr/lib/python3.10/tempfile.py", line 496, in mkstemp
+    return _mkstemp_inner(dir, prefix, suffix, flags, output_type)
+  File "/usr/lib/python3.10/tempfile.py", line 395, in _mkstemp_inner
+    fd = _os.open(file, flags, 0o600)
+PermissionError: [Errno 13] Permission denied: '/opt/tradingai/frontend/.alerts-qavnf1zm.html'
+exit sent for 2026-09-30|BANKNIFTY|BEAR|54431.4: STOP ok=True
+signal sent for 2026-09-30|NIFTY|BEAR|22754.8
+Traceback (most recent call last):
+  File "/opt/tradingai/scripts/build_alerts_page.py", line 318, in <module>
+    out, n = build()
+  File "/opt/tradingai/scripts/build_alerts_page.py", line 305, in build
+    fd, tmp = tempfile.mkstemp(dir=d, prefix='.alerts-', suffix='.html')
+  File "/usr/lib/python3.10/tempfile.py", line 496, in mkstemp
+    return _mkstemp_inner(dir, prefix, suffix, flags, output_type)
+  File "/usr/lib/python3.10/tempfile.py", line 395, in _mkstemp_inner
+    fd = _os.open(file, flags, 0o600)
+PermissionError: [Errno 13] Permission denied: '/opt/tradingai/frontend/.alerts-n669t4i5.html'
+exit sent for 2026-09-30|NIFTY|BEAR|22754.8: EOD EXIT ok=True
+Traceback (most recent call last):
+  File "/opt/tradingai/scripts/build_alerts_page.py", line 318, in <module>
+    out, n = build()
+  File "/opt/tradingai/scripts/build_alerts_page.py", line 305, in build
+    fd, tmp = tempfile.mkstemp(dir=d, prefix='.alerts-', suffix='.html')
+  File "/usr/lib/python3.10/tempfile.py", line 496, in mkstemp
+    return _mkstemp_inner(dir, prefix, suffix, flags, output_type)
+  File "/usr/lib/python3.10/tempfile.py", line 395, in _mkstemp_inner
+    fd = _os.open(file, flags, 0o600)
+PermissionError: [Errno 13] Permission denied: '/opt/tradingai/frontend/.alerts-u8gc863l.html'
+eod sent: True

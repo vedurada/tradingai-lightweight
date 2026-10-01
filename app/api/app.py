@@ -184,6 +184,33 @@ def candles(symbol):
     completed = completed_candle_ts(now_ist)
     res = market.get_5m_candles(mapping[inst])
     if res.get("state") != "LIVE" or completed is None:
+        # Fallback: most recent stored session candles (post-close / feed gap).
+        try:
+            _n = int(request.args.get("n", 12))
+        except (TypeError, ValueError):
+            _n = 12
+        _n = max(1, min(80, _n))
+        _conn = get_conn()
+        try:
+            _rows = _conn.execute(
+                'SELECT timestamp, open, high, low, close, volume FROM market_candles_5m '
+                'WHERE instrument_id=? ORDER BY timestamp DESC LIMIT ?', (inst, _n)).fetchall()
+        finally:
+            try:
+                _conn.close()
+            except Exception:
+                pass
+        _candles = [{"timestamp": str(r["timestamp"]), "open": r["open"], "high": r["high"],
+                     "low": r["low"], "close": r["close"], "volume": r["volume"],
+                     "is_complete": True} for r in reversed(list(_rows))]
+        if _candles:
+            return jsonify({"state": "LIVE", "timestamp": now_ist.isoformat(),
+                            "data": {"instrument": inst, "candles": _candles,
+                                     "count": len(_candles),
+                                     "completed_candle": completed.isoformat() if completed else None,
+                                     "forming_excluded": True,
+                                     "data_ts": _candles[-1]["timestamp"],
+                                     "reasons": ["DB_FALLBACK_LAST_SESSION"]}})
         return jsonify({"state": "NO_DATA", "timestamp": now_ist.isoformat(),
                         "data": {"instrument": inst, "candles": [],
                                  "reasons": ["NO_COMPLETED_CANDLES"],
@@ -794,6 +821,47 @@ def alerts_status():
     return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
                     "data": {"date": today, "open": open_today,
                              "closed": closed_today, "fired": fired_today}})
+
+
+@app.route("/api/market/holidays", methods=["GET"])
+@limiter.limit("30 per minute")
+def market_holidays():
+    """Read-only NSE session info: today open/closed, timings, 2026 holidays.
+
+    Powers the 'is the market open today' page. Weekends/holidays/after-close
+    reported factually from the encoded calendar; no trading content."""
+    from app.market import nse_calendar as _cal
+    from datetime import date as _date
+    today = datetime.now(_IST).date()
+    hn = _cal.holiday_name(today)
+    wknd = _cal.is_weekend(today)
+    now_t = datetime.now(_IST).time()
+    past_close = now_t >= datetime.strptime("15:30", "%H:%M").time()
+    pre_open = now_t < datetime.strptime("09:15", "%H:%M").time()
+    if wknd:
+        status, reason = "CLOSED", "Weekend (Saturday/Sunday are never NSE sessions)"
+    elif hn:
+        status, reason = "CLOSED", f"NSE holiday: {hn}"
+    elif past_close:
+        status, reason = "CLOSED", "Regular session ended at 15:30 IST"
+    elif pre_open:
+        status, reason = "PREMARKET", "Regular session opens at 09:15 IST"
+    else:
+        status, reason = "OPEN", "Regular session 09:15-15:30 IST is underway"
+    upcoming = []
+    try:
+        names = _cal._HOLIDAY_NAMES_2026
+        for ds in sorted(_cal.NSE_HOLIDAYS_2026):
+            if ds >= today.isoformat():
+                upcoming.append({"date": ds, "name": names.get(ds, "NSE holiday")})
+    except Exception:
+        upcoming = []
+    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
+                    "data": {"date": today.isoformat(), "status": status, "reason": reason,
+                             "session": "09:15-15:30 IST (Mon-Fri)",
+                             "premarket": "09:00-09:15 IST call auction",
+                             "upcoming_holidays": upcoming,
+                             "calendar_coverage": "2026 (NSE circular CMTR71775)"}})
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)

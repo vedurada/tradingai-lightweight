@@ -6,8 +6,8 @@ First trigger per session wins.
 
 Two executions (run_opens_* = approved spec; legacy close/intrabar kept for
 run_range/today_state/log_trigger history):
-- opens: entry at next candle OPEN in [09:20, 15:10); stops/targets evaluated
-  at subsequent opens (stop first); flat at 15:10 OPEN. Days <10 candles skipped.
+- opens: entry at next candle OPEN in [09:20, 15:20); stops/targets evaluated
+  at subsequent opens (stop first); flat at 15:20 OPEN. Days <10 candles skipped.
 - variant 'aligned': bull signal needs close above WEEKLY TC, bear needs close
   below WEEKLY BC (weekly CPR over prior 5 sessions).
 
@@ -349,8 +349,8 @@ def decay_win(direction, entry, exit_px, r_multiple, instrument):
         return None
 
 OPEN_MIN = '09:20'
-OPEN_MAX = '15:10'
-OPEN_EOD = '15:10'
+OPEN_MAX = '15:20'
+OPEN_EOD = '15:20'
 MIN_CANDLES = 10
 
 
@@ -440,15 +440,15 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
     """Approved-spec backtest: opens execution + optional weekly alignment.
 
     Rules (all deliberate, see boundaries below):
-    - signal: first trigger/session over candles < 15:15; BEAR checked before
+    - signal: first trigger/session over candles < 15:25; BEAR checked before
       BULL, so a same-candle double-touch counts BEAR. Within a side the
       first listed level wins (S2>S1>PDL>ABOVE_CPR; R2>R1>PDH>BELOW_CPR),
       so PDL/PDH only fire when S1/R1 did not.
-    - entry: next candle OPEN in [09:20, 15:10); later signals that day ignored.
+    - entry: next candle OPEN in [09:20, 15:20); later signals that day ignored.
     - exits: subsequent OPENS only; an open exactly on stop counts STOP;
       an open exactly on target counts TARGET; stop checked before target;
-      a stop exactly at the 15:10 open labels STOP (not EOD).
-    - flat: 15:10 OPEN. Missing 15:10 candle -> missing_eod (not a signal).
+      a stop exactly at the 15:20 open labels STOP (not EOD).
+    - flat: 15:20 OPEN. Missing 15:20 candle -> missing_eod (not a signal).
     - decay: |adverse points| < tolerance (NIFTY 30 / BANKNIFTY 60 /
       INDIA_VIX 0.02, ~0.11-0.17% of price) labels WIN; exactly at tolerance
       stays LOSS. Spot R is never rewritten.
@@ -487,7 +487,7 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
                 skipped['gate_missing'] += 1
                 continue
             candles = [c for c in session_candles(conn, inst, d)
-                       if c['timestamp'][11:16] < '15:15']
+                       if c['timestamp'][11:16] < '15:25']
             if len(candles) < MIN_CANDLES:
                 skipped['short_day'] += 1
                 continue
@@ -533,7 +533,7 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
                 risk = abs(entry * stop_pct)
                 move = (last - entry) if dr == 'BULL' else (entry - last)
                 r = round(move / risk, 3) if risk else 0.0
-                xp, how, xt = round(last, 2), 'EOD-1510', eod[0]['timestamp']
+                xp, how, xt = round(last, 2), 'EOD-1520', eod[0]['timestamp']
             else:
                 r, xp, how, xt = hit
             pts = round((xp - entry) if dr == 'BULL' else (entry - xp), 1)

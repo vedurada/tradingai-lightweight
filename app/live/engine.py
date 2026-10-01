@@ -27,7 +27,7 @@ Rules:
   shared across gunicorn workers; dry-run mode uses in-memory locks only.
 - Structured logging: one line per evaluation state CHANGE per instrument
   (plus every error state), so 30s browser polls do not spam logs.
-- Book math: next-open entry in [09:20, 15:10), 0.5% stop / 2% target, flat 15:10 open.
+- Book math: next-open entry in [09:20, 15:20), 0.5% stop / 2% target, flat 15:20 open.
 """
 import logging
 from datetime import datetime, time, timedelta

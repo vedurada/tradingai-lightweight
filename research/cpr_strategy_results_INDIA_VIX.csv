@@ -1,2 +1,2 @@
 strategy,qualifying_setups,executed_trades,wins,losses,win_rate,avg_trade,expectancy,profit_factor,max_dd,net_pnl,return_pct
-PIVOT_BOUNCE,0,27,18,9,66.67,5.96,5.96,N/A,0,161.0,0.16
+PIVOT_BOUNCE,0,23,11,12,47.83,-1.66,-1.66,N/A,0,-38.13,-0.04

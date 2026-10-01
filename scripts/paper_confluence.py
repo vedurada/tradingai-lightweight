@@ -656,6 +656,7 @@ td{{padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;font-variant-numeric:ta
 .pill.normal{{background:#f8fafc;color:#334155;border:1px solid #e2e8f0}}
 footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}}
 </style>
+<link rel="stylesheet" href="/tradingai-share.css?v=3">
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
@@ -690,6 +691,7 @@ footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padd
 </div>
 <footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
 {FILTER_JS}
+<script src="/tradingai-share.js?v=3" defer></script>
 </body>
 </html>"""
     with open(PAGE, "w") as f:

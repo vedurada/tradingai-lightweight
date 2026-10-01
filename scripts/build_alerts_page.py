@@ -157,6 +157,98 @@ def rows(ctx):
     return ''.join(out)
 
 
+def _fmt_num(x):
+    try:
+        return '{:,.2f}'.format(float(str(x).replace(',', '')))
+    except (ValueError, TypeError):
+        return None
+
+
+def why_direction(r, ctx):
+    """Plain-language rationale for the classified direction.
+
+    Presentation only: every sentence is built from fields already stored on
+    the record (trigger, position, CPR zone, VWAP, engine reasons). It adds no
+    new discretion and changes no trading logic.
+    """
+    direction = (ctx.get('direction') or '').upper()
+    trig = _fmt_num(ctx.get('trigger'))
+    if direction not in ('BEAR', 'BULL') or not trig:
+        return None
+    inst = r.get('inst') or 'the index'
+    pos = (ctx.get('price_position') or '').upper()
+    cpr_type = (ctx.get('cpr_type') or '').strip().upper()
+    vwap = (ctx.get('vwap_relation') or '').upper()
+    inv = _fmt_num(ctx.get('invalidation'))
+    strat = ctx.get('strategy') or ('Bear Call Spread' if direction == 'BEAR' else 'Bull Put Spread')
+    expl = r.get('explanation') or ''
+    qt = ''
+    m = re.search(r'T(\d{2}:\d{2})', ctx.get('quote_timestamp') or '')
+    if m:
+        qt = 'At %s IST, ' % m.group(1)
+    bc = tc = None
+    m = re.search(r'CPR\s*([0-9,.]+)\s*[\u2013\u2014\-]\s*([0-9,.]+)', ctx.get('structure') or '')
+    if m:
+        bc, tc = _fmt_num(m.group(1)), _fmt_num(m.group(2))
+    trig_name = ''
+    m = re.search(r'CPR trigger\s+([A-Z0-9_]+)', expl)
+    if m and m.group(1) not in ('BELOW_CPR', 'ABOVE_CPR'):
+        trig_name = m.group(1).replace('_', ' ')
+    width = (' %s-width' % cpr_type.lower()) if cpr_type and cpr_type != '\u2014' else ''
+    zone = ''
+    if bc and tc:
+        zone = ' (CPR %s\u2013%s)' % (bc, tc)
+
+    if direction == 'BEAR':
+        if pos == 'BELOW_BC' and bc:
+            core = ('%s%s stood at %s, below its CPR support zone%s%s. Under the published rules, '
+                    'a 5-minute close below the lower CPR boundary (bottom central %s) classifies the '
+                    'session downward-leaning (BEAR).'
+                    % (qt, esc(inst), trig, zone, width, bc))
+        elif pos == 'ABOVE_TC' and tc:
+            at = ' near the %s resistance zone' % esc(trig_name) if trig_name else ''
+            core = ('%s%s stood at %s, above its CPR top (top central %s)%s%s. The candle\u2019s touch of '
+                    'that resistance met the published downward-leaning trigger, so the session classified '
+                    'BEAR despite trading above the CPR.'
+                    % (qt, esc(inst), trig, tc, at, zone))
+        else:
+            core = ('%s%s stood at %s%s%s. Combined with the remaining published inputs, the rules '
+                    'classified the session downward-leaning (BEAR).'
+                    % (qt, esc(inst), trig, zone, width))
+        if vwap == 'BELOW':
+            core += ' Price was also below VWAP at the time, aligned with the classification.'
+        elif vwap == 'ABOVE':
+            core += ' Price held above VWAP at the time; the classification followed the CPR trigger.'
+    else:
+        if pos == 'ABOVE_TC' and tc:
+            core = ('%s%s stood at %s, above its CPR resistance zone%s%s. Under the published rules, '
+                    'a 5-minute close above the upper CPR boundary (top central %s) classifies the '
+                    'session upward-leaning (BULL).'
+                    % (qt, esc(inst), trig, zone, width, tc))
+        elif pos == 'BELOW_BC' and bc:
+            at = ' near the %s support zone' % esc(trig_name) if trig_name else ''
+            core = ('%s%s stood at %s, below its CPR bottom (bottom central %s)%s%s. The candle\u2019s touch of '
+                    'that support met the published upward-leaning trigger, so the session classified '
+                    'BULL despite trading below the CPR.'
+                    % (qt, esc(inst), trig, bc, at, zone))
+        else:
+            core = ('%s%s stood at %s%s%s. Combined with the remaining published inputs, the rules '
+                    'classified the session upward-leaning (BULL).'
+                    % (qt, esc(inst), trig, zone, width))
+        if vwap == 'ABOVE':
+            core += ' Price was also above VWAP at the time, aligned with the classification.'
+        elif vwap == 'BELOW':
+            core += ' Price held below VWAP at the time; the classification followed the CPR trigger.'
+    if 'WEEKLY_GATE_PASS' in expl:
+        core += ' The weekly trend gate was also aligned.'
+    levels = ' Reference trigger %s.' % trig
+    if inv:
+        levels += ' Invalidation level %s.' % inv
+    return ('%s The record is expressed for study as a %s.%s Full rules: '
+            '<a href="/methodology.html">methodology</a>, <a href="/signal-flow.html">signal flow</a>.'
+            % (core, esc(strat), levels))
+
+
 def record_card(r, outcome):
     ctx = r.get('ctx') or {}
     rtype = r.get('type')
@@ -187,6 +279,10 @@ def record_card(r, outcome):
         expl = re.sub(r'Reference invalidation', 'SL', expl)
     if expl:
         parts.append('<p class="note"><b>Explanation recorded at the time:</b> %s</p>' % clean(expl))
+    if rtype in ('signal', 'update') and r.get('source') != 'ledger-backfill':
+        why = why_direction(r, ctx)
+        if why:
+            parts.append('<p class="note"><b>Why this direction:</b> %s</p>' % why)
     if outcome:
         parts.append('<p class="note"><b>Outcome recorded:</b> %s &mdash; exit reference %s (%s).</p>'
                      % (clean(outcome.get('reason')), clean(outcome.get('exit')),
@@ -275,7 +371,7 @@ def build():
             ' at the time. Historical observations published win or lose.">'
             '<meta name="twitter:card" content="summary">'
             '<script type="application/ld+json">%s</script>'
-            '<style>%s</style></head><body>'
+            '<style>%s</style><link rel="stylesheet" href="/tradingai-share.css?v=3"></head><body>'
             '<div class="topbar"><span class="brand">TradingAI<span class="dot">.in</span></span>'
             '<span class="tagline">Model alerts archive</span></div>%s<div class="wrap">'
             '<h1>Model alerts archive</h1>'
@@ -293,7 +389,7 @@ def build():
             ' record was closed at the session boundary. All figures are model references, not fills, and include no'
             ' costs. Rules and assumptions are documented in the <a href="/methodology.html">model methodology</a>;'
             ' the longer observation ledger is on the <a href="/paper.html">observations journal</a>.</p></details>'
-            '<div class="notice">%s</div></div>%s</body></html>'
+             '<div class="notice">%s</div></div>%s<script src="/tradingai-share.js?v=3" defer></script></body></html>'
             % (title, title,
                json.dumps({"@context": "https://schema.org", "@type": "WebPage",
                            "name": "Model Alerts Archive — Daily Records, Exits & Outcomes",
