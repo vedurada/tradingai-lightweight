@@ -12,6 +12,14 @@
 <meta property="og:url" content="https://tradingai.in/signal-flow.html">
 <meta property="og:title" content="Signal Flow: How a Signal Is Generated | TradingAI.in">
 <meta property="og:description" content="Session gates, CPR trigger rules, weekly alignment, entry and alert timing. Educational use only.">
+<meta property="og:image" content="https://tradingai.in/og-image.png">
+<meta property="og:image:secure_url" content="https://tradingai.in/og-image.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="TradingAI.in - educational Indian market analytics. Not investment advice.">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="https://tradingai.in/og-image.png">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.7}
@@ -36,12 +44,15 @@ code{background:#f1f5f9;padding:.1rem .35rem;border-radius:4px;font-size:.85em}
 .notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.8rem;margin:.8rem 0}
 footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem}
 footer nav{margin-bottom:.6rem}footer a{color:#cbd5e1;text-decoration:none;margin:0 .5rem}
+/* P0-a11y-tables */
+.skip{position:absolute;left:-9999px;top:0;z-index:999;background:#2563eb;color:#fff;padding:.6rem 1rem;font-size:.9rem;font-weight:700;text-decoration:none;border-radius:0 0 8px 0}.skip:focus{left:0}.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;margin:.5rem 0}.tw>table{margin:0}.tw:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
 </style>
 <link rel="stylesheet" href="/tradingai-share.css?v=3"></head>
 <body>
+<a class="skip" href="#main">Skip to main content</a>
 <div class="topbar"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Signal flow</span></div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">Historical Analysis</a><a href="/signal-flow.html" style="display:none" aria-hidden="true" tabindex="-1">Signal Flow</a></nav>
-<div class="wrap"><div class="card">
+<div class="wrap" id="main" tabindex="-1"><div class="card">
 <h1>How a signal is generated</h1>
 <p>Deterministic, read-only evaluation on completed 5-minute candles. No lookahead, one trade per instrument per day. See <a href="/methodology.html">methodology</a> and <a href="/cpr-guide.html">CPR guide</a>.</p>
 <h2>Flowchart</h2>
@@ -61,12 +72,12 @@ footer nav{margin-bottom:.6rem}footer a{color:#cbd5e1;text-decoration:none;margi
 <div class="node green"><b>TRADE</b>signal_time = trigger candle, entry_time = next open (+5m). Alert on next 5-min poll (+5m). So signal to alert is about 10m.</div>
 </div>
 <h2>Trigger table</h2>
-<table><thead><tr><th>Direction</th><th>Level</th><th>Rule</th></tr></thead><tbody>
+<div class="tw" role="region" tabindex="0" aria-label="Data table, scrollable horizontally"><table><thead><tr><th>Direction</th><th>Level</th><th>Rule</th></tr></thead><tbody>
 <tr><td>BEAR</td><td>R2 / R1 / PDH</td><td>candle high touches resistance</td></tr>
 <tr><td>BEAR</td><td>BELOW_CPR</td><td>5m close below BC + below weekly BC</td></tr>
 <tr><td>BULL</td><td>S2 / S1 / PDL</td><td>candle low touches support</td></tr>
 <tr><td>BULL</td><td>ABOVE_CPR</td><td>5m close above TC + above weekly TC</td></tr>
-</tbody></table>
+</tbody></table></div>
 <h2>Timing example (01 Oct 2026)</h2>
 <ul><li>NIFTY BEAR 22556.05: signal 09:15 - entry 09:20 - alert 09:25.</li><li>BANKNIFTY BEAR 54494.8: signal 12:45 - entry 12:50 - alert 12:55.</li><li>Telegram shows entry time as Signal HH:MM. Full log in <a href="/alerts.html">alerts archive</a>, ledger in <a href="/paper.html">observations journal</a>, history in <a href="/backtest.html">historical analysis</a>.</li></ul>
 <div class="notice">Educational, rule-based output only. Not investment advice. See <a href="/signal-flow.html">signal flow</a>.</div>
