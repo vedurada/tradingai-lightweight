@@ -20,7 +20,7 @@ MANDATORY_NOTICE = ("It is not investment advice, a research recommendation, "
 # user-facing actionable phrases (negations like "not a recommendation" are fine
 # and are covered by allowing the mandatory-notice sentence only)
 BANNED_PHRASES = [
-    "trade now", "get signals", "get calls", "join telegram", "t.me/tradingai_cpr",
+    "trade now", "get signals", "get calls", "join telegram", "telegram.me/tradingai_cpr",
     "live trade", "paper trade", "paper-trade", "paper day", "model signal",
     "buy/sell alerts", "entry at", "stop-loss", "stop loss", "take profit",
     "trade alerts", "push notification", "whatsapp", "guaranteed returns",
@@ -32,7 +32,7 @@ OUTLOOK_PAGES = ["index.html", "indices/nifty.html", "indices/banknifty.html"]
 # Owner-authorised 2026-09-29: a single model-channel subscribe button on the
 # three outlook index pages. No other page may link or name the channel.
 ALERT_CHANNELS = ["index.html", "indices/nifty.html", "indices/banknifty.html"]
-CHANNEL_URL = "https://t.me/tradingai_cpr"
+CHANNEL_URL = "https://telegram.me/tradingai_cpr"
 SUBSCRIBE_BLOCK = 'aria-label="Model alert channel"'
 
 

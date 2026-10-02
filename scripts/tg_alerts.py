@@ -33,7 +33,7 @@ NAV_MARKUP = __import__('json').dumps({
          {"text": "BankNifty", "url": "https://tradingai.in/indices/banknifty.html"}],
         [{"text": "Backtest", "url": "https://tradingai.in/backtest.html"},
          {"text": "Paper", "url": "https://tradingai.in/paper.html"}],
-        [{"text": "Join Telegram", "url": "https://t.me/tradingai_cpr"}]
+        [{"text": "Join Telegram", "url": "https://telegram.me/tradingai_cpr"}]
     ]
 })
 

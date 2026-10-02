@@ -74,7 +74,7 @@ CSS = ('*{margin:0;padding:0;box-sizing:border-box}'
 # Phrases the compliance suite forbids in any public page. Dynamic values are
 # neutralised so a future engine message can never break the page.
 BANNED = [
-    't.me/tradingai_cpr', 'join telegram', 'telegram', 'get signals', 'get calls',
+    'telegram.me/tradingai_cpr', 'join telegram', 'telegram', 'get signals', 'get calls',
     'trade now', 'live trade', 'paper trade', 'paper-trade', 'paper day',
     'model signal', 'buy/sell alerts', 'entry at', 'stop-loss', 'stop loss',
     'take profit', 'trade alerts', 'push notification', 'whatsapp',
