@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MJ3X88QYEL');
+</script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Defined-Risk Option Spread Calculator — NIFTY &amp; BANKNIFTY | TradingAI.in</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<link rel="apple-touch-icon" href="/favicon.svg">
+<meta name="description" content="Educational calculator for defined-risk option spreads on NIFTY and BANKNIFTY. Enter your own premiums and see maximum reward, capped loss, breakeven and the expiry payoff chart.">
+<link rel="canonical" href="https://tradingai.in/fixed-loss-options.html">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="TradingAI.in">
+<meta property="og:url" content="https://tradingai.in/fixed-loss-options.html">
+<meta property="og:title" content="Defined-Risk Option Spread Calculator — NIFTY &amp; BANKNIFTY | TradingAI.in">
+<meta property="og:description" content="Study defined-risk option spreads using your own premiums. Capped loss, maximum reward, breakeven and the expiry payoff chart.">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="Defined-Risk Option Spread Calculator — NIFTY &amp; BANKNIFTY | TradingAI.in">
+<meta name="twitter:description" content="Study defined-risk option spreads using your own premiums. Capped loss, maximum reward, breakeven and the expiry payoff chart.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Defined-Risk Option Spread Calculator","url":"https://tradingai.in/fixed-loss-options.html","applicationCategory":"EducationalApplication","operatingSystem":"Any","description":"Educational calculator that estimates reward, capped loss and breakeven for defined-risk option spreads from user-supplied premiums.","isPartOf":{"@type":"WebSite","name":"TradingAI.in","url":"https://tradingai.in/"}}</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.6}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
+nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:.6rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:100}
+nav.main a{background:#1e3a5f;color:#e2e8f0;text-decoration:none;padding:.45rem 1rem;border-radius:8px;border:1px solid #2d4a73;font-weight:600;display:inline-block}
+nav.main a:hover,nav.main a.active{background:#2563eb;border-color:#38bdf8;color:#fff}
+.wrap{max-width:960px;margin:0 auto;padding:1rem}
+.card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:16px;padding:1.4rem;margin-bottom:1rem;box-shadow:0 4px 16px rgba(11,30,58,.08);position:relative;overflow:hidden}
+.card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2563eb,#38bdf8,#22d3ee)}
+h1{font-size:1.6rem;margin-bottom:.4rem;color:#0b1e3a}
+h2{font-size:1.15rem;margin:1.2rem 0 .4rem;color:#0b1e3a;padding-bottom:.4rem;border-bottom:2px solid #e0f2fe}
+h3{font-size:1rem;margin:.9rem 0 .3rem;color:#0b1e3a}
+p,li{font-size:.92rem;color:#334155}ul{margin-left:1.2rem}
+label{font-size:.82rem;color:#334155}
+.notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.8rem;margin:.8rem 0}
+footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem}
+footer nav{margin-bottom:.6rem}footer a{color:#cbd5e1;text-decoration:none;margin:0 .5rem}
+@media(max-width:768px){.wrap{padding:.7rem}.card{padding:1rem;border-radius:12px}h1{font-size:1.3rem}nav.main a{padding:.4rem .55rem;font-size:.78rem}}
+</style>
+<link rel="stylesheet" href="/fixed-loss-calc.css?v=1">
+</head>
+<body>
+<div class="topbar"><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Defined-Risk Calculator</span></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/tools.html">Tools</a></nav>
+<div class="wrap">
+
+<div class="card">
+<h1>Defined-Risk Option Spread Calculator for NIFTY and BANKNIFTY</h1>
+<p>A spread that combines two or four options has a <b>loss decided when it is opened</b>. You pay a premium and collect a premium; the difference between the two strikes caps how much can be lost. This page shows that arithmetic for spreads built from <b>premiums you type in yourself</b>, so you can study a structure before deciding whether it is worth your attention.</p>
+<div class="notice"><b>Educational material.</b> It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+</div>
+
+<div class="card">
+<h2>Enter your prices</h2>
+<p>Every figure below is produced by the server-side calculation module. This page contains no pricing formula of its own — it sends what you type and displays the answer it receives.</p>
+<form id="f" onsubmit="return false;">
+<div class="flc-grid">
+  <div class="flc-field"><label for="instrument">Index</label>
+    <select id="instrument"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option></select></div>
+  <div class="flc-field"><label for="strategy">Structure</label>
+    <select id="strategy">
+      <option value="BULL_PUT_SPREAD">Bull Put Spread</option>
+      <option value="BULL_CALL_SPREAD">Bull Call Spread</option>
+      <option value="BEAR_CALL_SPREAD">Bear Call Spread</option>
+      <option value="BEAR_PUT_SPREAD">Bear Put Spread</option>
+      <option value="IRON_CONDOR">Iron Condor</option>
+    </select></div>
+  <div class="flc-field"><label for="expiry">Expiry label</label>
+    <input id="expiry" type="text" maxlength="40" placeholder="e.g. 30JAN2026" autocomplete="off"></div>
+  <div class="flc-field"><label for="lots">Lots</label>
+    <input id="lots" type="number" step="1" min="1" value="1" inputmode="numeric"></div>
+  <div class="flc-field"><label for="lot_size">Lot size (optional override)</label>
+    <input id="lot_size" type="number" step="1" min="1" placeholder="server default" inputmode="numeric"></div>
+</div>
+<h3>Legs</h3>
+<div id="legs"></div>
+<p class="flc-hint">Which leg is bought and which is sold is worked out by the calculation module from the strikes and option types you choose. You do not need to decide that yourself.</p>
+<button class="flc-btn" id="calc" type="button">Calculate</button>
+</form>
+<div class="flc-msg" id="msg" hidden></div>
+</div>
+
+<div class="card" id="out" hidden></div>
+
+<div class="card">
+<h2>How to read the result</h2>
+<h3>Maximum reward</h3>
+<p>The best outcome is the premium collected when the spread is a credit structure, or the difference between what you paid and the spread width when it is a debit structure. It is a fixed amount, not a percentage.</p>
+<h3>Maximum risk</h3>
+<p>For a credit spread this is the distance between the two strikes minus the premium collected. For a debit spread it is the premium paid. Either way the number is fixed when the position is opened, so the loss cannot grow beyond it while the position is open.</p>
+<h3>Breakeven</h3>
+<p>The index level at expiry where the profit and loss of the structure reaches zero. A credit spread has one breakeven level; an iron condor has two.</p>
+<h3>Estimated costs</h3>
+<p>Brokerage, charges, taxes and the spread between the two sides of the book, applied to the structure you entered. This is an estimate for study, not a contract statement.</p>
+<h3>The chart</h3>
+<p>Profit and loss at expiry across the plotted range. The flat sections at each end show the defined outcome: the capped loss on one side and the maximum reward on the other.</p>
+</div>
+
+<div class="card">
+<h2>What this page does not do</h2>
+<ul>
+<li>It does not fetch live prices or an option chain. Everything comes from the premiums you enter.</li>
+<li>It does not quote a probability, an expected outcome or a forecast for any index level.</li>
+<li>It does not rank structures, suggest a strike, or compare instruments.</li>
+<li>It does not place, size or record any position, and it stores nothing you type.</li>
+<li>Premiums are treated as a mid-price fill, because you enter a single price per leg. Real fills sit between the best bid and the best offer.</li>
+</ul>
+</div>
+
+<div class="card">
+<h2>Related reading</h2>
+<ul>
+<li><a href="/tools.html">Tools and learning material</a></li>
+<li><a href="/learn.html">Learning modules</a></li>
+<li><a href="/methodology.html">How this site is built</a></li>
+<li><a href="/disclaimer.html">Disclaimer</a></li>
+</ul>
+</div>
+
+</div>
+<footer><nav><a href="/">Home</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/contact.html">Contact</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/disclaimer.html">Disclaimer</a></nav>
+<div>© 2026 TradingAI.in — educational software, not advice.</div></footer>
+<script src="/fixed-loss-calc.js?v=1"></script>
+</body>
+</html>

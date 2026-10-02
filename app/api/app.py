@@ -21,6 +21,7 @@ from app.options import (
     OptionsStrategyEngine)
 from app.options.contract import OptionsFreshness as OF, VALID_INSTRUMENTS
 from app.options.cache import recompute_age
+from app.api.e2_economics import bp as _e2_economics_bp
 
 app = Flask(__name__)
 # Trust exactly one hop (nginx on this host). Cloudflare/frontend IPs arrive
@@ -50,6 +51,13 @@ def _client_key():
 
 
 limiter = Limiter(app=app, key_func=_client_key, default_limits=["60 per minute"])
+
+# E.2 read-only educational economics endpoint. Isolated adapter: it
+# delegates to app.options.economics and touches no trade, alert,
+# signal, decision or database state. Adds no behaviour to existing
+# routes. Inherits the global default_limits above via before_request.
+app.register_blueprint(_e2_economics_bp)
+
 market = MarketDataProvider()
 qual = QualificationEngine(settings)
 paper = PaperTradeEngine()
