@@ -18,7 +18,7 @@ Risk levels: Keep / Rewrite / Remove / Manual review.
 
 | # | Location | Existing wording/functionality | Risk | Reason | Replacement / implementation |
 |---|---|---|---|---|---|
-| A1 | Main nav, all pages: `Join Telegram` button (`tg-join`, blinking) | CTA to t.me/tradingai_cpr trade-alert channel | Remove | Alert channel delivers entry/exit trade instructions (forbidden channel) | Delete link from every nav; no replacement CTA |
+| A1 | Main nav, all pages: `Join Telegram` button (`tg-join`, blinking) | CTA to telegram.me/tradingai_cpr trade-alert channel | Remove | Alert channel delivers entry/exit trade instructions (forbidden channel) | Delete link from every nav; no replacement CTA |
 | A2 | Footer legal trio (Privacy/Contact/Terms) + Disclaimer on some | Incomplete legal set | Rewrite | Missing Risk Disclosure prominence, Refund, Affiliate, About, Learn, Methodology links | Standard footer: About, Methodology, Learn, Tools, Risk Disclosure, Terms, Privacy, Refund Policy, Affiliate Disclosure, Contact |
 | A3 | Blinking bull/bear animations (`bullBlink`, `tgBlink`, dir pills) | Flashing BUY/SELL-style direction badges | Remove | Actionable direction emphasis; flashing trade cues | Neutral static outlook labels with text (green/red/grey/amber + words) |
 | A4 | Titles/metas/OG/Twitter with “Model Signals”, “Paper Trades”, “Current Model Output” | Signal/call marketing language in SEO | Rewrite | Implies trading instructions; contradicts education positioning | Outlook/education titles (see Task 8 list) |

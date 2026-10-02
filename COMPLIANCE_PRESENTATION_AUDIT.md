@@ -117,7 +117,7 @@ Identical before/after (presentation-only confirmed):
 - API: `/api/decision/nifty`, `/api/decision/banknifty` reachable; NIFTY/BANKNIFTY data renders (TRADE/BEAR payloads); CPR values unchanged (§8).
 - Backtest API + paper ledger endpoints reachable; ledger row counts/stats unchanged.
 - Telegram: generation functions verified; NO live `--test/--morning/--watch/--eod` sends performed (avoid unsolicited channel messages) — content verified by code review + py_compile.
-- Links: internal nav (Home/Nifty/BankNifty/Backtest/Paper/Disclaimer/Terms/Privacy/Contact/Methodology) + Telegram `t.me/tradingai_cpr` verified present on each page.
+- Links: internal nav (Home/Nifty/BankNifty/Backtest/Paper/Disclaimer/Terms/Privacy/Contact/Methodology) + Telegram `telegram.me/tradingai_cpr` verified present on each page.
 - Metadata: titles/descriptions/OG/Twitter/canonical verified per page.
 - Final recursive search for prohibited phrases: only legitimate legal/educational contexts remain (`…not personalised investment advice`, `…not a recommendation to buy/sell…`, `…not personalised recommendations`); zero promotional/actionable occurrences.
 - Mobile/desktop: viewport + responsive `@media` CSS retained; compact `.model-notice` banner verified non-dominant; layout smoke-tested via HTTP size + markup checks (full visual QA recommended on device).
