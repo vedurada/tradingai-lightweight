@@ -351,7 +351,7 @@ def render_block(sig, outcome, candles, prev_close, prefix):
         '__HFB__': 'https://www.facebook.com/sharer/sharer.php?u=' + eu,
         '__HWA__': 'https://wa.me/?text=' + up.quote(share_text + ' ' + share_url, safe=''),
         '__HLI__': 'https://www.linkedin.com/sharing/share-offsite/?url=' + eu,
-        '__HTG__': 'https://t.me/share/url?url=' + eu + '&text=' + et,
+        '__HTG__': 'https://telegram.me/share/url?url=' + eu + '&text=' + et,
         '__EURL__': share_url,
         '__ETEXT__': share_text,
     }

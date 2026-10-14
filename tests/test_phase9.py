@@ -129,7 +129,9 @@ def test_duplicate_candle_handled():
 def test_future_timestamp_rejected():
     rows = db_day('NIFTY', WED)
     upto = [c for c in rows if c['timestamp'] <= f'{WED}T09:30:00+05:30']
-    bad = dict(upto[-1]); bad['timestamp'] = f'{WED}T09:35:00+05:30'
+    # completed candle is 09:30 -> the forming candle (09:35) is a legitimate
+    # same-instant entry open; anything past it (09:40) is future data.
+    bad = dict(upto[-1]); bad['timestamp'] = f'{WED}T09:40:00+05:30'
     eng = _engine_with(upto + [bad])
     st = eng.evaluate('NIFTY', now=ist(f'{WED}T09:36:00+05:30'), dry_run=True)
     assert st['state'] == 'NO_DATA', st

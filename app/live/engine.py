@@ -20,8 +20,9 @@ Rules:
   MARKET_CLOSED (after 15:30, holiday, or no-data day), WEEKEND (Sat/Sun),
   with STALE/NO_DATA feed states.
 - Firing uses the unified CPR book (_cpr_book_signal: first trigger,
-  bear priority, weekly gate, next-open entry) — same math as
-  backtest/paper. A trigger on the latest completed candle waits for
+  bear priority, variant gate, next-open entry) — same math as
+  backtest/paper. Live default variant is 'plain' (no weekly gate).
+  A trigger on the latest completed candle waits for
   that open (ENTRY pending, no lookahead).
   Live mode persists the one-trade-day lock in daily_trade_locks so it is
   shared across gunicorn workers; dry-run mode uses in-memory locks only.
@@ -59,6 +60,11 @@ ST_QUALIFIED = 'QUALIFIED'
 
 # States that may pass through the session gate unchanged.
 _SESSION_PASSTHROUGH = (ST_PREMARKET, ST_CLOSED, ST_WEEKEND, ST_NO_DATA)
+
+# Live CPR-book variant: 'plain' (no filter) or 'aligned' (weekly gate).
+# Owner decision 2026-10-12: default engine for live signals, paper book,
+# backtest UI and Telegram alerts is plain.
+LIVE_VARIANT = 'plain'
 
 # Remembers last logged state per instrument: log on change only.
 _last_logged = {}
@@ -225,13 +231,63 @@ def build_market_state(price, candles=None):
     return out
 
 
-def _cpr_book_signal(instrument, candles, completed):
-    """CPR-book signal over live completed candles (unified rulebook).
+def _select_entry(feed, forming, sig_index, live_price, now):
+    """Pick (entry, entry_time, signal_time) for a CPR trigger. Pure (no I/O).
 
-    Same trigger math as backtest/paper (book_scan first trigger, bear
-    priority, weekly gate); entry at next candle OPEN when that candle
-    exists, else entry pending (no lookahead). Returns
-    {'trade': dict|None, 'reasons': [...]}. Read-only (SELECTs only)."""
+    Backtest parity (Oct-12 divergence fix): the entry is ALWAYS a next-open,
+    never the live price.
+    - A later COMPLETED entry candle exists (i+1 < len(feed)) -> historical
+      next-open entry (unchanged; keeps live == backtest/replay on late reads).
+    - Otherwise the trigger is on the latest completed candle: fire as soon as
+      the next candle's OPEN is known (forming.open is a past, real price, not
+      a forecast), with entry_time = the entry candle's timestamp. This keeps
+      alerts within ~a minute of the candle open while matching backtest
+      entries tick-for-tick.
+    - If the next candle is not in cache yet, return None (caller -> WAIT
+      entry_at_next_open) and keep polling; never fabricate from live price.
+    live_price is accepted for signature compatibility and ignored.
+    """
+    i = sig_index
+    if i + 1 < len(feed):
+        ec = feed[i + 1]
+        try:
+            entry = round(float(ec['open']), 2)
+        except (KeyError, TypeError, ValueError):
+            return None
+        return entry, str(ec.get('timestamp', '')), str(feed[i].get('timestamp', ''))
+    if forming is None:
+        return None
+    # Next-open entry: the forming candle's OPEN is already history (its
+    # interval started), so taking it is parity with backtest, not lookahead.
+    try:
+        entry = round(float(forming['open']), 2)
+        if entry <= 0:
+            return None
+    except (KeyError, TypeError, ValueError):
+        return None
+    sig_ts = str(feed[i].get('timestamp', '')) if i < len(feed) else ''
+    nt = str(forming.get('timestamp', ''))
+    if not nt:
+        return None
+    return entry, nt, sig_ts
+
+
+def _cpr_book_signal(instrument, candles, completed, live_price=None, now=None):
+    """CPR-book signal over live candles (unified rulebook; next-open entry).
+
+    Trigger math is identical to backtest/paper (book_scan first trigger, bear
+    priority, variant gate) run over COMPLETED candles only — the forming
+    candle is never scanned (Oct-12 divergence fix: intrabar touches that fade
+    by close permanently disagreed with the EOD paper book). Entry TIMING:
+    - A trigger on a completed candle with a later completed candle uses that
+      candle's open (historical next-open, unchanged).
+    - A trigger on the latest completed candle fires as soon as the next
+      candle's OPEN is known (forming.open is past fact, not a forecast),
+      with entry_time = the entry candle's timestamp: same price the backtest
+      would record, alerted within ~a minute of the candle open.
+    - If the next candle is not in cache yet, WAIT (entry_at_next_open).
+    Reads only real data, never future data. Returns {'trade': dict|None,
+    'reasons': [...]}. Read-only."""
     from app.core.db import get_conn
     from app.research.cpr_trigger_engine import (
         book_scan, day_levels, prev_session_ohlc, weekly_levels, monday_of,
@@ -243,7 +299,8 @@ def _cpr_book_signal(instrument, candles, completed):
         if not prev:
             return {'trade': None, 'reasons': ['CPR_DATA_UNAVAILABLE']}
         lv = day_levels(prev['high'], prev['low'], prev['close'])
-        wlv = weekly_levels(conn, instrument, monday_of(day_iso))
+        wlv = weekly_levels(conn, instrument, monday_of(day_iso)) \
+            if LIVE_VARIANT == 'aligned' else None
     finally:
         try:
             conn.close()
@@ -251,24 +308,34 @@ def _cpr_book_signal(instrument, candles, completed):
             pass
     if not lv:
         return {'trade': None, 'reasons': ['CPR_DATA_UNAVAILABLE']}
-    if not wlv:
+    if LIVE_VARIANT == 'aligned' and not wlv:
         return {'trade': None, 'reasons': ['weekly_gate_missing']}
     feed = [c for c in (candles or [])
             if str(c.get('timestamp', ''))[:10] == day_iso
             and str(c.get('timestamp', '')) <= completed.isoformat()]
-    sig = book_scan(feed, lv, wlv, 'aligned')
+    # Warm-up gate (Oct-12 divergence fix): the session's first completed
+    # candle (09:15) must be present in the feed before any trigger can fire.
+    # A cache that starts at 09:20 silently shifts first-trigger-wins onto a
+    # truncated candle set and permanently disagrees with the EOD paper book.
+    if feed and not any(str(c.get('timestamp', '')).startswith(day_iso + 'T09:15')
+                        for c in feed):
+        return {'trade': None, 'reasons': ['warmup_wait_first_candle']}
+    nxt_ts = (completed + timedelta(minutes=CANDLE_MINUTES)).isoformat()
+    forming = next((c for c in (candles or [])
+                    if str(c.get('timestamp', '')) == nxt_ts), None)
+    # Completed candles only: the forming candle is never scanned for triggers
+    # (Oct-12 divergence fix). It is used solely as the next-open entry source
+    # once a completed candle triggers (see _select_entry).
+    sig = book_scan(feed, lv, wlv, LIVE_VARIANT)
     if not sig:
         return {'trade': None, 'reasons': ['no_cpr_trigger']}
     dr, t, i = sig
-    if i + 1 >= len(feed):
+    picked = _select_entry(feed, forming, i, live_price, now)
+    if picked is None:
         return {'trade': None, 'reasons': ['entry_at_next_open']}
-    nt = str(feed[i + 1].get('timestamp', ''))
-    if not (OPEN_MIN <= nt[11:16] < OPEN_EOD):
+    entry, nt, sig_ts = picked
+    if not nt or not (OPEN_MIN <= nt[11:16] < OPEN_EOD):
         return {'trade': None, 'reasons': ['entry_window_closed']}
-    try:
-        entry = round(float(feed[i + 1]['open']), 2)
-    except (KeyError, TypeError, ValueError):
-        return {'trade': None, 'reasons': ['bad_entry_candle']}
     if dr == 'BEAR':
         stop = round(entry * (1 + OPEN_STOP_PCT), 2)
         tgt = round(entry * (1 - OPEN_TARGET_PCT), 2)
@@ -276,31 +343,100 @@ def _cpr_book_signal(instrument, candles, completed):
         stop = round(entry * (1 - OPEN_STOP_PCT), 2)
         tgt = round(entry * (1 + OPEN_TARGET_PCT), 2)
     trade = {'entry': entry, 'entry_time': nt,
-             'signal_time': str(feed[i].get('timestamp', '')),
+             'signal_time': sig_ts,
              'stop': stop, 'target': tgt,
              'max_risk': round(OPEN_STOP_PCT * 100, 4),
              'expected_reward': round(OPEN_TARGET_PCT * 100, 4),
              'strategy': 'Bear Call Spread' if dr == 'BEAR' else 'Bull Put Spread',
-             'objective': 'DIRECTIONAL', 'direction': dr, 'scenario': t}
+             'objective': 'DIRECTIONAL', 'direction': dr, 'scenario': t,
+             # Feed diagnostics (D): snapshot of what the trigger scan saw,
+             # so any future live/paper disagreement is diagnosable from the
+             # frozen record instead of log archaeology.
+             'feed_n': len(feed),
+             'feed_first_ts': str(feed[0].get('timestamp', '')) if feed else None,
+             'forming_ts': str(forming.get('timestamp', '')) if forming is not None else None}
     return {'trade': trade, 'reasons': [f'CPR_TRIGGER_{t}', 'WEEKLY_GATE_PASS']}
 
 
-def _consume_daily_lock(instrument, day_iso):
-    """Persist one-trade-a-day lock (live mode only). False if already taken."""
+def _frozen_trade(instrument, day_iso):
+    """Today's persisted (frozen) live trade for an instrument, or None.
+
+    Once a live trigger fires we persist the trade so the decision API serves
+    a STABLE entry/stop/target for the rest of the session. The engine is
+    stateless and recomputed on every poll; an unfrozen entry would otherwise
+    drift poll-to-poll and break the alert exit-sweep (which compares
+    each poll's entry to the one it recorded). Read-only (SELECT only)."""
+    import json as _json
+    from app.core.db import get_conn
+    conn = get_conn()
+    try:
+        r = conn.execute(
+            "SELECT timestamp, scenario, strategy, objective, direction, entry,"
+            " stop, target, max_risk, expected_reward, qualification_evidence"
+            " FROM qualified_trades WHERE instrument_id=? AND date=?"
+            " AND status IN ('ACTIVE','QUALIFIED')"
+            " ORDER BY created_at DESC LIMIT 1", (instrument, day_iso)).fetchone()
+    except Exception:
+        r = None
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+    if not r:
+        return None
+    sig = None
+    try:
+        sig = (_json.loads(r['qualification_evidence'] or '{}') or {}).get('signal_time')
+    except Exception:
+        sig = None
+    return {'entry': r['entry'], 'entry_time': r['timestamp'],
+            'signal_time': sig or r['timestamp'],
+            'stop': r['stop'], 'target': r['target'],
+            'max_risk': r['max_risk'], 'expected_reward': r['expected_reward'],
+            'strategy': r['strategy'], 'objective': r['objective'],
+            'direction': r['direction'], 'scenario': r['scenario'],
+            'frozen': True}
+
+
+def _freeze_trade(instrument, day_iso, trade):
+    """Persist the one-trade-a-day lock + frozen trade (live mode only).
+
+    Idempotent per (instrument, date): the UNIQUE daily lock makes a second
+    attempt a no-op. Returns True when THIS call created the freeze."""
+    import json as _json
     import sqlite3
-    import uuid
     from datetime import datetime as _dt
     from zoneinfo import ZoneInfo as _ZI
     from app.core.db import get_conn
     now = _dt.now(_ZI('Asia/Kolkata')).isoformat()
+    tid = f'QT-{instrument}-{day_iso}'
     conn = get_conn()
     try:
         conn.execute(
             'INSERT INTO daily_trade_locks (lock_id, instrument_id, date, status,'
             ' trade_id, locked_at, consumed_at, created_at)'
             ' VALUES (?,?,?,?,?,?,?,?)',
-            (f'LCK-{instrument}-{day_iso}', instrument, day_iso, 'CONSUMED',
-             str(uuid.uuid4())[:16].upper(), now, now, now))
+            (f'LCK-{instrument}-{day_iso}', instrument, day_iso, 'CONSUMED', tid,
+             now, now, now))
+        conn.execute(
+            'INSERT INTO qualified_trades (trade_id, instrument_id, date, timestamp,'
+            ' scenario, strategy, objective, direction, entry, stop, target,'
+            ' max_risk, expected_reward, risk_reward, qualification_evidence,'
+            ' status, daily_lock_consumed, created_at)'
+            ' VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)',
+            (tid, instrument, day_iso, trade.get('entry_time') or now,
+             trade.get('scenario') or '', trade.get('strategy') or '',
+             trade.get('objective') or '', trade.get('direction') or '',
+             trade.get('entry'), trade.get('stop'), trade.get('target'),
+             trade.get('max_risk'), trade.get('expected_reward'),
+             round((trade.get('expected_reward') or 0.0) / (trade.get('max_risk') or 1.0), 3),
+             _json.dumps({'signal_time': trade.get('signal_time'),
+                           'source': 'live_next_open',
+                          'feed_n': trade.get('feed_n'),
+                          'feed_first_ts': trade.get('feed_first_ts'),
+                          'forming_ts': trade.get('forming_ts')}),
+             'ACTIVE', 1, now))
         conn.commit()
         return True
     except sqlite3.IntegrityError:
@@ -337,8 +473,13 @@ class LiveEngine:
         if res.get('state') not in ('LIVE',):
             return []
         day = completed_ts.date().isoformat()
+        # Include the candle that opens at completed_ts+5m (the currently
+        # forming one) so _cpr_book_signal can use its OPEN as the next-open
+        # entry price. It is never scanned for triggers (Oct-12 divergence
+        # fix). Completed-candle gates still filter this out (see evaluate).
+        nxt = (completed_ts + timedelta(minutes=CANDLE_MINUTES)).isoformat()
         return [c for c in res.get('candles', [])
-                if c.get('timestamp', '')[:10] == day and c.get('timestamp', '') <= completed_ts.isoformat()]
+                if c.get('timestamp', '')[:10] == day and c.get('timestamp', '') <= nxt]
 
     def evaluate(self, instrument, now=None, dry_run=False):
         """Full gated evaluation. dry_run=True performs zero DB writes."""
@@ -370,7 +511,13 @@ class LiveEngine:
         age_min = (now_ist - completed).total_seconds() / 60.0
         base['completed_age_minutes'] = round(age_min, 2)
 
-        candles = self.candles_fn(instrument, completed) or []
+        all_candles = self.candles_fn(instrument, completed) or []
+        # Completed-candle gates (session, integrity, market state) see only
+        # candles up to `completed`; the forming candle is used solely as the
+        # same-instant entry open inside _cpr_book_signal (never validated,
+        # never priced).
+        candles = [c for c in all_candles
+                   if str(c.get('timestamp', '')) <= completed.isoformat()]
         sess = session_state(now_ist, has_data_today=bool(candles))
         base['session'] = sess
         if sess != 'LIVE':
@@ -391,6 +538,15 @@ class LiveEngine:
             return base
 
         ok, issues, usable = validate_candles(candles, completed)
+        # The forming candle (completed+5m) is the only timestamp past the last
+        # completed candle that a same-instant entry legitimately needs. Anything
+        # beyond it is future data: reject (no lookahead), same as before.
+        nxt_iso = (completed + timedelta(minutes=CANDLE_MINUTES)).isoformat()
+        future = [c for c in all_candles
+                  if str(c.get('timestamp', '')) > nxt_iso]
+        if future:
+            ok = False
+            issues = issues + [f'FUTURE_CANDLE:{c.get("timestamp")}' for c in future]
         if not ok:
             # Dead feed (data existed today but newest row is older than the
             # stale threshold) is STALE, not NO_DATA: it must never silently
@@ -413,19 +569,31 @@ class LiveEngine:
         price = float(usable['close'])
         base.update(decision_price=price, decision_timestamp=completed.isoformat())
         ms = build_market_state(price, candles)
-        # Unified rulebook: CPR-trigger book (same math as backtest/paper).
-        book = _cpr_book_signal(instrument, candles, completed)
+        # Unified rulebook: CPR-trigger book (same trigger math as backtest/
+        # paper) over completed candles only. A trigger on the latest completed
+        # candle fires as soon as the next candle's open is known (that open
+        # is past fact, so the entry matches backtest tick-for-tick).
+        book = _cpr_book_signal(instrument, all_candles, completed,
+                                live_price=quote.get('price'), now=now_ist)
         trade = book.get('trade')
-        if trade is not None and not dry_run:
-            if not _consume_daily_lock(instrument, completed.date().isoformat()):
+        day_iso = completed.date().isoformat()
+        # Serve the frozen trade once one exists (stability for the alert
+        # exit-sweep); otherwise freeze a freshly-fired live trade (write path
+        # only). dry_run never writes and never freezes.
+        frozen = _frozen_trade(instrument, day_iso)
+        if frozen is not None:
+            trade = frozen
+        elif trade is not None and not dry_run:
+            if not _freeze_trade(instrument, day_iso, trade):
                 base.update(state=ST_NO_TRADE, qualification='NO_TRADE',
                             reasons=['DAILY_TRADE_LIMIT_REACHED'], market_state=ms)
                 _log_state(base)
                 return base
         if trade is not None:
             base.update(state=ST_QUALIFIED, qualification='QUALIFIED_TRADE',
-                        reasons=book.get('reasons', []), trade=trade,
-                        market_state=ms)
+                        reasons=(['FROZEN_TRADE_ACTIVE'] if frozen is not None
+                                 else book.get('reasons', [])),
+                        trade=trade, market_state=ms)
         else:
             base.update(state=ST_NO_TRADE, qualification='NO_TRADE',
                         reasons=book.get('reasons', []), market_state=ms)

@@ -9,10 +9,10 @@
   "strategy_summary": {
     "PIVOT_BOUNCE": {
       "setups": 0,
-      "trades": 40,
-      "wins": 17,
-      "losses": 23,
-      "pnl": -20498.719999999994
+      "trades": 47,
+      "wins": 19,
+      "losses": 28,
+      "pnl": -20911.389999999992
     }
   },
   "options_mode": "UNAVAILABLE"

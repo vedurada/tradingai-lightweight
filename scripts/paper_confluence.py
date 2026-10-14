@@ -171,7 +171,7 @@ def ensure_spread_table():
 
 
 def log_spreads():
-    """Create today's paper spread per instrument on aligned SIGNAL.
+    """Create today's paper spread per instrument on plain SIGNAL.
 
     One row/session/instrument (INSERT OR IGNORE). Legs from the real strike
     grid; credit attempted live (NULL while NSE unreachable -> structure-only).
@@ -186,7 +186,7 @@ def log_spreads():
     conn = get_conn()
     for inst in ("NIFTY", "BANKNIFTY"):
         try:
-            st = today_state(inst, variant="aligned")
+            st = today_state(inst, variant="plain")
         except Exception as e:
             print(f"spreads {inst} state failed: {e}", flush=True)
             continue
@@ -286,7 +286,7 @@ def ensure_align_table():
     conn = get_conn()
     conn.execute("""CREATE TABLE IF NOT EXISTS paper_align (
         session_date TEXT NOT NULL, instrument_id TEXT NOT NULL,
-        variant TEXT NOT NULL DEFAULT 'aligned',
+        variant TEXT NOT NULL DEFAULT 'plain',
         state TEXT NOT NULL, direction TEXT, level TEXT,
         entry_time TEXT, entry_price REAL, stop_price REAL, target_price REAL,
         exit_time TEXT, exit_price REAL, exit_reason TEXT,
@@ -300,7 +300,7 @@ def log_align(backfill=False):
     """Log approved-spec (opens execution) trigger results per variant.
 
     One row/session/instrument/variant. Idempotent via INSERT OR IGNORE.
-    Incomplete today skipped unless backfill. Covers plain + aligned.
+    Incomplete today skipped unless backfill. Covers plain.
     result stores the shared decay_win() label (not raw sign), so paper.html
     and the API agree by construction."""
     from app.research.cpr_trigger_engine import run_opens_range, decay_win
@@ -314,7 +314,7 @@ def log_align(backfill=False):
         day_max = {d: m for d, m in conn.execute(
             "SELECT substr(timestamp,1,10), max(timestamp) FROM market_candles_5m "
             "WHERE instrument_id=? GROUP BY substr(timestamp,1,10)", (inst,))}
-        for variant in ("plain", "aligned"):
+        for variant in ("plain",):
             try:
                 res = run_opens_range(inst, "2000-01-01", "2100-01-01", variant)
             except Exception as e:
@@ -519,10 +519,10 @@ def render_page():
 
     def align_ledger(inst=None):
         out = []
-        # One truth on display: aligned variant, tradable instruments only.
-        # (plain rows stay in paper_align table; VIX rows stay in DB.)
+        # One truth on display: plain variant, tradable instruments only.
+        # (VIX rows stay in DB.)
         shown = [x for x in aligns if x["instrument_id"] != "INDIA_VIX"
-                 and x.get("variant", "aligned") == "aligned"
+                 and x.get("variant", "plain") == "plain"
                  and (inst is None or x["instrument_id"] == inst)]
         for r in sorted(shown, key=lambda x: (x["session_date"], x["instrument_id"]), reverse=True):
             if r["state"] == "SIGNAL":
@@ -625,7 +625,14 @@ def render_page():
 <meta property="og:url" content="https://tradingai.in/paper.html">
 <meta property="og:title" content="Historical Model Observations (Hypothetical) | TradingAI.in">
 <meta property="og:description" content="A dated journal of hypothetical rule-based market observations for NIFTY and BANKNIFTY, recorded for study. Historical and hypothetical — not investment advice.">
-<meta name="twitter:card" content="summary">
+<meta property="og:image" content="https://tradingai.in/og-paper.png">
+<meta property="og:image:secure_url" content="https://tradingai.in/og-paper.png">
+<meta property="og:image:type" content="image/png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="Historical Model Observations (Hypothetical) — TradingAI.in, educational market analytics. Not investment advice.">
+<meta name="twitter:image" content="https://tradingai.in/og-paper.png">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:title" content="Historical Model Observations (Hypothetical) | TradingAI.in">
 <meta name="twitter:description" content="A dated journal of hypothetical rule-based market observations for NIFTY and BANKNIFTY, recorded for study. Historical and hypothetical — not investment advice.">
 <script type="application/ld+json">{{"@context": "https://schema.org", "@type": "WebPage", "name": "Historical Model Observations (Hypothetical) | TradingAI.in", "url": "https://tradingai.in/paper.html", "description": "A dated journal of hypothetical rule-based market observations for NIFTY and BANKNIFTY, recorded for study. Historical and hypothetical — not investment advice.", "isPartOf": {{"@type": "WebSite", "name": "TradingAI.in", "url": "https://tradingai.in/"}}}}</script>
@@ -656,11 +663,12 @@ td{{padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;font-variant-numeric:ta
 .pill.normal{{background:#f8fafc;color:#334155;border:1px solid #e2e8f0}}
 footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padding:1rem;margin-top:1.2rem}}
 </style>
-<link rel="stylesheet" href="/tradingai-share.css?v=3">
+<link rel="stylesheet" href="/tradingai-share.css?v=4">
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
-<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a></nav>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/signals.html">Signal Notes</a></nav>
 <div class="wrap">
 <h1>Historical Model Observations <span class="exp">HYPOTHETICAL</span></h1>
 <p class="note">Snapshot rendered {datetime.now(_IST).strftime('%Y-%m-%d %H:%M')} IST — rows below are frozen historical records for study.</p>
@@ -669,8 +677,8 @@ footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padd
 <div class="card"><p class="note">Structures below were studied hypothetically in past sessions. Legs and expiries reference the strike grid at the time; no profit or loss is shown or implied, and nothing suggests using any structure on any day.</p></div>
 <h2>Recorded observations by session (hypothetical)</h2>
 <div class="grid">
-{align_card("NIFTY", [t for t in aligns if t["instrument_id"] == "NIFTY" and t["variant"] == "aligned"])}
-{align_card("BANKNIFTY", [t for t in aligns if t["instrument_id"] == "BANKNIFTY" and t["variant"] == "aligned"])}
+{align_card("NIFTY", [t for t in aligns if t["instrument_id"] == "NIFTY" and t["variant"] == "plain"])}
+{align_card("BANKNIFTY", [t for t in aligns if t["instrument_id"] == "BANKNIFTY" and t["variant"] == "plain"])}
 </div>
 {FILTER_HTML}
 <h2>NIFTY observations journal</h2>
@@ -691,7 +699,7 @@ footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padd
 </div>
 <footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
 {FILTER_JS}
-<script src="/tradingai-share.js?v=3" defer></script>
+<script src="/tradingai-share.js?v=5" defer></script>
 </body>
 </html>"""
     with open(PAGE, "w") as f:

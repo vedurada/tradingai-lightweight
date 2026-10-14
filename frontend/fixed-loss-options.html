@@ -1,6 +1,11 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index,follow">
+<title>Fixed-Loss Options Strategy Builder | TradingAI.in</title>
+<meta name="description" content="Build defined-risk NIFTY and BANKNIFTY option strategies, edit option legs, and understand payoff charts, max loss, max profit, and breakevens. Educational only.">
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MJ3X88QYEL"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
@@ -8,138 +13,496 @@
   gtag('js', new Date());
   gtag('config', 'G-MJ3X88QYEL');
 </script>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Defined-Risk Option Spread Calculator — NIFTY &amp; BANKNIFTY | TradingAI.in</title>
+<meta name="google-adsense-account" content="ca-pub-2262405054444130">
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <link rel="apple-touch-icon" href="/favicon.svg">
-<meta name="description" content="Educational calculator for defined-risk option spreads on NIFTY and BANKNIFTY. Enter your own premiums and see maximum reward, capped loss, breakeven and the expiry payoff chart.">
 <link rel="canonical" href="https://tradingai.in/fixed-loss-options.html">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="TradingAI.in">
 <meta property="og:url" content="https://tradingai.in/fixed-loss-options.html">
-<meta property="og:title" content="Defined-Risk Option Spread Calculator — NIFTY &amp; BANKNIFTY | TradingAI.in">
-<meta property="og:description" content="Study defined-risk option spreads using your own premiums. Capped loss, maximum reward, breakeven and the expiry payoff chart.">
-<meta property="og:image" content="https://tradingai.in/og-image.png">
-<meta property="og:image:secure_url" content="https://tradingai.in/og-image.png">
+<meta property="og:title" content="Fixed-Loss Options Strategy Builder | TradingAI.in">
+<meta property="og:description" content="Build defined-risk NIFTY and BANKNIFTY option strategies, edit option legs, and understand payoff charts, max loss, max profit, and breakevens. Educational only.">
+<meta property="og:image" content="https://tradingai.in/og-fixed-loss-options.png">
+<meta property="og:image:secure_url" content="https://tradingai.in/og-fixed-loss-options.png">
 <meta property="og:image:type" content="image/png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
-<meta property="og:image:alt" content="TradingAI.in - educational Indian market analytics. Not investment advice.">
-<meta name="twitter:image" content="https://tradingai.in/og-image.png">
+<meta property="og:image:alt" content="Fixed-Loss Options Strategy Builder — NIFTY &amp; BANKNIFTY — TradingAI.in, educational market analytics. Not investment advice.">
+<meta name="twitter:image" content="https://tradingai.in/og-fixed-loss-options.png">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:title" content="Defined-Risk Option Spread Calculator — NIFTY &amp; BANKNIFTY | TradingAI.in">
-<meta name="twitter:description" content="Study defined-risk option spreads using your own premiums. Capped loss, maximum reward, breakeven and the expiry payoff chart.">
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Defined-Risk Option Spread Calculator","url":"https://tradingai.in/fixed-loss-options.html","applicationCategory":"EducationalApplication","operatingSystem":"Any","description":"Educational calculator that estimates reward, capped loss and breakeven for defined-risk option spreads from user-supplied premiums.","isPartOf":{"@type":"WebSite","name":"TradingAI.in","url":"https://tradingai.in/"}}</script>
+<meta name="twitter:title" content="Fixed-Loss Options Strategy Builder | TradingAI.in">
+<meta name="twitter:description" content="Build defined-risk NIFTY and BANKNIFTY option strategies, edit option legs, and understand payoff charts, max loss, max profit, and breakevens. Educational only.">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"WebApplication","name":"Fixed-Loss Options Strategy Builder","url":"https://tradingai.in/fixed-loss-options.html","applicationCategory":"EducationalApplication","operatingSystem":"Any","description":"Educational builder that estimates payoff profile, capped loss, capped profit and breakevens for defined-risk option strategies from user-supplied premiums.","isPartOf":{"@type":"WebSite","name":"TradingAI.in","url":"https://tradingai.in/"}}</script>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tradingai.in/"}, {"@type": "ListItem", "position": 2, "name": "Tools", "item": "https://tradingai.in/tools.html"}, {"@type": "ListItem", "position": 3, "name": "Fixed-Loss Options Strategy Builder", "item": "https://tradingai.in/fixed-loss-options.html"}]}</script>
+<link rel="stylesheet" href="/tradingai-share.css?v=4">
 <style>
+:root{--bg:#f6f8fb;--card:#ffffff;--line:#e3e9f2;--text:#14223c;--muted:#5c6b82;--accent:#2563eb;--accent-deep:#174ea6;--teal:#0ea5a4;--red:#d64545;--green:#12925f;--amber:#b45309;--chip-bg:#eef3fb}
 *{margin:0;padding:0;box-sizing:border-box}
-body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.6}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.55}
+a{color:#2563eb;text-decoration:none}
+a:hover{text-decoration:underline}
+.bl-wrap{max-width:1180px;width:100%;margin:0 auto;padding:0 16px}
+.skip{position:absolute;left:-9999px;top:0;z-index:999;background:#2563eb;color:#fff;padding:.6rem 1rem;font-size:.9rem;font-weight:700;text-decoration:none;border-radius:0 0 8px 0}.skip:focus{left:0}
 .topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem}
 .brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
 .tagline{font-size:.85rem;color:#cbd5e1;margin-left:.8rem}
 nav.main{background:#0b1e3a;color:#cbd5e1;border-top:1px solid #1e3a5f;padding:.5rem 1.2rem;display:flex;gap:.6rem;justify-content:flex-end;font-size:.9rem;flex-wrap:wrap;align-items:center;position:sticky;top:0;z-index:100}
 nav.main a{background:#1e3a5f;color:#e2e8f0;text-decoration:none;padding:.45rem 1rem;border-radius:8px;border:1px solid #2d4a73;font-weight:600;display:inline-block}
-nav.main a:hover,nav.main a.active{background:#2563eb;border-color:#38bdf8;color:#fff}
-.wrap{max-width:960px;margin:0 auto;padding:1rem}
-.card{background:linear-gradient(180deg,#ffffff 0%,#f8fafc 100%);border:1px solid #e2e8f0;border-radius:16px;padding:1.4rem;margin-bottom:1rem;box-shadow:0 4px 16px rgba(11,30,58,.08);position:relative;overflow:hidden}
-.card::before{content:"";position:absolute;top:0;left:0;right:0;height:4px;background:linear-gradient(90deg,#2563eb,#38bdf8,#22d3ee)}
-h1{font-size:1.6rem;margin-bottom:.4rem;color:#0b1e3a}
-h2{font-size:1.15rem;margin:1.2rem 0 .4rem;color:#0b1e3a;padding-bottom:.4rem;border-bottom:2px solid #e0f2fe}
-h3{font-size:1rem;margin:.9rem 0 .3rem;color:#0b1e3a}
-p,li{font-size:.92rem;color:#334155}ul{margin-left:1.2rem}
-label{font-size:.82rem;color:#334155}
+nav.main a:hover{background:#2563eb;border-color:#38bdf8;color:#fff}
 .notice{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.8rem;margin:.8rem 0}
 footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem}
 footer nav{margin-bottom:.6rem}footer a{color:#cbd5e1;text-decoration:none;margin:0 .5rem}
-@media(max-width:768px){.wrap{padding:.7rem}.card{padding:1rem;border-radius:12px}h1{font-size:1.3rem}nav.main a{padding:.4rem .55rem;font-size:.78rem}}
-/* P0-a11y-tables */
-.skip{position:absolute;left:-9999px;top:0;z-index:999;background:#2563eb;color:#fff;padding:.6rem 1rem;font-size:.9rem;font-weight:700;text-decoration:none;border-radius:0 0 8px 0}.skip:focus{left:0}.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%;margin:.5rem 0}.tw>table{margin:0}.tw:focus-visible{outline:2px solid #2563eb;outline-offset:-2px}
+@media(max-width:768px){nav.main a{padding:.4rem .55rem;font-size:.78rem}.layout{grid-template-columns:1fr}.side-ctrls{position:static}.metrics{grid-template-columns:repeat(2,1fr)}}
+.layout{display:grid;grid-template-columns:340px 1fr;gap:22px;align-items:start;padding:22px 0 8px}
+.panel,.card-s{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:20px;box-shadow:0 6px 20px rgba(20,34,60,.06)}
+.side-ctrls{display:flex;flex-direction:column;gap:16px;position:sticky;top:80px}
+.field label{display:block;font-size:.78rem;font-weight:750;color:#26384d;margin:0 0 .28rem}
+.field .hint{font-size:.72rem;color:var(--muted);margin-top:.3rem}
+.field input,.field select{width:100%;padding:9px 11px;border:1px solid #cdd7e5;border-radius:9px;font-size:.92rem;color:var(--text);background:#fff}
+.field input:focus,.field select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px rgba(37,99,235,.14)}
+.field input[readonly]{background:#f3f6fb;color:#22344f}
+.lot-row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.preset-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.preset-row button{font-size:.74rem;padding:8px 4px;border:1px solid #cfdcf0;border-radius:9px;background:#f5f8fd;color:#1d3a6b;font-weight:700;cursor:pointer;transition:all .15s}
+.preset-row button:hover{background:#e5eefc;border-color:#2563eb;color:#174ea6}
+.preset-row button.on{background:#2563eb;color:#fff;border-color:#2563eb}
+.btn-row{display:flex;gap:10px;margin-top:16px}
+.btn{flex:1;padding:11px 14px;border-radius:10px;border:1px solid var(--accent);background:var(--accent);color:#fff;font-size:.9rem;font-weight:800;cursor:pointer;transition:background .18s}
+.btn:hover{background:var(--accent-deep);text-decoration:none}
+.btn.ghost{background:#fff;color:#174ea6;border:1px solid #c7d6ef}
+.btn.ghost:hover{background:#f2f6fe}
+.risk-box{background:#fffbeb;border:1px solid #fde68a;border-radius:12px;padding:12px 14px;font-size:.78rem;color:#7c4a03;line-height:1.45}
+.risk-box b{color:#92400e}
+.layout>.right{display:flex;flex-direction:column;gap:16px;min-width:0}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:16px}
+.metric{border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfdff}
+.metric .k{font-size:.72rem;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.3px}
+.metric .v{font-size:1.18rem;font-weight:850;color:var(--text);margin-top:2px}
+.metric .note{font-size:.7rem;color:var(--muted);margin-top:3px;font-weight:600}
+.chart-shell{position:relative}
+.chart-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:8px}
+.chart-head h2{font-size:1rem;color:#17314f;margin:0}
+.chart-head .note2{font-size:.74rem;color:var(--muted)}
+.legend{display:flex;gap:14px;font-size:.76rem;color:var(--muted);flex-wrap:wrap}
+.legend .swatch{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:5px;vertical-align:-1px}
+.chart-canvas-wrap{width:100%}
+.chart-canvas-wrap canvas{width:100%;height:auto;display:block;border:1px solid var(--line);border-radius:12px;background:#fff}
+.chart-note{font-size:.73rem;color:var(--muted);margin-top:8px}
+.ztooltips{position:absolute;background:#11233f;color:#eef5ff;font-size:.74rem;padding:8px 11px;border-radius:8px;pointer-events:none;z-index:90;box-shadow:0 4px 14px rgba(0,0,0,.18);max-width:230px;white-space:nowrap;display:none;transition:opacity .08s}
+.strategy-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:12px}
+.strategy-card{border:1px solid var(--line);border-radius:12px;padding:12px;text-align:left;background:#fff;font-size:.78rem;color:var(--muted);line-height:1.4;cursor:pointer;transition:border-color .15s,box-shadow .15s}
+.strategy-card:hover{border-color:var(--accent);box-shadow:0 4px 12px rgba(37,99,235,.1)}
+.strategy-card.c-on{border-color:var(--accent);background:#f4f8ff}
+.strategy-card b{display:block;color:#174ea6;font-size:.84rem;margin-bottom:3px}
+.strategy-card .tag{display:inline-block;font-size:.64rem;font-weight:800;color:var(--accent-deep);background:var(--chip-bg);padding:2px 7px;border-radius:999px;margin-top:2px;text-transform:uppercase;letter-spacing:.3px}
+.legs-wrap{overflow-x:auto;-webkit-overflow-scrolling:touch}
+table{width:100%;border-collapse:collapse;font-size:.84rem}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.3px;color:var(--muted)}
+th,td{padding:9px 8px;text-align:left;border-bottom:1px solid #edf1f7}
+td input{width:108px;padding:6px 7px;border:1px solid #cfdae9;border-radius:7px;font-size:.84rem}
+td .fx{color:var(--muted);font-size:.66rem}
+td button{background:none;border:none;color:var(--red);font-size:.8rem;font-weight:700;cursor:pointer;padding:2px 4px}
+td button:hover{text-decoration:underline}
+.pay-col{color:var(--green);font-weight:750}
+.pay-neg{color:var(--red);font-weight:750}
+a.add-l{display:inline-block;margin-top:6px;font-size:.78rem;font-weight:700;color:var(--accent)}
+.explain{margin-top:16px}
+.explain h3{font-size:.9rem;color:#1b3a63;margin-bottom:5px}
+.explain .steps{font-size:.83rem;color:#394b66;line-height:1.5}
+.explain .steps li{margin-bottom:9px;margin-left:16px}
+.explain .steps kbd{background:#eef3fb;border:1px solid #d6e2f5;border-radius:5px;padding:1px 5px;font-size:.78rem;color:#174ea6;font-family:inherit}
+.explain .steps b{color:#0f2d52}
+.refit{font-size:.78rem;color:var(--muted);margin-top:12px;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.refit label{font-size:.78rem;color:var(--muted);display:inline-flex;align-items:center;gap:4px}
+.refit select{border:1px solid #cdd7e5;border-radius:7px;padding:4px 7px;font-size:.78rem;background:#fff;color:#1d3a6b}
 </style>
-<link rel="stylesheet" href="/fixed-loss-calc.css?v=1">
-<script type="application/ld+json">{"@context": "https://schema.org", "@type": "BreadcrumbList", "itemListElement": [{"@type": "ListItem", "position": 1, "name": "Home", "item": "https://tradingai.in/"}, {"@type": "ListItem", "position": 2, "name": "Tools", "item": "https://tradingai.in/tools.html"}, {"@type": "ListItem", "position": 3, "name": "Defined-Risk Option Spread Calculator — NIFTY &amp; BANKNIFTY", "item": "https://tradingai.in/fixed-loss-options.html"}]}</script>
+<script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-2262405054444130" crossorigin="anonymous"></script>
 </head>
 <body>
 <a class="skip" href="#main">Skip to main content</a>
-<div class="topbar"><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Defined-Risk Calculator</span></div>
-<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/tools.html">Tools</a></nav>
-<div class="wrap" id="main" tabindex="-1">
+<div class="topbar"><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Fixed-Loss Strategy Builder</span></div>
+<nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html">Historical Analysis</a><a href="/signals.html">Signal Notes</a></nav>
+<main id="main" class="bl-wrap" tabindex="-1">
+  <div class="notice"><b>Educational material.</b> This builder is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+  <div class="layout">
 
-<div class="card">
-<h1>Defined-Risk Option Spread Calculator for NIFTY and BANKNIFTY</h1>
-<p>A spread that combines two or four options has a <b>loss decided when it is opened</b>. You pay a premium and collect a premium; the difference between the two strikes caps how much can be lost. This page shows that arithmetic for spreads built from <b>premiums you type in yourself</b>, so you can study a structure before deciding whether it is worth your attention.</p>
-<div class="notice"><b>Educational material.</b> It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
-</div>
+    <aside class="side-ctrls" aria-label="Strategy builder controls">
+      <div class="panel">
+        <form id="builder-form" novalidate>
+          <div class="field">
+            <label for="spot">Spot price (index points)</label>
+            <input id="spot" inputmode="decimal" autocomplete="off" value="24833">
+            <div class="hint">Latest NIFTY spot for calculating intrinsic value.</div>
+          </div>
+          <div class="field">
+            <label for="lotSize">Lot size</label>
+            <input id="lotSize" inputmode="number" autocomplete="off" value="75">
+            <div class="hint">Lots are contract multiples, not positions.</div>
+          </div>
+          <div class="field">
+            <label for="strike">Underlying strike</label>
+            <input id="strike" inputmode="decimal" autocomplete="off" value="25000">
+            <div class="hint">Be in-the-money or out-of-the-money as needed.</div>
+          </div>
+          <div class="field">
+            <label for="rangePct">Chart zoom (ATM &plusmn; range&percnt;)</label>
+            <input id="rangePct" inputmode="decimal" autocomplete="off" value="3">
+          </div>
+          <div class="lot-row">
+            <div class="field">
+              <label for="expiry">Expiry</label>
+              <select id="expiry" aria-label="Expiry type">
+                <option value="7" selected>7 days</option>
+                <option value="30">30 days</option>
+                <option value="60">60 days</option>
+                <option value="90">90 days</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="vol">Volatility (IV &percnt;)</label>
+              <input id="vol" inputmode="decimal" autocomplete="off" value="14">
+            </div>
+          </div>
 
-<div class="card">
-<h2>Enter your prices</h2>
-<p>Every figure below is produced by the server-side calculation module. This page contains no pricing formula of its own — it sends what you type and displays the answer it receives.</p>
-<form id="f" onsubmit="return false;">
-<div class="flc-grid">
-  <div class="flc-field"><label for="instrument">Index</label>
-    <select id="instrument"><option value="NIFTY">NIFTY</option><option value="BANKNIFTY">BANKNIFTY</option></select></div>
-  <div class="flc-field"><label for="strategy">Structure</label>
-    <select id="strategy">
-      <option value="BULL_PUT_SPREAD">Bull Put Spread</option>
-      <option value="BULL_CALL_SPREAD">Bull Call Spread</option>
-      <option value="BEAR_CALL_SPREAD">Bear Call Spread</option>
-      <option value="BEAR_PUT_SPREAD">Bear Put Spread</option>
-      <option value="IRON_CONDOR">Iron Condor</option>
-    </select></div>
-  <div class="flc-field"><label for="expiry">Expiry label</label>
-    <input id="expiry" type="text" maxlength="40" placeholder="e.g. 30JAN2026" autocomplete="off"></div>
-  <div class="flc-field"><label for="lots">Lots</label>
-    <input id="lots" type="number" step="1" min="1" value="1" inputmode="numeric"></div>
-  <div class="flc-field"><label for="lot_size">Lot size (optional override)</label>
-    <input id="lot_size" type="number" step="1" min="1" placeholder="server default" inputmode="numeric"></div>
-</div>
-<h3>Legs</h3>
-<div id="legs"></div>
-<p class="flc-hint">Which leg is bought and which is sold is worked out by the calculation module from the strikes and option types you choose. You do not need to decide that yourself.</p>
-<button class="flc-btn" id="calc" type="button">Calculate</button>
-</form>
-<div class="flc-msg" id="msg" hidden></div>
-</div>
+          <div class="field" style="margin-top:14px">
+            <label>Strategy template</label>
+            <div class="preset-row" role="group" aria-label="Strategy template">
+              <button type="button" data-preset="bullCall" class="on">Bull Call</button>
+              <button type="button" data-preset="bearPut">Bear Put</button>
+              <button type="button" data-preset="bullPut">Bull Put</button>
+              <button type="button" data-preset="bearCall">Bear Call</button>
+              <button type="button" data-preset="ironCondor">Iron Condor</button>
+              <button type="button" data-preset="butterfly">Butterfly</button>
+              <button type="button" data-preset="straddle">Straddle</button>
+            </div>
+          </div>
 
-<div class="card" id="out" hidden></div>
+          <div class="btn-row">
+            <button type="submit" class="btn">Calculate payoff</button>
+            <button type="button" id="resetBtn" class="btn ghost">Reset</button>
+          </div>
+        </form>
+      </div>
 
-<div class="card">
-<h2>How to read the result</h2>
-<h3>Maximum reward</h3>
-<p>The best outcome is the premium collected when the spread is a credit structure, or the difference between what you paid and the spread width when it is a debit structure. It is a fixed amount, not a percentage.</p>
-<h3>Maximum risk</h3>
-<p>For a credit spread this is the distance between the two strikes minus the premium collected. For a debit spread it is the premium paid. Either way the number is fixed when the position is opened, so the loss cannot grow beyond it while the position is open.</p>
-<h3>Breakeven</h3>
-<p>The index level at expiry where the profit and loss of the structure reaches zero. A credit spread has one breakeven level; an iron condor has two.</p>
-<h3>Estimated costs</h3>
-<p>Brokerage, charges, taxes and the spread between the two sides of the book, applied to the structure you entered. This is an estimate for study, not a contract statement.</p>
-<h3>The chart</h3>
-<p>Profit and loss at expiry across the plotted range. The flat sections at each end show the defined outcome: the capped loss on one side and the maximum reward on the other.</p>
-</div>
+      <div class="panel">
+        <div class="explain">
+          <h3>How to read this board</h3>
+          <ol class="steps">
+            <li>Pick a <b>strategy template</b> or edit the <b>option legs</b> below the chart.</li>
+            <li>Every leg shows <b>live premium</b>, <b>breakeven</b> and <b>intrinsic value</b> from the spot you enter.</li>
+            <li>At expiry the payoff is <b>max profit capped</b>, <b>max loss capped</b>, with profits from premium only (no margin slippage assumed).</li>
+          </ol>
+        </div>
+        <div class="risk-box"><b>Educational only.</b> TradingAI provides educational decision-support information only. This builder is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative. Verify option premiums, lot sizes, margin, charges, expiry rules, and risk with your broker before trading.</div>
+      </div>
+    </aside>
 
-<div class="card">
-<h2>What this page does not do</h2>
-<ul>
-<li>It does not fetch live prices or an option chain. Everything comes from the premiums you enter.</li>
-<li>It does not quote a probability, an expected outcome or a forecast for any index level.</li>
-<li>It does not rank structures, suggest a strike, or compare instruments.</li>
-<li>It does not place, size or record any position, and it stores nothing you type.</li>
-<li>Premiums are treated as a mid-price fill, because you enter a single price per leg. Real fills sit between the best bid and the best offer.</li>
-</ul>
-</div>
+    <div class="right">
+      <div class="metrics" role="list" aria-label="Strategy summary">
+        <div class="metric" role="listitem"><div class="k">Max profit</div><div class="v" id="mMaxProfit">&mdash;</div><div class="note">capped by structure</div></div>
+        <div class="metric" role="listitem"><div class="k">Max loss</div><div class="v" id="mMaxLoss">&mdash;</div><div class="note">capped by structure</div></div>
+        <div class="metric" role="listitem"><div class="k">Breakeven</div><div class="v" id="mBreakEven">&mdash;</div><div class="note">index level</div></div>
+        <div class="metric" role="listitem"><div class="k">Net debit / credit</div><div class="v" id="mNetDC">&mdash;</div><div class="note">per share &times; lot</div></div>
+      </div>
 
-<div class="card">
-<h2>Related reading</h2>
-<ul>
-<li><a href="/tools.html">Tools and learning material</a></li><li><a href="/credit-spreads.html">Defined-risk option structures</a> &middot; <a href="/bull-put-spread.html">Bull Put Spread</a> &middot; <a href="/bear-call-spread.html">Bear Call Spread</a></li>
-<li><a href="/learn.html">Learning modules</a></li>
-<li><a href="/methodology.html">How this site is built</a></li>
-<li><a href="/disclaimer.html">Disclaimer</a></li>
-</ul>
-</div>
+      <div class="panel">
+        <div class="chart-head">
+          <h2>Payoff at expiry &mdash; <span id="stratName" style="color:#2563eb">Bull Call</span></h2>
+          <span class="note2" id="chartFoot">x-axis: index level at expiry</span>
+        </div>
+        <div class="chart-canvas-wrap">
+          <canvas id="payoffChart" width="820" height="360" aria-label="Payoff chart showing profit or loss at expiration against index level" role="img"></canvas>
+        </div>
+        <div class="ztooltips" id="ztooltips"></div>
+        <p class="chart-note" id="chartNote">The dashed line is premium &times; lot for a single-lot display. Draw is educational only.</p>
+      </div>
 
-</div>
-<footer><nav><a href="/">Home</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/contact.html">Contact</a><a href="/privacy.html">Privacy</a><a href="/terms.html">Terms</a><a href="/disclaimer.html">Disclaimer</a></nav>
-<div>© 2026 TradingAI.in — educational software, not advice.</div></footer>
-<script src="/fixed-loss-calc.js?v=1"></script>
+      <div class="panel">
+        <h2 style="font-size:1rem;color:#17314f;margin-bottom:8px">Option legs</h2>
+        <div class="legs-wrap">
+          <table id="legs" aria-label="Option legs editor">
+            <thead>
+              <tr><th>Side</th><th>Strike</th><th>Type</th><th>Premium (pts)</th><th>Breakeven</th><th>Intrinsic</th><th></th></tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <a href="javascript:void 0" id="addLegBtn" class="add-l">&plus; add a leg</a>
+      </div>
+
+      <div class="panel">
+        <h2 style="font-size:1rem;color:#17314f;margin-bottom:8px">Strategy templates</h2>
+        <div class="strategy-grid" role="group" aria-label="Strategy templates" id="strategyGrid">
+          <button type="button" class="strategy-card c-on" data-preset="bullCall"><b>Bull Call Spread</b>Buy ATM call, sell OTM call.<span class="tag">Debit</span></button>
+          <button type="button" class="strategy-card" data-preset="bearPut"><b>Bear Put Spread</b>Buy ATM put, sell OTM put.<span class="tag">Debit</span></button>
+          <button type="button" class="strategy-card" data-preset="bullPut"><b>Bull Put Spread</b>Sell OTM put, buy lower-strike put.<span class="tag">Credit</span></button>
+          <button type="button" class="strategy-card" data-preset="bearCall"><b>Bear Call Spread</b>Sell OTM call, buy higher-strike call.<span class="tag">Credit</span></button>
+          <button type="button" class="strategy-card" data-preset="ironCondor"><b>Iron Condor</b>Short strangle plus long wings.<span class="tag">Credit</span></button>
+          <button type="button" class="strategy-card" data-preset="butterfly"><b>Butterfly</b>Buy ITM+OTM call, sell two ATM calls.<span class="tag">Debit</span></button>
+          <button type="button" class="strategy-card" data-preset="straddle"><b>Straddle</b>ATM call and put, same strike.<span class="tag">Debit</span></button>
+        </div>
+        <div class="refit">
+          <label>Strategy articles on TradingAI:&nbsp;
+            <select id="refitLinks" aria-label="Related strategy articles">
+              <option value="https://tradingai.in/tools.html">Tools overview</option>
+              <option value="https://tradingai.in/learn.html">Options learn path</option>
+              <option value="https://tradingai.in/methodology.html">How outlooks are built</option>
+              <option value="https://tradingai.in/contact.html">Contact &amp; corrections</option>
+            </select>
+            <button type="button" id="refitGo" class="btn" style="flex:0 0 auto;padding:7px 12px;font-size:.78rem">Go</button>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+<main class="bl-wrap" aria-label="Strategy payoff education" style="margin-top:1rem">
+  <div class="panel">
+    <h2 style="font-size:1.05rem;color:#0b1e3a;margin-bottom:.5rem">How to read the payoff chart</h2>
+    <p style="font-size:.9rem;color:#334155">The chart plots profit or loss at expiry against the underlying's closing price. Points above zero are gains, below zero are losses; where the line crosses zero are your breakevens. Because every template here combines bought and sold legs, the line always flattens outside the wings — that flattening is the fixed, predefined risk you are studying. Toggle the expiry and volatility inputs to see how time and IV reshape the curve before expiry: longer expiries and higher IV inflate both option values, which helps debit structures and hurts credit structures, all else equal.</p>
+    <h2 style="font-size:1.05rem;color:#0b1e3a;margin:1rem 0 .5rem">What each template is for</h2>
+    <ul style="font-size:.9rem;color:#334155;margin-left:1.2rem">
+      <li><b>Bull Call Spread (debit):</b> buy ATM call, sell higher call. Capped gain if the index closes above the short strike; max loss is the debit paid. Studied for measured upside participation with a hard floor on loss.</li>
+      <li><b>Bear Put Spread (debit):</b> the mirror — buy ATM put, sell lower put. Capped gain below the short strike; max loss the debit.</li>
+      <li><b>Bull Put Spread (credit):</b> sell OTM put, buy a lower put as protection. Keeps the credit if price stays above the short strike; max loss is the wing width minus credit. The structure behind this site's BULL observations (<a href="/bull-put-spread.html">bull put spread guide</a>).</li>
+      <li><b>Bear Call Spread (credit):</b> sell OTM call, buy a higher call. Keeps the credit below the short strike; max loss wing width minus credit. The structure behind BEAR observations (<a href="/bear-call-spread.html">bear call spread guide</a>).</li>
+      <li><b>Iron Condor (credit):</b> a bear call spread plus a bull put spread — profits when the index pins inside both short strikes, defined loss outside either wing. A range-study structure, fragile in trends.</li>
+      <li><b>Butterfly (debit):</b> two wings bought around two sold ATM options — peak gain only near the middle strike, small defined loss elsewhere. A pinning-study structure.</li>
+      <li><b>Straddle (debit):</b> ATM call plus ATM put — profits only on a large move either way beyond the combined premium. The physical form of the <a href="/expected-move-guide.html">expected move</a>.</li>
+    </ul>
+    <h2 style="font-size:1.05rem;color:#0b1e3a;margin:1rem 0 .5rem">Assumptions and limits of this sketch</h2>
+    <ul style="font-size:.9rem;color:#334155;margin-left:1.2rem">
+      <li>Payoffs are expiry payoffs from intrinsic value; live P&amp;L before expiry differs with time decay, IV shifts and bid-ask spreads.</li>
+      <li>Premiums here are modelled, not market quotes — use this builder to learn shapes, and your broker's chain for real prices.</li>
+      <li>Brokerage, STT, stamp duty, GST and slippage are excluded; on narrow spreads these frictions decide whether a theoretical edge survives.</li>
+      <li>Lot sizes, expiries and margin rules follow the exchange's current circulars — verify before studying any structure against live data.</li>
+    </ul>
+    <p style="font-size:.82rem;color:#64748b;margin-top:.6rem">Educational sketches only — not investment advice, a research recommendation, or an instruction to trade. See the <a href="/disclaimer.html">Risk Disclosure</a>.</p>
+  </div>
+</main>
+<footer><nav aria-label="Footer"><a href="/contact.html">About</a><a href="/methodology.html">Methodology</a><a href="/signal-flow.html">Signal Flow</a><a href="/learn.html">Learn</a><a href="/tools.html">Tools</a><a href="/disclaimer.html">Risk Disclosure</a><a href="/terms.html">Terms of Use</a><a href="/privacy.html">Privacy Policy</a><a href="/refund-policy.html">Refund Policy</a><a href="/affiliate-disclosure.html">Affiliate Disclosure</a><a href="/contact.html">Contact</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/paper.html">Observations Journal</a><a href="/alerts.html">Alerts Archive</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
+<script>
+(function(){
+  "use strict";
+  var SPOT=document.getElementById("spot"),
+      LOT=document.getElementById("lotSize"),
+      STRIKE=document.getElementById("strike"),
+      RANGE=document.getElementById("rangePct"),
+      EXPIRY=document.getElementById("expiry"),
+      VOL=document.getElementById("vol"),
+      FORM=document.getElementById("builder-form"),
+      LEGS_TB=document.querySelector("#legs tbody"),
+      ADD=document.getElementById("addLegBtn"),
+      RESET=document.getElementById("resetBtn"),
+      M_MAXP=document.getElementById("mMaxProfit"),
+      M_MAXL=document.getElementById("mMaxLoss"),
+      M_BE=document.getElementById("mBreakEven"),
+      M_NDC=document.getElementById("mNetDC"),
+      STRAT_NAME=document.getElementById("stratName"),
+      CHART=document.getElementById("payoffChart"),
+      ZTIP=document.getElementById("ztooltips"),
+      CARD=STRAT_NAME.closest(".panel");
+  function num(v,d){var n=parseFloat(v);return isFinite(n)?n:(d||0);}
+  function fmt(x,sign){if(!isFinite(x))return "&mdash;";var a=Math.abs(x).toFixed(2);return (sign!==false&&x>0?"+":x<0?"-":"")+a;}
+  var templates={
+    bullCall:function(){return [
+      {side:"buy",kind:"C",strike:25000,premium:150},
+      {side:"sell",kind:"C",strike:25500,premium:60}
+    ];},
+    bearPut:function(){return [
+      {side:"buy",kind:"P",strike:25000,premium:140},
+      {side:"sell",kind:"P",strike:24500,premium:55}
+    ];},
+    bullPut:function(){return [
+      {side:"sell",kind:"P",strike:25000,premium:120},
+      {side:"buy",kind:"P",strike:24500,premium:40}
+    ];},
+    bearCall:function(){return [
+      {side:"sell",kind:"C",strike:25000,premium:110},
+      {side:"buy",kind:"C",strike:25500,premium:35}
+    ];},
+    ironCondor:function(){return [
+      {side:"sell",kind:"C",strike:25000,premium:110},
+      {side:"buy",kind:"C",strike:25500,premium:35},
+      {side:"sell",kind:"P",strike:25000,premium:95},
+      {side:"buy",kind:"P",strike:24500,premium:30}
+    ];},
+    butterfly:function(){return [
+      {side:"buy",kind:"C",strike:24500,premium:120},
+      {side:"sell",kind:"C",strike:25000,premium:60},
+      {side:"buy",kind:"C",strike:25500,premium:18}
+    ];},
+    straddle:function(){return [
+      {side:"buy",kind:"C",strike:25000,premium:120},
+      {side:"buy",kind:"P",strike:25000,premium:105}
+    ];}
+  };
+  var activePreset="bullCall",lastLegs=[],refitSource=1,lastSpot=0;
+  function presetName(p){return ({bullCall:"Bull Call",bearPut:"Bear Put",bullPut:"Bull Put",bearCall:"Bear Call",ironCondor:"Iron Condor",butterfly:"Butterfly",straddle:"Straddle"})[p]||p;}
+  function freshness(){var x=num(SPOT.value),exp=num(EXPIRY.value,7),iv=num(VOL.value,14),t=exp/365;return Math.max(0.6,Math.min(1.9,0.95+ (isFinite(x)?0.12:0) ));}
+  function toChartLegs(legs){var spot=num(SPOT.value),reset=(refitSource===1),scaled=[];
+    for(var i=0;i<legs.length;i++){var L=legs[i],S=0;
+      S=(L.kind==="C"?(spot-L.strike):(L.strike-spot));
+      L.intrinsic=Math.max(0,S);
+      L.breakeven=(L.kind==="C"?(L.strike+L.premium):(L.strike-L.premium));
+      lastSpot=spot;
+      scaled.push({strike:L.strike,kind:L.kind,premium:L.premium,side:L.side,intrinsic:L.intrinsic,breakeven:L.breakeven});
+    }
+    lastLegs=scaled;
+    return scaled;
+  }
+  function presets(){return templates[activePreset]?templates[activePreset]():[];
+  }
+  function renderLegs(){
+    var legs=toChartLegs(presets()),html="";
+    for(var i=0;i<legs.length;i++){
+      var L=legs[i],pn=(L.premium||0),be=(L.kind==="C"?(L.strike+pn):(L.strike-pn));
+      html+="<tr data-i=\""+i+"\"><td><select class=\"leg-side\" aria-label=\"Side\" data-i=\""+i+"\"><option"+(L.side==="buy"?" selected":"")+">buy</option><option"+(L.side==="sell"?" selected":"")+">sell</option></select></td><td><input class=\"leg-strike\" data-i=\""+i+"\" inputmode=\"decimal\" aria-label=\"Strike\" value=\""+L.strike+"\"></td><td><select class=\"leg-kind\" aria-label=\"Type\" data-i=\""+i+"\"><option value=\"C\" "+(L.kind==="C"?"selected":"")+">Call</option><option value=\"P\" "+(L.kind==="P"?"selected":"")+">Put</option></select></td><td><input class=\"leg-prem\" data-i=\""+i+"\" inputmode=\"decimal\" aria-label=\"Premium\" value=\""+(pn||"")+"\"></td><td class=\"leg-be\">"+be.toFixed(2)+"</td><td class=\"leg-intr\">"+L.intrinsic.toFixed(2)+"</td><td><button type=\"button\" class=\"del-leg\" aria-label=\"Remove leg\" data-i=\""+i+"\">&times;</button></td></tr>";
+    }
+    LEGS_TB.innerHTML=html;
+    bindLegEvents();
+    compute();
+  }
+  function bindLegEvents(){
+    var qs=function(sel){return Array.prototype.slice.call(LEGS_TB.querySelectorAll(sel));};
+    qs("select.leg-side").forEach(function(s){s.addEventListener("change",function(){var i=num(s.dataset.i);lastLegs[i].side=s.value;renderLegs();});});
+    qs("input.leg-strike").forEach(function(inp){inp.addEventListener("input",function(e){var i=num(inp.dataset.i);lastLegs[i].strike=num(inp.value,0);compute();});});
+    qs("input.leg-prem").forEach(function(inp){inp.addEventListener("input",function(e){var i=num(inp.dataset.i);lastLegs[i].premium=num(inp.value,0);compute();});});
+    qs(".del-leg").forEach(function(b){b.addEventListener("click",function(){var i=num(b.dataset.i);if(lastLegs.length>1){lastLegs.splice(i,1);renderLegs();}});});
+  }
+  function legAt(s,p){return parseFloat(s.toLowerCase()==="buy"?1:-1)*(p||0);}
+  function compute(){
+    var spot=num(SPOT.value),lot=num(LOT.value,1),legs=lastLegs,rows=LEGS_TB.querySelectorAll("tr"),net=0;
+    for(var i=0;i<rows.length&&i<legs.length;i++){
+      var c=rows[i].querySelector(".leg-prem"),k=rows[i].querySelector(".leg-strike");
+      var pv=num(c?c.value:legs[i].premium,0),kv=num(k?k.value:legs[i].strike,0);
+      legs[i].premium=pv;legs[i].strike=kv;
+      var s=(legs[i].kind==="C"?(kv-pv):(kv+pv)),be=(legs[i].kind==="C"?(kv+pv):(kv-pv));
+      var cell=rows[i].querySelector(".leg-be");if(cell)cell.textContent=be.toFixed(2);
+      var linger=rows[i].querySelector(".leg-intr");if(linger)linger.textContent=Math.max(0,(legs[i].kind==="C"?(spot-kv):(kv-spot))).toFixed(2);
+      net+=(legs[i].side==="buy"?-1:1)*pv;
+    }
+    var pts=0,K=Math.max(spot,0);
+    var maxP=-1e18,maxL=1e18,beC=null;
+    var lo=-Math.abs(spot)*0.2,hi=spot*1.2;
+    if(lo>=hi){lo=spot*0.8;hi=spot*1.2;}
+    for(var S=lo;S<=hi;S+=Math.max(1,spot*0.001)){
+      pts=net;
+      for(var j=0;j<legs.length;j++){
+        var iv=legs[j].kind==="C"?Math.max(0,S-legs[j].strike):Math.max(0,legs[j].strike-S);
+        pts+=(legs[j].side==="buy"?1:-1)*iv;
+      }
+      if(pts>maxP)maxP=pts;
+      if(pts<maxL)maxL=pts;
+    }
+    var bLo=null,bHi=null,prevP=null,prevS=null;
+    for(var S2=lo;S2<=hi;S2+=Math.max(1,spot*0.002)){
+      var p2=net;
+      for(var j2=0;j2<legs.length;j2++){
+        var iv2=legs[j2].kind==="C"?Math.max(0,S2-legs[j2].strike):Math.max(0,legs[j2].strike-S2);
+        p2+=(legs[j2].side==="buy"?1:-1)*iv2;
+      }
+      if(prevP!=null&&((prevP<=0&&p2>0)||(prevP>=0&&p2<0))){
+        var t=(0-prevP)/(p2-prevP),be=prevS+t*(S2-prevS);
+        if(bLo==null)bLo=be;else bHi=be;
+      }
+      prevP=p2;prevS=S2;
+    }
+    M_MAXP.innerHTML=fmt(maxP);
+    M_MAXL.innerHTML=fmt(maxL);
+    M_NDC.innerHTML=(net>=0?"+":"-")+Math.abs(net).toFixed(2)+" &times; "+lot;
+    M_BE.innerHTML=(bLo!=null)?((bHi!=null?bLo.toFixed(2)+" / "+bHi.toFixed(2):bLo.toFixed(2))):"&mdash;";
+    compute.net=net;
+    compute.mx=Math.max(Math.abs(maxP),Math.abs(maxL),1);
+    draw();
+    return {net:net,maxP:maxP,maxL:maxL,be:bLo};
+  }
+  function priceAxis(val){return Math.round(val);}
+  function draw(){
+    var ctx=CHART.getContext("2d"),W=CHART.width,H=CHART.height,spot=num(SPOT.value,1),lot=num(LOT.value,1);
+    var rng=num(RANGE.value,3)/100,lo=spot*(1-rng),hi=spot*(1+rng);
+    if(lo>=hi){lo=spot*0.9;hi=spot*1.1;}
+    var padL=46,padR=14,padT=16,padB=34;
+    ctx.clearRect(0,0,W,H);
+    ctx.font="11px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+    var X=function(s){return padL+(s-lo)/(hi-lo)*(W-padL-padR);},Y=function(p){
+      var mx=(typeof compute.mx==="number"&&compute.mx>0)?compute.mx:1;
+      return padT+(0-p)/(2*mx)*(H-padT-padB)+ (H-padT-padB)/2;
+    };
+    function line(pts,color,dash){ctx.beginPath();ctx.strokeStyle=color;ctx.lineWidth=2;ctx.setLineDash(dash||[]);
+      for(var i=0;i<pts.length;i++){var px=X(pts[i][0]),py=Y(pts[i][1]);i===0?ctx.moveTo(px,py):ctx.lineTo(px,py);}
+      ctx.stroke();ctx.setLineDash([]);}
+    var zeroLine=[];
+    var gridVals=[];
+    for(var g=-4;g<=4;g++){var gv=Math.round(spot+g*spot*rng/4);
+      if(gv>=lo&&gv<=hi){gridVals.push(gv);zeroLine.push([gv,0]);}}
+    line(zeroLine,"#d7e0ee",[4,4]);
+    var pts=[];
+    for(var s=lo;s<=hi;s+=(hi-lo)/120){
+      pts.push([s,payoffAt(s)]);
+    }
+    line(pts,"#2563eb",[]);
+    ctx.fillStyle="#17314f";ctx.font="bold 11px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+    gridVals.forEach(function(v){if(v<=0)return;
+      ctx.beginPath();ctx.moveTo(X(v),padT);ctx.lineTo(X(v),H-padB);ctx.strokeStyle="#f0f4fa";ctx.lineWidth=1;ctx.stroke();
+      var lab=priceAxis(v); ctx.fillStyle="#5c6b82";ctx.font="10px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+      ctx.fillText(String(lab),X(v)-14,H-14);});
+    ctx.fillStyle="#5c6b82";ctx.font="10px -apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif";
+    ctx.fillText("0",padL+4,padT+10);
+    drawProbe();
+  }
+  function payoffAt(S){
+    var net=0,legs=lastLegs;
+    for(var i=0;i<legs.length;i++){
+      var iv=legs[i].kind==="C"?Math.max(0,S-legs[i].strike):Math.max(0,legs[i].strike-S);
+      net+=(legs[i].side==="buy"?1:-1)*iv;
+    }
+    net+=num(compute.net||0,0);
+    return net;
+  }
+  function drawProbe(){
+    var rng=num(RANGE.value,3)/100,spot=num(SPOT.value,1);
+    CHART.dispatchEvent(new CustomEvent("probe",{detail:{rng:rng,spot:spot}}));
+  }
+  ADD.addEventListener("click",function(){
+    var spot=num(SPOT.value,0);
+    lastLegs.push({side:"buy",kind:"C",strike:Math.round(spot),premium:20});
+    renderLegs();
+  });
+  RESET.addEventListener("click",function(){
+    SPOT.value=24833;LOT.value=75;STRIKE.value=25000;RANGE.value=3;VOL.value=14;EXPIRY.value=7;
+    var t=templates[activePreset]?templates[activePreset]():[];
+    lastLegs=toChartLegs(t.slice());
+    renderLegs();
+  });
+  function setPreset(p){
+    activePreset=p;
+    var css=document.querySelectorAll(".preset-row button,.strategy-card");
+    for(var i=0;i<css.length;i++)css[i].classList.toggle("on",css[i].dataset.preset===p);
+    STRAT_NAME.textContent=presetName(p);
+    lastLegs=toChartLegs((templates[p]?templates[p]():[]).slice());
+    renderLegs();
+  }
+  document.querySelectorAll(".preset-row button").forEach(function(b){
+    b.addEventListener("click",function(){setPreset(b.dataset.preset);});
+  });
+  document.querySelectorAll(".strategy-card").forEach(function(c){
+    c.addEventListener("click",function(){setPreset(c.dataset.preset);});
+  });
+  document.getElementById("refitGo").addEventListener("click",function(){
+    var url=document.getElementById("refitLinks").value;
+    if(url)window.location.href=url;
+  });
+  FORM.addEventListener("submit",function(e){e.preventDefault();compute();});
+  ["spot","lotSize","strike","rangePct","vol"].forEach(function(id){
+    var el=document.getElementById(id);
+    el.addEventListener("input",function(){compute();});
+  });
+  EXPIRY.addEventListener("change",function(){compute();});
+  compute.net=0;compute.mx=1;
+  renderLegs();
+})();
+</script>
+<script src="/tradingai-share.js?v=5" defer></script>
 </body>
 </html>

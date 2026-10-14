@@ -164,9 +164,10 @@ def decision_view(instrument):
 @limiter.limit("5 per minute")
 def decision_claim(symbol):
     """Explicit state-changing operation: run the gated live evaluation and,
-    only if all gates pass and the setup qualifies, persist the one-trade-day
-    lock/row. Idempotent per (instrument, trade_date): repeats return
-    DAILY_TRADE_LIMIT_REACHED, never duplicates, never HTTP 500."""
+    only if all gates pass and the setup qualifies, persist (freeze) the
+    one-trade-day lock/row. Idempotent per (instrument, trade_date): the first
+    call freezes the live entry; repeats serve that SAME frozen trade (stable
+    entry/stop/target), never duplicate, never HTTP 500."""
     inst = (symbol or "").upper()
     if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
         return jsonify({"state": "NO_DATA", "timestamp": None,
@@ -239,6 +240,106 @@ def candles(symbol):
                              "data_ts": done[-1]["timestamp"] if done else None}})
 
 
+@app.route("/api/<symbol>/intraday", methods=["GET"])
+@limiter.limit("30 per minute")
+def intraday_session(symbol):
+    """Read-only full-session 5m price series with CPR reference levels for ONE
+    trading day (default: latest session with stored candles). Zero DB writes.
+
+    Levels come from the existing pivot engine applied to the PRIOR session's
+    OHLC (same maths as /api/strategy/cpr), so the page renders backend values
+    only and never estimates a level itself. ?date=YYYY-MM-DD selects a day."""
+    from app.research.cpr_strategy_engine import (
+        calculate_cpr, classify_cpr, pivot_levels)
+    inst = (symbol or "").upper()
+    if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
+    now_ist = datetime.now(_IST)
+    date_arg = (request.args.get("date") or "").strip()
+    if date_arg:
+        try:
+            datetime.strptime(date_arg, "%Y-%m-%d")
+        except ValueError:
+            return jsonify({"state": "NO_DATA", "timestamp": now_ist.isoformat(),
+                            "data": {"reasons": ["INVALID_DATE"]}}), 400
+
+    conn = get_conn()
+    try:
+        if not date_arg:
+            row = conn.execute(
+                "SELECT MAX(substr(timestamp,1,10)) AS d FROM market_candles_5m "
+                "WHERE instrument_id=?", (inst,)).fetchone()
+            date_arg = row["d"] if row and row["d"] else None
+        if not date_arg:
+            return jsonify({"state": "NO_DATA", "timestamp": now_ist.isoformat(),
+                            "data": {"instrument": inst, "date": None, "points": [],
+                                     "reasons": ["NO_STORED_SESSION"]}})
+        rows = conn.execute(
+            "SELECT timestamp, open, high, low, close FROM market_candles_5m "
+            "WHERE instrument_id=? AND substr(timestamp,1,10)=? "
+            "ORDER BY timestamp", (inst, date_arg)).fetchall()
+        prev_row = conn.execute(
+            "SELECT MAX(substr(timestamp,1,10)) AS d FROM market_candles_5m "
+            "WHERE instrument_id=? AND substr(timestamp,1,10)<?",
+            (inst, date_arg)).fetchone()
+        prev_date = prev_row["d"] if prev_row and prev_row["d"] else None
+        prev_candles = []
+        if prev_date:
+            prev_candles = conn.execute(
+                "SELECT high, low, close FROM market_candles_5m "
+                "WHERE instrument_id=? AND substr(timestamp,1,10)=? "
+                "ORDER BY timestamp", (inst, prev_date)).fetchall()
+        nav = conn.execute(
+            "SELECT MAX(substr(timestamp,1,10)) AS lt, "
+            "MIN(CASE WHEN substr(timestamp,1,10)>? THEN substr(timestamp,1,10) END) AS nt "
+            "FROM market_candles_5m WHERE instrument_id=?", (date_arg, inst)).fetchone()
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+    cpr = {"available": False, "session": prev_date, "reasons": []}
+    if len(prev_candles) >= 2:
+        p_h = max(float(c["high"]) for c in prev_candles)
+        p_l = min(float(c["low"]) for c in prev_candles)
+        p_c = float(prev_candles[-1]["close"])
+        base = calculate_cpr(p_h, p_l, p_c)
+        lv = pivot_levels(p_h, p_l, base["pp"])
+        cpr = {"available": True, "session": prev_date,
+               "pivot": base["pp"], "bc": base["bc"], "tc": base["tc"],
+               "width_pct": base["width_pct"],
+               "cpr_type": classify_cpr(base["width_pct"]),
+               "r1": lv["r1"], "s1": lv["s1"], "r2": lv["r2"], "s2": lv["s2"],
+               "prev_close": p_c, "prev_high": p_h, "prev_low": p_l,
+               "reasons": []}
+    else:
+        cpr["reasons"] = ["NO_PRIOR_SESSION"]
+
+    points = [{"timestamp": str(r["timestamp"]), "close": float(r["close"])}
+              for r in rows]
+    closes = [p["close"] for p in points]
+    return jsonify({"state": "LIVE", "timestamp": now_ist.isoformat(),
+                    "data": {"instrument": inst,
+                             "date": date_arg,
+                             "points": points,
+                             "count": len(points),
+                             "first": points[0]["timestamp"] if points else None,
+                             "last": points[-1]["timestamp"] if points else None,
+                             "latest": closes[-1] if closes else None,
+                             "day_high": max(closes) if closes else None,
+                             "day_low": min(closes) if closes else None,
+                             "cpr": cpr,
+                             "latest_date": nav["lt"] if nav else None,
+                             "prev_date": prev_date,
+                             "next_date": (nav["nt"] if nav else None),
+                             "session_start": "09:15",
+                             "session_end": "15:30",
+                             "is_latest": date_arg == (nav["lt"] if nav else date_arg),
+                             "reasons": ["STORED_COMPLETED_5M_CANDLES"] if points else ["NO_CANDLES_FOR_DATE"]}})
+
+
 @app.route("/api/<symbol>/paper-trade", methods=["GET"])
 @limiter.limit("30 per minute")
 def paper_trade(symbol):
@@ -278,7 +379,7 @@ def paper_spreads():
 @app.route("/api/paper/spread/today", methods=["GET"])
 @limiter.limit("30 per minute")
 def paper_spread_today():
-    """Today's spread preview (read-only): aligned trigger state + legs from
+    """Today's spread preview (read-only): plain trigger state + legs from
     the real strike grid + payoff curve. Credit is live LTPs when the NSE
     feed answers, else null (structure-only, clearly flagged)."""
     from app.research.cpr_trigger_engine import today_state
@@ -288,7 +389,7 @@ def paper_spread_today():
     if inst not in ("NIFTY", "BANKNIFTY"):
         return jsonify({"state": "NO_DATA", "timestamp": None,
                         "data": {"error": "UNKNOWN_INSTRUMENT"}}), 404
-    st = today_state(inst, variant="aligned")
+    st = today_state(inst, variant="plain")
     if not isinstance(st, dict) or st.get("state") != "SIGNAL":
         return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
                         "data": {"trigger": st, "spread": None, "credit": None,
@@ -323,24 +424,23 @@ def paper_spread_today():
 def run_cpr_trigger_backtest():
     """No-filter CPR trigger backtest over stored 5m candles (opens execution).
 
-    variant plain: bull on S2/S1/PDL touch or close above TC; bear on
-      R2/R1/PDH touch or close below BC.
-    variant aligned: same triggers gated by weekly CPR (bull needs close
-      above weekly TC, bear below weekly BC).
+    Plain book only (the aligned variant was retired 2026-10-14): bull on
+      S2/S1/PDL touch or close above TC; bear on R2/R1/PDH touch or close
+      below BC.
     First trigger/session, entry at next open in [09:20,15:20), 0.5% stop /
     2% target evaluated at subsequent opens (stop first), flat 15:20 open.
     Read-only. Paper rows newer than date_end are appended (source='paper')
     so the table grows day by day with live paper trading."""
-    from app.research.cpr_trigger_engine import run_opens_range, VARIANTS
+    from app.research.cpr_trigger_engine import run_opens_range
     body = request.get_json() or {}
     inst = (body.get("instrument") or "NIFTY").upper()
-    variant = (body.get("variant") or "aligned").lower()
+    variant = "plain"  # only book; the aligned variant was retired 2026-10-14
+    if (body.get("variant") or "plain").lower() != "plain":
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": ["RETIRED_VARIANT"]}}), 404
     if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
         return jsonify({"state": "NO_DATA", "timestamp": None,
                         "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
-    if variant not in VARIANTS:
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"reasons": ["UNKNOWN_VARIANT"]}}), 404
     ds = body.get("date_start", "2026-07-29")
     de = body.get("date_end", "2026-09-25")
     result = run_opens_range(inst, ds, de, variant)
@@ -395,6 +495,28 @@ def run_cpr_trigger_backtest():
         result['win_rate'] = round(100 * result['wins'] / n, 1) if n else 0
         result['total_R'] = round(result.get('total_R', 0) + sum(pr), 2)
         result['paper_included'] = True
+    return jsonify({"state": "COMPLETED", "data": result})
+
+@app.route("/api/backtest/cpr-walkforward", methods=["POST"])
+@limiter.limit("5 per minute")
+def run_cpr_walkforward_backtest():
+    """CPR + gap 09:45 walk-forward credit-spread backtest (read-only).
+
+    Validated NIFTY-only daily 09:45 short-credit structure (see
+    LEVEL_RESEARCH_REPORT.md): first-30m observation, walk-forward CPR-width /
+    gap percentiles over a trailing 20-session window, entry at the 09:45
+    price, trigger-hit and 15:15-open-exit wins. Points proxy, not premium
+    P&L. Read-only vs market_candles_5m. Date bounds optional (default full
+    range)."""
+    from app.research.cpr_gap_walkforward_engine import run_walkforward
+    body = request.get_json() or {}
+    inst = (body.get("instrument") or "NIFTY").upper()
+    ds = body.get("date_start") or ""
+    de = body.get("date_end") or ""
+    result = run_walkforward(inst, ds, de)
+    if isinstance(result, dict) and result.get('error'):
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": [result['error']]}}), 404
     return jsonify({"state": "COMPLETED", "data": result})
 
 @app.route("/api/backtest/<run_id>", methods=["GET"])
@@ -677,18 +799,19 @@ def live_performance_instrument(instrument):
 @limiter.limit("30 per minute")
 def cpr_trigger_signal():
     """Today's CPR trigger state (opens execution). Read-only: today's stored
-    candles so far vs previous-session CPR. ?variant=plain|aligned (default
-    aligned, matching POST). SIGNAL (direction/level/entry/stop/target),
+    candles so far vs previous-session CPR. Plain book only (the aligned
+    variant was retired 2026-10-14; ?variant=aligned now returns
+    RETIRED_VARIANT). SIGNAL (direction/level/entry/stop/target),
     WATCH, or NO_DATA. Never writes, never trades."""
-    from app.research.cpr_trigger_engine import today_state, VALID, VARIANTS
+    from app.research.cpr_trigger_engine import today_state, VALID
     instrument = (request.args.get("instrument") or "NIFTY").upper()
-    variant = (request.args.get("variant") or "aligned").lower()
+    variant = "plain"  # only book; the aligned variant was retired 2026-10-14
+    if (request.args.get("variant") or "plain").lower() != "plain":
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"error": "RETIRED_VARIANT"}}), 404
     if instrument not in VALID:
         return jsonify({"state": "NO_DATA", "timestamp": None,
                         "data": {"error": "UNKNOWN_INSTRUMENT"}}), 404
-    if variant not in VARIANTS:
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"error": "UNKNOWN_VARIANT"}}), 404
     st = today_state(instrument, variant=variant)
     if isinstance(st, dict) and st.get('error'):
         return jsonify({"state": "NO_DATA", "timestamp": None,

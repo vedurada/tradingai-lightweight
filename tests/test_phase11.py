@@ -162,7 +162,9 @@ def _engine_with(candles):
 def test_future_rejected_live():
     rows = db_day('NIFTY', WED)
     upto = [c for c in rows if c['timestamp'] <= f'{WED}T09:30:00+05:30']
-    bad = dict(upto[-1]); bad['timestamp'] = f'{WED}T09:35:00+05:30'
+    # completed candle 09:30 -> forming candle 09:35 is the allowed entry open;
+    # a candle past it (09:40) is future data and must be rejected.
+    bad = dict(upto[-1]); bad['timestamp'] = f'{WED}T09:40:00+05:30'
     st = _engine_with(upto + [bad]).evaluate(
         'NIFTY', now=ist(f'{WED}T09:36:00+05:30'), dry_run=True)
     assert st['state'] == 'NO_DATA' and 'trade' not in st

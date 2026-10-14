@@ -40,6 +40,7 @@ LATE_SESSION_FROM = '15:00'
 WAIT_REASONS = frozenset({
     'no_active_scenario', 'scenario_not_matched', 'scenario_watch',
     'scenario_partially_matched', 'entry_at_next_open',
+    'warmup_wait_first_candle',
 })
 
 
@@ -260,6 +261,33 @@ def build_decision(instrument, now=None):
     elif scen and scen.get('match_state') == 'CONFIRMED':
         regime = scen.get('scenario_type') or 'UNAVAILABLE'
 
+    # DISPLAY FALLBACK (owner-approved 2026-10-07): with no active trade and
+    # no CONFIRMED scenario both cells read UNAVAILABLE all session. Fill them
+    # from the SAME PIT market_state the live engine already computed — bias
+    # from its session trend, regime from its volatility/momentum character.
+    # Pure display composition of existing backend values (never a new signal,
+    # never a page-side estimate). Gated on a LIVE session with LIVE/RECENT
+    # data so a closed, stale or empty session keeps today's UNAVAILABLE
+    # display and the homepage's "Market Closed" / "Insufficient Data" labels;
+    # None-valued market_state fields still fail closed to UNAVAILABLE.
+    if session == 'LIVE' and data_status in ('LIVE', 'RECENT'):
+        _ms = st.get('market_state') or {}
+        _trend = _ms.get('trend')
+        _mom = _ms.get('momentum')
+        _vol = _ms.get('volatility')
+        if bias == 'UNAVAILABLE' and _trend in ('BULLISH', 'BEARISH', 'NEUTRAL'):
+            bias = _trend
+            codes.append('BIAS_SESSION_TREND')
+        if regime == 'UNAVAILABLE':
+            if _vol == 'HIGH':
+                regime = 'VOLATILE'
+                codes.append('REGIME_SESSION_VOLATILITY')
+            elif _trend and _mom:
+                _agree = ((_trend == 'BULLISH' and _mom == 'POSITIVE') or
+                          (_trend == 'BEARISH' and _mom == 'NEGATIVE'))
+                regime = 'TRENDING' if _agree else 'RANGING'
+                codes.append('REGIME_SESSION_TREND_MOMENTUM')
+
     # --- lifecycle: active paper trade (read-only) ---
     # DISPLAY RULE (owner-ordered): a trade shows ACTIVE only when it was
     # generated today (IST). Stale/test rows from prior days never surface.
@@ -283,9 +311,9 @@ def build_decision(instrument, now=None):
     completed = st.get('completed_candle')
     trigger = confirmation = entry_zone = invalidation = None
     if decision == 'TRADE' and trade:
-        trigger = f"5-minute candle closes toward {strategy} entry {entry}"
-        confirmation = f"CPR trigger {regime} (weekly-gate aligned) at {completed}"
-        entry_zone = f"After confirmation near {entry}"
+        trigger = f"CPR level trigger takes the {strategy} entry at the next candle open {entry}"
+        confirmation = f"CPR trigger {regime} (all sessions) at {completed}"
+        entry_zone = f"Entered at the next candle open near {entry}"
         invalidation = f"5-minute close beyond stop {stop}"
     elif decision == 'WAIT':
         trigger = 'Trigger not yet satisfied on the latest completed 5-minute candle'

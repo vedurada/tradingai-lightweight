@@ -13,13 +13,15 @@
   function pageTitle() {
     return document.title || "TradingAI.in";
   }
+  var DISCLAIMER = " via TradingAI.in (educational market analytics, not investment advice)";
+  var SHARE_MAX = 250;
   function pageText() {
     var m = document.querySelector('meta[name="description"]');
     var desc = m && m.content ? m.content : "";
-    var t = pageTitle();
-    var s = t + (desc ? " — " + desc : "");
-    if (s.length > 220) s = s.slice(0, 217) + "...";
-    return s + " via TradingAI.in (educational market analytics, not investment advice)";
+    var s = (pageTitle() + (desc ? " — " + desc : "")).replace(/\s+/g, " ").trim();
+    var room = SHARE_MAX - DISCLAIMER.length;
+    if (s.length > room) s = s.slice(0, room - 3).replace(/\s+\S*$/, "") + "...";
+    return s + DISCLAIMER;
   }
 
   var url = pageUrl();
@@ -36,7 +38,7 @@
       svg: '<path d="M12 3a9 9 0 0 0-7.8 13.5L3 21l4.6-1.2A9 9 0 1 0 12 3zm0 1.8a7.2 7.2 0 1 1-3.7 13.4l-.3-.2-2.7.7.7-2.6-.2-.3A7.2 7.2 0 0 1 12 4.8zm-3 3.3c-.2 0-.5 0-.7.3-.2.3-.9.9-.9 2.1s.9 2.5 1 2.6c.1.1 1.9 3 4.6 4.1 2.3.9 2.8.7 3.3.7.5-.1 1.6-.7 1.9-1.3.2-.6.2-1.1.2-1.3-.1-.1-.3-.2-.6-.3l-2-1c-.3-.1-.5-.2-.7 0l-.9 1.1c-.2.2-.3.2-.6.1a7.6 7.6 0 0 1-2.2-1.4 8.2 8.2 0 0 1-1.5-1.9c-.2-.3 0-.4.1-.6l.5-.6c.1-.2.2-.3.3-.5.1-.2 0-.4 0-.5L9.3 8c-.2-.4-.4-.4-.6-.4H9z"/>' },
     { key: "linkedin", label: "Share on LinkedIn", href: "https://www.linkedin.com/sharing/share-offsite/?url=" + eu,
       svg: '<path d="M6.9 8.6H4V20h2.9V8.6zM5.4 3.5a1.7 1.7 0 1 0 0 3.4 1.7 1.7 0 0 0 0-3.4zM10 20v-6c0-1.5.8-2.6 2.3-2.6 1.4 0 2 1 2 2.6v6h2.9v-6.4c0-3-1.6-4.4-3.8-4.4-1.7 0-2.6 1-3 1.7V8.6H7.5V20H10z"/>' },
-    { key: "telegram", label: "Share on Telegram", href: "https://t.me/share/url?url=" + eu + "&text=" + et,
+    { key: "telegram", label: "Share on Telegram", href: "https://telegram.me/share/url?url=" + eu + "&text=" + et,
       svg: '<path d="M21 4 3.5 11.1c-.7.3-.7 1.2.1 1.4l4.4 1.4 1.7 5.3c.3.8 1.3.9 1.8.2l2.5-2.9 4.7 3.5c.6.4 1.5.1 1.7-.6L21.9 5c.2-.9-.5-1.3-.9-1zM8.6 13.1l9.5-7.5c.1-.1.3 0 .2.2l-7.8 7.4-.3 3-1.6-3.1z"/>' }
   ];
 

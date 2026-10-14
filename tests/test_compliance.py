@@ -35,6 +35,14 @@ ALERT_CHANNELS = ["index.html", "indices/nifty.html", "indices/banknifty.html"]
 CHANNEL_URL = "https://telegram.me/tradingai_cpr"
 SUBSCRIBE_BLOCK = 'aria-label="Model alert channel"'
 
+# The social share bar may provide a generic Telegram share button (e.g.
+# https://telegram.me/share/url). That is a page-share control, not the model
+# channel, so it is stripped (button markup + its CSS rule) before checks.
+SHARE_TG_RE = re.compile(
+    r'<a[^>]*tai-how-sh-telegram[^>]*>.*?</a>|\.tai-how-sh-telegram\{[^}]*\}',
+    re.S,
+)
+
 
 def read(rel):
     return (FRONTEND / rel).read_text()
@@ -63,6 +71,9 @@ class TestNoActionableContent(unittest.TestCase):
             r"not (a|the) (recommendation|forecast|forecasting|instruction|prediction|success rate)",
             r"no (guarantee|future-prediction|lookahead)",
             r"paper_confluence",
+            # social share bar: wa.me / platform share buttons point visitors at a
+            # page URL and are not trade directives (owner-principle)
+            r"tai-how-sh|data-sh=|https?://wa\.me/|tai-share-",
         ]
         for rel in PAGES:
             t = read(rel)
@@ -78,7 +89,7 @@ class TestNoActionableContent(unittest.TestCase):
 
     def test_no_telegram_links(self):
         for rel in PAGES:
-            t = _channel_free(rel, read(rel)).lower()
+            t = SHARE_TG_RE.sub("", _channel_free(rel, read(rel))).lower()
             self.assertNotIn("t.me/", t, f"{rel}: channel link outside the authorised block")
             self.assertNotIn("telegram", t, f"{rel}: channel reference outside the authorised block")
 

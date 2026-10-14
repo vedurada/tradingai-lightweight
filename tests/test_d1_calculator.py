@@ -256,28 +256,30 @@ class TestIsolationAndReadOnly(unittest.TestCase):
 
 
 class TestNoFrontendFormula(unittest.TestCase):
-    JS = (ROOT / "frontend" / "fixed-loss-calc.js").read_text()
+    """The fixed-loss options page must not encode an economic formula of its own.
+
+    History: the previous client (frontend/fixed-loss-calc.js) was removed on
+    2026-10-07 and the page rebuilt as a static strategy builder. The delegated
+    /api/economics/calculate endpoint still exists for future clients, but no
+    page consumes it; this test now guards the static page directly.
+    """
     HTML = (ROOT / "frontend" / "fixed-loss-options.html").read_text()
 
-    def test_client_calls_the_endpoint(self):
-        self.assertIn("/api/economics/calculate", self.JS)
-        self.assertIn('method: \'GET\'', self.JS)
+    def test_page_has_no_cost_or_tax_constants(self):
+        for token in ("STT", "GST", "brokerage", "stamp_duty", "LOT_SIZE"):
+            self.assertNotIn(token, self.HTML, "page must not encode %s" % token)
 
-    def test_client_has_no_cost_or_lot_constants(self):
-        for token in ("STT", "GST", "brokerage", "stamp_duty", "slippage",
-                      "charges", "LOT_SIZE", "0.0003", "0.001",
-                      "0.18", "0.06", "0.006"):
-            self.assertNotIn(token, self.JS, "client must not encode %s" % token)
-
-    def test_client_has_no_pricing_arithmetic(self):
-        # no assignment that derives an economic figure from leg prices
-        bad = re.findall(r"\+ *-|\* *leg|/ *premium|premium *\+|strike *\*", self.JS)
+    def test_page_has_no_pricing_arithmetic(self):
+        # no expression that derives an economic figure from leg prices
+        bad = re.findall(r"\+ *-|\* *leg|/ *premium|premium *\+|strike *\*", self.HTML)
         self.assertEqual(bad, [], bad)
 
-    def test_page_delegates_and_warns(self):
-        self.assertIn("fixed-loss-calc.js", self.HTML)
+    def test_page_has_no_external_pricing_client(self):
+        refs = re.findall(r'(?:src|href)="[^"]*\.(?:js|css)"', self.HTML)
+        self.assertEqual(refs, [], "page must not load an external pricing client: %s" % refs)
+
+    def test_page_warns(self):
         self.assertIn("not investment advice", self.HTML.lower())
-        self.assertIn("no pricing formula of its own", self.HTML.lower())
 
 
 if __name__ == "__main__":

@@ -1,86 +1,58 @@
-# TradingAI API Documentation
+# TradingAI API (live 2026-10-14)
 
-Base URL: `http://127.0.0.1:8000/api`
-All responses use envelope: `{"state": "...", "timestamp": "...", "data": {}}`
+Base: http://127.0.0.1:8000/api (nginx /api proxy, 60r/m). Envelope varies by route;
+health/quote/decision use state + timestamp + data. Unknown routes UNKNOWN_ROUTE.
+Unknown symbols 404 UNKNOWN_INSTRUMENT.
 
-## Health
+## Health / market
 
-### GET /api/health
-Check application health.
-```json
-{"state": "LIVE", "timestamp": "...", "data": {"tables": 26, "database": "/opt/tradingai_new/database/tradingai.db"}}
-```
+- GET /api/health
+- GET /api/quote/<INST> — latest 5m close, day-change vs prev daily close, STALE never as LIVE.
+- GET /api/decision/<INST> — dry-run composer, zero writes.
+- GET /api/<sym>/summary, GET /api/<sym>/decision (legacy aliases)
+- GET /api/<sym>/candles?n<=80 — completed-only, n clamped.
+- GET /api/<sym>/intraday — added Oct 2026 (uncommitted pre-push, see git log).
+- GET /api/<sym>/paper-trade
+- GET /api/market/holidays, GET /api/alerts/status
 
-## NIFTY
+## Trading (writes)
 
-### GET /api/NIFTY/summary
-Current NIFTY market state.
-```json
-{"state": "LIVE", "data": {"price": 25000.50, "change": 100.25, "state": "LIVE", "source": "yfinance", "timestamp": "..."}}
-```
+- POST /api/<sym>/decision/claim — ONLY live-trade writer (UNIQUE daily lock;
+  loser of race gets daily-limit, never 500).
 
-### GET /api/NIFTY/decision
-Today's trade decision for NIFTY.
-```json
-{"state": "LIVE", "data": {"decision": {"decision": "NO_TRADE", "reasons": ["scenario_not_confirmed"], "trade": null}, "market_state": {...}, "ai": {...}}}
-```
+## Paper
 
-### GET /api/NIFTY/paper-trade
-Active NIFTY paper trades.
-```json
-{"state": "LIVE", "data": {"trades": [...], "active": 0}}
-```
+- GET /api/paper/spreads, GET /api/paper/spread/today, GET /api/paper-trade
+- Lifecycle scripts/paper_confluence.py --topup. Spreads credit null (NSE 403),
+  CREDIT_ONLY gate. Costs 0.10R/trade as net_R API-only, never displayed.
 
-### GET /api/NIFTY/scenario
-Current NIFTY scenario status.
+## Backtest (live book)
 
-### GET /api/NIFTY/levels
-Key NIFTY levels (support, resistance, pivot).
+- POST /api/backtest/cpr-triggers {instrument, variant plain|aligned, dates}
+  (+ paper merge newer-than-end, today in missing_eod until 15:10)
+- POST /api/backtest/cpr-walkforward
+- GET /api/backtest/<run_id>, GET /api/backtest/validation/<run_id>
+- Removed 2026-09-28: POST /api/backtest/run (research simulator approximation;
+  signal-candle entries, NEUTRAL proxy, forced options_valid — do not mistake for live).
 
-### GET /api/NIFTY/chart
-5-minute NIFTY candle data.
+## Research / strategy / performance (kept, mostly unused by pages)
 
-### GET /api/NIFTY/options
-NIFTY option chain data (when available).
+- GET /api/research/scenarios, /api/research/scenarios/<instrument>
+- GET /api/research/performance, /api/research/baseline/<instrument>
+- GET /api/research/trade/<instrument>/<date>
+- GET /api/research/replay/<instrument>/<date>/<timestamp> (validated, LIMIT 500)
+- GET /api/strategy/cpr-triggers, /api/strategy/cpr
+- GET /api/performance/live, /api/performance/live/<instrument>
+- GET /api/options/<instrument>, /api/options/strategy/<instrument> (dormant, NSE 403)
 
-### GET /api/NIFTY/research
-Research data for NIFTY.
+## Economics (orphaned UI)
 
-## BANKNIFTY
-Same endpoints as NIFTY with `BANKNIFTY` replacing `NIFTY`.
+- GET /api/economics/calculate (blueprint app/api/e2_economics.py) — still exists + tested,
+  but frontend/fixed-loss-calc.js/css removed 2026-10-07; fixed-loss-options.html is static
+  with no /api calls.
 
-## Backtest
+## Rate limits / errors
 
-### POST /api/backtest/run
-Run historical backtest.
-```json
-// Request
-{"instrument": "NIFTY", "date_start": "2026-09-01", "date_end": "2026-09-19"}
-// Response
-{"state": "COMPLETED", "data": {"run_id": "BT-XXXXXXXX", "decisions": [...], "trades": [...], "outcome": {...}, "lookahead_check": "PASS"}}
-```
-
-### GET /api/backtest/{run_id}
-Get backtest results.
-```json
-{"state": "COMPLETED", "data": {"run": {...}, "decisions": [...], "trades": [...], "outcome": {...}}}
-```
-
-### GET /api/backtest/{run_id}/validation
-No-look-ahead validation.
-```json
-{"state": "COMPLETED", "data": {"run_id": "...", "lookahead_violations": 0, "result": "PASS"}}
-```
-
-## Error Response
-
-```json
-{"state": "API_ERROR", "error": {"code": "MARKET_DATA_UNAVAILABLE", "message": "..."}}
-```
-
-## Rate Limits
-- `/api/health`: unlimited
-- Summary/paper-trade endpoints: 30/minute
-- Decision: 10/minute
-- Backtest: 5/minute
-- Backtest detail: 30/minute
+Per-route limits via flask-limiter + nginx. STALE handling, 400 on bad replay date/ts,
+404 on unknown symbol. No auth (localhost bind + nginx/CF only) — do not expose
+write endpoints broadly.

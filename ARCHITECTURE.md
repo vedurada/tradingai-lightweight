@@ -1,101 +1,73 @@
-# TradingAI Architecture
+# TradingAI Architecture (live 2026-10-14)
 
-## System Overview
+Source of truth: /opt/tradingai on OCI VM. Deterministic CPR-trigger system, not LLM trading.
 
-TradingAI is a deterministic market-intelligence and paper-trading system for Indian index options.
+## Pipeline (live)
 
-## Core Pipeline
+LiveEngine.evaluate(dry_run) in app/live/engine.py:
+NSE-calendar session gate (MARKET_CLOSED/PREMARKET/WEEKEND/HOLIDAY) to
+completed-candle freshness gate (STALE never tradable) to market state
+(trend vs mean, VWAP side, 3-bar momentum, ATR band) to
+QualificationEngine.qualify (app/core/qualification.py) to
+decision view (app/decision/view.py: CPR from previous session only, gap, evidence codes).
 
-```
-PREVIOUS SESSIONS → HISTORICAL ANALYSIS → SCENARIO CANDIDATES → TODAY'S MARKET
-    ↓                                                      ↓
-SCENARIO MAP ← SCENARIO MATCHING ← CURRENT MARKET STATE
-    ↓
-CONFIRMATION CHECK
-    ↓
-OPTIONS ANALYSIS
-    ↓
-STRATEGY SELECTION
-    ↓
-RISK QUALIFICATION
-    ↓
-DAILY TRADE LOCK CHECK
-    ↓
-TRADE DECISION (QUALIFIED or NO TRADE)
-    ↓
-AI EXPLANATION (downstream)
-    ↓
-PAPER TRADE (if qualified)
-    ↓
-MONITORING & EXIT
-```
+QUALIFIED_TRADE requires ALL: session LIVE, fresh completed 5m candle,
+scenario CONFIRMED = trend + VWAP side + momentum ALL aligned
+(app/scenarios/engine.py; momentum alone never confirms),
+credit-only strategy found, live price present, risk <=2pct AND RR >=1.5
+(app/risk/engine.py), options valid, one trade per instrument per day (UNIQUE lock).
+
+## Trigger book (shared by live, backtest page, paper logger)
+
+File: app/research/cpr_trigger_engine.py. BEAR/BULL mirror:
+- BEAR = bearish trend + below VWAP + negative momentum + first touch R2/R1/prev-high
+  or close below BC, bearish gap => Bear Call Spread, SL entry x1.005, target x0.98.
+- BULL = bullish trend + above VWAP + positive momentum + first touch S2/S1/prev-low
+  or close above TC, bullish gap => Bull Put Spread, SL x0.995, target x1.02.
+Bear checked first; within side first listed level wins.
+Entries next-open [09:20,15:10), opens-only exits, 15:10 EOD flat, weekly gate >=3 sessions
+for aligned, decay NIFTY<30/BN<60/VIX 0.02, min-10-candle days.
 
 ## Components
 
-### app/api/app.py
-Flask REST API serving all endpoints under `/api/`.
+- app/api/app.py — Flask, 30 routes (see API.md). Dry-run composer for decisions (zero writes).
+  Only live-trade writer: POST /api/symbol/decision/claim. Removed 2026-09-28:
+  POST /api/backtest/run (0 callers; use cpr-triggers). Intraday endpoint added Oct 2026:
+  GET /api/symbol/intraday.
+- app/live/engine.py — intrabar entry + plain variant (Oct 2026, uncommitted pre-push).
+- app/decision/view.py — display fallback + intrabar wording (Oct 2026).
+- app/market/ — provider.py (yfinance, 12s bounded fetch + 1 retry, 429 RATE_LIMITED),
+  collector.py (today completed candles, UNIQUE dedupe), nse_calendar.py, cache.py.
+- app/options/ — contract/cache/db/economics/engine/provider/strategy. NSE chain 403-blocked;
+  spreads structure-only, CREDIT_ONLY gate on debit dispatch.
+- app/paper_trade/, scripts/paper_confluence.py --topup — appends day outcome to paper_align,
+  structure rows to paper_spreads. No live premiums so credit null.
+- scripts/tg_alerts.py --watch — Telegram entry/exit only, once-per-trade dedupe, IST.
+- scripts/build_alerts_page.py, build_replay.py, weekly_review.py, veto_score.py,
+  veto_paper_book.py, mistake_guard.py.
+- app/observability/, app/ai/explanation.py — downstream non-authoritative AI text only.
 
-### app/core/
-- **db.py**: SQLite connection with foreign keys and Row factory.
-- **config.py**: Loads JSON config files (instruments, settings).
-- **qualification.py**: Master qualification engine — checks all conditions for a trade.
+## Frontend (nginx root /opt/tradingai/frontend, .html no-store)
 
-### app/market/
-- **provider.py**: Market data provider using yfinance for NIFTY, BANKNIFTY, INDIA_VIX.
+- / index: 3 cards (decision+quote+candles), decision/candles 300s, quote 60s.
+- /indices/nifty.html, banknifty.html: bias pill, CPR strip, 5m chart + last-12 table.
+- /backtest.html: POST cpr-triggers (plain|aligned) + paper merge newer-than-end.
+- /paper.html, /alerts.html, /methodology.html, /signal-flow.html, /tools.html, /learn.html.
+- Fixed-loss page is static Strategy Builder (fixed-loss-calc.js/css removed 2026-10-07);
+  /api/economics/calculate still exists but has no frontend consumer.
 
-### app/scenarios/
-- **engine.py**: Scenario candidate generation and match evaluation (WATCH/PARTIALLY_MATCHED/CONFIRMED/INVALIDATED).
+## Database (SQLite WAL, timeout=10, schema_version=2)
 
-### app/strategies/
-- **engine.py**: Strategy selection based on scenario type, direction, volatility.
+34 tables. Core: market_candles_5m (NIFTY/BANKNIFTY ~4462 each + VIX ~3185),
+provider_cache (45s/90s TTL), instruments (3), trading_sessions, market_snapshots/levels,
+volatility_snapshots, scenario_definitions/candidates/matches, trade_candidates,
+qualified_trades + daily_trade_locks (UNIQUE), paper_align/paper_trigger/paper_pivot/
+paper_spreads/paper_trades(+events), backtest_runs/decisions/trades/outcomes,
+options_provider_cache, system_health, pipeline_runs, data_quality_events.
 
-### app/risk/
-- **engine.py**: Risk validation — entry/stop/target levels, reward:risk ratio, max risk.
+## Determinism / safety
 
-### app/paper_trade/
-- **engine.py**: Paper trade creation, monitoring (stop/target/scenario), exit handling.
-
-### app/research/
-- **backtest.py**: Historical replay engine with no-look-ahead validation.
-
-### app/ai/
-- **explanation.py**: AI explanation layer — downstream, non-authoritative.
-
-## Database
-
-SQLite at `database/tradingai.db`. Schema at `database/schema.sql`.
-
-Key tables:
-- `instruments` — NIFTY, BANKNIFTY, INDIA_VIX
-- `market_candles_5m` — 5-minute OHLCV data
-- `market_snapshots` — Market state snapshots
-- `scenario_definitions` — Scenario rule definitions
-- `scenario_candidates` — Historical candidates per session
-- `scenario_matches` — Current scenario match states
-- `qualified_trades` — Qualified trade records
-- `daily_trade_locks` — One-trade-per-day enforcement
-- `paper_trades` — Active/closed paper trades
-- `backtest_runs`, `backtest_decisions`, `backtest_trades`, `backtest_outcomes` — Backtest data
-- `system_health` — Health check history
-
-## Data Flow
-
-All market data flows: FETCH → VALIDATE → NORMALIZE → STORE → QUALITY CHECK → ENGINE.
-
-## Deterministic Hierarchy
-
-```
-Market Data → Deterministic Engine → Trade Decision → AI Explanation
-```
-
-AI cannot override: entry, stop, target, risk, daily limit, or convert NO_TRADE to TRADE.
-
-## No-Look-Ahead
-
-Every backtest decision records:
-- `latest_allowed_data_timestamp` (the candle used)
-- `actual_latest_data_timestamp` (must be ≤ decision timestamp)
-
-## Timezone
-
-All trading logic uses Asia/Kolkata (IST). UTC used internally where convenient, IST for all display.
+AI cannot override entry/SL/target/risk/lock. Unknown symbols 404 UNKNOWN_INSTRUMENT.
+STALE quote always data_status=STALE, never LIVE. Replay validated + LIMIT 500.
+141 except-Exception sites (46 bare pass) — known silent-failure risk, see audit.
+No auth on API (nginx rate-limit + Cloudflare only); bind localhost.

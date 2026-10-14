@@ -4,9 +4,30 @@ __pycache__/
 *.db-wal
 *.db-shm
 logs/*.log
+logs/*.log.*
+logs/*.gz
 data/generated/*.json
 
 database/tradingai.db
 *.db
 .tg_env
+config/llm_key
 reports/
+# Live hygiene 2026-10-14: backups, frozen snapshots, runtime state
+*.pre-*
+*.frozen-*
+*.backup_*
+*.remove-*
+*.bak
+*.bak-*
+frontend/*.frozen-*
+frontend/*.pre-*
+frontend/*.backup_*
+data/tg_state.json
+data/tg_alerts_archive.jsonl
+data/loss_memory*.json
+data/loss_memory*.jsonl
+data/archive/
+*.db-wal
+*.db-shm
+logs/selfheal.state.json
