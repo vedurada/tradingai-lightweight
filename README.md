@@ -58,6 +58,11 @@ See ARCHITECTURE.md. Removed 2026-09-28: POST /api/backtest/run (use POST /api/b
 - tests/ — 32 files, pytest (see DEPLOYMENT.md for slow/stale notes 2026-10-13)
 - database/tradingai.db — SQLite WAL (market_candles_5m, paper tables, backtest, locks)
 
+## How to use (narrative + animated)
+
+- Website animated story (60s, play/pause): https://tradingai.in/how-to-use-website.html
+- GitHub narrative + flowchart + animated SVG: HOW_TO_USE.md, docs/website-tour.svg
+
 ## Pages
 
 - Home (3 outlook cards): /index.html

@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="600" height="300" viewBox="0 0 600 300" role="img" aria-label="Animated six-stop tour of TradingAI.in">
+<title>TradingAI.in six-stop tour — Outlook, Inputs, Levels, Learn, Records, Decide. Educational only.</title>
+<rect x="0" y="0" width="600" height="300" fill="#f8fafc" rx="12"/>
+<rect x="20" y="20" width="165" height="100" fill="#fff" stroke="#2563eb" stroke-width="3" rx="8"/>
+<text x="32" y="46" font-size="13" font-weight="bold" fill="#0b1e3a">1 · Outlook</text>
+<text x="32" y="66" font-size="11" fill="#475569">NIFTY · BANKNIFTY · VIX</text>
+<text x="32" y="84" font-size="11" fill="#475569">timestamps in IST</text>
+<rect x="215" y="20" width="165" height="100" fill="#fff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
+<text x="227" y="46" font-size="13" font-weight="bold" fill="#0b1e3a">2 · Inputs</text>
+<text x="227" y="66" font-size="11" fill="#475569">VWAP · CPR · gap</text>
+<rect x="410" y="20" width="165" height="100" fill="#fff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
+<text x="422" y="46" font-size="13" font-weight="bold" fill="#0b1e3a">3 · Levels</text>
+<text x="422" y="66" font-size="11" fill="#475569">trigger / invalidation</text>
+<rect x="20" y="150" width="165" height="100" fill="#fff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
+<text x="32" y="176" font-size="13" font-weight="bold" fill="#0b1e3a">4 · Learn</text>
+<text x="32" y="196" font-size="11" fill="#475569">payoff · breakeven</text>
+<rect x="215" y="150" width="165" height="100" fill="#fff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
+<text x="227" y="176" font-size="13" font-weight="bold" fill="#0b1e3a">5 · Records</text>
+<text x="227" y="196" font-size="11" fill="#475569">kept win or lose</text>
+<rect x="410" y="150" width="165" height="100" fill="#fff" stroke="#cbd5e1" stroke-width="1.5" rx="8"/>
+<text x="422" y="176" font-size="13" font-weight="bold" fill="#0b1e3a">6 · Decide</text>
+<text x="422" y="196" font-size="11" fill="#475569">your call — always</text>
+<rect x="60" y="60" width="480" height="34" fill="#dbeafe" opacity="0.85"/>
+<text x="66" y="54" font-size="11" fill="#1d4ed8">CPR band TC/BC — yesterday only</text>
+<circle cx="60" cy="90" r="8" fill="#2563eb" stroke="#fff" stroke-width="2">
+<animate attributeName="cx" values="60;140;220;300;380;460;540;540" dur="14s" repeatCount="indefinite"/>
+<animate attributeName="cy" values="90;94;88;82;64;60;72;72" dur="14s" repeatCount="indefinite"/>
+</circle>
+<text x="20" y="285" font-size="12" fill="#0b1e3a">Follow Ravi 09:20 IST: Outlook → Inputs → Levels → Learn → Records → Decide.
+<animate attributeName="opacity" values="1;1;0;0" dur="14s" repeatCount="indefinite"/>
+</text>
+<text x="20" y="285" font-size="12" fill="#0b1e3a" opacity="0">Educational market analytics. Not investment advice. See methodology.
+<animate attributeName="opacity" values="0;0;1;1" dur="14s" repeatCount="indefinite"/>
+</text>
+</svg>
