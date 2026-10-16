@@ -22,6 +22,9 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 BASE = '/opt/tradingai'
+import sys as _sys
+if BASE not in _sys.path:
+    _sys.path.insert(0, BASE)
 IST = ZoneInfo('Asia/Kolkata')
 API = 'http://127.0.0.1:8000'
 CHANNEL = '@tradingai_cpr'
@@ -93,6 +96,76 @@ def tg(method, payload, photo=None, timeout=30):
     except Exception as e:
         return _fail(method, f'{type(e).__name__}: {e}')
 
+
+
+FB_ENV = os.path.join(BASE, ".fb_env")
+_FB_WARNED = set()
+
+def fb_config():
+    """Read (page_id, page_token) from .fb_env. Returns (None,None) if missing."""
+    try:
+        raw = open(FB_ENV).read().strip()
+    except Exception:
+        return None, None
+    cfg = {}
+    for line in raw.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, v = line.split("=", 1)
+        cfg[k.strip()] = v.strip()
+    if cfg.get("FB_PAGE_ID") or cfg.get("FB_PAGE_TOKEN"):
+        return cfg.get("FB_PAGE_ID") or None, cfg.get("FB_PAGE_TOKEN") or None
+    if "|" in raw:
+        pid, tok = raw.split("|", 1)
+        return pid.strip() or None, tok.strip() or None
+    parts = [x.strip() for x in raw.splitlines() if x.strip()]
+    if len(parts) >= 2:
+        return parts[0], parts[1]
+    return None, None
+
+
+def fb_post(message, link=None, photo=None, timeout=30):
+    """Best-effort Facebook Page post. Never raises; returns Graph response dict or None."""
+    pid, tok = fb_config()
+    if not pid or not tok:
+        key = "missing"
+        if key not in _FB_WARNED:
+            _FB_WARNED.add(key)
+            print("FB skipped (.fb_env missing or malformed)")
+        return None
+    try:
+        if photo is None:
+            payload = {"message": message, "access_token": tok}
+            if link:
+                payload["link"] = link
+            data = urllib.parse.urlencode(payload).encode()
+            req = urllib.request.Request(f"https://graph.facebook.com/v19.0/{pid}/feed", data=data)
+            with urllib.request.urlopen(req, timeout=timeout) as r:
+                return json.load(r)
+        import uuid
+        boundary = uuid.uuid4().hex
+        body = b""
+        fields = {"caption": message, "access_token": tok}
+        if link:
+            fields["link"] = link
+        for k, v in fields.items():
+            body += ("--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"" + k + "\"\r\n\r\n" + v + "\r\n").encode()
+        body += ("--" + boundary + "\r\n" + "Content-Disposition: form-data; name=\"source\"; filename=\"shot.png\"\r\nContent-Type: image/png\r\n\r\n").encode() + photo + ("\r\n--" + boundary + "--\r\n").encode()
+        req = urllib.request.Request(f"https://graph.facebook.com/v19.0/{pid}/photos", data=body,
+                                     headers={"Content-Type": f"multipart/form-data; boundary={boundary}"})
+        with urllib.request.urlopen(req, timeout=timeout) as r:
+            return json.load(r)
+    except urllib.error.HTTPError as e:
+        try:
+            detail = e.read().decode()[:200]
+        except Exception:
+            detail = str(e)
+        print(f"FB POST FAILED: HTTP {e.code} {detail}")
+        return None
+    except Exception as e:
+        print(f"FB POST FAILED: {type(e).__name__}: {e}")
+        return None
 
 def api(path):
     with urllib.request.urlopen(API + path, timeout=25) as r:
@@ -190,6 +263,15 @@ def rebuild_page():
     visible in tg.log rather than discovered later.
     """
     try:
+        _rr = subprocess.run(['/usr/bin/python3', os.path.join(BASE, 'scripts', 'build_rss.py')],
+                             timeout=60, check=False, capture_output=True, text=True)
+        if _rr.returncode != 0:
+            print(f'WARNING rss rebuild failed (exit {_rr.returncode}): {((_rr.stderr or _rr.stdout or "").strip().splitlines() or [""])[-1][:160]}')
+        elif (_rr.stdout or '').strip():
+            print((_rr.stdout or '').strip())
+    except Exception as _e:
+        print(f'WARNING rss rebuild did not run: {_e}')
+    try:
         r = subprocess.run(['/usr/bin/python3', ALERTS_PAGE], timeout=90,
                            check=False, capture_output=True, text=True)
     except Exception as e:
@@ -265,6 +347,10 @@ def do_test():
     if r.get('ok'):
         log_alert({'type': 'test', 'inst': 'channel',
                    'explanation': 'Connectivity check confirming the alerting path is live.'})
+    try:
+        fb_post('\U0001f527 TradingAI model alerts online. Morning model levels, intraday model signals and EOD model recaps will land here. Automated, standardized model output. Not personalised investment advice. Educational research only.')
+    except Exception as e:
+        print(f'FB hook (test) skipped: {e}')
     print('test sent:', r.get('ok'))
 
 
@@ -292,9 +378,13 @@ def do_morning():
             + '\nLive model signals from 09:15 → https://tradingai.in'
             + '\nAutomated, standardized model output. Not personalised investment advice. Educational research only.')
     img = shot('https://tradingai.in/index.html', '/tmp/tg_morning.png')
+    try:
+        fb_post(text, photo=img)
+    except Exception as e:
+        print(f'FB hook (morning) skipped: {e}')
     r = tg('sendPhoto', {'chat_id': CHANNEL, 'caption': text[:1024], 'reply_markup': NAV_MARKUP}, photo=img)
     if r.get('ok'):
-        log_alert({'type': 'morning', 'inst': 'NIFTY + BANKNIFTY',
+        log_alert({'type': 'morning', 'inst': 'NIFTY + BANKNIFTY', 'tg_text': text,
                    'ctx': {'session': sess, 'cpr_type': (n.get('cpr') or {}).get('cpr_type')},
                    'explanation': 'Reference levels (TC, pivot, BC) and context published '
                                   'before the session; these are derived from the previous '
@@ -457,10 +547,15 @@ def do_watch():
                                               'date': today,
                                               'signal_time': t.get('signal_time') or t.get('entry_time')
                                               or f'{today}T{sig_at}:00+05:30'}
-            log_alert({'type': 'signal', 'inst': inst, 'sym': sym, 'key': key,
+            log_alert({'type': 'signal', 'inst': inst, 'sym': sym, 'key': key, 'tg_text': text,
                        'direction': (t.get('direction') or '').upper() or '\u2014',
                        'ctx': ctx_from(d, t, _lvl, _exp, _sigtxt), 'explanation': explanation_from(d, t, 'signal')})
             save_state(st)
+            try:
+                fb_post(text)
+            except Exception as e:
+                print(f'FB hook (signal) skipped: {e}')
+            rebuild_page()
             print(f'signal sent for {key}')
         else:
             print(f'signal FAILED for {key}: {str(r)[:150]}')
@@ -545,7 +640,7 @@ def do_watch():
                                             'exit': _exit_f, 'reason': reason, 'points': _cpts,
                                             'strategy': o.get('strategy'), 'date': today})
         save_state(st)
-        log_alert({'type': 'update', 'inst': o.get('inst'), 'sym': o.get('sym'), 'key': key,
+        log_alert({'type': 'update', 'inst': o.get('inst'), 'sym': o.get('sym'), 'key': key, 'tg_text': text,
                    'outcome': {'reason': reason,
                                'exit': fmt(_xp if _xp is not None else (d or {}).get('price')),
                                'points_text': _pts_txt},
@@ -553,6 +648,10 @@ def do_watch():
                                   + ' Recorded exit reference: %s (%s).'
                                   % (reason, _pts_txt)})
         rebuild_page()
+        try:
+            fb_post(text)
+        except Exception as e:
+            print(f"FB hook (exit) skipped: {e}")
         print(f"exit sent for {key}: {reason} ok=True")
 
 
@@ -592,9 +691,13 @@ def do_eod():
     if not crisp:
         crisp = ['NO MODEL TRADE today']
     text = (f"EOD\n{_datetxt}\n\n" + "\n\n".join(crisp))
+    try:
+        fb_post(text)
+    except Exception as e:
+        print(f'FB hook (eod) skipped: {e}')
     r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
     if r.get('ok'):
-        log_alert({'type': 'eod', 'inst': 'NIFTY + BANKNIFTY',
+        log_alert({'type': 'eod', 'inst': 'NIFTY + BANKNIFTY', 'tg_text': text,
                    'explanation': 'Daily recap of every model record closed in the session '
                                   'ledger, published win or lose.'})
         rebuild_page()
