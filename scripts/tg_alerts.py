@@ -496,15 +496,20 @@ def do_watch():
         if key in st.get('fired', []):
             continue
         # First detection of a live trigger: freeze it server-side (idempotent,
-        # one per instrument/day) and use the persisted entry/stop/target so the
-        # alert can never drift on later stateless polls.
+        # one per instrument/day) and use the persisted entry/stop/target so
+        # the alert can never drift on later stateless polls. The claim is the
+        # authoritative gate: if the server does not persist a trade here, do
+        # NOT alert on the stale dry-run poll (the watcher retries next minute).
         try:
             ct = ((api_post_retry(f'/api/{inst}/decision/claim')) or {}).get('trade') or None
-            if ct:
-                t = ct
-                key = f"{today}|{inst}|{t.get('direction')}|{t.get('entry')}"
         except Exception as e:
-            print(f'{inst} claim failed (using live trade): {e}')
+            print(f'{inst} claim failed: {e}; not alerting (will retry next poll)')
+            continue
+        if not ct:
+            print(f'{inst} claim returned no trade; not alerting (server did not persist)')
+            continue
+        t = ct
+        key = f"{today}|{inst}|{t.get('direction')}|{t.get('entry')}"
         bull = (t.get('direction') != 'BEAR')
         emoji = '🟢' if bull else '🔴'
         sig_at = datetime.now(IST).strftime('%H:%M')

@@ -25,6 +25,18 @@ File: app/research/cpr_trigger_engine.py. BEAR/BULL mirror:
 - BULL = bullish trend + above VWAP + positive momentum + first touch S2/S1/prev-low
   or close above TC, bullish gap => Bull Put Spread, SL x0.995, target x1.02.
 Bear checked first; within side first listed level wins.
+Direction gate (2026-10-17): SHORT_ONLY=True suppresses ALL BULL signals, so only
+BEAR is emitted (long side measured negative in-sample AND out-of-sample on both
+instruments; see the SHORT_ONLY comment in cpr_trigger_engine.py). bull_trigger()
+level math is unchanged for diagnostics/tests.
+Weekday gate (2026-10-17, ENFORCED): SKIP_FRIDAY=True drops a BEAR signal whose
+session is a Friday (first trigger wins, so the whole session is skipped;
+bucket skip_friday). BULL is unaffected. Basis (BEAR book n=199): Fridays
+40/47.5%/-0.359R/-14.3R vs non-Friday 159/73.6%/+0.359R/+57.1R, drag recent.
+Promoted from the former SHADOW_SKIP_FRIDAY annotation, which is still emitted
+as shadow=['SKIP_FRIDAY'] (today_state + live trade dict) for the record.
+Fail-open on unknown dates. Monitored by scripts/shadow_friday.py (read-only;
+exit 2 = persistent+recent drag). Revert: SKIP_FRIDAY and SHADOW_SKIP_FRIDAY False.
 Entries next-open [09:20,15:10), opens-only exits, 15:10 EOD flat, weekly gate >=3 sessions
 for aligned, decay NIFTY<30/BN<60/VIX 0.02, min-10-candle days.
 
@@ -37,7 +49,16 @@ for aligned, decay NIFTY<30/BN<60/VIX 0.02, min-10-candle days.
 - app/live/engine.py — intrabar entry + plain variant (Oct 2026, uncommitted pre-push).
 - app/decision/view.py — display fallback + intrabar wording (Oct 2026).
 - app/market/ — provider.py (yfinance, 12s bounded fetch + 1 retry, 429 RATE_LIMITED),
-  collector.py (today completed candles, UNIQUE dedupe), nse_calendar.py, cache.py.
+  collector.py (today completed candles, UNIQUE dedupe), nse_calendar.py, cache.py,
+  events_calendar.py (hand-encoded non-recurring events + rule-generated NSE
+  monthly/weekly F&O expiry (Tuesday per NSE/FAOP/68747) and US payrolls, with
+  an advisory event_risk overlay).
+- app/decision/view.py — event-risk overlay (advisory 2026-10-17): event_risk /
+  event_risk_level / event_confirmation_required / upcoming_events + EVENT_RISK_*
+  reason codes. Never rewrites bias or the decision; never a gate.
+- scripts/events_coverage_check.py — monthly cron guard that warns before the
+  hand-encoded table (HAND_ENCODED_END) or recurring window (RECURRING_END)
+  runs out; logs to logs/events_coverage.log.
 - app/options/ — contract/cache/db/economics/engine/provider/strategy. NSE chain 403-blocked;
   spreads structure-only, CREDIT_ONLY gate on debit dispatch.
 - app/paper_trade/, scripts/paper_confluence.py --topup — appends day outcome to paper_align,
@@ -53,6 +74,8 @@ for aligned, decay NIFTY<30/BN<60/VIX 0.02, min-10-candle days.
 - /indices/nifty.html, banknifty.html: bias pill, CPR strip, 5m chart + last-12 table.
 - /backtest.html: POST cpr-triggers (plain|aligned) + paper merge newer-than-end.
 - /paper.html, /alerts.html, /methodology.html, /signal-flow.html, /tools.html, /learn.html.
+- /events.html — upcoming market events (RBI, Fed, CPI, Budget, expiry) + event risk;
+  homepage card + nav link; reads GET /api/market/events.
 - Fixed-loss page is static Strategy Builder (fixed-loss-calc.js/css removed 2026-10-07);
   /api/economics/calculate still exists but has no frontend consumer.
 

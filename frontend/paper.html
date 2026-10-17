@@ -64,22 +64,27 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
+<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Model rule:</b> signals are <b>bearish (short) CPR setups by default</b>. When a session produces <b>no base setup</b>, a <b>backtested breakout add-on</b> may issue a continuation &mdash; <b>long above resistance / short below support</b> &mdash; including an <b>upside breakout on Fridays</b>. <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">Why</a>.</div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/signals.html">Signal Notes</a></nav>
 <div class="wrap">
 <h1>Historical Model Observations <span class="exp">HYPOTHETICAL</span></h1>
-<p class="note">Snapshot rendered 2026-10-14 07:28 IST — rows below are frozen historical records for study.</p>
+<p class="note">Snapshot rendered 2026-10-17 19:16 IST — rows below are frozen historical records for study.</p>
+<p class="note">Rows recorded before 2026-10-17 reflect the model rules then in force (bearish short CPR setups only). The model rule changed on 2026-10-17: signals are bearish by default, with a backtested breakout add-on for sessions with no base setup. Older rows are kept exactly as recorded at the time &mdash; see the <a href="/methodology.html#strategy-rule">methodology</a> and <a href="/signals.html">signal notes</a> for the current rules.</p>
 <div class="ok"><h3>What this is</h3><p>One hypothetical observation per day per instrument from the CPR classification system (same rules as the <a href="/backtest.html">historical scenario analysis</a>): first classified observation per session, reference observation at the next open in [09:20,15:20), assumed reference bounds 0.5% / 2% evaluated at subsequent opens, session reference close at the 15:20 open. Rows are frozen once recorded. No real money, no positions, no instructions — study material only.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/learn.html">learn</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
 <h2>Spread structures studied (educational reference)</h2>
 <div class="card"><p class="note">Structures below were studied hypothetically in past sessions. Legs and expiries reference the strike grid at the time; no profit or loss is shown or implied, and nothing suggests using any structure on any day.</p></div>
 <h2>Recorded observations by session (hypothetical)</h2>
 <div class="grid">
-<div class="card"><h3>NIFTY (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>69</dd><dt>Above / below reference</dt><dd>45 / 23</dd><dt>Share above reference (hypothetical)</dt><dd >65.2%</dd></div></div>
-<div class="card"><h3>BANKNIFTY (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>69</dd><dt>Above / below reference</dt><dd>42 / 27</dd><dt>Share above reference (hypothetical)</dt><dd >60.9%</dd></div></div>
+<div class="card"><h3>NIFTY (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>72</dd><dt>Above / below reference</dt><dd>46 / 25</dd><dt>Share above reference (hypothetical)</dt><dd >63.9%</dd></div></div>
+<div class="card"><h3>BANKNIFTY (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>72</dd><dt>Above / below reference</dt><dd>44 / 28</dd><dt>Share above reference (hypothetical)</dt><dd >61.1%</dd></div></div>
 </div>
 <div class="card" id="dateFilter"><label for="dateSel"><b>Filter by session date:</b></label> <select id="dateSel" style="padding:.4rem .6rem;border-radius:8px;border:1px solid #cbd5e1;font-size:.9rem;max-width:100%"><option value="">All dates</option></select> <span class="meta" id="dateCount"></span></div>
 <h2>NIFTY observations journal</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
+<tr><td>2026-10-16</td><td>NIFTY</td><td>Downward</td><td>PDH</td><td>09:20</td><td>22955.90</td><td>10:15</td><td>23094.30</td><td>Below reference</td><td>STOP</td></tr>
+<tr><td>2026-10-15</td><td>NIFTY</td><td>Downward</td><td>R1</td><td>09:20</td><td>22724.85</td><td>10:00</td><td>22850.00</td><td>Below reference</td><td>STOP</td></tr>
+<tr><td>2026-10-14</td><td>NIFTY</td><td>Downward</td><td>PDH</td><td>09:20</td><td>22684.80</td><td>15:20</td><td>22625.15</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-13</td><td>NIFTY</td><td>Upward</td><td>PDL</td><td>09:20</td><td>22436.85</td><td>15:20</td><td>22702.05</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-12</td><td>NIFTY</td><td>Downward</td><td>R1</td><td>09:20</td><td>22585.10</td><td>15:20</td><td>22316.85</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-09</td><td>NIFTY</td><td>Upward</td><td>ABOVE_CPR</td><td>09:35</td><td>22394.00</td><td>15:20</td><td>22535.65</td><td>Above reference</td><td>EOD</td></tr>
@@ -153,6 +158,9 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <h2>BANKNIFTY observations journal</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
+<tr><td>2026-10-16</td><td>BANKNIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:20</td><td>55660.65</td><td>15:20</td><td>55764.65</td><td>Below reference</td><td>EOD</td></tr>
+<tr><td>2026-10-15</td><td>BANKNIFTY</td><td>Upward</td><td>ABOVE_CPR</td><td>09:20</td><td>55464.75</td><td>15:20</td><td>55634.55</td><td>Above reference</td><td>EOD</td></tr>
+<tr><td>2026-10-14</td><td>BANKNIFTY</td><td>Downward</td><td>PDH</td><td>09:35</td><td>55530.90</td><td>15:20</td><td>55378.10</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-13</td><td>BANKNIFTY</td><td>Upward</td><td>ABOVE_CPR</td><td>09:20</td><td>55154.75</td><td>15:20</td><td>55465.65</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-12</td><td>BANKNIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:55</td><td>55012.75</td><td>15:20</td><td>54812.25</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-09</td><td>BANKNIFTY</td><td>Downward</td><td>R1</td><td>09:30</td><td>54978.95</td><td>13:45</td><td>55296.30</td><td>Below reference</td><td>STOP</td></tr>
@@ -226,6 +234,10 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <h2>Structures journal (hypothetical reference)</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Structure studied</th><th>Reference expiry</th><th>Legs recorded</th><th>Record state</th><th>Session-close basis</th></tr></thead>
 <tbody>
+<tr><td>2026-10-16</td><td>BANKNIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE55700 / BUY CE56100</td><td>OPEN</td><td></td></tr>
+<tr><td>2026-10-16</td><td>NIFTY</td><td>Bear Call Spread</td><td>2026-10-19</td><td>SELL CE23000 / BUY CE23200</td><td>OPEN</td><td></td></tr>
+<tr><td>2026-10-15</td><td>BANKNIFTY</td><td>Bull Put Spread</td><td>2026-10-27</td><td>SELL PE55400 / BUY PE55000</td><td>CLOSED</td><td>EOD</td></tr>
+<tr><td>2026-10-15</td><td>NIFTY</td><td>Bear Call Spread</td><td>2026-10-19</td><td>SELL CE22750 / BUY CE22950</td><td>CLOSED</td><td>STOP</td></tr>
 <tr><td>2026-10-12</td><td>BANKNIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE54900 / BUY CE55300</td><td>OPEN</td><td></td></tr>
 <tr><td>2026-10-12</td><td>NIFTY</td><td>Bull Put Spread</td><td>2026-10-13</td><td>SELL PE22500 / BUY PE22300</td><td>OPEN</td><td></td></tr>
 <tr><td>2026-10-09</td><td>NIFTY</td><td>Bear Call Spread</td><td>2026-10-13</td><td>SELL CE22500 / BUY CE22700</td><td>OPEN</td><td></td></tr>

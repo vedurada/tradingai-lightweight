@@ -4,6 +4,15 @@ Bull triggers: candle low touches S2 / S1 / PDL (prev-day low), or close above T
 Bear triggers: candle high touches R2 / R1 / PDH (prev-day high), or close below BC.
 First trigger per session wins.
 
+DIRECTION GATE (SHORT_ONLY, 2026-10-17): bull/continuation signals are
+suppressed and only BEAR signals are emitted. bull_trigger() level math is
+unchanged for diagnostics/tests. See the SHORT_ONLY comment for the basis.
+
+WEEKDAY GATE (SKIP_FRIDAY, 2026-10-17): a BEAR signal whose session is a Friday
+is dropped entirely (first trigger wins, so the whole session is skipped). BULL
+is unaffected. Promoted from the SHADOW_SKIP_FRIDAY annotation. See the
+SKIP_FRIDAY comment for the basis.
+
 Two executions (run_opens_* = approved spec; legacy close/intrabar kept for
 run_range/today_state/log_trigger history):
 - opens: entry at next candle OPEN in [09:20, 15:20); stops/targets evaluated
@@ -29,6 +38,199 @@ VALID = ('NIFTY', 'BANKNIFTY', 'INDIA_VIX')
 
 STOP_PCT = 0.01
 TARGET_PCT = 0.02
+
+# ---------------------------------------------------------------------------
+# Direction gate: SHORT_ONLY
+# Read-only walk-forward analysis of trade_journal (246 trades,
+# 2026-07-07..2026-10-12) found long/continuation setups (ABOVE_CPR, S1, S2,
+# PDL) losing IN-SAMPLE and OUT-OF-SAMPLE, and on BOTH instruments:
+#   BEAR  n=199  win 68.3%  avg +0.215R  total +42.8R
+#   BULL  n=47   win 51.1%  avg -0.186R  total  -8.8R
+# Dropping the long side raises the baseline from 65.0% / +0.138R (+34.0R) to
+# 68.3% / +0.215R (+42.8R) while trading fewer signals. The short bias was
+# independently confirmed on raw yfinance 5-minute candles (09:20->15:10).
+# With SHORT_ONLY the engine emits BEAR signals only; bull_trigger() keeps its
+# level math for tests and diagnostics but never produces a signal.
+# Set to False to restore both sides.
+# A trailing-trend gate was also tested and REJECTED (lookahead artifact):
+# computed on a prev-close basis, up-trend shorts were the BETTER side.
+# Do not reintroduce a trend gate without a fresh no-lookahead test.
+# ---------------------------------------------------------------------------
+SHORT_ONLY = True
+
+# ---------------------------------------------------------------------------
+# Scope 2 (SHADOW, non-blocking): skip-Friday
+# The same walk-forward found BEAR-only + skip-Friday reached 73.6% / +0.359R
+# (+57.1R) vs BEAR-only 68.3% / +0.215R (+42.8R). The effect is small-n
+# (Fri n=45) and the loss-memory decay engine already flagged the learned
+# dow:Fri rule, so it is NOT enforced. SHADOW_SKIP_FRIDAY only annotates BEAR
+# signals that fall on a Friday (see shadow_flags) so the live/paper book can
+# measure the counterfactual before any promotion to a hard gate.
+# Set to False to silence. Promotion to enforcement is a separate decision.
+# ---------------------------------------------------------------------------
+SHADOW_SKIP_FRIDAY = True
+
+# ---------------------------------------------------------------------------
+# Scope 2 (ENFORCED): skip-Friday  (promoted 2026-10-17)
+# SKIP_FRIDAY turns the shadow annotation above into a hard gate: a BEAR signal
+# whose session is a Friday is dropped (first trigger wins, so the whole session
+# is skipped). BULL is unaffected. Basis (trade_journal BEAR book, n=199):
+#   Fridays     n=40  win 47.5%  avg -0.359R  total -14.3R
+#   non-Friday  n=159 win 73.6%  avg +0.359R  total +57.1R
+# and the drag was recent (last ~21 sessions: 28.6% / -0.592R). Monitored by
+# scripts/shadow_friday.py (exit 2 = persistent+recent drag). Fail-open: an
+# unknown/missing session date keeps the trade. Set both SHADOW_SKIP_FRIDAY and
+# SKIP_FRIDAY to False to fully revert.
+# ---------------------------------------------------------------------------
+SKIP_FRIDAY = True
+
+# ---------------------------------------------------------------------------
+# No-chase BEAR entry (2026-10-17)
+# A BEAR trigger is never chased at the next open. Instead the entry RE-ANCHORS
+# to whichever level price actually trades back near after the trigger:
+#   - resistance levels (R2 / R1 / PDH / BC)  -> SHORT (BEAR)
+#   - support levels (TC / S1 / S2 / PDL)      -> LONG  (BULL)
+# "Near" = the candle's open is within NO_CHASE_BAND_PCT (0.15% of the level),
+# or the candle's range covers the level (limit fill at the level). If price
+# never returns to any level within the entry window, the session is skipped.
+# The direction re-anchor deliberately OVERRIDES SHORT_ONLY: if price leaves
+# the bear trigger and falls to a support level, the correct directional trade
+# there is a LONG (the bounce). BC / TC are kept in the level set so a
+# BELOW_CPR / ABOVE_CPR break still fills near its CPR boundary. BULL re-anchor
+# is therefore allowed on any session, including under SHORT_ONLY. A BEAR
+# trigger on a Friday is still dropped whole (skip_Friday) before re-anchoring.
+# Reference and fill are shared by the paper/backtest book (run_opens_range) and
+# the live path (app/live/engine.py _select_entry), so live == backtest == paper
+# parity holds. Set NO_CHASE_BEAR=False to restore plain next-open entries.
+# DISABLED 2026-10-17: the 8-block walk-forward over all 73 sessions showed the
+# re-anchor degrades the strategy (NIFTY +21.54R -> +2.34R, BNK +19.64R ->
+# +10.96R), driven by BULL flips fading breakdowns. Kept gated off for research.
+# ---------------------------------------------------------------------------
+NO_CHASE_BEAR = False
+NO_CHASE_BAND_PCT = 0.0015   # 0.15% of the level price
+
+# ---------------------------------------------------------------------------
+# Breakout add-on (2026-10-17)
+# A session that produces NO base CPR-book trigger falls back to the first
+# fresh close-CROSS of a level: close crossing UP through a resistance level
+# (R1/R2/PDH/TC) is a BULL continuation, close crossing DOWN through a support
+# level (S1/S2/PDL/BC) is a BEAR continuation. This is an ADD-ON only — it can
+# never override or delay a base trigger (the base always wins "first trigger
+# per session"). Rationale: the base is SHORT_ONLY, so upside breakout days are
+# otherwise left flat; on those base-flat days the long breakout adds a small
+# positive (NIFTY +2.9R, BNK +3.7R over the full range, positive in 7/8 and 6/8
+# walk-forward blocks). Broad standalone breakout entries were measured negative
+# (long side), so this is deliberately NOT a primary signal. The BULL side is a
+# sanctioned SHORT_ONLY exception for exactly this fallback. Set
+# BREAKOUT_ADDON=False to disable.
+# ---------------------------------------------------------------------------
+BREAKOUT_ADDON = True
+
+# (level_name, day_levels key) for up-breaks (BULL) and down-breaks (BEAR).
+_BREAKOUT_UP = (('BRK_R1', 'r1'), ('BRK_R2', 'r2'),
+                ('BRK_PDH', 'pdh'), ('BRK_TC', 'tc'))
+_BREAKOUT_DN = (('BRK_S1', 's1'), ('BRK_S2', 's2'),
+                ('BRK_PDL', 'pdl'), ('BRK_BC', 'bc'))
+
+# (level_name, implied_direction, day_levels key). Resistance first (bear
+# priority on a tie), then support.
+_ENTRY_LEVELS = (
+    ('R2', 'BEAR', 'r2'), ('R1', 'BEAR', 'r1'), ('PDH', 'BEAR', 'pdh'),
+    ('BC', 'BEAR', 'bc'),
+    ('TC', 'BULL', 'tc'), ('S1', 'BULL', 's1'), ('S2', 'BULL', 's2'),
+    ('PDL', 'BULL', 'pdl'),
+)
+
+
+def entry_levels(lv):
+    """Ordered (name, direction, ref) entry levels for the no-chase re-anchor.
+
+    Skips any level whose price is missing or non-positive."""
+    if not lv:
+        return []
+    out = []
+    for name, dr, key in _ENTRY_LEVELS:
+        try:
+            ref = float(lv.get(key))
+        except (TypeError, ValueError):
+            continue
+        if ref and ref > 0:
+            out.append((name, dr, ref))
+    return out
+
+
+def no_chase_fill(lv, candles, i):
+    """First candle j>i within the band of ANY entry level -> re-anchored entry.
+
+    Near = the candle's OPEN is within NO_CHASE_BAND_PCT of a level (fill at
+    that open), or the candle's range covers a level (limit fill at the level).
+    Returns (j, level_name, direction, fill_price) or None. Pure; no I/O."""
+    levels = entry_levels(lv)
+    if not levels:
+        return None
+    for j in range(i + 1, len(candles or [])):
+        c = candles[j]
+        try:
+            op, hi, lo = float(c['open']), float(c['high']), float(c['low'])
+        except (KeyError, TypeError, ValueError):
+            continue
+        for name, dr, ref in levels:                 # open near a level
+            if abs(op - ref) <= NO_CHASE_BAND_PCT * ref:
+                return j, name, dr, op
+        for name, dr, ref in levels:                 # range covers a level
+            if lo <= ref <= hi:
+                return j, name, dr, ref
+    return None
+
+
+def breakout_trigger(candle, prev_close, lv):
+    """Fresh close-cross breakout, or None -> (direction, level_name).
+
+    Long (BULL) when the close crosses UP through a resistance level; short
+    (BEAR) when it crosses DOWN through a support level. 'Crosses' means the
+    previous close was on the other side, so a level merely touched but not
+    broken does not fire. Pure; no I/O."""
+    if not lv or prev_close is None:
+        return None
+    try:
+        cl = float(candle['close'])
+        pc = float(prev_close)
+    except (KeyError, TypeError, ValueError):
+        return None
+    for name, key in _BREAKOUT_UP:
+        lvl = lv.get(key)
+        if lvl and pc <= lvl < cl:
+            return 'BULL', name
+    for name, key in _BREAKOUT_DN:
+        lvl = lv.get(key)
+        if lvl and pc >= lvl > cl:
+            return 'BEAR', name
+    return None
+
+
+def breakout_signal(candles, lv, wlv=None, variant='aligned'):
+    """First breakout add-on signal for a session, or None -> (dr, name, i).
+
+    Only fresh close-crosses (see BREAKOUT_ADDON); the aligned weekly gate is
+    applied, but friday_skip is left to the caller. Pure; no I/O."""
+    if not lv or not BREAKOUT_ADDON:
+        return None
+    prev = None
+    for i, c in enumerate(candles or []):
+        try:
+            close = float(c['close'])
+        except (KeyError, TypeError, ValueError):
+            prev = None
+            continue
+        r = breakout_trigger(c, prev, lv)
+        prev = close
+        if not r:
+            continue
+        dr, name = r
+        if variant == 'aligned' and not aligned_ok(dr, close, wlv):
+            continue
+        return dr, name, i
+    return None
 
 
 def day_levels(prev_high, prev_low, prev_close):
@@ -80,12 +282,58 @@ def bear_trigger(candle, lv):
     return None
 
 
+def shadow_flags(direction, day_iso):
+    """Non-blocking shadow annotations for a signal (scope 2, 2026-10-17).
+
+    Returns rule codes that WOULD fire but are NOT enforced. SKIP_FRIDAY marks
+    a BEAR signal on a Friday. Pure/deterministic; a missing or malformed date
+    yields no flags (fail-open to a normal, unannotated trade)."""
+    if not SHADOW_SKIP_FRIDAY or direction != 'BEAR':
+        return []
+    try:
+        wd = datetime.fromisoformat(str(day_iso)[:10]).weekday()
+    except (TypeError, ValueError):
+        return []
+    return ['SKIP_FRIDAY'] if wd == 4 else []
+
+
+def _day_of(candle):
+    """Session date (YYYY-MM-DD) of a candle, or None."""
+    ts = (candle or {}).get('timestamp')
+    return str(ts)[:10] if ts else None
+
+
+def is_friday(day_iso):
+    """True iff day_iso is a Friday. Missing/malformed -> False (fail-open)."""
+    if not day_iso:
+        return False
+    try:
+        return datetime.fromisoformat(str(day_iso)[:10]).weekday() == 4
+    except (TypeError, ValueError):
+        return False
+
+
+def friday_skip(direction, day_iso):
+    """Enforced scope-2 gate: drop BEAR signals whose session is a Friday.
+
+    Promoted from SHADOW_SKIP_FRIDAY on 2026-10-17 (see the SKIP_FRIDAY block).
+    Only BEAR is affected; unknown/missing dates fail open (keep the trade)."""
+    return bool(SKIP_FRIDAY and direction == 'BEAR' and is_friday(day_iso))
+
+
 def first_trigger(day_candles, lv):
-    """First (direction, level, index) trigger of the session, else None."""
+    """First (direction, level, index) trigger of the session, else None.
+
+    If the first trigger is a BEAR on a Friday the whole session is skipped
+    (SKIP_FRIDAY gate, 2026-10-17)."""
     for i, c in enumerate(day_candles):
-        t = bear_trigger(c, lv) or bull_trigger(c, lv)
+        b = bear_trigger(c, lv)
+        u = None if SHORT_ONLY else bull_trigger(c, lv)
+        t = b or u
         if t:
-            dr = 'BEAR' if bear_trigger(c, lv) else 'BULL'
+            dr = 'BEAR' if b else 'BULL'
+            if friday_skip(dr, _day_of(c)):
+                return None
             return {'direction': dr, 'level': t, 'index': i,
                     'timestamp': c.get('timestamp')}
     return None
@@ -234,19 +482,25 @@ def book_scan(candles, lv, wlv, variant='aligned'):
 
     Same rules as run_opens_range/today_state: bear checked before bull
     (same-candle tie -> BEAR), weekly gate when variant='aligned'.
-    Returns (direction, level, index) or None. No I/O."""
+    Returns (direction, level, index) or None. No I/O. A BEAR first trigger on
+    a Friday is skipped (SKIP_FRIDAY gate, 2026-10-17)."""
     if not lv:
         return None
     for i, c in enumerate(candles or []):
         try:
             b = bear_trigger(c, lv)
-            u = bull_trigger(c, lv)
+            u = None if SHORT_ONLY else bull_trigger(c, lv)
         except (KeyError, TypeError, ValueError):
             continue
         t = b or u
         if not t:
             continue
         dr = 'BEAR' if b else 'BULL'
+        if friday_skip(dr, _day_of(c)):
+            # Friday BEAR: no base trade. Fall through to the breakout add-on
+            # (a Friday BULL up-break may still fire; a Friday BEAR one will
+            # not). Never resumes the base scan.
+            break
         try:
             cl = c.get('close')
         except AttributeError:
@@ -254,6 +508,10 @@ def book_scan(candles, lv, wlv, variant='aligned'):
         if variant == 'aligned' and not aligned_ok(dr, cl, wlv):
             continue
         return dr, t, i
+    # No base trigger this session: optional breakout add-on fallback.
+    bs = breakout_signal(candles, lv, wlv, variant)
+    if bs is not None and not friday_skip(bs[0], _day_of(candles[bs[2]])):
+        return bs
     return None
 
 
@@ -298,12 +556,27 @@ def today_state(instrument, now_ist=None, variant='aligned'):
                 'candles_so_far': len(candles),
                 'last_candle': candles[-1]['timestamp']}
     dr, t, i = sig
-    if i + 1 < len(candles):
-        entry = float(candles[i + 1]['open'])
+    entry = entry_time = note = None
+    if NO_CHASE_BEAR and dr == 'BEAR':
+        # No-chase re-anchor: wait for price back within the band of an entry
+        # level (direction may flip to BULL at a support level). Until then the
+        # signal stands but the entry is pending (NO_CHASE_WAIT).
+        nc = no_chase_fill(lv, candles, i)
+        if nc is None:
+            note = 'NO_CHASE_WAIT'
+        else:
+            j, name, dr2, fill = nc
+            if OPEN_MIN <= candles[j]['timestamp'][11:16] < OPEN_EOD:
+                entry = round(float(fill), 2)
+                entry_time = candles[j]['timestamp']
+                dr, t = dr2, name
+            else:
+                note = 'NO_CHASE_WAIT'
+    elif i + 1 < len(candles):
+        entry = round(float(candles[i + 1]['open']), 2)
         entry_time = candles[i + 1]['timestamp']
-        note = None
     else:
-        entry, entry_time, note = None, None, 'ENTRY_AT_NEXT_OPEN'
+        note = 'ENTRY_AT_NEXT_OPEN'
     if entry is not None:
         if dr == 'BULL':
             stop, tgt = entry * (1 - OPEN_STOP_PCT), entry * (1 + OPEN_TARGET_PCT)
@@ -316,6 +589,7 @@ def today_state(instrument, now_ist=None, variant='aligned'):
             'state': 'SIGNAL', 'direction': dr, 'level': t,
             'signal_time': candles[i]['timestamp'],
             'entry': entry, 'entry_time': entry_time, 'stop': stop, 'target': tgt, 'levels': lv,
+            'shadow': shadow_flags(dr, day_iso),
             'note': note, 'candles_so_far': len(candles),
             'last_candle': candles[-1]['timestamp']}
 
@@ -453,6 +727,10 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
       INDIA_VIX 0.02, ~0.11-0.17% of price) labels WIN; exactly at tolerance
       stays LOSS. Spot R is never rewritten.
     - wins AND losses both derive from win_loss (single label definition).
+    - skip-Friday (2026-10-17): a session whose first trigger is a BEAR on a
+      Friday takes no base trade (bucket skip_friday). With BREAKOUT_ADDON the
+      session is still treated as flat, so a Friday upside-breakout BULL may be
+      taken instead; a Friday BEAR breakout stays skipped.
 
     Read-only. `days` = signals + every skipped bucket (no silent drops)."""
     inst = (instrument or '').upper()
@@ -472,7 +750,8 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
             (inst, date_start, date_end)).fetchall()]
         trades = []
         skipped = {'no_signal': 0, 'short_day': 0, 'missing_eod': 0,
-                   'gate_missing': 0, 'bad_data': 0}
+                   'gate_missing': 0, 'bad_data': 0, 'skip_friday': 0,
+                   'no_chase': 0}
         for d in days:
             prev = prev_session_ohlc(conn, inst, d)
             if not prev:
@@ -492,13 +771,17 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
                 skipped['short_day'] += 1
                 continue
             sig = None
+            fri_skip = False
             for i, c in enumerate(candles):
                 b = bear_trigger(c, lv)
-                u = bull_trigger(c, lv)
+                u = None if SHORT_ONLY else bull_trigger(c, lv)
                 t = b or u
                 if not t:
                     continue
                 dr = 'BEAR' if b else 'BULL'
+                if friday_skip(dr, d):
+                    fri_skip = True
+                    break
                 if variant == 'aligned' and not aligned_ok(dr, c['close'], wlv):
                     continue
                 if i + 1 >= len(candles):
@@ -508,17 +791,55 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
                     continue
                 sig = (dr, t, i)
                 break
+            if not sig and BREAKOUT_ADDON:
+                # No base TRADE this session: either there was no base trigger
+                # at all, or the only base trigger was a Friday BEAR that is
+                # skipped (fri_skip). Either way the session is flat, so fall
+                # back to the first fresh close-cross breakout (BULL above
+                # resistance / BEAR below support). A Friday BEAR breakout is
+                # itself skipped. Never overrides a base trigger.
+                bs = breakout_signal(candles, lv, wlv, variant)
+                if bs is not None and not friday_skip(bs[0], d):
+                    sig = bs
             if not sig:
-                skipped['no_signal'] += 1
+                if fri_skip:
+                    skipped['skip_friday'] += 1
+                else:
+                    skipped['no_signal'] += 1
                 continue
             dr, t, i = sig
-            try:
-                entry = float(candles[i + 1]['open'])
-            except (KeyError, TypeError, ValueError):
-                skipped['bad_data'] += 1
-                continue
-            nt = candles[i + 1]['timestamp']
-            opens = [(c['timestamp'], c['open']) for c in candles[i + 2:]]
+            entry_idx = i + 1
+            if NO_CHASE_BEAR and dr == 'BEAR':
+                # No-chase re-anchor: never take the next open. Wait for price
+                # to trade back within the band of ANY entry level and take the
+                # direction that level implies (resistance -> short, support ->
+                # long). Direction may flip (BULL is allowed here even under
+                # SHORT_ONLY). Skip the session if price never returns.
+                nc = no_chase_fill(lv, candles, i)
+                if nc is None:
+                    skipped['no_chase'] += 1
+                    continue
+                j, name, dr, fill = nc
+                if not (OPEN_MIN <= candles[j]['timestamp'][11:16] < OPEN_EOD):
+                    skipped['no_chase'] += 1
+                    continue
+                if friday_skip(dr, d):       # re-anchored BEAR on a Friday
+                    skipped['skip_friday'] += 1
+                    continue
+                entry_idx, t = j, name
+                try:
+                    entry = float(fill)
+                except (TypeError, ValueError):
+                    skipped['bad_data'] += 1
+                    continue
+            else:
+                try:
+                    entry = float(candles[entry_idx]['open'])
+                except (KeyError, TypeError, ValueError):
+                    skipped['bad_data'] += 1
+                    continue
+            nt = candles[entry_idx]['timestamp']
+            opens = [(c['timestamp'], c['open']) for c in candles[entry_idx + 1:]]
             eod = [c for c in candles if c['timestamp'][11:16] == OPEN_EOD]
             if not eod:
                 skipped['missing_eod'] += 1

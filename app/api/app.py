@@ -920,6 +920,102 @@ def cpr_strategy():
 
 
 
+@app.route("/api/alerts/rss", methods=["GET"])
+@limiter.limit("30 per minute")
+def alerts_rss():
+    """RSS 2.0 feed of model alerts for automation (Make/Zapier/Buffer -> FB Page).
+
+    Read-only: serves the latest 30 records from data/tg_alerts_archive.jsonl
+    (same source as frontend/rss.xml). No DB writes, no trading logic.
+    Content-Type application/rss+xml so RSS readers accept it directly."""
+    import json as _json
+    import os as _os
+    from email.utils import format_datetime as _fmt_dt
+    from xml.sax.saxutils import escape as _esc
+    from flask import Response as _Resp
+    base = _os.environ.get('TRADINGAI_BASE', '/opt/tradingai')
+    arch = _os.path.join(base, 'data', 'tg_alerts_archive.jsonl')
+    recs = []
+    try:
+        with open(arch) as _f:
+            for _line in _f:
+                _line = _line.strip()
+                if not _line:
+                    continue
+                try:
+                    recs.append(_json.loads(_line))
+                except Exception:
+                    continue
+    except FileNotFoundError:
+        recs = []
+    recs.sort(key=lambda r: str(r.get('ts_ist') or r.get('date') or ''), reverse=True)
+    recs = recs[:30]
+    _SITE = 'https://tradingai.in'
+    _DISC = ('Automated model output. Not investment advice. Educational research only.')
+    _items = []
+    for _r in recs:
+        _t = _r.get('type', '')
+        _inst = _r.get('inst') or 'Model'
+        _dir = (_r.get('direction') or '').upper()
+        _date = _r.get('date') or ''
+        if _t == 'signal':
+            _trig = ((_r.get('ctx') or {}).get('trigger')) or ''
+            _title = f'{_inst} {_dir} model signal {_trig} | {_date}'.strip()
+        elif _t == 'update':
+            _o = _r.get('outcome') or {}
+            _title = f"{_inst} model update: {_o.get('reason')} ({_o.get('points_text')}) | {_date}".strip()
+        elif _t == 'eod':
+            _title = f'TradingAI EOD recap | {_date}'
+        elif _t == 'morning':
+            _title = f'TradingAI model levels | {_date}'
+        else:
+            _title = f'TradingAI model alert ({_inst}) | {_date}'
+        _tg = (_r.get('tg_text') or '').strip()
+        if _tg:
+            _desc = _tg
+        else:
+            _bits = []
+            _ctx = _r.get('ctx') or {}
+            if _t == 'signal':
+                _bits.append(f'Direction: {_dir}')
+                for _k in ('trigger', 'invalidation', 'target', 'strategy', 'signal_time'):
+                    if _ctx.get(_k):
+                        _bits.append(f'{_k}: {_ctx[_k]}')
+            if _t == 'update':
+                _o = _r.get('outcome') or {}
+                _bits.append(f"Result: {_o.get('reason')} ({_o.get('points_text')})")
+            _ex = (_r.get('explanation') or '').strip()
+            if _ex:
+                _bits.append(_ex)
+            _bits.append(_DISC)
+            _desc = ' \u2014 '.join(_b for _b in _bits if _b)
+        _sym = (_r.get('sym') or '').lower()
+        _link = {'nifty': _SITE + '/indices/nifty.html',
+                 'banknifty': _SITE + '/indices/banknifty.html'}.get(_sym, _SITE + '/alerts.html')
+        try:
+            _dt = datetime.fromisoformat(_r.get('ts_ist') or _r.get('date'))
+            if _dt.tzinfo is None:
+                _dt = _dt.replace(tzinfo=_IST)
+        except Exception:
+            _dt = datetime.now(_IST)
+        _items.append(
+            '<item><title>' + _esc(_title) + '</title><link>' + _esc(_link) + '</link>'
+            '<guid isPermaLink="false">' + _esc(f"{_SITE}/alerts.html#{_r.get('key') or _r.get('ts_ist') or _title}") + '</guid>'
+            '<pubDate>' + _fmt_dt(_dt) + '</pubDate><description>' + _esc(_desc) + '</description></item>')
+    _now = _fmt_dt(datetime.now(_IST))
+    _xml = (
+        '<?xml version="1.0" encoding="UTF-8"?>\n'
+        '<rss version="2.0"><channel>'
+        '<title>TradingAI.in Model Alerts</title><link>' + _SITE + '/alerts.html</link>'
+        '<description>Automated NIFTY/BANKNIFTY model signals, updates and EOD recaps. '
+        'Educational research only, not investment advice.</description>'
+        '<language>en-in</language>'
+        '<lastBuildDate>' + _now + '</lastBuildDate>'
+        '<pubDate>' + _now + '</pubDate><ttl>5</ttl>'
+        + ''.join(_items) + '</channel></rss>\n')
+    return _Resp(_xml, mimetype='application/rss+xml')
+
+
 @app.route("/api/alerts/status", methods=["GET"])
 @limiter.limit("30 per minute")
 def alerts_status():
@@ -993,6 +1089,58 @@ def market_holidays():
                              "premarket": "09:00-09:15 IST call auction",
                              "upcoming_holidays": upcoming,
                              "calendar_coverage": "2026 (NSE circular CMTR71775)"}})
+
+
+@app.route("/api/market/events", methods=["GET"])
+@limiter.limit("30 per minute")
+def market_events():
+    """Read-only scheduled market-event calendar + advisory event-risk overlay.
+
+    Powers the /events.html page and the decision view's event_risk field.
+    Curated events only (no network): RBI MPC, US FOMC, Union Budget, monthly
+    F&O expiry, CPI/WPI/GDP and US payrolls/CPI. Advisory reference layer —
+    never changes a trade, entry/stop/target or any gate.
+
+    Query: instrument (NIFTY|BANKNIFTY|INDIA_VIX, optional), days (default 90,
+    capped 365). Unknown instrument -> 400 UNKNOWN_INSTRUMENT (never guess)."""
+    from app.market.events_calendar import (
+        upcoming_events, event_risk, COVERAGE_START, COVERAGE_END,
+        HAND_ENCODED_END, RECURRING_END, CALENDAR_LAST_VERIFIED)
+    inst = (request.args.get("instrument") or "").upper() or None
+    if inst is not None and inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 400
+    try:
+        days = int(request.args.get("days", 90))
+    except (TypeError, ValueError):
+        days = 90
+    days = max(1, min(days, 365))
+    events = upcoming_events(days=days, instrument=inst)
+    # Advisory risk for each traded instrument (INDIA_VIX is not traded but
+    # shown for context on the events page).
+    risks = {i: event_risk(i) for i in ("NIFTY", "BANKNIFTY", "INDIA_VIX")}
+    return jsonify({
+        "state": "LIVE",
+        "timestamp": datetime.now(_IST).isoformat(),
+        "data": {
+            "instrument": inst,
+            "days": days,
+            "events": events,
+            "risk": {k: {"risk_level": v.get("risk_level"),
+                         "risk_label": v.get("risk_label"),
+                         "confirmation_required": v.get("confirmation_required"),
+                         "bias_overlay": v.get("bias_overlay"),
+                         "today_impact": v.get("today_impact"),
+                         "pending": v.get("pending"),
+                         "next_event": v.get("next_event")}
+                     for k, v in risks.items()},
+            "coverage": {"start": COVERAGE_START, "end": COVERAGE_END,
+                         "hand_encoded_end": HAND_ENCODED_END,
+                         "recurring_end": RECURRING_END,
+                         "last_verified": CALENDAR_LAST_VERIFIED},
+        },
+    })
+
 
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)

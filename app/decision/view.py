@@ -21,6 +21,17 @@ Engine-state -> decision mapping (deterministic, documented):
 Bias is reported ONLY from engine evidence (qualified trade direction
 or CPR live-signal direction when computed from stored data). Missing
 data is UNAVAILABLE, never defaulted to NEUTRAL.
+
+EVENT-RISK OVERLAY (advisory, 2026-10-17): the scheduled-events calendar
+(app/market/events_calendar.py) is layered on top as an ADVISORY condition.
+It never changes entry/stop/target, never overrides the risk/lock/freshness
+gates, and never rewrites the evidence-based bias. It adds:
+- event_risk: risk level / label / reasons for the instrument;
+- event_confirmation_required: an explicit-confirmation flag when a
+  high/medium-impact event is imminent;
+- upcoming_events: the dated events ahead (for display);
+- reason codes EVENT_RISK_HIGH / EVENT_RISK_MEDIUM / EVENT_CONFIRM_REQUIRED
+  and an explanation.confirmation caution line.
 """
 from datetime import datetime
 from zoneinfo import ZoneInfo
@@ -32,6 +43,7 @@ from app.live.engine import (
     ST_NO_TRADE, ST_QUALIFIED,
 )
 from app.market.nse_calendar import holiday_name
+from app.market.events_calendar import event_risk
 
 _IST = ZoneInfo('Asia/Kolkata')
 VALID = ('NIFTY', 'BANKNIFTY', 'INDIA_VIX')
@@ -179,6 +191,41 @@ def map_decision(state, session, reasons, has_trade, lock_consumed):
     return 'NO TRADE', [r.upper()[:64] for r in reasons] or ['NO_SETUP']
 
 
+VETO_LOG = '/opt/tradingai/data/mistake_veto_log.jsonl'
+
+
+def _vetoed_today(inst, today_iso, trade):
+    """Matching live loss-memory veto for today+instrument, else None.
+
+    Additive consistency hook (2026-10-17): mistake_guard.py records vetoes in
+    data/mistake_veto_log.jsonl. The decision API must reflect them so that
+    /api/decision, the dashboards and tg_alerts all agree -- previously a veto
+    suppressed only the alert while the API still served TRADE. Read-only, and
+    only invoked when a trade would otherwise be served.
+    """
+    import json
+    if not trade:
+        return None
+    direction = trade.get('direction')
+    try:
+        with open(VETO_LOG) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if (rec.get('date') == today_iso
+                        and rec.get('instrument') == inst
+                        and (rec.get('trade') or {}).get('direction') == direction):
+                    return rec
+    except OSError:
+        return None
+    return None
+
+
 def build_decision(instrument, now=None):
     """Normalized read-only decision object. Never writes, never fabricates."""
     inst = (instrument or '').upper()
@@ -232,6 +279,13 @@ def build_decision(instrument, now=None):
         if decision == 'TRADE':
             decision, map_codes = 'NO TRADE', ['DATA_STALE']
             codes = [c for c in codes if c != 'SETUP_QUALIFIED'] + map_codes
+
+    # LOSS-MEMORY VETO (consistency fix 2026-10-17): if the live guard vetoed
+    # this instrument's setup today, the API must NOT serve TRADE -- it must
+    # agree with the alert channel that skipped it.
+    if decision == 'TRADE' and _vetoed_today(inst, today_iso, trade):
+        decision, map_codes = 'NO TRADE', ['VETOED_BY_LOSS_MEMORY']
+        codes = [c for c in codes if c != 'SETUP_QUALIFIED'] + map_codes
 
     # --- CPR block (previous session only) ---
     try:
@@ -287,6 +341,28 @@ def build_decision(instrument, now=None):
                           (_trend == 'BEARISH' and _mom == 'NEGATIVE'))
                 regime = 'TRENDING' if _agree else 'RANGING'
                 codes.append('REGIME_SESSION_TREND_MOMENTUM')
+
+    # --- scheduled-event risk overlay (advisory, never a gate) ---
+    # Composed from the curated events calendar; pure, no I/O. It annotates
+    # the decision and requires an explicit confirmation for imminent
+    # high/medium-impact events, but never rewrites bias or the decision.
+    try:
+        ev = event_risk(inst, now=now_ist)
+    except Exception:
+        ev = {'risk_level': 'NONE', 'risk_label': 'Event calendar unavailable',
+              'confirmation_required': False, 'bias_overlay': 'NEUTRAL',
+              'today_impact': [], 'pending': [], 'next_event': None,
+              'upcoming': [], 'reasons': [], 'coverage': {}}
+    event_level = ev.get('risk_level', 'NONE')
+    event_confirmation = bool(ev.get('confirmation_required'))
+    if event_level == 'HIGH':
+        codes.append('EVENT_RISK_HIGH')
+    elif event_level == 'MEDIUM':
+        codes.append('EVENT_RISK_MEDIUM')
+    elif event_level == 'LOW':
+        codes.append('EVENT_RISK_LOW')
+    if event_confirmation:
+        codes.append('EVENT_CONFIRM_REQUIRED')
 
     # --- lifecycle: active paper trade (read-only) ---
     # DISPLAY RULE (owner-ordered): a trade shows ACTIVE only when it was
@@ -344,6 +420,19 @@ def build_decision(instrument, now=None):
         'target': _line(target),
     }
 
+    # Event overlay on the confirmation line (advisory). When a high/medium
+    # impact event is imminent, the explicit confirmation an operator needs
+    # is a named event warning. The decision itself is never changed here.
+    _next_ev = ev.get('next_event') or {}
+    _ev_name = _next_ev.get('name')
+    _ev_date = _next_ev.get('date')
+    event_line = ev.get('risk_label') or 'No scheduled event risk in range'
+    if _ev_name:
+        event_line = f"{event_line} — next: {_ev_name} on {_ev_date}"
+    explanation['event_risk'] = event_line
+    if event_confirmation and decision in ('TRADE', 'WAIT'):
+        explanation['confirmation'] = f"{_line(confirmation)} · {event_line}. Explicit confirmation advised."
+
     return {
         'instrument': inst,
         'timestamp': now_ist.isoformat(),
@@ -378,6 +467,10 @@ def build_decision(instrument, now=None):
         'risk_reward': round(reward / risk, 2) if risk else None,
         'reason_codes': codes,
         'engine_reasons': reasons,
+        'event_risk': ev,
+        'event_risk_level': event_level,
+        'event_confirmation_required': event_confirmation,
+        'upcoming_events': ev.get('upcoming', []),
         'daily_lock_consumed': lock_consumed,
         'active_paper_trade': active_trade,
         'trade': dict(trade) if trade else None,

@@ -359,11 +359,18 @@ def ensure_trigger_table():
 
 
 def log_trigger(backfill=False):
-    """Log no-filter CPR trigger results (one row/session/instrument, R units).
+    """Log plain-book CPR trigger results (one row/session/instrument, R units).
 
-    Same triggers as /api/backtest/cpr-triggers. Idempotent via
-    INSERT OR IGNORE -- safe for cron. Incomplete today skipped unless backfill."""
-    from app.research.cpr_trigger_engine import day_levels, first_trigger, exit_trade
+    SHIPPED model (2026-10-17): the row is taken from cpr_trigger_engine
+    run_opens_range -- the same truth as /api/backtest/cpr-triggers, paper_align,
+    the live path and the signal notes: next-open entry, opens exits (0.5% stop /
+    2% target = 4R), SHORT_ONLY + SKIP_FRIDAY gates and the breakout add-on. The
+    legacy first_trigger/exit_trade close-entry 1%/2% path is retired.
+
+    History is untouched: identical journaled-day guards as before and
+    INSERT OR IGNORE, so every existing row stays frozen. Incomplete today
+    skipped unless backfill."""
+    from app.research.cpr_trigger_engine import day_levels, run_opens_range, decay_win
     from datetime import datetime as dt
     ensure_trigger_table()
     today = dt.now(_IST).strftime("%Y-%m-%d")
@@ -377,6 +384,12 @@ def log_trigger(backfill=False):
         by_day = {}
         for r in rows:
             by_day.setdefault(r['timestamp'][:10], []).append(dict(r))
+        try:
+            res = run_opens_range(inst, "2000-01-01", "2100-01-01", "plain")
+        except Exception as e:
+            print(f"trigger {inst} failed: {e}", flush=True)
+            continue
+        by_date = {t["trade_date"]: t for t in res.get("trades", [])}
         for d in sorted(by_day):
             if not backfill and (d > today or (
                     d == today and not day_complete_ts(max(c["timestamp"] for c in by_day[d])))):
@@ -389,18 +402,19 @@ def log_trigger(backfill=False):
             day = by_day[d]
             if not lv or not day:
                 continue
-            sig = first_trigger(day, lv)
-            if not sig:
+            t = by_date.get(d)
+            if t is None:
                 row = (d, inst, "NO_TRADE", None, None, None, None, None,
                        None, None, 0.0, "SKIP", now)
             else:
-                entry = float(day[sig['index']]['close'])
-                stop = entry * (0.99 if sig['direction'] == 'BULL' else 1.01)
-                tgt = entry * (1.02 if sig['direction'] == 'BULL' else 0.98)
-                r, xp, how = exit_trade(sig['direction'], entry, day[sig['index'] + 1:])
-                res = 'WIN' if r > 0 else ('LOSS' if r < 0 else 'FLAT')
-                row = (d, inst, "SIGNAL", sig['direction'], sig['level'], entry,
-                       stop, tgt, xp, how, r, res, now)
+                dr = t["direction"]
+                entry = t["entry"]
+                stop = entry * (0.995 if dr == "BULL" else 1.005)
+                tgt = entry * (1.02 if dr == "BULL" else 0.98)
+                row = (d, inst, "SIGNAL", dr, t["level"], entry,
+                       round(stop, 2), round(tgt, 2), t["exit"],
+                       t["exit_reason"], t["r_multiple"],
+                       decay_win(dr, entry, t["exit"], t["r_multiple"], inst), now)
             conn.execute(
                 """INSERT OR IGNORE INTO paper_trigger
                 (session_date, instrument_id, state, direction, level, entry_price, stop_price,
@@ -668,10 +682,12 @@ footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padd
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
+<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Model rule:</b> signals are <b>bearish (short) CPR setups by default</b>. When a session produces <b>no base setup</b>, a <b>backtested breakout add-on</b> may issue a continuation &mdash; <b>long above resistance / short below support</b> &mdash; including an <b>upside breakout on Fridays</b>. <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">Why</a>.</div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/signals.html">Signal Notes</a></nav>
 <div class="wrap">
 <h1>Historical Model Observations <span class="exp">HYPOTHETICAL</span></h1>
 <p class="note">Snapshot rendered {datetime.now(_IST).strftime('%Y-%m-%d %H:%M')} IST — rows below are frozen historical records for study.</p>
+<p class="note">Rows recorded before 2026-10-17 reflect the model rules then in force (bearish short CPR setups only). The model rule changed on 2026-10-17: signals are bearish by default, with a backtested breakout add-on for sessions with no base setup. Older rows are kept exactly as recorded at the time &mdash; see the <a href="/methodology.html#strategy-rule">methodology</a> and <a href="/signals.html">signal notes</a> for the current rules.</p>
 <div class="ok"><h3>What this is</h3><p>One hypothetical observation per day per instrument from the CPR classification system (same rules as the <a href="/backtest.html">historical scenario analysis</a>): first classified observation per session, reference observation at the next open in [09:20,15:20), assumed reference bounds 0.5% / 2% evaluated at subsequent opens, session reference close at the 15:20 open. Rows are frozen once recorded. No real money, no positions, no instructions — study material only.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/learn.html">learn</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
 <h2>Spread structures studied (educational reference)</h2>
 <div class="card"><p class="note">Structures below were studied hypothetically in past sessions. Legs and expiries reference the strike grid at the time; no profit or loss is shown or implied, and nothing suggests using any structure on any day.</p></div>
@@ -726,6 +742,31 @@ def bt_row(t):
             f'<td>{float(t["entry_price"]):.2f}</td><td>{float(t["exit_price"]):.2f}</td>'
             f'<td class="{("win" if float(t["net_pnl"] or 0) > 0 else "loss")}">{money(t["net_pnl"])}</td>'
             f'<td>{t.get("exit_reason") or ""}</td></tr>')
+
+
+def close_qualified_trades():
+    """Close live frozen trades for completed sessions (2026-10-17 fix).
+
+    qualified_trades rows are INSERT-only in the live freeze path, so without
+    this they stay ACTIVE forever (the exit sweep only updates the alert
+    archive). Any session before today is complete -> ACTIVE/QUALIFIED ->
+    CLOSED. Additive and idempotent: never touches today's in-progress row.
+    """
+    from datetime import datetime as _dt
+    today = _dt.now(_IST).strftime('%Y-%m-%d')
+    conn = get_conn()
+    try:
+        cur = conn.execute(
+            "UPDATE qualified_trades SET status='CLOSED' "
+            "WHERE status IN ('ACTIVE','QUALIFIED') AND date < ?", (today,))
+        conn.commit()
+        n = cur.rowcount
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+    print(f'qualified_trades closed for completed sessions: {n}', flush=True)
 
 
 def refresh_backtest():
@@ -843,6 +884,7 @@ if __name__ == "__main__":
     stage("log_spreads", log_spreads)
     stage("mark_spreads", mark_spreads)
     stage("render_page", render_page)
+    stage("close_qualified_trades", close_qualified_trades)
     stage("refresh_backtest", refresh_backtest)
     if _failures:
         print(f"completed WITH stage failures: {','.join(_failures)}", flush=True)

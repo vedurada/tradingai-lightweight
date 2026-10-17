@@ -14,6 +14,20 @@ Unknown symbols 404 UNKNOWN_INSTRUMENT.
 - GET /api/<sym>/intraday — added Oct 2026 (uncommitted pre-push, see git log).
 - GET /api/<sym>/paper-trade
 - GET /api/market/holidays, GET /api/alerts/status
+- GET /api/market/events — scheduled-events calendar (RBI MPC, US FOMC,
+  Union Budget, CPI/WPI/GDP, US payrolls/CPI, NSE monthly + weekly F&O expiry)
+  + advisory event-risk overlay per instrument. Query: instrument (optional,
+  else all), days (default 90, capped 365). Unknown instrument 400
+  UNKNOWN_INSTRUMENT. Non-recurring events are hand-encoded; NSE expiry
+  (monthly = last Tuesday, weekly Nifty = every Tuesday, previous trading day
+  on a holiday — per circular NSE/FAOP/68747) and US payrolls are rule-generated
+  (no per-month maintenance). Read-only reference layer: never changes a trade,
+  entry/stop/target or a gate. Response coverage block reports hand_encoded_end /
+  recurring_end / last_verified.
+  Also surfaced inside GET /api/decision/<INST> as event_risk / event_risk_level /
+  event_confirmation_required / upcoming_events (+ EVENT_RISK_* reason codes).
+  Source app/market/events_calendar.py; guard scripts/events_coverage_check.py
+  (monthly cron); page /events.html.
 
 ## Trading (writes)
 

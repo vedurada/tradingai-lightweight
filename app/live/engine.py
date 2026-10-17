@@ -272,6 +272,49 @@ def _select_entry(feed, forming, sig_index, live_price, now):
     return entry, nt, sig_ts
 
 
+def _select_entry_no_chase(feed, forming, sig_index, lv):
+    """No-chase re-anchor entry for a BEAR trigger: (entry, entry_time,
+    direction, level) or None. Pure (no I/O).
+
+    Mirrors app.research.cpr_trigger_engine.no_chase_fill so live == backtest
+    == paper: the trigger's next open is NEVER taken. Instead we wait for price
+    to trade back within NO_CHASE_BAND_PCT (0.15%) of ANY entry level and enter
+    with the direction that level implies — resistance (R2/R1/PDH/BC) shorts,
+    support (TC/S1/S2/PDL) longs. The direction may therefore flip to BULL even
+    under SHORT_ONLY (that re-anchor is the intended exception).
+
+    Fills from COMPLETED candles beyond the trigger first (historical parity).
+    If price has not returned yet, the FORMING candle is checked: its open is a
+    fixed past price and its high/low are the extremes already traded, so a
+    near-level touch there is a past fact, not a lookahead forecast. Returns
+    None -> the caller WAITs (no_chase_wait) until price returns or the entry
+    window closes. Fills strictly inside [OPEN_MIN, OPEN_EOD)."""
+    from app.research.cpr_trigger_engine import (
+        no_chase_fill, entry_levels, NO_CHASE_BAND_PCT)
+    nc = no_chase_fill(lv, feed, sig_index)
+    if nc is not None:
+        j, name, dr, fill = nc
+        return round(float(fill), 2), str(feed[j].get('timestamp', '')), dr, name
+    if forming is None:
+        return None
+    try:
+        op = float(forming['open'])
+        hi = float(forming['high'])
+        lo = float(forming['low'])
+    except (KeyError, TypeError, ValueError):
+        return None
+    levels = entry_levels(lv)
+    for name, dr, ref in levels:                 # open near a level
+        if abs(op - ref) <= NO_CHASE_BAND_PCT * ref:
+            nt = str(forming.get('timestamp', ''))
+            return (round(op, 2) if nt else None), nt, dr, name
+    for name, dr, ref in levels:                 # range already covers a level
+        if lo <= ref <= hi:
+            nt = str(forming.get('timestamp', ''))
+            return (round(ref, 2) if nt else None), nt, dr, name
+    return None
+
+
 def _cpr_book_signal(instrument, candles, completed, live_price=None, now=None):
     """CPR-book signal over live candles (unified rulebook; next-open entry).
 
@@ -291,7 +334,8 @@ def _cpr_book_signal(instrument, candles, completed, live_price=None, now=None):
     from app.core.db import get_conn
     from app.research.cpr_trigger_engine import (
         book_scan, day_levels, prev_session_ohlc, weekly_levels, monday_of,
-        OPEN_MIN, OPEN_EOD, OPEN_STOP_PCT, OPEN_TARGET_PCT)
+        OPEN_MIN, OPEN_EOD, OPEN_STOP_PCT, OPEN_TARGET_PCT, shadow_flags,
+        NO_CHASE_BEAR, friday_skip)
     day_iso = completed.date().isoformat()
     conn = get_conn()
     try:
@@ -330,12 +374,27 @@ def _cpr_book_signal(instrument, candles, completed, live_price=None, now=None):
     if not sig:
         return {'trade': None, 'reasons': ['no_cpr_trigger']}
     dr, t, i = sig
-    picked = _select_entry(feed, forming, i, live_price, now)
-    if picked is None:
-        return {'trade': None, 'reasons': ['entry_at_next_open']}
-    entry, nt, sig_ts = picked
+    no_chase = False
+    if NO_CHASE_BEAR and dr == 'BEAR':
+        # No-chase re-anchor: never take the next open. Wait for price to come
+        # back near an entry level and enter with that level's direction (which
+        # may flip to BULL). Until then WAIT (no_chase_wait); skip once the
+        # window closes or a re-anchored BEAR lands on a Friday.
+        picked = _select_entry_no_chase(feed, forming, i, lv)
+        if picked is None:
+            return {'trade': None, 'reasons': ['no_chase_wait']}
+        entry, nt, dr, t = picked
+        no_chase = True
+    else:
+        picked = _select_entry(feed, forming, i, live_price, now)
+        if picked is None:
+            return {'trade': None, 'reasons': ['entry_at_next_open']}
+        entry, nt, _sig = picked
+    sig_ts = str(feed[i].get('timestamp', ''))
     if not nt or not (OPEN_MIN <= nt[11:16] < OPEN_EOD):
         return {'trade': None, 'reasons': ['entry_window_closed']}
+    if no_chase and friday_skip(dr, day_iso):
+        return {'trade': None, 'reasons': ['skip_friday']}
     if dr == 'BEAR':
         stop = round(entry * (1 + OPEN_STOP_PCT), 2)
         tgt = round(entry * (1 - OPEN_TARGET_PCT), 2)
@@ -349,12 +408,18 @@ def _cpr_book_signal(instrument, candles, completed, live_price=None, now=None):
              'expected_reward': round(OPEN_TARGET_PCT * 100, 4),
              'strategy': 'Bear Call Spread' if dr == 'BEAR' else 'Bull Put Spread',
              'objective': 'DIRECTIONAL', 'direction': dr, 'scenario': t,
+             'shadow': shadow_flags(dr, day_iso),
              # Feed diagnostics (D): snapshot of what the trigger scan saw,
              # so any future live/paper disagreement is diagnosable from the
              # frozen record instead of log archaeology.
              'feed_n': len(feed),
              'feed_first_ts': str(feed[0].get('timestamp', '')) if feed else None,
-             'forming_ts': str(forming.get('timestamp', '')) if forming is not None else None}
+             'forming_ts': str(forming.get('timestamp', '')) if forming is not None else None,
+             # Markers so the frozen-trade gate + attribution know WHY a BULL
+             # is here (the sanctioned SHORT_ONLY overrides): a no-chase
+             # re-anchor, or the breakout add-on ('BRK_*' level).
+             'no_chase_reanchor': no_chase,
+             'breakout': str(t).startswith('BRK_')}
     return {'trade': trade, 'reasons': [f'CPR_TRIGGER_{t}', 'WEEKLY_GATE_PASS']}
 
 
@@ -386,17 +451,63 @@ def _frozen_trade(instrument, day_iso):
     if not r:
         return None
     sig = None
+    ncr = False
+    brk = False
     try:
-        sig = (_json.loads(r['qualification_evidence'] or '{}') or {}).get('signal_time')
+        ev = _json.loads(r['qualification_evidence'] or '{}') or {}
+        sig = ev.get('signal_time')
+        ncr = bool(ev.get('no_chase_reanchor'))
+        brk = bool(ev.get('breakout'))
     except Exception:
         sig = None
+        ncr = False
+        brk = False
     return {'entry': r['entry'], 'entry_time': r['timestamp'],
             'signal_time': sig or r['timestamp'],
             'stop': r['stop'], 'target': r['target'],
             'max_risk': r['max_risk'], 'expected_reward': r['expected_reward'],
             'strategy': r['strategy'], 'objective': r['objective'],
             'direction': r['direction'], 'scenario': r['scenario'],
-            'frozen': True}
+            'no_chase_reanchor': ncr, 'breakout': brk, 'frozen': True}
+
+
+def _frozen_trade_passes_gate(frozen, day_iso):
+    """Re-validate a persisted frozen trade against the CURRENT gates.
+
+    A frozen row must never bypass the direction/weekday gates: a row frozen
+    before a gate change (or by a non-gated writer) would otherwise keep
+    serving TRADE for the rest of the session. Uses the same predicates as the
+    trigger engine (SHORT_ONLY, friday_skip) and fails open on an unknown or
+    missing date, exactly like friday_skip. Read-only."""
+    from app.research.cpr_trigger_engine import (
+        SHORT_ONLY, NO_CHASE_BEAR, BREAKOUT_ADDON, friday_skip)
+    dr = (frozen or {}).get('direction')
+    scen = (frozen or {}).get('scenario') or ''
+    if SHORT_ONLY and dr != 'BEAR':
+        # Sanctioned SHORT_ONLY overrides. (a) A no-chase re-anchor whose
+        # direction came from the SUPPORT level price reached back to. (b) The
+        # breakout add-on fallback ('BRK_*' levels) which is BULL above
+        # resistance. Every other BULL row is still rejected exactly as before.
+        reanchor_ok = NO_CHASE_BEAR and (frozen or {}).get('no_chase_reanchor')
+        breakout_ok = BREAKOUT_ADDON and scen.startswith('BRK_')
+        if not (reanchor_ok or breakout_ok):
+            return False
+    if friday_skip(dr, day_iso):
+        return False
+    return True
+
+
+def _live_source(trade):
+    """qualification.source label for a freshly frozen live trade.
+
+    Attribution only: 'live_breakout' (breakout add-on, BRK_* level),
+    'live_no_chase' (no-chase re-anchor), else 'live_next_open'."""
+    t = trade or {}
+    if t.get('breakout'):
+        return 'live_breakout'
+    if t.get('no_chase_reanchor'):
+        return 'live_no_chase'
+    return 'live_next_open'
 
 
 def _freeze_trade(instrument, day_iso, trade):
@@ -431,11 +542,13 @@ def _freeze_trade(instrument, day_iso, trade):
              trade.get('entry'), trade.get('stop'), trade.get('target'),
              trade.get('max_risk'), trade.get('expected_reward'),
              round((trade.get('expected_reward') or 0.0) / (trade.get('max_risk') or 1.0), 3),
-             _json.dumps({'signal_time': trade.get('signal_time'),
-                           'source': 'live_next_open',
-                          'feed_n': trade.get('feed_n'),
-                          'feed_first_ts': trade.get('feed_first_ts'),
-                          'forming_ts': trade.get('forming_ts')}),
+              _json.dumps({'signal_time': trade.get('signal_time'),
+                           'source': _live_source(trade),
+                           'no_chase_reanchor': bool(trade.get('no_chase_reanchor')),
+                           'breakout': bool(trade.get('breakout')),
+                           'feed_n': trade.get('feed_n'),
+                           'feed_first_ts': trade.get('feed_first_ts'),
+                           'forming_ts': trade.get('forming_ts')}),
              'ACTIVE', 1, now))
         conn.commit()
         return True
@@ -581,6 +694,8 @@ class LiveEngine:
         # exit-sweep); otherwise freeze a freshly-fired live trade (write path
         # only). dry_run never writes and never freezes.
         frozen = _frozen_trade(instrument, day_iso)
+        if frozen is not None and not _frozen_trade_passes_gate(frozen, day_iso):
+            frozen = None
         if frozen is not None:
             trade = frozen
         elif trade is not None and not dry_run:

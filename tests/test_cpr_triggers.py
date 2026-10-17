@@ -228,3 +228,62 @@ def test_market_state_empty_never_fabricates():
     assert ms['trend'] is None and ms['momentum'] is None
     ms2 = build_market_state(100.0, [])
     assert ms2['price'] == 100.0 and ms2['trend'] is None
+
+
+def test_short_only_suppresses_long_side():
+    # 2026-10-17 direction gate: only BEAR signals are emitted (long side
+    # was measured negative in-sample and out-of-sample on both instruments).
+    from app.research.cpr_trigger_engine import SHORT_ONLY
+    assert SHORT_ONLY is True
+    L = lv()
+    # pure-bull candle: low touches S1, close above BC, high below PDH
+    bull = [{'timestamp': 't1', 'low': 89, 'high': 96, 'close': 96}]
+    assert bull_trigger(bull[0], L) == 'S1'   # level math left intact
+    assert first_trigger(bull, L) is None         # but no signal is emitted
+    # pure-bear candle still fires
+    bear = [{'timestamp': 't1', 'low': 94, 'high': 101, 'close': 94}]
+    sig = first_trigger(bear, L)
+    assert sig and sig['direction'] == 'BEAR' and sig['level'] == 'R1'
+
+
+def test_shadow_skip_friday_is_non_blocking():
+    # Scope 2 (2026-10-17): skip-Friday is staged as a NON-BLOCKING shadow.
+    from app.research.cpr_trigger_engine import shadow_flags, SHADOW_SKIP_FRIDAY
+    assert SHADOW_SKIP_FRIDAY is True
+    assert shadow_flags('BEAR', '2026-10-16') == ['SKIP_FRIDAY']  # Friday
+    assert shadow_flags('BEAR', '2026-10-15') == []                # Thursday
+    assert shadow_flags('BULL', '2026-10-16') == []                # long side
+    assert shadow_flags('BEAR', None) == []                          # fail-open
+
+
+def test_skip_friday_helper():
+    from app.research.cpr_trigger_engine import friday_skip, is_friday, SKIP_FRIDAY
+    assert SKIP_FRIDAY is True
+    assert is_friday('2026-10-16') is True and is_friday('2026-10-15') is False
+    assert is_friday(None) is False and is_friday('not-a-date') is False
+    assert friday_skip('BEAR', '2026-10-16') is True
+    assert friday_skip('BEAR', '2026-10-15') is False
+    assert friday_skip('BULL', '2026-10-16') is False
+    assert friday_skip('BEAR', None) is False
+
+
+def test_first_trigger_skips_friday_bear():
+    # 2026-10-17 promotion: a Friday BEAR first trigger drops the session.
+    L = lv()
+    fri = [{'timestamp': '2026-10-16T09:20:00+05:30', 'low': 94, 'high': 101, 'close': 94}]
+    assert first_trigger(fri, L) is None
+    thu = [{'timestamp': '2026-10-15T09:20:00+05:30', 'low': 94, 'high': 101, 'close': 94}]
+    sig = first_trigger(thu, L)
+    assert sig and sig['direction'] == 'BEAR' and sig['level'] == 'R1'
+
+
+def test_skip_friday_enforced_in_opens_range():
+    from datetime import datetime as dt
+    r = run_opens_range('NIFTY', '2026-09-01', '2026-10-12', 'plain')
+    assert r['signals'] >= 1
+    assert r['skipped']['skip_friday'] >= 1
+    for t in r['trades']:
+        # No Friday BEAR base trade. A Friday BULL upside-breakout add-on is
+        # the sanctioned exception (BREAKOUT_ADDON, 2026-10-17).
+        if dt.fromisoformat(t['trade_date']).weekday() == 4:
+            assert t['direction'] == 'BULL' and t['level'].startswith('BRK_')

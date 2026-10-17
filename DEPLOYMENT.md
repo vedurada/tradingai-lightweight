@@ -41,6 +41,9 @@ Restart=always. WorkingDirectory=/opt/tradingai.
 - paper_confluence.py --topup weekdays 15:45 IST
 - tg_alerts.py --watch every 5 min 09-15 Mon-Fri (entry/exit Telegram only)
 - weekly_review.py Sun 08:30
+- events_coverage_check.py monthly (1st, 08:00) — warns before the scheduled-
+  events calendar runs out of hand-encoded (HAND_ENCODED_END) or rule-generated
+  (RECURRING_END) coverage; logs to logs/events_coverage.log.
 - GA4 G-MJ3X88QYEL, Search Console, owner uptime monitor.
 
 ## Telegram
