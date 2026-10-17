@@ -39,6 +39,18 @@ Fail-open on unknown dates. Monitored by scripts/shadow_friday.py (read-only;
 exit 2 = persistent+recent drag). Revert: SKIP_FRIDAY and SHADOW_SKIP_FRIDAY False.
 Entries next-open [09:20,15:10), opens-only exits, 15:10 EOD flat, weekly gate >=3 sessions
 for aligned, decay NIFTY<30/BN<60/VIX 0.02, min-10-candle days.
+Breakout add-on (2026-10-17, ADD-ON): BREAKOUT_ADDON=True. A session with NO base
+trigger falls back to the first fresh close-CROSS of a level — close crossing UP
+through a resistance (R1/R2/PDH/TC) = BULL continuation, DOWN through a support
+(S1/S2/PDL/BC) = BEAR continuation. Never overrides or delays a base trigger (base
+wins first-trigger-per-session). Deliberately a fallback, not a primary — broad
+standalone breakout entries measured negative in-sample; as an add-on on base-flat
+days it adds NIFTY +2.9R / BNK +3.7R over the range (positive 7/8 and 6/8
+walk-forward blocks). The BULL side is a sanctioned SHORT_ONLY exception. Shipped
+book (gates + add-on): NIFTY n=63 total_R +24.44 net_R +18.14; BNK n=62 total_R
++23.30 net_R +17.10. Add-on signals carry BRK_ level names (BRK_R1/R2/PDH/TC up,
+BRK_S1/S2/PDL/BC down). Set BREAKOUT_ADDON=False to disable. Reproduce:
+scripts/engine_walkforward.py -> reports/engine_walkforward_2026-10-17.md.
 
 ## Components
 

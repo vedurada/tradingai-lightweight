@@ -43,7 +43,10 @@ Unknown symbols 404 UNKNOWN_INSTRUMENT.
 ## Backtest (live book)
 
 - POST /api/backtest/cpr-triggers {instrument, variant plain|aligned, dates}
-  (+ paper merge newer-than-end, today in missing_eod until 15:10)
+  (+ paper merge newer-than-end, today in missing_eod until 15:10). Returns the
+  shipped book: SHORT_ONLY BEAR base + gated breakout add-on (BREAKOUT_ADDON);
+  add-on trades use BRK_ level names (BRK_R1/R2/PDH/TC up, BRK_S1/S2/PDL/BC down).
+  See ARCHITECTURE.md "Trigger book" and reports/engine_walkforward_2026-10-17.md.
 - POST /api/backtest/cpr-walkforward
 - GET /api/backtest/<run_id>, GET /api/backtest/validation/<run_id>
 - Removed 2026-09-28: POST /api/backtest/run (research simulator approximation;

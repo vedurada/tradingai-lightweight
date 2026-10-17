@@ -61,6 +61,10 @@ Level/Expiry/Signal (not backfillable).
 - Rollback = copy back preserved files; frontend needs no restart;
   code needs systemctl restart tradingai-api.
 - GATE: owner authorization per change; trigger/entry/exit/decay values unchanged Sep-28.
+- Engine flags (2026-10-17): SHORT_ONLY=True, SKIP_FRIDAY=True, BREAKOUT_ADDON=True,
+  NO_CHASE_BEAR=False. Breakout add-on = gated fallback (see ARCHITECTURE.md
+  "Trigger book"); disable via BREAKOUT_ADDON=False + systemctl restart tradingai-api.
+  Walk-forward: scripts/engine_walkforward.py -> reports/engine_walkforward_2026-10-17.md.
 
 ## Tests
 
