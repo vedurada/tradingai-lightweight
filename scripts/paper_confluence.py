@@ -358,10 +358,59 @@ def ensure_trigger_table():
     conn.close()
 
 
+def ensure_scalp_table():
+    conn = get_conn()
+    conn.execute("""CREATE TABLE IF NOT EXISTS paper_scalp (
+        session_date TEXT NOT NULL, instrument_id TEXT NOT NULL,
+        direction TEXT, level TEXT,
+        entry_price REAL, entry_time TEXT, exit_price REAL, exit_time TEXT,
+        exit_reason TEXT, r_multiple REAL, result TEXT, points REAL,
+        created_at TEXT NOT NULL,
+        PRIMARY KEY (session_date, instrument_id))""")
+    conn.commit()
+    conn.close()
+
+
+def log_scalp(backfill=False):
+    """Log scalp (HLC 3-bar) backtest trades per session/instrument."""
+    from app.research.scalp_engine import run_opens_range, decay_win
+    from datetime import datetime as dt
+    ensure_scalp_table()
+    today = dt.now(_IST).strftime("%Y-%m-%d")
+    now = dt.now(_IST).isoformat()
+    conn = get_conn()
+    total = 0
+    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        try:
+            res = run_opens_range(inst, "2000-01-01", "2100-01-01", "plain")
+        except Exception as e:
+            print(f"scalp {inst} failed: {e}", flush=True)
+            continue
+        for t in res.get("trades", []):
+            if not backfill and t["trade_date"] > today:
+                continue
+            r = t["r_multiple"]
+            row = (t["trade_date"], inst, t["direction"], t["level"],
+                   t["entry"], t.get("entry_time"), t["exit"], t.get("exit_time"),
+                   t["exit_reason"], r,
+                   decay_win(t["direction"], t["entry"], t["exit"], r, inst),
+                   t.get("points"), now)
+            conn.execute(
+                """INSERT OR IGNORE INTO paper_scalp
+                (session_date, instrument_id, direction, level, entry_price,
+                 entry_time, exit_price, exit_time, exit_reason, r_multiple,
+                 result, points, created_at)
+                VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)""", row)
+            total += 1
+    conn.commit()
+    conn.close()
+    print(f"scalp rows processed={total} (new inserts only)", flush=True)
+
+
 def log_trigger(backfill=False):
     """Log plain-book CPR trigger results (one row/session/instrument, R units).
 
-    SHIPPED model (2026-10-17): the row is taken from cpr_trigger_engine
+    SHIPPED model (2026-10-23): the row is taken from cpr_trigger_engine
     run_opens_range -- the same truth as /api/backtest/cpr-triggers, paper_align,
     the live path and the signal notes: next-open entry, opens exits (0.5% stop /
     2% target = 4R), SHORT_ONLY + SKIP_FRIDAY gates and the breakout add-on. The
@@ -394,14 +443,17 @@ def log_trigger(backfill=False):
             if not backfill and (d > today or (
                     d == today and not day_complete_ts(max(c["timestamp"] for c in by_day[d])))):
                 continue
-            prev_days = sorted(x for x in by_day if x < d)
-            if not prev_days:
-                continue
-            pc = by_day[prev_days[-1]]
-            lv = day_levels(max(c['high'] for c in pc), min(c['low'] for c in pc), pc[-1]['close'])
             day = by_day[d]
-            if not lv or not day:
+            if not day:
                 continue
+            if inst not in ('NIFTY', 'BANKNIFTY'):
+                prev_days = sorted(x for x in by_day if x < d)
+                if not prev_days:
+                    continue
+                pc = by_day[prev_days[-1]]
+                lv = day_levels(max(c['high'] for c in pc), min(c['low'] for c in pc), pc[-1]['close'])
+                if not lv:
+                    continue
             t = by_date.get(d)
             if t is None:
                 row = (d, inst, "NO_TRADE", None, None, None, None, None,
@@ -457,6 +509,47 @@ def render_page():
         spreads = []
     conn.close()
     sigs = [r for r in recs if r["state"] == "SIGNAL"]
+
+    # Show the same current-engine, session-only replay used by Historical Analysis.
+    # Historical paper_align rows remain below as a clearly identified archive.
+    from app.research.cpr_trigger_engine import run_opens_range
+    replay_start = "2026-07-29"
+    end_conn = get_conn()
+    end_row = end_conn.execute(
+        "SELECT max(substr(timestamp,1,10)) FROM market_candles_5m "
+        "WHERE instrument_id='NIFTY' AND substr(timestamp,1,10)>=? "
+        "AND substr(timestamp,12,5)='15:20'", (replay_start,)).fetchone()
+    end_conn.close()
+    replay_end = end_row[0] if end_row and end_row[0] else replay_start
+    current_replays = {inst: run_opens_range(inst, replay_start, replay_end, "plain")
+                       for inst in ("NIFTY", "BANKNIFTY")}
+
+    def replay_card(inst):
+        r = current_replays[inst]
+        flats = max(0, r["signals"] - r["wins"] - r["losses"])
+        skips = r.get("skipped", {})
+        points = sum(float(t.get("points") or 0) for t in r.get("trades", []))
+        return (f'<div class="card"><h3>{inst} — current-engine replay</h3><div class="kv">'
+                f'<dt>Sessions / trades</dt><dd>{r["days"]} / {r["signals"]}</dd>'
+                f'<dt>Wins / losses / flat</dt><dd>{r["wins"]} / {r["losses"]} / {flats}</dd>'
+                f'<dt>Engine-labeled win rate</dt><dd>{r["win_rate"]:.1f}%</dd>'
+                f'<dt>Gross R / net R</dt><dd>{r["total_R"]:.2f}R / {r["net_R"]:.2f}R</dd>'
+                f'<dt>Net spot points</dt><dd>{points:,.1f}</dd>'
+                f'<dt>Skipped sessions</dt><dd>{skips.get("skip_friday", 0)} Friday; '
+                f'{skips.get("missing_eod", 0)} missing 15:20 candle</dd></div></div>')
+
+    def replay_ledger(inst):
+        out = []
+        for t in current_replays[inst].get("trades", []):
+            result = t.get("win_loss", "FLAT")
+            cls = "win" if result == "WIN" else ("loss" if result == "LOSS" else "")
+            out.append(
+                f'<tr><td>{t["trade_date"]}</td><td>{t["direction"]}</td><td>{t["level"]}</td>'
+                f'<td>{t["entry_time"][11:]}</td><td>{t["entry"]:.2f}</td>'
+                f'<td>{t["exit_time"][11:]}</td><td>{t["exit"]:.2f}</td>'
+                f'<td>{t["points"]:+.1f}</td><td>{t["r_multiple"]:+.3f}R</td>'
+                f'<td class="{cls}">{result}</td><td>{t["exit_reason"]}</td></tr>')
+        return "\n".join(out)
 
     def card(title, ts):
         n = len(ts)
@@ -682,27 +775,34 @@ footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padd
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
-<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Model rule:</b> signals are <b>bearish (short) CPR setups by default</b>. When a session produces <b>no base setup</b>, a <b>backtested breakout add-on</b> may issue a continuation &mdash; <b>long above resistance / short below support</b> &mdash; including an <b>upside breakout on Fridays</b>. <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">Why</a>.</div>
+<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Active signal rule:</b> NIFTY and BANKNIFTY: short-only after a completed 5-minute close below session SMA20; enter at the next candle open. The stop is 0.5% above entry, target 2% below, and any open position exits at 15:20 IST. No bullish signals are generated. Rule effective 2026-10-26; VIX remains a market gauge. See <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">the complete rules</a>.</div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/signals.html">Signal Notes</a></nav>
 <div class="wrap">
 <h1>Historical Model Observations <span class="exp">HYPOTHETICAL</span></h1>
-<p class="note">Snapshot rendered {datetime.now(_IST).strftime('%Y-%m-%d %H:%M')} IST — rows below are frozen historical records for study.</p>
-<p class="note">Rows recorded before 2026-10-17 reflect the model rules then in force (bearish short CPR setups only). The model rule changed on 2026-10-17: signals are bearish by default, with a backtested breakout add-on for sessions with no base setup. Older rows are kept exactly as recorded at the time &mdash; see the <a href="/methodology.html#strategy-rule">methodology</a> and <a href="/signals.html">signal notes</a> for the current rules.</p>
-<div class="ok"><h3>What this is</h3><p>One hypothetical observation per day per instrument from the CPR classification system (same rules as the <a href="/backtest.html">historical scenario analysis</a>): first classified observation per session, reference observation at the next open in [09:20,15:20), assumed reference bounds 0.5% / 2% evaluated at subsequent opens, session reference close at the 15:20 open. Rows are frozen once recorded. No real money, no positions, no instructions — study material only.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/learn.html">learn</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+<p class="note">Snapshot rendered {datetime.now(_IST).strftime('%Y-%m-%d %H:%M')} IST. The replay below is freshly calculated with the current engine and matches the session-only Historical Analysis rules for the same dates. The older journal is retained as a frozen archive.</p>
+<p class="note">Rows in the archived journal were recorded under the model version active at the time and are not recomputed; they may differ from the current-engine replay. See <a href="/methodology.html#strategy-rule">methodology</a> for the active rules.</p>
+<div class="ok"><h3>Replay and archive</h3><p>The current-engine replay below uses the short-only session SMA20 confirmation, next 5-minute open entries, subsequent-open exits, 0.5% stop, 2% target or the 15:20 open. Engine labels adverse outcomes up to 30 NIFTY points (60 BANKNIFTY points) as wins, matching Historical Analysis. Spot points and R are underlying-price measures, not option-premium P&amp;L. The archived observations are historical records, not the recomputed backtest.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/backtest.html">Historical Analysis</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+<h2>Current-engine replay — {replay_start} through {replay_end}</h2>
+<div class="grid">{replay_card("NIFTY")}{replay_card("BANKNIFTY")}</div>
+<h3>NIFTY replay trades</h3>
+<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Side</th><th>Signal</th><th>Entry time</th><th>Entry</th><th>Exit time</th><th>Exit</th><th>Points</th><th>Gross R</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody>{replay_ledger("NIFTY")}</tbody></table></div>
+<h3>BANKNIFTY replay trades</h3>
+<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Side</th><th>Signal</th><th>Entry time</th><th>Entry</th><th>Exit time</th><th>Exit</th><th>Points</th><th>Gross R</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody>{replay_ledger("BANKNIFTY")}</tbody></table></div>
+<h2>Archived observations from the paper journal (frozen)</h2>
 <h2>Spread structures studied (educational reference)</h2>
 <div class="card"><p class="note">Structures below were studied hypothetically in past sessions. Legs and expiries reference the strike grid at the time; no profit or loss is shown or implied, and nothing suggests using any structure on any day.</p></div>
-<h2>Recorded observations by session (hypothetical)</h2>
+<h2>Archived recorded observations by session (frozen; may differ from replay)</h2>
 <div class="grid">
-{align_card("NIFTY", [t for t in aligns if t["instrument_id"] == "NIFTY" and t["variant"] == "plain"])}
-{align_card("BANKNIFTY", [t for t in aligns if t["instrument_id"] == "BANKNIFTY" and t["variant"] == "plain"])}
+{align_card("NIFTY archive", [t for t in aligns if t["instrument_id"] == "NIFTY" and t["variant"] == "plain"])}
+{align_card("BANKNIFTY archive", [t for t in aligns if t["instrument_id"] == "BANKNIFTY" and t["variant"] == "plain"])}
 </div>
 {FILTER_HTML}
-<h2>NIFTY observations journal</h2>
+<h2>Archived NIFTY observation journal</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
 {align_ledger("NIFTY")}
 </tbody></table>
-<h2>BANKNIFTY observations journal</h2>
+<h2>Archived BANKNIFTY observation journal</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
 {align_ledger("BANKNIFTY")}
@@ -880,6 +980,7 @@ if __name__ == "__main__":
         stage("topup", topup)
     stage("log_pivot", lambda: log_pivot(backfill=a.backfill))
     stage("log_trigger", lambda: log_trigger(backfill=a.backfill))
+    stage("log_scalp", lambda: log_scalp(backfill=a.backfill))
     stage("log_align", lambda: log_align(backfill=a.backfill))
     stage("log_spreads", log_spreads)
     stage("mark_spreads", mark_spreads)

@@ -387,8 +387,8 @@ def build_decision(instrument, now=None):
     completed = st.get('completed_candle')
     trigger = confirmation = entry_zone = invalidation = None
     if decision == 'TRADE' and trade:
-        trigger = f"CPR level trigger takes the {strategy} entry at the next candle open {entry}"
-        confirmation = f"CPR trigger {regime} (all sessions) at {completed}"
+        trigger = f"SMA20 bearish close confirmation; enter short at the next 5-minute open {entry}"
+        confirmation = "Completed close below session SMA20 at {}; SMA20={}".format(trade.get("signal_time") or completed, trade.get("sma20"))
         entry_zone = f"Entered at the next candle open near {entry}"
         invalidation = f"5-minute close beyond stop {stop}"
     elif decision == 'WAIT':

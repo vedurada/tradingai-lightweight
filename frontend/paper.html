@@ -64,24 +64,151 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
-<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Model rule:</b> signals are <b>bearish (short) CPR setups by default</b>. When a session produces <b>no base setup</b>, a <b>backtested breakout add-on</b> may issue a continuation &mdash; <b>long above resistance / short below support</b> &mdash; including an <b>upside breakout on Fridays</b>. <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">Why</a>.</div>
+<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Active signal rule:</b> NIFTY and BANKNIFTY: short-only after a completed 5-minute close below session SMA20; enter at the next candle open. The stop is 0.5% above entry, target 2% below, and any open position exits at 15:20 IST. No bullish signals are generated. Rule effective 2026-10-26; VIX remains a market gauge. See <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">the complete rules</a>.</div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/signals.html">Signal Notes</a></nav>
 <div class="wrap">
 <h1>Historical Model Observations <span class="exp">HYPOTHETICAL</span></h1>
-<p class="note">Snapshot rendered 2026-10-17 19:16 IST — rows below are frozen historical records for study.</p>
-<p class="note">Rows recorded before 2026-10-17 reflect the model rules then in force (bearish short CPR setups only). The model rule changed on 2026-10-17: signals are bearish by default, with a backtested breakout add-on for sessions with no base setup. Older rows are kept exactly as recorded at the time &mdash; see the <a href="/methodology.html#strategy-rule">methodology</a> and <a href="/signals.html">signal notes</a> for the current rules.</p>
-<div class="ok"><h3>What this is</h3><p>One hypothetical observation per day per instrument from the CPR classification system (same rules as the <a href="/backtest.html">historical scenario analysis</a>): first classified observation per session, reference observation at the next open in [09:20,15:20), assumed reference bounds 0.5% / 2% evaluated at subsequent opens, session reference close at the 15:20 open. Rows are frozen once recorded. No real money, no positions, no instructions — study material only.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/learn.html">learn</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+<p class="note">Snapshot rendered 2026-10-25 13:57 IST. The replay below is freshly calculated with the current engine and matches the session-only Historical Analysis rules for the same dates. The older journal is retained as a frozen archive.</p>
+<p class="note">Rows in the archived journal were recorded under the model version active at the time and are not recomputed; they may differ from the current-engine replay. See <a href="/methodology.html#strategy-rule">methodology</a> for the active rules.</p>
+<div class="ok"><h3>Replay and archive</h3><p>The current-engine replay below uses the short-only session SMA20 confirmation, next 5-minute open entries, subsequent-open exits, 0.5% stop, 2% target or the 15:20 open. Engine labels adverse outcomes up to 30 NIFTY points (60 BANKNIFTY points) as wins, matching Historical Analysis. Spot points and R are underlying-price measures, not option-premium P&amp;L. The archived observations are historical records, not the recomputed backtest.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/backtest.html">Historical Analysis</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+<h2>Current-engine replay — 2026-07-29 through 2026-10-23</h2>
+<div class="grid"><div class="card"><h3>NIFTY — current-engine replay</h3><div class="kv"><dt>Sessions / trades</dt><dd>60 / 59</dd><dt>Wins / losses / flat</dt><dd>43 / 16 / 0</dd><dt>Engine-labeled win rate</dt><dd>72.9%</dd><dt>Gross R / net R</dt><dd>10.75R / 4.85R</dd><dt>Net spot points</dt><dd>1,230.3</dd><dt>Skipped sessions</dt><dd>0 Friday; 1 missing 15:20 candle</dd></div></div><div class="card"><h3>BANKNIFTY — current-engine replay</h3><div class="kv"><dt>Sessions / trades</dt><dd>60 / 59</dd><dt>Wins / losses / flat</dt><dd>44 / 15 / 0</dd><dt>Engine-labeled win rate</dt><dd>74.6%</dd><dt>Gross R / net R</dt><dd>6.75R / 0.85R</dd><dt>Net spot points</dt><dd>1,717.8</dd><dt>Skipped sessions</dt><dd>0 Friday; 1 missing 15:20 candle</dd></div></div></div>
+<h3>NIFTY replay trades</h3>
+<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Side</th><th>Signal</th><th>Entry time</th><th>Entry</th><th>Exit time</th><th>Exit</th><th>Points</th><th>Gross R</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody><tr><td>2026-07-29</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:40</td><td>24221.85</td><td>15:20</td><td>24243.55</td><td>-21.7</td><td>-0.179R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-07-30</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:00</td><td>24256.45</td><td>15:20</td><td>24314.95</td><td>-58.5</td><td>-0.482R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-07-31</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:10</td><td>24337.10</td><td>15:20</td><td>24377.45</td><td>-40.3</td><td>-0.332R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-03</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:05</td><td>24588.00</td><td>15:20</td><td>24573.35</td><td>+14.7</td><td>+0.119R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-04</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24584.55</td><td>15:20</td><td>24463.45</td><td>+121.1</td><td>+0.985R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-05</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:35</td><td>24590.20</td><td>15:20</td><td>24570.20</td><td>+20.0</td><td>+0.163R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-06</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24629.40</td><td>15:20</td><td>24627.95</td><td>+1.5</td><td>+0.012R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-07</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24582.20</td><td>15:20</td><td>24557.00</td><td>+25.2</td><td>+0.205R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-10</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:45</td><td>24583.50</td><td>15:20</td><td>24560.15</td><td>+23.3</td><td>+0.190R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-11</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24476.90</td><td>15:20</td><td>24450.25</td><td>+26.7</td><td>+0.218R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-12</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24359.30</td><td>15:20</td><td>24361.70</td><td>-2.4</td><td>-0.020R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-13</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>24325.55</td><td>15:20</td><td>24353.35</td><td>-27.8</td><td>-0.229R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-14</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:00</td><td>24313.05</td><td>15:20</td><td>24354.85</td><td>-41.8</td><td>-0.344R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-17</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24241.95</td><td>15:20</td><td>24339.80</td><td>-97.9</td><td>-0.807R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-18</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24196.95</td><td>15:20</td><td>24166.35</td><td>+30.6</td><td>+0.253R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-19</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24062.75</td><td>15:20</td><td>24048.55</td><td>+14.2</td><td>+0.118R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-20</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24203.90</td><td>15:20</td><td>24211.60</td><td>-7.7</td><td>-0.064R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-21</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:45</td><td>24251.30</td><td>15:20</td><td>24234.75</td><td>+16.5</td><td>+0.136R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-24</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24269.20</td><td>15:20</td><td>24182.80</td><td>+86.4</td><td>+0.712R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-25</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:00</td><td>24144.55</td><td>15:20</td><td>24260.05</td><td>-115.5</td><td>-0.957R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-26</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24319.65</td><td>15:20</td><td>24276.90</td><td>+42.7</td><td>+0.352R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-27</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24163.45</td><td>15:20</td><td>24133.05</td><td>+30.4</td><td>+0.252R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-28</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:10</td><td>24143.05</td><td>15:20</td><td>24142.45</td><td>+0.6</td><td>+0.005R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-31</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>24005.80</td><td>15:20</td><td>24050.25</td><td>-44.5</td><td>-0.370R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-01</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:25</td><td>24098.75</td><td>15:20</td><td>23980.55</td><td>+118.2</td><td>+0.981R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-02</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>23837.35</td><td>15:20</td><td>23882.85</td><td>-45.5</td><td>-0.382R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-03</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23960.10</td><td>15:20</td><td>23904.10</td><td>+56.0</td><td>+0.467R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-04</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:05</td><td>23959.30</td><td>15:20</td><td>23937.90</td><td>+21.4</td><td>+0.179R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-07</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23790.60</td><td>15:20</td><td>23760.30</td><td>+30.3</td><td>+0.255R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-08</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23683.00</td><td>15:20</td><td>23640.05</td><td>+42.9</td><td>+0.363R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-09</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:35</td><td>23515.85</td><td>15:20</td><td>23462.45</td><td>+53.4</td><td>+0.454R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-10</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23410.80</td><td>15:20</td><td>23389.25</td><td>+21.5</td><td>+0.184R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-11</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:50</td><td>23344.15</td><td>15:20</td><td>23435.10</td><td>-90.9</td><td>-0.779R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-15</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23336.00</td><td>15:20</td><td>23172.35</td><td>+163.7</td><td>+1.403R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-16</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:30</td><td>23220.20</td><td>15:20</td><td>23224.15</td><td>-4.0</td><td>-0.034R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-17</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23272.25</td><td>15:20</td><td>23294.35</td><td>-22.1</td><td>-0.190R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-18</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23309.20</td><td>15:20</td><td>23341.85</td><td>-32.6</td><td>-0.280R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-22</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23375.60</td><td>15:20</td><td>23349.50</td><td>+26.1</td><td>+0.223R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-23</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>13:15</td><td>23446.30</td><td>15:20</td><td>23431.35</td><td>+15.0</td><td>+0.128R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-24</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:10</td><td>23221.00</td><td>15:20</td><td>23085.60</td><td>+135.4</td><td>+1.166R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-25</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23061.20</td><td>15:20</td><td>23128.10</td><td>-66.9</td><td>-0.580R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-28</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22828.00</td><td>15:20</td><td>22788.25</td><td>+39.8</td><td>+0.348R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-29</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>22600.55</td><td>11:35</td><td>22721.60</td><td>-121.0</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-09-30</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22713.35</td><td>15:20</td><td>22616.60</td><td>+96.8</td><td>+0.852R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-01</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22556.95</td><td>15:20</td><td>22446.00</td><td>+111.0</td><td>+0.984R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-05</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22472.40</td><td>15:20</td><td>22535.45</td><td>-63.0</td><td>-0.561R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-06</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:10</td><td>22676.65</td><td>15:20</td><td>22717.70</td><td>-41.0</td><td>-0.362R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-07</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:15</td><td>22674.75</td><td>15:20</td><td>22615.45</td><td>+59.3</td><td>+0.523R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-08</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22447.85</td><td>15:20</td><td>22216.00</td><td>+231.8</td><td>+2.066R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-09</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:40</td><td>22491.65</td><td>15:20</td><td>22535.65</td><td>-44.0</td><td>-0.391R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-12</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22442.15</td><td>15:20</td><td>22316.85</td><td>+125.3</td><td>+1.117R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-13</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22516.60</td><td>14:35</td><td>22636.70</td><td>-120.1</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-10-14</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:20</td><td>22714.35</td><td>15:20</td><td>22625.15</td><td>+89.2</td><td>+0.785R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-15</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>14:25</td><td>23015.05</td><td>15:20</td><td>22939.95</td><td>+75.1</td><td>+0.653R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-16</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:05</td><td>23106.25</td><td>15:20</td><td>23119.00</td><td>-12.8</td><td>-0.110R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-19</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>23051.85</td><td>15:20</td><td>22873.55</td><td>+178.3</td><td>+1.547R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-21</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22972.15</td><td>15:20</td><td>22738.45</td><td>+233.7</td><td>+2.035R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-22</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:45</td><td>22683.15</td><td>15:20</td><td>22666.55</td><td>+16.6</td><td>+0.146R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-23</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22474.00</td><td>15:20</td><td>22516.40</td><td>-42.4</td><td>-0.377R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr></tbody></table></div>
+<h3>BANKNIFTY replay trades</h3>
+<div style="overflow-x:auto"><table><thead><tr><th>Date</th><th>Side</th><th>Signal</th><th>Entry time</th><th>Entry</th><th>Exit time</th><th>Exit</th><th>Points</th><th>Gross R</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody><tr><td>2026-07-29</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:50</td><td>57185.90</td><td>15:20</td><td>57190.90</td><td>-5.0</td><td>-0.017R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-07-30</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:50</td><td>56852.85</td><td>15:10</td><td>57162.80</td><td>-310.0</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-07-31</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57200.55</td><td>15:20</td><td>57256.10</td><td>-55.6</td><td>-0.194R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-03</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:20</td><td>57789.55</td><td>15:20</td><td>57683.70</td><td>+105.9</td><td>+0.366R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-04</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57707.25</td><td>15:20</td><td>57492.75</td><td>+214.5</td><td>+0.743R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-05</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57817.85</td><td>15:20</td><td>57629.75</td><td>+188.1</td><td>+0.651R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-06</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:45</td><td>57859.95</td><td>15:20</td><td>58007.95</td><td>-148.0</td><td>-0.512R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-07</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57841.40</td><td>15:20</td><td>57801.15</td><td>+40.3</td><td>+0.139R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-10</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:25</td><td>57664.10</td><td>15:20</td><td>57606.10</td><td>+58.0</td><td>+0.201R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-11</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:05</td><td>57258.00</td><td>15:20</td><td>57366.05</td><td>-108.1</td><td>-0.377R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-12</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:00</td><td>57608.65</td><td>15:20</td><td>57771.35</td><td>-162.7</td><td>-0.565R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-13</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>57583.70</td><td>15:20</td><td>57591.00</td><td>-7.3</td><td>-0.025R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-14</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57506.90</td><td>15:20</td><td>57459.10</td><td>+47.8</td><td>+0.166R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-17</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57185.35</td><td>12:55</td><td>57478.40</td><td>-293.1</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-08-18</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57259.90</td><td>15:20</td><td>57308.15</td><td>-48.2</td><td>-0.169R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-19</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57082.40</td><td>15:20</td><td>57157.75</td><td>-75.3</td><td>-0.264R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-20</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:20</td><td>57642.55</td><td>15:20</td><td>57444.05</td><td>+198.5</td><td>+0.689R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-21</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:55</td><td>57679.45</td><td>15:20</td><td>57647.65</td><td>+31.8</td><td>+0.110R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-24</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57598.10</td><td>15:20</td><td>57419.45</td><td>+178.7</td><td>+0.620R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-25</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>57456.70</td><td>15:20</td><td>57454.10</td><td>+2.6</td><td>+0.009R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-26</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57892.50</td><td>15:20</td><td>57876.80</td><td>+15.7</td><td>+0.054R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-27</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57716.85</td><td>15:20</td><td>57569.50</td><td>+147.3</td><td>+0.511R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-28</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:10</td><td>57479.90</td><td>15:20</td><td>57432.25</td><td>+47.7</td><td>+0.166R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-08-31</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57224.20</td><td>15:20</td><td>57397.35</td><td>-173.2</td><td>-0.605R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-01</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:25</td><td>57608.75</td><td>15:20</td><td>57264.15</td><td>+344.6</td><td>+1.196R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-02</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>57048.85</td><td>15:20</td><td>57087.40</td><td>-38.5</td><td>-0.135R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-03</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57573.45</td><td>15:20</td><td>57433.65</td><td>+139.8</td><td>+0.486R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-04</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:25</td><td>57550.10</td><td>15:20</td><td>57440.60</td><td>+109.5</td><td>+0.381R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-07</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>57074.10</td><td>15:20</td><td>57056.75</td><td>+17.3</td><td>+0.061R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-08</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>56910.30</td><td>15:20</td><td>56765.85</td><td>+144.4</td><td>+0.508R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-09</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:55</td><td>56553.05</td><td>15:20</td><td>56379.60</td><td>+173.4</td><td>+0.613R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-10</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>56416.10</td><td>15:20</td><td>56262.50</td><td>+153.6</td><td>+0.545R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-11</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:15</td><td>56099.60</td><td>14:00</td><td>56478.80</td><td>-379.2</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-09-15</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>56192.30</td><td>15:20</td><td>55908.95</td><td>+283.4</td><td>+1.009R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-16</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:30</td><td>56089.20</td><td>15:20</td><td>56226.75</td><td>-137.6</td><td>-0.490R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-17</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>56269.35</td><td>15:20</td><td>56137.45</td><td>+131.9</td><td>+0.469R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-18</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>56120.70</td><td>14:10</td><td>56406.60</td><td>-285.9</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-09-22</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>56354.70</td><td>15:20</td><td>56280.95</td><td>+73.8</td><td>+0.262R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-23</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:50</td><td>56544.00</td><td>15:20</td><td>56542.25</td><td>+1.8</td><td>+0.006R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-24</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:10</td><td>55578.20</td><td>15:20</td><td>55464.70</td><td>+113.5</td><td>+0.408R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-25</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>55512.25</td><td>15:20</td><td>55522.50</td><td>-10.2</td><td>-0.037R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-28</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>54576.50</td><td>15:20</td><td>54467.70</td><td>+108.8</td><td>+0.399R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-29</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:30</td><td>54180.75</td><td>15:20</td><td>54364.90</td><td>-184.1</td><td>-0.680R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-09-30</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>13:45</td><td>54971.70</td><td>15:20</td><td>54706.75</td><td>+264.9</td><td>+0.964R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-01</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>54895.70</td><td>15:20</td><td>54565.10</td><td>+330.6</td><td>+1.204R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-05</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>54656.80</td><td>15:20</td><td>54713.60</td><td>-56.8</td><td>-0.208R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-06</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>54983.20</td><td>15:20</td><td>54993.75</td><td>-10.6</td><td>-0.038R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-07</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>12:00</td><td>55223.35</td><td>15:20</td><td>55065.40</td><td>+158.0</td><td>+0.572R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-08</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:25</td><td>54857.90</td><td>15:20</td><td>54482.30</td><td>+375.6</td><td>+1.369R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-09</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:10</td><td>55102.75</td><td>14:20</td><td>55386.20</td><td>-283.4</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-10-12</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>54916.45</td><td>15:20</td><td>54812.25</td><td>+104.2</td><td>+0.379R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-13</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:00</td><td>55211.30</td><td>14:50</td><td>55506.10</td><td>-294.8</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-10-14</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:05</td><td>55456.50</td><td>15:20</td><td>55378.10</td><td>+78.4</td><td>+0.283R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-15</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:20</td><td>55692.05</td><td>12:55</td><td>55988.45</td><td>-296.4</td><td>-1.000R</td><td class="loss">LOSS</td><td>STOP</td></tr>
+<tr><td>2026-10-16</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>55664.55</td><td>15:20</td><td>55764.65</td><td>-100.1</td><td>-0.360R</td><td class="loss">LOSS</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-19</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:35</td><td>55570.10</td><td>15:20</td><td>55481.85</td><td>+88.2</td><td>+0.318R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-21</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>55481.00</td><td>15:20</td><td>54892.70</td><td>+588.3</td><td>+2.121R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-22</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>11:35</td><td>54815.10</td><td>15:20</td><td>54832.35</td><td>-17.3</td><td>-0.063R</td><td class="win">WIN</td><td>EOD-1520</td></tr>
+<tr><td>2026-10-23</td><td>BEAR</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>54249.90</td><td>15:20</td><td>54111.55</td><td>+138.3</td><td>+0.510R</td><td class="win">WIN</td><td>EOD-1520</td></tr></tbody></table></div>
+<h2>Archived observations from the paper journal (frozen)</h2>
 <h2>Spread structures studied (educational reference)</h2>
 <div class="card"><p class="note">Structures below were studied hypothetically in past sessions. Legs and expiries reference the strike grid at the time; no profit or loss is shown or implied, and nothing suggests using any structure on any day.</p></div>
-<h2>Recorded observations by session (hypothetical)</h2>
+<h2>Archived recorded observations by session (frozen; may differ from replay)</h2>
 <div class="grid">
-<div class="card"><h3>NIFTY (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>72</dd><dt>Above / below reference</dt><dd>46 / 25</dd><dt>Share above reference (hypothetical)</dt><dd >63.9%</dd></div></div>
-<div class="card"><h3>BANKNIFTY (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>72</dd><dt>Above / below reference</dt><dd>44 / 28</dd><dt>Share above reference (hypothetical)</dt><dd >61.1%</dd></div></div>
+<div class="card"><h3>NIFTY archive (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>77</dd><dt>Above / below reference</dt><dd>49 / 27</dd><dt>Share above reference (hypothetical)</dt><dd >63.6%</dd></div></div>
+<div class="card"><h3>BANKNIFTY archive (align)</h3><div class="kv"><dt>Classified sessions</dt><dd>77</dd><dt>Above / below reference</dt><dd>48 / 29</dd><dt>Share above reference (hypothetical)</dt><dd >62.3%</dd></div></div>
 </div>
 <div class="card" id="dateFilter"><label for="dateSel"><b>Filter by session date:</b></label> <select id="dateSel" style="padding:.4rem .6rem;border-radius:8px;border:1px solid #cbd5e1;font-size:.9rem;max-width:100%"><option value="">All dates</option></select> <span class="meta" id="dateCount"></span></div>
-<h2>NIFTY observations journal</h2>
+<h2>Archived NIFTY observation journal</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
+<tr><td>2026-10-23</td><td>NIFTY</td><td>Downward</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>22474.00</td><td>15:20</td><td>22516.40</td><td>Below reference</td><td>EOD</td></tr>
+<tr><td>2026-10-22</td><td>NIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:20</td><td>22608.95</td><td>10:25</td><td>22726.10</td><td>Below reference</td><td>STOP</td></tr>
+<tr><td>2026-10-21</td><td>NIFTY</td><td>Downward</td><td>R1</td><td>09:35</td><td>23117.35</td><td>15:20</td><td>22738.45</td><td>Above reference</td><td>EOD</td></tr>
+<tr><td>2026-10-19</td><td>NIFTY</td><td>Downward</td><td>PDH</td><td>09:20</td><td>23153.25</td><td>15:20</td><td>22873.55</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-16</td><td>NIFTY</td><td>Downward</td><td>PDH</td><td>09:20</td><td>22955.90</td><td>10:15</td><td>23094.30</td><td>Below reference</td><td>STOP</td></tr>
 <tr><td>2026-10-15</td><td>NIFTY</td><td>Downward</td><td>R1</td><td>09:20</td><td>22724.85</td><td>10:00</td><td>22850.00</td><td>Below reference</td><td>STOP</td></tr>
 <tr><td>2026-10-14</td><td>NIFTY</td><td>Downward</td><td>PDH</td><td>09:20</td><td>22684.80</td><td>15:20</td><td>22625.15</td><td>Above reference</td><td>EOD</td></tr>
@@ -154,10 +281,15 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <tr><td>2026-07-09</td><td>NIFTY</td><td>Upward</td><td>ABOVE_CPR</td><td>10:10</td><td>24065.30</td><td>15:10</td><td>23953.65</td><td>Below reference</td><td>EOD</td></tr>
 <tr><td>2026-07-08</td><td>NIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:20</td><td>24285.50</td><td>15:10</td><td>23861.50</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-07-07</td><td>NIFTY</td><td>Downward</td><td>PDH</td><td>09:20</td><td>24460.20</td><td>15:10</td><td>24405.70</td><td>Above reference</td><td>EOD</td></tr>
+<tr><td>2026-07-06</td><td>NIFTY</td><td>Downward</td><td>SMA20_CLOSE_BELOW</td><td>13:35</td><td>24438.50</td><td>15:20</td><td>24433.10</td><td>Above reference</td><td>EOD</td></tr>
 </tbody></table>
-<h2>BANKNIFTY observations journal</h2>
+<h2>Archived BANKNIFTY observation journal</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Classified direction</th><th>Context level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Reference outcome</th><th>Session-close basis</th></tr></thead>
 <tbody>
+<tr><td>2026-10-23</td><td>BANKNIFTY</td><td>Downward</td><td>SMA20_CLOSE_BELOW</td><td>10:55</td><td>54249.90</td><td>15:20</td><td>54111.55</td><td>Above reference</td><td>EOD</td></tr>
+<tr><td>2026-10-22</td><td>BANKNIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:20</td><td>54701.45</td><td>10:25</td><td>54994.15</td><td>Below reference</td><td>STOP</td></tr>
+<tr><td>2026-10-21</td><td>BANKNIFTY</td><td>Downward</td><td>R1</td><td>09:35</td><td>55821.65</td><td>15:20</td><td>54892.70</td><td>Above reference</td><td>EOD</td></tr>
+<tr><td>2026-10-19</td><td>BANKNIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:20</td><td>55687.75</td><td>15:20</td><td>55481.85</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-16</td><td>BANKNIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:20</td><td>55660.65</td><td>15:20</td><td>55764.65</td><td>Below reference</td><td>EOD</td></tr>
 <tr><td>2026-10-15</td><td>BANKNIFTY</td><td>Upward</td><td>ABOVE_CPR</td><td>09:20</td><td>55464.75</td><td>15:20</td><td>55634.55</td><td>Above reference</td><td>EOD</td></tr>
 <tr><td>2026-10-14</td><td>BANKNIFTY</td><td>Downward</td><td>PDH</td><td>09:35</td><td>55530.90</td><td>15:20</td><td>55378.10</td><td>Above reference</td><td>EOD</td></tr>
@@ -230,10 +362,17 @@ footer{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;paddi
 <tr><td>2026-07-09</td><td>BANKNIFTY</td><td>Upward</td><td>ABOVE_CPR</td><td>10:10</td><td>57328.40</td><td>15:10</td><td>57232.25</td><td>Below reference</td><td>EOD</td></tr>
 <tr><td>2026-07-08</td><td>BANKNIFTY</td><td>Downward</td><td>BELOW_CPR</td><td>09:20</td><td>57937.95</td><td>14:30</td><td>56736.30</td><td>Above reference</td><td>TARGET</td></tr>
 <tr><td>2026-07-07</td><td>BANKNIFTY</td><td>Downward</td><td>R1</td><td>09:20</td><td>58446.50</td><td>15:10</td><td>58230.30</td><td>Above reference</td><td>EOD</td></tr>
+<tr><td>2026-07-06</td><td>BANKNIFTY</td><td>Downward</td><td>SMA20_CLOSE_BELOW</td><td>11:15</td><td>58287.90</td><td>15:20</td><td>58289.85</td><td>Above reference</td><td>EOD</td></tr>
 </tbody></table>
 <h2>Structures journal (hypothetical reference)</h2>
 <table><thead><tr><th>Date</th><th>Instrument</th><th>Structure studied</th><th>Reference expiry</th><th>Legs recorded</th><th>Record state</th><th>Session-close basis</th></tr></thead>
 <tbody>
+<tr><td>2026-10-22</td><td>BANKNIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE54800 / BUY CE55200</td><td>OPEN</td><td></td></tr>
+<tr><td>2026-10-22</td><td>NIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE22650 / BUY CE22850</td><td>OPEN</td><td></td></tr>
+<tr><td>2026-10-21</td><td>BANKNIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE55900 / BUY CE56300</td><td>OPEN</td><td></td></tr>
+<tr><td>2026-10-21</td><td>NIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE23150 / BUY CE23350</td><td>OPEN</td><td></td></tr>
+<tr><td>2026-10-19</td><td>BANKNIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE55700 / BUY CE56100</td><td>OPEN</td><td></td></tr>
+<tr><td>2026-10-19</td><td>NIFTY</td><td>Bear Call Spread</td><td>2026-10-19</td><td>SELL CE23200 / BUY CE23400</td><td>OPEN</td><td></td></tr>
 <tr><td>2026-10-16</td><td>BANKNIFTY</td><td>Bear Call Spread</td><td>2026-10-27</td><td>SELL CE55700 / BUY CE56100</td><td>OPEN</td><td></td></tr>
 <tr><td>2026-10-16</td><td>NIFTY</td><td>Bear Call Spread</td><td>2026-10-19</td><td>SELL CE23000 / BUY CE23200</td><td>OPEN</td><td></td></tr>
 <tr><td>2026-10-15</td><td>BANKNIFTY</td><td>Bull Put Spread</td><td>2026-10-27</td><td>SELL PE55400 / BUY PE55000</td><td>CLOSED</td><td>EOD</td></tr>

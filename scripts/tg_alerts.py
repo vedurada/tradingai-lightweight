@@ -21,7 +21,7 @@ import urllib.parse
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
-BASE = '/opt/tradingai'
+BASE = os.environ.get('TRADINGAI_BASE', '/opt/tradingai')
 import sys as _sys
 if BASE not in _sys.path:
     _sys.path.insert(0, BASE)
@@ -241,13 +241,22 @@ def save_state(s):
     json.dump(s, open(p, 'w'), indent=1)
 
 
-def log_alert(rec):
-    """Append one sent alert to the permanent append-only archive (JSONL)."""
+def log_alert(rec, delivered=None, message_id=None):
+    """Append one sent alert to the permanent append-only archive (JSONL).
+
+    Delivery provenance (2026-10-18): `delivered`/`message_id` record whether
+    Telegram actually accepted the message. Before this, the archive stored
+    only what we TRIED to send, so a generated alert could not be told apart
+    from a delivered one. Backfills pass delivered=False explicitly."""
     try:
         now = datetime.now(IST)
         rec.setdefault('date', now.date().isoformat())
         rec.setdefault('ts_ist', now.isoformat(timespec='seconds'))
         rec.setdefault('source', 'live')
+        if delivered is not None:
+            rec.setdefault('delivered', bool(delivered))
+        if message_id is not None:
+            rec.setdefault('message_id', message_id)
         with open(ARCHIVE, 'a') as f:
             f.write(json.dumps(rec) + '\n')
     except Exception as e:
@@ -346,7 +355,9 @@ def do_test():
                            'text': '🔧 TradingAI model alerts online. Morning model levels, intraday model signals and EOD model recaps will land here. Automated, standardized model output. Not personalised investment advice. Educational research only.'})
     if r.get('ok'):
         log_alert({'type': 'test', 'inst': 'channel',
-                   'explanation': 'Connectivity check confirming the alerting path is live.'})
+                   'explanation': 'Connectivity check confirming the alerting path is live.'},
+                  delivered=True,
+                  message_id=(r.get('result') or {}).get('message_id'))
     try:
         fb_post('\U0001f527 TradingAI model alerts online. Morning model levels, intraday model signals and EOD model recaps will land here. Automated, standardized model output. Not personalised investment advice. Educational research only.')
     except Exception as e:
@@ -388,7 +399,9 @@ def do_morning():
                    'ctx': {'session': sess, 'cpr_type': (n.get('cpr') or {}).get('cpr_type')},
                    'explanation': 'Reference levels (TC, pivot, BC) and context published '
                                   'before the session; these are derived from the previous '
-                                  'session, not live prices.'})
+                                  'session, not live prices.'},
+                  delivered=True,
+                  message_id=(r.get('result') or {}).get('message_id'))
         rebuild_page()
     print('morning sent:', r.get('ok'))
 
@@ -438,9 +451,8 @@ def _candle_opens(sym, inst, since_iso):
     """Completed 5m candle OPENS strictly after `since_iso` as [(ts, open)].
     Mirrors the plain backtest subsequent-opens walk (opens spec)."""
     import sqlite3
-    conn = sqlite3.connect(
-        f"file:{os.path.join(BASE, 'database', 'tradingai.db')}?mode=ro",
-        uri=True)
+    db = os.environ.get('TRADINGAI_DB_PATH') or os.path.join(BASE, 'database', 'tradingai.db')
+    conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
     try:
         rows = conn.execute(
             "SELECT timestamp, open FROM market_candles_5m "
@@ -510,6 +522,18 @@ def do_watch():
             continue
         t = ct
         key = f"{today}|{inst}|{t.get('direction')}|{t.get('entry')}"
+        # Automatic paper trading: persist ONE live paper trade for a
+        # confirmed (frozen) signal. Idempotent per (instrument, day) — the
+        # deterministic trade_id means retries and concurrent runs cannot
+        # duplicate it. Only runs on a persisted claim (never fabricates a
+        # signal); failures are logged and never stop the alert loop.
+        try:
+            from app.paper_trade.engine import PaperTradeEngine
+            _pt_id = PaperTradeEngine().create_paper_trade(
+                {**t, 'instrument_id': inst}, link_key=f'{inst}|{today}')
+            print(f'{inst} paper trade {_pt_id} active')
+        except Exception as e:
+            print(f'{inst} paper-trade create failed: {e}')
         bull = (t.get('direction') != 'BEAR')
         emoji = '🟢' if bull else '🔴'
         sig_at = datetime.now(IST).strftime('%H:%M')
@@ -554,7 +578,9 @@ def do_watch():
                                               or f'{today}T{sig_at}:00+05:30'}
             log_alert({'type': 'signal', 'inst': inst, 'sym': sym, 'key': key, 'tg_text': text,
                        'direction': (t.get('direction') or '').upper() or '\u2014',
-                       'ctx': ctx_from(d, t, _lvl, _exp, _sigtxt), 'explanation': explanation_from(d, t, 'signal')})
+                       'ctx': ctx_from(d, t, _lvl, _exp, _sigtxt), 'explanation': explanation_from(d, t, 'signal')},
+                      delivered=True,
+                      message_id=(r.get('result') or {}).get('message_id'))
             save_state(st)
             try:
                 fb_post(text)
@@ -651,13 +677,29 @@ def do_watch():
                                'points_text': _pts_txt},
                    'explanation': explanation_from(d, None, 'exit')
                                   + ' Recorded exit reference: %s (%s).'
-                                  % (reason, _pts_txt)})
+                                  % (reason, _pts_txt)},
+                  delivered=True,
+                  message_id=(r.get('result') or {}).get('message_id'))
         rebuild_page()
         try:
             fb_post(text)
         except Exception as e:
             print(f"FB hook (exit) skipped: {e}")
         print(f"exit sent for {key}: {reason} ok=True")
+    # Automatic paper-trade monitoring: close any open live paper trade whose
+    # strategy exit (opens spec, 0.5%/2%) has been reached since entry. Runs
+    # every watch cycle inside the single-instance scheduler process (never
+    # inside a gunicorn worker). Logged; never fatal to the watch loop.
+    try:
+        from app.paper_trade.engine import PaperTradeEngine
+        _pt = PaperTradeEngine()
+        for _mi in ('NIFTY', 'BANKNIFTY'):
+            try:
+                _pt.monitor(_mi)
+            except Exception as e:
+                print(f'paper monitor {_mi} failed: {e}')
+    except Exception as e:
+        print(f'paper monitor unavailable: {e}')
 
 
 def _fmt_pts(v):
@@ -704,7 +746,9 @@ def do_eod():
     if r.get('ok'):
         log_alert({'type': 'eod', 'inst': 'NIFTY + BANKNIFTY', 'tg_text': text,
                    'explanation': 'Daily recap of every model record closed in the session '
-                                  'ledger, published win or lose.'})
+                                  'ledger, published win or lose.'},
+                  delivered=True,
+                  message_id=(r.get('result') or {}).get('message_id'))
         rebuild_page()
     print('eod sent:', r.get('ok'))
 
@@ -792,7 +836,8 @@ def do_reconcile():
                                    'on record for this trade (watcher runs failed that '
                                    'day). Outcome reconstructed from the paper ledger '
                                    '(level %s, entry ref %s); nothing was sent to '
-                                   'Telegram now.') % (level, entry_px)})
+                                   'Telegram now.') % (level, entry_px)},
+                  delivered=False)
         arch_keys.add(('update', key))
         return 1
 
@@ -826,7 +871,8 @@ def do_reconcile():
                        'explanation': ('Backfilled by --reconcile: the entry Telegram for '
                                        'this record was sent live, but archiving failed at '
                                        'the time. Details reconstructed from the paper '
-                                       'ledger (level %s, entry ref %s).') % (level, entry_px)})
+                                       'ledger (level %s, entry ref %s).') % (level, entry_px)},
+                      delivered=True)
             arch_keys.add(('signal', key))
             n_sig += 1
         try:

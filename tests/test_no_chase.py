@@ -136,12 +136,12 @@ def test_select_entry_no_chase_none_when_price_never_returns():
 def test_frozen_gate_reanchor_only_when_enabled():
     import app.research.cpr_trigger_engine as eng
     MON, FRI = '2026-10-19', '2026-10-16'   # Monday / Friday
-    # Ordinary BULL (no marker) is still rejected under SHORT_ONLY.
+    # Ordinary BULL without a support-reversal level remains gated.
     assert _frozen_trade_passes_gate({'direction': 'BULL'}, MON) is False
     b = {'direction': 'BULL', 'no_chase_reanchor': True}
     old = eng.NO_CHASE_BEAR
     try:
-        # Re-anchor BULL only passes while the re-anchor feature is enabled.
+        # Re-anchor BULL passes only while that feature is enabled.
         eng.NO_CHASE_BEAR = True
         assert _frozen_trade_passes_gate(b, MON) is True
         eng.NO_CHASE_BEAR = False

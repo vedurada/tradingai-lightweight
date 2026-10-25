@@ -1,9 +1,7 @@
 """Live-path regression for the breakout add-on (2026-10-17).
 
-Proves a Friday upside-breakout flows through the LIVE signal path as a BULL
-'BRK_*' trade, that it is tagged as a breakout, that its freeze source is
-'live_breakout', and that the frozen-trade gate accepts it while still
-rejecting a plain BULL. Uses stored candles; read-only (no writes)."""
+Live-path regressions for breakout and close-confirmed support reversal signals.
+Uses stored candles; read-only (no writes)."""
 import sys
 sys.path.insert(0, '/opt/tradingai')
 
@@ -49,11 +47,26 @@ def test_live_breakout_signal_is_bull_brk():
     assert tr['target'] == round(tr['entry'] * 1.02, 2), tr
 
 
+def test_live_confirmed_pdl_reversal_emits_bull():
+    rows = _day('NIFTY', '2026-10-13')
+    assert rows, '2026-10-13 NIFTY candles missing'
+    completed = datetime.fromisoformat('2026-10-13T09:15:00+05:30')
+    out = _cpr_book_signal('NIFTY', rows, completed, live_price=None, now=completed)
+    tr = out.get('trade')
+    assert tr is not None, out
+    assert tr['direction'] == 'BULL' and tr['scenario'] == 'PDL', tr
+    assert tr['signal_time'] == '2026-10-13T09:15:00+05:30', tr
+    assert tr['entry_time'] == '2026-10-13T09:20:00+05:30', tr
+    assert _frozen_trade_passes_gate(tr, '2026-10-13') is True
+
+
 def test_live_breakout_frozen_gate():
     # A breakout BULL passes the frozen gate on its Friday and on a Monday.
     f = {'direction': 'BULL', 'scenario': 'BRK_TC', 'breakout': True}
     assert _frozen_trade_passes_gate(f, FRI) is True
     assert _frozen_trade_passes_gate(f, '2026-10-19') is True
-    # A plain BULL (not a breakout) is still rejected under SHORT_ONLY.
+    # Confirmed support BULL passes; CPR continuation BULL remains gated.
     assert _frozen_trade_passes_gate(
-        {'direction': 'BULL', 'scenario': 'S1'}, '2026-10-19') is False
+        {'direction': 'BULL', 'scenario': 'S1'}, '2026-10-19') is True
+    assert _frozen_trade_passes_gate(
+        {'direction': 'BULL', 'scenario': 'ABOVE_CPR'}, '2026-10-19') is False

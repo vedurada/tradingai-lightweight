@@ -6,7 +6,6 @@ from app.core.db import get_conn, DB_PATH
 from app.core.config import settings, instruments
 from app.market.provider import MarketDataProvider
 from app.core.qualification import QualificationEngine
-from app.paper_trade.engine import PaperTradeEngine
 from app.ai.explanation import AIExplanation
 from app.scenarios.engine import ScenarioEngine
 from app.live.engine import LiveEngine
@@ -60,7 +59,6 @@ app.register_blueprint(_e2_economics_bp)
 
 market = MarketDataProvider()
 qual = QualificationEngine(settings)
-paper = PaperTradeEngine()
 ai = AIExplanation()
 scenario_engine = ScenarioEngine()
 live_engine = LiveEngine()
@@ -340,12 +338,6 @@ def intraday_session(symbol):
                              "reasons": ["STORED_COMPLETED_5M_CANDLES"] if points else ["NO_CANDLES_FOR_DATE"]}})
 
 
-@app.route("/api/<symbol>/paper-trade", methods=["GET"])
-@limiter.limit("30 per minute")
-def paper_trade(symbol):
-    trades = paper.monitor(symbol)
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(), "data": {"trades": trades, "active": len(trades)}})
-
 @app.route("/api/paper/spreads", methods=["GET"])
 @limiter.limit("30 per minute")
 def paper_spreads():
@@ -424,15 +416,18 @@ def paper_spread_today():
 def run_cpr_trigger_backtest():
     """No-filter CPR trigger backtest over stored 5m candles (opens execution).
 
-    Plain book only (the aligned variant was retired 2026-10-14): bull on
-      S2/S1/PDL touch or close above TC; bear on R2/R1/PDH touch or close
-      below BC.
-    First trigger/session, entry at next open in [09:20,15:20), 0.5% stop /
-    2% target evaluated at subsequent opens (stop first), flat 15:20 open.
-    Read-only. Paper rows newer than date_end are appended (source='paper')
-    so the table grows day by day with live paper trading."""
-    from app.research.cpr_trigger_engine import run_opens_range
+    Plain book only: confirmed bear reversals on PDH/R1/R2 and confirmed bull
+    reversals on PDL only. Bull S1/S2 reversals, CPR continuation and breakout
+    add-ons are excluded.
+    The historical page offers session-close and live-paper carry-forward modes."""
     body = request.get_json() or {}
+    execution = (body.get("execution") or "session").lower()
+    if execution == "live-paper":
+        from app.research.live_paper_replay import run_live_paper_range
+        run_backtest = run_live_paper_range
+    else:
+        from app.research.cpr_trigger_engine import run_opens_range
+        run_backtest = run_opens_range
     inst = (body.get("instrument") or "NIFTY").upper()
     variant = "plain"  # only book; the aligned variant was retired 2026-10-14
     if (body.get("variant") or "plain").lower() != "plain":
@@ -443,58 +438,65 @@ def run_cpr_trigger_backtest():
                         "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
     ds = body.get("date_start", "2026-07-29")
     de = body.get("date_end", "2026-09-25")
-    result = run_opens_range(inst, ds, de, variant)
+    if execution == "live-paper":
+        result = run_backtest(inst, ds, de)
+    else:
+        result = run_backtest(inst, ds, de, variant)
     if isinstance(result, dict) and result.get('error'):
         return jsonify({"state": "NO_DATA", "timestamp": None,
                         "data": {"reasons": [result['error']]}}), 404
     paper = []
-    conn = None
-    try:
-        from app.research.cpr_trigger_engine import decay_win
-        conn = get_conn()
-        rows = conn.execute(
-            "SELECT session_date AS trade_date, direction, level, entry_time, "
-            "entry_price AS entry, exit_time, exit_price AS exit, exit_reason, "
-            "r_multiple, result FROM paper_align "
-            "WHERE instrument_id=? AND variant=? AND session_date>? "
-            "ORDER BY session_date", (inst, variant, de)).fetchall()
-        for r in rows:
-            d = dict(r)
-            d['source'] = 'paper'
-            d['exit_reason'] = 'PAPER · ' + (d.get('exit_reason') or '')
-            d['win_loss'] = decay_win(d.get('direction'), d.get('entry'),
-                                      d.get('exit'), d.get('r_multiple'), inst)
-            try:
-                en, ex = float(d['entry']), float(d['exit'])
-                d['points'] = round((ex - en) if d.get('direction') == 'BULL'
-                                    else (en - ex), 1)
-            except (TypeError, ValueError):
-                d['points'] = None
-            paper.append(d)
-    except Exception as e:
-        import logging as _log
-        _log.getLogger('tradingai.api').warning('paper merge failed: %s', str(e)[:120])
-        paper = []
-    finally:
+    if execution in ("live-paper", "session-only"):
+        result["paper_trades"] = []
+        result["paper_appended"] = 0
+    else:
+        conn = None
         try:
-            if conn is not None:
-                conn.close()
-        except Exception:
-            pass
-    result['paper_trades'] = paper
-    result['paper_appended'] = len(paper)
-    if paper:
-        pw = sum(1 for t in paper if t.get('win_loss') == 'WIN')
-        pl = sum(1 for t in paper if t.get('win_loss') == 'LOSS')
-        pr = [t['r_multiple'] for t in paper
-              if isinstance(t.get('r_multiple'), (int, float))]
-        result['wins'] = result.get('wins', 0) + pw
-        result['losses'] = result.get('losses', 0) + pl
-        result['signals'] = result.get('signals', 0) + len(paper)
-        n = result['signals']
-        result['win_rate'] = round(100 * result['wins'] / n, 1) if n else 0
-        result['total_R'] = round(result.get('total_R', 0) + sum(pr), 2)
-        result['paper_included'] = True
+            from app.research.cpr_trigger_engine import decay_win
+            conn = get_conn()
+            rows = conn.execute(
+                "SELECT session_date AS trade_date, direction, level, entry_time, "
+                "entry_price AS entry, exit_time, exit_price AS exit, exit_reason, "
+                "r_multiple, result FROM paper_align "
+                "WHERE instrument_id=? AND variant=? AND session_date>? "
+                "ORDER BY session_date", (inst, variant, de)).fetchall()
+            for r in rows:
+                d = dict(r)
+                d["source"] = "paper"
+                d["exit_reason"] = "PAPER - " + (d.get("exit_reason") or "")
+                d["win_loss"] = decay_win(d.get("direction"), d.get("entry"),
+                                          d.get("exit"), d.get("r_multiple"), inst)
+                try:
+                    en, ex = float(d["entry"]), float(d["exit"])
+                    d["points"] = round((ex - en) if d.get("direction") == "BULL"
+                                        else (en - ex), 1)
+                except (TypeError, ValueError):
+                    d["points"] = None
+                paper.append(d)
+        except Exception as e:
+            import logging as _log
+            _log.getLogger("tradingai.api").warning("paper merge failed: %s", str(e)[:120])
+            paper = []
+        finally:
+            try:
+                if conn is not None:
+                    conn.close()
+            except Exception:
+                pass
+        result["paper_trades"] = paper
+        result["paper_appended"] = len(paper)
+        if paper:
+            pw = sum(1 for t in paper if t.get("win_loss") == "WIN")
+            pl = sum(1 for t in paper if t.get("win_loss") == "LOSS")
+            pr = [t["r_multiple"] for t in paper
+                  if isinstance(t.get("r_multiple"), (int, float))]
+            result["wins"] = result.get("wins", 0) + pw
+            result["losses"] = result.get("losses", 0) + pl
+            result["signals"] = result.get("signals", 0) + len(paper)
+            n = result["signals"]
+            result["win_rate"] = round(100 * result["wins"] / n, 1) if n else 0
+            result["total_R"] = round(result.get("total_R", 0) + sum(pr), 2)
+            result["paper_included"] = True
     return jsonify({"state": "COMPLETED", "data": result})
 
 @app.route("/api/backtest/cpr-walkforward", methods=["POST"])
@@ -775,22 +777,39 @@ def research_replay(instrument, date, timestamp):
 @app.route("/api/performance/live", methods=["GET"])
 @limiter.limit("30 per minute")
 def live_performance():
-    """Live paper-trade performance aggregated across all instruments."""
+    """Live paper-trade performance aggregated across all instruments.
+
+    Source: the live paper ledger (`paper_trades`, written by the watcher).
+    Returns an explicit empty result when no eligible live trades exist, and
+    an explicit error (never a silent 200 with data:null) when the calculation
+    cannot be completed."""
     from app.paper_trade.performance import get_performance
-    perf = get_performance()
+    try:
+        perf = get_performance(start=request.args.get("start"),
+                               end=request.args.get("end"))
+    except Exception as e:
+        return jsonify({"state": "ERROR", "timestamp": datetime.now(_IST).isoformat(),
+                        "data": {"error": "PERFORMANCE_UNAVAILABLE",
+                                 "detail": str(e)[:200]}}), 500
     return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(), "data": perf})
 
 
 @app.route("/api/performance/live/<instrument>", methods=["GET"])
 @limiter.limit("30 per minute")
 def live_performance_instrument(instrument):
-    """Live paper-trade performance for one instrument."""
+    """Live paper-trade performance for one instrument (see live_performance)."""
     from app.paper_trade.performance import get_performance
     inst = (instrument or "").upper()
     if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
         return jsonify({"state": "NO_DATA", "timestamp": None,
                         "data": {"error": "UNKNOWN_INSTRUMENT"}}), 404
-    perf = get_performance(inst)
+    try:
+        perf = get_performance(inst, start=request.args.get("start"),
+                               end=request.args.get("end"))
+    except Exception as e:
+        return jsonify({"state": "ERROR", "timestamp": datetime.now(_IST).isoformat(),
+                        "data": {"error": "PERFORMANCE_UNAVAILABLE",
+                                 "detail": str(e)[:200]}}), 500
     return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(), "data": perf})
 
 
@@ -1142,8 +1161,157 @@ def market_events():
     })
 
 
+
+@app.route("/api/strategy/scalp", methods=["GET"])
+@app.route("/api/strategy/scalp-triggers", methods=["GET"])
+@limiter.limit("30 per minute")
+def scalp_signal():
+    """Today's scalp (HLC 3-bar) trigger state. Read-only."""
+    from app.research.scalp_engine import today_state, VALID
+    inst = (request.args.get("instrument") or request.args.get("symbol") or "NIFTY").upper()
+    if inst not in VALID:
+        return jsonify({"state": "NO_DATA", "timestamp": None,
+                        "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 400
+    variant = request.args.get("variant", "plain")
+    try:
+        st = today_state(inst, variant=variant)
+    except Exception as e:
+        return jsonify({"state": "UNAVAILABLE", "timestamp": None,
+                        "data": {"reasons": ["ENGINE_ERROR"], "error": str(e)}}), 500
+    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
+                    "data": st})
+
+
+@app.route("/api/backtest/scalp", methods=["POST"])
+@app.route("/api/backtest/scalp-triggers", methods=["POST"])
+@limiter.limit("10 per minute")
+def run_scalp_backtest():
+    """Scalp (HLC 3-bar) backtest over stored 5m candles (opens execution)."""
+    from app.research.scalp_engine import run_opens_range, VALID
+    data = request.get_json(silent=True) or {}
+    inst = (data.get("instrument") or "NIFTY").upper()
+    if inst not in VALID:
+        return jsonify({"error": "UNKNOWN_INSTRUMENT"}), 400
+    start = data.get("start") or data.get("date_start") or "2000-01-01"
+    end = data.get("end") or data.get("date_end") or "2100-01-01"
+    variant = data.get("variant", "plain")
+    try:
+        res = run_opens_range(inst, start, end, variant=variant)
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
+                    "data": res})
+
+
+
+@app.route("/api/paper/scalp", methods=["GET"])
+@limiter.limit("30 per minute")
+def paper_scalp():
+    """Live scalp paper trades only. Read-only."""
+    from app.core.db import get_conn
+    conn = get_conn()
+    rows = []
+    try:
+        for r in conn.execute("SELECT trade_id, instrument_id, direction, entry, stop, target, entry_time, exit_time, exit_price, exit_reason, paper_pnl, status, qualification_evidence, created_at FROM paper_trades WHERE (scenario='SCALP_HLC' OR qualification_evidence LIKE '%SCALP_HLC%') AND instrument_id IN ('NIFTY','BANKNIFTY') ORDER BY created_at DESC LIMIT 500"):
+            ev = {}
+            try:
+                import json as _j
+                ev = _j.loads(r[8] or "{}")
+            except Exception:
+                ev = {}
+            ev = {}
+            try:
+                import json as _j
+                ev = _j.loads(r[12] or "{}")
+            except Exception:
+                ev = {}
+            rows.append({"trade_id": r[0], "instrument": r[1], "direction": r[2],
+                         "entry": r[3], "stop": r[4], "target": r[5],
+                         "entry_time": r[6], "exit_time": r[7],
+                         "exit": r[8], "exit_reason": r[9],
+                         "points": r[10], "status": r[11],
+                         "r_multiple": ev.get("r_multiple"),
+                         "result": "WIN" if (r[10] or 0)>0 else ("LOSS" if (r[10] or 0)<0 else ("OPEN" if r[11] in ("ACTIVE","OPEN") else "FLAT")),
+                         "trade_date": (r[6] or r[13] or "")[:10],
+                         "created_at": r[13], "source": "LIVE"})
+    except Exception:
+        pass
+    conn.close()
+    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
+                    "data": {"trades": rows, "count": len(rows)}})
+
+
+@app.route("/api/paper/scalp/eod", methods=["GET"])
+@limiter.limit("30 per minute")
+def paper_scalp_eod():
+    """EOD scalp paper (backtest) trades. Read-only."""
+    from app.core.db import get_conn
+    conn = get_conn()
+    rows = []
+    try:
+        for r in conn.execute("SELECT session_date, instrument_id, direction, level, entry_price, entry_time, exit_price, exit_time, exit_reason, r_multiple, result, points, created_at FROM paper_scalp WHERE instrument_id IN ('NIFTY','BANKNIFTY') ORDER BY session_date DESC LIMIT 500"):
+            rows.append({"trade_date": r[0], "instrument": r[1], "direction": r[2],
+                         "level": r[3], "entry": r[4], "entry_time": r[5],
+                         "exit": r[6], "exit_time": r[7],
+                         "exit_reason": r[8], "r_multiple": r[9], "result": r[10],
+                         "points": r[11], "created_at": r[12], "source": "EOD"})
+    except Exception:
+        pass
+    conn.close()
+    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
+                    "data": {"trades": rows, "count": len(rows)}})
+
+
+
+@app.route("/api/paper/scalp/reconciled", methods=["GET"])
+@limiter.limit("30 per minute")
+def paper_scalp_reconciled():
+    from app.core.db import get_conn
+    from app.research.scalp_reconcile import reconcile
+    conn = get_conn()
+    rows = reconcile(conn)
+    conn.close()
+    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
+                    "data": {"trades": rows, "count": len(rows)}})
+
+
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)
+
+
+@app.route("/api/backtest/prevday-pa", methods=["POST"])
+@limiter.limit("5 per minute")
+def run_prevday_pa_backtest():
+    """Previous-day price action strategy backtest (isolated second strategy)."""
+    body = request.get_json() or {}
+    inst = (body.get("instrument") or "NIFTY").upper()
+    ds = body.get("date_start", "2026-07-06")
+    de = body.get("date_end", "2026-10-23")
+    from app.research.prevday_price_action_engine import run_prevday_pa_range
+    result = run_prevday_pa_range(inst, ds, de)
+    if isinstance(result, dict) and result.get("error"):
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo as _ZI
+        return jsonify({"state": "NO_DATA", "timestamp": _dt.now(_ZI("Asia/Kolkata")).isoformat(),
+                        "data": {"reasons": [result["error"]]}}), 404
+    return jsonify({"state": "OK", "timestamp": None, "data": result})
+
+
+@app.route("/api/backtest/price-action-target", methods=["POST"])
+@limiter.limit("5 per minute")
+def run_price_action_target_backtest():
+    body = request.get_json() or {}
+    inst = (body.get("instrument") or "NIFTY").upper()
+    ds = body.get("date_start", "2026-07-06")
+    de = body.get("date_end", "2026-10-23")
+    from app.research.prevday_price_action_engine import run_price_action_target_range
+    result = run_price_action_target_range(inst, ds, de)
+    if isinstance(result, dict) and result.get("error"):
+        from datetime import datetime as _dt
+        from zoneinfo import ZoneInfo as _ZI
+        return jsonify({"state": "NO_DATA", "timestamp": _dt.now(_ZI("Asia/Kolkata")).isoformat(),
+                        "data": {"reasons": [result["error"]]}}), 404
+    return jsonify({"state": "OK", "timestamp": None, "data": result})
 
 
 @app.errorhandler(404)

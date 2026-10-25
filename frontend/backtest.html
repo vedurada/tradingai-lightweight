@@ -63,18 +63,21 @@ nav.main{align-items:center}nav.main a{background:#1e3a5f;color:#e2e8f0;text-dec
 <a class="skip" href="#main">Skip to main content</a>
 <h1 style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Historical Scenario Analysis — Hypothetical Backtest Explorer</h1>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Historical Analysis</span></div></div>
-<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Model rule:</b> signals are <b>bearish (short) CPR setups by default</b>. When a session produces <b>no base setup</b>, a <b>backtested breakout add-on</b> may issue a continuation &mdash; <b>long above resistance / short below support</b> &mdash; including an <b>upside breakout on Fridays</b>. <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">Why</a>.</div>
+<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Active signal rule:</b> NIFTY and BANKNIFTY: take at most one BEAR trade per session after a completed 5-minute close below the current session SMA20; enter at the next 5-minute candle open. If price is already below SMA20 once its first 20-bar value is available, that close qualifies. The stop is 0.5% above entry, target is 2% below, and any open position exits at 15:20 IST. No bullish signals are generated. Rule effective 2026-10-26. VIX remains a market gauge, not a traded signal. See <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">the complete rules</a>.</div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY</a><a href="/indices/banknifty.html">BANKNIFTY</a><a href="/backtest.html" class="active" aria-current="page">Historical Analysis</a><a href="/events.html">Events</a><a href="/signals.html">Signal Notes</a></nav>
 <div class="wrap" id="main" tabindex="-1">
-<section class="card"><h2>Historical Scenario Analysis</h2><p class="note"><b>Historical/backtested results are hypothetical and do not guarantee future results. Actual option execution, premiums, liquidity, brokerage, slippage and market conditions can materially differ.</b> Underlying/index-based model backtest — not an actual historical option-premium P&amp;L record.</p><p class="note">Reference classification rules: sessions classified upward on S2/S1/PDL touch or close above TC, downward on R2/R1/PDH touch or close below BC. Assumed observation point: next open in [09:20,15:20); assumed reference bounds: 0.5% / 2% evaluated at subsequent opens; session reference close: 15:20 open. Small adverse drifts within tolerance (sub-30pt NIFTY / sub-60pt BANKNIFTY) are recorded per the decay methodology. Read-only over stored candles. These are analytical assumptions for study — not instructions.</p>
-<form id="f2"><label for="inst2">Instrument</label><select id="inst2"><option>NIFTY</option><option>BANKNIFTY</option></select>
+<section class="card"><h2>Historical Scenario Analysis</h2><p class="note"><b>Historical/backtested results are hypothetical and do not guarantee future results. Actual option execution, premiums, liquidity, brokerage, slippage and market conditions can materially differ.</b> Underlying/index-based model backtest — not an actual historical option-premium P&amp;L record.</p><p class="note">The active NIFTY/BANKNIFTY live engine waits for a completed 5-minute close below session SMA20 and enters short at the next candle open, with one trade per session, 0.5% stop, 2% target and a 15:20 exit. The scenario-analysis views below are historical research modes and may use different archived trigger rules; they do not redefine live eligibility. Choose an execution view below: session backtest exits at that session’s 15:20 open; live-paper aligned mode carries positions until a later 5-minute open reaches stop/target. Outcomes are underlying/index proxies, not option-premium P&amp;L.</p>
+<form id="f2"><label for="strat2">Strategy</label><select id="strat2"><option value="cpr" selected>Primary: CPR triggers</option><option value="prevday-pa">Secondary: Price Action</option><option value="price-action-target">Tertiary: Price Action Target</option>
+<option value="scalp">Scalp: HLC 3-bar alignment</option></select>
+<label for="inst2">Instrument</label><select id="inst2"><option>NIFTY</option><option>BANKNIFTY</option></select>
 <input type="hidden" id="var2" value="plain">
+<label for="exec2">Execution view</label><select id="exec2"><option value="session-only" selected>Session backtest (intraday close)</option><option value="live-paper">Live-paper aligned (positions may carry)</option></select>
 <label for="ds2">From</label><input id="ds2" type="date" value="2026-07-29">
 <label for="de2">To</label><input id="de2" type="date" value="2026-09-25">
 <br><button id="go2" type="submit">Explore historical scenarios</button></form><p class="note" id="status2"></p></section>
 <section class="card" id="resCard2" hidden><h2>Scenario outcomes (hypothetical)</h2><div id="out2"></div>
-<h2 style="margin-top:1rem">By level</h2><div style="overflow-x:auto"><div class="tw" role="region" tabindex="0" aria-label="Data table, scrollable horizontally"><table id="bylvl"><thead><tr><th>Side/Level</th><th>Classified sessions</th><th>Above reference</th></tr></thead><tbody></tbody></table></div></div>
-<p class="note">Reference outcomes below use the published decay methodology on underlying/index moves; see <a href="/methodology.html">methodology</a>. “Above reference” means the session closed beyond the assumed bound in the classified direction. Historical results do not predict future performance.</p><h2 style="margin-top:1rem">Historical Model Trades</h2><div style="overflow-x:auto"><div class="tw" role="region" tabindex="0" aria-label="Data table, scrollable horizontally"><table id="trades2"><thead><tr><th>Date</th><th>Classified direction</th><th>Level</th><th>Observation time</th><th>Reference price</th><th>Session-close time</th><th>Close price</th><th>Points vs reference</th><th>Reference outcome</th><th>Session close reason</th></tr></thead><tbody></tbody></table></div></div></section>
+<h2 style="margin-top:1rem">By level</h2><div style="overflow-x:auto"><div class="tw" role="region" tabindex="0" aria-label="Data table, scrollable horizontally"><table id="bylvl"><thead><tr><th>Side/Level</th><th>Trades</th><th>Wins</th><th>Open</th><th>Gross R</th></tr></thead><tbody></tbody></table></div></div>
+<p class="note">Source identifies recorded live paper trades or a replay from stored 5-minute candles. The selected execution view determines whether positions close intraday or carry forward. Prices and P&amp;L remain underlying/index proxies, not option fills.</p><h2 style="margin-top:1rem">Backtest Trades</h2><div style="overflow-x:auto"><div class="tw" role="region" tabindex="0" aria-label="Data table, scrollable horizontally"><table id="trades2"><thead><tr><th>Date</th><th>Source</th><th>Direction</th><th>Level</th><th>Entry time</th><th>Entry</th><th>Exit/mark date and time</th><th>Exit/mark</th><th>Net spot P&amp;L</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody></tbody></table></div></div></section>
 <section class="card" aria-label="Related research"><h2>Related Research</h2><p class="note">Reproduce any historical run with the <a href="/free-backtesting-tool.html">free NIFTY &amp; BANKNIFTY backtesting tool</a>; the rules are documented in <a href="/methodology.html">model methodology</a> (<a href="/signal-flow.html">signal flowchart</a>), live hypothetical fills accumulate in the <a href="/paper.html">historical model observations</a>, and spread structures are explained in <a href="/credit-spreads.html">credit spreads</a>, and you can work out the risk maths of a structure yourself with the <a href="/fixed-loss-options.html">fixed-loss options calculator</a>.</p></section>
 </div>
 <div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div><footer style="background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.78rem;padding:1.2rem;margin-top:1.5rem"><nav aria-label="Footer"><a href="/contact.html" style="color:#cbd5e1">About</a><a href="/methodology.html" style="color:#cbd5e1">Methodology</a><a href="/signal-flow.html" style="color:#cbd5e1">Signal Flow</a><a href="/learn.html" style="color:#cbd5e1">Learn</a><a href="/tools.html" style="color:#cbd5e1">Tools</a><a href="/disclaimer.html" style="color:#cbd5e1">Risk Disclosure</a><a href="/terms.html" style="color:#cbd5e1">Terms of Use</a><a href="/privacy.html" style="color:#cbd5e1">Privacy Policy</a><a href="/refund-policy.html" style="color:#cbd5e1">Refund Policy</a><a href="/affiliate-disclosure.html" style="color:#cbd5e1">Affiliate Disclosure</a><a href="/contact.html" style="color:#cbd5e1">Contact</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/paper.html">Observations Journal</a><a href="/alerts.html">Alerts Archive</a></nav><div>TradingAI.in · Educational market analytics · Not investment advice</div></footer>
@@ -88,43 +91,61 @@ $('f2').addEventListener('submit',async function(e){
   var go=$('go2');go.disabled=true;$('status2').textContent='Running…';
   function num(v){return (v===null||v===undefined||!isFinite(Number(v)))?'—':Number(v).toLocaleString('en-IN',{maximumFractionDigits:2});}
   try{
-    var r=await fetch('/api/backtest/cpr-triggers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:$('inst2').value,variant:$('var2').value,date_start:$('ds2').value,date_end:$('de2').value})});
+    var strat=(document.getElementById('strat2')||{value:'cpr'}).value;
+    var r;
+    if(strat==='price-action-target'){
+      r=await fetch('/api/backtest/price-action-target',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:'NIFTY',date_start:$('ds2').value,date_end:$('de2').value})});
+    } else if(strat==='scalp'){
+      r=await fetch('/api/backtest/scalp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:$('inst2').value,date_start:$('ds2').value,date_end:$('de2').value})});
+    } else if(strat==='prevday-pa'){
+      r=await fetch('/api/backtest/prevday-pa',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:'NIFTY',date_start:$('ds2').value,date_end:$('de2').value})});
+    } else {
+      r=await fetch('/api/backtest/cpr-triggers',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:$('inst2').value,variant:$('var2').value,execution:$("exec2").value,date_start:$('ds2').value,date_end:$('de2').value})});
+    }
     if(!r.ok)throw new Error('HTTP '+r.status);
     var d=(await r.json()).data||{};
     $('resCard2').hidden=false;
+    var liveMode=$('exec2').value==='live-paper';
+    var tradePoints=(d.trades||[]).reduce(function(a,t){return a+(Number(t.points)||0);},0);
     $('out2').innerHTML='<div class="tw" role="region" tabindex="0" aria-label="Data table, scrollable horizontally"><table><tbody>'
       +'<tr><th>Sessions</th><td>'+esc(d.days)+'</td></tr>'
-      +'<tr><th>Classified / unclassified sessions</th><td>'+esc(d.signals)+' / '+esc(d.no_signal_days)+'</td></tr>'
-      +'<tr><th>Above / below reference</th><td>'+esc(d.wins)+' / '+esc(d.losses)+'</td></tr>'
-      +'<tr><th>Share above reference (hypothetical; not a success rate)</th><td>'+esc(d.win_rate)+'%</td></tr></tbody></table></div>'
-      +(d.signals===0?'<p class="note">No classified sessions in range — no stored sessions matched these filters. Try widening the date range or choosing fewer filters.</p>':'');
+      +'<tr><th>'+(liveMode?'Closed / open trades':'Trades')+'</th><td>'+(liveMode?esc(d.closed_trades)+' / '+esc(d.open_trades):esc(d.signals))+'</td></tr>'
+      +'<tr><th>'+(liveMode?'Net-P&amp;L wins / losses':'Engine-labeled wins / losses')+'</th><td>'+esc(d.wins)+' / '+esc(d.losses)+'</td></tr>'
+      +'<tr><th>'+(liveMode?'Win rate of closed trades':'Win rate')+'</th><td>'+esc(d.win_rate)+'%</td></tr>'
+      +'<tr><th>Gross R / net R</th><td>'+esc(d.total_R)+' / '+esc(d.net_R)+'</td></tr>'
+      +'<tr><th>'+(liveMode?'Net underlying P&amp;L proxy (₹)':'Net spot points')+'</th><td>'+(liveMode?num(d.net_pnl_spot_proxy):num(tradePoints))+'</td></tr></tbody></table></div>'
+      +'<p class="note">'+esc(d.execution_note||(liveMode?'Live-paper aligned replay; positions may carry across sessions.':'Session backtest: next-open entries, subsequent 5-minute opens, and 15:20 session close.'))+'</p>'
+      +(d.signals===0?'<p class="note">No trades in this range.</p>':'');
     var tb=$('bylvl').querySelector('tbody');tb.innerHTML='';
     Object.keys(d.by_level||{}).sort().forEach(function(k){
       var v=d.by_level[k],tr=document.createElement('tr');
-      [k,v.n,v.wins].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+      [k,v.n,v.wins,(v.open||0),v.R].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
       tb.appendChild(tr);});
-    if(!Object.keys(d.by_level||{}).length){tb.innerHTML='<tr><td colspan="3">No levels.</td></tr>';}
+    if(!Object.keys(d.by_level||{}).length){tb.innerHTML='<tr><td colspan="5">No levels.</td></tr>';}
     var tb2=$('trades2').querySelector('tbody');tb2.innerHTML='';
-    function trow(t,paper){
+    function trow(t){
       var tr=document.createElement('tr');
-      var ob=(t.entry!=null?t.entry:t.entry_price), cx=(t.exit!=null?t.exit:t.exit_price);
-      var pts=(t.points!=null?t.points:((ob!=null&&cx!=null)?(t.direction=='BULL'?(cx-ob):(ob-cx)):null));
-      var raw=(t.win_loss||(t.r_multiple==null?'—':(t.r_multiple>0?'WIN':(t.r_multiple<0?'LOSS':'FLAT'))));
-      var wl=(raw==='WIN'?'Above reference':(raw==='LOSS'?'Below reference':(raw==='FLAT'?'Within tolerance':'—')));
-      [(t.trade_date||''),(t.direction||''),(t.level||''),(t.entry_time||'').slice(11,16),(ob==null?'—':ob),(t.exit_time||'').slice(11,16),(cx==null?'—':cx),(pts==null?'—':((pts>0?'+':'')+num(pts))),wl,String(t.exit_reason||'').replace('EOD-1520','EOD').replace('EOD-1510','EOD')].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
-      var pill=tr.childNodes[9];pill.className=(wl==='Above reference'?'ok':(wl==='Below reference'?'bad':''));
-      if(paper){tr.style.background='#eff6ff';}
+      if(t.session){
+        var pts=t.points, outcome=(pts>0?'WIN':'LOSS');
+        [(t.session||''),'PRICE ACTION',(t.direction||''),(t.trigger||''),(t.entry_time||'').slice(11,16),(t.entry_price==null?'—':num(t.entry_price)),(t.exit_time||'').slice(0,16).replace('T',' '),(t.exit_price==null?'—':num(t.exit_price)),(pts==null?'—':num(pts)),outcome,String(t.exit_reason||'')].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+      } else {
+        var ob=t.entry, cx=t.exit, pts=t.points;
+        var outcome=t.status==='OPEN'?'OPEN':(t.win_loss||'FLAT');
+        var pnl=t.paper_pnl==null?(pts==null?'—':num(pts)):num(t.paper_pnl), tm=t.exit_time||'';
+        [(t.trade_date||''),(t.source||''),(t.direction||''),(t.level||''),(t.entry_time||'').slice(11,16),(ob==null?'—':num(ob)),tm.slice(0,16).replace('T',' '),(cx==null?'—':num(cx)),pnl,outcome,String(t.exit_reason||'')].forEach(function(x){var td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+        tr.childNodes[10].className=(outcome==='WIN'?'ok':(outcome==='LOSS'?'bad':''));
+        if(t.source==='LIVE PAPER'){tr.style.background='#eff6ff';}
+      }
       tb2.appendChild(tr);}
-    (d.paper_trades||[]).slice().reverse().forEach(function(t){trow(t,true);});
-    (d.trades||[]).slice().reverse().forEach(function(t){trow(t,false);});
-    if(!(d.trades||[]).length&&!(d.paper_trades||[]).length){tb2.innerHTML='<tr><td colspan="10">No classified sessions in range.</td></tr>';}
-    else if(d.paper_appended){$('status2').textContent+=' + '+d.paper_appended+' recorded observation day(s) included';}
-    $('status2').textContent='Completed '+d.instrument+' '+(d.variant||'')+' '+d.date_start+' → '+d.date_end;try{var mx='';(d.trades||[]).concat(d.paper_trades||[]).forEach(function(t){var s=t.trade_date||t.session_date||t.date||String(t.signal_time||t.entry_time||'').slice(0,10);if(/^\d{4}-\d{2}-\d{2}$/.test(s)&&s>mx)mx=s;});if(mx)document.getElementById('de2').value=mx;}catch(e){}
+    (d.trades||[]).slice().reverse().forEach(function(t){trow(t);});
+    if(!(d.trades||[]).length){tb2.innerHTML='<tr><td colspan="12">No trades in range.</td></tr>'; }
+    $('status2').textContent='Completed '+d.instrument+' '+(d.variant||'')+' '+($('exec2').value==='live-paper'?'live-paper aligned':'session backtest')+' '+d.date_start+' → '+d.date_end
   }catch(err){$('status2').textContent='Historical scenarios unavailable ('+err.message+').';}
   go.disabled=false;
 });
 })();
 </script>
 <script src="/tradingai-share.js?v=5" defer></script>
+
 </body>
 </html>

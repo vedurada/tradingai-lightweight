@@ -27,18 +27,20 @@ def test_day_levels_rejects_garbage():
     assert day_levels(90, 100, 95) is None  # high < low
 
 
-def test_bull_triggers_priority():
+def test_bull_triggers_require_close_above_support():
     L = lv()
     assert bull_trigger({'low': 84, 'close': 94}, L) == 'S2'
     assert bull_trigger({'low': 89, 'close': 94}, L) == 'S1'
-    assert bull_trigger({'low': 91, 'close': 94}, L) is None  # above S1/PDL, at/below TC
+    assert bull_trigger({'low': 89, 'close': 89}, L) is None
+    assert bull_trigger({'low': 91, 'close': 94}, L) is None
     assert bull_trigger({'low': 96, 'close': 96}, L) == 'ABOVE_CPR'
 
 
-def test_bear_triggers_priority():
+def test_bear_triggers_require_close_below_resistance():
     L = lv()
     assert bear_trigger({'high': 106, 'close': 94}, L) == 'R2'
     assert bear_trigger({'high': 101, 'close': 94}, L) == 'R1'
+    assert bear_trigger({'high': 101, 'close': 100}, L) is None
     assert bear_trigger({'high': 94, 'close': 94}, L) == 'BELOW_CPR'
     assert bear_trigger({'high': 94, 'close': 96}, L) is None
 
@@ -230,17 +232,16 @@ def test_market_state_empty_never_fabricates():
     assert ms2['price'] == 100.0 and ms2['trend'] is None
 
 
-def test_short_only_suppresses_long_side():
-    # 2026-10-17 direction gate: only BEAR signals are emitted (long side
-    # was measured negative in-sample and out-of-sample on both instruments).
+def test_confirmed_support_reversal_enabled_cpr_bull_continuation_gated():
     from app.research.cpr_trigger_engine import SHORT_ONLY
     assert SHORT_ONLY is True
     L = lv()
-    # pure-bull candle: low touches S1, close above BC, high below PDH
     bull = [{'timestamp': 't1', 'low': 89, 'high': 96, 'close': 96}]
-    assert bull_trigger(bull[0], L) == 'S1'   # level math left intact
-    assert first_trigger(bull, L) is None         # but no signal is emitted
-    # pure-bear candle still fires
+    sig = first_trigger(bull, L)
+    assert sig and sig['direction'] == 'BULL' and sig['level'] == 'S1'
+    above_cpr = [{'timestamp': 't2', 'low': 96, 'high': 97, 'close': 96}]
+    assert bull_trigger(above_cpr[0], L) == 'ABOVE_CPR'
+    assert first_trigger(above_cpr, L) is None
     bear = [{'timestamp': 't1', 'low': 94, 'high': 101, 'close': 94}]
     sig = first_trigger(bear, L)
     assert sig and sig['direction'] == 'BEAR' and sig['level'] == 'R1'

@@ -1,29 +1,20 @@
-"""No-filter CPR trigger strategy (approved offline as vix_regime variant without VIX gate).
+"""Production CPR signal selector shared by live, paper and replay.
 
-Bull triggers: candle low touches S2 / S1 / PDL (prev-day low), or close above TC.
-Bear triggers: candle high touches R2 / R1 / PDH (prev-day high), or close below BC.
-First trigger per session wins.
+On completed candles, a close above R2 is BULL and a close below S2 is BEAR,
+checked before ordinary touch triggers on that candle. With SHORT_ONLY active,
+other base CPR triggers are BEAR-only: touches at R2/R1/PDH or close below BC.
+The first eligible trigger after the weekly-alignment gate is selected.
 
-DIRECTION GATE (SHORT_ONLY, 2026-10-17): bull/continuation signals are
-suppressed and only BEAR signals are emitted. bull_trigger() level math is
-unchanged for diagnostics/tests. See the SHORT_ONLY comment for the basis.
+When no base setup qualifies, BREAKOUT_ADDON may use the first fresh close-cross
+above R1/R2/PDH/TC as BULL or below S1/S2/PDL/BC as BEAR. SKIP_FRIDAY suppresses
+BEAR signals; aligned Friday BULL breakout signals may qualify.
 
-WEEKDAY GATE (SKIP_FRIDAY, 2026-10-17): a BEAR signal whose session is a Friday
-is dropped entirely (first trigger wins, so the whole session is skipped). BULL
-is unaffected. Promoted from the SHADOW_SKIP_FRIDAY annotation. See the
-SKIP_FRIDAY comment for the basis.
+The approved opens execution enters at the next 5-minute open, evaluates the
+0.5% stop / 2% target at subsequent opens (stop first), and exits at 15:20.
+Legacy close/intrabar helpers remain for historical API paths.
 
-Two executions (run_opens_* = approved spec; legacy close/intrabar kept for
-run_range/today_state/log_trigger history):
-- opens: entry at next candle OPEN in [09:20, 15:20); stops/targets evaluated
-  at subsequent opens (stop first); flat at 15:20 OPEN. Days <10 candles skipped.
-- variant 'aligned': bull signal needs close above WEEKLY TC, bear needs close
-  below WEEKLY BC (weekly CPR over prior 5 sessions).
-
-Read-only vs the market DB (SELECT only). Shared by:
-- POST /api/backtest/cpr-triggers (date-range backtest, variant param)
-- GET /api/strategy/cpr-triggers (today's trigger state, read-only)
-- scripts/paper_confluence.py log_trigger() [legacy] / log_align() [opens]
+Read-only vs the market DB (SELECT only). Shared by live decisions, backtests
+and the paper/replay builders.
 """
 import sqlite3
 from datetime import datetime
@@ -49,8 +40,9 @@ TARGET_PCT = 0.02
 # Dropping the long side raises the baseline from 65.0% / +0.138R (+34.0R) to
 # 68.3% / +0.215R (+42.8R) while trading fewer signals. The short bias was
 # independently confirmed on raw yfinance 5-minute candles (09:20->15:10).
-# With SHORT_ONLY the engine emits BEAR signals only; bull_trigger() keeps its
-# level math for tests and diagnostics but never produces a signal.
+# With SHORT_ONLY, ordinary base CPR triggers are BEAR-only; the explicit
+# R2/S2 close-confirmation and the gated breakout add-on remain exceptions.
+# bull_trigger() retains legacy support-trigger math for diagnostics/tests.
 # Set to False to restore both sides.
 # A trailing-trend gate was also tested and REJECTED (lookahead artifact):
 # computed on a prev-close basis, up-trend shorts were the BETTER side.
@@ -248,6 +240,27 @@ def day_levels(prev_high, prev_low, prev_close):
             'pdh': ph, 'pdl': pl, 'prev_close': pc}
 
 
+def outer_pivot_breakout(candle, lv):
+    """Directional confirmation on closes beyond the outer CPR pivots.
+
+    A completed close above R2 is bullish; a completed close below S2 is
+    bearish. Checked before the ordinary touch/reversal triggers so an outer
+    pivot breakout is not mislabeled as a reversal at that same level.
+    Returns (direction, signal_code) or None.
+    """
+    try:
+        close = float(candle['close'])
+        r2 = float(lv['r2'])
+        s2 = float(lv['s2'])
+    except (KeyError, TypeError, ValueError):
+        return None
+    if close > r2:
+        return 'BULL', 'BRK_R2'
+    if close < s2:
+        return 'BEAR', 'BRK_S2'
+    return None
+
+
 def bull_trigger(candle, lv):
     """Return level name or None. Checks support touches first, then CPR break."""
     try:
@@ -327,15 +340,20 @@ def first_trigger(day_candles, lv):
     If the first trigger is a BEAR on a Friday the whole session is skipped
     (SKIP_FRIDAY gate, 2026-10-17)."""
     for i, c in enumerate(day_candles):
-        b = bear_trigger(c, lv)
-        u = None if SHORT_ONLY else bull_trigger(c, lv)
-        t = b or u
-        if t:
+        outer = outer_pivot_breakout(c, lv)
+        if outer:
+            dr, t = outer
+        else:
+            b = bear_trigger(c, lv)
+            u = None if SHORT_ONLY else bull_trigger(c, lv)
+            t = b or u
+            if not t:
+                continue
             dr = 'BEAR' if b else 'BULL'
-            if friday_skip(dr, _day_of(c)):
-                return None
-            return {'direction': dr, 'level': t, 'index': i,
-                    'timestamp': c.get('timestamp')}
+        if friday_skip(dr, _day_of(c)):
+            return None
+        return {'direction': dr, 'level': t, 'index': i,
+                'timestamp': c.get('timestamp')}
     return None
 
 
@@ -378,6 +396,31 @@ def exit_trade(direction, entry, fwd_candles):
         return 0.0, entry, 'NO_FORWARD_DATA'
     move = (last - entry) if direction == 'BULL' else (entry - last)
     return round(move / risk, 3), last, 'EOD'
+
+
+def previous_half_bias(prev_open, prev_high, prev_low, prev_close):
+    """Next-day directional bias from the previous session's price action.
+
+    GREEN previous session:
+      - close in lower half of high-low range -> BULL (continuation)
+      - close in upper half of range          -> BEAR (mean-reversion)
+    RED previous session                       -> BEAR
+    DOJI / missing / invalid                   -> NEUTRAL
+    Returns 'BULL' / 'BEAR' / 'NEUTRAL'.
+    """
+    try:
+        po, ph, pl, pc = (float(prev_open), float(prev_high),
+                          float(prev_low), float(prev_close))
+    except (TypeError, ValueError):
+        return 'NEUTRAL'
+    if not (ph > pl and ph > 0 and pl > 0):
+        return 'NEUTRAL'
+    if pc > po:
+        position = (pc - pl) / (ph - pl)
+        return 'BULL' if position <= 0.5 else 'BEAR'
+    if pc < po:
+        return 'BEAR'
+    return 'NEUTRAL'
 
 
 def prev_session_ohlc(conn, instrument, day_iso):
@@ -487,15 +530,19 @@ def book_scan(candles, lv, wlv, variant='aligned'):
     if not lv:
         return None
     for i, c in enumerate(candles or []):
-        try:
-            b = bear_trigger(c, lv)
-            u = None if SHORT_ONLY else bull_trigger(c, lv)
-        except (KeyError, TypeError, ValueError):
-            continue
-        t = b or u
-        if not t:
-            continue
-        dr = 'BEAR' if b else 'BULL'
+        outer = outer_pivot_breakout(c, lv)
+        if outer:
+            dr, t = outer
+        else:
+            try:
+                b = bear_trigger(c, lv)
+                u = None if SHORT_ONLY else bull_trigger(c, lv)
+            except (KeyError, TypeError, ValueError):
+                continue
+            t = b or u
+            if not t:
+                continue
+            dr = 'BEAR' if b else 'BULL'
         if friday_skip(dr, _day_of(c)):
             # Friday BEAR: no base trade. Fall through to the breakout add-on
             # (a Friday BULL up-break may still fire; a Friday BEAR one will
@@ -515,6 +562,54 @@ def book_scan(candles, lv, wlv, variant='aligned'):
     return None
 
 
+def daily_sma20_short_signal(candles, completed_ts=None):
+    """First confirmed 5m close below session SMA20; enter at next candle open."""
+    seq=[]; day=None
+    for c in candles or []:
+        ts=str(c.get('timestamp',''))
+        if completed_ts is not None and ts > completed_ts.isoformat(): continue
+        if len(ts)<16 or ts[11:16]<'09:15' or ts[11:16]>='15:20': continue
+        if day is None: day=ts[:10]
+        if ts[:10]!=day: continue
+        try: seq.append((c,float(c['close'])))
+        except (KeyError,TypeError,ValueError): continue
+    from datetime import timedelta as _td
+    for i in range(19,len(seq)):
+        sma=sum(x[1] for x in seq[i-19:i+1])/20.0
+        if seq[i][1] < sma:
+            sig=seq[i][0]
+            nxt_ts=(datetime.fromisoformat(str(sig['timestamp']))+_td(minutes=5)).isoformat()
+            nxt=next((c for c in (candles or []) if str(c.get('timestamp',''))==nxt_ts),None)
+            if nxt is None: return {'signal':sig,'sma20':round(sma,2),'entry_candle':None}
+            if str(nxt.get('timestamp',''))[11:16]>='15:20': return None
+            try: entry=round(float(nxt['open']),2)
+            except (KeyError,TypeError,ValueError): return {'signal':sig,'sma20':round(sma,2),'entry_candle':None}
+            return {'signal':sig,'sma20':round(sma,2),'entry_candle':nxt,'entry':entry}
+    return None
+
+
+def _daily_sma20_short_range(conn, inst, days, date_start, date_end, variant, stop_pct, target_pct):
+    trades=[]; skipped={'no_signal':0,'short_day':0,'missing_eod':0,'gate_missing':0,'bad_data':0,'skip_friday':0,'no_chase':0}
+    for d in days:
+        candles=[c for c in session_candles(conn,inst,d) if c['timestamp'][11:16]<'15:25']
+        sig=daily_sma20_short_signal(candles)
+        if not sig or sig.get('entry_candle') is None:
+            skipped['no_signal']+=1; continue
+        ent=sig['entry_candle']; ix=next((i for i,c in enumerate(candles) if c['timestamp']==ent['timestamp']),None)
+        if ix is None: skipped['bad_data']+=1; continue
+        eod=next((c for c in candles if c['timestamp'][11:16]==OPEN_EOD),None)
+        if eod is None: skipped['missing_eod']+=1; continue
+        entry=sig['entry']; hit=exits_opens('BEAR',entry,stop_pct,target_pct,[(c['timestamp'],c['open']) for c in candles[ix+1:]])
+        if hit is None:
+            try: xp=float(eod['open'])
+            except (KeyError,TypeError,ValueError): skipped['bad_data']+=1; continue
+            risk=entry*stop_pct; r=round((entry-xp)/risk,3) if risk else 0.0; how,xt='EOD-1520',eod['timestamp']
+        else: r,xp,how,xt=hit
+        trades.append({'trade_date':d,'direction':'BEAR','level':'SMA20_CLOSE_BELOW','entry_time':ent['timestamp'][:16].replace('T',' '),'entry':entry,'exit_time':(xt or '')[:16].replace('T',' '),'exit':xp,'r_multiple':r,'exit_reason':how,'points':round(entry-xp,1),'signal_time':sig['signal']['timestamp'],'sma20':sig['sma20'],'win_loss':decay_win('BEAR',entry,xp,r,inst)})
+    rs=[t['r_multiple'] for t in trades]; w=sum(t.get('win_loss')=='WIN' for t in trades); n=len(trades)
+    return {'instrument':inst,'variant':variant,'date_start':date_start,'date_end':date_end,'days':len(days),'signals':n,'no_signal_days':skipped['no_signal'],'skipped':skipped,'wins':w,'losses':sum(t.get('win_loss')=='LOSS' for t in trades),'win_rate':round(100*w/n,1) if n else 0,'total_R':round(sum(rs),2),'avg_R':round(sum(rs)/n,3) if n else 0,'net_R':round(sum(rs)-COST_R_PER_TRADE*n,2),'cost_note':'net_R deducts %.2fR/trade estimated costs; net R is an estimate' % COST_R_PER_TRADE,'by_level':{'BEAR/SMA20_CLOSE_BELOW':{'n':n,'wins':w,'R':round(sum(rs),2)}},'trades':trades}
+
+
 def today_state(instrument, now_ist=None, variant='aligned'):
     """Today's trigger state from stored candles so far (opens execution).
 
@@ -530,12 +625,37 @@ def today_state(instrument, now_ist=None, variant='aligned'):
     if now.tzinfo is None:
         now = now.replace(tzinfo=_IST)
     day_iso = now.date().isoformat()
+    if inst in ('NIFTY','BANKNIFTY'):
+        if day_iso < DAILY_SHORT_EFFECTIVE_DATE:
+            return {'instrument':inst,'variant':variant,'date':day_iso,'state':'NO_TRADE','reason':'STRATEGY_EFFECTIVE_NEXT_SESSION'}
+        conn=get_conn()
+        try:
+            lock=conn.execute("SELECT 1 FROM daily_trade_locks WHERE instrument_id=? AND date=? AND status='CONSUMED' LIMIT 1",(inst,day_iso)).fetchone()
+            if lock:
+                return {'instrument':inst,'variant':variant,'date':day_iso,'state':'NO_TRADE','reason':'DAILY_TRADE_LIMIT_REACHED'}
+            from datetime import timedelta as _td
+            cutoff=now.replace(minute=(now.minute//5)*5,second=0,microsecond=0)-_td(minutes=5)
+            rows=session_candles(conn,inst,day_iso); sig=daily_sma20_short_signal(rows,cutoff)
+        finally: conn.close()
+        if not sig: return {'instrument':inst,'variant':variant,'date':day_iso,'state':'WATCH','reason':'WAITING_FOR_SMA20_BEARISH_CLOSE'}
+        nxt=sig.get('entry_candle')
+        if nxt is None: return {'instrument':inst,'variant':variant,'date':day_iso,'state':'WATCH','direction':'BEAR','level':'SMA20_CLOSE_BELOW','signal_time':sig['signal']['timestamp'],'sma20':sig['sma20'],'reason':'ENTRY_AT_NEXT_OPEN'}
+        entry=sig['entry']
+        return {'instrument':inst,'variant':variant,'date':day_iso,'state':'SIGNAL','direction':'BEAR','level':'SMA20_CLOSE_BELOW','signal_time':sig['signal']['timestamp'],'entry':entry,'entry_time':nxt['timestamp'],'stop':round(entry*(1+OPEN_STOP_PCT),2),'target':round(entry*(1-OPEN_TARGET_PCT),2),'sma20':sig['sma20'],'note':'BEARISH_CLOSE_CONFIRMED_BELOW_SMA20'}
     conn = get_conn()
     try:
         prev = prev_session_ohlc(conn, inst, day_iso)
         if not prev:
             return {'instrument': inst, 'variant': variant, 'date': day_iso,
                     'state': 'NO_DATA', 'reason': 'CPR_DATA_UNAVAILABLE'}
+        # Previous-day price-action bias (lower-half close -> BULL, upper-half
+        # or RED -> BEAR, DOJI -> NEUTRAL). Used to gate the trigger below.
+        _prev_open_row = conn.execute(
+            'SELECT open FROM market_candles_5m WHERE instrument_id=? '
+            'AND substr(timestamp,1,10)=? ORDER BY timestamp ASC LIMIT 1',
+            (inst, prev['date'])).fetchone()
+        _prev_open = (_prev_open_row['open'] if _prev_open_row else prev['close'])
+        _bias = previous_half_bias(_prev_open, prev['high'], prev['low'], prev['close'])
         lv = day_levels(prev['high'], prev['low'], prev['close'])
         wlv = weekly_levels(conn, inst, monday_of(day_iso)) if variant == 'aligned' else None
         if variant == 'aligned' and not wlv:
@@ -553,6 +673,22 @@ def today_state(instrument, now_ist=None, variant='aligned'):
     if not sig:
         return {'instrument': inst, 'variant': variant, 'date': day_iso,
                 'state': 'WATCH', 'levels': lv,
+                'candles_so_far': len(candles),
+                'last_candle': candles[-1]['timestamp'],
+                'prev_day_bias': _bias}
+    # Previous-day price-action bias gate: drop triggers whose direction does
+    # not agree with the bias. Sanctioned exceptions: BREAKOUT_ADDON BULL
+    # continuation and the no-chase re-anchor are handled inside book_scan and
+    # are not re-gated here beyond the direction mismatch check.
+    try:
+        _sig_dir = sig[0]
+    except (TypeError, IndexError):
+        _sig_dir = None
+    if _bias in ('BULL', 'BEAR') and _sig_dir is not None and _sig_dir != _bias:
+        return {'instrument': inst, 'variant': variant, 'date': day_iso,
+                'state': 'WATCH', 'levels': lv,
+                'reason': 'PREV_DAY_HALF_BIAS_MISMATCH',
+                'prev_day_bias': _bias, 'signal_direction': _sig_dir,
                 'candles_so_far': len(candles),
                 'last_candle': candles[-1]['timestamp']}
     dr, t, i = sig
@@ -587,6 +723,7 @@ def today_state(instrument, now_ist=None, variant='aligned'):
         stop = tgt = None
     return {'instrument': inst, 'variant': variant, 'date': day_iso,
             'state': 'SIGNAL', 'direction': dr, 'level': t,
+            'prev_day_bias': _bias,
             'signal_time': candles[i]['timestamp'],
             'entry': entry, 'entry_time': entry_time, 'stop': stop, 'target': tgt, 'levels': lv,
             'shadow': shadow_flags(dr, day_iso),
@@ -595,6 +732,7 @@ def today_state(instrument, now_ist=None, variant='aligned'):
 
 
 VARIANTS = ('plain', 'aligned')
+DAILY_SHORT_EFFECTIVE_DATE = '2026-10-26'
 
 DECAY_TOL_POINTS = {'NIFTY': 30.0, 'BANKNIFTY': 60.0, 'INDIA_VIX': 0.02}
 # Tolerances ≈ 0.11-0.17% of typical price (30/24000, 60/55000, 0.02/12):
@@ -748,6 +886,8 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
             'SELECT DISTINCT substr(timestamp,1,10) FROM market_candles_5m '
             'WHERE instrument_id=? AND substr(timestamp,1,10) BETWEEN ? AND ? ORDER BY 1',
             (inst, date_start, date_end)).fetchall()]
+        if inst in ('NIFTY','BANKNIFTY'):
+            return _daily_sma20_short_range(conn,inst,days,date_start,date_end,variant,stop_pct,target_pct)
         trades = []
         skipped = {'no_signal': 0, 'short_day': 0, 'missing_eod': 0,
                    'gate_missing': 0, 'bad_data': 0, 'skip_friday': 0,
@@ -773,12 +913,16 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
             sig = None
             fri_skip = False
             for i, c in enumerate(candles):
-                b = bear_trigger(c, lv)
-                u = None if SHORT_ONLY else bull_trigger(c, lv)
-                t = b or u
-                if not t:
-                    continue
-                dr = 'BEAR' if b else 'BULL'
+                outer = outer_pivot_breakout(c, lv)
+                if outer:
+                    dr, t = outer
+                else:
+                    b = bear_trigger(c, lv)
+                    u = None if SHORT_ONLY else bull_trigger(c, lv)
+                    t = b or u
+                    if not t:
+                        continue
+                    dr = 'BEAR' if b else 'BULL'
                 if friday_skip(dr, d):
                     fri_skip = True
                     break

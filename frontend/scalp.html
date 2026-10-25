@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scalp Model (HLC 3-bar) | TradingAI.in</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5}
+.topbar{background:#0b1e3a;color:#fff;padding:.6rem 1.2rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem}
+.brand{font-size:1.4rem;font-weight:800}.brand .dot{color:#22d3ee}
+.wrap{max-width:1200px;margin:0 auto;padding:1rem}
+.card{background:#fff;padding:1.2rem;border-radius:12px;border:1px solid #e2e8f0;margin:1rem 0}
+.btn{font-size:.9rem;font-weight:700;background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:.55rem 1.2rem;margin:.3rem;cursor:pointer}
+.btn.alt{background:#0f766e}
+table{width:100%;border-collapse:collapse;font-size:.82rem;margin:.5rem 0}
+th,td{padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;white-space:nowrap}
+.note{font-size:.8rem;color:#475569;margin-top:.5rem}
+select{padding:.4rem;margin:.3rem}
+.win{color:#15803d;font-weight:700}.loss{color:#b91c1c;font-weight:700}
+</style>
+</head>
+<body>
+<div class="topbar"><div><img src="/favicon.svg" alt="logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span style="margin-left:.8rem">Scalp Model</span></div><div><a href="/" style="color:#cbd5e1;text-decoration:none">Home</a></div></div>
+<div class="wrap">
+<h1>Scalp Model — HLC 3-Bar Alignment</h1>
+<div class="card">
+<h2>Signal generation</h2>
+<p>Signal fires when 3 consecutive 5-minute bars all move the same direction across high, low and close: each bar's high, low and close all rise (bullish) or all fall (bearish) versus the previous bar. Evaluated on the full 5-minute history, so alignment can span sessions.</p>
+<h2>Entry</h2>
+<p>Entry at the open of the candle immediately after the third aligned bar. No lookahead.</p>
+<h2>Exit</h2>
+<p>Stop = signal candle low − 1 (bull) / high + 1 (bear). Target = entry ± 1.5 × risk. Otherwise flat at 15:20 open. Underlying-price measures only.</p>
+<p class="note">No Telegram/social alerts. Live trades persisted by watcher; EOD backtest logged daily.</p>
+</div>
+<div class="card">
+<label>Instrument</label>
+<select id="inst"><option>NIFTY</option><option>BANKNIFTY</option></select>
+<button class="btn" id="btnLive">Live trades</button>
+<button class="btn alt" id="btnBacktest">Backtest</button>
+<p class="note" id="status"></p>
+<div style="overflow-x:auto"><table id="tbl"><thead><tr><th>Date</th><th>Source</th><th>Direction</th><th>Level</th><th>Entry time</th><th>Entry</th><th>Exit/mark date and time</th><th>Exit/mark</th><th>Net spot P&amp;L</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody></tbody></table></div>
+</div>
+</div>
+<script>
+function $(id){return document.getElementById(id);}
+function num(v){return (v===null||v===undefined||!isFinite(Number(v)))?'—':Number(v).toLocaleString('en-IN',{maximumFractionDigits:2});}
+function row(t,source){
+  const tr=document.createElement('tr');
+  const pts=t.points; const outcome=t.win_loss||t.result||t.status||'';
+  [t.trade_date|| (t.created_at||'').slice(0,10), source, t.direction, t.level, (t.entry_time||'').slice(0,16).replace('T',' '), num(t.entry), (t.exit_time||'').slice(0,16).replace('T',' '), num(t.exit), num(pts), outcome, t.exit_reason||''].forEach(x=>{const td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+  const oc=tr.childNodes[9]; if(oc) oc.className=(outcome==='WIN'?'win':(outcome==='LOSS'?'loss':''));
+  return tr;
+}
+async function runLive(){
+  $('status').textContent='Loading live trades…';
+  const r=await fetch('/api/paper/scalp');
+  const d=(await r.json()).data||{};
+  const tb=$('tbl').querySelector('tbody'); tb.innerHTML='';
+  (d.trades||[]).forEach(t=>{ tb.appendChild(row(t,t.source||'LIVE')); });
+  if(!(d.trades||[]).length) tb.innerHTML='<tr><td colspan="11">No live trades.</td></tr>';
+  $('status').textContent='Loaded '+(d.trades||[]).length+' live trades.';
+}
+async function runBacktest(){
+  $('status').textContent='Running backtest…';
+  const inst=$('inst').value;
+  const r=await fetch('/api/backtest/scalp',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({instrument:inst,date_start:'2026-07-06',date_end:new Date().toISOString().slice(0,10)})});
+  const d=(await r.json()).data||{};
+  const tb=$('tbl').querySelector('tbody'); tb.innerHTML='';
+  (d.trades||[]).slice().reverse().forEach(t=>{ tb.appendChild(row(t,'BACKTEST')); });
+  if(!(d.trades||[]).length) tb.innerHTML='<tr><td colspan="11">No trades.</td></tr>';
+  $('status').textContent='Backtest: '+(d.signals||0)+' trades, win rate '+(d.win_rate||0)+'%, total R '+(d.total_R||0)+'.';
+}
+$('btnLive').addEventListener('click',runLive);
+$('btnBacktest').addEventListener('click',runBacktest);
+runLive();
+setInterval(runLive, 60000);
+</script>
+<div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+</body>
+</html>

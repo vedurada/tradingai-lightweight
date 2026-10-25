@@ -90,5 +90,6 @@ def test_frozen_gate_allows_breakout_bull():
     MON = '2026-10-19'
     brk = {'direction': 'BULL', 'scenario': 'BRK_R1'}
     assert _frozen_trade_passes_gate(brk, MON) is True
-    # A non-breakout BULL is still rejected under SHORT_ONLY.
-    assert _frozen_trade_passes_gate({'direction': 'BULL', 'scenario': 'S1'}, MON) is False
+    # Confirmed support BULL passes; CPR continuation BULL stays gated.
+    assert _frozen_trade_passes_gate({'direction': 'BULL', 'scenario': 'S1'}, MON) is True
+    assert _frozen_trade_passes_gate({'direction': 'BULL', 'scenario': 'ABOVE_CPR'}, MON) is False
