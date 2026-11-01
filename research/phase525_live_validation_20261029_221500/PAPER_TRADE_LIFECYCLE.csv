@@ -1,0 +1,2 @@
+trade_id,instrument,signal_time,entry_time,exit_time,exit_reason,status,notes
+# NOT RUN - Market closed

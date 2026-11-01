@@ -1,0 +1,24 @@
+{
+  "run_id": "LM-20261030_084704-393def",
+  "start": "2026-10-30T08:47:04.212551+05:30",
+  "finish": "2026-10-30T08:47:04.215333+05:30",
+  "duration_s": 0.002782,
+  "status": "DATA_UNHEALTHY",
+  "strategy_mode": "SCALP_HLC",
+  "market_state": "IN_SESSION",
+  "data_freshness": {
+    "NIFTY": "STALE",
+    "BANKNIFTY": "STALE"
+  },
+  "signals": 29,
+  "paper_trades": 94,
+  "alerts": 33,
+  "detected_problems": [
+    "STALE_CANDLE_NIFTY",
+    "STALE_CANDLE_BANKNIFTY"
+  ],
+  "recovery_attempts": [],
+  "errors": [
+    "'list' object has no attribute 'get'"
+  ]
+}

@@ -1,0 +1,40 @@
+# Phase 5.15 — Audit Execution Log
+# Audit date: 2026-10-29
+# Host: webserver (Oracle VM)
+# Mode: READ-ONLY research
+
+## Actions Performed
+
+1. Verified hostname: webserver (Oracle VM)
+2. Traced signal lifecycle (candle → signal → entry → trade → expiry)
+3. Analyzed _entry_time_guard() implementation and callers
+4. Audited overnight carry: 6 trades, max delay 63,900s (17.75h)
+5. Identified root cause: signal at 15:25, entry at 09:15 next day, entry guard passes (entry_time is today's candle)
+6. Designed isolated expiry policy (15 conditions)
+7. Ran 15 expiry tests: 14 PASS, 1 FAIL (ET10 timezone — design question)
+8. Ran historical expiry replay: 723 accepted, 6 rejected (all cross-session)
+9. Preserved 245-row CSV discrepancy as unresolved
+10. Created all 10 required deliverables
+
+## Files Modified
+
+NONE. This is a read-only research phase. No production files were modified.
+
+## Files Created (in research directory)
+
+- PHASE515_REPORT.md
+- SIGNAL_LIFECYCLE_TRACE.md
+- OVERNIGHT_CARRY_AUDIT.csv
+- EXPIRY_POLICY_DESIGN.md
+- EXPIRY_TEST_RESULTS.csv
+- HISTORICAL_EXPIRY_REPLAY.csv
+- PERFORMANCE_IMPACT.md
+- LEDGER_DISCREPANCY_STATUS.md
+- PAPER_VALIDATION_GATE.csv
+- AUDIT_LOG.txt
+- expiry_test_results.json
+- expiry_replay_summary.json
+
+## Production Changes
+
+NONE. No production files, database records, services, configuration or trading behavior changed.

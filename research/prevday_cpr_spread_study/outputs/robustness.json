@@ -1,0 +1,197 @@
+{
+  "neighbours": [
+    {
+      "isval_exp_r": 0.07903848277476848,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "PCT_0.25",
+      "target": "R_0.5"
+    },
+    {
+      "isval_exp_r": -0.06833686471474024,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.25",
+      "target": "R_1.0"
+    },
+    {
+      "isval_exp_r": -0.10625930952731297,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.25",
+      "target": "R_1.5"
+    },
+    {
+      "isval_exp_r": -0.13615804737075174,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.25",
+      "target": "R_2.0"
+    },
+    {
+      "isval_exp_r": 0.06454437182510102,
+      "isval_n": 47,
+      "positive": true,
+      "stop": "PCT_0.25",
+      "target": "STRUCT"
+    },
+    {
+      "isval_exp_r": 0.06038237346910026,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "PCT_0.35",
+      "target": "R_0.5"
+    },
+    {
+      "isval_exp_r": -0.10703207090026273,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.35",
+      "target": "R_1.0"
+    },
+    {
+      "isval_exp_r": -0.11465738073644281,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.35",
+      "target": "R_1.5"
+    },
+    {
+      "isval_exp_r": -0.09356201819218789,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.35",
+      "target": "R_2.0"
+    },
+    {
+      "isval_exp_r": -0.030967084239282742,
+      "isval_n": 47,
+      "positive": false,
+      "stop": "PCT_0.35",
+      "target": "STRUCT"
+    },
+    {
+      "isval_exp_r": -0.042509067918661624,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.50",
+      "target": "R_0.5"
+    },
+    {
+      "isval_exp_r": -0.11955707033159509,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.50",
+      "target": "R_1.0"
+    },
+    {
+      "isval_exp_r": -0.10915668453238898,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.50",
+      "target": "R_1.5"
+    },
+    {
+      "isval_exp_r": -0.10003856710899203,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "PCT_0.50",
+      "target": "R_2.0"
+    },
+    {
+      "isval_exp_r": -0.015134351375873366,
+      "isval_n": 47,
+      "positive": false,
+      "stop": "PCT_0.50",
+      "target": "STRUCT"
+    },
+    {
+      "isval_exp_r": 0.06647913152484848,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "STRUCT_10",
+      "target": "R_0.5"
+    },
+    {
+      "isval_exp_r": 0.09353589870353575,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "STRUCT_10",
+      "target": "R_1.0"
+    },
+    {
+      "isval_exp_r": 0.03233147880082412,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "STRUCT_10",
+      "target": "R_1.5"
+    },
+    {
+      "isval_exp_r": -0.02266003353910228,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "STRUCT_10",
+      "target": "R_2.0"
+    },
+    {
+      "isval_exp_r": 0.021024596573526295,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "ATR_1.0",
+      "target": "R_0.5"
+    },
+    {
+      "isval_exp_r": 0.053920191260784234,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "ATR_1.0",
+      "target": "R_1.0"
+    },
+    {
+      "isval_exp_r": 0.04526107028440106,
+      "isval_n": 59,
+      "positive": true,
+      "stop": "ATR_1.0",
+      "target": "R_1.5"
+    },
+    {
+      "isval_exp_r": -0.10823198708196557,
+      "isval_n": 59,
+      "positive": false,
+      "stop": "ATR_1.0",
+      "target": "R_2.0"
+    },
+    {
+      "isval_exp_r": 0.1943248095969077,
+      "isval_n": 47,
+      "positive": true,
+      "stop": "ATR_1.0",
+      "target": "STRUCT"
+    },
+    {
+      "isval_exp_r": 0.1983906009308393,
+      "isval_n": 47,
+      "positive": true,
+      "stop": "STRUCT_10",
+      "target": "STRUCT",
+      "time_exit": "13:30"
+    },
+    {
+      "isval_exp_r": 0.20821769619237415,
+      "isval_n": 47,
+      "positive": true,
+      "stop": "STRUCT_10",
+      "target": "STRUCT",
+      "time_exit": "14:00"
+    },
+    {
+      "isval_exp_r": 0.23709996399707345,
+      "isval_n": 47,
+      "positive": true,
+      "stop": "STRUCT_10",
+      "target": "STRUCT",
+      "time_exit": "14:30"
+    }
+  ],
+  "positive_fraction": 0.48148148148148145
+}

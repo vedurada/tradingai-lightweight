@@ -1,0 +1,18 @@
+[Unit]
+Description=TradingAI ScanLP live paper-trading watcher
+After=network.target tradingai-api.service
+Wants=tradingai-api.service
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/opt/tradingai
+Environment=PYTHONPATH=/opt/tradingai
+ExecStart=/usr/bin/python3 /opt/tradingai/scripts/paper_scalp_live.py
+Restart=always
+RestartSec=10
+StandardOutput=append:/opt/tradingai/logs/paper_scalp_live.log
+StandardError=append:/opt/tradingai/logs/paper_scalp_live.log
+
+[Install]
+WantedBy=multi-user.target

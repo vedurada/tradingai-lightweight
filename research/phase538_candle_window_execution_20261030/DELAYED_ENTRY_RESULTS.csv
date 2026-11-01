@@ -1,0 +1,2 @@
+scenario,delayed_entry,trades_evaluated,wins,losses,flats,excluded,net_points,profit_factor
+ONE_CANDLE_DELAYED_ENTRY,1.0,881,0,0,0,0,0,0

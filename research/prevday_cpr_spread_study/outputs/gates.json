@@ -1,0 +1,85 @@
+{
+  "FINAL": "FAIL",
+  "gates": {
+    "FINAL": "FAIL",
+    "G10_direction_transparency": {
+      "bear": 3,
+      "bull": 9,
+      "definition": "bullish and bearish results reported separately",
+      "status": "PASS"
+    },
+    "G1_pit_integrity": {
+      "definition": "PIT recomputation reproduces every feature and every signal survives bar truncation",
+      "feature_pit_checked": 71,
+      "feature_pit_mismatches": 0,
+      "signal_recompute_checked": 1840,
+      "signal_recompute_mismatches": 0,
+      "status": "PASS"
+    },
+    "G2_data_quality": {
+      "definition": "no missing session days, no OHLC violations, sessions flagged",
+      "ohlc_violations": 0,
+      "short_sessions": {
+        "2026-09-21": 73,
+        "2026-10-15": 73,
+        "2026-10-22": 37
+      },
+      "status": "PASS"
+    },
+    "G3_oos_expectancy": {
+      "bootstrap_p": 0.0,
+      "definition": "OOS expectancy > 0 in points and R; block-bootstrap p <= 0.10",
+      "oos_avg_points": 18.025770399305657,
+      "oos_avg_r": 0.8734807222080471,
+      "status": "PASS"
+    },
+    "G4_sample_sufficiency": {
+      "bear": 3,
+      "bull": 9,
+      "definition": ">=8 OOS trades, >=3 per direction, >=2 distinct weeks",
+      "distinct_weeks": 4,
+      "oos_trades": 12,
+      "status": "PASS"
+    },
+    "G5_robustness": {
+      "definition": ">=2/3 splits positive, >=4/6 WF blocks positive, >=70% positive parameter neighbours",
+      "neighbour_positive_fraction": 0.48148148148148145,
+      "positive_splits": 3,
+      "positive_splits_detail": {
+        "IS": 0.07806128402479945,
+        "OOS": 0.8734807222080471,
+        "VAL": 0.5711697560891958
+      },
+      "positive_wf_blocks": 2,
+      "status": "FAIL"
+    },
+    "G6_risk_shape": {
+      "definition": "IS+VAL maxDD <= 3R; no single loss worse than -1.2R",
+      "isval_maxdd_r": 2.258792516706928,
+      "isval_worst_trade_r": -1.1,
+      "status": "PASS"
+    },
+    "G7_concentration": {
+      "avg_r_excl_best": 0.3285902694806977,
+      "best_trade_share": 0.6551638297608235,
+      "definition": "best trade <=40% of OOS profit and expectancy positive without the best trade",
+      "status": "FAIL"
+    },
+    "G8_cost_robustness": {
+      "definition": "OOS expectancy > 0 at the 0.10R proxy cost",
+      "oos_exp_r_at_0.10R": 0.8734807222080471,
+      "status": "PASS"
+    },
+    "G9_no_trade_mechanism": {
+      "definition": "closed NO TRADE reason taxonomy, reported per model",
+      "status": "PASS"
+    },
+    "failed_gates": [
+      "G5_robustness",
+      "G7_concentration"
+    ],
+    "inconclusive_gates": []
+  },
+  "n_variants_eligible": 3,
+  "n_variants_evaluated": 675
+}

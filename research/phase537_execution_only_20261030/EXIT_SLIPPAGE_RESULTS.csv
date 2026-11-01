@@ -1,0 +1,4 @@
+scenario,slippage_points,trades_evaluated,wins,losses,flats,excluded,net_points,profit_factor
+D1,0.5,881,0,0,0,0,0,0
+D2,1.0,881,0,0,0,0,0,0
+D3,2.0,881,0,0,0,0,0,0

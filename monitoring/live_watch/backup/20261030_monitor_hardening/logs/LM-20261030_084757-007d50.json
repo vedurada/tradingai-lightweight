@@ -1,0 +1,18 @@
+{
+  "run_id": "LM-20261030_084757-007d50",
+  "start": "2026-10-30T08:47:57.937432+05:30",
+  "finish": "2026-10-30T08:47:57.937728+05:30",
+  "duration_s": 0.000296,
+  "status": "OUT_OF_SESSION",
+  "strategy_mode": null,
+  "market_state": "OUT_OF_SESSION",
+  "data_freshness": "UNKNOWN",
+  "signals": 0,
+  "paper_trades": 0,
+  "alerts": 0,
+  "detected_problems": [],
+  "recovery_attempts": [],
+  "errors": [
+    "'list' object has no attribute 'get'"
+  ]
+}

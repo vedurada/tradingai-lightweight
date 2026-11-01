@@ -1,0 +1,13 @@
+app/research/scalp_engine.py: OK
+app/research/scalp_signal_store.py: OK
+scripts/paper_scalp_live.py: OK
+app/live/engine.py: OK
+app/api/app.py: OK
+app/api/live.dashboard.html: OK
+scripts/live_dashboard_worker.py: OK
+scripts/entry_shadow.py: OK
+scripts/data_probe.py: OK
+scripts/entry_capture.py: OK
+app/paper_trade/engine.py: OK
+scripts/tg_alerts.py: OK
+database/tradingai.db: OK

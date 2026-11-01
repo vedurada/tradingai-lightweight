@@ -1,0 +1,268 @@
+{
+  "study": "setup_first",
+  "title": "Phase 3 - setup-first trading, market swings, entry confirmation and structural stop-loss",
+  "verdict": "INCONCLUSIVE",
+  "candidate_arm": "SF_C2_S0",
+  "selected_entry_policy": "C2_REJECTION_CLOSE",
+  "selected_stop": "S0",
+  "candidate_trades": 98,
+  "experiment_d_run": false,
+  "frozen_config": {
+    "splits": {
+      "IS": [
+        "2026-07-06",
+        "2026-08-31"
+      ],
+      "VAL": [
+        "2026-09-01",
+        "2026-09-30"
+      ],
+      "OOS": [
+        "2026-10-01",
+        "2026-10-21"
+      ]
+    },
+    "instruments": [
+      "NIFTY",
+      "BANKNIFTY"
+    ],
+    "date_range": [
+      "2026-07-06",
+      "2026-10-21"
+    ],
+    "excluded_dates": [
+      "2026-10-22"
+    ],
+    "zone_pct": 0.001,
+    "expiry_bars": 12,
+    "max_entry_extension_pct": 0.0025,
+    "min_rr": 1.5,
+    "min_stop_pct": 0.0025,
+    "max_stop_pct": 0.015,
+    "eps_pct": 0.0002,
+    "stop_pct": 0.005,
+    "target_pct": 0.02,
+    "cost_r_per_trade": 0.1,
+    "cost_grid": [
+      0.0,
+      0.1,
+      0.2,
+      0.3
+    ],
+    "swing_m": 2,
+    "resistance_priority": [
+      "PDH",
+      "PIVOT",
+      "R1",
+      "R2"
+    ],
+    "support_priority": [
+      "PDL",
+      "PIVOT",
+      "S1",
+      "S2",
+      "BC"
+    ],
+    "setup_families": [
+      "F1_PREV_DAY_LEVEL_REJECTION",
+      "F2_CPR_BOUNDARY_REJECTION",
+      "F3_BREAKDOWN_RETEST",
+      "F4_PULLBACK_TO_SWING_HIGH",
+      "F5_FAILED_BREAK_REJECTION",
+      "F6_SWING_BREAK_RETEST"
+    ]
+  },
+  "inputs": {
+    "snapshot": {
+      "snapshot_path": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/snapshots/tradingai_snapshot.db",
+      "snapshot_sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f",
+      "snapshot_size_bytes": 12161024,
+      "snapshot_created_at": "2026-10-22T17:14:44.552093+05:30",
+      "source": {
+        "path": "/opt/tradingai/database/tradingai.db",
+        "size_bytes": 12161024,
+        "mtime": "2026-10-22T16:50:07.794832+05:30"
+      },
+      "source_sha256_at_snapshot": "455d8da024f6abae1283318958decf4f5e9d598397e6da67002c092011b0b2d9",
+      "method": "sqlite3 Connection.backup from a mode=ro source (consistent image)",
+      "work_copy": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/snapshots/working_copy.db"
+    },
+    "baseline_reconciliation": {
+      "per_instrument": {
+        "NIFTY": {
+          "production_trades": 65,
+          "resimulated_trades": 65,
+          "matched": 65,
+          "issues": [],
+          "production_booked_total_R": 30.135,
+          "resimulated_realized_total_R": 29.894,
+          "difference_R": -0.241,
+          "consistent": true
+        },
+        "BANKNIFTY": {
+          "production_trades": 64,
+          "resimulated_trades": 64,
+          "matched": 64,
+          "issues": [],
+          "production_booked_total_R": 27.367,
+          "resimulated_realized_total_R": 26.596,
+          "difference_R": -0.771,
+          "consistent": true
+        }
+      },
+      "production_trades": 129,
+      "resimulated_trades": 129,
+      "consistent": true,
+      "issues": [],
+      "difference_R_total": -1.012,
+      "note": "the reconciliation is computed per instrument: the production run of the two instruments is a single call and the records must not be merged across instruments"
+    },
+    "data_quality_status": "PASS",
+    "data_quality_problems": [],
+    "protected_hashes_preflight": {
+      "app/research/cpr_trigger_engine.py": {
+        "sha256": "2316f56cd315e7db763d89d58667e9a143c62098a914d4ca08ec437f199ec80c",
+        "size": 38634,
+        "mtime": 1792239512.549674,
+        "class": "code"
+      },
+      "app/research/cpr_strategy_engine.py": {
+        "sha256": "523a03c5caf9aea144e53e576642f662c98ba0d0033775749785a5da12380e64",
+        "size": 28045,
+        "mtime": 1790576963.4134705,
+        "class": "code"
+      },
+      "app/live/engine.py": {
+        "sha256": "61df16172e758a4824f87caba1c1b819a588af635cfe7e360677083f76cf8f92",
+        "size": 33170,
+        "mtime": 1792241202.6802351,
+        "class": "code"
+      },
+      "app/paper_trade/engine.py": {
+        "sha256": "4344d7c30c542b5a0fc189591bf90fe543361b457f4c8c696f763ffef936098c",
+        "size": 10896,
+        "mtime": 1792317340.1254847,
+        "class": "code"
+      },
+      "app/api/app.py": {
+        "sha256": "0203086472af510290110edb29868e28bd6fbab68a43f1a0efdcefb6085fb663",
+        "size": 57121,
+        "mtime": 1792317340.1334848,
+        "class": "code"
+      },
+      "app/research/backtest.py": {
+        "sha256": "656f735ce8d7a80851db10f4a60b89715c9224866bc58fda5a6f9dc50755f576",
+        "size": 13795,
+        "mtime": 1790576982.6027713,
+        "class": "code"
+      },
+      "app/core/db.py": {
+        "sha256": "8f2391356f7a5ebf5d69603e931b0813f0e1e42026be5a7c670deebec2fae047",
+        "size": 974,
+        "mtime": 1790575934.514313,
+        "class": "code"
+      },
+      "scripts/tg_alerts.py": {
+        "sha256": "7676ff58e590c884d06b7cf2069fa493f527c66f6c02b64f9fbd5f3ab445897e",
+        "size": 40087,
+        "mtime": 1792317340.1304848,
+        "class": "code"
+      },
+      "scripts/paper_confluence.py": {
+        "sha256": "ac26fd230ba2f8111d6e2f18bbb011d8db5afd63b2f07b5e93a466b8ca9b0d9e",
+        "size": 47664,
+        "mtime": 1792244759.32574,
+        "class": "code"
+      },
+      "config/settings.json": {
+        "sha256": "8aff897ec2973b6d936c789ba7f10d26f8c6078924dcee2ba245b51e6ac9c543",
+        "size": 615,
+        "mtime": 1790177182.888544,
+        "class": "code"
+      },
+      "frontend/index.html": {
+        "sha256": "8d1f490446e867a286ad3cecccae27cc11a447c51f1091b9f13a5609cfb53209",
+        "size": 77563,
+        "mtime": 1792665302.036789,
+        "class": "service_generated"
+      },
+      "frontend/paper.html": {
+        "sha256": "eadab305de820cde77b0fa6460e06e3f4ce5c4319357c0d6cea43d2cdbe2a31a",
+        "size": 42101,
+        "mtime": 1792664137.7059295,
+        "class": "service_generated"
+      },
+      "frontend/signals.html": {
+        "sha256": "8264befb420bc63ead3e4a70ca2688bbc080c42b972521ae0d6e4dab85fae063",
+        "size": 49430,
+        "mtime": 1792664143.6100185,
+        "class": "service_generated"
+      },
+      "frontend/alerts.html": {
+        "sha256": "2635c2cec1e360fced5d350720df3ecc966b1ee9e34ddd5614351c73a3c9d62b",
+        "size": 60966,
+        "mtime": 1792645269.199503,
+        "class": "service_generated"
+      }
+    }
+  },
+  "integrity": {
+    "head_before": "879c9769a3e9118014f04173a643466d0197ae16",
+    "head_after": "879c9769a3e9118014f04173a643466d0197ae16",
+    "branch_before": "production-2026-10-01",
+    "branch_after": "production-2026-10-01",
+    "protected_hashes_identical": true,
+    "git_status_lines_before": 237,
+    "git_status_lines_after": 237
+  },
+  "production_change": "NONE - research only, no production change is authorised by this study",
+  "outputs": [
+    "PREFLIGHT.json",
+    "PREFLIGHT.md",
+    "PREFLIGHT_GIT.txt",
+    "PREFLIGHT_GIT_STATUS.txt",
+    "PREFLIGHT_GUNICORN.txt",
+    "PREFLIGHT_PROCESSES.txt",
+    "baseline_counts.json",
+    "baseline_reconciliation.json",
+    "baseline_trades.csv",
+    "data_quality.json",
+    "db_meta_preflight.json",
+    "experiment_A_funnel.json",
+    "experiment_B.json",
+    "experiment_B_trades_C1.csv",
+    "experiment_B_trades_C2.csv",
+    "experiment_C.json",
+    "experiment_C_trades_S0.csv",
+    "experiment_C_trades_S1.csv",
+    "experiment_C_trades_S2.csv",
+    "experiment_C_trades_S4.csv",
+    "experiment_C_trades_S5.csv",
+    "experiment_D.json",
+    "experiment_D_trades.csv",
+    "git_branch.txt",
+    "git_head.txt",
+    "git_status_preflight.txt",
+    "integrity_final.json",
+    "opportunity_accounting.csv",
+    "protected_hashes_preflight.json",
+    "robustness.json",
+    "run_manifest.json",
+    "selection.json",
+    "setup_state_rows.csv",
+    "snapshot_meta.json",
+    "stop_out_forensics.json"
+  ],
+  "reports": [
+    "BASELINE_REPRODUCTION.md",
+    "ENTRY_AND_STOP_PLANS.md",
+    "EXECUTIVE_SUMMARY.md",
+    "INTEGRITY_FINAL.md",
+    "PERFORMANCE_AND_ROBUSTNESS.md",
+    "PREFLIGHT.md",
+    "SETUP_ARRIVAL_CONFIRMATION.md",
+    "SETUP_DEFINITION.md",
+    "STOP_OUT_FORENSICS.md",
+    "VALIDATION_GATES.md"
+  ]
+}

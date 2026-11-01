@@ -1,0 +1,28 @@
+# Phase 5.31 — Audit Execution Log
+# Mode: READ-ONLY research
+# Host: webserver (Oracle VM)
+# Project root: /opt/tradingai
+
+## Actions Performed
+1. Inspected live processing contract from source (engine, scalp_engine, strategy, paper runner).
+2. Implemented isolated candle-by-candle replay harness (research-only).
+3. Executed candle-by-candle replay (NIFTY, BANKNIFTY).
+4. Generated deterministic test results.
+5. Generated comparison and reassessment artifacts.
+
+## Production Changes
+NONE.
+
+## Files Created (phase531_candle_replay_20261029_224500)
+- PHASE531_REPORT.md
+- LIVE_PROCESSING_CONTRACT.md
+- CANDLE_REPLAY_DESIGN.md
+- DETERMINISTIC_TEST_RESULTS.csv
+- CANDLE_BY_CANDLE_TRADE_LEDGER.csv
+- DAY_BY_DAY_VS_CANDLE_REPLAY_DIFF.csv
+- SIX_CASE_RECONCILIATION.csv
+- 245_ROW_REASSESSMENT.csv
+- PERFORMANCE_COMPARISON.csv
+- NO_LOOKAHEAD_AUDIT.md
+- PRODUCTION_UNCHANGED_CHECK.md
+- AUDIT_LOG.txt

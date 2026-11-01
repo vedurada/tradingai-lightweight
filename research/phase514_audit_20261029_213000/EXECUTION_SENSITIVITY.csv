@@ -1,0 +1,6 @@
+scenario,n,wins,losses,win_rate,total_points,profit_factor,avg_R,max_drawdown,max_consec_losses
+S1: Baseline (original),729,528,201,72.43,19210.95,3.47,0.794,442.4,6
+S2: One-candle-later entry,974,432,542,44.35,7167.92,1.25,0.073,3097.22,20
+S3: Slippage (1 point worse entry),729,528,201,72.43,19789.47,3.49,0.749,445.4,6
+S4: Transaction costs (0.5 pts/trade),729,528,201,72.43,18846.45,3.4,0.767,446.4,6
+S5: Skip Oct 15 (missing data day),717,518,199,72.25,18697.93,3.42,0.789,442.4,6

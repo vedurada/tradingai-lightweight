@@ -1,0 +1,6 @@
+guard,method,status,evidence
+Expiry/session-age,Isolated tests (Phase 5.22),PASS,12/12 tests
+Duplicate prevention,Code inspection,PASS,UNIQUE constraint + deterministic trade_id
+Overnight signal prevention,Code inspection,PASS,Cross-session check in expiry policy
+Open trade monitoring,Code inspection,PASS,monitor() independent
+Broker execution,Code inspection,PASS,No broker code path

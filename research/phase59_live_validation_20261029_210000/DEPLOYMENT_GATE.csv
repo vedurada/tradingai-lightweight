@@ -1,0 +1,14 @@
+blocker_id,description,severity,status,phase59_notes
+B1,Dirty working tree (1842 uncommitted files),HIGH,OPEN,No change — safe deployment not established
+B2,No production backup rehearsal,MEDIUM,OPEN,No change — documented only
+B3,Daily trade limit not implemented,MEDIUM,OPEN,No change
+B4,Systemd unit not enabled,MEDIUM,OPEN,No change
+B5,Feature flag not implemented,MEDIUM,OPEN,No change
+B6,Live timing not verified,HIGH,OPEN,Market closed — cannot verify
+B7,Candle ingestion delay,HIGH,RESOLVED,No change — historical evidence sufficient
+B8,Daily limit enforcement,MEDIUM,OPEN,No change
+B9,Integration tests,MEDIUM,RESOLVED,No change
+B10,Isolated test env,MEDIUM,RESOLVED,No change
+B11,CPR retirement,LOW,OPEN,No change
+B12,Rollback rehearsal,MEDIUM,OPEN,No change
+B13,Live-session latency,HIGH,OPEN,Market closed — cannot verify

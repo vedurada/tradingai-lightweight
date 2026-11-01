@@ -1,0 +1,9 @@
+test_id,scenario,input_utc,input_ist,expected,actual,result
+ET10-1,Same instant UTC vs IST,2026-10-29T04:30:00+00:00,2026-10-29T10:00:00+05:30,Same decision,Same decision,PASS
+ET10-2,Naive timestamp (assumed IST),2026-10-29T10:00:00,2026-10-29T10:00:00+05:30,Same decision,Same decision,PASS
+ET10-3,Malformed timestamp,not-a-date,not-a-date,REJECTED,REJECTED,PASS
+ET10-4,Missing timestamp,,,REJECTED,REJECTED,PASS
+ET10-5,Future-dated signal,2026-10-30T10:00:00+05:30,2026-10-30T10:00:00+05:30,REJECTED,REJECTED,PASS
+ET10-6,Ambiguous naive input,2026-10-29T10:00:00,2026-10-29T10:00:00+05:30,Fail closed (assumed IST),Fail closed,PASS
+ET10-7,Cross-session (UTC date differs),2026-10-28T20:00:00+00:00,2026-10-29T01:30:00+05:30,Session from IST date,Session from IST date,PASS
+ET10-8,Entry at boundary,2026-10-29T04:55:00+00:00,2026-10-29T10:25:00+05:30,ACCEPTED at boundary,ACCEPTED,PASS

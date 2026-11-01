@@ -1,0 +1,92 @@
+[
+  {
+    "block": 1,
+    "block_avg_r": null,
+    "block_max_dd_r": null,
+    "block_total_r": null,
+    "block_trades": 0,
+    "block_win_rate": null,
+    "n_sessions": 13,
+    "range": [
+      "2026-07-06",
+      "2026-07-22"
+    ],
+    "selected_model": null,
+    "selected_variant": null
+  },
+  {
+    "block": 2,
+    "block_avg_r": -0.36160049030688235,
+    "block_max_dd_r": 3.2392058836825663,
+    "block_total_r": -4.339205883682588,
+    "block_trades": 12,
+    "block_win_rate": 0.4166666666666667,
+    "n_sessions": 13,
+    "range": [
+      "2026-07-23",
+      "2026-08-10"
+    ],
+    "selected_model": "E",
+    "selected_variant": "5540e9162e"
+  },
+  {
+    "block": 3,
+    "block_avg_r": 0.7938766004714237,
+    "block_max_dd_r": 1.1000000000000005,
+    "block_total_r": 7.938766004714237,
+    "block_trades": 10,
+    "block_win_rate": 0.7,
+    "n_sessions": 13,
+    "range": [
+      "2026-08-11",
+      "2026-08-27"
+    ],
+    "selected_model": "E",
+    "selected_variant": "43185e86af"
+  },
+  {
+    "block": 4,
+    "block_avg_r": -0.31305820075373536,
+    "block_max_dd_r": 1.1,
+    "block_total_r": -1.8783492045224122,
+    "block_trades": 6,
+    "block_win_rate": 0.5,
+    "n_sessions": 12,
+    "range": [
+      "2026-08-28",
+      "2026-09-15"
+    ],
+    "selected_model": "E",
+    "selected_variant": "43185e86af"
+  },
+  {
+    "block": 5,
+    "block_avg_r": -0.8144561115385566,
+    "block_max_dd_r": 1.343368334615678,
+    "block_total_r": -2.44336833461567,
+    "block_trades": 3,
+    "block_win_rate": 0.0,
+    "n_sessions": 12,
+    "range": [
+      "2026-09-16",
+      "2026-10-01"
+    ],
+    "selected_model": "A",
+    "selected_variant": "b44e8894c0"
+  },
+  {
+    "block": 6,
+    "block_avg_r": 0.9034728988424443,
+    "block_max_dd_r": 1.1,
+    "block_total_r": 9.938201887266887,
+    "block_trades": 11,
+    "block_win_rate": 0.6363636363636364,
+    "n_sessions": 12,
+    "range": [
+      "2026-10-05",
+      "2026-10-21"
+    ],
+    "selected_model": "B",
+    "selected_variant": "aa8e713bd8"
+  }
+]

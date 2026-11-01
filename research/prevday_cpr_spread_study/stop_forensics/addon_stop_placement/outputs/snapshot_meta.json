@@ -1,0 +1,7 @@
+{
+  "snapshot_path": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/snapshot/tradingai_snapshot.db",
+  "snapshot_sha256": "1187d0eae268bdf3d6b71e0bcf88f02ebde8ad2a8e90ceb9aab4e4ff7b51f76b",
+  "source_sha256_at_snapshot": "40743da501edb0061211597ae3527f98aba60e96519507a4ff86c90a011d5544",
+  "method": "reused the parent study snapshot (read-only input, copied to a working copy); the live database was not read for this run",
+  "parent_snapshot_meta": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/outputs/snapshot_meta.json"
+}

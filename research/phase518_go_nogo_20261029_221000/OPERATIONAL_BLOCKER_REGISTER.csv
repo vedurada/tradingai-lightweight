@@ -1,0 +1,14 @@
+blocker_id,description,severity,status,phase518_notes
+B1,Dirty working tree (1842 files),HIGH,OPEN,No change
+B2,No production backup rehearsal,MEDIUM,OPEN,Documented only
+B3,Daily trade limit not implemented,MEDIUM,OPEN,Designed only
+B4,Systemd unit not enabled,MEDIUM,OPEN,No enabled unit
+B5,Feature flag not implemented,MEDIUM,OPEN,Designed only
+B6,Live timing not verified,HIGH,OPEN,Market closed
+B7,Candle ingestion delay,HIGH,RESOLVED,Historical evidence
+B8,Daily limit enforcement,MEDIUM,OPEN,Not coded
+B9,Integration tests,MEDIUM,RESOLVED,16/16 PASS
+B10,Isolated test env,MEDIUM,RESOLVED,Isolated DB
+B11,CPR retirement,LOW,OPEN,Active dependencies
+B12,Rollback rehearsal,MEDIUM,OPEN,Documented only
+B13,Live-session latency,HIGH,OPEN,Market closed

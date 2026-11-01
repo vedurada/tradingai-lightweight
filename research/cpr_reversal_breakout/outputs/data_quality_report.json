@@ -1,0 +1,230 @@
+{
+  "date_start": "2026-07-06",
+  "date_end": "2026-10-19",
+  "generated_from": "market_candles_5m (read-only)",
+  "structure": {
+    "duplicate_candles": 0,
+    "ohlc_violations": 0,
+    "timezone_offsets": {
+      "+05:30": 15361
+    },
+    "rows_not_marked_complete": 0
+  },
+  "coverage": {
+    "NIFTY": {
+      "sessions_with_data": 74,
+      "first_session": "2026-07-06",
+      "last_session": "2026-10-19",
+      "short_sessions": {
+        "2026-09-21": 73,
+        "2026-10-15": 73
+      },
+      "expected_session_days_without_data": [],
+      "data_on_non_session_days": [],
+      "first_candle_min": "2026-07-06T09:15:00+05:30",
+      "last_candle_max": "2026-10-19T15:25:00+05:30"
+    },
+    "BANKNIFTY": {
+      "sessions_with_data": 74,
+      "first_session": "2026-07-06",
+      "last_session": "2026-10-19",
+      "short_sessions": {
+        "2026-09-21": 73,
+        "2026-10-15": 73
+      },
+      "expected_session_days_without_data": [],
+      "data_on_non_session_days": [],
+      "first_candle_min": "2026-07-06T09:15:00+05:30",
+      "last_candle_max": "2026-10-19T15:25:00+05:30"
+    }
+  },
+  "option_history": {
+    "option_snapshots": {
+      "rows": 0,
+      "min": null,
+      "max": null
+    },
+    "option_contracts": {
+      "rows": 0,
+      "min": null,
+      "max": null
+    },
+    "historical_option_premiums_available": false,
+    "consequence": "UNAVAILABLE -> this run is an UNDERLYING (spot) signal study only; credit-spread P&L cannot be claimed from these inputs"
+  },
+  "pit_level_check": {
+    "levels_checked": 146,
+    "mismatches": 144,
+    "examples": [
+      {
+        "instrument": "NIFTY",
+        "date": "2026-07-08",
+        "full": {
+          "pp": 24411.5996,
+          "tc": 24439.8496,
+          "bc": 24383.3496,
+          "r1": 24473.699200000003,
+          "s1": 24292.999981250003,
+          "r2": 24592.29881875,
+          "s2": 24230.90038125,
+          "pdh": 24530.19921875,
+          "pdl": 24349.5,
+          "prev_close": 24355.099609375
+        },
+        "truncated": {
+          "pp": 24391.7832,
+          "tc": 24410.125,
+          "bc": 24373.4414,
+          "r1": 24493.515618750003,
+          "s1": 24253.367181250003,
+          "r2": 24631.9316375,
+          "s2": 24151.6347625,
+          "pdh": 24530.19921875,
+          "pdl": 24290.05078125,
+          "prev_close": 24355.099609375
+        }
+      },
+      {
+        "instrument": "NIFTY",
+        "date": "2026-07-09",
+        "full": {
+          "pp": 24001.3997,
+          "tc": 24053.5,
+          "bc": 23949.2995,
+          "r1": 24195.549400000004,
+          "s1": 23703.049400000004,
+          "r2": 24493.8997,
+          "s2": 23508.8997,
+          "pdh": 24299.75,
+          "pdl": 23807.25,
+          "prev_close": 23897.19921875
+        },
+        "truncated": {
+          "pp": 24078.2161,
+          "tc": 24168.7246,
+          "bc": 23987.7077,
+          "r1": 24349.182200000003,
+          "s1": 23626.232981250003,
+          "r2": 24801.16531875,
+          "s2": 23355.26688125,
+          "pdh": 24530.19921875,
+          "pdl": 23807.25,
+          "prev_close": 23897.19921875
+        }
+      },
+      {
+        "instrument": "NIFTY",
+        "date": "2026-07-10",
+        "full": {
+          "pp": 24013.9499,
+          "tc": 24029.9746,
+          "bc": 23997.9251,
+          "r1": 24101.300190625,
+          "s1": 23894.550190625,
+          "r2": 24220.6999,
+          "s2": 23807.1999,
+          "pdh": 24133.349609375,
+          "pdl": 23926.599609375,
+          "prev_close": 23981.900390625
+        },
+        "truncated": {
+          "pp": 24106.4499,
+          "tc": 24168.7246,
+          "bc": 24044.1751,
+          "r1": 24405.6498,
+          "s1": 23682.70058125,
+          "r2": 24829.39911875,
+          "s2": 23383.50068125,
+          "pdh": 24530.19921875,
+          "pdl": 23807.25,
+          "prev_close": 23981.900390625
+        }
+      },
+      {
+        "instrument": "NIFTY",
+        "date": "2026-07-13",
+        "full": {
+          "pp": 24188.2839,
+          "tc": 24199.9671,
+          "bc": 24176.6006,
+          "r1": 24251.517018749997,
+          "s1": 24148.417409374997,
+          "r2": 24291.383509375,
+          "s2": 24085.184290625,
+          "pdh": 24228.150390625,
+          "pdl": 24125.05078125,
+          "prev_close": 24211.650390625
+        },
+        "truncated": {
+          "pp": 24183.0332,
+          "tc": 24197.3418,
+          "bc": 24168.7246,
+          "r1": 24558.816400000003,
+          "s1": 23835.867181250003,
+          "r2": 24905.98241875,
+          "s2": 23460.08398125,
+          "pdh": 24530.19921875,
+          "pdl": 23807.25,
+          "prev_close": 24211.650390625
+        }
+      },
+      {
+        "instrument": "NIFTY",
+        "date": "2026-07-14",
+        "full": {
+          "pp": 24156.3665,
+          "tc": 24182.4831,
+          "bc": 24130.25,
+          "r1": 24311.883390625,
+          "s1": 24053.082609375,
+          "r2": 24415.16728125,
+          "s2": 23897.56571875,
+          "pdh": 24259.650390625,
+          "pdl": 24000.849609375,
+          "prev_close": 24208.599609375
+        },
+        "truncated": {
+          "pp": 24182.0163,
+          "tc": 24195.3079,
+          "bc": 24168.7246,
+          "r1": 24556.7826,
+          "s1": 23833.83338125,
+          "r2": 24904.96551875,
+          "s2": 23459.06708125,
+          "pdh": 24530.19921875,
+          "pdl": 23807.25,
+          "prev_close": 24208.599609375
+        }
+      }
+    ],
+    "verdict": "FAIL"
+  },
+  "sources": [
+    {
+      "source": "yfinance",
+      "data_state": "LIVE",
+      "n": 6663,
+      "mn": "2026-07-29T09:25:00+05:30",
+      "mx": "2026-10-19T15:25:00+05:30"
+    },
+    {
+      "source": "yfinance-backfill",
+      "data_state": "LIVE",
+      "n": 8698,
+      "mn": "2026-07-06T09:15:00+05:30",
+      "mx": "2026-09-25T09:15:00+05:30"
+    }
+  ],
+  "verdict": {
+    "issues": [
+      "NIFTY: short sessions {'2026-09-21': 73, '2026-10-15': 73}",
+      "BANKNIFTY: short sessions {'2026-09-21': 73, '2026-10-15': 73}",
+      "point-in-time level check FAILED",
+      "NO historical option premiums -> credit-spread P&L test not executable (labelled limitation)"
+    ],
+    "blocking": [
+      "point-in-time level check FAILED"
+    ],
+    "status": "PASS_WITH_LIMITATIONS"
+  }
+}

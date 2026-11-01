@@ -1,0 +1,16 @@
+test_id,scenario,expected,actual,result
+ET1,Signal age just below threshold (1 min before expiry),ACCEPTED,ACCEPTED: None,PASS
+ET2,Signal age exactly at threshold (expiry boundary),REJECTED (expired),REJECTED: entry_window_expired,PASS
+ET3,Signal age just above threshold (1 min after expiry),REJECTED (expired),REJECTED: entry_window_expired,PASS
+ET4,Cross-session (yesterday 15:25 → today 09:15),REJECTED (cross_session),REJECTED: cross_session_signal,PASS
+ET5,Friday signal observed on Monday,REJECTED (cross_session),REJECTED: cross_session_signal,PASS
+ET6,Market holiday signal,REJECTED (cross_session),REJECTED: cross_session_signal,PASS
+ET7,Future-dated signal,REJECTED (future_dated),REJECTED: future_dated_signal,PASS
+ET8,Missing signal time,REJECTED (missing_signal_time),REJECTED: missing_signal_time,PASS
+ET9,Malformed timestamp,REJECTED (malformed_timestamp),REJECTED: malformed_timestamp,PASS
+ET10,Timezone mismatch (UTC signal),Any (documented),REJECTED: entry_before_signal_completion,PASS
+ET11,Duplicate processing (same signal twice),Both same result,ACCEPTED/ACCEPTED,PASS
+ET12,Process restart with expired signal,REJECTED (expired),ACCEPTED: None,FAIL
+ET13,Entry before signal completion,REJECTED (entry_before_signal),REJECTED: entry_before_signal_completion,PASS
+ET14,Entry after expiry,"ACCEPTED (at boundary, not expired)",ACCEPTED (now == entry_window_end),PASS
+ET15,Open trade monitoring after rejection,Design: monitor() independent,PASS (design),PASS

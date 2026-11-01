@@ -1,0 +1,82 @@
+[
+  {
+    "test_id": "FF1",
+    "scenario": "Flag missing \u2192 default (preserve current HLC behavior)",
+    "expected": "True (HLC)",
+    "actual": "True",
+    "result": "PASS",
+    "method": "Executed"
+  },
+  {
+    "test_id": "FF2",
+    "scenario": "Flag=false \u2192 CPR mode",
+    "expected": "False (CPR)",
+    "actual": "False",
+    "result": "PASS",
+    "method": "Executed"
+  },
+  {
+    "test_id": "FF3",
+    "scenario": "Flag=true \u2192 HLC mode",
+    "expected": "True (HLC)",
+    "actual": "True",
+    "result": "PASS",
+    "method": "Executed"
+  },
+  {
+    "test_id": "FF4",
+    "scenario": "Invalid flag \u2192 fail safe to default",
+    "expected": "True (HLC)",
+    "actual": "True",
+    "result": "PASS",
+    "method": "Executed"
+  },
+  {
+    "test_id": "FF5",
+    "scenario": "Empty flag \u2192 default",
+    "expected": "True (HLC)",
+    "actual": "True",
+    "result": "PASS",
+    "method": "Executed"
+  },
+  {
+    "test_id": "FF6",
+    "scenario": "Flag=0 \u2192 CPR mode",
+    "expected": "False (CPR)",
+    "actual": "False",
+    "result": "PASS",
+    "method": "Executed"
+  },
+  {
+    "test_id": "FF7",
+    "scenario": "Flag=1 \u2192 HLC mode",
+    "expected": "True (HLC)",
+    "actual": "True",
+    "result": "PASS",
+    "method": "Executed"
+  },
+  {
+    "test_id": "FF8",
+    "scenario": "Both signal functions exist",
+    "expected": "Both exist",
+    "actual": "Both exist",
+    "result": "PASS",
+    "method": "Code inspection"
+  },
+  {
+    "test_id": "FF9",
+    "scenario": "evaluate() uses _hlc_only_mode",
+    "expected": "Uses flag",
+    "actual": "Uses flag: True",
+    "result": "PASS",
+    "method": "Code inspection"
+  },
+  {
+    "test_id": "FF10",
+    "scenario": "No broker execution in evaluate()",
+    "expected": "No broker keywords",
+    "actual": "Broker keywords: False",
+    "result": "PASS",
+    "method": "Code inspection"
+  }
+]

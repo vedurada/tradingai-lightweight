@@ -1,0 +1,2 @@
+baseline manifest -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/outputs/baseline_manifest.json
+  head=879c9769a3e9118014f04173a643466d0197ae16 branch=production-2026-10-01 status_lines=323 pids=193117,212809,4085944

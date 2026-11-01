@@ -1,0 +1,16 @@
+integrity -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/outputs/integrity.json
+  head_unchanged                         PASS
+  branch_unchanged                       PASS
+  live_db_unchanged                      PASS
+  live_db_main_file_unchanged            PASS
+  live_db_content_unchanged_except_live_cache PASS
+  same_service_pids                      PASS
+  no_service_restart                     PASS
+  snapshot_unchanged                     PASS
+  protected_files_unchanged              PASS
+  git_no_removals                        PASS
+  git_no_status_changes                  PASS
+  git_additions_inside_study_tree        PASS
+  no_artifacts_outside_run_dir           PASS
+  study_never_opened_the_live_db         PASS
+  ALL CHECKS: PASS

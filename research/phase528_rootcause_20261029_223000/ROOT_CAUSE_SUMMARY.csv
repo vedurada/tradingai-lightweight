@@ -1,0 +1,4 @@
+category,count,description,evidence
+MATCHED,729,Present in authoritative JSON ledger,All 729 JSON trades found in CSV
+CLOSE_ENTRY_TIME,245,Entry time within 1 hour of JSON trade on same day/instrument,Candle-by-candle processing + last-candle detection
+TOTAL_CSV,974,Total CSV rows,729 + 245 = 974

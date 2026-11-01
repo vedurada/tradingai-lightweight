@@ -1,0 +1,56 @@
+{
+  "study": "addon_stop_placement",
+  "parent_study": "stop_forensics (phase 2)",
+  "spec": "spec_addon.md (pre-registered)",
+  "parameters": {
+    "EPS_PCT": 0.0002,
+    "Z": 0.001,
+    "SWING_LOOKBACK": 20,
+    "SWING_M": 2,
+    "K_VOL": 0.5,
+    "VOL_MIN_BARS": 3,
+    "MIN_STOP_PCT": 0.0025,
+    "MAX_STOP_PCT": 0.015,
+    "PULLBACK_MULT": 1.0
+  },
+  "target_pct": 0.02,
+  "date_range": [
+    "2026-07-06",
+    "2026-10-21"
+  ],
+  "instruments": [
+    "NIFTY",
+    "BANKNIFTY"
+  ],
+  "counts": {
+    "signals": 129,
+    "record_rows": 774,
+    "excluded_missing_eod": 0,
+    "per_variant": {
+      "B0": 129,
+      "S1": 8,
+      "S2": 18,
+      "S3": 27,
+      "S4": 55,
+      "S5": 10
+    }
+  },
+  "selected_variant": "S4",
+  "integrity_ok": true,
+  "verdict": "INCONCLUSIVE",
+  "oos_independence": "PARTIAL",
+  "eligible_for_human_review": false,
+  "production_changed": false,
+  "db_env_used_by_research": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/snapshot/working_copy.db",
+  "snapshot_sha256": "1187d0eae268bdf3d6b71e0bcf88f02ebde8ad2a8e90ceb9aab4e4ff7b51f76b",
+  "dq_status": "PASS",
+  "b0_equivalence": {
+    "n_baseline": 129,
+    "n_b0_rows": 129,
+    "n_mismatches": 0,
+    "mismatches": [],
+    "max_abs_realized_r_diff": 0.0001,
+    "tolerance": "exit reason and price exact; realized R within 1e-3 (4th decimal rounding only)",
+    "pass": true
+  }
+}

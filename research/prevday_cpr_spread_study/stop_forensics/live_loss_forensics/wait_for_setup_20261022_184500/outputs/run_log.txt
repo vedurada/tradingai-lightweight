@@ -1,0 +1,25 @@
+rows: 1698 live rows: 36
+
+== A_RECORDED_BOOK signals: 150
+  V0_BASELINE                  traded 148 skipped   2 W/L  96/51  wr  64.9% totalR   37.527 netR   22.727 dR      0.0 winLost   0 lossSaved   0 p None
+  V1_WAIT_SETUP                traded  66 skipped  84 W/L  45/21  wr  68.2% totalR   16.272 netR    9.672 dR  -21.255 winLost   0 lossSaved   3 p 0.0549
+  V1X_WAIT_SETUP_NO_EXPIRY     traded  94 skipped  56 W/L  66/28  wr  70.2% totalR   18.826 netR    9.426 dR  -18.701 winLost   0 lossSaved  13 p 0.4744
+  V2_WAIT_CONFIRM              traded  52 skipped  98 W/L  40/12  wr  76.9% totalR   14.494 netR    9.294 dR  -23.033 winLost   0 lossSaved   6 p 0.0
+  V3_WAIT_CONFIRM_RETEST       traded  36 skipped 114 W/L  23/13  wr  63.9% totalR     6.59 netR     2.99 dR  -30.937 winLost   0 lossSaved   2 p 0.0
+  V4_NO_CHASE_FLIP             traded 126 skipped  24 W/L  79/46  wr  62.7% totalR   29.616 netR   17.016 dR   -7.911 winLost  29 lossSaved  25 p 0.1456
+
+== B_CURRENT_ENGINE_REPLAY signals: 133
+  V0_BASELINE                  traded 131 skipped   2 W/L  98/32  wr  74.8% totalR   55.502 netR   42.402 dR      0.0 winLost   0 lossSaved   0 p None
+  V1_WAIT_SETUP                traded  67 skipped  66 W/L  53/14  wr  79.1% totalR   26.543 netR   19.843 dR  -28.959 winLost   0 lossSaved   1 p 0.039
+  V1X_WAIT_SETUP_NO_EXPIRY     traded  83 skipped  50 W/L  66/17  wr  79.5% totalR   28.437 netR   20.137 dR  -27.065 winLost   0 lossSaved   7 p 0.5727
+  V2_WAIT_CONFIRM              traded  53 skipped  80 W/L  44/9   wr  83.0% totalR   24.072 netR   18.772 dR   -31.43 winLost   1 lossSaved   2 p 0.0
+  V3_WAIT_CONFIRM_RETEST       traded  36 skipped  97 W/L  30/6   wr  83.3% totalR   12.725 netR    9.125 dR  -42.777 winLost   0 lossSaved   1 p 0.0
+  V4_NO_CHASE_FLIP             traded 119 skipped  14 W/L  78/40  wr  65.5% totalR   26.411 netR   14.511 dR  -29.091 winLost  23 lossSaved  14 p 0.0163
+
+== live trades
+  V0_BASELINE                  traded  6 skipped  0 W/L  2/4  totalR  -3.011
+  V1_WAIT_SETUP                traded  3 skipped  3 W/L  0/3  totalR    -3.0
+  V1X_WAIT_SETUP_NO_EXPIRY     traded  4 skipped  2 W/L  0/4  totalR    -4.0
+  V2_WAIT_CONFIRM              traded  2 skipped  4 W/L  0/2  totalR    -2.0
+  V3_WAIT_CONFIRM_RETEST       traded  2 skipped  4 W/L  0/2  totalR    -2.0
+  V4_NO_CHASE_FLIP             traded  6 skipped  0 W/L  6/0  totalR   10.75

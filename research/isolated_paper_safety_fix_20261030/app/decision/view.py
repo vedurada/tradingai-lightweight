@@ -1,0 +1,496 @@
+"""Phase 5 normalized intraday decision view (READ-ONLY composer).
+
+Reuses validated engines, creates no new calculations and performs zero
+DB writes:
+- LiveEngine.evaluate(dry_run=True): session gate, completed-5m-candle
+  PIT rule, freshness gate, candle integrity, unified CPR-book firing
+  (same trigger math as backtest/paper; existing Trade/Wait/No-Trade
+  semantics).
+- CPR research fns (calculate_cpr, pivot_levels, classify_cpr,
+  classify_gap, is_virgin_cpr) over STORED candles only, previous
+  session only (never current/future session).
+- Read-only SELECTs for scenario conditions, daily lock, paper trades.
+
+Engine-state -> decision mapping (deterministic, documented):
+- QUALIFIED (+trade)            -> TRADE
+- LIVE-session NO_TRADE with developing structure
+  (no_cpr_trigger, entry_at_next_open)  -> WAIT
+- DAILY_TRADE_LIMIT_REACHED, risk/options failures,
+  STALE/NO_DATA/CLOSED/WEEKEND/PREMARKET -> NO TRADE (+status context)
+
+Bias is reported ONLY from engine evidence (qualified trade direction
+or CPR live-signal direction when computed from stored data). Missing
+data is UNAVAILABLE, never defaulted to NEUTRAL.
+
+EVENT-RISK OVERLAY (advisory, 2026-10-17): the scheduled-events calendar
+(app/market/events_calendar.py) is layered on top as an ADVISORY condition.
+It never changes entry/stop/target, never overrides the risk/lock/freshness
+gates, and never rewrites the evidence-based bias. It adds:
+- event_risk: risk level / label / reasons for the instrument;
+- event_confirmation_required: an explicit-confirmation flag when a
+  high/medium-impact event is imminent;
+- upcoming_events: the dated events ahead (for display);
+- reason codes EVENT_RISK_HIGH / EVENT_RISK_MEDIUM / EVENT_CONFIRM_REQUIRED
+  and an explanation.confirmation caution line.
+"""
+from datetime import datetime
+from zoneinfo import ZoneInfo
+
+from app.core.db import get_conn
+from app.live.engine import (
+    LiveEngine, completed_candle_ts, session_state,
+    ST_PREMARKET, ST_CLOSED, ST_WEEKEND, ST_NO_DATA, ST_STALE,
+    ST_NO_TRADE, ST_QUALIFIED,
+)
+from app.market.nse_calendar import holiday_name
+from app.market.events_calendar import event_risk
+
+_IST = ZoneInfo('Asia/Kolkata')
+VALID = ('NIFTY', 'BANKNIFTY', 'INDIA_VIX')
+LATE_SESSION_FROM = '15:00'
+
+WAIT_REASONS = frozenset({
+    'no_active_scenario', 'scenario_not_matched', 'scenario_watch',
+    'scenario_partially_matched', 'entry_at_next_open',
+    'warmup_wait_first_candle',
+})
+
+
+def _prev_session_ohlc(conn, instrument, today_iso):
+    row = conn.execute(
+        'SELECT substr(timestamp,1,10) AS d, MAX(high) AS h, MIN(low) AS l '
+        'FROM market_candles_5m WHERE instrument_id=? AND substr(timestamp,1,10)<? '
+        'GROUP BY d ORDER BY d DESC LIMIT 1',
+        (instrument, today_iso)).fetchone()
+    if not row or row['h'] is None:
+        return None
+    last = conn.execute(
+        'SELECT close FROM market_candles_5m WHERE instrument_id=? '
+        'AND substr(timestamp,1,10)=? ORDER BY timestamp DESC LIMIT 1',
+        (instrument, row['d'])).fetchone()
+    if not last:
+        return None
+    return {'date': row['d'], 'high': float(row['h']),
+            'low': float(row['l']), 'close': float(last['close'])}
+
+
+
+def _day_open(conn, instrument, today_iso):
+    """Today's first stored candle open (read-only). None when absent."""
+    try:
+        r = conn.execute(
+            'SELECT open FROM market_candles_5m WHERE instrument_id=? '
+            'AND substr(timestamp,1,10)=? ORDER BY timestamp ASC LIMIT 1',
+            (instrument, today_iso)).fetchone()
+        return float(r['open']) if r and r['open'] is not None else None
+    except Exception:
+        return None
+
+
+def _cpr_block(conn, instrument, today_iso, ref_price):
+    """Previous-session CPR + pivots + gap + virgin state. None-safe."""
+    from app.research.cpr_strategy_engine import (
+        calculate_cpr, pivot_levels, classify_cpr, classify_gap,
+        is_virgin_cpr)
+    prev = _prev_session_ohlc(conn, instrument, today_iso)
+    if not prev:
+        return {'available': False, 'reason': 'CPR_DATA_UNAVAILABLE'}, ['CPR_DATA_UNAVAILABLE']
+    cpr = calculate_cpr(prev['high'], prev['low'], prev['close'])
+    piv = pivot_levels(prev['high'], prev['low'], cpr['pp'])
+    ctype = classify_cpr(cpr['width_pct'])
+    codes = [f'CPR_{ctype}']
+    day_open_px = _day_open(conn, instrument, today_iso)
+    gap_pts, gap_dir = None, None
+    # FIX 2026-09-28: overnight gap is day-open vs prev close (fixed after open).
+    # Live-price drift is day-change, not gap. Fall back to live price pre-open.
+    gap_base = day_open_px if day_open_px is not None else (float(ref_price) if ref_price else None)
+    if gap_base is not None:
+        gap_pts = round(float(gap_base) - prev['close'], 2)
+        gap_dir = classify_gap(gap_pts)
+        codes.append(f'GAP_{gap_dir}' if gap_dir in ('BULLISH', 'BEARISH') else 'GAP_FLAT')
+    pos, pos_code = None, None
+    if ref_price:
+        p = float(ref_price)
+        if p > cpr['tc']:
+            pos, pos_code = 'ABOVE_TC', 'PRICE_ABOVE_TC'
+        elif p < cpr['bc']:
+            pos, pos_code = 'BELOW_BC', 'PRICE_BELOW_BC'
+        else:
+            pos, pos_code = 'INSIDE_CPR', 'PRICE_INSIDE_CPR'
+        codes.append(pos_code)
+    virgin = None
+    try:
+        today = conn.execute(
+            'SELECT MAX(high) AS h, MIN(low) AS l FROM market_candles_5m '
+            'WHERE instrument_id=? AND substr(timestamp,1,10)=?',
+            (instrument, today_iso)).fetchone()
+        if today and today['h'] is not None:
+            virgin = bool(is_virgin_cpr(float(today['h']), float(today['l']),
+                                        cpr['tc'], cpr['bc']))
+            codes.append('VIRGIN_CPR' if virgin else 'CPR_TESTED')
+    except Exception:
+        virgin = None
+    return {'available': True, 'session': prev['date'],
+            'pivot': cpr['pp'], 'bc': cpr['bc'], 'tc': cpr['tc'],
+            'width_pct': cpr['width_pct'], 'cpr_type': ctype,
+            's1': round(piv['s1'], 2), 's2': round(piv['s2'], 2),
+            'r1': round(piv['r1'], 2), 'r2': round(piv['r2'], 2),
+            'prev_high': prev['high'], 'prev_low': prev['low'],
+            'prev_close': prev['close'], 'gap_points': gap_pts,
+            'gap_direction': gap_dir, 'price_position': pos,
+            'virgin': virgin, 'day_open': day_open_px}, codes
+
+
+def _scenario_conditions(conn, instrument, as_of_ts):
+    try:
+        from app.scenarios.engine import ScenarioEngine
+        sc = ScenarioEngine()
+        sc.conn.close()
+        sc.conn = conn
+        active = sc.get_scenario_for_timestamp(instrument, as_of_ts)
+    except Exception:
+        return None
+    if not active or not active.get('candidate'):
+        return None
+    import json
+    cand = active['candidate']
+    def _j(k):
+        try:
+            return json.loads(cand.get(k) or '{}')
+        except Exception:
+            return {}
+    return {'scenario_type': cand.get('scenario_type'),
+            'status': cand.get('status'),
+            'confidence': cand.get('confidence'),
+            'required': _j('required_conditions'),
+            'confirmation': _j('confirmation_conditions'),
+            'invalidation': _j('invalidation_conditions'),
+            'match_state': (active.get('match') or {}).get('match_state'),
+            'match_evidence': (active.get('match') or {}).get('evidence')}
+
+
+def map_decision(state, session, reasons, has_trade, lock_consumed):
+    """Pure engine-state -> TRADE/WAIT/NO TRADE mapping (no I/O, testable).
+
+    Extracted verbatim from build_decision so every combination (including
+    NIFTY=TRADE while BANKNIFTY=WAIT) is unit-testable without mocks.
+    """
+    reasons = list(reasons or [])
+    if state == ST_QUALIFIED and has_trade:
+        return 'TRADE', ['SETUP_QUALIFIED']
+    if lock_consumed or 'DAILY_TRADE_LIMIT_REACHED' in reasons:
+        return 'NO TRADE', ['DAILY_TRADE_LIMIT_REACHED']
+    if state in (ST_STALE,):
+        return 'NO TRADE', ['DATA_STALE']
+    if state in (ST_NO_DATA, ST_CLOSED, ST_WEEKEND):
+        return 'NO TRADE', [f'SESSION_{session}']
+    if state == ST_PREMARKET:
+        return 'NO TRADE', ['PREMARKET_NO_LIVE_SETUP']
+    if state == ST_NO_TRADE and any(r in WAIT_REASONS for r in reasons):
+        return 'WAIT', [r.upper() for r in reasons if r in WAIT_REASONS]
+    return 'NO TRADE', [r.upper()[:64] for r in reasons] or ['NO_SETUP']
+
+
+VETO_LOG = '/opt/tradingai/data/mistake_veto_log.jsonl'
+
+
+def _vetoed_today(inst, today_iso, trade):
+    """Matching live loss-memory veto for today+instrument, else None.
+
+    Additive consistency hook (2026-10-17): mistake_guard.py records vetoes in
+    data/mistake_veto_log.jsonl. The decision API must reflect them so that
+    /api/decision, the dashboards and tg_alerts all agree -- previously a veto
+    suppressed only the alert while the API still served TRADE. Read-only, and
+    only invoked when a trade would otherwise be served.
+    """
+    import json
+    if not trade:
+        return None
+    direction = trade.get('direction')
+    try:
+        with open(VETO_LOG) as f:
+            for line in f:
+                line = line.strip()
+                if not line:
+                    continue
+                try:
+                    rec = json.loads(line)
+                except ValueError:
+                    continue
+                if (rec.get('date') == today_iso
+                        and rec.get('instrument') == inst
+                        and (rec.get('trade') or {}).get('direction') == direction):
+                    return rec
+    except OSError:
+        return None
+    return None
+
+
+def build_decision(instrument, now=None):
+    """Normalized read-only decision object. Never writes, never fabricates."""
+    inst = (instrument or '').upper()
+    if inst not in VALID:
+        raise ValueError('UNKNOWN_INSTRUMENT')
+    now_ist = now or datetime.now(_IST)
+    if now_ist.tzinfo is None:
+        now_ist = now_ist.replace(tzinfo=_IST)
+    today_iso = now_ist.date().isoformat()
+
+    eng = LiveEngine()
+    st = eng.evaluate(inst, now=now_ist, dry_run=True)
+    state = st.get('state')
+    reasons = list(st.get('reasons') or [])
+    trade = st.get('trade')
+    session = st.get('session', state)
+
+    price = st.get('decision_price', st.get('live_price'))
+    codes = []
+
+    # --- data status (LIVE/RECENT/STALE/UNAVAILABLE) ---
+    if state in (ST_CLOSED, ST_WEEKEND):
+        data_status = 'UNAVAILABLE'
+    elif state == ST_STALE or st.get('quote_state') == 'STALE':
+        data_status = 'STALE'  # STALE quote is STALE always, even when QUALIFIED (never LIVE)
+    elif state in (ST_NO_DATA,) or price is None:
+        data_status = 'UNAVAILABLE'
+    elif state == ST_PREMARKET:
+        data_status = 'RECENT' if price is not None else 'UNAVAILABLE'
+    else:
+        data_status = 'LIVE'
+
+    # --- decision ---
+    lock_consumed = False
+    conn = get_conn()
+    try:
+        lk = conn.execute(
+            'SELECT status FROM daily_trade_locks WHERE instrument_id=? AND date=?',
+            (inst, today_iso)).fetchone()
+        lock_consumed = bool(lk and lk['status'] == 'CONSUMED')
+    except Exception:
+        lock_consumed = False
+
+    decision, map_codes = map_decision(state, session, reasons, trade is not None, lock_consumed)
+    codes.extend(map_codes)
+    # FAIL-CLOSED: a STALE quote never serves TRADE/LIVE. Data status is
+    # STALE always; a QUALIFIED engine state with a stale quote degrades
+    # to NO TRADE + DATA_STALE (frontend must say STALE, never LIVE).
+    if st.get('quote_state') == 'STALE':
+        data_status = 'STALE'
+        if decision == 'TRADE':
+            decision, map_codes = 'NO TRADE', ['DATA_STALE']
+            codes = [c for c in codes if c != 'SETUP_QUALIFIED'] + map_codes
+
+    # LOSS-MEMORY VETO (consistency fix 2026-10-17): if the live guard vetoed
+    # this instrument's setup today, the API must NOT serve TRADE -- it must
+    # agree with the alert channel that skipped it.
+    if decision == 'TRADE' and _vetoed_today(inst, today_iso, trade):
+        decision, map_codes = 'NO TRADE', ['VETOED_BY_LOSS_MEMORY']
+        codes = [c for c in codes if c != 'SETUP_QUALIFIED'] + map_codes
+
+    # --- CPR block (previous session only) ---
+    try:
+        cpr, cpr_codes = _cpr_block(conn, inst, today_iso, price)
+    except Exception:
+        cpr, cpr_codes = {'available': False, 'reason': 'CPR_DATA_UNAVAILABLE'}, ['CPR_DATA_UNAVAILABLE']
+    codes.extend([c for c in cpr_codes if c not in codes])
+
+    # --- bias / regime / strategy ---
+    bias, regime, strategy, strat_dir = 'UNAVAILABLE', 'UNAVAILABLE', 'NONE', None
+    entry = stop = target = risk = reward = None
+    scen = None
+    try:
+        as_of = st.get('decision_timestamp') or st.get('now_ist')
+        scen = _scenario_conditions(conn, inst, as_of) if as_of else None
+    except Exception:
+        scen = None
+    if trade:
+        strat_dir = trade.get('direction')
+        bias = strat_dir or 'UNAVAILABLE'
+        regime = trade.get('scenario') or 'UNAVAILABLE'
+        strategy = trade.get('strategy') or 'NONE'
+        entry, stop, target = trade.get('entry'), trade.get('stop'), trade.get('target')
+        risk, reward = trade.get('max_risk'), trade.get('expected_reward')
+        if strat_dir in ('BULLISH', 'BEARISH', 'BULL', 'BEAR'):
+            codes.append(f'STRUCTURE_{strat_dir}')
+    elif scen and scen.get('match_state') == 'CONFIRMED':
+        regime = scen.get('scenario_type') or 'UNAVAILABLE'
+
+    # DISPLAY FALLBACK (owner-approved 2026-10-07): with no active trade and
+    # no CONFIRMED scenario both cells read UNAVAILABLE all session. Fill them
+    # from the SAME PIT market_state the live engine already computed — bias
+    # from its session trend, regime from its volatility/momentum character.
+    # Pure display composition of existing backend values (never a new signal,
+    # never a page-side estimate). Gated on a LIVE session with LIVE/RECENT
+    # data so a closed, stale or empty session keeps today's UNAVAILABLE
+    # display and the homepage's "Market Closed" / "Insufficient Data" labels;
+    # None-valued market_state fields still fail closed to UNAVAILABLE.
+    if session == 'LIVE' and data_status in ('LIVE', 'RECENT'):
+        _ms = st.get('market_state') or {}
+        _trend = _ms.get('trend')
+        _mom = _ms.get('momentum')
+        _vol = _ms.get('volatility')
+        if bias == 'UNAVAILABLE' and _trend in ('BULLISH', 'BEARISH', 'NEUTRAL'):
+            bias = _trend
+            codes.append('BIAS_SESSION_TREND')
+        if regime == 'UNAVAILABLE':
+            if _vol == 'HIGH':
+                regime = 'VOLATILE'
+                codes.append('REGIME_SESSION_VOLATILITY')
+            elif _trend and _mom:
+                _agree = ((_trend == 'BULLISH' and _mom == 'POSITIVE') or
+                          (_trend == 'BEARISH' and _mom == 'NEGATIVE'))
+                regime = 'TRENDING' if _agree else 'RANGING'
+                codes.append('REGIME_SESSION_TREND_MOMENTUM')
+
+    # --- scheduled-event risk overlay (advisory, never a gate) ---
+    # Composed from the curated events calendar; pure, no I/O. It annotates
+    # the decision and requires an explicit confirmation for imminent
+    # high/medium-impact events, but never rewrites bias or the decision.
+    try:
+        ev = event_risk(inst, now=now_ist)
+    except Exception:
+        ev = {'risk_level': 'NONE', 'risk_label': 'Event calendar unavailable',
+              'confirmation_required': False, 'bias_overlay': 'NEUTRAL',
+              'today_impact': [], 'pending': [], 'next_event': None,
+              'upcoming': [], 'reasons': [], 'coverage': {}}
+    event_level = ev.get('risk_level', 'NONE')
+    event_confirmation = bool(ev.get('confirmation_required'))
+    if event_level == 'HIGH':
+        codes.append('EVENT_RISK_HIGH')
+    elif event_level == 'MEDIUM':
+        codes.append('EVENT_RISK_MEDIUM')
+    elif event_level == 'LOW':
+        codes.append('EVENT_RISK_LOW')
+    if event_confirmation:
+        codes.append('EVENT_CONFIRM_REQUIRED')
+
+    # --- lifecycle: active paper trade (read-only) ---
+    # DISPLAY RULE (owner-ordered): a trade shows ACTIVE only when it was
+    # generated today (IST). Stale/test rows from prior days never surface.
+    active_trade = None
+    try:
+        pt = conn.execute(
+            'SELECT trade_id, strategy, direction, entry, stop, target, entry_time, status '
+            'FROM paper_trades WHERE instrument_id=? AND status IN (\'ACTIVE\',\'OPEN\') '
+            'ORDER BY entry_time DESC LIMIT 1', (inst,)).fetchone()
+        if pt:
+            today = datetime.now(_IST).date().isoformat()
+            if str(pt['entry_time'])[:10] == today:
+                active_trade = dict(pt)
+    except Exception:
+        active_trade = None
+    try:
+        conn.close()
+    except Exception:
+        pass
+
+    completed = st.get('completed_candle')
+    trigger = confirmation = entry_zone = invalidation = None
+    if decision == 'TRADE' and trade:
+        trigger = f"SMA20 bearish close confirmation; enter short at the next 5-minute open {entry}"
+        confirmation = "Completed close below session SMA20 at {}; SMA20={}".format(trade.get("signal_time") or completed, trade.get("sma20"))
+        entry_zone = f"Entered at the next candle open near {entry}"
+        invalidation = f"5-minute close beyond stop {stop}"
+    elif decision == 'WAIT':
+        trigger = 'Trigger not yet satisfied on the latest completed 5-minute candle'
+        confirmation = 'Awaiting confirmation'
+        entry_zone = 'No entry zone until confirmation'
+        invalidation = 'Setup invalid if price breaks against developing structure'
+
+    late = False
+    try:
+        late = session == 'LIVE' and now_ist.strftime('%H:%M') >= LATE_SESSION_FROM
+    except Exception:
+        late = False
+    if late:
+        codes.append('LATE_SESSION')
+
+    def _line(v):
+        return v if v not in (None, '') else 'data unavailable'
+
+    explanation = {
+        'market_bias': bias,
+        'structure': _structure_line(cpr, price, scen),
+        'strategy': strategy if strategy != 'NONE' else 'No validated strategy in current conditions',
+        'decision': decision,
+        'trigger': _line(trigger),
+        'confirmation': _line(confirmation),
+        'entry': _line(entry_zone),
+        'invalidation': _line(invalidation),
+        'target': _line(target),
+    }
+
+    # Event overlay on the confirmation line (advisory). When a high/medium
+    # impact event is imminent, the explicit confirmation an operator needs
+    # is a named event warning. The decision itself is never changed here.
+    _next_ev = ev.get('next_event') or {}
+    _ev_name = _next_ev.get('name')
+    _ev_date = _next_ev.get('date')
+    event_line = ev.get('risk_label') or 'No scheduled event risk in range'
+    if _ev_name:
+        event_line = f"{event_line} — next: {_ev_name} on {_ev_date}"
+    explanation['event_risk'] = event_line
+    if event_confirmation and decision in ('TRADE', 'WAIT'):
+        explanation['confirmation'] = f"{_line(confirmation)} · {event_line}. Explicit confirmation advised."
+
+    return {
+        'instrument': inst,
+        'timestamp': now_ist.isoformat(),
+        'price': price,
+        'change': st.get('change'),
+        'change_pct': st.get('change_pct'),
+        'quote_timestamp': st.get('quote_timestamp'),
+        'quote_age_seconds': st.get('quote_age_seconds'),
+        'data_status': data_status,
+        'session': session,
+        'engine_state': state,
+        'market_bias': bias,
+        'market_regime': regime,
+        'cpr': cpr,
+        'gap_direction': cpr.get('gap_direction'),
+        'gap_points': cpr.get('gap_points'),
+        'vwap_relation': (st.get('market_state') or {}).get('vwap_relation'),
+        'atr': None,
+        'volatility_state': (st.get('market_state') or {}).get('volatility'),
+        'structure': _structure_line(cpr, price, scen),
+        'strategy': strategy,
+        'strategy_direction': strat_dir,
+        'decision': decision,
+        'confidence': (scen or {}).get('confidence'),
+        'trigger': trigger,
+        'confirmation': confirmation,
+        'entry_zone': entry_zone,
+        'invalidation': invalidation,
+        'target': target,
+        'risk_pct': risk,
+        'reward_pct': reward,
+        'risk_reward': round(reward / risk, 2) if risk else None,
+        'reason_codes': codes,
+        'engine_reasons': reasons,
+        'event_risk': ev,
+        'event_risk_level': event_level,
+        'event_confirmation_required': event_confirmation,
+        'upcoming_events': ev.get('upcoming', []),
+        'daily_lock_consumed': lock_consumed,
+        'active_paper_trade': active_trade,
+        'trade': dict(trade) if trade else None,
+        'market_state': st.get('market_state'),
+        'quote_state': st.get('quote_state'),
+        'read_only': True,
+        'late_session': late,
+        'completed_candle': completed,
+        'explanation': explanation,
+    }
+
+
+def _structure_line(cpr, price, scen):
+    parts = []
+    if cpr.get('available') and price is not None:
+        pos = cpr.get('price_position')
+        parts.append(f"Price {pos.replace('_', ' ').lower()}" if pos else 'CPR computed')
+        parts.append(f"CPR {cpr['bc']}–{cpr['tc']} ({cpr['cpr_type']})")
+    else:
+        parts.append('CPR data unavailable')
+    if scen and scen.get('scenario_type'):
+        parts.append(f"scenario {scen['scenario_type']} ({scen.get('match_state', 'unknown')})")
+    return '; '.join(parts)

@@ -1,0 +1,58 @@
+# Phase 5.3 — Backup Manifest
+# Audit date: 2026-10-29
+# Host: webserver (Oracle VM)
+# Backup directory: /opt/tradingai/backups/phase53_hlc_isolation_20261029_202000/
+
+# Application source tree (complete /opt/tradingai/app/)
+# Frontend tree (complete /opt/tradingai/frontend/)
+# Configuration files
+# Database schema (schema.sql)
+# Cron entries
+# Systemd unit files
+# Phase 5.1 and 5.2 research artifacts
+
+# Note: This is a read-only audit. No files were actually backed up because
+# no production changes were made. The backup directory was not created.
+# If a backup were needed, the following files would be backed up:
+
+# HLC strategy files (HLC_REQUIRED):
+# app/research/scalp_engine.py
+# app/research/scalp_signal_store.py
+# app/research/scalp_validation.py
+# app/research/scalp_reconcile.py
+# app/strategies/scalp.py
+# scripts/paper_scalp_live.py
+# scripts/tg_alerts.py
+
+# Shared infrastructure files (SHARED_INFRASTRUCTURE):
+# app/market/provider.py
+# app/market/collector.py
+# app/market/cache.py
+# app/core/db.py
+# app/core/config.py
+# app/paper_trade/engine.py
+# app/paper_trade/performance.py
+# app/risk/engine.py
+# app/scenarios/engine.py
+# app/api/app.py
+# app/decision/view.py
+
+# Legacy strategy files (UNRELATED_STRATEGY):
+# app/research/cpr_trigger_engine.py
+# app/research/cpr_strategy_engine.py
+# app/research/cpr_gap_walkforward_engine.py
+# app/research/backtest.py
+# app/research/replay.py
+# app/core/qualification.py
+# app/strategies/engine.py
+# scripts/paper_confluence.py
+# scripts/signal_articles.py
+# scripts/veto_paper_book.py
+# scripts/veto_score.py
+
+# Unknown/shared files (UNKNOWN_OR_SHARED):
+# app/research/contrarian_analyzer.py
+# app/research/prevday_price_action_engine.py
+# app/research/live_paper_replay.py
+# app/research/live_sim.py
+# app/research/scalp_alert_events.py

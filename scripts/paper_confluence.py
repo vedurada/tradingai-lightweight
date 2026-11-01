@@ -380,7 +380,7 @@ def log_scalp(backfill=False):
     now = dt.now(_IST).isoformat()
     conn = get_conn()
     total = 0
-    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+    for inst in ("NIFTY", "BANKNIFTY"):
         try:
             res = run_opens_range(inst, "2000-01-01", "2100-01-01", "plain")
         except Exception as e:
@@ -512,8 +512,8 @@ def render_page():
 
     # Show the same current-engine, session-only replay used by Historical Analysis.
     # Historical paper_align rows remain below as a clearly identified archive.
-    from app.research.cpr_trigger_engine import run_opens_range
-    replay_start = "2026-07-29"
+    from app.research.scalp_engine import run_opens_range
+    replay_start = "2026-07-06"
     end_conn = get_conn()
     end_row = end_conn.execute(
         "SELECT max(substr(timestamp,1,10)) FROM market_candles_5m "
@@ -527,16 +527,14 @@ def render_page():
     def replay_card(inst):
         r = current_replays[inst]
         flats = max(0, r["signals"] - r["wins"] - r["losses"])
-        skips = r.get("skipped", {})
         points = sum(float(t.get("points") or 0) for t in r.get("trades", []))
         return (f'<div class="card"><h3>{inst} — current-engine replay</h3><div class="kv">'
                 f'<dt>Sessions / trades</dt><dd>{r["days"]} / {r["signals"]}</dd>'
                 f'<dt>Wins / losses / flat</dt><dd>{r["wins"]} / {r["losses"]} / {flats}</dd>'
-                f'<dt>Engine-labeled win rate</dt><dd>{r["win_rate"]:.1f}%</dd>'
-                f'<dt>Gross R / net R</dt><dd>{r["total_R"]:.2f}R / {r["net_R"]:.2f}R</dd>'
+                f'<dt>Win rate</dt><dd>{r["win_rate"]:.1f}%</dd>'
+                f'<dt>Total R / avg R</dt><dd>{r["total_R"]:.2f}R / {r["avg_R"]:.3f}R</dd>'
                 f'<dt>Net spot points</dt><dd>{points:,.1f}</dd>'
-                f'<dt>Skipped sessions</dt><dd>{skips.get("skip_friday", 0)} Friday; '
-                f'{skips.get("missing_eod", 0)} missing 15:20 candle</dd></div></div>')
+                f'<dt>No-signal sessions</dt><dd>{r.get("no_signal_days", 0)}</dd></div></div>')
 
     def replay_ledger(inst):
         out = []
@@ -775,13 +773,13 @@ footer{{background:#0b1e3a;color:#94a3b8;text-align:center;font-size:.75rem;padd
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="TradingAI logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span class="tagline">Model Observations</span></div></div>
-<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Active signal rule:</b> NIFTY and BANKNIFTY: short-only after a completed 5-minute close below session SMA20; enter at the next candle open. The stop is 0.5% above entry, target 2% below, and any open position exits at 15:20 IST. No bullish signals are generated. Rule effective 2026-10-26; VIX remains a market gauge. See <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">the complete rules</a>.</div>
+<!--TAIRULE--><div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45"><b>Active signal rule:</b> NIFTY and BANKNIFTY: every qualifying scalp HLC 3-bar alignment — three consecutive 5-minute candles making higher highs, higher lows and higher closes (BULL) or lower highs, lower lows and lower closes (BEAR); enter at the next 5-minute candle open. The stop is the signal candle low minus 1.0 (BULL) or high plus 1.0 (BEAR); target is 1.5x risk; any open position exits at 15:25 IST. No fixed percentage cap. Rule effective 2026-10-26; VIX remains a market gauge. See <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">the complete rules</a>.</div>
 <nav class="main" aria-label="Primary"><a href="/">Home</a><a href="/indices/nifty.html">NIFTY Outlook</a><a href="/nifty-intraday-dashboard.html">NIFTY Intraday</a><a href="/indices/banknifty.html">BANKNIFTY Outlook</a><a href="/backtest.html">Historical Analysis</a><a href="/tools.html">Tools</a><a href="/learn.html">Learn</a><a href="/methodology.html">Methodology</a><a href="/signals.html">Signal Notes</a></nav>
 <div class="wrap">
 <h1>Historical Model Observations <span class="exp">HYPOTHETICAL</span></h1>
 <p class="note">Snapshot rendered {datetime.now(_IST).strftime('%Y-%m-%d %H:%M')} IST. The replay below is freshly calculated with the current engine and matches the session-only Historical Analysis rules for the same dates. The older journal is retained as a frozen archive.</p>
 <p class="note">Rows in the archived journal were recorded under the model version active at the time and are not recomputed; they may differ from the current-engine replay. See <a href="/methodology.html#strategy-rule">methodology</a> for the active rules.</p>
-<div class="ok"><h3>Replay and archive</h3><p>The current-engine replay below uses the short-only session SMA20 confirmation, next 5-minute open entries, subsequent-open exits, 0.5% stop, 2% target or the 15:20 open. Engine labels adverse outcomes up to 30 NIFTY points (60 BANKNIFTY points) as wins, matching Historical Analysis. Spot points and R are underlying-price measures, not option-premium P&amp;L. The archived observations are historical records, not the recomputed backtest.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/backtest.html">Historical Analysis</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+<div class="ok"><h3>Replay and archive</h3><p>The current-engine replay below uses the scalp HLC 3-bar rule: after three consecutive 5-minute candles make higher highs, higher lows and higher closes (BULL) or lower highs, lower lows and lower closes (BEAR), enter at the next 5-minute open; stop is the signal-candle low minus 1.0 (BULL) or high plus 1.0 (BEAR); target is 1.5x risk; any open position exits at the 15:25 close. No fixed percentage cap. Spot points and R are underlying-price measures, not option-premium P&amp;L. The archived observations are historical records, not the recomputed backtest.</p><p class="note">Rules: <a href="/methodology.html">methodology</a> · <a href="/backtest.html">Historical Analysis</a></p></div><div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
 <h2>Current-engine replay — {replay_start} through {replay_end}</h2>
 <div class="grid">{replay_card("NIFTY")}{replay_card("BANKNIFTY")}</div>
 <h3>NIFTY replay trades</h3>

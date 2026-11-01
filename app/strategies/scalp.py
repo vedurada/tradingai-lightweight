@@ -1,5 +1,6 @@
 """Scalp strategy adapter (HLC 3-bar alignment)."""
-from app.research.scalp_engine import first_trigger, today_state, run_opens_range
+from app.research.cpr_trigger_engine import first_trigger
+from app.research.scalp_engine import today_state, run_opens_range
 
 
 class ScalpEngine:

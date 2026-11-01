@@ -1,0 +1,3 @@
+instrument,trade_count,eod_losses,stop_exits,mae_max,mfe_max
+NIFTY,478,8,0,23.0,92.35
+BANKNIFTY,403,7,0,72.35,308.45

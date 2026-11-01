@@ -1,0 +1,9 @@
+{
+  "original_trades": 729,
+  "accepted_with_expiry": 723,
+  "rejected_with_expiry": 6,
+  "cross_session_rejected": 6,
+  "expired_rejected": 0,
+  "next_candle_accepted": 962,
+  "next_candle_rejected": 12
+}

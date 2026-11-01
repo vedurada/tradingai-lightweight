@@ -1,0 +1,58 @@
+[
+  {
+    "date": "2026-10-26",
+    "total": 2,
+    "traded": 1,
+    "expired": 0,
+    "ignored": 1,
+    "new": 0,
+    "entry_candle_closed": 0,
+    "provider_failures": 0,
+    "stale_rejections": 0,
+    "service_interruptions": 0,
+    "shadow_proposals": 0,
+    "shadow_recovered_missed": 0
+  },
+  {
+    "date": "2026-10-27",
+    "total": 17,
+    "traded": 17,
+    "expired": 0,
+    "ignored": 0,
+    "new": 0,
+    "entry_candle_closed": 0,
+    "provider_failures": 0,
+    "stale_rejections": 0,
+    "service_interruptions": 0,
+    "shadow_proposals": 0,
+    "shadow_recovered_missed": 0
+  },
+  {
+    "date": "2026-10-29",
+    "total": 10,
+    "traded": 0,
+    "expired": 10,
+    "ignored": 0,
+    "new": 0,
+    "entry_candle_closed": 10,
+    "provider_failures": 0,
+    "stale_rejections": 0,
+    "service_interruptions": 113,
+    "shadow_proposals": 0,
+    "shadow_recovered_missed": 0
+  },
+  {
+    "date": "2026-10-30",
+    "total": 20,
+    "traded": 10,
+    "expired": 10,
+    "ignored": 0,
+    "new": 0,
+    "entry_candle_closed": 10,
+    "provider_failures": 0,
+    "stale_rejections": 0,
+    "service_interruptions": 8,
+    "shadow_proposals": 0,
+    "shadow_recovered_missed": 0
+  }
+]

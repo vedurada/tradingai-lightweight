@@ -1,0 +1,70 @@
+{
+  "range": [
+    "2026-07-06",
+    "2026-10-21"
+  ],
+  "instruments": {
+    "NIFTY": {
+      "sessions": 75,
+      "first_session": "2026-07-06",
+      "last_session": "2026-10-21",
+      "bars_total": 5621,
+      "duplicate_timestamps": 0,
+      "timezone_offsets": [
+        "+05:30"
+      ],
+      "short_sessions": {
+        "2026-09-21": 73,
+        "2026-10-15": 73
+      },
+      "sessions_with_missing_bars": {
+        "2026-09-21": [
+          "15:20",
+          "15:25"
+        ],
+        "2026-10-15": [
+          "11:45",
+          "11:50"
+        ]
+      },
+      "ohlc_violations": {},
+      "data_on_weekend_days": [],
+      "data_on_non_session_days": [],
+      "complete_sessions": 73
+    },
+    "BANKNIFTY": {
+      "sessions": 75,
+      "first_session": "2026-07-06",
+      "last_session": "2026-10-21",
+      "bars_total": 5621,
+      "duplicate_timestamps": 0,
+      "timezone_offsets": [
+        "+05:30"
+      ],
+      "short_sessions": {
+        "2026-09-21": 73,
+        "2026-10-15": 73
+      },
+      "sessions_with_missing_bars": {
+        "2026-09-21": [
+          "15:20",
+          "15:25"
+        ],
+        "2026-10-15": [
+          "11:45",
+          "11:50"
+        ]
+      },
+      "ohlc_violations": {},
+      "data_on_weekend_days": [],
+      "data_on_non_session_days": [],
+      "complete_sessions": 73
+    }
+  },
+  "timezone_offsets_all": [
+    "+05:30"
+  ],
+  "expected_bars_per_session": 75,
+  "problems": [],
+  "status": "PASS"
+}

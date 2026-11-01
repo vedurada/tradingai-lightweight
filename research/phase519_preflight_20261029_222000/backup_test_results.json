@@ -1,0 +1,42 @@
+[
+  {
+    "test_id": "B1",
+    "scenario": "SQLite backup via backup API (from production)",
+    "expected": "Integrity OK, counts match, schema match",
+    "actual": "Integrity=ok, counts_match=True, schema_match=True",
+    "result": "PASS",
+    "evidence": "isolated_test/backup.db"
+  },
+  {
+    "test_id": "B2",
+    "scenario": "SQLite restore via backup API (to isolated DB)",
+    "expected": "Integrity OK, counts match, schema match",
+    "actual": "Integrity=ok, counts_match=True, schema_match=True",
+    "result": "PASS",
+    "evidence": "isolated_test/restore.db"
+  },
+  {
+    "test_id": "B3",
+    "scenario": "Simulated failed restore (corrupt DB)",
+    "expected": "Integrity check fails or raises",
+    "actual": "Failed restore detected: True",
+    "result": "PASS",
+    "evidence": "isolated_test/failed_restore.db"
+  },
+  {
+    "test_id": "B4",
+    "scenario": "Production DB unchanged after backup/restore test",
+    "expected": "Counts and integrity match pre-test",
+    "actual": "Integrity=ok, counts_match=True",
+    "result": "PASS",
+    "evidence": "database/tradingai.db"
+  },
+  {
+    "test_id": "B5",
+    "scenario": "Production DB not copied to test directory",
+    "expected": "No production DB in test dir",
+    "actual": "Production DB in test dir: False",
+    "result": "PASS",
+    "evidence": "/opt/tradingai/research/phase519_preflight_20261029_222000/isolated_test"
+  }
+]

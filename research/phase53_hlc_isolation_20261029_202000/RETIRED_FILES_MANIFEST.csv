@@ -1,0 +1,2 @@
+file_path,purpose,strategy,importers,retired,reason
+app/research/scalp_alert_events.py,P0.14 alert pipeline,HLC 3-Bar Scalp,Tests only,NO,Not wired into live runtime (in-memory only); low value but safe to retain

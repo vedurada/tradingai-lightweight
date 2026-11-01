@@ -1,0 +1,7 @@
+case_id,type,instrument,timestamp,direction,day_by_day_match,candle_replay_match,classification,notes
+SS-DFD2B7DFE704,signal,NIFTY,2026-10-27T11:10:00+05:30,BEAR,NO_MATCH,NO_MATCH,UNCLASSIFIABLE,Signal recorded live; replay produced no equivalent signal; intermediate-signal hypothesis unconfirmed
+SS-55CC79460843,signal,BANKNIFTY,2026-10-29T09:30:00+05:30,BULL,NO_MATCH,NO_MATCH,UNCLASSIFIABLE,Signal recorded live; replay produced no equivalent signal; one-candle offset hypothesis unconfirmed
+PT-6C19D5601E,trade,NIFTY,2026-10-27T11:15:00+05:30,BEAR,NO_MATCH,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction; entry time not exact in either model
+PT-1AFB06CC01,trade,NIFTY,2026-10-28T11:00:00+05:30,BULL,NO_MATCH,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction; entry time not exact in either model
+PT-58E0E20BA3,trade,NIFTY,2026-10-28T12:05:00+05:30,BULL,NO_MATCH,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction; entry time not exact in either model
+PT-7F4FF31032,trade,NIFTY,2026-10-28T12:50:00+05:30,BULL,NO_MATCH,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction; entry time not exact in either model

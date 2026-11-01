@@ -1,0 +1,3 @@
+scenario,delayed_entry,entry_slip,exit_slip,trades_evaluated,wins,losses,flats,excluded,net_points,profit_factor
+E,1.0,1.0,1.0,881,0,0,0,0,0,0
+F,2.0,2.0,2.0,881,0,0,0,0,0,0

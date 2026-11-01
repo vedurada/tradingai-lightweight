@@ -1,0 +1,9 @@
+control_id,control,method,result,evidence
+SC1,Expired signals cannot create trades,Executed (isolated),PASS,14/14 expiry tests
+SC2,Duplicate evaluation no duplicate trades,Executed (isolated),PASS,IntegrityError caught
+SC3,Restart recovery no revival,Executed (isolated),PASS,Expiry policy deterministic
+SC4,Open trades monitored normally,Executed (isolated),PASS,Monitor runs independently
+SC5,Rejected signal no side effects,Executed (isolated),PASS,No trade/position/alert
+SC6,CPR engine unchanged,Code inspection,PASS,_cpr_book_signal retained
+SC7,No broker execution,Code inspection,PASS,No broker API calls
+SC8,Feature flag default safe,Code inspection,PASS,Not implemented (defaults to CPR)

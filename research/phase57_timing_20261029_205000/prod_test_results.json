@@ -1,0 +1,146 @@
+[
+  {
+    "test_id": "EG1",
+    "func_called": "paper_scalp_live._entry_time_guard",
+    "scenario": "Valid timely entry (now within 5-min window)",
+    "expected": "ok, None",
+    "actual": "ok, None",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "EG2",
+    "func_called": "paper_scalp_live._entry_time_guard",
+    "scenario": "Expired entry (now > entry+5min)",
+    "expected": "expired, entry_candle_closed",
+    "actual": "expired, entry_candle_closed",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "EG3",
+    "func_called": "paper_scalp_live._entry_time_guard",
+    "scenario": "Missing entry time",
+    "expected": "failed, missing_entry_time",
+    "actual": "failed, missing_entry_time",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "EG4",
+    "func_called": "paper_scalp_live._entry_time_guard",
+    "scenario": "Bad entry time format",
+    "expected": "failed, bad_entry_time",
+    "actual": "failed, bad_entry_time",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "EG5",
+    "func_called": "paper_scalp_live._entry_time_guard",
+    "scenario": "Timezone-naive entry (assumes IST)",
+    "expected": "ok, None",
+    "actual": "ok, None",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "SS1",
+    "func_called": "scalp_engine._scan_signals",
+    "scenario": "Actual HLC signal scan on 6-candle bullish alignment",
+    "expected": "At least 1 signal",
+    "actual": "1 signals",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "SS2",
+    "func_called": "scalp_engine._scan_signals",
+    "scenario": "No signal on flat (no alignment) data",
+    "expected": "0 signals",
+    "actual": "0 signals",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "PT1",
+    "func_called": "PaperTradeEngine.create_paper_trade",
+    "scenario": "Actual paper trade creation in isolated DB",
+    "expected": "Trade ID returned (PT-*)",
+    "actual": "PT-CF3A897425",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "PT2",
+    "func_called": "PaperTradeEngine.create_paper_trade",
+    "scenario": "Duplicate trade prevention (same link_key)",
+    "expected": "Existing trade ID returned (idempotent)",
+    "actual": "PT-CF3A897425 (same as first trade, idempotent)",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "OP1",
+    "func_called": "SQL query (has_open_position logic)",
+    "scenario": "Open position detection after trade creation",
+    "expected": "PT-CF3A897425",
+    "actual": "PT-CF3A897425",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "OP2",
+    "func_called": "SQL query (has_open_position logic)",
+    "scenario": "No open position for different instrument",
+    "expected": "None",
+    "actual": "None",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "RS1",
+    "func_called": "scalp_signal_store.record_signal",
+    "scenario": "Signal recording in isolated DB",
+    "expected": "Signal ID returned",
+    "actual": "SS-C18D601BFDD6",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "RS2",
+    "func_called": "scalp_signal_store.record_signal",
+    "scenario": "Duplicate signal prevention (UNIQUE constraint)",
+    "expected": "Same ID returned (idempotent)",
+    "actual": "SS-C18D601BFDD6",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "LS1",
+    "func_called": "scalp_engine._live_signal",
+    "scenario": "Live signal with entry candle present",
+    "expected": "entry not None",
+    "actual": "entry=22820.0",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "LS2",
+    "func_called": "scalp_engine._live_signal",
+    "scenario": "Live signal without entry candle (entry computed)",
+    "expected": "entry_time computed",
+    "actual": "entry=None, entry_time=2026-10-29T09:45:00+05:30",
+    "result": "PASS",
+    "evidence": "Isolated test"
+  },
+  {
+    "test_id": "MON1",
+    "func_called": "PaperTradeEngine.monitor",
+    "scenario": "Monitor with open trade (no exit candle data)",
+    "expected": "No crash",
+    "actual": "No crash",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  }
+]

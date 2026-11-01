@@ -1,0 +1,9 @@
+test_id,check,method,expected,actual,result
+SI-1,paper_trades authoritative for active trades,Code inspection,paper_trades,Verified,PASS
+SI-2,paper_scalp is EOD-only,Code inspection,EOD backtest,Verified,PASS
+SI-3,Stable trade_id (deterministic),Code inspection,SHA-1 of link_key,Verified,PASS
+SI-4,Signal UNIQUE constraint,Code inspection,UNIQUE(instrument, candle_ts, direction),Verified,PASS
+SI-5,Duplicate trade prevention,Executed (isolated),IntegrityError caught,Verified,PASS
+SI-6,Rejected signal no side effects,Executed (isolated),No trade/position/alert,Verified,PASS
+SI-7,Restart recovery,Code inspection,recover_open_positions(),Verified,PASS
+SI-8,Live vs EOD exit consistency,Code inspection,Same exit logic,Verified,PASS

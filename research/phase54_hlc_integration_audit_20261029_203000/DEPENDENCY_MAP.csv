@@ -1,0 +1,39 @@
+component,file,classification,importers,frontend_refs,job_refs,shared_functionality,retire_status
+scalp_engine.py,app/research/scalp_engine.py,HLC_REQUIRED,"paper_scalp_live.py,tg_alerts.py,live/engine.py,api/app.py","Yes (scalp.html,nifty.html,banknifty.html)","Yes (paper_scalp_live,tg_alerts)",No,HLC_REQUIRED
+scalp_signal_store.py,app/research/scalp_signal_store.py,HLC_REQUIRED,"paper_scalp_live.py,tg_alerts.py","No","Yes (paper_scalp_live,tg_alerts)",No,HLC_REQUIRED
+scalp_validation.py,app/research/scalp_validation.py,HLC_REQUIRED,"paper_scalp_live.py","No","Yes (paper_scalp_live)",No,HLC_REQUIRED
+scalp_reconcile.py,app/research/scalp_reconcile.py,HLC_REQUIRED,"tg_alerts.py","No","Yes (tg_alerts --reconcile)",No,HLC_REQUIRED
+strategies/scalp.py,app/strategies/scalp.py,HLC_REQUIRED,"api/app.py","No","Yes (API routes)",Delegates to scalp_engine,HLC_REQUIRED
+paper_scalp_live.py,scripts/paper_scalp_live.py,HLC_REQUIRED,"N/A (standalone)","No","No (not in cron/systemd)",No,HLC_REQUIRED
+tg_alerts.py,scripts/tg_alerts.py,HLC_REQUIRED,"N/A (standalone)","Yes (alerts.html)","Yes (cron)","Yes (shared alerting)",HLC_REQUIRED
+live/engine.py,app/live/engine.py,HLC_REQUIRED+CPR,"api/app.py,decision/view.py","Yes (nifty.html,banknifty.html)","Yes (gunicorn)","Yes (shared decision pipeline)",SHARED_INFRASTRUCTURE
+cpr_trigger_engine.py,app/research/cpr_trigger_engine.py,UNRELATED_STRATEGY,"live/engine.py,paper_trade/engine.py,paper_confluence.py,signal_articles.py,engine_walkforward.py","Yes (backtest.html)","Yes (paper_confluence,signal_articles)",Yes (shared with paper_trade monitor),UNRELATED_STRATEGY
+cpr_strategy_engine.py,app/research/cpr_strategy_engine.py,UNRELATED_STRATEGY,"api/app.py (/api/strategy/cpr)","Yes (indices/*.html)","Yes (API endpoint)",Yes (intraday session),UNRELATED_STRATEGY
+cpr_gap_walkforward_engine.py,app/research/cpr_gap_walkforward_engine.py,UNRELATED_STRATEGY,"api/app.py (/api/backtest/cpr-walkforward)","No","Yes (API endpoint)",No,UNRELATED_STRATEGY
+backtest.py,app/research/backtest.py,UNRELATED_STRATEGY,"replay.py,live_sim.py","Yes (backtest.html)","Yes (replay.py,live_sim.py)",Yes (shared IntradayExitEngine),UNRELATED_STRATEGY
+replay.py,app/research/replay.py,UNRELATED_STRATEGY,"api/app.py","Yes (indices/*.html)","Yes (API endpoint)",Yes (replay engine),UNRELATED_STRATEGY
+qualification.py,app/core/qualification.py,SHARED_INFRASTRUCTURE,"live/engine.py,backtest.py","No","Yes (live engine constructor)",Yes (trade qualification),SHARED_INFRASTRUCTURE
+strategies/engine.py,app/strategies/engine.py,SHARED_INFRASTRUCTURE,"qualification.py","No","Yes (qualification)",Yes (credit spread selection),SHARED_INFRASTRUCTURE
+scenarios/engine.py,app/scenarios/engine.py,SHARED_INFRASTRUCTURE,"qualification.py","No","Yes (qualification)",Yes (scenario generation),SHARED_INFRASTRUCTURE
+risk/engine.py,app/risk/engine.py,SHARED_INFRASTRUCTURE,"qualification.py","No","Yes (qualification)",Yes (risk validation),SHARED_INFRASTRUCTURE
+paper_trade/engine.py,app/paper_trade/engine.py,HLC+CPR,"api/paper/scalp,monitor,tg_alerts","Yes (paper.html)","Yes (all)",Yes (shared persistence),SHARED_INFRASTRUCTURE
+paper_trade/performance.py,app/paper_trade/performance.py,HLC+CPR,"api endpoints","Yes (paper.html)","Yes (API)",Yes (shared performance),SHARED_INFRASTRUCTURE
+market/provider.py,app/market/provider.py,SHARED_INFRASTRUCTURE,"All","No","Yes (all)",Yes (shared data source),SHARED_INFRASTRUCTURE
+market/collector.py,app/market/collector.py,SHARED_INFRASTRUCTURE,"systemd timer","No","Yes (systemd timer)",Yes (shared data collection),SHARED_INFRASTRUCTURE
+market/cache.py,app/market/cache.py,SHARED_INFRASTRUCTURE,"provider.py","No","Yes (provider)",Yes (shared cache),SHARED_INFRASTRUCTURE
+core/db.py,app/core/db.py,SHARED_INFRASTRUCTURE,"All","No","Yes (all)",Yes (shared DB access),SHARED_INFRASTRUCTURE
+core/config.py,app/core/config.py,SHARED_INFRASTRUCTURE,"All","No","Yes (all)",Yes (shared config),SHARED_INFRASTRUCTURE
+api/app.py,app/api/app.py,HLC+CPR,"Frontend,tg_alerts","Yes (all)","Yes (all)",Yes (shared API),SHARED_INFRASTRUCTURE
+decision/view.py,app/decision/view.py,SHARED_INFRASTRUCTURE,"api","Yes (indices/*.html)","Yes (API)",Yes (shared decision),SHARED_INFRASTRUCTURE
+scalp_alert_events.py,app/research/scalp_alert_events.py,HLC (P0.14),"Tests only","No","No (not wired)",No (in-memory only),UNKNOWN_OR_SHARED
+live_paper_replay.py,app/research/live_paper_replay.py,CPR Replay,"Unknown","No","Unknown",Yes (replay helper),UNKNOWN_OR_SHARED
+live_sim.py,app/research/live_sim.py,CPR Sim,"Unknown","No","Unknown",Yes (simulation helper),UNKNOWN_OR_SHARED
+contrarian_analyzer.py,app/research/contrarian_analyzer.py,Contrarian,Unknown,"No","Unknown",Unknown,UNKNOWN_OR_SHARED
+prevday_price_action_engine.py,app/research/prevday_price_action_engine.py,Prev-day PA,Unknown,"No","Unknown",Unknown,UNKNOWN_OR_SHARED
+cpr_gap_walkforward_engine.py,app/research/cpr_gap_walkforward_engine.py,CPR Walkforward,"api/app.py","No","Yes (API endpoint)",No,UNRELATED_STRATEGY
+paper_confluence.py,scripts/paper_confluence.py,CPR Confluence,"N/A","No","Yes (cron 15:45)",No,UNRELATED_STRATEGY
+signal_articles.py,scripts/signal_articles.py,CPR Signals,"N/A","No","Yes (cron 15:45)",No,UNRELATED_STRATEGY
+veto_paper_book.py,scripts/veto_paper_book.py,CPR Veto,"N/A","No","Yes (cron 15:52)",No,UNRELATED_STRATEGY
+veto_score.py,scripts/veto_score.py,CPR Veto,"N/A","No","Yes (cron 15:52)",No,UNRELATED_STRATEGY
+engine_walkforward.py,scripts/engine_walkforward.py,CPR Walkforward,"N/A","No","No (manual)",No,UNRELATED_STRATEGY
+shadow_friday.py,scripts/shadow_friday.py,CPR Shadow,"N/A","No","No (manual)",No,UNRELATED_STRATEGY

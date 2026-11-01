@@ -1,0 +1,21 @@
+Look-Ahead Test Results
+============================================================
+Date: 2026-10-29T20:06:45.598219+05:30
+Method: Chronological replay with prefix truncation
+Sessions: 2026-10-27, 2026-10-28, 2026-10-29
+Instruments: NIFTY, BANKNIFTY
+============================================================
+
+Test 1: Signal uses only completed candles: PASS
+Test 2: Indicators use only past observations: PASS
+Test 3: Daily high/low not used before session complete: PASS
+Test 4: Signal direction not from future: PASS
+Test 5: Trade filled only after signal: PASS
+Test 6: Entry price is next candle open: PASS
+Test 7: Prefix-invariance: PASS
+Test 8: Outcome not used to filter: PASS
+Test 9: No cross-session leakage: PASS
+
+============================================================
+RESULTS: 9 passed, 0 failed, 0 errors
+ALL LOOK-AHEAD TESTS PASSED

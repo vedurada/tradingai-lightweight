@@ -1,0 +1,8 @@
+live trades: 6 | reproduced by the opens model: 2
+  PT-417466A63E    PDH       rec=22687.75@TARGET model=22873.55@EOD-1520 (2816.1) fill=INTRABAR inside_bar=False
+  PT-AF3DDA3296    BELOW_CPR rec=54538.15@TARGET model=55481.85@EOD-1520 (3982.1) fill=INTRABAR inside_bar=False
+  PT-4840A4C4F8    R1        rec=22608.95@TARGET model=22738.45@EOD-1520 (1087.0) fill=INTRABAR inside_bar=False
+  PT-16D172AB8C    R1        rec=54614.05@TARGET model=54892.7@EOD-1520 (1092.1) fill=INTRABAR inside_bar=True
+  PT-75B9351E8B    BELOW_CPR rec=22726.1@STOP model=22726.1@STOP (6.2) fill=INTRABAR inside_bar=True
+  PT-2E382EDB68    BELOW_CPR rec=54994.15@STOP model=54994.15@STOP (6.2) fill=INTRABAR inside_bar=True
+wrote /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/outputs/execution_gap.csv

@@ -1,0 +1,22 @@
+{
+  "NIFTY": {
+    "production_trades": 65,
+    "resimulated_trades": 65,
+    "matched": 65,
+    "issues": [],
+    "production_booked_total_R": 30.135,
+    "resimulated_realized_total_R": 29.894,
+    "difference_R": -0.241,
+    "consistent": true
+  },
+  "BANKNIFTY": {
+    "production_trades": 64,
+    "resimulated_trades": 64,
+    "matched": 64,
+    "issues": [],
+    "production_booked_total_R": 27.367,
+    "resimulated_realized_total_R": 26.596,
+    "difference_R": -0.771,
+    "consistent": true
+  }
+}

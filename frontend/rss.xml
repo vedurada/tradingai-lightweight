@@ -1,152 +1,178 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss version="2.0"><channel><title>TradingAI.in Model Alerts</title><link>https://tradingai.in/alerts.html</link><description>Automated NIFTY/BANKNIFTY model signals, updates and EOD recaps. Educational research only, not investment advice.</description><language>en-in</language><lastBuildDate>Fri, 23 Oct 2026 14:50:06 +0530</lastBuildDate><pubDate>Fri, 23 Oct 2026 14:50:06 +0530</pubDate><ttl>5</ttl><item><title>BANKNIFTY model update: FLAT (+182.70 pts) | 2026-10-23</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-23|BANKNIFTY|BEAR|54249.9</guid><pubDate>Fri, 23 Oct 2026 14:50:06 +0530</pubDate><description>BANKNIFTY
-23 Oct 2026
-Direction: BEAR
-Entry (ref): 54,249.90
-Exit (ref): 54,067.20
-Result: FLAT (+182.70 pts)
-Bear Call Spread</description></item><item><title>BANKNIFTY BEAR model signal 54,249.90 | 2026-10-23</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-23|BANKNIFTY|BEAR|54249.9</guid><pubDate>Fri, 23 Oct 2026 14:45:05 +0530</pubDate><description>BANKNIFTY
-23 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 54,249.90
-SL: 54,521.15
-Bear Call Spread · Exp — · Signal 10:55 AM</description></item><item><title>NIFTY model update: STOP (-126.20 pts) | 2026-10-23</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-23|NIFTY|BULL|22686.9</guid><pubDate>Fri, 23 Oct 2026 10:11:04 +0530</pubDate><description>NIFTY
-23 Oct 2026
+<rss version="2.0"><channel><title>TradingAI.in Model Alerts</title><link>https://tradingai.in/alerts.html</link><description>Automated NIFTY/BANKNIFTY model signals, updates and EOD recaps. Educational research only, not investment advice.</description><language>en-in</language><lastBuildDate>Fri, 30 Oct 2026 14:26:06 +0530</lastBuildDate><pubDate>Fri, 30 Oct 2026 14:26:06 +0530</pubDate><ttl>5</ttl><item><title>BANKNIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BULL|2026-10-30T14:20:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:26:06 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
 Direction: BULL
-Entry (ref): 22,686.90
-Exit (ref): 22,560.70
-Result: STOP (-126.20 pts)
-Bull Put Spread</description></item><item><title>NIFTY BULL model signal 22,686.90 | 2026-10-23</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-23|NIFTY|BULL|22686.9</guid><pubDate>Fri, 23 Oct 2026 09:42:03 +0530</pubDate><description>NIFTY
-23 Oct 2026
+Entry (ref): —
+SL: 54,671.60
+Target (ref): —
+Signal Entry 2:25 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:20:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:26:04 +0530</pubDate><description>NIFTY
+30 Oct 2026
 Direction: BULL
-Level: BRK_TC
-Entry (ref): 22,686.90
-SL: 22,573.47
-Bull Put Spread · Exp 2026-10-27 · Signal 9:40 AM</description></item><item><title>BANKNIFTY model update: STOP (-294.85 pts) | 2026-10-22</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-22|BANKNIFTY|BEAR|54699.3</guid><pubDate>Thu, 22 Oct 2026 10:31:08 +0530</pubDate><description>BANKNIFTY
-22 Oct 2026
-Direction: BEAR
-Entry (ref): 54,699.30
-Exit (ref): 54,994.15
-Result: STOP (-294.85 pts)
-Bear Call Spread</description></item><item><title>NIFTY model update: STOP (-117.15 pts) | 2026-10-22</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-22|NIFTY|BEAR|22608.95</guid><pubDate>Thu, 22 Oct 2026 10:31:06 +0530</pubDate><description>NIFTY
-22 Oct 2026
-Direction: BEAR
-Entry (ref): 22,608.95
-Exit (ref): 22,726.10
-Result: STOP (-117.15 pts)
-Bear Call Spread</description></item><item><title>BANKNIFTY BEAR model signal 54,699.30 | 2026-10-22</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-22|BANKNIFTY|BEAR|54699.3</guid><pubDate>Thu, 22 Oct 2026 09:20:04 +0530</pubDate><description>BANKNIFTY
-22 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 54,699.30
-SL: 54,972.80
-Bear Call Spread · Exp — · Signal 9:20 AM</description></item><item><title>NIFTY BEAR model signal 22,608.95 | 2026-10-22</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-22|NIFTY|BEAR|22608.95</guid><pubDate>Thu, 22 Oct 2026 09:20:02 +0530</pubDate><description>NIFTY
-22 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 22,608.95
-SL: 22,721.99
-Bear Call Spread · Exp — · Signal 9:20 AM</description></item><item><title>BANKNIFTY model update: EOD EXIT (+898.30 pts) | 2026-10-21</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-21|BANKNIFTY|BEAR|55810.45</guid><pubDate>Wed, 21 Oct 2026 15:15:06 +0530</pubDate><description>BANKNIFTY
-21 Oct 2026
-Direction: BEAR
-Entry (ref): 55,810.45
-Exit (ref): 54,912.15
-Result: EOD EXIT (+898.30 pts)
-Bear Call Spread</description></item><item><title>NIFTY model update: EOD EXIT (+376.70 pts) | 2026-10-21</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-21|NIFTY|BEAR|23113.15</guid><pubDate>Wed, 21 Oct 2026 15:15:05 +0530</pubDate><description>NIFTY
-21 Oct 2026
-Direction: BEAR
-Entry (ref): 23,113.15
-Exit (ref): 22,736.45
-Result: EOD EXIT (+376.70 pts)
-Bear Call Spread</description></item><item><title>BANKNIFTY BEAR model signal 55,810.45 | 2026-10-21</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-21|BANKNIFTY|BEAR|55810.45</guid><pubDate>Wed, 21 Oct 2026 09:36:04 +0530</pubDate><description>BANKNIFTY
-21 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 55,810.45
-SL: 56,089.50
-Bear Call Spread · Exp — · Signal 9:35 AM</description></item><item><title>NIFTY BEAR model signal 23,113.15 | 2026-10-21</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-21|NIFTY|BEAR|23113.15</guid><pubDate>Wed, 21 Oct 2026 09:36:03 +0530</pubDate><description>NIFTY
-21 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 23,113.15
-SL: 23,228.72
-Bear Call Spread · Exp — · Signal 9:35 AM</description></item><item><title>BANKNIFTY model update: EOD EXIT (+199.60 pts) | 2026-10-19</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-19|BANKNIFTY|BEAR|55671.05</guid><pubDate>Mon, 19 Oct 2026 15:15:06 +0530</pubDate><description>BANKNIFTY
-19 Oct 2026
-Direction: BEAR
-Entry (ref): 55,671.05
-Exit (ref): 55,471.45
-Result: EOD EXIT (+199.60 pts)
-Bear Call Spread</description></item><item><title>NIFTY model update: EOD EXIT (+281.25 pts) | 2026-10-19</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-19|NIFTY|BEAR|23152.05</guid><pubDate>Mon, 19 Oct 2026 15:15:04 +0530</pubDate><description>NIFTY
-19 Oct 2026
-Direction: BEAR
-Entry (ref): 23,152.05
-Exit (ref): 22,870.80
-Result: EOD EXIT (+281.25 pts)
-Bear Call Spread</description></item><item><title>BANKNIFTY BEAR model signal 55,671.05 | 2026-10-19</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-19|BANKNIFTY|BEAR|55671.05</guid><pubDate>Mon, 19 Oct 2026 09:20:05 +0530</pubDate><description>BANKNIFTY
-19 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 55,671.05
-SL: 55,949.41
-Bear Call Spread · Exp — · Signal 9:20 AM</description></item><item><title>NIFTY BEAR model signal 23,152.05 | 2026-10-19</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-19|NIFTY|BEAR|23152.05</guid><pubDate>Mon, 19 Oct 2026 09:20:03 +0530</pubDate><description>NIFTY
-19 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 23,152.05
-SL: 23,267.81
-Bear Call Spread · Exp — · Signal 9:20 AM</description></item><item><title>BANKNIFTY model update: EOD EXIT (-83.65 pts) | 2026-10-16</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-16|BANKNIFTY|BEAR|55668.95</guid><pubDate>Fri, 16 Oct 2026 15:15:06 +0530</pubDate><description>BANKNIFTY
-16 Oct 2026
-Direction: BEAR
-Entry (ref): 55,668.95
-Exit (ref): 55,752.60
-Result: EOD EXIT (-83.65 pts)
-Bear Call Spread</description></item><item><title>NIFTY model update: STOP (-137.05 pts) | 2026-10-16</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-16|NIFTY|BEAR|22957.25</guid><pubDate>Fri, 16 Oct 2026 10:21:04 +0530</pubDate><description>NIFTY
-16 Oct 2026
-Direction: BEAR
-Entry (ref): 22,957.25
-Exit (ref): 23,094.30
-Result: STOP (-137.05 pts)
-Bear Call Spread</description></item><item><title>BANKNIFTY BEAR model signal 55,668.95 | 2026-10-16</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-16|BANKNIFTY|BEAR|55668.95</guid><pubDate>Fri, 16 Oct 2026 09:20:05 +0530</pubDate><description>BANKNIFTY
-16 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 55,668.95
-SL: 55,947.29
-Bear Call Spread · Exp — · Signal 9:20 AM</description></item><item><title>NIFTY BEAR model signal 22,957.25 | 2026-10-16</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-16|NIFTY|BEAR|22957.25</guid><pubDate>Fri, 16 Oct 2026 09:20:03 +0530</pubDate><description>NIFTY
-16 Oct 2026
-Direction: BEAR
-Level: —
-Entry (ref): 22,957.25
-SL: 23,072.04
-Bear Call Spread · Exp — · Signal 9:20 AM</description></item><item><title>BANKNIFTY model update: FLAT (+325.20 pts) | 2026-10-15</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-15|BANKNIFTY|BULL|55470.7</guid><pubDate>Thu, 15 Oct 2026 11:50:04 +0530</pubDate><description>BANKNIFTY
-15 Oct 2026
+Entry (ref): —
+SL: 23,026.85
+Target (ref): —
+Signal Entry 2:25 PM</description></item><item><title>BANKNIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BULL|2026-10-30T14:15:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:23:10 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
 Direction: BULL
-Entry (ref): 55,470.70
-Exit (ref): 55,795.90
-Result: FLAT (+325.20 pts)
-Bull Put Spread</description></item><item><title>NIFTY model update: STOP (-124.15 pts) | 2026-10-15</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-15|NIFTY|BEAR|22725.85</guid><pubDate>Thu, 15 Oct 2026 10:18:31 +0530</pubDate><description>NIFTY
-15 Oct 2026
-Direction: BEAR
-Entry (ref): 22,725.85
-Exit (ref): 22,850.00
-Result: STOP (-124.15 pts)
-Bear Call Spread</description></item><item><title>BANKNIFTY BULL model signal 55,470.70 | 2026-10-15</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-15|BANKNIFTY|BULL|55470.7</guid><pubDate>Thu, 15 Oct 2026 09:20:04 +0530</pubDate><description>BANKNIFTY
-15 Oct 2026
+Entry (ref): —
+SL: 54,653.40
+Target (ref): —
+Signal Entry 2:20 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:15:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:23:08 +0530</pubDate><description>NIFTY
+30 Oct 2026
 Direction: BULL
-Level: —
-Entry (ref): 55,470.70
-SL: 55,193.35
-Bull Put Spread · Exp — · Signal 9:20 AM</description></item><item><title>NIFTY BEAR model signal 22,725.85 | 2026-10-15</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-15|NIFTY|BEAR|22725.85</guid><pubDate>Thu, 15 Oct 2026 09:20:03 +0530</pubDate><description>NIFTY
-15 Oct 2026
+Entry (ref): —
+SL: 23,016.50
+Target (ref): —
+Signal Entry 2:20 PM</description></item><item><title>NIFTY BULL model signal 23,025.20 | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:23:06 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): 23,025.20
+SL: 23,013.95
+Target (ref): 23,042.07
+Signal Entry 2:15 PM</description></item><item><title>BANKNIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BULL|2026-10-30T14:15:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:22:07 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 54,653.40
+Target (ref): —
+Signal Entry 2:20 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:15:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:22:05 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,016.50
+Target (ref): —
+Signal Entry 2:20 PM</description></item><item><title>NIFTY BULL model signal 23,025.20 | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:22:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): 23,025.20
+SL: 23,013.95
+Target (ref): 23,042.07
+Signal Entry 2:15 PM</description></item><item><title>BANKNIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BULL|2026-10-30T14:15:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:21:05 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 54,653.40
+Target (ref): —
+Signal Entry 2:20 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:15:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:21:04 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,016.50
+Target (ref): —
+Signal Entry 2:20 PM</description></item><item><title>NIFTY BULL model signal 23,025.20 | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:21:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): 23,025.20
+SL: 23,013.95
+Target (ref): 23,042.07
+Signal Entry 2:15 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:20:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,013.95
+Target (ref): —
+Signal Entry 2:15 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:19:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,013.95
+Target (ref): —
+Signal Entry 2:15 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:18:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,013.95
+Target (ref): —
+Signal Entry 2:15 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:17:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,013.95
+Target (ref): —
+Signal Entry 2:15 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:16:02 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,013.95
+Target (ref): —
+Signal Entry 2:15 PM</description></item><item><title>NIFTY BULL model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BULL|2026-10-30T14:10:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:15:45 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BULL
+Entry (ref): —
+SL: 23,013.95
+Target (ref): —
+Signal Entry 2:15 PM</description></item><item><title>NIFTY BEAR model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BEAR|2026-10-30T14:00:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:10:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
 Direction: BEAR
-Level: —
-Entry (ref): 22,725.85
-SL: 22,839.48
-Bear Call Spread · Exp — · Signal 9:20 AM</description></item><item><title>NIFTY BEAR model signal 22,684.80 | 2026-10-14</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-14|NIFTY|BEAR|22684.8|VERIFY</guid><pubDate>Wed, 14 Oct 2026 21:40:06 +0530</pubDate><description>NIFTY
-14 Oct 2026
+Entry (ref): —
+SL: 23,015.75
+Target (ref): —
+Signal Entry 2:05 PM</description></item><item><title>NIFTY BEAR model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BEAR|2026-10-30T14:00:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:09:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
 Direction: BEAR
-Level: PDH
-Entry (ref): 22,684.80
-SL: 22,798.22
-Bear Call Spread Exp 2026-10-19 Signal 9:20 AM</description></item><item><title>BANKNIFTY model update: EOD EXIT (+217.35 pts) | 2026-10-14</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-14|BANKNIFTY|BEAR|55529.7</guid><pubDate>Wed, 14 Oct 2026 15:15:04 +0530</pubDate><description>Result: EOD EXIT (+217.35 pts) — Session context at the exit check: LIVE, engine QUALIFIED. Structure: Price inside cpr; CPR 55144.6758–55368.9258 (WIDE) Confirmation: CPR trigger PDH (all sessions) at 2026-10-14T15:10:00+05:30 Entry zone: Entered at the next candle open near 55529.7 Reference trigger: CPR level trigger takes the Bear Call Spread entry at the next candle open 55529.7 Reference invalidation: 5-minute close beyond stop 55807.35 Reference target: 54419.11 Quote timestamp: 2026-10-14T15:10:00+05:30. Engine reasons: FROZEN_TRADE_ACTIVE Recorded exit reference: EOD EXIT (+217.35 pts). — Automated model output. Not investment advice, not a research recommendation. Educational research only. https://tradingai.in/disclaimer.html</description></item><item><title>NIFTY model update: EOD EXIT (+59.30 pts) | 2026-10-14</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-14|NIFTY|BEAR|22684.8</guid><pubDate>Wed, 14 Oct 2026 15:15:03 +0530</pubDate><description>Result: EOD EXIT (+59.30 pts) — Session context at the exit check: LIVE, engine QUALIFIED. Structure: Price inside cpr; CPR 22505.3242–22649.7409 (WIDE) Confirmation: CPR trigger PDH (all sessions) at 2026-10-14T15:10:00+05:30 Entry zone: Entered at the next candle open near 22684.8 Reference trigger: CPR level trigger takes the Bear Call Spread entry at the next candle open 22684.8 Reference invalidation: 5-minute close beyond stop 22798.22 Reference target: 22231.1 Quote timestamp: 2026-10-14T15:10:00+05:30. Engine reasons: FROZEN_TRADE_ACTIVE Recorded exit reference: EOD EXIT (+59.30 pts). — Automated model output. Not investment advice, not a research recommendation. Educational research only. https://tradingai.in/disclaimer.html</description></item><item><title>BANKNIFTY BEAR model signal 55,529.70 | 2026-10-14</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-14|BANKNIFTY|BEAR|55529.7</guid><pubDate>Wed, 14 Oct 2026 09:35:04 +0530</pubDate><description>Direction: BEAR — trigger: 55,529.70 — invalidation: 55,807.35 — target: 54,419.11 — strategy: Bear Call Spread — signal_time: 9:35 AM — Engine classified the session as TRADE (bias BEAR, engine QUALIFIED). Structure: Price above tc; CPR 55144.6758–55368.9258 (WIDE) Confirmation: CPR trigger PDH (all sessions) at 2026-10-14T09:30:00+05:30 Entry zone: Entered at the next candle open near 55529.7 Reference trigger: CPR level trigger takes the Bear Call Spread entry at the next candle open 55529.7 Reference invalidation: 5-minute close beyond stop 55807.35 Reference target: 54419.11 Quote timestamp: 2026-10-14T09:35:00+05:30. Engine reasons: CPR_TRIGGER_PDH, WEEKLY_GATE_PASS — Automated model output. Not investment advice, not a research recommendation. Educational research only. https://tradingai.in/disclaimer.html</description></item><item><title>NIFTY BEAR model signal 22,684.80 | 2026-10-14</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-14|NIFTY|BEAR|22684.8</guid><pubDate>Wed, 14 Oct 2026 09:22:03 +0530</pubDate><description>Direction: BEAR — trigger: 22,684.80 — invalidation: 22,798.22 — target: 22,231.10 — strategy: Bear Call Spread — signal_time: 9:20 AM — Engine classified the session as TRADE (bias BEAR, engine QUALIFIED). Structure: Price above tc; CPR 22505.3242–22649.7409 (WIDE) Confirmation: CPR trigger PDH (all sessions) at 2026-10-14T09:15:00+05:30 Entry zone: Entered at the next candle open near 22684.8 Reference trigger: CPR level trigger takes the Bear Call Spread entry at the next candle open 22684.8 Reference invalidation: 5-minute close beyond stop 22798.22 Reference target: 22231.1 Quote timestamp: 2026-10-14T09:20:00+05:30. Engine reasons: CPR_TRIGGER_PDH, WEEKLY_GATE_PASS — Automated model output. Not investment advice, not a research recommendation. Educational research only. https://tradingai.in/disclaimer.html</description></item><item><title>BANKNIFTY BULL model signal 55154.75 | 2026-10-13</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-13|BANKNIFTY|BULL|55136.85</guid><pubDate>Wed, 14 Oct 2026 08:29:47 +0530</pubDate><description>Direction: BULL — trigger: 55154.75 — strategy: Bull Put Spread — Backfilled by --reconcile: the entry Telegram for this record was sent live, but archiving failed at the time. Details reconstructed from the paper ledger (level ABOVE_CPR, entry ref 55154.75). — Automated model output. Not investment advice, not a research recommendation. Educational research only. https://tradingai.in/disclaimer.html</description></item></channel></rss>
+Entry (ref): —
+SL: 23,015.75
+Target (ref): —
+Signal Entry 2:05 PM</description></item><item><title>NIFTY BEAR model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BEAR|2026-10-30T14:00:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:08:04 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BEAR
+Entry (ref): —
+SL: 23,015.75
+Target (ref): —
+Signal Entry 2:05 PM</description></item><item><title>NIFTY BEAR model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BEAR|2026-10-30T14:00:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:07:04 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BEAR
+Entry (ref): —
+SL: 23,015.75
+Target (ref): —
+Signal Entry 2:05 PM</description></item><item><title>NIFTY BEAR model signal — | 2026-10-30</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|NIFTY|BEAR|2026-10-30T14:00:00+05:30</guid><pubDate>Fri, 30 Oct 2026 14:06:03 +0530</pubDate><description>NIFTY
+30 Oct 2026
+Direction: BEAR
+Entry (ref): —
+SL: 23,015.75
+Target (ref): —
+Signal Entry 2:05 PM</description></item><item><title>BANKNIFTY model update: TARGET (+39.75 pts) | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BEAR|2026-10-30T13:40:00+05:30</guid><pubDate>Fri, 30 Oct 2026 13:51:04 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
+Direction: BEAR
+Entry (ref): 54,713.45
+Exit (ref): 54,673.70
+Result: TARGET (+39.75 pts)</description></item><item><title>BANKNIFTY BEAR model signal 54,713.45 | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BEAR|2026-10-30T13:40:00+05:30</guid><pubDate>Fri, 30 Oct 2026 13:51:03 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
+Direction: BEAR
+Entry (ref): 54,713.45
+SL: 54,739.95
+Target (ref): 54,673.70
+Signal Entry 1:45 PM</description></item><item><title>BANKNIFTY model update: TARGET (+67.47 pts) | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BEAR|2026-10-30T13:30:00+05:30</guid><pubDate>Fri, 30 Oct 2026 13:46:05 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
+Direction: BEAR
+Entry (ref): 54,767.15
+Exit (ref): 54,699.68
+Result: TARGET (+67.47 pts)</description></item><item><title>BANKNIFTY BEAR model signal 54,767.15 | 2026-10-30</title><link>https://tradingai.in/indices/banknifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-30|BANKNIFTY|BEAR|2026-10-30T13:30:00+05:30</guid><pubDate>Fri, 30 Oct 2026 13:40:05 +0530</pubDate><description>BANKNIFTY
+30 Oct 2026
+Direction: BEAR
+Entry (ref): 54,767.15
+SL: 54,831.55
+Target (ref): 54,670.54
+Signal Entry 1:35 PM</description></item><item><title>NIFTY model update: TARGET (+14.10 pts) | 2026-10-28</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-28|NIFTY|BULL|2026-10-28T14:45:00+05:30</guid><pubDate>Wed, 28 Oct 2026 14:56:04 +0530</pubDate><description>NIFTY
+28 Oct 2026
+Direction: BULL
+Entry (ref): 22,704.60
+Exit (ref): 22,718.70
+Result: TARGET (+14.10 pts)</description></item><item><title>NIFTY BULL model signal 22,704.60 | 2026-10-28</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-28|NIFTY|BULL|2026-10-28T14:45:00+05:30</guid><pubDate>Wed, 28 Oct 2026 14:56:02 +0530</pubDate><description>NIFTY
+28 Oct 2026
+Direction: BULL
+Entry (ref): 22,704.60
+SL: 22,695.20
+Target (ref): 22,718.70
+Signal Entry 2:50 PM</description></item><item><title>NIFTY model update: TARGET (+27.45 pts) | 2026-10-28</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-28|NIFTY|BEAR|2026-10-28T13:55:00+05:30</guid><pubDate>Wed, 28 Oct 2026 14:26:04 +0530</pubDate><description>NIFTY
+28 Oct 2026
+Direction: BEAR
+Entry (ref): 22,706.50
+Exit (ref): 22,679.05
+Result: TARGET (+27.45 pts)</description></item><item><title>NIFTY BEAR model signal 22,706.50 | 2026-10-28</title><link>https://tradingai.in/indices/nifty.html</link><guid isPermaLink="false">https://tradingai.in/alerts.html#2026-10-28|NIFTY|BEAR|2026-10-28T13:55:00+05:30</guid><pubDate>Wed, 28 Oct 2026 14:06:03 +0530</pubDate><description>NIFTY
+28 Oct 2026
+Direction: BEAR
+Entry (ref): 22,706.50
+SL: 22,724.80
+Target (ref): 22,679.05
+Signal Entry 2:00 PM</description></item></channel></rss>

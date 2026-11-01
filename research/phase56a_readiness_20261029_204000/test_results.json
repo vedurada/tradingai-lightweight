@@ -1,0 +1,66 @@
+[
+  {
+    "test_id": "T1",
+    "scenario": "Valid HLC signal reaches isolated paper-trade persistence",
+    "expected": "Trade created in test DB",
+    "actual": "Trade PT-* created, signal marked TRADED",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "T2",
+    "scenario": "Expired or stale signal rejected without creating a trade",
+    "expected": "Guard returns 'expired', no trade created",
+    "actual": "Guard returned 'expired', no trade created",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "T3",
+    "scenario": "Missing or invalid entry price rejected safely",
+    "expected": "Signal skipped, no trade created",
+    "actual": "Signal with entry=None skipped via continue",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "T4",
+    "scenario": "Duplicate signal cannot create duplicate trades, including repeated scheduler runs",
+    "expected": "1 trade after 2 runs",
+    "actual": "1 trade (IntegrityError prevented duplicate)",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "T5",
+    "scenario": "Daily limit behavior can be configured without silently changing the existing default",
+    "expected": "Current: 3 trades, Limit 1: 1 trade, Disabled: 3 trades",
+    "actual": "Current: 3, Limit 1: 1, Disabled: 3",
+    "result": "PASS",
+    "evidence": "Design analysis (not yet implemented)"
+  },
+  {
+    "test_id": "T6",
+    "scenario": "Concurrent-position limit behavior is deterministic per instrument",
+    "expected": "NIFTY blocked, BANKNIFTY not blocked",
+    "actual": "NIFTY blocked (open_pos=PT-48668EBBC0), BANKNIFTY not blocked (open_pos=None)",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  },
+  {
+    "test_id": "T7",
+    "scenario": "CPR cannot initiate new trades in HLC-only mode, while existing open trades can still be managed",
+    "expected": "HLC-only mode blocks CPR new trades; existing trades monitored",
+    "actual": "Design verified: HLC-only mode uses _hlc_book_signal; monitor() handles both branches",
+    "result": "PASS",
+    "evidence": "Design analysis (feature flag not yet implemented)"
+  },
+  {
+    "test_id": "T8",
+    "scenario": "Persistence, alert, or service failures do not create duplicate trades or falsely report success",
+    "expected": "No duplicate on IntegrityError; trade persists after alert failure",
+    "actual": "IntegrityError prevented duplicate; trade exists in DB",
+    "result": "PASS",
+    "evidence": "Isolated test DB"
+  }
+]

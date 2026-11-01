@@ -1,0 +1,2499 @@
+{
+  "period": {
+    "instrument": "NIFTY",
+    "start": "2026-07-06",
+    "end": "2026-10-22",
+    "sessions": 76
+  },
+  "definitions": {
+    "CPR_REV": "resistance touch+close below PDH/R1/R2 or support touch+close above PDL/S1/S2",
+    "CPR_BRK": "completed close crosses TC/PP/BC, PDH/PDL, R1/R2/S1/S2; direction follows break",
+    "SMA20/SMA50": "close crosses its simple moving average",
+    "MACD": "12/26 line crosses 9-period signal",
+    "RSI": "Wilder RSI14 crosses 55 bull / 45 bear; confirmation state neutral between 45 and 55",
+    "confirmation": "other-source direction states at signal close; each candidate source excluded; CPR state uses above/below CPR/PP; entry at next open, 0.5% SL, 2% target, cutoff 15:00, EOD 15:20",
+    "labels": "adverse move under 30 points counts labeled WIN; raw-positive rate separately; net R subtracts estimated 0.10R per trade"
+  },
+  "baseline_current_CPR": {
+    "trades": 43,
+    "labeled_wins": 32,
+    "labeled_losses": 11,
+    "labeled_win_rate_pct": 74.4,
+    "raw_positive": 30,
+    "raw_positive_pct": 69.8,
+    "gross_R": 16.66,
+    "net_R_after_0.10_cost": 12.36,
+    "points": 1905.2
+  },
+  "strategies": {
+    "CONSENSUS_3_of_5": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 45,
+        "labeled_losses": 29,
+        "labeled_win_rate_pct": 60.8,
+        "raw_positive": 33,
+        "raw_positive_pct": 44.6,
+        "gross_R": -0.06,
+        "net_R_after_0.10_cost": -7.46,
+        "points": -226.2
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 26,
+        "labeled_losses": 13,
+        "labeled_win_rate_pct": 66.7,
+        "raw_positive": 17,
+        "raw_positive_pct": 43.6,
+        "gross_R": -1.0,
+        "net_R_after_0.10_cost": -4.9,
+        "points": -150.5
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 19,
+        "labeled_losses": 16,
+        "labeled_win_rate_pct": 54.3,
+        "raw_positive": 16,
+        "raw_positive_pct": 45.7,
+        "gross_R": 0.95,
+        "net_R_after_0.10_cost": -2.55,
+        "points": -75.7
+      },
+      "by_signal": {
+        "SMA50_CROSS_UP": {
+          "trades": 3,
+          "labeled_wins": 1,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 1,
+          "raw_positive_pct": 33.3,
+          "gross_R": -0.77,
+          "net_R_after_0.10_cost": -1.07,
+          "points": -105.2
+        },
+        "CPR_BRK_S2": {
+          "trades": 7,
+          "labeled_wins": 6,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 85.7,
+          "raw_positive": 5,
+          "raw_positive_pct": 71.4,
+          "gross_R": 3.14,
+          "net_R_after_0.10_cost": 2.44,
+          "points": 378.9
+        },
+        "CPR_BRK_PP": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 75.0,
+          "gross_R": 3.54,
+          "net_R_after_0.10_cost": 3.14,
+          "points": 395.1
+        },
+        "SMA20_CROSS_UP": {
+          "trades": 10,
+          "labeled_wins": 8,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 80.0,
+          "raw_positive": 5,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.47,
+          "net_R_after_0.10_cost": -1.47,
+          "points": -57.5
+        },
+        "RSI_CROSS_45": {
+          "trades": 4,
+          "labeled_wins": 2,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.36,
+          "net_R_after_0.10_cost": -0.04,
+          "points": -7.1
+        },
+        "CPR_BRK_BC": {
+          "trades": 5,
+          "labeled_wins": 3,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 60.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 40.0,
+          "gross_R": -0.27,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -31.6
+        },
+        "CPR_BRK_PDH": {
+          "trades": 8,
+          "labeled_wins": 3,
+          "labeled_losses": 5,
+          "labeled_win_rate_pct": 37.5,
+          "raw_positive": 2,
+          "raw_positive_pct": 25.0,
+          "gross_R": -3.77,
+          "net_R_after_0.10_cost": -4.57,
+          "points": -475.0
+        },
+        "CPR_BRK_TC": {
+          "trades": 3,
+          "labeled_wins": 1,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.7,
+          "net_R_after_0.10_cost": -2.0,
+          "points": -199.2
+        },
+        "CPR_BRK_R2": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.4,
+          "net_R_after_0.10_cost": -0.6,
+          "points": -46.9
+        },
+        "CPR_BRK_S1": {
+          "trades": 9,
+          "labeled_wins": 6,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 5,
+          "raw_positive_pct": 55.6,
+          "gross_R": 1.71,
+          "net_R_after_0.10_cost": 0.81,
+          "points": 141.9
+        },
+        "MACD_CROSS_UP": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.38,
+          "net_R_after_0.10_cost": -0.58,
+          "points": -45.9
+        },
+        "CPR_REV_S1": {
+          "trades": 1,
+          "labeled_wins": 0,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 0.0,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.0,
+          "net_R_after_0.10_cost": -1.1,
+          "points": -123.4
+        },
+        "SMA20_CROSS_DOWN": {
+          "trades": 9,
+          "labeled_wins": 7,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 77.8,
+          "raw_positive": 3,
+          "raw_positive_pct": 33.3,
+          "gross_R": 0.26,
+          "net_R_after_0.10_cost": -0.64,
+          "points": 3.5
+        },
+        "CPR_BRK_PDL": {
+          "trades": 4,
+          "labeled_wins": 2,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.02,
+          "net_R_after_0.10_cost": -0.38,
+          "points": 1.0
+        },
+        "RSI_CROSS_55": {
+          "trades": 1,
+          "labeled_wins": 0,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 0.0,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.0,
+          "net_R_after_0.10_cost": -1.1,
+          "points": -116.3
+        },
+        "CPR_BRK_R1": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.67,
+          "net_R_after_0.10_cost": 0.47,
+          "points": 61.5
+        }
+      },
+      "no_trade_days": 2
+    },
+    "CONSENSUS_4_of_5": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 48,
+        "labeled_losses": 26,
+        "labeled_win_rate_pct": 64.9,
+        "raw_positive": 37,
+        "raw_positive_pct": 50.0,
+        "gross_R": 4.03,
+        "net_R_after_0.10_cost": -3.37,
+        "points": 294.8
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 26,
+        "labeled_losses": 13,
+        "labeled_win_rate_pct": 66.7,
+        "raw_positive": 18,
+        "raw_positive_pct": 46.2,
+        "gross_R": -0.49,
+        "net_R_after_0.10_cost": -4.39,
+        "points": -93.0
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 22,
+        "labeled_losses": 13,
+        "labeled_win_rate_pct": 62.9,
+        "raw_positive": 19,
+        "raw_positive_pct": 54.3,
+        "gross_R": 4.52,
+        "net_R_after_0.10_cost": 1.02,
+        "points": 387.8
+      },
+      "by_signal": {
+        "SMA50_CROSS_UP": {
+          "trades": 2,
+          "labeled_wins": 0,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 0.0,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.42,
+          "net_R_after_0.10_cost": -1.61,
+          "points": -183.1
+        },
+        "CPR_BRK_S2": {
+          "trades": 7,
+          "labeled_wins": 6,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 85.7,
+          "raw_positive": 5,
+          "raw_positive_pct": 71.4,
+          "gross_R": 3.14,
+          "net_R_after_0.10_cost": 2.44,
+          "points": 378.9
+        },
+        "CPR_BRK_PP": {
+          "trades": 6,
+          "labeled_wins": 5,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 83.3,
+          "raw_positive": 4,
+          "raw_positive_pct": 66.7,
+          "gross_R": 3.48,
+          "net_R_after_0.10_cost": 2.88,
+          "points": 387.8
+        },
+        "SMA20_CROSS_UP": {
+          "trades": 9,
+          "labeled_wins": 8,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 88.9,
+          "raw_positive": 5,
+          "raw_positive_pct": 55.6,
+          "gross_R": 0.04,
+          "net_R_after_0.10_cost": -0.86,
+          "points": 4.4
+        },
+        "RSI_CROSS_45": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.54,
+          "net_R_after_0.10_cost": -0.74,
+          "points": -74.0
+        },
+        "CPR_BRK_BC": {
+          "trades": 6,
+          "labeled_wins": 4,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 3,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.23,
+          "net_R_after_0.10_cost": -0.37,
+          "points": 29.1
+        },
+        "CPR_BRK_PDH": {
+          "trades": 8,
+          "labeled_wins": 3,
+          "labeled_losses": 5,
+          "labeled_win_rate_pct": 37.5,
+          "raw_positive": 2,
+          "raw_positive_pct": 25.0,
+          "gross_R": -3.77,
+          "net_R_after_0.10_cost": -4.57,
+          "points": -475.0
+        },
+        "CPR_BRK_TC": {
+          "trades": 3,
+          "labeled_wins": 1,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.7,
+          "net_R_after_0.10_cost": -2.0,
+          "points": -199.2
+        },
+        "CPR_BRK_R2": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.4,
+          "net_R_after_0.10_cost": -0.6,
+          "points": -46.9
+        },
+        "CPR_BRK_S1": {
+          "trades": 9,
+          "labeled_wins": 6,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 5,
+          "raw_positive_pct": 55.6,
+          "gross_R": 1.71,
+          "net_R_after_0.10_cost": 0.81,
+          "points": 141.9
+        },
+        "SMA50_CROSS_DOWN": {
+          "trades": 4,
+          "labeled_wins": 2,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 1.17,
+          "net_R_after_0.10_cost": 0.77,
+          "points": 139.7
+        },
+        "MACD_CROSS_UP": {
+          "trades": 1,
+          "labeled_wins": 1,
+          "labeled_losses": 0,
+          "labeled_win_rate_pct": 100.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 100.0,
+          "gross_R": 0.33,
+          "net_R_after_0.10_cost": 0.23,
+          "points": 39.9
+        },
+        "RSI_CROSS_55": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.44,
+          "net_R_after_0.10_cost": -0.64,
+          "points": -60.7
+        },
+        "SMA20_CROSS_DOWN": {
+          "trades": 6,
+          "labeled_wins": 5,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 83.3,
+          "raw_positive": 3,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.78,
+          "net_R_after_0.10_cost": 0.18,
+          "points": 65.7
+        },
+        "CPR_BRK_PDL": {
+          "trades": 4,
+          "labeled_wins": 2,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.02,
+          "net_R_after_0.10_cost": -0.38,
+          "points": 1.0
+        },
+        "CPR_REV_S2": {
+          "trades": 1,
+          "labeled_wins": 1,
+          "labeled_losses": 0,
+          "labeled_win_rate_pct": 100.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 100.0,
+          "gross_R": 0.72,
+          "net_R_after_0.10_cost": 0.62,
+          "points": 83.8
+        },
+        "CPR_BRK_R1": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.67,
+          "net_R_after_0.10_cost": 0.47,
+          "points": 61.5
+        }
+      },
+      "no_trade_days": 2
+    },
+    "CPR_ALL_confirm_0": {
+      "all": {
+        "trades": 70,
+        "labeled_wins": 42,
+        "labeled_losses": 28,
+        "labeled_win_rate_pct": 60.0,
+        "raw_positive": 32,
+        "raw_positive_pct": 45.7,
+        "gross_R": 8.71,
+        "net_R_after_0.10_cost": 1.71,
+        "points": 871.7
+      },
+      "first_half": {
+        "trades": 37,
+        "labeled_wins": 20,
+        "labeled_losses": 17,
+        "labeled_win_rate_pct": 54.1,
+        "raw_positive": 14,
+        "raw_positive_pct": 37.8,
+        "gross_R": -1.92,
+        "net_R_after_0.10_cost": -5.62,
+        "points": -255.0
+      },
+      "second_half": {
+        "trades": 33,
+        "labeled_wins": 22,
+        "labeled_losses": 11,
+        "labeled_win_rate_pct": 66.7,
+        "raw_positive": 18,
+        "raw_positive_pct": 54.5,
+        "gross_R": 10.63,
+        "net_R_after_0.10_cost": 7.33,
+        "points": 1126.7
+      },
+      "by_signal": {
+        "CPR_REV_PDH": {
+          "trades": 9,
+          "labeled_wins": 7,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 77.8,
+          "raw_positive": 6,
+          "raw_positive_pct": 66.7,
+          "gross_R": 4.36,
+          "net_R_after_0.10_cost": 3.46,
+          "points": 497.4
+        },
+        "CPR_BRK_S2": {
+          "trades": 6,
+          "labeled_wins": 5,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 83.3,
+          "raw_positive": 4,
+          "raw_positive_pct": 66.7,
+          "gross_R": 2.67,
+          "net_R_after_0.10_cost": 2.07,
+          "points": 323.3
+        },
+        "CPR_BRK_PP": {
+          "trades": 7,
+          "labeled_wins": 4,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 57.1,
+          "raw_positive": 2,
+          "raw_positive_pct": 28.6,
+          "gross_R": 1.71,
+          "net_R_after_0.10_cost": 1.01,
+          "points": 177.7
+        },
+        "CPR_REV_R2": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.71,
+          "net_R_after_0.10_cost": -0.91,
+          "points": -86.4
+        },
+        "CPR_REV_S2": {
+          "trades": 5,
+          "labeled_wins": 3,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 60.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 60.0,
+          "gross_R": 0.62,
+          "net_R_after_0.10_cost": 0.12,
+          "points": 73.0
+        },
+        "CPR_BRK_BC": {
+          "trades": 7,
+          "labeled_wins": 5,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 71.4,
+          "raw_positive": 3,
+          "raw_positive_pct": 42.9,
+          "gross_R": 0.21,
+          "net_R_after_0.10_cost": -0.49,
+          "points": 26.9
+        },
+        "CPR_BRK_PDH": {
+          "trades": 4,
+          "labeled_wins": 0,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 0.0,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -2.97,
+          "net_R_after_0.10_cost": -3.37,
+          "points": -377.0
+        },
+        "CPR_BRK_TC": {
+          "trades": 5,
+          "labeled_wins": 2,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 40.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 20.0,
+          "gross_R": -0.86,
+          "net_R_after_0.10_cost": -1.36,
+          "points": -106.0
+        },
+        "CPR_REV_S1": {
+          "trades": 8,
+          "labeled_wins": 2,
+          "labeled_losses": 6,
+          "labeled_win_rate_pct": 25.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 25.0,
+          "gross_R": -2.32,
+          "net_R_after_0.10_cost": -3.12,
+          "points": -283.0
+        },
+        "CPR_BRK_R2": {
+          "trades": 3,
+          "labeled_wins": 2,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 1,
+          "raw_positive_pct": 33.3,
+          "gross_R": -0.83,
+          "net_R_after_0.10_cost": -1.13,
+          "points": -99.6
+        },
+        "CPR_REV_R1": {
+          "trades": 4,
+          "labeled_wins": 4,
+          "labeled_losses": 0,
+          "labeled_win_rate_pct": 100.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 75.0,
+          "gross_R": 3.26,
+          "net_R_after_0.10_cost": 2.86,
+          "points": 385.6
+        },
+        "CPR_BRK_PDL": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.04,
+          "net_R_after_0.10_cost": -0.24,
+          "points": -6.1
+        },
+        "CPR_REV_PDL": {
+          "trades": 1,
+          "labeled_wins": 1,
+          "labeled_losses": 0,
+          "labeled_win_rate_pct": 100.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 100.0,
+          "gross_R": 0.3,
+          "net_R_after_0.10_cost": 0.2,
+          "points": 36.7
+        },
+        "CPR_BRK_S1": {
+          "trades": 5,
+          "labeled_wins": 4,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 80.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 60.0,
+          "gross_R": 2.64,
+          "net_R_after_0.10_cost": 2.14,
+          "points": 247.7
+        },
+        "CPR_BRK_R1": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.67,
+          "net_R_after_0.10_cost": 0.47,
+          "points": 61.5
+        }
+      },
+      "no_trade_days": 6
+    },
+    "CPR_ALL_confirm_1": {
+      "all": {
+        "trades": 69,
+        "labeled_wins": 42,
+        "labeled_losses": 27,
+        "labeled_win_rate_pct": 60.9,
+        "raw_positive": 32,
+        "raw_positive_pct": 46.4,
+        "gross_R": 7.78,
+        "net_R_after_0.10_cost": 0.88,
+        "points": 713.5
+      },
+      "first_half": {
+        "trades": 36,
+        "labeled_wins": 19,
+        "labeled_losses": 17,
+        "labeled_win_rate_pct": 52.8,
+        "raw_positive": 14,
+        "raw_positive_pct": 38.9,
+        "gross_R": -3.07,
+        "net_R_after_0.10_cost": -6.67,
+        "points": -412.4
+      },
+      "second_half": {
+        "trades": 33,
+        "labeled_wins": 23,
+        "labeled_losses": 10,
+        "labeled_win_rate_pct": 69.7,
+        "raw_positive": 18,
+        "raw_positive_pct": 54.5,
+        "gross_R": 10.85,
+        "net_R_after_0.10_cost": 7.55,
+        "points": 1125.9
+      },
+      "by_signal": {
+        "CPR_BRK_PDH": {
+          "trades": 7,
+          "labeled_wins": 2,
+          "labeled_losses": 5,
+          "labeled_win_rate_pct": 28.6,
+          "raw_positive": 2,
+          "raw_positive_pct": 28.6,
+          "gross_R": -2.56,
+          "net_R_after_0.10_cost": -3.26,
+          "points": -333.6
+        },
+        "CPR_BRK_S2": {
+          "trades": 7,
+          "labeled_wins": 6,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 85.7,
+          "raw_positive": 5,
+          "raw_positive_pct": 71.4,
+          "gross_R": 2.68,
+          "net_R_after_0.10_cost": 1.98,
+          "points": 325.1
+        },
+        "CPR_BRK_PP": {
+          "trades": 8,
+          "labeled_wins": 5,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 62.5,
+          "raw_positive": 3,
+          "raw_positive_pct": 37.5,
+          "gross_R": 1.75,
+          "net_R_after_0.10_cost": 0.95,
+          "points": 158.8
+        },
+        "CPR_REV_PDL": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.59,
+          "net_R_after_0.10_cost": -0.79,
+          "points": -88.9
+        },
+        "CPR_BRK_BC": {
+          "trades": 6,
+          "labeled_wins": 4,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 3,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.23,
+          "net_R_after_0.10_cost": -0.37,
+          "points": 29.1
+        },
+        "CPR_BRK_TC": {
+          "trades": 6,
+          "labeled_wins": 2,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 1,
+          "raw_positive_pct": 16.7,
+          "gross_R": -1.14,
+          "net_R_after_0.10_cost": -1.74,
+          "points": -140.2
+        },
+        "CPR_BRK_R2": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.37,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -44.5
+        },
+        "CPR_BRK_S1": {
+          "trades": 10,
+          "labeled_wins": 7,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 70.0,
+          "raw_positive": 6,
+          "raw_positive_pct": 60.0,
+          "gross_R": 2.18,
+          "net_R_after_0.10_cost": 1.18,
+          "points": 190.0
+        },
+        "CPR_REV_PDH": {
+          "trades": 7,
+          "labeled_wins": 6,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 85.7,
+          "raw_positive": 5,
+          "raw_positive_pct": 71.4,
+          "gross_R": 6.91,
+          "net_R_after_0.10_cost": 6.21,
+          "points": 796.8
+        },
+        "CPR_REV_S1": {
+          "trades": 2,
+          "labeled_wins": 0,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 0.0,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.36,
+          "net_R_after_0.10_cost": -1.56,
+          "points": -164.1
+        },
+        "CPR_BRK_PDL": {
+          "trades": 3,
+          "labeled_wins": 1,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 1,
+          "raw_positive_pct": 33.3,
+          "gross_R": -0.47,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -58.8
+        },
+        "CPR_REV_S2": {
+          "trades": 3,
+          "labeled_wins": 2,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 2,
+          "raw_positive_pct": 66.7,
+          "gross_R": 0.18,
+          "net_R_after_0.10_cost": -0.12,
+          "points": 20.9
+        },
+        "CPR_BRK_R1": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 25.0,
+          "gross_R": 0.34,
+          "net_R_after_0.10_cost": -0.06,
+          "points": 22.9
+        }
+      },
+      "no_trade_days": 7
+    },
+    "CPR_ALL_confirm_2": {
+      "all": {
+        "trades": 69,
+        "labeled_wins": 42,
+        "labeled_losses": 27,
+        "labeled_win_rate_pct": 60.9,
+        "raw_positive": 33,
+        "raw_positive_pct": 47.8,
+        "gross_R": 4.3,
+        "net_R_after_0.10_cost": -2.6,
+        "points": 313.7
+      },
+      "first_half": {
+        "trades": 36,
+        "labeled_wins": 20,
+        "labeled_losses": 16,
+        "labeled_win_rate_pct": 55.6,
+        "raw_positive": 15,
+        "raw_positive_pct": 41.7,
+        "gross_R": -2.8,
+        "net_R_after_0.10_cost": -6.4,
+        "points": -380.1
+      },
+      "second_half": {
+        "trades": 33,
+        "labeled_wins": 22,
+        "labeled_losses": 11,
+        "labeled_win_rate_pct": 66.7,
+        "raw_positive": 18,
+        "raw_positive_pct": 54.5,
+        "gross_R": 7.1,
+        "net_R_after_0.10_cost": 3.8,
+        "points": 693.8
+      },
+      "by_signal": {
+        "CPR_BRK_PDH": {
+          "trades": 9,
+          "labeled_wins": 3,
+          "labeled_losses": 6,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 3,
+          "raw_positive_pct": 33.3,
+          "gross_R": -3.07,
+          "net_R_after_0.10_cost": -3.97,
+          "points": -397.9
+        },
+        "CPR_BRK_S2": {
+          "trades": 8,
+          "labeled_wins": 7,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 87.5,
+          "raw_positive": 6,
+          "raw_positive_pct": 75.0,
+          "gross_R": 3.22,
+          "net_R_after_0.10_cost": 2.42,
+          "points": 388.5
+        },
+        "CPR_BRK_PP": {
+          "trades": 9,
+          "labeled_wins": 6,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 5,
+          "raw_positive_pct": 55.6,
+          "gross_R": 2.24,
+          "net_R_after_0.10_cost": 1.34,
+          "points": 218.3
+        },
+        "CPR_REV_PDL": {
+          "trades": 2,
+          "labeled_wins": 1,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.59,
+          "net_R_after_0.10_cost": -0.79,
+          "points": -88.9
+        },
+        "CPR_BRK_BC": {
+          "trades": 7,
+          "labeled_wins": 5,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 71.4,
+          "raw_positive": 4,
+          "raw_positive_pct": 57.1,
+          "gross_R": 0.73,
+          "net_R_after_0.10_cost": 0.03,
+          "points": 89.5
+        },
+        "CPR_BRK_TC": {
+          "trades": 4,
+          "labeled_wins": 1,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 25.0,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.98,
+          "net_R_after_0.10_cost": -2.38,
+          "points": -233.4
+        },
+        "CPR_BRK_R2": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.37,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -44.5
+        },
+        "CPR_BRK_S1": {
+          "trades": 11,
+          "labeled_wins": 7,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 63.6,
+          "raw_positive": 6,
+          "raw_positive_pct": 54.5,
+          "gross_R": 1.18,
+          "net_R_after_0.10_cost": 0.08,
+          "points": 75.0
+        },
+        "CPR_REV_PDH": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 3.47,
+          "net_R_after_0.10_cost": 3.07,
+          "points": 395.4
+        },
+        "CPR_REV_S1": {
+          "trades": 2,
+          "labeled_wins": 0,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 0.0,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.36,
+          "net_R_after_0.10_cost": -1.56,
+          "points": -164.1
+        },
+        "CPR_BRK_PDL": {
+          "trades": 3,
+          "labeled_wins": 1,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 1,
+          "raw_positive_pct": 33.3,
+          "gross_R": -0.47,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -58.8
+        },
+        "CPR_REV_S2": {
+          "trades": 2,
+          "labeled_wins": 2,
+          "labeled_losses": 0,
+          "labeled_win_rate_pct": 100.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 100.0,
+          "gross_R": 0.95,
+          "net_R_after_0.10_cost": 0.75,
+          "points": 111.7
+        },
+        "CPR_BRK_R1": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 25.0,
+          "gross_R": 0.34,
+          "net_R_after_0.10_cost": -0.06,
+          "points": 22.9
+        }
+      },
+      "no_trade_days": 7
+    },
+    "CPR_BRK_confirm_0": {
+      "all": {
+        "trades": 69,
+        "labeled_wins": 40,
+        "labeled_losses": 29,
+        "labeled_win_rate_pct": 58.0,
+        "raw_positive": 28,
+        "raw_positive_pct": 40.6,
+        "gross_R": -1.52,
+        "net_R_after_0.10_cost": -8.42,
+        "points": -331.6
+      },
+      "first_half": {
+        "trades": 36,
+        "labeled_wins": 21,
+        "labeled_losses": 15,
+        "labeled_win_rate_pct": 58.3,
+        "raw_positive": 15,
+        "raw_positive_pct": 41.7,
+        "gross_R": -0.89,
+        "net_R_after_0.10_cost": -4.49,
+        "points": -124.6
+      },
+      "second_half": {
+        "trades": 33,
+        "labeled_wins": 19,
+        "labeled_losses": 14,
+        "labeled_win_rate_pct": 57.6,
+        "raw_positive": 13,
+        "raw_positive_pct": 39.4,
+        "gross_R": -0.63,
+        "net_R_after_0.10_cost": -3.93,
+        "points": -207.0
+      },
+      "by_signal": {
+        "CPR_BRK_PDH": {
+          "trades": 12,
+          "labeled_wins": 4,
+          "labeled_losses": 8,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 2,
+          "raw_positive_pct": 16.7,
+          "gross_R": -5.68,
+          "net_R_after_0.10_cost": -6.88,
+          "points": -708.5
+        },
+        "CPR_BRK_S2": {
+          "trades": 10,
+          "labeled_wins": 8,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 80.0,
+          "raw_positive": 6,
+          "raw_positive_pct": 60.0,
+          "gross_R": 2.13,
+          "net_R_after_0.10_cost": 1.13,
+          "points": 260.3
+        },
+        "CPR_BRK_PP": {
+          "trades": 8,
+          "labeled_wins": 4,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 25.0,
+          "gross_R": 0.71,
+          "net_R_after_0.10_cost": -0.09,
+          "points": 37.5
+        },
+        "CPR_BRK_S1": {
+          "trades": 11,
+          "labeled_wins": 7,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 63.6,
+          "raw_positive": 6,
+          "raw_positive_pct": 54.5,
+          "gross_R": 2.3,
+          "net_R_after_0.10_cost": 1.2,
+          "points": 215.8
+        },
+        "CPR_BRK_BC": {
+          "trades": 8,
+          "labeled_wins": 6,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 4,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.59,
+          "net_R_after_0.10_cost": -0.21,
+          "points": 69.3
+        },
+        "CPR_BRK_TC": {
+          "trades": 7,
+          "labeled_wins": 3,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 42.9,
+          "raw_positive": 2,
+          "raw_positive_pct": 28.6,
+          "gross_R": -1.23,
+          "net_R_after_0.10_cost": -1.93,
+          "points": -147.0
+        },
+        "CPR_BRK_R2": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.37,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -44.5
+        },
+        "CPR_BRK_PDL": {
+          "trades": 6,
+          "labeled_wins": 3,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.42,
+          "net_R_after_0.10_cost": -1.02,
+          "points": -51.9
+        },
+        "CPR_BRK_R1": {
+          "trades": 3,
+          "labeled_wins": 2,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 1,
+          "raw_positive_pct": 33.3,
+          "gross_R": 0.46,
+          "net_R_after_0.10_cost": 0.16,
+          "points": 37.4
+        }
+      },
+      "no_trade_days": 7
+    },
+    "CPR_BRK_confirm_1": {
+      "all": {
+        "trades": 69,
+        "labeled_wins": 41,
+        "labeled_losses": 28,
+        "labeled_win_rate_pct": 59.4,
+        "raw_positive": 30,
+        "raw_positive_pct": 43.5,
+        "gross_R": 1.17,
+        "net_R_after_0.10_cost": -5.73,
+        "points": -20.9
+      },
+      "first_half": {
+        "trades": 36,
+        "labeled_wins": 20,
+        "labeled_losses": 16,
+        "labeled_win_rate_pct": 55.6,
+        "raw_positive": 15,
+        "raw_positive_pct": 41.7,
+        "gross_R": -1.75,
+        "net_R_after_0.10_cost": -5.35,
+        "points": -229.2
+      },
+      "second_half": {
+        "trades": 33,
+        "labeled_wins": 21,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 63.6,
+        "raw_positive": 15,
+        "raw_positive_pct": 45.5,
+        "gross_R": 2.92,
+        "net_R_after_0.10_cost": -0.38,
+        "points": 208.3
+      },
+      "by_signal": {
+        "CPR_BRK_PDH": {
+          "trades": 12,
+          "labeled_wins": 4,
+          "labeled_losses": 8,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 2,
+          "raw_positive_pct": 16.7,
+          "gross_R": -5.68,
+          "net_R_after_0.10_cost": -6.88,
+          "points": -708.5
+        },
+        "CPR_BRK_S2": {
+          "trades": 10,
+          "labeled_wins": 8,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 80.0,
+          "raw_positive": 6,
+          "raw_positive_pct": 60.0,
+          "gross_R": 2.1,
+          "net_R_after_0.10_cost": 1.1,
+          "points": 257.8
+        },
+        "CPR_BRK_PP": {
+          "trades": 9,
+          "labeled_wins": 6,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 4,
+          "raw_positive_pct": 44.4,
+          "gross_R": 3.28,
+          "net_R_after_0.10_cost": 2.38,
+          "points": 337.6
+        },
+        "CPR_BRK_S1": {
+          "trades": 11,
+          "labeled_wins": 7,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 63.6,
+          "raw_positive": 6,
+          "raw_positive_pct": 54.5,
+          "gross_R": 2.3,
+          "net_R_after_0.10_cost": 1.2,
+          "points": 215.8
+        },
+        "CPR_BRK_BC": {
+          "trades": 7,
+          "labeled_wins": 5,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 71.4,
+          "raw_positive": 4,
+          "raw_positive_pct": 57.1,
+          "gross_R": 0.6,
+          "net_R_after_0.10_cost": -0.1,
+          "points": 71.5
+        },
+        "CPR_BRK_TC": {
+          "trades": 5,
+          "labeled_wins": 2,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 40.0,
+          "raw_positive": 1,
+          "raw_positive_pct": 20.0,
+          "gross_R": -0.86,
+          "net_R_after_0.10_cost": -1.36,
+          "points": -106.0
+        },
+        "CPR_BRK_R2": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.37,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -44.5
+        },
+        "CPR_BRK_R1": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.53,
+          "net_R_after_0.10_cost": 0.13,
+          "points": 45.7
+        },
+        "CPR_BRK_PDL": {
+          "trades": 7,
+          "labeled_wins": 3,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 42.9,
+          "raw_positive": 3,
+          "raw_positive_pct": 42.9,
+          "gross_R": -0.73,
+          "net_R_after_0.10_cost": -1.44,
+          "points": -90.3
+        }
+      },
+      "no_trade_days": 7
+    },
+    "CPR_BRK_confirm_2": {
+      "all": {
+        "trades": 69,
+        "labeled_wins": 42,
+        "labeled_losses": 27,
+        "labeled_win_rate_pct": 60.9,
+        "raw_positive": 32,
+        "raw_positive_pct": 46.4,
+        "gross_R": 0.47,
+        "net_R_after_0.10_cost": -6.43,
+        "points": -116.2
+      },
+      "first_half": {
+        "trades": 36,
+        "labeled_wins": 22,
+        "labeled_losses": 14,
+        "labeled_win_rate_pct": 61.1,
+        "raw_positive": 17,
+        "raw_positive_pct": 47.2,
+        "gross_R": -0.58,
+        "net_R_after_0.10_cost": -4.18,
+        "points": -87.4
+      },
+      "second_half": {
+        "trades": 33,
+        "labeled_wins": 20,
+        "labeled_losses": 13,
+        "labeled_win_rate_pct": 60.6,
+        "raw_positive": 15,
+        "raw_positive_pct": 45.5,
+        "gross_R": 1.05,
+        "net_R_after_0.10_cost": -2.25,
+        "points": -28.8
+      },
+      "by_signal": {
+        "CPR_BRK_PDH": {
+          "trades": 13,
+          "labeled_wins": 5,
+          "labeled_losses": 8,
+          "labeled_win_rate_pct": 38.5,
+          "raw_positive": 3,
+          "raw_positive_pct": 23.1,
+          "gross_R": -5.2,
+          "net_R_after_0.10_cost": -6.5,
+          "points": -652.5
+        },
+        "CPR_BRK_S2": {
+          "trades": 10,
+          "labeled_wins": 8,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 80.0,
+          "raw_positive": 6,
+          "raw_positive_pct": 60.0,
+          "gross_R": 2.1,
+          "net_R_after_0.10_cost": 1.1,
+          "points": 257.8
+        },
+        "CPR_BRK_PP": {
+          "trades": 12,
+          "labeled_wins": 8,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 7,
+          "raw_positive_pct": 58.3,
+          "gross_R": 2.82,
+          "net_R_after_0.10_cost": 1.62,
+          "points": 262.8
+        },
+        "CPR_BRK_BC": {
+          "trades": 6,
+          "labeled_wins": 4,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 3,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.23,
+          "net_R_after_0.10_cost": -0.37,
+          "points": 29.1
+        },
+        "CPR_BRK_TC": {
+          "trades": 3,
+          "labeled_wins": 1,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 0,
+          "raw_positive_pct": 0.0,
+          "gross_R": -1.7,
+          "net_R_after_0.10_cost": -2.0,
+          "points": -199.2
+        },
+        "CPR_BRK_R2": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": -0.37,
+          "net_R_after_0.10_cost": -0.77,
+          "points": -44.5
+        },
+        "CPR_BRK_S1": {
+          "trades": 10,
+          "labeled_wins": 7,
+          "labeled_losses": 3,
+          "labeled_win_rate_pct": 70.0,
+          "raw_positive": 6,
+          "raw_positive_pct": 60.0,
+          "gross_R": 2.79,
+          "net_R_after_0.10_cost": 1.79,
+          "points": 274.9
+        },
+        "CPR_BRK_R1": {
+          "trades": 4,
+          "labeled_wins": 3,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.53,
+          "net_R_after_0.10_cost": 0.13,
+          "points": 45.7
+        },
+        "CPR_BRK_PDL": {
+          "trades": 7,
+          "labeled_wins": 3,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 42.9,
+          "raw_positive": 3,
+          "raw_positive_pct": 42.9,
+          "gross_R": -0.73,
+          "net_R_after_0.10_cost": -1.44,
+          "points": -90.3
+        }
+      },
+      "no_trade_days": 7
+    },
+    "CPR_REV_confirm_0": {
+      "all": {
+        "trades": 63,
+        "labeled_wins": 40,
+        "labeled_losses": 22,
+        "labeled_win_rate_pct": 63.5,
+        "raw_positive": 35,
+        "raw_positive_pct": 55.6,
+        "gross_R": 9.48,
+        "net_R_after_0.10_cost": 3.18,
+        "points": 1051.1
+      },
+      "first_half": {
+        "trades": 31,
+        "labeled_wins": 19,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 61.3,
+        "raw_positive": 17,
+        "raw_positive_pct": 54.8,
+        "gross_R": -0.17,
+        "net_R_after_0.10_cost": -3.27,
+        "points": -33.3
+      },
+      "second_half": {
+        "trades": 32,
+        "labeled_wins": 21,
+        "labeled_losses": 10,
+        "labeled_win_rate_pct": 65.6,
+        "raw_positive": 18,
+        "raw_positive_pct": 56.2,
+        "gross_R": 9.64,
+        "net_R_after_0.10_cost": 6.44,
+        "points": 1084.4
+      },
+      "by_signal": {
+        "CPR_REV_PDH": {
+          "trades": 17,
+          "labeled_wins": 13,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 76.5,
+          "raw_positive": 12,
+          "raw_positive_pct": 70.6,
+          "gross_R": 6.61,
+          "net_R_after_0.10_cost": 4.91,
+          "points": 763.6
+        },
+        "CPR_REV_S2": {
+          "trades": 11,
+          "labeled_wins": 6,
+          "labeled_losses": 5,
+          "labeled_win_rate_pct": 54.5,
+          "raw_positive": 4,
+          "raw_positive_pct": 36.4,
+          "gross_R": -1.44,
+          "net_R_after_0.10_cost": -2.54,
+          "points": -195.5
+        },
+        "CPR_REV_R2": {
+          "trades": 5,
+          "labeled_wins": 3,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 60.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 60.0,
+          "gross_R": 0.67,
+          "net_R_after_0.10_cost": 0.17,
+          "points": 80.2
+        },
+        "CPR_REV_S1": {
+          "trades": 14,
+          "labeled_wins": 6,
+          "labeled_losses": 7,
+          "labeled_win_rate_pct": 42.9,
+          "raw_positive": 5,
+          "raw_positive_pct": 35.7,
+          "gross_R": -2.49,
+          "net_R_after_0.10_cost": -3.89,
+          "points": -317.8
+        },
+        "CPR_REV_R1": {
+          "trades": 9,
+          "labeled_wins": 7,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 77.8,
+          "raw_positive": 6,
+          "raw_positive_pct": 66.7,
+          "gross_R": 4.99,
+          "net_R_after_0.10_cost": 4.09,
+          "points": 588.7
+        },
+        "CPR_REV_PDL": {
+          "trades": 7,
+          "labeled_wins": 5,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 71.4,
+          "raw_positive": 5,
+          "raw_positive_pct": 71.4,
+          "gross_R": 1.13,
+          "net_R_after_0.10_cost": 0.43,
+          "points": 131.9
+        }
+      },
+      "no_trade_days": 13
+    },
+    "CPR_REV_confirm_1": {
+      "all": {
+        "trades": 52,
+        "labeled_wins": 34,
+        "labeled_losses": 17,
+        "labeled_win_rate_pct": 65.4,
+        "raw_positive": 25,
+        "raw_positive_pct": 48.1,
+        "gross_R": 5.69,
+        "net_R_after_0.10_cost": 0.49,
+        "points": 605.2
+      },
+      "first_half": {
+        "trades": 27,
+        "labeled_wins": 17,
+        "labeled_losses": 10,
+        "labeled_win_rate_pct": 63.0,
+        "raw_positive": 12,
+        "raw_positive_pct": 44.4,
+        "gross_R": -0.76,
+        "net_R_after_0.10_cost": -3.46,
+        "points": -119.7
+      },
+      "second_half": {
+        "trades": 25,
+        "labeled_wins": 17,
+        "labeled_losses": 7,
+        "labeled_win_rate_pct": 68.0,
+        "raw_positive": 13,
+        "raw_positive_pct": 52.0,
+        "gross_R": 6.46,
+        "net_R_after_0.10_cost": 3.96,
+        "points": 724.9
+      },
+      "by_signal": {
+        "CPR_REV_R1": {
+          "trades": 5,
+          "labeled_wins": 4,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 80.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 60.0,
+          "gross_R": 0.44,
+          "net_R_after_0.10_cost": -0.06,
+          "points": 57.5
+        },
+        "CPR_REV_S2": {
+          "trades": 12,
+          "labeled_wins": 8,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 66.7,
+          "raw_positive": 4,
+          "raw_positive_pct": 33.3,
+          "gross_R": -1.55,
+          "net_R_after_0.10_cost": -2.75,
+          "points": -197.3
+        },
+        "CPR_REV_PDL": {
+          "trades": 9,
+          "labeled_wins": 5,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 55.6,
+          "raw_positive": 4,
+          "raw_positive_pct": 44.4,
+          "gross_R": -1.26,
+          "net_R_after_0.10_cost": -2.16,
+          "points": -171.4
+        },
+        "CPR_REV_S1": {
+          "trades": 11,
+          "labeled_wins": 6,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 54.5,
+          "raw_positive": 4,
+          "raw_positive_pct": 36.4,
+          "gross_R": -1.45,
+          "net_R_after_0.10_cost": -2.55,
+          "points": -188.7
+        },
+        "CPR_REV_R2": {
+          "trades": 4,
+          "labeled_wins": 2,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 2,
+          "raw_positive_pct": 50.0,
+          "gross_R": 0.57,
+          "net_R_after_0.10_cost": 0.17,
+          "points": 68.3
+        },
+        "CPR_REV_PDH": {
+          "trades": 11,
+          "labeled_wins": 9,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 81.8,
+          "raw_positive": 8,
+          "raw_positive_pct": 72.7,
+          "gross_R": 8.95,
+          "net_R_after_0.10_cost": 7.85,
+          "points": 1036.8
+        }
+      },
+      "no_trade_days": 24
+    },
+    "CPR_REV_confirm_2": {
+      "all": {
+        "trades": 46,
+        "labeled_wins": 30,
+        "labeled_losses": 15,
+        "labeled_win_rate_pct": 65.2,
+        "raw_positive": 22,
+        "raw_positive_pct": 47.8,
+        "gross_R": 3.17,
+        "net_R_after_0.10_cost": -1.43,
+        "points": 283.6
+      },
+      "first_half": {
+        "trades": 25,
+        "labeled_wins": 16,
+        "labeled_losses": 9,
+        "labeled_win_rate_pct": 64.0,
+        "raw_positive": 12,
+        "raw_positive_pct": 48.0,
+        "gross_R": -1.06,
+        "net_R_after_0.10_cost": -3.56,
+        "points": -203.5
+      },
+      "second_half": {
+        "trades": 21,
+        "labeled_wins": 14,
+        "labeled_losses": 6,
+        "labeled_win_rate_pct": 66.7,
+        "raw_positive": 10,
+        "raw_positive_pct": 47.6,
+        "gross_R": 4.23,
+        "net_R_after_0.10_cost": 2.13,
+        "points": 487.1
+      },
+      "by_signal": {
+        "CPR_REV_R1": {
+          "trades": 6,
+          "labeled_wins": 5,
+          "labeled_losses": 1,
+          "labeled_win_rate_pct": 83.3,
+          "raw_positive": 4,
+          "raw_positive_pct": 66.7,
+          "gross_R": 0.88,
+          "net_R_after_0.10_cost": 0.27,
+          "points": 110.3
+        },
+        "CPR_REV_S1": {
+          "trades": 10,
+          "labeled_wins": 5,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 4,
+          "raw_positive_pct": 40.0,
+          "gross_R": -1.29,
+          "net_R_after_0.10_cost": -2.29,
+          "points": -206.8
+        },
+        "CPR_REV_PDL": {
+          "trades": 8,
+          "labeled_wins": 4,
+          "labeled_losses": 4,
+          "labeled_win_rate_pct": 50.0,
+          "raw_positive": 3,
+          "raw_positive_pct": 37.5,
+          "gross_R": -2.11,
+          "net_R_after_0.10_cost": -2.91,
+          "points": -270.2
+        },
+        "CPR_REV_R2": {
+          "trades": 3,
+          "labeled_wins": 1,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 33.3,
+          "raw_positive": 1,
+          "raw_positive_pct": 33.3,
+          "gross_R": -0.16,
+          "net_R_after_0.10_cost": -0.46,
+          "points": -18.7
+        },
+        "CPR_REV_S2": {
+          "trades": 11,
+          "labeled_wins": 9,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 81.8,
+          "raw_positive": 5,
+          "raw_positive_pct": 45.5,
+          "gross_R": 0.63,
+          "net_R_after_0.10_cost": -0.47,
+          "points": 73.5
+        },
+        "CPR_REV_PDH": {
+          "trades": 8,
+          "labeled_wins": 6,
+          "labeled_losses": 2,
+          "labeled_win_rate_pct": 75.0,
+          "raw_positive": 5,
+          "raw_positive_pct": 62.5,
+          "gross_R": 5.22,
+          "net_R_after_0.10_cost": 4.42,
+          "points": 595.5
+        }
+      },
+      "no_trade_days": 30
+    },
+    "MACD_confirm_0": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 43,
+        "labeled_losses": 31,
+        "labeled_win_rate_pct": 58.1,
+        "raw_positive": 31,
+        "raw_positive_pct": 41.9,
+        "gross_R": -2.12,
+        "net_R_after_0.10_cost": -9.52,
+        "points": -337.0
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 29,
+        "labeled_losses": 10,
+        "labeled_win_rate_pct": 74.4,
+        "raw_positive": 19,
+        "raw_positive_pct": 48.7,
+        "gross_R": 2.32,
+        "net_R_after_0.10_cost": -1.58,
+        "points": 271.0
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 14,
+        "labeled_losses": 21,
+        "labeled_win_rate_pct": 40.0,
+        "raw_positive": 12,
+        "raw_positive_pct": 34.3,
+        "gross_R": -4.44,
+        "net_R_after_0.10_cost": -7.94,
+        "points": -608.0
+      },
+      "by_signal": {
+        "MACD_CROSS_DOWN": {
+          "trades": 38,
+          "labeled_wins": 24,
+          "labeled_losses": 14,
+          "labeled_win_rate_pct": 63.2,
+          "raw_positive": 17,
+          "raw_positive_pct": 44.7,
+          "gross_R": 1.95,
+          "net_R_after_0.10_cost": -1.85,
+          "points": 190.9
+        },
+        "MACD_CROSS_UP": {
+          "trades": 36,
+          "labeled_wins": 19,
+          "labeled_losses": 17,
+          "labeled_win_rate_pct": 52.8,
+          "raw_positive": 14,
+          "raw_positive_pct": 38.9,
+          "gross_R": -4.07,
+          "net_R_after_0.10_cost": -7.67,
+          "points": -527.9
+        }
+      },
+      "no_trade_days": 2
+    },
+    "MACD_confirm_1": {
+      "all": {
+        "trades": 71,
+        "labeled_wins": 47,
+        "labeled_losses": 22,
+        "labeled_win_rate_pct": 66.2,
+        "raw_positive": 31,
+        "raw_positive_pct": 43.7,
+        "gross_R": 0.07,
+        "net_R_after_0.10_cost": -7.03,
+        "points": -80.7
+      },
+      "first_half": {
+        "trades": 37,
+        "labeled_wins": 25,
+        "labeled_losses": 10,
+        "labeled_win_rate_pct": 67.6,
+        "raw_positive": 13,
+        "raw_positive_pct": 35.1,
+        "gross_R": -0.66,
+        "net_R_after_0.10_cost": -4.36,
+        "points": -88.5
+      },
+      "second_half": {
+        "trades": 34,
+        "labeled_wins": 22,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 64.7,
+        "raw_positive": 18,
+        "raw_positive_pct": 52.9,
+        "gross_R": 0.73,
+        "net_R_after_0.10_cost": -2.67,
+        "points": 7.8
+      },
+      "by_signal": {
+        "MACD_CROSS_UP": {
+          "trades": 33,
+          "labeled_wins": 20,
+          "labeled_losses": 12,
+          "labeled_win_rate_pct": 60.6,
+          "raw_positive": 13,
+          "raw_positive_pct": 39.4,
+          "gross_R": -4.18,
+          "net_R_after_0.10_cost": -7.48,
+          "points": -531.7
+        },
+        "MACD_CROSS_DOWN": {
+          "trades": 38,
+          "labeled_wins": 27,
+          "labeled_losses": 10,
+          "labeled_win_rate_pct": 71.1,
+          "raw_positive": 18,
+          "raw_positive_pct": 47.4,
+          "gross_R": 4.25,
+          "net_R_after_0.10_cost": 0.45,
+          "points": 451.0
+        }
+      },
+      "no_trade_days": 5
+    },
+    "MACD_confirm_2": {
+      "all": {
+        "trades": 64,
+        "labeled_wins": 41,
+        "labeled_losses": 23,
+        "labeled_win_rate_pct": 64.1,
+        "raw_positive": 27,
+        "raw_positive_pct": 42.2,
+        "gross_R": -3.9,
+        "net_R_after_0.10_cost": -10.3,
+        "points": -563.7
+      },
+      "first_half": {
+        "trades": 32,
+        "labeled_wins": 20,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 62.5,
+        "raw_positive": 11,
+        "raw_positive_pct": 34.4,
+        "gross_R": -3.14,
+        "net_R_after_0.10_cost": -6.34,
+        "points": -400.0
+      },
+      "second_half": {
+        "trades": 32,
+        "labeled_wins": 21,
+        "labeled_losses": 11,
+        "labeled_win_rate_pct": 65.6,
+        "raw_positive": 16,
+        "raw_positive_pct": 50.0,
+        "gross_R": -0.76,
+        "net_R_after_0.10_cost": -3.96,
+        "points": -163.7
+      },
+      "by_signal": {
+        "MACD_CROSS_UP": {
+          "trades": 29,
+          "labeled_wins": 17,
+          "labeled_losses": 12,
+          "labeled_win_rate_pct": 58.6,
+          "raw_positive": 10,
+          "raw_positive_pct": 34.5,
+          "gross_R": -7.22,
+          "net_R_after_0.10_cost": -10.12,
+          "points": -897.1
+        },
+        "MACD_CROSS_DOWN": {
+          "trades": 35,
+          "labeled_wins": 24,
+          "labeled_losses": 11,
+          "labeled_win_rate_pct": 68.6,
+          "raw_positive": 17,
+          "raw_positive_pct": 48.6,
+          "gross_R": 3.33,
+          "net_R_after_0.10_cost": -0.17,
+          "points": 333.4
+        }
+      },
+      "no_trade_days": 12
+    },
+    "RSI_confirm_0": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 49,
+        "labeled_losses": 24,
+        "labeled_win_rate_pct": 66.2,
+        "raw_positive": 35,
+        "raw_positive_pct": 47.3,
+        "gross_R": -2.84,
+        "net_R_after_0.10_cost": -10.24,
+        "points": -517.4
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 27,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 69.2,
+        "raw_positive": 16,
+        "raw_positive_pct": 41.0,
+        "gross_R": -2.19,
+        "net_R_after_0.10_cost": -6.09,
+        "points": -306.8
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 22,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 62.9,
+        "raw_positive": 19,
+        "raw_positive_pct": 54.3,
+        "gross_R": -0.65,
+        "net_R_after_0.10_cost": -4.15,
+        "points": -210.6
+      },
+      "by_signal": {
+        "RSI_CROSS_55": {
+          "trades": 39,
+          "labeled_wins": 23,
+          "labeled_losses": 15,
+          "labeled_win_rate_pct": 59.0,
+          "raw_positive": 15,
+          "raw_positive_pct": 38.5,
+          "gross_R": -7.42,
+          "net_R_after_0.10_cost": -11.32,
+          "points": -955.3
+        },
+        "RSI_CROSS_45": {
+          "trades": 35,
+          "labeled_wins": 26,
+          "labeled_losses": 9,
+          "labeled_win_rate_pct": 74.3,
+          "raw_positive": 20,
+          "raw_positive_pct": 57.1,
+          "gross_R": 4.57,
+          "net_R_after_0.10_cost": 1.07,
+          "points": 437.9
+        }
+      },
+      "no_trade_days": 2
+    },
+    "RSI_confirm_1": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 49,
+        "labeled_losses": 24,
+        "labeled_win_rate_pct": 66.2,
+        "raw_positive": 35,
+        "raw_positive_pct": 47.3,
+        "gross_R": -2.84,
+        "net_R_after_0.10_cost": -10.24,
+        "points": -517.4
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 27,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 69.2,
+        "raw_positive": 16,
+        "raw_positive_pct": 41.0,
+        "gross_R": -2.19,
+        "net_R_after_0.10_cost": -6.09,
+        "points": -306.8
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 22,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 62.9,
+        "raw_positive": 19,
+        "raw_positive_pct": 54.3,
+        "gross_R": -0.65,
+        "net_R_after_0.10_cost": -4.15,
+        "points": -210.6
+      },
+      "by_signal": {
+        "RSI_CROSS_55": {
+          "trades": 39,
+          "labeled_wins": 23,
+          "labeled_losses": 15,
+          "labeled_win_rate_pct": 59.0,
+          "raw_positive": 15,
+          "raw_positive_pct": 38.5,
+          "gross_R": -7.42,
+          "net_R_after_0.10_cost": -11.32,
+          "points": -955.3
+        },
+        "RSI_CROSS_45": {
+          "trades": 35,
+          "labeled_wins": 26,
+          "labeled_losses": 9,
+          "labeled_win_rate_pct": 74.3,
+          "raw_positive": 20,
+          "raw_positive_pct": 57.1,
+          "gross_R": 4.57,
+          "net_R_after_0.10_cost": 1.07,
+          "points": 437.9
+        }
+      },
+      "no_trade_days": 2
+    },
+    "RSI_confirm_2": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 49,
+        "labeled_losses": 24,
+        "labeled_win_rate_pct": 66.2,
+        "raw_positive": 35,
+        "raw_positive_pct": 47.3,
+        "gross_R": -2.84,
+        "net_R_after_0.10_cost": -10.24,
+        "points": -517.4
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 27,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 69.2,
+        "raw_positive": 16,
+        "raw_positive_pct": 41.0,
+        "gross_R": -2.19,
+        "net_R_after_0.10_cost": -6.09,
+        "points": -306.8
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 22,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 62.9,
+        "raw_positive": 19,
+        "raw_positive_pct": 54.3,
+        "gross_R": -0.65,
+        "net_R_after_0.10_cost": -4.15,
+        "points": -210.6
+      },
+      "by_signal": {
+        "RSI_CROSS_55": {
+          "trades": 39,
+          "labeled_wins": 23,
+          "labeled_losses": 15,
+          "labeled_win_rate_pct": 59.0,
+          "raw_positive": 15,
+          "raw_positive_pct": 38.5,
+          "gross_R": -7.42,
+          "net_R_after_0.10_cost": -11.32,
+          "points": -955.3
+        },
+        "RSI_CROSS_45": {
+          "trades": 35,
+          "labeled_wins": 26,
+          "labeled_losses": 9,
+          "labeled_win_rate_pct": 74.3,
+          "raw_positive": 20,
+          "raw_positive_pct": 57.1,
+          "gross_R": 4.57,
+          "net_R_after_0.10_cost": 1.07,
+          "points": 437.9
+        }
+      },
+      "no_trade_days": 2
+    },
+    "SMA20_confirm_0": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 43,
+        "labeled_losses": 31,
+        "labeled_win_rate_pct": 58.1,
+        "raw_positive": 28,
+        "raw_positive_pct": 37.8,
+        "gross_R": -1.62,
+        "net_R_after_0.10_cost": -9.02,
+        "points": -286.9
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 28,
+        "labeled_losses": 11,
+        "labeled_win_rate_pct": 71.8,
+        "raw_positive": 15,
+        "raw_positive_pct": 38.5,
+        "gross_R": -1.21,
+        "net_R_after_0.10_cost": -5.11,
+        "points": -203.1
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 15,
+        "labeled_losses": 20,
+        "labeled_win_rate_pct": 42.9,
+        "raw_positive": 13,
+        "raw_positive_pct": 37.1,
+        "gross_R": -0.41,
+        "net_R_after_0.10_cost": -3.91,
+        "points": -83.8
+      },
+      "by_signal": {
+        "SMA20_CROSS_DOWN": {
+          "trades": 40,
+          "labeled_wins": 25,
+          "labeled_losses": 15,
+          "labeled_win_rate_pct": 62.5,
+          "raw_positive": 17,
+          "raw_positive_pct": 42.5,
+          "gross_R": 3.77,
+          "net_R_after_0.10_cost": -0.23,
+          "points": 431.9
+        },
+        "SMA20_CROSS_UP": {
+          "trades": 34,
+          "labeled_wins": 18,
+          "labeled_losses": 16,
+          "labeled_win_rate_pct": 52.9,
+          "raw_positive": 11,
+          "raw_positive_pct": 32.4,
+          "gross_R": -5.39,
+          "net_R_after_0.10_cost": -8.79,
+          "points": -718.8
+        }
+      },
+      "no_trade_days": 2
+    },
+    "SMA20_confirm_1": {
+      "all": {
+        "trades": 74,
+        "labeled_wins": 43,
+        "labeled_losses": 31,
+        "labeled_win_rate_pct": 58.1,
+        "raw_positive": 28,
+        "raw_positive_pct": 37.8,
+        "gross_R": -1.68,
+        "net_R_after_0.10_cost": -9.08,
+        "points": -285.0
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 29,
+        "labeled_losses": 10,
+        "labeled_win_rate_pct": 74.4,
+        "raw_positive": 16,
+        "raw_positive_pct": 41.0,
+        "gross_R": 0.59,
+        "net_R_after_0.10_cost": -3.31,
+        "points": 12.0
+      },
+      "second_half": {
+        "trades": 35,
+        "labeled_wins": 14,
+        "labeled_losses": 21,
+        "labeled_win_rate_pct": 40.0,
+        "raw_positive": 12,
+        "raw_positive_pct": 34.3,
+        "gross_R": -2.27,
+        "net_R_after_0.10_cost": -5.77,
+        "points": -297.0
+      },
+      "by_signal": {
+        "SMA20_CROSS_DOWN": {
+          "trades": 41,
+          "labeled_wins": 26,
+          "labeled_losses": 15,
+          "labeled_win_rate_pct": 63.4,
+          "raw_positive": 17,
+          "raw_positive_pct": 41.5,
+          "gross_R": 3.66,
+          "net_R_after_0.10_cost": -0.44,
+          "points": 423.7
+        },
+        "SMA20_CROSS_UP": {
+          "trades": 33,
+          "labeled_wins": 17,
+          "labeled_losses": 16,
+          "labeled_win_rate_pct": 51.5,
+          "raw_positive": 11,
+          "raw_positive_pct": 33.3,
+          "gross_R": -5.34,
+          "net_R_after_0.10_cost": -8.64,
+          "points": -708.7
+        }
+      },
+      "no_trade_days": 2
+    },
+    "SMA20_confirm_2": {
+      "all": {
+        "trades": 73,
+        "labeled_wins": 53,
+        "labeled_losses": 20,
+        "labeled_win_rate_pct": 72.6,
+        "raw_positive": 38,
+        "raw_positive_pct": 52.1,
+        "gross_R": 4.8,
+        "net_R_after_0.10_cost": -2.5,
+        "points": 489.0
+      },
+      "first_half": {
+        "trades": 39,
+        "labeled_wins": 30,
+        "labeled_losses": 9,
+        "labeled_win_rate_pct": 76.9,
+        "raw_positive": 17,
+        "raw_positive_pct": 43.6,
+        "gross_R": 2.33,
+        "net_R_after_0.10_cost": -1.57,
+        "points": 256.1
+      },
+      "second_half": {
+        "trades": 34,
+        "labeled_wins": 23,
+        "labeled_losses": 11,
+        "labeled_win_rate_pct": 67.6,
+        "raw_positive": 21,
+        "raw_positive_pct": 61.8,
+        "gross_R": 2.46,
+        "net_R_after_0.10_cost": -0.94,
+        "points": 232.9
+      },
+      "by_signal": {
+        "SMA20_CROSS_UP": {
+          "trades": 29,
+          "labeled_wins": 19,
+          "labeled_losses": 10,
+          "labeled_win_rate_pct": 65.5,
+          "raw_positive": 14,
+          "raw_positive_pct": 48.3,
+          "gross_R": -2.35,
+          "net_R_after_0.10_cost": -5.25,
+          "points": -326.1
+        },
+        "SMA20_CROSS_DOWN": {
+          "trades": 44,
+          "labeled_wins": 34,
+          "labeled_losses": 10,
+          "labeled_win_rate_pct": 77.3,
+          "raw_positive": 24,
+          "raw_positive_pct": 54.5,
+          "gross_R": 7.15,
+          "net_R_after_0.10_cost": 2.75,
+          "points": 815.1
+        }
+      },
+      "no_trade_days": 3
+    },
+    "SMA50_confirm_0": {
+      "all": {
+        "trades": 63,
+        "labeled_wins": 41,
+        "labeled_losses": 22,
+        "labeled_win_rate_pct": 65.1,
+        "raw_positive": 27,
+        "raw_positive_pct": 42.9,
+        "gross_R": 0.52,
+        "net_R_after_0.10_cost": -5.78,
+        "points": -11.9
+      },
+      "first_half": {
+        "trades": 34,
+        "labeled_wins": 23,
+        "labeled_losses": 11,
+        "labeled_win_rate_pct": 67.6,
+        "raw_positive": 14,
+        "raw_positive_pct": 41.2,
+        "gross_R": -2.65,
+        "net_R_after_0.10_cost": -6.05,
+        "points": -339.2
+      },
+      "second_half": {
+        "trades": 29,
+        "labeled_wins": 18,
+        "labeled_losses": 11,
+        "labeled_win_rate_pct": 62.1,
+        "raw_positive": 13,
+        "raw_positive_pct": 44.8,
+        "gross_R": 3.17,
+        "net_R_after_0.10_cost": 0.27,
+        "points": 327.3
+      },
+      "by_signal": {
+        "SMA50_CROSS_DOWN": {
+          "trades": 35,
+          "labeled_wins": 25,
+          "labeled_losses": 10,
+          "labeled_win_rate_pct": 71.4,
+          "raw_positive": 18,
+          "raw_positive_pct": 51.4,
+          "gross_R": 6.33,
+          "net_R_after_0.10_cost": 2.83,
+          "points": 726.2
+        },
+        "SMA50_CROSS_UP": {
+          "trades": 28,
+          "labeled_wins": 16,
+          "labeled_losses": 12,
+          "labeled_win_rate_pct": 57.1,
+          "raw_positive": 9,
+          "raw_positive_pct": 32.1,
+          "gross_R": -5.81,
+          "net_R_after_0.10_cost": -8.61,
+          "points": -738.1
+        }
+      },
+      "no_trade_days": 13
+    },
+    "SMA50_confirm_1": {
+      "all": {
+        "trades": 63,
+        "labeled_wins": 39,
+        "labeled_losses": 24,
+        "labeled_win_rate_pct": 61.9,
+        "raw_positive": 25,
+        "raw_positive_pct": 39.7,
+        "gross_R": -3.23,
+        "net_R_after_0.10_cost": -9.53,
+        "points": -478.2
+      },
+      "first_half": {
+        "trades": 34,
+        "labeled_wins": 22,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 64.7,
+        "raw_positive": 13,
+        "raw_positive_pct": 38.2,
+        "gross_R": -3.38,
+        "net_R_after_0.10_cost": -6.79,
+        "points": -428.5
+      },
+      "second_half": {
+        "trades": 29,
+        "labeled_wins": 17,
+        "labeled_losses": 12,
+        "labeled_win_rate_pct": 58.6,
+        "raw_positive": 12,
+        "raw_positive_pct": 41.4,
+        "gross_R": 0.15,
+        "net_R_after_0.10_cost": -2.75,
+        "points": -49.7
+      },
+      "by_signal": {
+        "SMA50_CROSS_UP": {
+          "trades": 30,
+          "labeled_wins": 16,
+          "labeled_losses": 14,
+          "labeled_win_rate_pct": 53.3,
+          "raw_positive": 9,
+          "raw_positive_pct": 30.0,
+          "gross_R": -7.23,
+          "net_R_after_0.10_cost": -10.23,
+          "points": -932.9
+        },
+        "SMA50_CROSS_DOWN": {
+          "trades": 33,
+          "labeled_wins": 23,
+          "labeled_losses": 10,
+          "labeled_win_rate_pct": 69.7,
+          "raw_positive": 16,
+          "raw_positive_pct": 48.5,
+          "gross_R": 3.99,
+          "net_R_after_0.10_cost": 0.69,
+          "points": 454.7
+        }
+      },
+      "no_trade_days": 13
+    },
+    "SMA50_confirm_2": {
+      "all": {
+        "trades": 63,
+        "labeled_wins": 44,
+        "labeled_losses": 19,
+        "labeled_win_rate_pct": 69.8,
+        "raw_positive": 31,
+        "raw_positive_pct": 49.2,
+        "gross_R": 3.23,
+        "net_R_after_0.10_cost": -3.07,
+        "points": 314.0
+      },
+      "first_half": {
+        "trades": 34,
+        "labeled_wins": 24,
+        "labeled_losses": 10,
+        "labeled_win_rate_pct": 70.6,
+        "raw_positive": 15,
+        "raw_positive_pct": 44.1,
+        "gross_R": -0.4,
+        "net_R_after_0.10_cost": -3.8,
+        "points": -49.3
+      },
+      "second_half": {
+        "trades": 29,
+        "labeled_wins": 20,
+        "labeled_losses": 9,
+        "labeled_win_rate_pct": 69.0,
+        "raw_positive": 16,
+        "raw_positive_pct": 55.2,
+        "gross_R": 3.64,
+        "net_R_after_0.10_cost": 0.74,
+        "points": 363.3
+      },
+      "by_signal": {
+        "SMA50_CROSS_UP": {
+          "trades": 32,
+          "labeled_wins": 20,
+          "labeled_losses": 12,
+          "labeled_win_rate_pct": 62.5,
+          "raw_positive": 13,
+          "raw_positive_pct": 40.6,
+          "gross_R": -4.23,
+          "net_R_after_0.10_cost": -7.43,
+          "points": -555.5
+        },
+        "SMA50_CROSS_DOWN": {
+          "trades": 31,
+          "labeled_wins": 24,
+          "labeled_losses": 7,
+          "labeled_win_rate_pct": 77.4,
+          "raw_positive": 18,
+          "raw_positive_pct": 58.1,
+          "gross_R": 7.46,
+          "net_R_after_0.10_cost": 4.36,
+          "points": 869.5
+        }
+      },
+      "no_trade_days": 13
+    }
+  },
+  "missing_eod_by_strategy": {
+    "CPR_REV_confirm_0": 11,
+    "CPR_ALL_confirm_0": 18,
+    "CONSENSUS_3_of_5": 12,
+    "CONSENSUS_4_of_5": 12,
+    "CPR_BRK_confirm_0": 7,
+    "CPR_BRK_confirm_1": 7,
+    "CPR_BRK_confirm_2": 7,
+    "CPR_ALL_confirm_1": 10,
+    "CPR_ALL_confirm_2": 8,
+    "RSI_confirm_0": 2,
+    "RSI_confirm_1": 2,
+    "RSI_confirm_2": 2,
+    "CPR_REV_confirm_1": 3,
+    "MACD_confirm_0": 6,
+    "MACD_confirm_1": 3,
+    "MACD_confirm_2": 3,
+    "CPR_REV_confirm_2": 1,
+    "SMA20_confirm_0": 4,
+    "SMA20_confirm_1": 4,
+    "SMA20_confirm_2": 2
+  }
+}

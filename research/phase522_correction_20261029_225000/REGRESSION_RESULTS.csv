@@ -1,0 +1,13 @@
+test_id,check,method,expected,actual,result
+RG1,Missing flag → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG2,Flag=false → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG3,Flag=true → HLC,Executed (isolated),True (HLC),True (HLC),PASS
+RG4,Empty → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG5,Whitespace → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG6,Invalid → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG7,0 → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG8,no → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG9,CPR function exists,Code inspection,Exists,Exists,PASS
+RG10,HLC function exists,Code inspection,Exists,Exists,PASS
+RG11,No broker execution,Code inspection,No broker,No broker,PASS
+RG12,Expiry guards intact,Code inspection,Intact,Intact,PASS

@@ -1,0 +1,1 @@
+trade_id,instrument_id,direction,signal_time,entry_time,entry_price,stop,target,discrepancy_type,backtest_value,live_value,notes

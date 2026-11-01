@@ -1,0 +1,13 @@
+gate_id,gate,status,evidence
+OG1,Market-data timer active,IMPLEMENTED AND TESTED,tradingai-market-data.timer (5-min cadence)
+OG2,paper_scalp_live supervised service,NOT IMPLEMENTED,No enabled systemd unit
+OG3,Telegram alert watcher,IMPLEMENTED AND TESTED,cron every minute 09:15-15:30
+OG4,Telegram duplicate suppression,IMPLEMENTED AND TESTED,fired key in tg_state.json
+OG5,Backup procedure,DOCUMENTED ONLY,Phase 5.8 (not rehearsed on production)
+OG6,Restore rehearsal,NOT VERIFIED,Only isolated test DB
+OG7,Rollback procedure,DOCUMENTED ONLY,Phase 5.8 (not rehearsed)
+OG8,Feature flag HLC_ONLY_MODE,NOT IMPLEMENTED,Designed but not coded
+OG9,Daily trade limit,NOT IMPLEMENTED,Designed but not coded
+OG10,Working tree safety,NOT VERIFIED,1,842 dirty files
+OG11,CPR retention for rollback,IMPLEMENTED AND TESTED,_cpr_book_signal retained
+OG12,Broker execution disabled,IMPLEMENTED AND TESTED,No broker API calls

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Insert / update the shared model-rule notice on every strategy/signal page.
 
-Rule copy follows app/research/cpr_trigger_engine.py: outer R2/S2 close confirmations,
-BEAR-only ordinary base triggers, weekly alignment, Friday BEAR skip, and a gated
-close-cross breakout add-on. This keeps one uniform notice on every in-scope page.
+Rule copy follows app/research/scalp_engine.py: 3-bar HLC alignment, next-open entry,
+signal-candle-extreme stop (+/- 1.0) and 1.5R target, 15:25 EOD. This keeps one
+uniform notice on every in-scope page.
 
 Idempotent: a page already carrying the current <!--TAIRULE--> block is left
 unchanged; a page carrying an OLD block is updated in place. Read-modify-write
@@ -18,13 +18,13 @@ import sys
 
 BASE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND = os.path.join(BASE, 'frontend')
-STAMP = 'pre-daily-short-20261023'
+STAMP = 'pre-scalp-20261026'
 
 MARKER = '<!--TAIRULE-->'
 NOTICE = (
     MARKER
     + '<div class="tairule" role="note" style="background:#fff7ed;border-bottom:1px solid #fed7aa;color:#7c2d12;font-size:.8rem;text-align:center;padding:.5rem .9rem;line-height:1.45">'
-    '<b>Active signal rule:</b> NIFTY and BANKNIFTY: take at most one BEAR trade per session after a completed 5-minute close below the current session SMA20; enter at the next 5-minute candle open. If price is already below SMA20 once its first 20-bar value is available, that close qualifies. The stop is 0.5% above entry, target is 2% below, and any open position exits at 15:20 IST. No bullish signals are generated. Rule effective 2026-10-26. VIX remains a market gauge, not a traded signal. See <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">the complete rules</a>.'
+    '<b>Active signal rule:</b> NIFTY and BANKNIFTY: every qualifying scalp HLC 3-bar alignment (multiple signals per session possible) — three consecutive 5-minute candles making higher highs, higher lows and higher closes (BULL) or lower highs, lower lows and lower closes (BEAR); enter at the next 5-minute candle open. The stop is the signal candle low minus 1.0 (BULL) or high plus 1.0 (BEAR); target is 1.5x risk; any open position exits at 15:25 IST. No fixed percentage cap. Rule effective 2026-10-26. VIX remains a market gauge, not a traded signal. See <a href="/methodology.html#strategy-rule" style="color:#9a3412;font-weight:600;text-decoration:underline">the complete rules</a>.'
     '</div>'
 )
 

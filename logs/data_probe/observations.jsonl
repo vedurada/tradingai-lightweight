@@ -1,0 +1,1 @@
+{"event": "probe_start", "at": "2026-10-31T15:14:13+05:30", "readonly_ok": true, "detail": "OperationalError: attempt to write a readonly database"}

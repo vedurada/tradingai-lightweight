@@ -1,0 +1,29 @@
+{
+  "total_rows": 974,
+  "unique_keys": 974,
+  "nifty": 516,
+  "banknifty": 458,
+  "wins": 955,
+  "losses": 18,
+  "flats": 1,
+  "win_rate": 98.05,
+  "total_points": 22584.01,
+  "total_R": 774.85,
+  "avg_R": 0.796,
+  "profit_factor": 330.45,
+  "max_drawdown": 45.55,
+  "max_consec_losses": 2,
+  "gross_profit": 22652.56,
+  "gross_loss": 68.55,
+  "missing_fields": 0,
+  "bad_timestamps": 0,
+  "exit_reasons": {
+    "TARGET": 309,
+    "EOD": 665
+  },
+  "splits": {
+    "dev": 582,
+    "val": 179,
+    "test": 213
+  }
+}

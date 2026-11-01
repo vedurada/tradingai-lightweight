@@ -1,0 +1,13 @@
+variant,instrument,n_trades,n_no_trade,mean_stop_distance_pct,median_stop_distance_pts,mean_rr_to_target,mean_rr_to_nearest_level,mean_mae_before_first_profit_r,pullback_would_hit,wider_than_production,note
+B0,NIFTY,65,0,0.005,119.843,4.0,0.32,0.1497,0,0,cushion is context only; a wider cushion is not a better trade
+B0,BANKNIFTY,64,0,0.005,286.156,4.0,0.3801,0.3328,0,0,cushion is context only; a wider cushion is not a better trade
+S1,NIFTY,4,61,0.0032,67.239,6.5394,1.126,0.1706,0,0,cushion is context only; a wider cushion is not a better trade
+S1,BANKNIFTY,4,60,0.0055,243.752,4.1586,0.8303,0.6697,0,1,cushion is context only; a wider cushion is not a better trade
+S2,NIFTY,8,57,0.005,110.997,4.6126,0.5272,0.1226,0,3,cushion is context only; a wider cushion is not a better trade
+S2,BANKNIFTY,10,54,0.0059,305.383,3.888,0.6355,0.3573,0,5,cushion is context only; a wider cushion is not a better trade
+S3,NIFTY,13,52,0.0033,71.087,6.3691,0.4142,0.2646,0,1,cushion is context only; a wider cushion is not a better trade
+S3,BANKNIFTY,14,50,0.0037,185.726,5.7985,0.4714,0.2361,1,3,cushion is context only; a wider cushion is not a better trade
+S4,NIFTY,28,37,0.0057,120.098,4.0231,0.3726,0.1489,0,15,cushion is context only; a wider cushion is not a better trade
+S4,BANKNIFTY,27,37,0.0065,350.482,3.6475,0.4509,0.3098,0,18,cushion is context only; a wider cushion is not a better trade
+S5,NIFTY,6,59,0.0033,71.757,6.3457,0.7782,0.1308,0,1,cushion is context only; a wider cushion is not a better trade
+S5,BANKNIFTY,4,60,0.0062,286.346,3.6097,0.7142,0.573,0,2,cushion is context only; a wider cushion is not a better trade

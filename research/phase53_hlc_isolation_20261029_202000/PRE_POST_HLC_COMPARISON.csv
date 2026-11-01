@@ -1,0 +1,15 @@
+metric,pre_consolidation,post_consolidation,change,notes
+hlc_signal_logic,_scan_signals in scalp_engine.py,_scan_signals in scalp_engine.py,none,HLC logic unchanged
+hlc_entry_price,next candle open,next candle open,none,HLC logic unchanged
+hlc_stop,signal extreme ±1.0,signal extreme ±1.0,none,HLC logic unchanged
+hlc_target,entry ± 1.5×R,entry ± 1.5×R,none,HLC logic unchanged
+hlc_stop_first_tie_break,yes,yes,none,HLC logic unchanged
+hlc_eod_flat,last session close,last session close,none,HLC logic unchanged
+hlc_daily_trade_limit,none (every signal),none (every signal),none,HLC logic unchanged
+hlc_mode_c,has_open_position() blocks,has_open_position() blocks,none,HLC logic unchanged
+cpr_trigger_engine,active (live decision),active (live decision),none,Retained for rollback
+cpr_strategy_engine,active (API endpoint),active (API endpoint),none,Retained for API
+qualification_engine,active (live constructor),active (live constructor),none,Retained for live engine
+backtest_engine,active (replay endpoint),active (replay endpoint),none,Retained for replay
+strategies_removed,0,0,none,No strategies retired (all have active dependencies)
+files_retired,0,0,none,No files retired (all have active dependencies)

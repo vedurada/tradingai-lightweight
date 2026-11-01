@@ -1,0 +1,11 @@
+test_id,scenario,method,expected,actual,result,evidence
+FF1,Flag missing → default HLC,Executed, True (HLC), True (HLC),PASS,phase520
+FF2,Flag=false → CPR,Executed, False (CPR), False (CPR),PASS,phase520
+FF3,Flag=true → HLC,Executed, True (HLC), True (HLC),PASS,phase520
+FF4,Invalid flag → fail safe,Executed, True (HLC), True (HLC),PASS,phase520
+FF5,Empty flag → default,Executed, True (HLC), True (HLC),PASS,phase520
+FF6,Flag=0 → CPR,Executed, False (CPR), False (CPR),PASS,phase520
+FF7,Flag=1 → HLC,Executed, True (HLC), True (HLC),PASS,phase520
+FF8,Both signal functions exist,Code inspection,Both exist,Both exist,PASS,phase520
+FF9,evaluate() uses flag,Code inspection,Uses flag,Uses flag,PASS,phase520
+FF10,No broker execution,Code inspection,No broker keywords,No broker keywords,PASS,phase520

@@ -1,0 +1,11 @@
+{
+  "csv_rows": 974,
+  "json_trades": 729,
+  "matched": 729,
+  "csv_only": 245,
+  "json_only": 0,
+  "classifications": {
+    "CLOSE_ENTRY_TIME": 197,
+    "NEW_SIGNAL_NOT_IN_JSON": 48
+  }
+}

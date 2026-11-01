@@ -21,6 +21,7 @@ from app.options import (
 from app.options.contract import OptionsFreshness as OF, VALID_INSTRUMENTS
 from app.options.cache import recompute_age
 from app.api.e2_economics import bp as _e2_economics_bp
+from app.api.zerodha_paper_report import bp as zerodha_paper_bp
 
 app = Flask(__name__)
 # Trust exactly one hop (nginx on this host). Cloudflare/frontend IPs arrive
@@ -56,6 +57,7 @@ limiter = Limiter(app=app, key_func=_client_key, default_limits=["60 per minute"
 # signal, decision or database state. Adds no behaviour to existing
 # routes. Inherits the global default_limits above via before_request.
 app.register_blueprint(_e2_economics_bp)
+app.register_blueprint(zerodha_paper_bp, url_prefix="/api/zerodha-paper")
 
 market = MarketDataProvider()
 qual = QualificationEngine(settings)
@@ -151,6 +153,43 @@ def decision_view(instrument):
                         "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
     from app.decision.view import build_decision
     d = build_decision(inst)
+    # UNIFORM SCALP OVERLAY (2026-10-26 owner directive): the website's live
+    # signal levels must come from the same scalp engine (HLC 3-bar) used by
+    # live signals, paper trades, backtest and alerts, not the legacy SMA20
+    # percentage levels. Display-only; never writes.
+    try:
+        from app.research.scalp_engine import today_state as _scalp_state
+        _sd = _scalp_state(inst)
+        if (inst in ('NIFTY', 'BANKNIFTY')
+                and _sd.get('state') == 'SIGNAL' and _sd.get('entry') is not None
+                and _sd.get('stop') is not None and _sd.get('target') is not None):
+            _dir = _sd.get('direction')
+            _bias = ('BULLISH' if _dir == 'BULL' else
+                     ('BEARISH' if _dir == 'BEAR' else _dir))
+            # Both keys: older cards read market_bias, the scalp card reads bias.
+            d['market_bias'] = _bias
+            d['bias'] = _bias
+            d['strategy'] = 'SCALP_HLC_3BAR'
+            d['level'] = _sd.get('level')
+            d['entry'] = _sd.get('entry')
+            d['stop'] = _sd.get('stop')
+            d['target'] = _sd.get('target')
+            d['signal_time'] = _sd.get('signal_time')
+            d['trade'] = {'direction': _sd.get('direction'),
+                          'level': _sd.get('level'),
+                          'entry': _sd.get('entry'),
+                          'stop': _sd.get('stop'),
+                          'target': _sd.get('target'),
+                          'entry_time': _sd.get('entry_time'),
+                          'signal_time': _sd.get('signal_time'),
+                          'strategy': 'Scalp HLC 3-bar'}
+            d['scalp'] = _sd
+            d['scalp_decision'] = ('TRADE' if d.get('data_status') in ('LIVE', 'RECENT')
+                                   else 'NO_TRADE')
+            d['scalp_reasons'] = ['SCALP_HLC_3BAR_ALIGNMENT']
+            # Never overwrite the loss-memory veto / daily-lock decision.
+    except Exception:
+        pass
     d['live_price'] = d.get('price')
     d['state'] = d.get('engine_state')
     d['now_ist'] = d.get('timestamp')
@@ -318,6 +357,8 @@ def intraday_session(symbol):
     points = [{"timestamp": str(r["timestamp"]), "close": float(r["close"])}
               for r in rows]
     closes = [p["close"] for p in points]
+    highs = [float(r["high"]) for r in rows if r["high"] is not None]
+    lows = [float(r["low"]) for r in rows if r["low"] is not None]
     return jsonify({"state": "LIVE", "timestamp": now_ist.isoformat(),
                     "data": {"instrument": inst,
                              "date": date_arg,
@@ -326,8 +367,8 @@ def intraday_session(symbol):
                              "first": points[0]["timestamp"] if points else None,
                              "last": points[-1]["timestamp"] if points else None,
                              "latest": closes[-1] if closes else None,
-                             "day_high": max(closes) if closes else None,
-                             "day_low": min(closes) if closes else None,
+                             "day_high": max(highs) if highs else None,
+                             "day_low": min(lows) if lows else None,
                              "cpr": cpr,
                              "latest_date": nav["lt"] if nav else None,
                              "prev_date": prev_date,
@@ -1216,22 +1257,45 @@ def paper_scalp():
             ev = {}
             try:
                 import json as _j
-                ev = _j.loads(r[8] or "{}")
-            except Exception:
-                ev = {}
-            ev = {}
-            try:
-                import json as _j
                 ev = _j.loads(r[12] or "{}")
             except Exception:
                 ev = {}
+            points = None
+            r_multiple = ev.get("r_multiple")
+            try:
+                if r[8] is not None and r[3] is not None:
+                    sign = -1 if str(r[2] or "").upper() in ("SHORT", "BEAR", "BEARISH") else 1
+                    points = round((float(r[8]) - float(r[3])) * sign, 2)
+                    risk = abs(float(r[3]) - float(r[4])) if r[4] is not None else 0
+                    if r_multiple is None and risk:
+                        r_multiple = round(points / risk, 3)
+            except (TypeError, ValueError):
+                points = None
+            score = r_multiple if r_multiple is not None else points
+            result = "OPEN" if r[11] in ("ACTIVE","OPEN") else ("WIN" if (score or 0) > 0 else ("LOSS" if (score or 0) < 0 else "FLAT"))
+            level = ev.get("level")
+            try:
+                if level is None and ev.get("signal_time"):
+                    sig = conn.execute("SELECT reference_level FROM scalp_signals WHERE instrument_id=? AND direction=? AND source_candle_ts=?", (r[1], r[2], ev.get("signal_time"))).fetchone()
+                else:
+                    sig = None
+                if level is None and sig is not None:
+                    level = sig[0]
+                if level is None:
+                    sig = conn.execute("SELECT reference_level FROM scalp_signals WHERE instrument_id=? AND direction=? AND substr(source_candle_ts,1,10)=? ORDER BY created_at DESC LIMIT 1", (r[1], r[2], (r[6] or r[13] or "")[:10])).fetchone()
+                    if sig is not None:
+                        level = sig[0]
+            except Exception:
+                level = None
             rows.append({"trade_id": r[0], "instrument": r[1], "direction": r[2],
+                         "level": level,
                          "entry": r[3], "stop": r[4], "target": r[5],
                          "entry_time": r[6], "exit_time": r[7],
                          "exit": r[8], "exit_reason": r[9],
-                         "points": r[10], "status": r[11],
-                         "r_multiple": ev.get("r_multiple"),
-                         "result": "WIN" if (r[10] or 0)>0 else ("LOSS" if (r[10] or 0)<0 else ("OPEN" if r[11] in ("ACTIVE","OPEN") else "FLAT")),
+                         "points": points, "pnl": r[10], "status": r[11],
+                         "r_multiple": r_multiple,
+                         "win_loss": result,
+                         "result": result,
                          "trade_date": (r[6] or r[13] or "")[:10],
                          "created_at": r[13], "source": "LIVE"})
     except Exception:

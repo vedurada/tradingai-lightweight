@@ -1,0 +1,10 @@
+test_id,test_name,result
+T1,Normal intraday trade,PENDING
+T2,First candle of session,PENDING
+T3,Last candle of session,PENDING
+T4,Missing entry candle,PENDING
+T5,Missing exit candle,PENDING
+T6,Empty candle window,PENDING
+T7,Overnight boundary,PENDING
+T8,Duplicate candle timestamps,PENDING
+T9,Naive versus timezone-aware timestamps,PENDING

@@ -1,0 +1,4 @@
+scenario,trades,wins,losses,win_rate,total_points,profit_factor,notes
+Authoritative (JSON only),729,528,201,72.43,19210.95,3.47,Confirmed baseline
+If 245 extra rows were valid,974,960,14,98.56,22584.01,330.45,NOT VALIDATED - extra rows unverified
+Expiry policy enforced,723,522,201,72.20,17857.91,3.30,6 cross-session rejected

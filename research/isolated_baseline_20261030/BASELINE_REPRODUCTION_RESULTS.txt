@@ -1,0 +1,30 @@
+BASELINE REPRODUCTION RESULTS — ISOLATED BASELINE
+Phase: TradingAI — Reconcile Isolated Baseline Test Discrepancy
+Host gate: PASS (webserver / Ubuntu 22.04.5 LTS / x86_64 / ubuntu / /opt/tradingai)
+Workspace: /opt/tradingai/research/isolated_paper_safety_fix_20261030/
+
+REPRODUCTION RUNS (no source/test edits)
+1) /usr/bin/python3 -m pytest -q tests/test_hlc_engine.py
+   EXIT=1 ; RESULT: 3 failed, 16 passed in 0.57s
+
+2) /usr/bin/python3 -m pytest -q tests/test_scalp_paper_live_runtime.py
+   EXIT=1 ; RESULT: 4 failed, 5 passed in 3.66s
+
+3) /usr/bin/python3 -m pytest -q tests/test_scalp_exit_atomicity.py
+   EXIT=1 ; RESULT: 2 failed, 1 passed in 0.22s
+
+4) /usr/bin/python3 -m pytest -q tests/test_unified_book.py
+   EXIT=1 ; RESULT: 1 failed, 1 passed in 1.06s
+
+COMBINED:
+   /usr/bin/python3 -m pytest -q tests/test_hlc_engine.py tests/test_scalp_paper_live_runtime.py tests/test_scalp_exit_atomicity.py tests/test_unified_book.py
+   EXIT=1 ; RESULT: 7 failed, 26 passed in 2.32s
+
+LOGS:
+- /tmp/iso_baseline_test_hlc_engine.log
+- /tmp/iso_baseline_test_scalp_paper_live_runtime.log
+- /tmp/iso_baseline_test_scalp_exit_atomicity.log
+- /tmp/iso_baseline_test_unified_book.log
+- /tmp/iso_baseline_all.log
+
+NO source or test files were changed during reproduction.

@@ -19,18 +19,22 @@ Rules:
 - Session: PREMARKET (< 09:15), LIVE (09:15..15:30 on a day with data),
   MARKET_CLOSED (after 15:30, holiday, or no-data day), WEEKEND (Sat/Sun),
   with STALE/NO_DATA feed states.
-- Firing uses the unified CPR book (_cpr_book_signal: first trigger,
-  bear priority, variant gate, next-open entry) — same math as
-  backtest/paper. Live default variant is 'plain' (no weekly gate).
+- Firing uses the HLC 3-bar scalp book (_hlc_book_signal: three-consecutive
+  candle alignment, next-open entry, signal-candle-extreme stop ±1pt,
+  1.5R target) — same math as backtest/paper. Live default variant is 'plain'.
   A trigger on the latest completed candle waits for
   that open (ENTRY pending, no lookahead).
   Live mode persists the one-trade-day lock in daily_trade_locks so it is
   shared across gunicorn workers; dry-run mode uses in-memory locks only.
+- The CPR trigger engine (_cpr_book_signal) is retained for rollback but is
+  no longer the default trade-decision engine.
 - Structured logging: one line per evaluation state CHANGE per instrument
   (plus every error state), so 30s browser polls do not spam logs.
-- Book math: next-open entry in [09:20, 15:20), 0.5% stop / 2% target, flat 15:20 open.
+- Book math: next-open entry in [09:20, 15:20), signal-candle-extreme stop ±1pt,
+  1.5R target, flat EOD close.
 """
 import logging
+import os
 from datetime import datetime, time, timedelta
 from zoneinfo import ZoneInfo
 
@@ -65,6 +69,31 @@ _SESSION_PASSTHROUGH = (ST_PREMARKET, ST_CLOSED, ST_WEEKEND, ST_NO_DATA)
 # Owner decision 2026-10-12: default engine for live signals, paper book,
 # backtest UI and Telegram alerts is plain.
 LIVE_VARIANT = 'plain'
+
+# HLC feature flag: controls whether HLC is the sole decision engine.
+# Default preserves current production behavior (HLC). Set HLC_ONLY_MODE=false
+# (env var or config/settings.json) to roll back to CPR. Missing/invalid
+# config fails safe to current behavior (HLC).
+def _hlc_only_mode():
+    val = os.environ.get('HLC_ONLY_MODE', '').strip().lower()
+    if val in ('true', '1', 'yes'):
+        return True
+    if val in ('false', '0', 'no'):
+        return False
+    try:
+        import json as _json
+        _base = os.environ.get('TRADINGAI_BASE', '/opt/tradingai')
+        with open(os.path.join(_base, 'config', 'settings.json')) as _f:
+            _cfg = _json.load(_f)
+        val = str(_cfg.get('HLC_ONLY_MODE', '')).strip().lower()
+        if val in ('true', '1', 'yes'):
+            return True
+        if val in ('false', '0', 'no'):
+            return False
+    except Exception:
+        pass
+    # Default: fail safe to CPR (approved design)
+    return False
 
 # Remembers last logged state per instrument: log on change only.
 _last_logged = {}
@@ -478,11 +507,18 @@ def _frozen_trade_passes_gate(frozen, day_iso):
     before a gate change (or by a non-gated writer) would otherwise keep
     serving TRADE for the rest of the session. Uses the same predicates as the
     trigger engine (SHORT_ONLY, friday_skip) and fails open on an unknown or
-    missing date, exactly like friday_skip. Read-only."""
+    missing date, exactly like friday_skip. Read-only.
+
+    HLC scalp trades (scenario HLC_3BAR) are not subject to CPR-specific
+    gates (SHORT_ONLY, no_chase_reanchor, breakout) — they pass through.
+    """
     from app.research.cpr_trigger_engine import (
         SHORT_ONLY, NO_CHASE_BEAR, BREAKOUT_ADDON, friday_skip)
     dr = (frozen or {}).get('direction')
     scen = (frozen or {}).get('scenario') or ''
+    # HLC scalp trades bypass CPR-specific gates.
+    if scen == 'HLC_3BAR':
+        return True
     if SHORT_ONLY and dr != 'BEAR':
         # Sanctioned SHORT_ONLY overrides. (a) A no-chase re-anchor whose
         # direction came from the SUPPORT level price reached back to. (b) The
@@ -563,6 +599,90 @@ def _freeze_trade(instrument, day_iso, trade):
             conn.close()
         except Exception:
             pass
+
+
+def _hlc_book_signal(instrument, candles, completed, live_price=None, now=None):
+    """HLC scalp-book signal over live candles (3-bar alignment trigger).
+
+    Uses app/research/scalp_engine for the canonical HLC 3-bar signal:
+    - 3 consecutive candles with higher H/L/C (BULL) or lower H/L/C (BEAR)
+    - Entry at next candle open (past price, no lookahead)
+    - Stop = signal candle low - 1 (BULL) or high + 1 (BEAR)
+    - Target = entry + 1.5R (BULL) or entry - 1.5R (BEAR)
+    - Reject invalid risk (<= 0)
+    - Stop-first tie-break on same candle
+    - EOD flat at last session close if neither level hit
+    Read-only: no DB writes. Returns {'trade': dict|None, 'reasons': [...]}."""
+    from app.research.scalp_engine import _scan_signals, _live_signal
+    from app.research.cpr_trigger_engine import OPEN_MIN, OPEN_EOD
+
+    day_iso = completed.date().isoformat()
+
+    # Filter to today's completed candles only (up to and including completed)
+    feed = [c for c in (candles or [])
+            if str(c.get('timestamp', ''))[:10] == day_iso
+            and str(c.get('timestamp', '')) <= completed.isoformat()]
+
+    if not feed:
+        return {'trade': None, 'reasons': ['no_hlc_trigger']}
+
+    # Warm-up gate: session's first completed candle (09:15) must be present
+    if not any(str(c.get('timestamp', '')).startswith(day_iso + 'T09:15')
+               for c in feed):
+        return {'trade': None, 'reasons': ['warmup_wait_first_candle']}
+
+    sigs, _ = _scan_signals(feed)
+
+    # The forming candle (completed+5m) is used solely as next-open entry source,
+    # never scanned for triggers.
+    nxt_ts = (completed + timedelta(minutes=CANDLE_MINUTES)).isoformat()
+    forming = next((c for c in (candles or [])
+                    if str(c.get('timestamp', '')) == nxt_ts), None)
+
+    for idx, direction in sigs:
+        # Only signals whose entry day is today
+        if idx + 1 >= len(feed):
+            continue
+        if feed[idx + 1]['timestamp'][:10] != day_iso:
+            continue
+
+        s = _live_signal(feed, idx, direction, instrument, day_iso, 'plain')
+        if s is None:
+            continue
+
+        entry_time = s['entry_time']
+        entry = s['entry']
+        stop = s['stop']
+        target = s['target']
+
+        # Entry window check: entry must be within [09:20, 15:20)
+        nt = entry_time
+        if not nt or not (OPEN_MIN <= nt[11:16] < OPEN_EOD):
+            return {'trade': None, 'reasons': ['entry_window_closed']}
+
+        risk_pts = abs(float(entry) - float(stop))
+        reward_pts = abs(float(target) - float(entry))
+
+        trade = {
+            'entry': entry,
+            'entry_time': entry_time,
+            'signal_time': s['signal_time'],
+            'stop': stop,
+            'target': target,
+            'max_risk': round(risk_pts / entry * 100, 4) if entry else 0.0,
+            'expected_reward': round(reward_pts / entry * 100, 4) if entry else 0.0,
+            'strategy': 'Scalp HLC 3-bar',
+            'objective': 'DIRECTIONAL',
+            'direction': direction,
+            'scenario': 'HLC_3BAR',
+            'source': 'hlc_scalp',
+            'feed_n': len(feed),
+            'feed_first_ts': str(feed[0].get('timestamp', '')) if feed else None,
+            'forming_ts': str(forming.get('timestamp', '')) if forming is not None else None,
+        }
+        return {'trade': trade, 'reasons': ['HLC_TRIGGER_3BAR_ALIGNMENT']}
+
+    return {'trade': None, 'reasons': ['no_hlc_trigger']}
 
 
 class LiveEngine:
@@ -682,12 +802,17 @@ class LiveEngine:
         price = float(usable['close'])
         base.update(decision_price=price, decision_timestamp=completed.isoformat())
         ms = build_market_state(price, candles)
-        # Unified rulebook: CPR-trigger book (same trigger math as backtest/
-        # paper) over completed candles only. A trigger on the latest completed
-        # candle fires as soon as the next candle's open is known (that open
-        # is past fact, so the entry matches backtest tick-for-tick).
-        book = _cpr_book_signal(instrument, all_candles, completed,
-                                live_price=quote.get('price'), now=now_ist)
+        # Unified rulebook: HLC scalp-book (3-bar alignment, same trigger math
+        # as backtest/paper) over completed candles only. A trigger on the
+        # latest completed candle fires as soon as the next candle's open is
+        # known (that open is past fact, so the entry matches backtest
+        # tick-for-tick). CPR trigger engine retained for rollback only.
+        if _hlc_only_mode():
+            book = _hlc_book_signal(instrument, all_candles, completed,
+                                    live_price=quote.get('price'), now=now_ist)
+        else:
+            book = _cpr_book_signal(instrument, all_candles, completed,
+                                    live_price=quote.get('price'), now=now_ist)
         trade = book.get('trade')
         day_iso = completed.date().isoformat()
         # Serve the frozen trade once one exists (stability for the alert

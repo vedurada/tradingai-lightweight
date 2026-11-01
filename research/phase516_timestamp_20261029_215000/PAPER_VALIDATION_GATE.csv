@@ -1,0 +1,13 @@
+gate_id,criterion,status,evidence
+G1,CSV/JSON reconciliation,UNRESOLVED,245 extra CSV rows
+G2,Entry-price availability,PASS,729/729 trades
+G3,Next-candle sensitivity,PASS,Reproduced: WR 44.35%, PF 1.25
+G4,Conservative execution,FAIL,One-candle-later degrades severely
+G5,Options profitability,NOT TESTED,No option data
+G6,Production safety,CONFIRMED UNCHANGED,No changes
+G7,Overnight carry,IDENTIFIED,6 trades, 63,900s max delay
+G8,Expiry policy tests,14/15 PASS,ET10 resolved
+G9,Historical expiry replay,PASS,723/729 accepted
+G10,Out-of-sample unchanged,PASS,161/161 trades accepted
+G11,ET10 timezone resolution,PASS,8/8 tests pass
+G12,Production function tests,PASS,14/14 using actual _entry_time_guard

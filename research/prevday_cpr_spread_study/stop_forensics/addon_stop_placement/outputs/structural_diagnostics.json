@@ -1,0 +1,334 @@
+{
+  "swing_definition": {
+    "m": 2,
+    "lookback": 20,
+    "confirm_at": "close of bar i+m, usable only if i+m <= trigger"
+  },
+  "by_variant": {
+    "B0": {
+      "n_signals": 129,
+      "n_trades": 129,
+      "n_no_trade": 0,
+      "rejection_reasons": {},
+      "by_setup": {
+        "PDH": {
+          "trades": 16,
+          "no_trade": 0
+        },
+        "BELOW_CPR": {
+          "trades": 67,
+          "no_trade": 0
+        },
+        "R1": {
+          "trades": 26,
+          "no_trade": 0
+        },
+        "BRK_R2": {
+          "trades": 2,
+          "no_trade": 0
+        },
+        "R2": {
+          "trades": 8,
+          "no_trade": 0
+        },
+        "BRK_PDH": {
+          "trades": 2,
+          "no_trade": 0
+        },
+        "BRK_TC": {
+          "trades": 5,
+          "no_trade": 0
+        },
+        "BRK_R1": {
+          "trades": 3,
+          "no_trade": 0
+        }
+      },
+      "by_instrument": {
+        "NIFTY": {
+          "trades": 65
+        },
+        "BANKNIFTY": {
+          "trades": 64
+        }
+      },
+      "mean_stop_distance_pct": 0.005,
+      "wider_than_production": 0,
+      "no_lookahead_ok": true
+    },
+    "S1": {
+      "n_signals": 129,
+      "n_trades": 8,
+      "n_no_trade": 121,
+      "rejection_reasons": {
+        "no_confirmed_swing_within_lookback": 111,
+        "stop_too_tight_below_minimum": 3,
+        "swing_on_wrong_side_of_entry": 7
+      },
+      "by_setup": {
+        "PDH": {
+          "trades": 0,
+          "no_trade": 16
+        },
+        "BELOW_CPR": {
+          "trades": 5,
+          "no_trade": 62
+        },
+        "R1": {
+          "trades": 0,
+          "no_trade": 26
+        },
+        "BRK_R2": {
+          "trades": 1,
+          "no_trade": 1
+        },
+        "R2": {
+          "trades": 0,
+          "no_trade": 8
+        },
+        "BRK_PDH": {
+          "trades": 0,
+          "no_trade": 2
+        },
+        "BRK_TC": {
+          "trades": 1,
+          "no_trade": 4
+        },
+        "BRK_R1": {
+          "trades": 1,
+          "no_trade": 2
+        }
+      },
+      "by_instrument": {
+        "NIFTY": {
+          "trades": 4
+        },
+        "BANKNIFTY": {
+          "trades": 4
+        }
+      },
+      "mean_stop_distance_pct": 0.0044,
+      "wider_than_production": 1,
+      "no_lookahead_ok": true
+    },
+    "S2": {
+      "n_signals": 129,
+      "n_trades": 18,
+      "n_no_trade": 111,
+      "rejection_reasons": {
+        "no_failed_opposite_break_attempt": 110,
+        "stop_too_tight_below_minimum": 1
+      },
+      "by_setup": {
+        "PDH": {
+          "trades": 0,
+          "no_trade": 16
+        },
+        "BELOW_CPR": {
+          "trades": 13,
+          "no_trade": 54
+        },
+        "R1": {
+          "trades": 0,
+          "no_trade": 26
+        },
+        "BRK_R2": {
+          "trades": 1,
+          "no_trade": 1
+        },
+        "R2": {
+          "trades": 0,
+          "no_trade": 8
+        },
+        "BRK_PDH": {
+          "trades": 0,
+          "no_trade": 2
+        },
+        "BRK_TC": {
+          "trades": 2,
+          "no_trade": 3
+        },
+        "BRK_R1": {
+          "trades": 2,
+          "no_trade": 1
+        }
+      },
+      "by_instrument": {
+        "NIFTY": {
+          "trades": 8
+        },
+        "BANKNIFTY": {
+          "trades": 10
+        }
+      },
+      "mean_stop_distance_pct": 0.0055,
+      "wider_than_production": 8,
+      "no_lookahead_ok": true
+    },
+    "S3": {
+      "n_signals": 129,
+      "n_trades": 27,
+      "n_no_trade": 102,
+      "rejection_reasons": {
+        "no_completed_retest_before_entry": 53,
+        "stop_too_tight_below_minimum": 49
+      },
+      "by_setup": {
+        "PDH": {
+          "trades": 1,
+          "no_trade": 15
+        },
+        "BELOW_CPR": {
+          "trades": 21,
+          "no_trade": 46
+        },
+        "R1": {
+          "trades": 3,
+          "no_trade": 23
+        },
+        "BRK_R2": {
+          "trades": 0,
+          "no_trade": 2
+        },
+        "R2": {
+          "trades": 1,
+          "no_trade": 7
+        },
+        "BRK_PDH": {
+          "trades": 0,
+          "no_trade": 2
+        },
+        "BRK_TC": {
+          "trades": 0,
+          "no_trade": 5
+        },
+        "BRK_R1": {
+          "trades": 1,
+          "no_trade": 2
+        }
+      },
+      "by_instrument": {
+        "NIFTY": {
+          "trades": 13
+        },
+        "BANKNIFTY": {
+          "trades": 14
+        }
+      },
+      "mean_stop_distance_pct": 0.0035,
+      "wider_than_production": 4,
+      "no_lookahead_ok": true
+    },
+    "S4": {
+      "n_signals": 129,
+      "n_trades": 55,
+      "n_no_trade": 74,
+      "rejection_reasons": {
+        "setup_does_not_support_cpr_invalidation": 57,
+        "stop_too_tight_below_minimum": 16,
+        "stop_too_wide_risk_excessive": 1
+      },
+      "by_setup": {
+        "PDH": {
+          "trades": 0,
+          "no_trade": 16
+        },
+        "BELOW_CPR": {
+          "trades": 52,
+          "no_trade": 15
+        },
+        "R1": {
+          "trades": 0,
+          "no_trade": 26
+        },
+        "BRK_R2": {
+          "trades": 0,
+          "no_trade": 2
+        },
+        "R2": {
+          "trades": 0,
+          "no_trade": 8
+        },
+        "BRK_PDH": {
+          "trades": 0,
+          "no_trade": 2
+        },
+        "BRK_TC": {
+          "trades": 3,
+          "no_trade": 2
+        },
+        "BRK_R1": {
+          "trades": 0,
+          "no_trade": 3
+        }
+      },
+      "by_instrument": {
+        "NIFTY": {
+          "trades": 28
+        },
+        "BANKNIFTY": {
+          "trades": 27
+        }
+      },
+      "mean_stop_distance_pct": 0.0061,
+      "wider_than_production": 33,
+      "no_lookahead_ok": true
+    },
+    "S5": {
+      "n_signals": 129,
+      "n_trades": 10,
+      "n_no_trade": 119,
+      "rejection_reasons": {
+        "no_confirmed_swing_within_lookback": 111,
+        "swing_on_wrong_side_of_entry": 7,
+        "stop_too_tight_below_minimum": 1
+      },
+      "by_setup": {
+        "PDH": {
+          "trades": 0,
+          "no_trade": 16
+        },
+        "BELOW_CPR": {
+          "trades": 6,
+          "no_trade": 61
+        },
+        "R1": {
+          "trades": 0,
+          "no_trade": 26
+        },
+        "BRK_R2": {
+          "trades": 1,
+          "no_trade": 1
+        },
+        "R2": {
+          "trades": 0,
+          "no_trade": 8
+        },
+        "BRK_PDH": {
+          "trades": 0,
+          "no_trade": 2
+        },
+        "BRK_TC": {
+          "trades": 2,
+          "no_trade": 3
+        },
+        "BRK_R1": {
+          "trades": 1,
+          "no_trade": 2
+        }
+      },
+      "by_instrument": {
+        "NIFTY": {
+          "trades": 6
+        },
+        "BANKNIFTY": {
+          "trades": 4
+        }
+      },
+      "mean_stop_distance_pct": 0.0045,
+      "wider_than_production": 3,
+      "no_lookahead_ok": true
+    }
+  },
+  "n_baseline_signals": 129
+}

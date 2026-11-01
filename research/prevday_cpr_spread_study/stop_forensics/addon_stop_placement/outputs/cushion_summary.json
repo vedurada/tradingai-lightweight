@@ -1,0 +1,92 @@
+{
+  "B0": {
+    "n_trades": 129,
+    "n_no_trade": 0,
+    "mean_stop_distance_pct": 0.005,
+    "median_stop_distance_pts": 123.35,
+    "pullback_would_hit": 0,
+    "wider_than_production": 0,
+    "mean_mae_before_first_profit_r": 0.2405,
+    "mean_rr_to_nearest_level": 0.3501,
+    "no_trade_reasons": {},
+    "note": "a wider cushion is not a better trade"
+  },
+  "S1": {
+    "n_trades": 8,
+    "n_no_trade": 121,
+    "mean_stop_distance_pct": 0.004369,
+    "median_stop_distance_pts": 163.881,
+    "pullback_would_hit": 0,
+    "wider_than_production": 1,
+    "mean_mae_before_first_profit_r": 0.4201,
+    "mean_rr_to_nearest_level": 0.957,
+    "no_trade_reasons": {
+      "no_confirmed_swing_within_lookback": 111,
+      "stop_too_tight_below_minimum": 3,
+      "swing_on_wrong_side_of_entry": 7
+    },
+    "note": "a wider cushion is not a better trade"
+  },
+  "S2": {
+    "n_trades": 18,
+    "n_no_trade": 111,
+    "mean_stop_distance_pct": 0.005525,
+    "median_stop_distance_pts": 208.405,
+    "pullback_would_hit": 0,
+    "wider_than_production": 8,
+    "mean_mae_before_first_profit_r": 0.253,
+    "mean_rr_to_nearest_level": 0.5909,
+    "no_trade_reasons": {
+      "no_failed_opposite_break_attempt": 110,
+      "stop_too_tight_below_minimum": 1
+    },
+    "note": "a wider cushion is not a better trade"
+  },
+  "S3": {
+    "n_trades": 27,
+    "n_no_trade": 102,
+    "mean_stop_distance_pct": 0.003504,
+    "median_stop_distance_pts": 147.426,
+    "pullback_would_hit": 1,
+    "wider_than_production": 4,
+    "mean_mae_before_first_profit_r": 0.2498,
+    "mean_rr_to_nearest_level": 0.445,
+    "no_trade_reasons": {
+      "no_completed_retest_before_entry": 53,
+      "stop_too_tight_below_minimum": 49
+    },
+    "note": "a wider cushion is not a better trade"
+  },
+  "S4": {
+    "n_trades": 55,
+    "n_no_trade": 74,
+    "mean_stop_distance_pct": 0.00608,
+    "median_stop_distance_pts": 207.199,
+    "pullback_would_hit": 0,
+    "wider_than_production": 33,
+    "mean_mae_before_first_profit_r": 0.2279,
+    "mean_rr_to_nearest_level": 0.4126,
+    "no_trade_reasons": {
+      "setup_does_not_support_cpr_invalidation": 57,
+      "stop_too_tight_below_minimum": 16,
+      "stop_too_wide_risk_excessive": 1
+    },
+    "note": "a wider cushion is not a better trade"
+  },
+  "S5": {
+    "n_trades": 10,
+    "n_no_trade": 119,
+    "mean_stop_distance_pct": 0.004463,
+    "median_stop_distance_pts": 100.015,
+    "pullback_would_hit": 0,
+    "wider_than_production": 3,
+    "mean_mae_before_first_profit_r": 0.3077,
+    "mean_rr_to_nearest_level": 0.7498,
+    "no_trade_reasons": {
+      "no_confirmed_swing_within_lookback": 111,
+      "swing_on_wrong_side_of_entry": 7,
+      "stop_too_tight_below_minimum": 1
+    },
+    "note": "a wider cushion is not a better trade"
+  }
+}

@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TradingAI — Live HLC 3-Bar Dashboard</title>
+<style>
+:root { color-scheme: dark; }
+* { box-sizing: border-box; }
+body { margin: 0; padding: 1.5rem; background: #0b0c15; color: #e8eaf0;
+       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+h1 { color: #00e5ff; font-size: 1.4rem; margin: 0 0 .4rem; }
+h2 { color: #9ad7ff; font-size: 1.05rem; margin: 1.6rem 0 .4rem; display: flex;
+      align-items: center; gap: .6rem; }
+.meta, .sub { color: #9aa4bf; font-size: .82rem; margin: .2rem 0; }
+.latest { font-size: .9rem; margin: .5rem 0 .7rem; color: #cdd6ef; }
+.mono { font-variant-numeric: tabular-nums; font-family: ui-monospace, Menlo, Consolas, monospace; }
+section { border-top: 1px solid #1e2438; padding-top: .3rem; }
+table { border-collapse: collapse; width: 100%; font-size: .82rem; }
+th { background: #141a2c; color: #00e5ff; text-align: left; padding: .5rem .45rem;
+      position: sticky; top: 0; }
+td { padding: .42rem .45rem; border-bottom: 1px solid #1c2236; white-space: nowrap; }
+tbody tr:hover { background: #121827; }
+.bull, .pos { color: #36d399; font-weight: 600; }
+.bear, .neg { color: #fb7185; font-weight: 600; }
+.badge { display: inline-block; padding: .12rem .45rem; border-radius: 999px;
+         font-size: .7rem; font-weight: 700; letter-spacing: .02em; }
+.badge.new { background: #3a3208; color: #fbbf24; }
+.badge.open, .badge.traded { background: #06301f; color: #34d399; }
+.badge.closed { background: #0b2440; color: #60a5fa; }
+.badge.expired, .badge.ignored { background: #232838; color: #94a3b8; }
+.badge.unknown { background: #2a2233; color: #c4b5fd; }
+.badge.stale { outline: 1px solid #f59e0b; }
+.badge.data.fresh { background: #06301f; color: #34d399; }
+.badge.data.stale { background: #3a2a06; color: #f59e0b; }
+.badge.data.unavailable { background: #3a0f14; color: #fb7185; }
+.banner { padding: .55rem .8rem; border-radius: 8px; font-size: .82rem; margin: .6rem 0; }
+.banner.closed { background: #1a1f30; color: #cbd5e1; border-left: 3px solid #64748b; }
+.banner.stale { background: #3a2a06; color: #fbbf24; border-left: 3px solid #f59e0b; }
+.empty { color: #9aa4bf; }
+footer { margin-top: 2rem; color: #6b7590; font-size: .76rem; line-height: 1.5; }
+</style>
+</head>
+<body>
+<h1>TradingAI — Live HLC 3-Bar Dashboard</h1>
+<div class="meta">
+  Generated: <span class="mono">2026-10-31 16:25:57 IST</span>
+  &nbsp;|&nbsp; Market: <span class="badge data closed">CLOSED</span>
+  &nbsp;|&nbsp; Session: <span class="mono">2026-10-30</span>
+  &nbsp;|&nbsp; Refreshed every 5s from signal candle close until trade entry, otherwise 60s
+</div>
+<div class="banner closed">MARKET CLOSED — showing the most recent persisted session. Live generation resumes on the next trading session.</div><div class="banner stale">MARKET DATA STALE — latest candle is older than 15 minutes; current price is withheld rather than shown stale.</div>
+
+    <section>
+      <h2>NIFTY <span class="badge data stale">DATA STALE</span></h2>
+      <div class="sub">
+        Latest candle: <span class="mono">2026-10-30T15:25:00+05:30</span>
+        &nbsp;|&nbsp; Age: <span class="mono">1d 1h</span>
+        &nbsp;|&nbsp; Price: <span class="mono">—</span>
+      </div>
+      <div class="latest">Latest signal: <b>BULL</b> @ 2026-10-30 14:35 &nbsp;<span class="badge closed">CLOSED</span></div>
+      <table><thead><tr><th>Signal time (IST)</th><th>Entry time (IST)</th><th>Dir</th><th>Entry</th><th>Stop</th><th>Target</th><th>Exit</th><th>Exit reason</th><th>R</th><th>P&amp;L (pts)</th><th>Status</th></tr></thead><tbody><tr><td class="mono">2026-10-30 14:35</td><td class="mono">2026-10-30 14:40</td><td class="bull">BULL</td><td class="mono">23072.90</td><td class="mono">23063.20</td><td class="mono">23087.45</td><td class="mono">23063.20</td><td>STOP</td><td class="mono">-1.00R</td><td class="mono neg">-9.70</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 14:20</td><td class="mono">—</td><td class="bull">BULL</td><td class="mono">23057.65</td><td class="mono">23026.85</td><td class="mono">23103.85</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 14:15</td><td class="mono">2026-10-30 14:20</td><td class="bull">BULL</td><td class="mono">23037.00</td><td class="mono">23016.50</td><td class="mono">23067.75</td><td class="mono">23067.75</td><td>TARGET</td><td class="mono">+1.50R</td><td class="mono pos">+30.75</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 14:10</td><td class="mono">2026-10-30 14:15</td><td class="bull">BULL</td><td class="mono">23025.90</td><td class="mono">23013.95</td><td class="mono">23043.83</td><td class="mono">23043.83</td><td>TARGET</td><td class="mono">+1.50R</td><td class="mono pos">+17.93</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 14:00</td><td class="mono">2026-10-30 14:05</td><td class="bear">BEAR</td><td class="mono">23012.60</td><td class="mono">23015.75</td><td class="mono">23007.87</td><td class="mono">23015.75</td><td>STOP</td><td class="mono">-1.00R</td><td class="mono neg">-3.15</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 11:10</td><td class="mono">—</td><td class="bull">BULL</td><td class="mono">23009.95</td><td class="mono">22999.50</td><td class="mono">23025.62</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 11:05</td><td class="mono">—</td><td class="bull">BULL</td><td class="mono">23004.25</td><td class="mono">22978.75</td><td class="mono">23042.50</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 11:00</td><td class="mono">—</td><td class="bull">BULL</td><td class="mono">22990.30</td><td class="mono">22963.25</td><td class="mono">23030.88</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 10:55</td><td class="mono">—</td><td class="bull">BULL</td><td class="mono">22972.45</td><td class="mono">22955.85</td><td class="mono">22997.35</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 10:10</td><td class="mono">—</td><td class="bear">BEAR</td><td class="mono">22938.60</td><td class="mono">22948.70</td><td class="mono">22923.45</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr></tbody></table>
+    </section>
+    
+    <section>
+      <h2>BANKNIFTY <span class="badge data stale">DATA STALE</span></h2>
+      <div class="sub">
+        Latest candle: <span class="mono">2026-10-30T15:25:00+05:30</span>
+        &nbsp;|&nbsp; Age: <span class="mono">1d 1h</span>
+        &nbsp;|&nbsp; Price: <span class="mono">—</span>
+      </div>
+      <div class="latest">Latest signal: <b>BEAR</b> @ 2026-10-30 14:45 &nbsp;<span class="badge closed">CLOSED</span></div>
+      <table><thead><tr><th>Signal time (IST)</th><th>Entry time (IST)</th><th>Dir</th><th>Entry</th><th>Stop</th><th>Target</th><th>Exit</th><th>Exit reason</th><th>R</th><th>P&amp;L (pts)</th><th>Status</th></tr></thead><tbody><tr><td class="mono">2026-10-30 14:45</td><td class="mono">2026-10-30 14:50</td><td class="bear">BEAR</td><td class="mono">54654.35</td><td class="mono">54691.35</td><td class="mono">54598.85</td><td class="mono">54598.85</td><td>TARGET</td><td class="mono">+1.50R</td><td class="mono pos">+55.50</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 14:40</td><td class="mono">—</td><td class="bear">BEAR</td><td class="mono">54668.75</td><td class="mono">54713.90</td><td class="mono">54601.02</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 14:20</td><td class="mono">2026-10-30 14:25</td><td class="bull">BULL</td><td class="mono">54742.25</td><td class="mono">54671.60</td><td class="mono">54848.23</td><td class="mono">54671.60</td><td>STOP</td><td class="mono">-1.00R</td><td class="mono neg">-70.65</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 14:15</td><td class="mono">2026-10-30 14:20</td><td class="bull">BULL</td><td class="mono">54693.05</td><td class="mono">54653.40</td><td class="mono">54752.53</td><td class="mono">54752.53</td><td>TARGET</td><td class="mono">+1.50R</td><td class="mono pos">+59.48</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 13:45</td><td class="mono">2026-10-30 13:50</td><td class="bear">BEAR</td><td class="mono">54705.25</td><td class="mono">54715.00</td><td class="mono">54690.62</td><td class="mono">54715.00</td><td>STOP</td><td class="mono">-1.00R</td><td class="mono neg">-9.75</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 13:40</td><td class="mono">2026-10-30 13:45</td><td class="bear">BEAR</td><td class="mono">54713.45</td><td class="mono">54739.95</td><td class="mono">54673.70</td><td class="mono">54673.70</td><td>TARGET</td><td class="mono">+1.50R</td><td class="mono pos">+39.75</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 13:35</td><td class="mono">—</td><td class="bear">BEAR</td><td class="mono">54704.55</td><td class="mono">54788.70</td><td class="mono">54578.33</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 13:30</td><td class="mono">2026-10-30 13:35</td><td class="bear">BEAR</td><td class="mono">54778.80</td><td class="mono">54831.55</td><td class="mono">54699.68</td><td class="mono">54699.68</td><td>TARGET</td><td class="mono">+1.50R</td><td class="mono pos">+79.12</td><td><span class="badge closed">CLOSED</span></td></tr><tr><td class="mono">2026-10-30 11:35</td><td class="mono">—</td><td class="bull">BULL</td><td class="mono">54849.60</td><td class="mono">54819.85</td><td class="mono">54894.23</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr><tr><td class="mono">2026-10-30 10:00</td><td class="mono">—</td><td class="bear">BEAR</td><td class="mono">54681.35</td><td class="mono">54743.80</td><td class="mono">54587.68</td><td class="mono">—</td><td>—</td><td class="mono">—</td><td class="mono ">—</td><td><span class="badge expired">EXPIRED</span></td></tr></tbody></table>
+    </section>
+    
+<footer>
+  Read-only view of signals persisted by the existing HLC 3-Bar paper engine.
+  This page never creates signals and never writes to the database.
+  Rule: 3-bar H/L/C alignment → entry at next candle open; stop = signal low/high ±1pt;
+  target = 1.5R; exit on stop/target or EOD 15:25 IST.
+  Values shown as “—” are genuinely unavailable (never fabricated).
+</footer>
+</body>
+</html>

@@ -1,0 +1,14 @@
+blocker_id,description,severity,status,phase58,phase59,phase510,evidence
+B1,Dirty working tree (1842 uncommitted files),HIGH,OPEN,OPEN,OPEN,OPEN,git status: 439 modified + 1403 untracked
+B2,No production backup rehearsal,MEDIUM,OPEN,OPEN,OPEN,OPEN,Only test DB backup/restore tested
+B3,Daily trade limit not implemented,MEDIUM,OPEN,OPEN,OPEN,OPEN,Not coded in paper_scalp_live.py
+B4,Systemd unit not enabled,MEDIUM,OPEN,OPEN,OPEN,OPEN,No enabled unit found
+B5,Feature flag not implemented,MEDIUM,OPEN,OPEN,OPEN,OPEN,Not in codebase
+B6,Live timing not verified,HIGH,OPEN,OPEN,OPEN,OPEN,Market closed
+B7,Candle ingestion delay,HIGH,RESOLVED,RESOLVED,RESOLVED,RESOLVED,Historical: median 8.6s P95 78.4s
+B8,Daily limit enforcement,MEDIUM,OPEN,OPEN,OPEN,OPEN,Not coded
+B9,Integration tests,MEDIUM,RESOLVED,RESOLVED,RESOLVED,RESOLVED,16/16 PASS
+B10,Isolated test env,MEDIUM,RESOLVED,RESOLVED,RESOLVED,RESOLVED,Isolated test DB
+B11,CPR retirement,LOW,OPEN,OPEN,OPEN,OPEN,Phase 5.3 dependency map
+B12,Rollback rehearsal,MEDIUM,OPEN,OPEN,OPEN,OPEN,Design only
+B13,Live-session latency,HIGH,OPEN,OPEN,OPEN,OPEN,Market closed

@@ -1,0 +1,11 @@
+audit -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/outputs/audit.json
+{
+ "candles": {
+  "BANKNIFTY": 5696,
+  "INDIA_VIX": 4419,
+  "NIFTY": 5696
+ },
+ "total_rows": 15811,
+ "tables": 42,
+ "live_trades": 6
+}

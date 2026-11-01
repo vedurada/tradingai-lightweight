@@ -10,7 +10,7 @@ R-DEFINITION MAP (see also app/research/backtest.py — canonical):
 This module persists legs JSON and exits on candle OPENS strictly AFTER entry
 (entry_bar < t <= exit_bar) with STOP-first tie-break, using the SAME
 `exits_opens` routine as the live alert/reconcile path and the approved-spec
-opens execution (0.5% stop / 2% target on next opens). Booking the REAL
+scalp execution (signal-candle-extreme stop, 1.5R target on next opens). Booking the REAL
 recorded open (not the planned stop/target level) keeps the live paper ledger
 consistent with the published strategy truth and avoids planned-vs-realised
 divergence (audit F-04-01).
@@ -162,7 +162,7 @@ class PaperTradeEngine:
         # directional view on the same session is the same idea, not a
         # second bet. Skipped instead of sized down so the ledger keeps one
         # unambiguous position per direction per day.
-        if link_key is not None:
+        if link_key is not None and (q.get('scenario') or '') != 'SCALP_HLC':
             blocked = self._correlated_block(
                 (q.get('instrument_id') or '').upper(),
                 _direction_sign(q.get('direction')),
@@ -228,7 +228,7 @@ class PaperTradeEngine:
 
         For each ACTIVE/OPEN trade, evaluate the OPEN of 5m candles with
         timestamp STRICTLY AFTER entry_time (entry<t<=exit) via the shared
-        `exits_opens` routine: 0.5% stop / 2% target, STOP-first tie-break.
+        `exits_opens` routine: signal-candle-extreme stop, 1.5R target, STOP-first tie-break.
         The exit is booked at the REAL recorded open (gapped or not), matching
         the live alert exit sweep and the approved opens-execution spec.
         """
@@ -276,27 +276,72 @@ class PaperTradeEngine:
                         if sl is None or tg is None:
                             res = None
                         else:
-                            # absolute stop/target using recorded candle opens
-                            risk = abs(float(entry) * 0.0)  # placeholder, not used
-                            for ts, o in opens:
-                                try:
-                                    o = float(o)
-                                    slf = float(sl); tgf = float(tg)
-                                except (TypeError, ValueError):
-                                    continue
+                            slf = float(sl)
+                            tgf = float(tg)
+                            risk = abs(float(entry) - slf)
+                            scalp_candles = []
+                            try:
+                                scalp_rows = conn.execute(
+                                    'SELECT timestamp, open, high, low, close FROM market_candles_5m '
+                                    'WHERE instrument_id=? AND timestamp >= ? AND substr(timestamp,1,10)=? '
+                                    'ORDER BY timestamp', (instrument_id, entry_time, (entry_time or '')[:10])).fetchall()
+                                for sr in scalp_rows:
+                                    scalp_candles.append({'timestamp': sr['timestamp'], 'open': float(sr['open']), 'high': float(sr['high']), 'low': float(sr['low']), 'close': float(sr['close'])})
+                            except Exception:
+                                scalp_candles = []
+                            exit_px = None
+                            exit_reason = None
+                            exit_bar_ts = None
+                            for bar in scalp_candles:
+                                bhigh = float(bar['high'])
+                                blow = float(bar['low'])
+                                bar_ts = bar['timestamp']
                                 if dir_word == 'BULL':
-                                    s_hit = o <= slf
-                                    t_hit = o >= tgf
+                                    s_hit = blow <= slf
+                                    t_hit = bhigh >= tgf
                                 else:
-                                    s_hit = o >= slf
-                                    t_hit = o <= tgf
+                                    s_hit = bhigh >= slf
+                                    t_hit = blow <= tgf
+                                if s_hit and t_hit:
+                                    exit_px = slf
+                                    exit_reason = 'STOP'
+                                    exit_bar_ts = bar_ts
+                                    break
                                 if s_hit:
-                                    res = (-1.0, round(o, 2), 'STOP', ts)
+                                    exit_px = slf
+                                    exit_reason = 'STOP'
+                                    exit_bar_ts = bar_ts
                                     break
                                 if t_hit:
-                                    res = (round(abs(tgf - float(entry)) / abs(float(entry) - slf), 3) if abs(float(entry)-slf) else 0.0,
-                                           round(o, 2), 'TARGET', ts)
+                                    exit_px = tgf
+                                    exit_reason = 'TARGET'
+                                    exit_bar_ts = bar_ts
                                     break
+                            if exit_reason is None and scalp_candles:
+                                # Scalp spec: a position still open at the 15:25
+                                # close is squared off at the last available
+                                # close of the entry session. Only once the
+                                # session is settled, so a half-formed session
+                                # can never book a premature exit. Entry, stop
+                                # and target are never altered here.
+                                _last = scalp_candles[-1]
+                                _now_hm = datetime.now(_IST).strftime('%H:%M')
+                                _entry_day = (entry_time or '')[:10]
+                                _today_ist = datetime.now(_IST).date().isoformat()
+                                # Today: only after the 15:25 bar has settled
+                                # (15:30), so a forming bar is never used. A
+                                # prior session is always settled.
+                                _set_over = ((_entry_day and _entry_day < _today_ist)
+                                             or (_entry_day == _today_ist and _now_hm > '15:30'))
+                                if _set_over:
+                                    exit_px = float(_last['close'])
+                                    exit_reason = 'EOD'
+                                    exit_bar_ts = _last.get('timestamp')
+                            if exit_reason is None:
+                                res = None
+                            else:
+                                pnl_gross = (exit_px - float(entry)) if dir_word == 'BULL' else (float(entry) - exit_px)
+                                res = ((pnl_gross / risk) if risk else (-1.0 if exit_reason == 'STOP' else 0.0), exit_px, exit_reason, exit_bar_ts)
                     else:
                         from app.research.cpr_trigger_engine import (
                             exits_opens, OPEN_STOP_PCT, OPEN_TARGET_PCT)
@@ -306,14 +351,16 @@ class PaperTradeEngine:
                     res = None
                 if res:
                     _r, xp, reason, _xts = res
-                    if reason in ('STOP', 'TARGET') and xp is not None:
-                        self._exit_trade(t['trade_id'], xp, reason, entry,
-                                         direction, instrument_id, conn=conn,
-                                         exit_time=_xts)
-                        filled = True
-                        t['status'] = 'CLOSED'
-                        t['exit_price'] = xp
-                        t['exit_reason'] = reason
+                    if reason in ('STOP', 'TARGET', 'EOD') and xp is not None:
+                        if self._exit_trade(t['trade_id'], xp, reason, entry,
+                                            direction, instrument_id, conn=conn,
+                                            exit_time=_xts):
+                            filled = True
+                            t['status'] = 'CLOSED'
+                            t['exit_price'] = xp
+                            t['exit_reason'] = reason
+                            if _xts is not None:
+                                t['exit_time'] = _xts
                 elif eod_mode:
                     # Published-spec parity: flat at the 15:20 open of the
                     # entry session when neither the stop nor the target was
@@ -328,12 +375,12 @@ class PaperTradeEngine:
                         if datetime.now(_IST).time() > _time(15, 30):
                             eod_px = opens[-1][1]
                     if eod_px is not None:
-                        self._exit_trade(t['trade_id'], eod_px, 'EOD-1520', entry,
-                                         direction, instrument_id, conn=conn)
-                        filled = True
-                        t['status'] = 'CLOSED'
-                        t['exit_price'] = eod_px
-                        t['exit_reason'] = 'EOD-1520'
+                        if self._exit_trade(t['trade_id'], eod_px, 'EOD-1520', entry,
+                                            direction, instrument_id, conn=conn):
+                            filled = True
+                            t['status'] = 'CLOSED'
+                            t['exit_price'] = eod_px
+                            t['exit_reason'] = 'EOD-1520'
                 results.append({**t, 'current_price': current_price, 'filled': filled})
             return results
         finally:
@@ -376,9 +423,18 @@ class PaperTradeEngine:
             costs = BROKERAGE_RS + SLIPPAGE_PTS * lot
             pnl = round(signed_pts * lot - costs, 2)
             _exit_ts = exit_time or datetime.now(_IST).isoformat()
-            conn.execute('UPDATE paper_trades SET exit_price=?, exit_reason=?, exit_time=?, status=?, paper_pnl=?, updated_at=? WHERE trade_id=?',
-                (exit_price, reason, _exit_ts, 'CLOSED', pnl, datetime.now(_IST).isoformat(), trade_id))
+            cur = conn.execute(
+                'UPDATE paper_trades SET exit_price=?, exit_reason=?, exit_time=?, '
+                'status=?, paper_pnl=?, updated_at=? '
+                'WHERE trade_id=? AND status IN ("ACTIVE", "OPEN")',
+                (exit_price, reason, _exit_ts, 'CLOSED', pnl,
+                 datetime.now(_IST).isoformat(), trade_id))
             conn.commit()
+            if cur.rowcount != 1:
+                # A concurrent monitor already closed this trade. A losing
+                # close transition must not overwrite the booked exit nor
+                # re-record performance/exit events.
+                return False
             # Feed the performance event stream: without this the live
             # ledger never wrote paper_trade_events, so the learning /
             # performance pipeline had no production data at all.
@@ -388,6 +444,7 @@ class PaperTradeEngine:
             except Exception as e:
                 log.warning('performance record failed for %s: %s',
                             trade_id, str(e)[:120])
+            return True
         finally:
             if own:
                 conn.close()

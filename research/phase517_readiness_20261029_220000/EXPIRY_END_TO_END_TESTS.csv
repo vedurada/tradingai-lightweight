@@ -1,0 +1,16 @@
+test_id,scenario,method,expected,actual,result,evidence
+E2E-1,Valid unexpired signal creates at most one trade,Executed (isolated),Trade created once,Trade created once,PASS,phase517
+E2E-2,Expired signal creates no trade,Executed (isolated),No trade created,No trade created,PASS,phase517
+E2E-3,Prior-session signal rejected,Executed (isolated),REJECTED (cross_session),REJECTED,PASS,phase517
+E2E-4,Duplicate signal cannot revive expired,Executed (isolated),No duplicate trade,No duplicate,PASS,phase517
+E2E-5,Restart cannot revive expired signal,Executed (isolated),REJECTED after restart,REJECTED,PASS,phase517
+E2E-6,Missing timestamp rejected,Executed (isolated),REJECTED (missing),REJECTED,PASS,phase517
+E2E-7,Malformed timestamp rejected,Executed (isolated),REJECTED (malformed),REJECTED,PASS,phase517
+E2E-8,Future-dated signal rejected,Executed (isolated),REJECTED (future),REJECTED,PASS,phase517
+E2E-9,Naive timestamp (assumed IST),Executed (isolated),ACCEPTED (assumed IST),ACCEPTED,PASS,phase517
+E2E-10,UTC vs IST same instant,Executed (isolated),Same decision,Same decision,PASS,phase517
+E2E-11,Entry price before signal rejected,Executed (isolated),REJECTED (entry_before_signal),REJECTED,PASS,phase517
+E2E-12,Entry price after expiry rejected,Executed (isolated),REJECTED (expired),REJECTED,PASS,phase517
+E2E-13,Open trade monitored after new signal rejection,Executed (isolated),Monitor runs independently,Monitor runs,PASS,phase517
+E2E-14,Rejected signal leaves no trade/position/alert,Executed (isolated),No side effects,No side effects,PASS,phase517
+E2E-15,Valid signal remains eligible,Executed (isolated),ACCEPTED,ACCEPTED,PASS,phase517

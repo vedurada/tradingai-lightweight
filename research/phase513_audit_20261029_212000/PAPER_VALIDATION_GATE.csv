@@ -1,0 +1,11 @@
+gate_id,criterion,status,evidence
+G1,Ledger arithmetic reconciles,PASS,729 trades, all metrics match
+G2,Out-of-sample independence,PASS,161 trades in 17 test days, chronologically later
+G3,No-lookahead behavior,PASS,14/14 tests pass
+G4,Execution realism,PARTIAL,S2 shows sensitivity to entry timing
+G5,Performance stability,PARTIAL,Monthly WR varies 67-78%, BANKNIFTY dominates
+G6,Production safety,CONFIRMED UNCHANGED,No production changes
+G7,Data coverage,SUFFICIENT (3.5 months),81 sessions, 6071 candles per instrument
+G8,Transaction costs,ESTIMATED,0.5 pts/trade assumed (not verified)
+G9,Market regime classification,NOT AVAILABLE,No regime data
+G10,Live validation,NOT RUN,Market closed during all audit windows

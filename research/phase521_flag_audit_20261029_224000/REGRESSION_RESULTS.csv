@@ -1,0 +1,12 @@
+test_id,check,method,expected,actual,result
+RG1,Flag missing → design CPR,Executed (isolated),False (CPR),True (HLC),FAIL
+RG2,Flag=false → CPR,Executed (isolated),False (CPR),False (CPR),PASS
+RG3,Flag=true → HLC,Executed (isolated),True (HLC),True (HLC),PASS
+RG4,Flag empty → design CPR,Executed (isolated),False (CPR),True (HLC),FAIL
+RG5,Flag invalid → design CPR,Executed (isolated),False (CPR),True (HLC),FAIL
+RG6,CPR function exists,Code inspection,Exists,Exists,PASS
+RG7,HLC function exists,Code inspection,Exists,Exists,PASS
+RG8,evaluate() uses flag,Code inspection,Uses flag,Uses flag,PASS
+RG9,No broker execution,Code inspection,No broker,No broker,PASS
+RG10,Production DB unchanged,Read-only check,94/29/217/16936,94/29/217/16936,PASS
+RG11,Service state unchanged,Read-only check,No restart,No restart,PASS

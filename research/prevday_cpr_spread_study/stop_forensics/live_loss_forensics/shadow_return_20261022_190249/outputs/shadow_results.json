@@ -1,0 +1,4702 @@
+{
+  "books": {
+    "A_RECORDED_BOOK": {
+      "ALL": {
+        "baseline": {
+          "outcome": {
+            "flats": 1,
+            "losses": 55,
+            "n": 150,
+            "win_rate_pct": 62.7,
+            "wins": 94
+          },
+          "r_per_setup": 0.244,
+          "total_r": 36.608
+        },
+        "censored_observations": 0,
+        "complete_observations": 150,
+        "confirmed_at_or_after_return": 55,
+        "eligible_signals": 150,
+        "family": "ALL",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 19,
+              "n": 55,
+              "win_rate_pct": 65.5,
+              "wins": 36
+            },
+            "entry_diff_points": {
+              "hi": 26.76,
+              "lo": -13.53,
+              "mean": 5.28,
+              "median": 3.3,
+              "n": 53
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 55,
+            "retained_flats": 0,
+            "retained_losses": 19,
+            "retained_mean_r": 0.305,
+            "retained_of_eligible_pct": 36.7,
+            "retained_r_per_trade": 0.273,
+            "retained_total_r": 15.002,
+            "retained_win_rate_pct": 65.5,
+            "retained_wins": 36,
+            "skipped": 95,
+            "skipped_baseline_r_discarded": 21.606,
+            "skipped_baseline_r_per_setup": 0.227,
+            "skipped_baseline_win_rate_pct": 61.1,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 36,
+            "skipped_winners_discarded": 58
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 28,
+              "n": 68,
+              "win_rate_pct": 58.8,
+              "wins": 40
+            },
+            "entry_diff_points": {
+              "hi": 49.97,
+              "lo": 18.37,
+              "mean": 33.63,
+              "median": 19.52,
+              "n": 66
+            },
+            "filter": "filter_return_retained",
+            "retained": 68,
+            "retained_flats": 0,
+            "retained_losses": 28,
+            "retained_mean_r": 0.247,
+            "retained_of_eligible_pct": 45.3,
+            "retained_r_per_trade": 0.12,
+            "retained_total_r": 8.155,
+            "retained_win_rate_pct": 58.8,
+            "retained_wins": 40,
+            "skipped": 82,
+            "skipped_baseline_r_discarded": 28.453,
+            "skipped_baseline_r_per_setup": 0.347,
+            "skipped_baseline_win_rate_pct": 65.9,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 27,
+            "skipped_winners_discarded": 54
+          }
+        },
+        "outcome_not_returned": {
+          "flats": 1,
+          "losses": 27,
+          "n": 82,
+          "win_rate_pct": 65.9,
+          "wins": 54
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 28,
+          "n": 68,
+          "win_rate_pct": 58.8,
+          "wins": 40
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 53.3,
+          "lo": 36.7
+        },
+        "return_freq_pct": {
+          "hi": 0.5332,
+          "k": 68,
+          "lo": 0.3758,
+          "n": 150,
+          "pct": 45.3
+        },
+        "returned_12b": 68
+      },
+      "BREAK": {
+        "baseline": {
+          "outcome": {
+            "flats": 1,
+            "losses": 36,
+            "n": 100,
+            "win_rate_pct": 63.0,
+            "wins": 63
+          },
+          "r_per_setup": 0.156,
+          "total_r": 15.631
+        },
+        "censor_reasons": {},
+        "censored_observations": 0,
+        "complete_observations": 100,
+        "confirm_freq_of_all_complete_pct": {
+          "hi": 0.4166,
+          "k": 32,
+          "lo": 0.2367,
+          "n": 100,
+          "pct": 32.0
+        },
+        "confirm_freq_of_returned_pct": {
+          "hi": 0.895,
+          "k": 32,
+          "lo": 0.6524,
+          "n": 40,
+          "pct": 80.0
+        },
+        "confirmed_at_or_after_return": 32,
+        "confirmed_bootstrap_pct": {
+          "hi": 41.0,
+          "lo": 23.0
+        },
+        "confirmed_strictly_after_return": 24,
+        "eligible_signals": 100,
+        "excursion": {
+          "mae_pts_after_return": {
+            "hi": 190.66,
+            "lo": 100.08,
+            "mean": 144.72,
+            "median": 85.26,
+            "n": 40
+          },
+          "mae_pts_from_signal": {
+            "hi": 193.15,
+            "lo": 126.8,
+            "mean": 157.72,
+            "median": 104.15,
+            "n": 100
+          },
+          "mae_r_from_signal": {
+            "hi": 0.84,
+            "lo": 0.61,
+            "mean": 0.72,
+            "median": 0.57,
+            "n": 100
+          },
+          "mfe_pts_after_return": {
+            "hi": 236.94,
+            "lo": 135.39,
+            "mean": 182.36,
+            "median": 116.89,
+            "n": 40
+          },
+          "mfe_pts_from_signal": {
+            "hi": 226.27,
+            "lo": 151.34,
+            "mean": 185.95,
+            "median": 133.15,
+            "n": 100
+          }
+        },
+        "family": "BREAK",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 12,
+              "n": 32,
+              "win_rate_pct": 62.5,
+              "wins": 20
+            },
+            "entry_diff_points": {
+              "hi": 45.16,
+              "lo": -5.68,
+              "mean": 16.65,
+              "median": 7.7,
+              "n": 32
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 32,
+            "retained_flats": 0,
+            "retained_losses": 12,
+            "retained_mean_r": 0.083,
+            "retained_of_eligible_pct": 32.0,
+            "retained_r_per_trade": 0.024,
+            "retained_total_r": 0.776,
+            "retained_win_rate_pct": 62.5,
+            "retained_wins": 20,
+            "skipped": 68,
+            "skipped_baseline_r_discarded": 14.855,
+            "skipped_baseline_r_per_setup": 0.218,
+            "skipped_baseline_win_rate_pct": 63.2,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 24,
+            "skipped_winners_discarded": 43
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 17,
+              "n": 40,
+              "win_rate_pct": 57.5,
+              "wins": 23
+            },
+            "entry_diff_points": {
+              "hi": 69.86,
+              "lo": 28.2,
+              "mean": 46.22,
+              "median": 22.9,
+              "n": 40
+            },
+            "filter": "filter_return_retained",
+            "retained": 40,
+            "retained_flats": 0,
+            "retained_losses": 17,
+            "retained_mean_r": 0.088,
+            "retained_of_eligible_pct": 40.0,
+            "retained_r_per_trade": -0.064,
+            "retained_total_r": -2.555,
+            "retained_win_rate_pct": 57.5,
+            "retained_wins": 23,
+            "skipped": 60,
+            "skipped_baseline_r_discarded": 18.186,
+            "skipped_baseline_r_per_setup": 0.303,
+            "skipped_baseline_win_rate_pct": 66.7,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 19,
+            "skipped_winners_discarded": 40
+          }
+        },
+        "instruments": {
+          "BANKNIFTY": {
+            "confirmed": 18,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 6,
+                  "n": 18,
+                  "win_rate_pct": 66.7,
+                  "wins": 12
+                },
+                "entry_diff_points": {
+                  "hi": 70.61,
+                  "lo": -14.35,
+                  "mean": 23.95,
+                  "median": -0.58,
+                  "n": 18
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 18,
+                "retained_flats": 0,
+                "retained_losses": 6,
+                "retained_mean_r": 0.127,
+                "retained_of_eligible_pct": 34.6,
+                "retained_r_per_trade": 0.083,
+                "retained_total_r": 1.497,
+                "retained_win_rate_pct": 66.7,
+                "retained_wins": 12,
+                "skipped": 34,
+                "skipped_baseline_r_discarded": 4.71,
+                "skipped_baseline_r_per_setup": 0.139,
+                "skipped_baseline_win_rate_pct": 58.8,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 14,
+                "skipped_winners_discarded": 20
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 10,
+                  "n": 24,
+                  "win_rate_pct": 58.3,
+                  "wins": 14
+                },
+                "entry_diff_points": {
+                  "hi": 97.79,
+                  "lo": 32.51,
+                  "mean": 62.08,
+                  "median": 26.98,
+                  "n": 24
+                },
+                "filter": "filter_return_retained",
+                "retained": 24,
+                "retained_flats": 0,
+                "retained_losses": 10,
+                "retained_mean_r": 0.064,
+                "retained_of_eligible_pct": 46.2,
+                "retained_r_per_trade": -0.057,
+                "retained_total_r": -1.371,
+                "retained_win_rate_pct": 58.3,
+                "retained_wins": 14,
+                "skipped": 28,
+                "skipped_baseline_r_discarded": 7.578,
+                "skipped_baseline_r_per_setup": 0.271,
+                "skipped_baseline_win_rate_pct": 64.3,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 10,
+                "skipped_winners_discarded": 18
+              }
+            },
+            "n": 52,
+            "outcome": {
+              "flats": 0,
+              "losses": 20,
+              "n": 52,
+              "win_rate_pct": 61.5,
+              "wins": 32
+            },
+            "r_per_setup": 0.119,
+            "return_freq_pct": {
+              "hi": 0.595,
+              "k": 24,
+              "lo": 0.3334,
+              "n": 52,
+              "pct": 46.2
+            },
+            "returned": 24,
+            "total_r": 6.207
+          },
+          "NIFTY": {
+            "confirmed": 14,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 6,
+                  "n": 14,
+                  "win_rate_pct": 57.1,
+                  "wins": 8
+                },
+                "entry_diff_points": {
+                  "hi": 16.14,
+                  "lo": -1.78,
+                  "mean": 7.26,
+                  "median": 8.95,
+                  "n": 14
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 14,
+                "retained_flats": 0,
+                "retained_losses": 6,
+                "retained_mean_r": 0.028,
+                "retained_of_eligible_pct": 29.2,
+                "retained_r_per_trade": -0.051,
+                "retained_total_r": -0.721,
+                "retained_win_rate_pct": 57.1,
+                "retained_wins": 8,
+                "skipped": 34,
+                "skipped_baseline_r_discarded": 10.145,
+                "skipped_baseline_r_per_setup": 0.298,
+                "skipped_baseline_win_rate_pct": 67.6,
+                "skipped_flats_discarded": 1,
+                "skipped_losers_discarded": 10,
+                "skipped_winners_discarded": 23
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 7,
+                  "n": 16,
+                  "win_rate_pct": 56.2,
+                  "wins": 9
+                },
+                "entry_diff_points": {
+                  "hi": 29.63,
+                  "lo": 15.7,
+                  "mean": 22.44,
+                  "median": 19.79,
+                  "n": 16
+                },
+                "filter": "filter_return_retained",
+                "retained": 16,
+                "retained_flats": 0,
+                "retained_losses": 7,
+                "retained_mean_r": 0.124,
+                "retained_of_eligible_pct": 33.3,
+                "retained_r_per_trade": -0.074,
+                "retained_total_r": -1.184,
+                "retained_win_rate_pct": 56.2,
+                "retained_wins": 9,
+                "skipped": 32,
+                "skipped_baseline_r_discarded": 10.608,
+                "skipped_baseline_r_per_setup": 0.332,
+                "skipped_baseline_win_rate_pct": 68.8,
+                "skipped_flats_discarded": 1,
+                "skipped_losers_discarded": 9,
+                "skipped_winners_discarded": 22
+              }
+            },
+            "n": 48,
+            "outcome": {
+              "flats": 1,
+              "losses": 16,
+              "n": 48,
+              "win_rate_pct": 64.6,
+              "wins": 31
+            },
+            "r_per_setup": 0.196,
+            "return_freq_pct": {
+              "hi": 0.4746,
+              "k": 16,
+              "lo": 0.2168,
+              "n": 48,
+              "pct": 33.3
+            },
+            "returned": 16,
+            "total_r": 9.424
+          }
+        },
+        "levels": {
+          "ABOVE_CPR": {
+            "confirmed": 14,
+            "n": 23,
+            "outcome": {
+              "flats": 0,
+              "losses": 11,
+              "n": 23,
+              "win_rate_pct": 52.2,
+              "wins": 12
+            },
+            "return_freq_pct": {
+              "hi": 0.844,
+              "k": 16,
+              "lo": 0.4913,
+              "n": 23,
+              "pct": 69.6
+            },
+            "returned": 16,
+            "total_r": -0.822
+          },
+          "BELOW_CPR": {
+            "confirmed": 18,
+            "n": 77,
+            "outcome": {
+              "flats": 1,
+              "losses": 25,
+              "n": 77,
+              "win_rate_pct": 66.2,
+              "wins": 51
+            },
+            "return_freq_pct": {
+              "hi": 0.422,
+              "k": 24,
+              "lo": 0.2193,
+              "n": 77,
+              "pct": 31.2
+            },
+            "returned": 24,
+            "total_r": 16.453
+          }
+        },
+        "not_returned": 60,
+        "outcome_discrimination": {
+          "bootstrap_ci_pct": {
+            "diff_pct": -10.3,
+            "hi": 9.8,
+            "lo": -28.8
+          },
+          "fisher_p": 0.3947,
+          "table": {
+            "not_returned_loss": 19,
+            "not_returned_win": 40,
+            "returned_loss": 17,
+            "returned_win": 23
+          },
+          "win_rate_diff_pct": -10.3
+        },
+        "outcome_not_returned": {
+          "flats": 1,
+          "losses": 19,
+          "n": 60,
+          "win_rate_pct": 66.7,
+          "wins": 40
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 17,
+          "n": 40,
+          "win_rate_pct": 57.5,
+          "wins": 23
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 50.0,
+          "lo": 30.0
+        },
+        "return_freq_pct": {
+          "hi": 0.498,
+          "k": 40,
+          "lo": 0.3094,
+          "n": 100,
+          "pct": 40.0
+        },
+        "returned_12b": 40,
+        "sessions": {
+          "2026-07-08": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 7.492,
+            "wins": 2
+          },
+          "2026-07-09": {
+            "confirmed": 1,
+            "losses": 2,
+            "n": 2,
+            "returned": 2,
+            "total_r": -1.263,
+            "wins": 0
+          },
+          "2026-07-13": {
+            "confirmed": 1,
+            "losses": 2,
+            "n": 2,
+            "returned": 1,
+            "total_r": -2.0,
+            "wins": 0
+          },
+          "2026-07-14": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.92,
+            "wins": 2
+          },
+          "2026-07-16": {
+            "confirmed": 2,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.134,
+            "wins": 1
+          },
+          "2026-07-17": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 2.394,
+            "wins": 1
+          },
+          "2026-07-20": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.656,
+            "wins": 0
+          },
+          "2026-07-21": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.576,
+            "wins": 0
+          },
+          "2026-07-22": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 2.047,
+            "wins": 2
+          },
+          "2026-07-23": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.099,
+            "wins": 2
+          },
+          "2026-07-24": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": -1.048,
+            "wins": 1
+          },
+          "2026-07-28": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 1.098,
+            "wins": 1
+          },
+          "2026-07-30": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.292,
+            "wins": 1
+          },
+          "2026-08-04": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 2.424,
+            "wins": 2
+          },
+          "2026-08-05": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-08-06": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0.924,
+            "wins": 2
+          },
+          "2026-08-07": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.516,
+            "wins": 2
+          },
+          "2026-08-10": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.386,
+            "wins": 0
+          },
+          "2026-08-11": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.299,
+            "wins": 2
+          },
+          "2026-08-12": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.585,
+            "wins": 1
+          },
+          "2026-08-13": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.13,
+            "wins": 2
+          },
+          "2026-08-14": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.249,
+            "wins": 1
+          },
+          "2026-08-17": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -1.357,
+            "wins": 0
+          },
+          "2026-08-18": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.529,
+            "wins": 2
+          },
+          "2026-08-19": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.587,
+            "wins": 2
+          },
+          "2026-08-21": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.497,
+            "wins": 0
+          },
+          "2026-08-25": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.415,
+            "wins": 1
+          },
+          "2026-08-27": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.671,
+            "wins": 1
+          },
+          "2026-08-28": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.209,
+            "wins": 2
+          },
+          "2026-08-31": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": -0.009,
+            "wins": 1
+          },
+          "2026-09-01": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 1.531,
+            "wins": 2
+          },
+          "2026-09-02": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.749,
+            "wins": 0
+          },
+          "2026-09-04": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.199,
+            "wins": 2
+          },
+          "2026-09-07": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.532,
+            "wins": 2
+          },
+          "2026-09-08": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.942,
+            "wins": 2
+          },
+          "2026-09-09": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.599,
+            "wins": 2
+          },
+          "2026-09-10": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.314,
+            "wins": 1
+          },
+          "2026-09-11": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -2.0,
+            "wins": 0
+          },
+          "2026-09-16": {
+            "confirmed": 2,
+            "losses": 2,
+            "n": 2,
+            "returned": 2,
+            "total_r": -2.0,
+            "wins": 0
+          },
+          "2026-09-17": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.485,
+            "wins": 1
+          },
+          "2026-09-18": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-09-22": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 0,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-09-23": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0.463,
+            "wins": 2
+          },
+          "2026-09-24": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.598,
+            "wins": 2
+          },
+          "2026-09-25": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.229,
+            "wins": 1
+          },
+          "2026-09-28": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 3.129,
+            "wins": 2
+          },
+          "2026-09-29": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.44,
+            "wins": 0
+          },
+          "2026-09-30": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.76,
+            "wins": 0
+          },
+          "2026-10-01": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.024,
+            "wins": 1
+          },
+          "2026-10-05": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 0,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-10-06": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.19,
+            "wins": 1
+          },
+          "2026-10-07": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.936,
+            "wins": 1
+          },
+          "2026-10-08": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 3.863,
+            "wins": 2
+          },
+          "2026-10-09": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 1.265,
+            "wins": 1
+          },
+          "2026-10-12": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.729,
+            "wins": 1
+          },
+          "2026-10-13": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 1.127,
+            "wins": 1
+          },
+          "2026-10-15": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.612,
+            "wins": 1
+          },
+          "2026-10-16": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.374,
+            "wins": 0
+          },
+          "2026-10-19": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.739,
+            "wins": 1
+          },
+          "2026-10-22": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -2.0,
+            "wins": 0
+          }
+        }
+      },
+      "TOUCH": {
+        "baseline": {
+          "outcome": {
+            "flats": 0,
+            "losses": 19,
+            "n": 50,
+            "win_rate_pct": 62.0,
+            "wins": 31
+          },
+          "r_per_setup": 0.42,
+          "total_r": 20.977
+        },
+        "censor_reasons": {},
+        "censored_observations": 0,
+        "complete_observations": 50,
+        "confirm_freq_of_all_complete_pct": {
+          "hi": 0.596,
+          "k": 23,
+          "lo": 0.3297,
+          "n": 50,
+          "pct": 46.0
+        },
+        "confirm_freq_of_returned_pct": {
+          "hi": 0.9212,
+          "k": 23,
+          "lo": 0.6441,
+          "n": 28,
+          "pct": 82.1
+        },
+        "confirmed_at_or_after_return": 23,
+        "confirmed_bootstrap_pct": {
+          "hi": 60.0,
+          "lo": 32.0
+        },
+        "confirmed_strictly_after_return": 17,
+        "eligible_signals": 50,
+        "excursion": {
+          "mae_pts_after_return": {
+            "hi": 218.41,
+            "lo": 78.49,
+            "mean": 141.33,
+            "median": 71.91,
+            "n": 28
+          },
+          "mae_pts_from_signal": {
+            "hi": 186.83,
+            "lo": 97.87,
+            "mean": 138.79,
+            "median": 71.67,
+            "n": 50
+          },
+          "mae_r_from_signal": {
+            "hi": 0.92,
+            "lo": 0.51,
+            "mean": 0.7,
+            "median": 0.55,
+            "n": 48
+          },
+          "mfe_pts_after_return": {
+            "hi": 330.32,
+            "lo": 136.88,
+            "mean": 224.6,
+            "median": 134.69,
+            "n": 28
+          },
+          "mfe_pts_from_signal": {
+            "hi": 277.66,
+            "lo": 144.56,
+            "mean": 208.74,
+            "median": 110.85,
+            "n": 50
+          }
+        },
+        "family": "TOUCH",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 7,
+              "n": 23,
+              "win_rate_pct": 69.6,
+              "wins": 16
+            },
+            "entry_diff_points": {
+              "hi": 21.39,
+              "lo": -46.15,
+              "mean": -12.04,
+              "median": -2.2,
+              "n": 21
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 23,
+            "retained_flats": 0,
+            "retained_losses": 7,
+            "retained_mean_r": 0.642,
+            "retained_of_eligible_pct": 46.0,
+            "retained_r_per_trade": 0.619,
+            "retained_total_r": 14.226,
+            "retained_win_rate_pct": 69.6,
+            "retained_wins": 16,
+            "skipped": 27,
+            "skipped_baseline_r_discarded": 6.751,
+            "skipped_baseline_r_per_setup": 0.25,
+            "skipped_baseline_win_rate_pct": 55.6,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 12,
+            "skipped_winners_discarded": 15
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 11,
+              "n": 28,
+              "win_rate_pct": 60.7,
+              "wins": 17
+            },
+            "entry_diff_points": {
+              "hi": 37.0,
+              "lo": -8.27,
+              "mean": 14.25,
+              "median": 10.95,
+              "n": 26
+            },
+            "filter": "filter_return_retained",
+            "retained": 28,
+            "retained_flats": 0,
+            "retained_losses": 11,
+            "retained_mean_r": 0.49,
+            "retained_of_eligible_pct": 56.0,
+            "retained_r_per_trade": 0.383,
+            "retained_total_r": 10.71,
+            "retained_win_rate_pct": 60.7,
+            "retained_wins": 17,
+            "skipped": 22,
+            "skipped_baseline_r_discarded": 10.267,
+            "skipped_baseline_r_per_setup": 0.467,
+            "skipped_baseline_win_rate_pct": 63.6,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 8,
+            "skipped_winners_discarded": 14
+          }
+        },
+        "instruments": {
+          "BANKNIFTY": {
+            "confirmed": 10,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 3,
+                  "n": 10,
+                  "win_rate_pct": 70.0,
+                  "wins": 7
+                },
+                "entry_diff_points": {
+                  "hi": 38.04,
+                  "lo": -95.05,
+                  "mean": -30.65,
+                  "median": -37.45,
+                  "n": 9
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 10,
+                "retained_flats": 0,
+                "retained_losses": 3,
+                "retained_mean_r": 0.714,
+                "retained_of_eligible_pct": 43.5,
+                "retained_r_per_trade": 0.704,
+                "retained_total_r": 7.039,
+                "retained_win_rate_pct": 70.0,
+                "retained_wins": 7,
+                "skipped": 13,
+                "skipped_baseline_r_discarded": 2.157,
+                "skipped_baseline_r_per_setup": 0.166,
+                "skipped_baseline_win_rate_pct": 53.8,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 6,
+                "skipped_winners_discarded": 7
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 6,
+                  "n": 14,
+                  "win_rate_pct": 57.1,
+                  "wins": 8
+                },
+                "entry_diff_points": {
+                  "hi": 57.64,
+                  "lo": -27.4,
+                  "mean": 13.05,
+                  "median": -3.6,
+                  "n": 13
+                },
+                "filter": "filter_return_retained",
+                "retained": 14,
+                "retained_flats": 0,
+                "retained_losses": 6,
+                "retained_mean_r": 0.4,
+                "retained_of_eligible_pct": 60.9,
+                "retained_r_per_trade": 0.323,
+                "retained_total_r": 4.523,
+                "retained_win_rate_pct": 57.1,
+                "retained_wins": 8,
+                "skipped": 9,
+                "skipped_baseline_r_discarded": 4.673,
+                "skipped_baseline_r_per_setup": 0.519,
+                "skipped_baseline_win_rate_pct": 66.7,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 3,
+                "skipped_winners_discarded": 6
+              }
+            },
+            "n": 23,
+            "outcome": {
+              "flats": 0,
+              "losses": 9,
+              "n": 23,
+              "win_rate_pct": 60.9,
+              "wins": 14
+            },
+            "r_per_setup": 0.4,
+            "return_freq_pct": {
+              "hi": 0.7784,
+              "k": 14,
+              "lo": 0.4079,
+              "n": 23,
+              "pct": 60.9
+            },
+            "returned": 14,
+            "total_r": 9.196
+          },
+          "NIFTY": {
+            "confirmed": 13,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 4,
+                  "n": 13,
+                  "win_rate_pct": 69.2,
+                  "wins": 9
+                },
+                "entry_diff_points": {
+                  "hi": 26.37,
+                  "lo": -18.74,
+                  "mean": 1.91,
+                  "median": 2.38,
+                  "n": 12
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 13,
+                "retained_flats": 0,
+                "retained_losses": 4,
+                "retained_mean_r": 0.587,
+                "retained_of_eligible_pct": 48.1,
+                "retained_r_per_trade": 0.553,
+                "retained_total_r": 7.187,
+                "retained_win_rate_pct": 69.2,
+                "retained_wins": 9,
+                "skipped": 14,
+                "skipped_baseline_r_discarded": 4.594,
+                "skipped_baseline_r_per_setup": 0.328,
+                "skipped_baseline_win_rate_pct": 57.1,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 6,
+                "skipped_winners_discarded": 8
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 5,
+                  "n": 14,
+                  "win_rate_pct": 64.3,
+                  "wins": 9
+                },
+                "entry_diff_points": {
+                  "hi": 35.13,
+                  "lo": 0.27,
+                  "mean": 15.45,
+                  "median": 12.73,
+                  "n": 13
+                },
+                "filter": "filter_return_retained",
+                "retained": 14,
+                "retained_flats": 0,
+                "retained_losses": 5,
+                "retained_mean_r": 0.581,
+                "retained_of_eligible_pct": 51.9,
+                "retained_r_per_trade": 0.442,
+                "retained_total_r": 6.187,
+                "retained_win_rate_pct": 64.3,
+                "retained_wins": 9,
+                "skipped": 13,
+                "skipped_baseline_r_discarded": 5.594,
+                "skipped_baseline_r_per_setup": 0.43,
+                "skipped_baseline_win_rate_pct": 61.5,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 5,
+                "skipped_winners_discarded": 8
+              }
+            },
+            "n": 27,
+            "outcome": {
+              "flats": 0,
+              "losses": 10,
+              "n": 27,
+              "win_rate_pct": 63.0,
+              "wins": 17
+            },
+            "r_per_setup": 0.436,
+            "return_freq_pct": {
+              "hi": 0.6926,
+              "k": 14,
+              "lo": 0.3399,
+              "n": 27,
+              "pct": 51.9
+            },
+            "returned": 14,
+            "total_r": 11.781
+          }
+        },
+        "levels": {
+          "PDH": {
+            "confirmed": 10,
+            "n": 11,
+            "outcome": {
+              "flats": 0,
+              "losses": 3,
+              "n": 11,
+              "win_rate_pct": 72.7,
+              "wins": 8
+            },
+            "return_freq_pct": {
+              "hi": 0.9838,
+              "k": 10,
+              "lo": 0.6226,
+              "n": 11,
+              "pct": 90.9
+            },
+            "returned": 10,
+            "total_r": 3.971
+          },
+          "PDL": {
+            "confirmed": 0,
+            "n": 2,
+            "outcome": {
+              "flats": 0,
+              "losses": 1,
+              "n": 2,
+              "win_rate_pct": 50.0,
+              "wins": 1
+            },
+            "return_freq_pct": {
+              "hi": 0.6576,
+              "k": 0,
+              "lo": 0.0,
+              "n": 2,
+              "pct": 0.0
+            },
+            "returned": 0,
+            "total_r": 1.553
+          },
+          "R1": {
+            "confirmed": 11,
+            "n": 27,
+            "outcome": {
+              "flats": 0,
+              "losses": 9,
+              "n": 27,
+              "win_rate_pct": 66.7,
+              "wins": 18
+            },
+            "return_freq_pct": {
+              "hi": 0.6601,
+              "k": 13,
+              "lo": 0.3074,
+              "n": 27,
+              "pct": 48.1
+            },
+            "returned": 13,
+            "total_r": 15.083
+          },
+          "R2": {
+            "confirmed": 1,
+            "n": 9,
+            "outcome": {
+              "flats": 0,
+              "losses": 5,
+              "n": 9,
+              "win_rate_pct": 44.4,
+              "wins": 4
+            },
+            "return_freq_pct": {
+              "hi": 0.7334,
+              "k": 4,
+              "lo": 0.1888,
+              "n": 9,
+              "pct": 44.4
+            },
+            "returned": 4,
+            "total_r": 0.646
+          },
+          "S1": {
+            "confirmed": 1,
+            "n": 1,
+            "outcome": {
+              "flats": 0,
+              "losses": 1,
+              "n": 1,
+              "win_rate_pct": 0.0,
+              "wins": 0
+            },
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 1,
+              "lo": 0.2065,
+              "n": 1,
+              "pct": 100.0
+            },
+            "returned": 1,
+            "total_r": -0.276
+          }
+        },
+        "not_returned": 22,
+        "outcome_discrimination": {
+          "bootstrap_ci_pct": {
+            "diff_pct": -2.9,
+            "hi": 23.1,
+            "lo": -29.9
+          },
+          "fisher_p": 1.0,
+          "table": {
+            "not_returned_loss": 8,
+            "not_returned_win": 14,
+            "returned_loss": 11,
+            "returned_win": 17
+          },
+          "win_rate_diff_pct": -2.9
+        },
+        "outcome_not_returned": {
+          "flats": 0,
+          "losses": 8,
+          "n": 22,
+          "win_rate_pct": 63.6,
+          "wins": 14
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 11,
+          "n": 28,
+          "win_rate_pct": 60.7,
+          "wins": 17
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 70.0,
+          "lo": 42.0
+        },
+        "return_freq_pct": {
+          "hi": 0.6884,
+          "k": 28,
+          "lo": 0.4231,
+          "n": 50,
+          "pct": 56.0
+        },
+        "returned_12b": 28,
+        "sessions": {
+          "2026-07-07": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 1.186,
+            "wins": 2
+          },
+          "2026-07-10": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 1,
+            "total_r": -1.381,
+            "wins": 0
+          },
+          "2026-07-15": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.126,
+            "wins": 2
+          },
+          "2026-07-17": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 0,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-07-21": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 1.303,
+            "wins": 1
+          },
+          "2026-07-27": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.117,
+            "wins": 1
+          },
+          "2026-07-28": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.53,
+            "wins": 1
+          },
+          "2026-07-29": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 1,
+            "total_r": -1.324,
+            "wins": 0
+          },
+          "2026-07-31": {
+            "confirmed": 2,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.218,
+            "wins": 1
+          },
+          "2026-08-03": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 1,
+            "total_r": -1.315,
+            "wins": 0
+          },
+          "2026-08-05": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.775,
+            "wins": 1
+          },
+          "2026-08-10": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 1.061,
+            "wins": 1
+          },
+          "2026-08-20": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.011,
+            "wins": 2
+          },
+          "2026-08-21": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.029,
+            "wins": 1
+          },
+          "2026-08-24": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 2.532,
+            "wins": 2
+          },
+          "2026-08-26": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.087,
+            "wins": 1
+          },
+          "2026-08-27": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.926,
+            "wins": 1
+          },
+          "2026-08-31": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.276,
+            "wins": 0
+          },
+          "2026-09-03": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 1.251,
+            "wins": 2
+          },
+          "2026-09-10": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 0,
+            "total_r": -0.811,
+            "wins": 0
+          },
+          "2026-09-15": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 5.476,
+            "wins": 2
+          },
+          "2026-09-18": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": -0.174,
+            "wins": 1
+          },
+          "2026-09-21": {
+            "confirmed": 2,
+            "losses": 2,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.831,
+            "wins": 0
+          },
+          "2026-09-22": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.765,
+            "wins": 1
+          },
+          "2026-09-30": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-10-05": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 1.529,
+            "wins": 1
+          },
+          "2026-10-06": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-10-09": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 0,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-10-12": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 2.375,
+            "wins": 1
+          },
+          "2026-10-13": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 2.364,
+            "wins": 1
+          },
+          "2026-10-14": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 1.076,
+            "wins": 2
+          },
+          "2026-10-15": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-10-16": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -1.0,
+            "wins": 0
+          },
+          "2026-10-19": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 2.416,
+            "wins": 1
+          },
+          "2026-10-21": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 6.606,
+            "wins": 2
+          }
+        }
+      }
+    },
+    "B_CURRENT_ENGINE_REPLAY": {
+      "ALL": {
+        "baseline": {
+          "outcome": {
+            "flats": 1,
+            "losses": 32,
+            "n": 133,
+            "win_rate_pct": 73.7,
+            "wins": 98
+          },
+          "r_per_setup": 0.417,
+          "total_r": 55.502
+        },
+        "censored_observations": 0,
+        "complete_observations": 133,
+        "confirmed_at_or_after_return": 55,
+        "eligible_signals": 133,
+        "family": "ALL",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 9,
+              "n": 55,
+              "win_rate_pct": 80.0,
+              "wins": 44
+            },
+            "entry_diff_points": {
+              "hi": 14.17,
+              "lo": -22.83,
+              "mean": -5.62,
+              "median": -3.3,
+              "n": 53
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 55,
+            "retained_flats": 0,
+            "retained_losses": 9,
+            "retained_mean_r": 0.472,
+            "retained_of_eligible_pct": 41.4,
+            "retained_r_per_trade": 0.493,
+            "retained_total_r": 27.106,
+            "retained_win_rate_pct": 80.0,
+            "retained_wins": 44,
+            "skipped": 78,
+            "skipped_baseline_r_discarded": 28.396,
+            "skipped_baseline_r_per_setup": 0.364,
+            "skipped_baseline_win_rate_pct": 69.2,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 23,
+            "skipped_winners_discarded": 54
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 15,
+              "n": 69,
+              "win_rate_pct": 75.4,
+              "wins": 52
+            },
+            "entry_diff_points": {
+              "hi": 36.17,
+              "lo": 7.82,
+              "mean": 21.19,
+              "median": 8.0,
+              "n": 67
+            },
+            "filter": "filter_return_retained",
+            "retained": 69,
+            "retained_flats": 0,
+            "retained_losses": 15,
+            "retained_mean_r": 0.396,
+            "retained_of_eligible_pct": 51.9,
+            "retained_r_per_trade": 0.32,
+            "retained_total_r": 22.052,
+            "retained_win_rate_pct": 75.4,
+            "retained_wins": 52,
+            "skipped": 64,
+            "skipped_baseline_r_discarded": 33.45,
+            "skipped_baseline_r_per_setup": 0.523,
+            "skipped_baseline_win_rate_pct": 71.9,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 17,
+            "skipped_winners_discarded": 46
+          }
+        },
+        "outcome_not_returned": {
+          "flats": 1,
+          "losses": 17,
+          "n": 64,
+          "win_rate_pct": 71.9,
+          "wins": 46
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 15,
+          "n": 69,
+          "win_rate_pct": 75.4,
+          "wins": 52
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 60.9,
+          "lo": 43.6
+        },
+        "return_freq_pct": {
+          "hi": 0.602,
+          "k": 69,
+          "lo": 0.4346,
+          "n": 133,
+          "pct": 51.9
+        },
+        "returned_12b": 69
+      },
+      "BREAK": {
+        "baseline": {
+          "outcome": {
+            "flats": 1,
+            "losses": 18,
+            "n": 69,
+            "win_rate_pct": 72.5,
+            "wins": 50
+          },
+          "r_per_setup": 0.317,
+          "total_r": 21.869
+        },
+        "censor_reasons": {},
+        "censored_observations": 0,
+        "complete_observations": 69,
+        "confirm_freq_of_all_complete_pct": {
+          "hi": 0.3282,
+          "k": 15,
+          "lo": 0.1364,
+          "n": 69,
+          "pct": 21.7
+        },
+        "confirm_freq_of_returned_pct": {
+          "hi": 0.8364,
+          "k": 15,
+          "lo": 0.4732,
+          "n": 22,
+          "pct": 68.2
+        },
+        "confirmed_at_or_after_return": 15,
+        "confirmed_bootstrap_pct": {
+          "hi": 31.9,
+          "lo": 13.0
+        },
+        "confirmed_strictly_after_return": 11,
+        "eligible_signals": 69,
+        "excursion": {
+          "mae_pts_after_return": {
+            "hi": 222.86,
+            "lo": 90.97,
+            "mean": 151.34,
+            "median": 85.26,
+            "n": 22
+          },
+          "mae_pts_from_signal": {
+            "hi": 173.62,
+            "lo": 104.87,
+            "mean": 137.78,
+            "median": 85.25,
+            "n": 69
+          },
+          "mae_r_from_signal": {
+            "hi": 0.77,
+            "lo": 0.5,
+            "mean": 0.63,
+            "median": 0.47,
+            "n": 69
+          },
+          "mfe_pts_after_return": {
+            "hi": 255.15,
+            "lo": 120.53,
+            "mean": 180.39,
+            "median": 149.96,
+            "n": 22
+          },
+          "mfe_pts_from_signal": {
+            "hi": 254.52,
+            "lo": 159.75,
+            "mean": 201.98,
+            "median": 170.9,
+            "n": 69
+          }
+        },
+        "family": "BREAK",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 3,
+              "n": 15,
+              "win_rate_pct": 80.0,
+              "wins": 12
+            },
+            "entry_diff_points": {
+              "hi": 82.7,
+              "lo": -11.3,
+              "mean": 29.34,
+              "median": 16.95,
+              "n": 15
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 15,
+            "retained_flats": 0,
+            "retained_losses": 3,
+            "retained_mean_r": 0.312,
+            "retained_of_eligible_pct": 21.7,
+            "retained_r_per_trade": 0.202,
+            "retained_total_r": 3.032,
+            "retained_win_rate_pct": 80.0,
+            "retained_wins": 12,
+            "skipped": 54,
+            "skipped_baseline_r_discarded": 18.837,
+            "skipped_baseline_r_per_setup": 0.349,
+            "skipped_baseline_win_rate_pct": 70.4,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 15,
+            "skipped_winners_discarded": 38
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 5,
+              "n": 22,
+              "win_rate_pct": 77.3,
+              "wins": 17
+            },
+            "entry_diff_points": {
+              "hi": 93.91,
+              "lo": 23.7,
+              "mean": 54.25,
+              "median": 16.51,
+              "n": 22
+            },
+            "filter": "filter_return_retained",
+            "retained": 22,
+            "retained_flats": 0,
+            "retained_losses": 5,
+            "retained_mean_r": 0.222,
+            "retained_of_eligible_pct": 31.9,
+            "retained_r_per_trade": 0.063,
+            "retained_total_r": 1.376,
+            "retained_win_rate_pct": 77.3,
+            "retained_wins": 17,
+            "skipped": 47,
+            "skipped_baseline_r_discarded": 20.493,
+            "skipped_baseline_r_per_setup": 0.436,
+            "skipped_baseline_win_rate_pct": 70.2,
+            "skipped_flats_discarded": 1,
+            "skipped_losers_discarded": 13,
+            "skipped_winners_discarded": 33
+          }
+        },
+        "instruments": {
+          "BANKNIFTY": {
+            "confirmed": 8,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 2,
+                  "n": 8,
+                  "win_rate_pct": 75.0,
+                  "wins": 6
+                },
+                "entry_diff_points": {
+                  "hi": 135.59,
+                  "lo": -35.43,
+                  "mean": 40.47,
+                  "median": 2.82,
+                  "n": 8
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 8,
+                "retained_flats": 0,
+                "retained_losses": 2,
+                "retained_mean_r": 0.241,
+                "retained_of_eligible_pct": 22.9,
+                "retained_r_per_trade": 0.205,
+                "retained_total_r": 1.639,
+                "retained_win_rate_pct": 75.0,
+                "retained_wins": 6,
+                "skipped": 27,
+                "skipped_baseline_r_discarded": 7.287,
+                "skipped_baseline_r_per_setup": 0.27,
+                "skipped_baseline_win_rate_pct": 66.7,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 9,
+                "skipped_winners_discarded": 18
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 4,
+                  "n": 13,
+                  "win_rate_pct": 69.2,
+                  "wins": 9
+                },
+                "entry_diff_points": {
+                  "hi": 136.04,
+                  "lo": 23.19,
+                  "mean": 75.01,
+                  "median": 11.81,
+                  "n": 13
+                },
+                "filter": "filter_return_retained",
+                "retained": 13,
+                "retained_flats": 0,
+                "retained_losses": 4,
+                "retained_mean_r": 0.111,
+                "retained_of_eligible_pct": 37.1,
+                "retained_r_per_trade": 0.01,
+                "retained_total_r": 0.133,
+                "retained_win_rate_pct": 69.2,
+                "retained_wins": 9,
+                "skipped": 22,
+                "skipped_baseline_r_discarded": 8.793,
+                "skipped_baseline_r_per_setup": 0.4,
+                "skipped_baseline_win_rate_pct": 68.2,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 7,
+                "skipped_winners_discarded": 15
+              }
+            },
+            "n": 35,
+            "outcome": {
+              "flats": 0,
+              "losses": 11,
+              "n": 35,
+              "win_rate_pct": 68.6,
+              "wins": 24
+            },
+            "r_per_setup": 0.255,
+            "return_freq_pct": {
+              "hi": 0.5366,
+              "k": 13,
+              "lo": 0.2317,
+              "n": 35,
+              "pct": 37.1
+            },
+            "returned": 13,
+            "total_r": 8.926
+          },
+          "NIFTY": {
+            "confirmed": 7,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 1,
+                  "n": 7,
+                  "win_rate_pct": 85.7,
+                  "wins": 6
+                },
+                "entry_diff_points": {
+                  "hi": 27.69,
+                  "lo": 5.52,
+                  "mean": 16.61,
+                  "median": 16.95,
+                  "n": 7
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 7,
+                "retained_flats": 0,
+                "retained_losses": 1,
+                "retained_mean_r": 0.392,
+                "retained_of_eligible_pct": 20.6,
+                "retained_r_per_trade": 0.199,
+                "retained_total_r": 1.393,
+                "retained_win_rate_pct": 85.7,
+                "retained_wins": 6,
+                "skipped": 27,
+                "skipped_baseline_r_discarded": 11.55,
+                "skipped_baseline_r_per_setup": 0.428,
+                "skipped_baseline_win_rate_pct": 74.1,
+                "skipped_flats_discarded": 1,
+                "skipped_losers_discarded": 6,
+                "skipped_winners_discarded": 20
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 1,
+                  "n": 9,
+                  "win_rate_pct": 88.9,
+                  "wins": 8
+                },
+                "entry_diff_points": {
+                  "hi": 33.77,
+                  "lo": 15.34,
+                  "mean": 24.26,
+                  "median": 17.65,
+                  "n": 9
+                },
+                "filter": "filter_return_retained",
+                "retained": 9,
+                "retained_flats": 0,
+                "retained_losses": 1,
+                "retained_mean_r": 0.383,
+                "retained_of_eligible_pct": 26.5,
+                "retained_r_per_trade": 0.138,
+                "retained_total_r": 1.243,
+                "retained_win_rate_pct": 88.9,
+                "retained_wins": 8,
+                "skipped": 25,
+                "skipped_baseline_r_discarded": 11.7,
+                "skipped_baseline_r_per_setup": 0.468,
+                "skipped_baseline_win_rate_pct": 72.0,
+                "skipped_flats_discarded": 1,
+                "skipped_losers_discarded": 6,
+                "skipped_winners_discarded": 18
+              }
+            },
+            "n": 34,
+            "outcome": {
+              "flats": 1,
+              "losses": 7,
+              "n": 34,
+              "win_rate_pct": 76.5,
+              "wins": 26
+            },
+            "r_per_setup": 0.381,
+            "return_freq_pct": {
+              "hi": 0.4312,
+              "k": 9,
+              "lo": 0.146,
+              "n": 34,
+              "pct": 26.5
+            },
+            "returned": 9,
+            "total_r": 12.943
+          }
+        },
+        "levels": {
+          "BELOW_CPR": {
+            "confirmed": 15,
+            "n": 69,
+            "outcome": {
+              "flats": 1,
+              "losses": 18,
+              "n": 69,
+              "win_rate_pct": 72.5,
+              "wins": 50
+            },
+            "return_freq_pct": {
+              "hi": 0.4358,
+              "k": 22,
+              "lo": 0.2209,
+              "n": 69,
+              "pct": 31.9
+            },
+            "returned": 22,
+            "total_r": 21.869
+          }
+        },
+        "not_returned": 47,
+        "outcome_discrimination": {
+          "bootstrap_ci_pct": {
+            "diff_pct": 5.5,
+            "hi": 25.9,
+            "lo": -17.0
+          },
+          "fisher_p": 0.772,
+          "table": {
+            "not_returned_loss": 13,
+            "not_returned_win": 33,
+            "returned_loss": 5,
+            "returned_win": 17
+          },
+          "win_rate_diff_pct": 5.5
+        },
+        "outcome_not_returned": {
+          "flats": 1,
+          "losses": 13,
+          "n": 47,
+          "win_rate_pct": 70.2,
+          "wins": 33
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 5,
+          "n": 22,
+          "win_rate_pct": 77.3,
+          "wins": 17
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 43.5,
+          "lo": 21.7
+        },
+        "return_freq_pct": {
+          "hi": 0.4358,
+          "k": 22,
+          "lo": 0.2209,
+          "n": 69,
+          "pct": 31.9
+        },
+        "returned_12b": 22,
+        "sessions": {
+          "2026-07-08": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 7.15,
+            "wins": 2
+          },
+          "2026-07-09": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.132,
+            "wins": 1
+          },
+          "2026-07-13": {
+            "confirmed": 1,
+            "losses": 2,
+            "n": 2,
+            "returned": 1,
+            "total_r": -2.0,
+            "wins": 0
+          },
+          "2026-07-14": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 1.395,
+            "wins": 2
+          },
+          "2026-07-16": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0.671,
+            "wins": 2
+          },
+          "2026-07-20": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.729,
+            "wins": 0
+          },
+          "2026-07-21": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.054,
+            "wins": 1
+          },
+          "2026-07-22": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.799,
+            "wins": 2
+          },
+          "2026-07-23": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.107,
+            "wins": 2
+          },
+          "2026-07-28": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.553,
+            "wins": 1
+          },
+          "2026-07-30": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 1,
+            "returned": 0,
+            "total_r": -0.649,
+            "wins": 0
+          },
+          "2026-08-04": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 2.269,
+            "wins": 2
+          },
+          "2026-08-05": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.212,
+            "wins": 1
+          },
+          "2026-08-10": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.018,
+            "wins": 1
+          },
+          "2026-08-11": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.344,
+            "wins": 2
+          },
+          "2026-08-12": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.628,
+            "wins": 1
+          },
+          "2026-08-13": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.153,
+            "wins": 2
+          },
+          "2026-08-17": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -1.278,
+            "wins": 0
+          },
+          "2026-08-18": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.96,
+            "wins": 2
+          },
+          "2026-08-19": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.585,
+            "wins": 2
+          },
+          "2026-08-25": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": -0.609,
+            "wins": 1
+          },
+          "2026-08-27": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.76,
+            "wins": 1
+          },
+          "2026-08-31": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.246,
+            "wins": 2
+          },
+          "2026-09-01": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 1.343,
+            "wins": 2
+          },
+          "2026-09-02": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.967,
+            "wins": 0
+          },
+          "2026-09-07": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.407,
+            "wins": 2
+          },
+          "2026-09-08": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.036,
+            "wins": 2
+          },
+          "2026-09-09": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.733,
+            "wins": 2
+          },
+          "2026-09-10": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.702,
+            "wins": 2
+          },
+          "2026-09-16": {
+            "confirmed": 2,
+            "losses": 2,
+            "n": 2,
+            "returned": 2,
+            "total_r": -2.0,
+            "wins": 0
+          },
+          "2026-09-24": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 1.904,
+            "wins": 2
+          },
+          "2026-09-28": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 3.129,
+            "wins": 2
+          },
+          "2026-09-29": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.44,
+            "wins": 0
+          },
+          "2026-10-01": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.718,
+            "wins": 1
+          },
+          "2026-10-07": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.936,
+            "wins": 1
+          },
+          "2026-10-08": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 3.863,
+            "wins": 2
+          },
+          "2026-10-12": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.729,
+            "wins": 1
+          },
+          "2026-10-19": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.739,
+            "wins": 1
+          },
+          "2026-10-22": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -2.0,
+            "wins": 0
+          }
+        }
+      },
+      "BREAKOUT": {
+        "baseline": {
+          "outcome": {
+            "flats": 0,
+            "losses": 0,
+            "n": 12,
+            "win_rate_pct": 100.0,
+            "wins": 12
+          },
+          "r_per_setup": 0.548,
+          "total_r": 6.575
+        },
+        "censor_reasons": {},
+        "censored_observations": 0,
+        "complete_observations": 12,
+        "confirm_freq_of_all_complete_pct": {
+          "hi": 0.9111,
+          "k": 9,
+          "lo": 0.4677,
+          "n": 12,
+          "pct": 75.0
+        },
+        "confirm_freq_of_returned_pct": {
+          "hi": 0.9486,
+          "k": 9,
+          "lo": 0.523,
+          "n": 11,
+          "pct": 81.8
+        },
+        "confirmed_at_or_after_return": 9,
+        "confirmed_bootstrap_pct": {
+          "hi": 100.0,
+          "lo": 50.0
+        },
+        "confirmed_strictly_after_return": 3,
+        "eligible_signals": 12,
+        "excursion": {
+          "mae_pts_after_return": {
+            "hi": 115.86,
+            "lo": 16.27,
+            "mean": 58.89,
+            "median": 25.15,
+            "n": 11
+          },
+          "mae_pts_from_signal": {
+            "hi": 131.85,
+            "lo": 39.72,
+            "mean": 80.09,
+            "median": 50.85,
+            "n": 12
+          },
+          "mae_r_from_signal": {
+            "hi": 0.53,
+            "lo": 0.23,
+            "mean": 0.37,
+            "median": 0.29,
+            "n": 12
+          },
+          "mfe_pts_after_return": {
+            "hi": 341.13,
+            "lo": 115.78,
+            "mean": 211.23,
+            "median": 149.65,
+            "n": 11
+          },
+          "mfe_pts_from_signal": {
+            "hi": 334.89,
+            "lo": 122.61,
+            "mean": 216.2,
+            "median": 151.12,
+            "n": 12
+          }
+        },
+        "family": "BREAKOUT",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 9,
+              "win_rate_pct": 100.0,
+              "wins": 9
+            },
+            "entry_diff_points": {
+              "hi": 4.54,
+              "lo": -32.71,
+              "mean": -12.83,
+              "median": -9.8,
+              "n": 9
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 9,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": 0.596,
+            "retained_of_eligible_pct": 75.0,
+            "retained_r_per_trade": 0.641,
+            "retained_total_r": 5.768,
+            "retained_win_rate_pct": 100.0,
+            "retained_wins": 9,
+            "skipped": 3,
+            "skipped_baseline_r_discarded": 0.807,
+            "skipped_baseline_r_per_setup": 0.269,
+            "skipped_baseline_win_rate_pct": 100.0,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 0,
+            "skipped_winners_discarded": 3
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 11,
+              "win_rate_pct": 100.0,
+              "wins": 11
+            },
+            "entry_diff_points": {
+              "hi": 23.91,
+              "lo": 6.6,
+              "mean": 15.16,
+              "median": 8.4,
+              "n": 11
+            },
+            "filter": "filter_return_retained",
+            "retained": 11,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": 0.601,
+            "retained_of_eligible_pct": 91.7,
+            "retained_r_per_trade": 0.512,
+            "retained_total_r": 5.633,
+            "retained_win_rate_pct": 100.0,
+            "retained_wins": 11,
+            "skipped": 1,
+            "skipped_baseline_r_discarded": 0.942,
+            "skipped_baseline_r_per_setup": 0.942,
+            "skipped_baseline_win_rate_pct": 100.0,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 0,
+            "skipped_winners_discarded": 1
+          }
+        },
+        "instruments": {
+          "BANKNIFTY": {
+            "confirmed": 3,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 3,
+                  "win_rate_pct": 100.0,
+                  "wins": 3
+                },
+                "entry_diff_points": {
+                  "hi": 0.25,
+                  "lo": -78.6,
+                  "mean": -39.58,
+                  "median": -40.4,
+                  "n": 3
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 3,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 0.811,
+                "retained_of_eligible_pct": 50.0,
+                "retained_r_per_trade": 0.952,
+                "retained_total_r": 2.855,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 3,
+                "skipped": 3,
+                "skipped_baseline_r_discarded": 0.807,
+                "skipped_baseline_r_per_setup": 0.269,
+                "skipped_baseline_win_rate_pct": 100.0,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 3
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 5,
+                  "win_rate_pct": 100.0,
+                  "wins": 5
+                },
+                "entry_diff_points": {
+                  "hi": 32.31,
+                  "lo": 2.69,
+                  "mean": 17.5,
+                  "median": 13.85,
+                  "n": 5
+                },
+                "filter": "filter_return_retained",
+                "retained": 5,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 0.605,
+                "retained_of_eligible_pct": 83.3,
+                "retained_r_per_trade": 0.544,
+                "retained_total_r": 2.72,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 5,
+                "skipped": 1,
+                "skipped_baseline_r_discarded": 0.942,
+                "skipped_baseline_r_per_setup": 0.942,
+                "skipped_baseline_win_rate_pct": 100.0,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 1
+              }
+            },
+            "n": 6,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 6,
+              "win_rate_pct": 100.0,
+              "wins": 6
+            },
+            "r_per_setup": 0.61,
+            "return_freq_pct": {
+              "hi": 0.9699,
+              "k": 5,
+              "lo": 0.4365,
+              "n": 6,
+              "pct": 83.3
+            },
+            "returned": 5,
+            "total_r": 3.662
+          },
+          "NIFTY": {
+            "confirmed": 6,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 6,
+                  "win_rate_pct": 100.0,
+                  "wins": 6
+                },
+                "entry_diff_points": {
+                  "hi": 15.88,
+                  "lo": -11.32,
+                  "mean": 0.54,
+                  "median": -5.68,
+                  "n": 6
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 6,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 0.488,
+                "retained_of_eligible_pct": 100.0,
+                "retained_r_per_trade": 0.485,
+                "retained_total_r": 2.913,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 6,
+                "skipped": 0,
+                "skipped_baseline_r_discarded": 0,
+                "skipped_baseline_r_per_setup": null,
+                "skipped_baseline_win_rate_pct": null,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 0
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 6,
+                  "win_rate_pct": 100.0,
+                  "wins": 6
+                },
+                "entry_diff_points": {
+                  "hi": 22.98,
+                  "lo": 4.29,
+                  "mean": 13.22,
+                  "median": 7.18,
+                  "n": 6
+                },
+                "filter": "filter_return_retained",
+                "retained": 6,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 0.598,
+                "retained_of_eligible_pct": 100.0,
+                "retained_r_per_trade": 0.485,
+                "retained_total_r": 2.913,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 6,
+                "skipped": 0,
+                "skipped_baseline_r_discarded": 0,
+                "skipped_baseline_r_per_setup": null,
+                "skipped_baseline_win_rate_pct": null,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 0
+              }
+            },
+            "n": 6,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 6,
+              "win_rate_pct": 100.0,
+              "wins": 6
+            },
+            "r_per_setup": 0.485,
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 6,
+              "lo": 0.6097,
+              "n": 6,
+              "pct": 100.0
+            },
+            "returned": 6,
+            "total_r": 2.913
+          }
+        },
+        "levels": {
+          "BRK_PDH": {
+            "confirmed": 1,
+            "n": 2,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 2,
+              "win_rate_pct": 100.0,
+              "wins": 2
+            },
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 2,
+              "lo": 0.3424,
+              "n": 2,
+              "pct": 100.0
+            },
+            "returned": 2,
+            "total_r": 0.288
+          },
+          "BRK_R1": {
+            "confirmed": 2,
+            "n": 3,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 3,
+              "win_rate_pct": 100.0,
+              "wins": 3
+            },
+            "return_freq_pct": {
+              "hi": 0.9385,
+              "k": 2,
+              "lo": 0.2077,
+              "n": 3,
+              "pct": 66.7
+            },
+            "returned": 2,
+            "total_r": 2.928
+          },
+          "BRK_R2": {
+            "confirmed": 2,
+            "n": 2,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 2,
+              "win_rate_pct": 100.0,
+              "wins": 2
+            },
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 2,
+              "lo": 0.3424,
+              "n": 2,
+              "pct": 100.0
+            },
+            "returned": 2,
+            "total_r": 1.103
+          },
+          "BRK_TC": {
+            "confirmed": 4,
+            "n": 5,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 5,
+              "win_rate_pct": 100.0,
+              "wins": 5
+            },
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 5,
+              "lo": 0.5655,
+              "n": 5,
+              "pct": 100.0
+            },
+            "returned": 5,
+            "total_r": 2.256
+          }
+        },
+        "not_returned": 1,
+        "outcome_discrimination": {
+          "bootstrap_ci_pct": {
+            "diff_pct": 0.0,
+            "hi": 0.0,
+            "lo": 0.0
+          },
+          "fisher_p": 1.0,
+          "table": {
+            "not_returned_loss": 0,
+            "not_returned_win": 1,
+            "returned_loss": 0,
+            "returned_win": 11
+          },
+          "win_rate_diff_pct": 0.0
+        },
+        "outcome_not_returned": {
+          "flats": 0,
+          "losses": 0,
+          "n": 1,
+          "win_rate_pct": 100.0,
+          "wins": 1
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 0,
+          "n": 11,
+          "win_rate_pct": 100.0,
+          "wins": 11
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 100.0,
+          "lo": 75.0
+        },
+        "return_freq_pct": {
+          "hi": 0.9851,
+          "k": 11,
+          "lo": 0.6461,
+          "n": 12,
+          "pct": 91.7
+        },
+        "returned_12b": 11,
+        "sessions": {
+          "2026-07-09": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.189,
+            "wins": 1
+          },
+          "2026-07-10": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.649,
+            "wins": 1
+          },
+          "2026-07-17": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 2.646,
+            "wins": 2
+          },
+          "2026-07-31": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0.288,
+            "wins": 2
+          },
+          "2026-09-04": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.09,
+            "wins": 1
+          },
+          "2026-09-18": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.206,
+            "wins": 1
+          },
+          "2026-10-09": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 2.207,
+            "wins": 2
+          },
+          "2026-10-16": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 1.27,
+            "wins": 2
+          }
+        }
+      },
+      "TOUCH": {
+        "baseline": {
+          "outcome": {
+            "flats": 0,
+            "losses": 14,
+            "n": 52,
+            "win_rate_pct": 69.2,
+            "wins": 36
+          },
+          "r_per_setup": 0.52,
+          "total_r": 27.058
+        },
+        "censor_reasons": {},
+        "censored_observations": 0,
+        "complete_observations": 52,
+        "confirm_freq_of_all_complete_pct": {
+          "hi": 0.7184,
+          "k": 31,
+          "lo": 0.4607,
+          "n": 52,
+          "pct": 59.6
+        },
+        "confirm_freq_of_returned_pct": {
+          "hi": 0.9392,
+          "k": 31,
+          "lo": 0.7134,
+          "n": 36,
+          "pct": 86.1
+        },
+        "confirmed_at_or_after_return": 31,
+        "confirmed_bootstrap_pct": {
+          "hi": 73.1,
+          "lo": 46.2
+        },
+        "confirmed_strictly_after_return": 26,
+        "eligible_signals": 52,
+        "excursion": {
+          "mae_pts_after_return": {
+            "hi": 182.76,
+            "lo": 75.58,
+            "mean": 125.41,
+            "median": 58.17,
+            "n": 36
+          },
+          "mae_pts_from_signal": {
+            "hi": 164.07,
+            "lo": 83.37,
+            "mean": 120.6,
+            "median": 70.32,
+            "n": 52
+          },
+          "mae_r_from_signal": {
+            "hi": 0.81,
+            "lo": 0.43,
+            "mean": 0.61,
+            "median": 0.43,
+            "n": 50
+          },
+          "mfe_pts_after_return": {
+            "hi": 275.48,
+            "lo": 133.52,
+            "mean": 198.39,
+            "median": 126.03,
+            "n": 36
+          },
+          "mfe_pts_from_signal": {
+            "hi": 287.72,
+            "lo": 164.95,
+            "mean": 218.99,
+            "median": 131.07,
+            "n": 52
+          }
+        },
+        "family": "TOUCH",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 6,
+              "n": 31,
+              "win_rate_pct": 74.2,
+              "wins": 23
+            },
+            "entry_diff_points": {
+              "hi": -4.4,
+              "lo": -40.14,
+              "mean": -21.47,
+              "median": -9.3,
+              "n": 29
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 31,
+            "retained_flats": 0,
+            "retained_losses": 6,
+            "retained_mean_r": 0.517,
+            "retained_of_eligible_pct": 59.6,
+            "retained_r_per_trade": 0.591,
+            "retained_total_r": 18.306,
+            "retained_win_rate_pct": 74.2,
+            "retained_wins": 23,
+            "skipped": 21,
+            "skipped_baseline_r_discarded": 8.752,
+            "skipped_baseline_r_per_setup": 0.417,
+            "skipped_baseline_win_rate_pct": 61.9,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 8,
+            "skipped_winners_discarded": 13
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 10,
+              "n": 36,
+              "win_rate_pct": 66.7,
+              "wins": 24
+            },
+            "entry_diff_points": {
+              "hi": 12.81,
+              "lo": -10.54,
+              "mean": 1.75,
+              "median": -0.44,
+              "n": 34
+            },
+            "filter": "filter_return_retained",
+            "retained": 36,
+            "retained_flats": 0,
+            "retained_losses": 10,
+            "retained_mean_r": 0.442,
+            "retained_of_eligible_pct": 69.2,
+            "retained_r_per_trade": 0.418,
+            "retained_total_r": 15.043,
+            "retained_win_rate_pct": 66.7,
+            "retained_wins": 24,
+            "skipped": 16,
+            "skipped_baseline_r_discarded": 12.015,
+            "skipped_baseline_r_per_setup": 0.751,
+            "skipped_baseline_win_rate_pct": 75.0,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 4,
+            "skipped_winners_discarded": 12
+          }
+        },
+        "instruments": {
+          "BANKNIFTY": {
+            "confirmed": 13,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 3,
+                  "n": 13,
+                  "win_rate_pct": 69.2,
+                  "wins": 9
+                },
+                "entry_diff_points": {
+                  "hi": -5.09,
+                  "lo": -78.88,
+                  "mean": -39.35,
+                  "median": -34.83,
+                  "n": 12
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 13,
+                "retained_flats": 0,
+                "retained_losses": 3,
+                "retained_mean_r": 0.567,
+                "retained_of_eligible_pct": 52.0,
+                "retained_r_per_trade": 0.665,
+                "retained_total_r": 8.651,
+                "retained_win_rate_pct": 69.2,
+                "retained_wins": 9,
+                "skipped": 12,
+                "skipped_baseline_r_discarded": 5.128,
+                "skipped_baseline_r_per_setup": 0.427,
+                "skipped_baseline_win_rate_pct": 66.7,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 4,
+                "skipped_winners_discarded": 8
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 6,
+                  "n": 17,
+                  "win_rate_pct": 58.8,
+                  "wins": 10
+                },
+                "entry_diff_points": {
+                  "hi": 19.19,
+                  "lo": -27.41,
+                  "mean": -2.64,
+                  "median": -4.13,
+                  "n": 16
+                },
+                "filter": "filter_return_retained",
+                "retained": 17,
+                "retained_flats": 0,
+                "retained_losses": 6,
+                "retained_mean_r": 0.363,
+                "retained_of_eligible_pct": 68.0,
+                "retained_r_per_trade": 0.376,
+                "retained_total_r": 6.388,
+                "retained_win_rate_pct": 58.8,
+                "retained_wins": 10,
+                "skipped": 8,
+                "skipped_baseline_r_discarded": 7.391,
+                "skipped_baseline_r_per_setup": 0.924,
+                "skipped_baseline_win_rate_pct": 87.5,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 1,
+                "skipped_winners_discarded": 7
+              }
+            },
+            "n": 25,
+            "outcome": {
+              "flats": 0,
+              "losses": 7,
+              "n": 25,
+              "win_rate_pct": 68.0,
+              "wins": 17
+            },
+            "r_per_setup": 0.551,
+            "return_freq_pct": {
+              "hi": 0.828,
+              "k": 17,
+              "lo": 0.4841,
+              "n": 25,
+              "pct": 68.0
+            },
+            "returned": 17,
+            "total_r": 13.779
+          },
+          "NIFTY": {
+            "confirmed": 18,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 3,
+                  "n": 18,
+                  "win_rate_pct": 77.8,
+                  "wins": 14
+                },
+                "entry_diff_points": {
+                  "hi": 2.19,
+                  "lo": -20.38,
+                  "mean": -8.84,
+                  "median": -5.3,
+                  "n": 17
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 18,
+                "retained_flats": 0,
+                "retained_losses": 3,
+                "retained_mean_r": 0.481,
+                "retained_of_eligible_pct": 66.7,
+                "retained_r_per_trade": 0.536,
+                "retained_total_r": 9.655,
+                "retained_win_rate_pct": 77.8,
+                "retained_wins": 14,
+                "skipped": 9,
+                "skipped_baseline_r_discarded": 3.624,
+                "skipped_baseline_r_per_setup": 0.403,
+                "skipped_baseline_win_rate_pct": 55.6,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 4,
+                "skipped_winners_discarded": 5
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 4,
+                  "n": 19,
+                  "win_rate_pct": 73.7,
+                  "wins": 14
+                },
+                "entry_diff_points": {
+                  "hi": 13.86,
+                  "lo": -2.27,
+                  "mean": 5.65,
+                  "median": 0.96,
+                  "n": 18
+                },
+                "filter": "filter_return_retained",
+                "retained": 19,
+                "retained_flats": 0,
+                "retained_losses": 4,
+                "retained_mean_r": 0.513,
+                "retained_of_eligible_pct": 70.4,
+                "retained_r_per_trade": 0.456,
+                "retained_total_r": 8.655,
+                "retained_win_rate_pct": 73.7,
+                "retained_wins": 14,
+                "skipped": 8,
+                "skipped_baseline_r_discarded": 4.624,
+                "skipped_baseline_r_per_setup": 0.578,
+                "skipped_baseline_win_rate_pct": 62.5,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 3,
+                "skipped_winners_discarded": 5
+              }
+            },
+            "n": 27,
+            "outcome": {
+              "flats": 0,
+              "losses": 7,
+              "n": 27,
+              "win_rate_pct": 70.4,
+              "wins": 19
+            },
+            "r_per_setup": 0.492,
+            "return_freq_pct": {
+              "hi": 0.8415,
+              "k": 19,
+              "lo": 0.5152,
+              "n": 27,
+              "pct": 70.4
+            },
+            "returned": 19,
+            "total_r": 13.279
+          }
+        },
+        "levels": {
+          "PDH": {
+            "confirmed": 15,
+            "n": 17,
+            "outcome": {
+              "flats": 0,
+              "losses": 3,
+              "n": 17,
+              "win_rate_pct": 76.5,
+              "wins": 13
+            },
+            "return_freq_pct": {
+              "hi": 0.9671,
+              "k": 15,
+              "lo": 0.6566,
+              "n": 17,
+              "pct": 88.2
+            },
+            "returned": 15,
+            "total_r": 7.632
+          },
+          "R1": {
+            "confirmed": 15,
+            "n": 27,
+            "outcome": {
+              "flats": 0,
+              "losses": 7,
+              "n": 27,
+              "win_rate_pct": 70.4,
+              "wins": 19
+            },
+            "return_freq_pct": {
+              "hi": 0.8136,
+              "k": 18,
+              "lo": 0.4782,
+              "n": 27,
+              "pct": 66.7
+            },
+            "returned": 18,
+            "total_r": 17.772
+          },
+          "R2": {
+            "confirmed": 1,
+            "n": 8,
+            "outcome": {
+              "flats": 0,
+              "losses": 4,
+              "n": 8,
+              "win_rate_pct": 50.0,
+              "wins": 4
+            },
+            "return_freq_pct": {
+              "hi": 0.6943,
+              "k": 3,
+              "lo": 0.1368,
+              "n": 8,
+              "pct": 37.5
+            },
+            "returned": 3,
+            "total_r": 1.654
+          }
+        },
+        "not_returned": 16,
+        "outcome_discrimination": {
+          "bootstrap_ci_pct": {
+            "diff_pct": -4.4,
+            "hi": 23.2,
+            "lo": -29.0
+          },
+          "fisher_p": 1.0,
+          "table": {
+            "not_returned_loss": 4,
+            "not_returned_win": 12,
+            "returned_loss": 10,
+            "returned_win": 24
+          },
+          "win_rate_diff_pct": -4.4
+        },
+        "outcome_not_returned": {
+          "flats": 0,
+          "losses": 4,
+          "n": 16,
+          "win_rate_pct": 75.0,
+          "wins": 12
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 10,
+          "n": 36,
+          "win_rate_pct": 66.7,
+          "wins": 24
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 80.8,
+          "lo": 55.8
+        },
+        "return_freq_pct": {
+          "hi": 0.8009,
+          "k": 36,
+          "lo": 0.5573,
+          "n": 52,
+          "pct": 69.2
+        },
+        "returned_12b": 36,
+        "sessions": {
+          "2026-07-07": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 1.459,
+            "wins": 2
+          },
+          "2026-07-15": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 0.975,
+            "wins": 2
+          },
+          "2026-07-21": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 1.345,
+            "wins": 1
+          },
+          "2026-07-27": {
+            "confirmed": 0,
+            "losses": 1,
+            "n": 2,
+            "returned": 0,
+            "total_r": -0.065,
+            "wins": 1
+          },
+          "2026-07-28": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.212,
+            "wins": 1
+          },
+          "2026-07-29": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 1,
+            "total_r": -1.031,
+            "wins": 0
+          },
+          "2026-07-30": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 1,
+            "returned": 1,
+            "total_r": -0.329,
+            "wins": 0
+          },
+          "2026-08-03": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 1,
+            "total_r": -1.352,
+            "wins": 0
+          },
+          "2026-08-05": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 0.536,
+            "wins": 1
+          },
+          "2026-08-06": {
+            "confirmed": 2,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0.112,
+            "wins": 1
+          },
+          "2026-08-10": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 0.955,
+            "wins": 1
+          },
+          "2026-08-20": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.138,
+            "wins": 2
+          },
+          "2026-08-24": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 2.326,
+            "wins": 2
+          },
+          "2026-08-26": {
+            "confirmed": 1,
+            "losses": 1,
+            "n": 2,
+            "returned": 1,
+            "total_r": 0.095,
+            "wins": 1
+          },
+          "2026-08-27": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 1.039,
+            "wins": 1
+          },
+          "2026-09-03": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 1.053,
+            "wins": 2
+          },
+          "2026-09-15": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 2,
+            "returned": 0,
+            "total_r": 5.45,
+            "wins": 2
+          },
+          "2026-09-17": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 1.196,
+            "wins": 2
+          },
+          "2026-09-21": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0,
+            "wins": 0
+          },
+          "2026-09-22": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 2,
+            "returned": 1,
+            "total_r": 1.9,
+            "wins": 2
+          },
+          "2026-09-23": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0.124,
+            "wins": 2
+          },
+          "2026-09-30": {
+            "confirmed": 2,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": 0.215,
+            "wins": 1
+          },
+          "2026-10-05": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 2.191,
+            "wins": 2
+          },
+          "2026-10-06": {
+            "confirmed": 2,
+            "losses": 1,
+            "n": 2,
+            "returned": 2,
+            "total_r": -0.444,
+            "wins": 1
+          },
+          "2026-10-12": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 2.375,
+            "wins": 1
+          },
+          "2026-10-13": {
+            "confirmed": 2,
+            "losses": 2,
+            "n": 2,
+            "returned": 2,
+            "total_r": -1.515,
+            "wins": 0
+          },
+          "2026-10-14": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 1.076,
+            "wins": 2
+          },
+          "2026-10-15": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 2,
+            "total_r": -2.0,
+            "wins": 0
+          },
+          "2026-10-19": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 2.416,
+            "wins": 1
+          },
+          "2026-10-21": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 6.606,
+            "wins": 2
+          }
+        }
+      }
+    },
+    "C_LIVE_TRADES": {
+      "ALL": {
+        "baseline": {
+          "outcome": {
+            "flats": 0,
+            "losses": 2,
+            "n": 6,
+            "win_rate_pct": 66.7,
+            "wins": 4
+          },
+          "r_per_setup": 2.436,
+          "total_r": 14.617
+        },
+        "censored_observations": 0,
+        "complete_observations": 6,
+        "confirmed_at_or_after_return": 3,
+        "eligible_signals": 6,
+        "family": "ALL",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 3,
+              "win_rate_pct": 100.0,
+              "wins": 3
+            },
+            "entry_diff_points": {
+              "hi": -21.7,
+              "lo": -58.25,
+              "mean": -42.22,
+              "median": -46.7,
+              "n": 3
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 3,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": 2.683,
+            "retained_of_eligible_pct": 50.0,
+            "retained_r_per_trade": 4.22,
+            "retained_total_r": 12.661,
+            "retained_win_rate_pct": 100.0,
+            "retained_wins": 3,
+            "skipped": 3,
+            "skipped_baseline_r_discarded": 1.956,
+            "skipped_baseline_r_per_setup": 0.652,
+            "skipped_baseline_win_rate_pct": 33.3,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 2,
+            "skipped_winners_discarded": 1
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 3,
+              "win_rate_pct": 100.0,
+              "wins": 3
+            },
+            "entry_diff_points": {
+              "hi": -3.4,
+              "lo": -23.07,
+              "mean": -15.27,
+              "median": -19.33,
+              "n": 3
+            },
+            "filter": "filter_return_retained",
+            "retained": 3,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": 2.91,
+            "retained_of_eligible_pct": 50.0,
+            "retained_r_per_trade": 4.22,
+            "retained_total_r": 12.661,
+            "retained_win_rate_pct": 100.0,
+            "retained_wins": 3,
+            "skipped": 3,
+            "skipped_baseline_r_discarded": 1.956,
+            "skipped_baseline_r_per_setup": 0.652,
+            "skipped_baseline_win_rate_pct": 33.3,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 2,
+            "skipped_winners_discarded": 1
+          }
+        },
+        "outcome_not_returned": {
+          "flats": 0,
+          "losses": 2,
+          "n": 3,
+          "win_rate_pct": 33.3,
+          "wins": 1
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 0,
+          "n": 3,
+          "win_rate_pct": 100.0,
+          "wins": 3
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 83.3,
+          "lo": 16.7
+        },
+        "return_freq_pct": {
+          "hi": 0.8124,
+          "k": 3,
+          "lo": 0.1876,
+          "n": 6,
+          "pct": 50.0
+        },
+        "returned_12b": 3
+      },
+      "BREAK": {
+        "baseline": {
+          "outcome": {
+            "flats": 0,
+            "losses": 2,
+            "n": 3,
+            "win_rate_pct": 33.3,
+            "wins": 1
+          },
+          "r_per_setup": 0.652,
+          "total_r": 1.956
+        },
+        "censor_reasons": {},
+        "censored_observations": 0,
+        "complete_observations": 3,
+        "confirm_freq_of_all_complete_pct": {
+          "hi": 0.5615,
+          "k": 0,
+          "lo": 0.0,
+          "n": 3,
+          "pct": 0.0
+        },
+        "confirm_freq_of_returned_pct": {
+          "hi": null,
+          "k": 0,
+          "lo": null,
+          "n": 0,
+          "pct": null
+        },
+        "confirmed_at_or_after_return": 0,
+        "confirmed_bootstrap_pct": {
+          "hi": 0.0,
+          "lo": 0.0
+        },
+        "confirmed_strictly_after_return": 0,
+        "eligible_signals": 3,
+        "excursion": {
+          "mae_pts_after_return": {
+            "hi": null,
+            "lo": null,
+            "mean": null,
+            "median": null,
+            "n": 0
+          },
+          "mae_pts_from_signal": {
+            "hi": 428.85,
+            "lo": 41.8,
+            "mean": 215.03,
+            "median": 174.45,
+            "n": 3
+          },
+          "mae_r_from_signal": {
+            "hi": 1.57,
+            "lo": 0.15,
+            "mean": 1.09,
+            "median": 1.54,
+            "n": 3
+          },
+          "mfe_pts_after_return": {
+            "hi": null,
+            "lo": null,
+            "mean": null,
+            "median": null,
+            "n": 0
+          },
+          "mfe_pts_from_signal": {
+            "hi": 349.55,
+            "lo": 55.2,
+            "mean": 203.68,
+            "median": 206.3,
+            "n": 3
+          }
+        },
+        "family": "BREAK",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 0,
+              "win_rate_pct": null,
+              "wins": 0
+            },
+            "entry_diff_points": {
+              "hi": null,
+              "lo": null,
+              "mean": null,
+              "median": null,
+              "n": 0
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 0,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": null,
+            "retained_of_eligible_pct": 0.0,
+            "retained_r_per_trade": null,
+            "retained_total_r": 0,
+            "retained_win_rate_pct": null,
+            "retained_wins": 0,
+            "skipped": 3,
+            "skipped_baseline_r_discarded": 1.956,
+            "skipped_baseline_r_per_setup": 0.652,
+            "skipped_baseline_win_rate_pct": 33.3,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 2,
+            "skipped_winners_discarded": 1
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 0,
+              "win_rate_pct": null,
+              "wins": 0
+            },
+            "entry_diff_points": {
+              "hi": null,
+              "lo": null,
+              "mean": null,
+              "median": null,
+              "n": 0
+            },
+            "filter": "filter_return_retained",
+            "retained": 0,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": null,
+            "retained_of_eligible_pct": 0.0,
+            "retained_r_per_trade": null,
+            "retained_total_r": 0,
+            "retained_win_rate_pct": null,
+            "retained_wins": 0,
+            "skipped": 3,
+            "skipped_baseline_r_discarded": 1.956,
+            "skipped_baseline_r_per_setup": 0.652,
+            "skipped_baseline_win_rate_pct": 33.3,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 2,
+            "skipped_winners_discarded": 1
+          }
+        },
+        "instruments": {
+          "BANKNIFTY": {
+            "confirmed": 0,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 0,
+                  "win_rate_pct": null,
+                  "wins": 0
+                },
+                "entry_diff_points": {
+                  "hi": null,
+                  "lo": null,
+                  "mean": null,
+                  "median": null,
+                  "n": 0
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 0,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": null,
+                "retained_of_eligible_pct": 0.0,
+                "retained_r_per_trade": null,
+                "retained_total_r": 0,
+                "retained_win_rate_pct": null,
+                "retained_wins": 0,
+                "skipped": 2,
+                "skipped_baseline_r_discarded": 2.992,
+                "skipped_baseline_r_per_setup": 1.496,
+                "skipped_baseline_win_rate_pct": 50.0,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 1,
+                "skipped_winners_discarded": 1
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 0,
+                  "win_rate_pct": null,
+                  "wins": 0
+                },
+                "entry_diff_points": {
+                  "hi": null,
+                  "lo": null,
+                  "mean": null,
+                  "median": null,
+                  "n": 0
+                },
+                "filter": "filter_return_retained",
+                "retained": 0,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": null,
+                "retained_of_eligible_pct": 0.0,
+                "retained_r_per_trade": null,
+                "retained_total_r": 0,
+                "retained_win_rate_pct": null,
+                "retained_wins": 0,
+                "skipped": 2,
+                "skipped_baseline_r_discarded": 2.992,
+                "skipped_baseline_r_per_setup": 1.496,
+                "skipped_baseline_win_rate_pct": 50.0,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 1,
+                "skipped_winners_discarded": 1
+              }
+            },
+            "n": 2,
+            "outcome": {
+              "flats": 0,
+              "losses": 1,
+              "n": 2,
+              "win_rate_pct": 50.0,
+              "wins": 1
+            },
+            "r_per_setup": 1.496,
+            "return_freq_pct": {
+              "hi": 0.6576,
+              "k": 0,
+              "lo": 0.0,
+              "n": 2,
+              "pct": 0.0
+            },
+            "returned": 0,
+            "total_r": 2.992
+          },
+          "NIFTY": {
+            "confirmed": 0,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 0,
+                  "win_rate_pct": null,
+                  "wins": 0
+                },
+                "entry_diff_points": {
+                  "hi": null,
+                  "lo": null,
+                  "mean": null,
+                  "median": null,
+                  "n": 0
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 0,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": null,
+                "retained_of_eligible_pct": 0.0,
+                "retained_r_per_trade": null,
+                "retained_total_r": 0,
+                "retained_win_rate_pct": null,
+                "retained_wins": 0,
+                "skipped": 1,
+                "skipped_baseline_r_discarded": -1.036,
+                "skipped_baseline_r_per_setup": -1.036,
+                "skipped_baseline_win_rate_pct": 0.0,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 1,
+                "skipped_winners_discarded": 0
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 0,
+                  "win_rate_pct": null,
+                  "wins": 0
+                },
+                "entry_diff_points": {
+                  "hi": null,
+                  "lo": null,
+                  "mean": null,
+                  "median": null,
+                  "n": 0
+                },
+                "filter": "filter_return_retained",
+                "retained": 0,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": null,
+                "retained_of_eligible_pct": 0.0,
+                "retained_r_per_trade": null,
+                "retained_total_r": 0,
+                "retained_win_rate_pct": null,
+                "retained_wins": 0,
+                "skipped": 1,
+                "skipped_baseline_r_discarded": -1.036,
+                "skipped_baseline_r_per_setup": -1.036,
+                "skipped_baseline_win_rate_pct": 0.0,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 1,
+                "skipped_winners_discarded": 0
+              }
+            },
+            "n": 1,
+            "outcome": {
+              "flats": 0,
+              "losses": 1,
+              "n": 1,
+              "win_rate_pct": 0.0,
+              "wins": 0
+            },
+            "r_per_setup": -1.036,
+            "return_freq_pct": {
+              "hi": 0.7935,
+              "k": 0,
+              "lo": 0.0,
+              "n": 1,
+              "pct": 0.0
+            },
+            "returned": 0,
+            "total_r": -1.036
+          }
+        },
+        "levels": {
+          "BELOW_CPR": {
+            "confirmed": 0,
+            "n": 3,
+            "outcome": {
+              "flats": 0,
+              "losses": 2,
+              "n": 3,
+              "win_rate_pct": 33.3,
+              "wins": 1
+            },
+            "return_freq_pct": {
+              "hi": 0.5615,
+              "k": 0,
+              "lo": 0.0,
+              "n": 3,
+              "pct": 0.0
+            },
+            "returned": 0,
+            "total_r": 1.956
+          }
+        },
+        "not_returned": 3,
+        "outcome_discrimination": {
+          "bootstrap_ci_pct": {
+            "diff_pct": null,
+            "hi": null,
+            "lo": null
+          },
+          "fisher_p": 1.0,
+          "table": {
+            "not_returned_loss": 2,
+            "not_returned_win": 1,
+            "returned_loss": 0,
+            "returned_win": 0
+          },
+          "win_rate_diff_pct": null
+        },
+        "outcome_not_returned": {
+          "flats": 0,
+          "losses": 2,
+          "n": 3,
+          "win_rate_pct": 33.3,
+          "wins": 1
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 0,
+          "n": 0,
+          "win_rate_pct": null,
+          "wins": 0
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 0.0,
+          "lo": 0.0
+        },
+        "return_freq_pct": {
+          "hi": 0.5615,
+          "k": 0,
+          "lo": 0.0,
+          "n": 3,
+          "pct": 0.0
+        },
+        "returned_12b": 0,
+        "sessions": {
+          "2026-10-19": {
+            "confirmed": 0,
+            "losses": 0,
+            "n": 1,
+            "returned": 0,
+            "total_r": 4.07,
+            "wins": 1
+          },
+          "2026-10-22": {
+            "confirmed": 0,
+            "losses": 2,
+            "n": 2,
+            "returned": 0,
+            "total_r": -2.114,
+            "wins": 0
+          }
+        }
+      },
+      "TOUCH": {
+        "baseline": {
+          "outcome": {
+            "flats": 0,
+            "losses": 0,
+            "n": 3,
+            "win_rate_pct": 100.0,
+            "wins": 3
+          },
+          "r_per_setup": 4.22,
+          "total_r": 12.661
+        },
+        "censor_reasons": {},
+        "censored_observations": 0,
+        "complete_observations": 3,
+        "confirm_freq_of_all_complete_pct": {
+          "hi": 1.0,
+          "k": 3,
+          "lo": 0.4385,
+          "n": 3,
+          "pct": 100.0
+        },
+        "confirm_freq_of_returned_pct": {
+          "hi": 1.0,
+          "k": 3,
+          "lo": 0.4385,
+          "n": 3,
+          "pct": 100.0
+        },
+        "confirmed_at_or_after_return": 3,
+        "confirmed_bootstrap_pct": {
+          "hi": 100.0,
+          "lo": 100.0
+        },
+        "confirmed_strictly_after_return": 3,
+        "eligible_signals": 3,
+        "excursion": {
+          "mae_pts_after_return": {
+            "hi": 56.38,
+            "lo": 18.6,
+            "mean": 33.87,
+            "median": 26.62,
+            "n": 3
+          },
+          "mae_pts_from_signal": {
+            "hi": 44.3,
+            "lo": 5.25,
+            "mean": 21.57,
+            "median": 15.15,
+            "n": 3
+          },
+          "mae_r_from_signal": {
+            "hi": 0.16,
+            "lo": 0.05,
+            "mean": 0.11,
+            "median": 0.13,
+            "n": 3
+          },
+          "mfe_pts_after_return": {
+            "hi": 1105.87,
+            "lo": 304.6,
+            "mean": 618.27,
+            "median": 444.33,
+            "n": 3
+          },
+          "mfe_pts_from_signal": {
+            "hi": 1125.8,
+            "lo": 308.05,
+            "mean": 633.18,
+            "median": 465.7,
+            "n": 3
+          }
+        },
+        "family": "TOUCH",
+        "filters": {
+          "WAIT_CONFIRM_AFTER_RETURN": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 3,
+              "win_rate_pct": 100.0,
+              "wins": 3
+            },
+            "entry_diff_points": {
+              "hi": -21.7,
+              "lo": -58.25,
+              "mean": -42.22,
+              "median": -46.7,
+              "n": 3
+            },
+            "filter": "filter_confirm_retained",
+            "retained": 3,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": 2.683,
+            "retained_of_eligible_pct": 100.0,
+            "retained_r_per_trade": 4.22,
+            "retained_total_r": 12.661,
+            "retained_win_rate_pct": 100.0,
+            "retained_wins": 3,
+            "skipped": 0,
+            "skipped_baseline_r_discarded": 0,
+            "skipped_baseline_r_per_setup": null,
+            "skipped_baseline_win_rate_pct": null,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 0,
+            "skipped_winners_discarded": 0
+          },
+          "WAIT_RETURN_12B": {
+            "counterfactual_labels": {
+              "flats": 0,
+              "losses": 0,
+              "n": 3,
+              "win_rate_pct": 100.0,
+              "wins": 3
+            },
+            "entry_diff_points": {
+              "hi": -3.4,
+              "lo": -23.07,
+              "mean": -15.27,
+              "median": -19.33,
+              "n": 3
+            },
+            "filter": "filter_return_retained",
+            "retained": 3,
+            "retained_flats": 0,
+            "retained_losses": 0,
+            "retained_mean_r": 2.91,
+            "retained_of_eligible_pct": 100.0,
+            "retained_r_per_trade": 4.22,
+            "retained_total_r": 12.661,
+            "retained_win_rate_pct": 100.0,
+            "retained_wins": 3,
+            "skipped": 0,
+            "skipped_baseline_r_discarded": 0,
+            "skipped_baseline_r_per_setup": null,
+            "skipped_baseline_win_rate_pct": null,
+            "skipped_flats_discarded": 0,
+            "skipped_losers_discarded": 0,
+            "skipped_winners_discarded": 0
+          }
+        },
+        "instruments": {
+          "BANKNIFTY": {
+            "confirmed": 1,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 1,
+                  "win_rate_pct": 100.0,
+                  "wins": 1
+                },
+                "entry_diff_points": {
+                  "hi": -21.7,
+                  "lo": -21.7,
+                  "mean": -21.7,
+                  "median": -21.7,
+                  "n": 1
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 1,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 3.252,
+                "retained_of_eligible_pct": 100.0,
+                "retained_r_per_trade": 4.287,
+                "retained_total_r": 4.287,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 1,
+                "skipped": 0,
+                "skipped_baseline_r_discarded": 0,
+                "skipped_baseline_r_per_setup": null,
+                "skipped_baseline_win_rate_pct": null,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 0
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 1,
+                  "win_rate_pct": 100.0,
+                  "wins": 1
+                },
+                "entry_diff_points": {
+                  "hi": -19.33,
+                  "lo": -19.33,
+                  "mean": -19.33,
+                  "median": -19.33,
+                  "n": 1
+                },
+                "filter": "filter_return_retained",
+                "retained": 1,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 3.26,
+                "retained_of_eligible_pct": 100.0,
+                "retained_r_per_trade": 4.287,
+                "retained_total_r": 4.287,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 1,
+                "skipped": 0,
+                "skipped_baseline_r_discarded": 0,
+                "skipped_baseline_r_per_setup": null,
+                "skipped_baseline_win_rate_pct": null,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 0
+              }
+            },
+            "n": 1,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 1,
+              "win_rate_pct": 100.0,
+              "wins": 1
+            },
+            "r_per_setup": 4.287,
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 1,
+              "lo": 0.2065,
+              "n": 1,
+              "pct": 100.0
+            },
+            "returned": 1,
+            "total_r": 4.287
+          },
+          "NIFTY": {
+            "confirmed": 2,
+            "filters": {
+              "WAIT_CONFIRM_AFTER_RETURN": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 2,
+                  "win_rate_pct": 100.0,
+                  "wins": 2
+                },
+                "entry_diff_points": {
+                  "hi": -46.7,
+                  "lo": -58.25,
+                  "mean": -52.48,
+                  "median": -52.48,
+                  "n": 2
+                },
+                "filter": "filter_confirm_retained",
+                "retained": 2,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 2.399,
+                "retained_of_eligible_pct": 100.0,
+                "retained_r_per_trade": 4.187,
+                "retained_total_r": 8.374,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 2,
+                "skipped": 0,
+                "skipped_baseline_r_discarded": 0,
+                "skipped_baseline_r_per_setup": null,
+                "skipped_baseline_win_rate_pct": null,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 0
+              },
+              "WAIT_RETURN_12B": {
+                "counterfactual_labels": {
+                  "flats": 0,
+                  "losses": 0,
+                  "n": 2,
+                  "win_rate_pct": 100.0,
+                  "wins": 2
+                },
+                "entry_diff_points": {
+                  "hi": -3.4,
+                  "lo": -23.07,
+                  "mean": -13.23,
+                  "median": -13.23,
+                  "n": 2
+                },
+                "filter": "filter_return_retained",
+                "retained": 2,
+                "retained_flats": 0,
+                "retained_losses": 0,
+                "retained_mean_r": 2.734,
+                "retained_of_eligible_pct": 100.0,
+                "retained_r_per_trade": 4.187,
+                "retained_total_r": 8.374,
+                "retained_win_rate_pct": 100.0,
+                "retained_wins": 2,
+                "skipped": 0,
+                "skipped_baseline_r_discarded": 0,
+                "skipped_baseline_r_per_setup": null,
+                "skipped_baseline_win_rate_pct": null,
+                "skipped_flats_discarded": 0,
+                "skipped_losers_discarded": 0,
+                "skipped_winners_discarded": 0
+              }
+            },
+            "n": 2,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 2,
+              "win_rate_pct": 100.0,
+              "wins": 2
+            },
+            "r_per_setup": 4.187,
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 2,
+              "lo": 0.3424,
+              "n": 2,
+              "pct": 100.0
+            },
+            "returned": 2,
+            "total_r": 8.374
+          }
+        },
+        "levels": {
+          "PDH": {
+            "confirmed": 1,
+            "n": 1,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 1,
+              "win_rate_pct": 100.0,
+              "wins": 1
+            },
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 1,
+              "lo": 0.2065,
+              "n": 1,
+              "pct": 100.0
+            },
+            "returned": 1,
+            "total_r": 4.011
+          },
+          "R1": {
+            "confirmed": 2,
+            "n": 2,
+            "outcome": {
+              "flats": 0,
+              "losses": 0,
+              "n": 2,
+              "win_rate_pct": 100.0,
+              "wins": 2
+            },
+            "return_freq_pct": {
+              "hi": 1.0,
+              "k": 2,
+              "lo": 0.3424,
+              "n": 2,
+              "pct": 100.0
+            },
+            "returned": 2,
+            "total_r": 8.65
+          }
+        },
+        "not_returned": 0,
+        "outcome_discrimination": {
+          "bootstrap_ci_pct": {
+            "diff_pct": null,
+            "hi": null,
+            "lo": null
+          },
+          "fisher_p": 1.0,
+          "table": {
+            "not_returned_loss": 0,
+            "not_returned_win": 0,
+            "returned_loss": 0,
+            "returned_win": 3
+          },
+          "win_rate_diff_pct": null
+        },
+        "outcome_not_returned": {
+          "flats": 0,
+          "losses": 0,
+          "n": 0,
+          "win_rate_pct": null,
+          "wins": 0
+        },
+        "outcome_returned": {
+          "flats": 0,
+          "losses": 0,
+          "n": 3,
+          "win_rate_pct": 100.0,
+          "wins": 3
+        },
+        "return_freq_bootstrap_pct": {
+          "hi": 100.0,
+          "lo": 100.0
+        },
+        "return_freq_pct": {
+          "hi": 1.0,
+          "k": 3,
+          "lo": 0.4385,
+          "n": 3,
+          "pct": 100.0
+        },
+        "returned_12b": 3,
+        "sessions": {
+          "2026-10-19": {
+            "confirmed": 1,
+            "losses": 0,
+            "n": 1,
+            "returned": 1,
+            "total_r": 4.011,
+            "wins": 1
+          },
+          "2026-10-21": {
+            "confirmed": 2,
+            "losses": 0,
+            "n": 2,
+            "returned": 2,
+            "total_r": 8.65,
+            "wins": 2
+          }
+        }
+      }
+    }
+  },
+  "constants": {
+    "return_window_bars": 12
+  },
+  "generated_at": "2026-10-22T19:32:26",
+  "source": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/outputs/shadow_annotations.json"
+}

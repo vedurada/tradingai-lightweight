@@ -1,0 +1,11 @@
+test_id,check,method,expected,actual,result
+DB1,Source integrity (production),PRAGMA integrity_check,ok,ok,PASS
+DB2,Backup integrity,PRAGMA integrity_check,ok,ok,PASS
+DB3,Restore integrity,PRAGMA integrity_check,ok,ok,PASS
+DB4,Source counts match backup,Row count comparison,Match,Match,PASS
+DB5,Source counts match restore,Row count comparison,Match,Match,PASS
+DB6,Schema match (source vs backup),Schema hash comparison,Match,Match,PASS
+DB7,Schema match (source vs restore),Schema hash comparison,Match,Match,PASS
+DB8,Failed restore detected,Corrupt file test,Fail detected,Fail detected,PASS
+DB9,Production DB unchanged,Row count + integrity,Match,Match,PASS
+DB10,Production DB not in test dir,Path check,Not present,Not present,PASS

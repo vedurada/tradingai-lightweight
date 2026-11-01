@@ -1,0 +1,3 @@
+strategy,sessions,trades,wins,win_rate_pct,total_points,avg_points,total_R,avg_R,stops,targets,eods
+Primary: Price Action (prevday PA),77,74,50,67.6,4259.03,57.55,36.25,0.49,7,0,67
+Secondary: CPR triggers (plain),77,76,45,59.2,1693.2,22.28,14.78,0.194,3,0,0

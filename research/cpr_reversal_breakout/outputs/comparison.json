@@ -1,0 +1,2923 @@
+{
+  "primary": "combined_parity",
+  "full": {
+    "total_trades": {
+      "baseline": 127,
+      "candidate": 132,
+      "diff": 5,
+      "pct_diff": 3.94
+    },
+    "win_rate": {
+      "baseline": 0.7559,
+      "candidate": 0.6136,
+      "diff": -0.1423,
+      "pct_diff": -18.83
+    },
+    "net_pnl_rs": {
+      "baseline": 394884.5,
+      "candidate": 38113.5,
+      "diff": -356771.0,
+      "pct_diff": -90.35
+    },
+    "total_R": {
+      "baseline": 50.896,
+      "candidate": 7.986,
+      "diff": -42.91,
+      "pct_diff": -84.31
+    },
+    "avg_net_per_trade_rs": {
+      "baseline": 3109.33,
+      "candidate": 288.74,
+      "diff": -2820.59,
+      "pct_diff": -90.71
+    },
+    "avg_R_per_trade": {
+      "baseline": 0.4008,
+      "candidate": 0.0605,
+      "diff": -0.3403,
+      "pct_diff": -84.91
+    },
+    "profit_factor": {
+      "baseline": 3.12,
+      "candidate": 1.124,
+      "diff": -1.996,
+      "pct_diff": -63.97
+    },
+    "max_drawdown_rs": {
+      "baseline": 26370.5,
+      "candidate": 81112.75,
+      "diff": 54742.25,
+      "pct_diff": 207.59
+    },
+    "max_drawdown_R": {
+      "baseline": 3.07,
+      "candidate": 9.15,
+      "diff": 6.08,
+      "pct_diff": 198.05
+    },
+    "largest_loss_rs": {
+      "baseline": -11206.0,
+      "candidate": -11786.5,
+      "diff": -580.5,
+      "pct_diff": 5.18
+    },
+    "max_consecutive_losses": {
+      "baseline": 4,
+      "candidate": 4,
+      "diff": 0,
+      "pct_diff": 0.0
+    },
+    "return_on_capital_pct": {
+      "baseline": 23.882,
+      "candidate": 2.305,
+      "diff": -21.577,
+      "pct_diff": -90.35
+    },
+    "expectancy_daily_rs": {
+      "baseline": 3109.33,
+      "candidate": 288.74,
+      "diff": -2820.59,
+      "pct_diff": -90.71
+    },
+    "sessions_traded": {
+      "baseline": 127,
+      "candidate": 132,
+      "diff": 5,
+      "pct_diff": 3.94
+    },
+    "friday_trades": {
+      "baseline": 11,
+      "candidate": 27,
+      "diff": 16,
+      "pct_diff": 145.45
+    },
+    "reversal_trades": {
+      "baseline": 115,
+      "candidate": 22,
+      "diff": -93,
+      "pct_diff": -80.87
+    },
+    "breakout_trades": {
+      "baseline": 12,
+      "candidate": 110,
+      "diff": 98,
+      "pct_diff": 816.67
+    }
+  },
+  "by_period": {
+    "IS": {
+      "total_trades": {
+        "baseline": 69,
+        "candidate": 74,
+        "diff": 5,
+        "pct_diff": 7.25
+      },
+      "win_rate": {
+        "baseline": 0.7536,
+        "candidate": 0.5946,
+        "diff": -0.159,
+        "pct_diff": -21.1
+      },
+      "net_pnl_rs": {
+        "baseline": 173360.5,
+        "candidate": 15484.75,
+        "diff": -157875.75,
+        "pct_diff": -91.07
+      },
+      "total_R": {
+        "baseline": 21.718,
+        "candidate": 3.455,
+        "diff": -18.263,
+        "pct_diff": -84.09
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 2512.47,
+        "candidate": 209.25,
+        "diff": -2303.22,
+        "pct_diff": -91.67
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.3148,
+        "candidate": 0.0467,
+        "diff": -0.2681,
+        "pct_diff": -85.17
+      },
+      "profit_factor": {
+        "baseline": 2.777,
+        "candidate": 1.101,
+        "diff": -1.676,
+        "pct_diff": -60.35
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 29566.25,
+        "diff": 3195.75,
+        "pct_diff": 12.12
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 3.14,
+        "diff": 0.07,
+        "pct_diff": 2.28
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 10.484,
+        "candidate": 0.936,
+        "diff": -9.548,
+        "pct_diff": -91.07
+      },
+      "expectancy_daily_rs": {
+        "baseline": 2512.47,
+        "candidate": 209.25,
+        "diff": -2303.22,
+        "pct_diff": -91.67
+      },
+      "sessions_traded": {
+        "baseline": 69,
+        "candidate": 74,
+        "diff": 5,
+        "pct_diff": 7.25
+      },
+      "friday_trades": {
+        "baseline": 5,
+        "candidate": 15,
+        "diff": 10,
+        "pct_diff": 200.0
+      },
+      "reversal_trades": {
+        "baseline": 63,
+        "candidate": 11,
+        "diff": -52,
+        "pct_diff": -82.54
+      },
+      "breakout_trades": {
+        "baseline": 6,
+        "candidate": 63,
+        "diff": 57,
+        "pct_diff": 950.0
+      }
+    },
+    "VAL": {
+      "total_trades": {
+        "baseline": 34,
+        "candidate": 35,
+        "diff": 1,
+        "pct_diff": 2.94
+      },
+      "win_rate": {
+        "baseline": 0.7941,
+        "candidate": 0.6,
+        "diff": -0.1941,
+        "pct_diff": -24.44
+      },
+      "net_pnl_rs": {
+        "baseline": 129220.5,
+        "candidate": -38242.0,
+        "diff": -167462.5,
+        "pct_diff": -129.59
+      },
+      "total_R": {
+        "baseline": 16.489,
+        "candidate": -4.413,
+        "diff": -20.902,
+        "pct_diff": -126.76
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3800.6,
+        "candidate": -1092.63,
+        "diff": -4893.23,
+        "pct_diff": -128.75
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.485,
+        "candidate": -0.1261,
+        "diff": -0.6111,
+        "pct_diff": -126.0
+      },
+      "profit_factor": {
+        "baseline": 4.2,
+        "candidate": 0.613,
+        "diff": -3.587,
+        "pct_diff": -85.4
+      },
+      "max_drawdown_rs": {
+        "baseline": 17315.5,
+        "candidate": 42815.5,
+        "diff": 25500.0,
+        "pct_diff": 147.27
+      },
+      "max_drawdown_R": {
+        "baseline": 2.08,
+        "candidate": 5.01,
+        "diff": 2.93,
+        "pct_diff": 140.87
+      },
+      "largest_loss_rs": {
+        "baseline": -8716.0,
+        "candidate": -8731.0,
+        "diff": -15.0,
+        "pct_diff": 0.17
+      },
+      "max_consecutive_losses": {
+        "baseline": 2,
+        "candidate": 3,
+        "diff": 1,
+        "pct_diff": 50.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 7.815,
+        "candidate": -2.313,
+        "diff": -10.128,
+        "pct_diff": -129.6
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3800.6,
+        "candidate": -1092.63,
+        "diff": -4893.23,
+        "pct_diff": -128.75
+      },
+      "sessions_traded": {
+        "baseline": 34,
+        "candidate": 35,
+        "diff": 1,
+        "pct_diff": 2.94
+      },
+      "friday_trades": {
+        "baseline": 2,
+        "candidate": 8,
+        "diff": 6,
+        "pct_diff": 300.0
+      },
+      "reversal_trades": {
+        "baseline": 32,
+        "candidate": 6,
+        "diff": -26,
+        "pct_diff": -81.25
+      },
+      "breakout_trades": {
+        "baseline": 2,
+        "candidate": 29,
+        "diff": 27,
+        "pct_diff": 1350.0
+      }
+    },
+    "OOS": {
+      "total_trades": {
+        "baseline": 24,
+        "candidate": 23,
+        "diff": -1,
+        "pct_diff": -4.17
+      },
+      "win_rate": {
+        "baseline": 0.7083,
+        "candidate": 0.6957,
+        "diff": -0.0126,
+        "pct_diff": -1.78
+      },
+      "net_pnl_rs": {
+        "baseline": 92303.5,
+        "candidate": 60870.75,
+        "diff": -31432.75,
+        "pct_diff": -34.05
+      },
+      "total_R": {
+        "baseline": 12.689,
+        "candidate": 8.944,
+        "diff": -3.745,
+        "pct_diff": -29.51
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3845.98,
+        "candidate": 2646.55,
+        "diff": -1199.43,
+        "pct_diff": -31.19
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.5287,
+        "candidate": 0.3889,
+        "diff": -0.1398,
+        "pct_diff": -26.44
+      },
+      "profit_factor": {
+        "baseline": 2.91,
+        "candidate": 2.068,
+        "diff": -0.842,
+        "pct_diff": -28.93
+      },
+      "max_drawdown_rs": {
+        "baseline": 20486.0,
+        "candidate": 17296.75,
+        "diff": -3189.25,
+        "pct_diff": -15.57
+      },
+      "max_drawdown_R": {
+        "baseline": 2.44,
+        "candidate": 2.0,
+        "diff": -0.44,
+        "pct_diff": -18.03
+      },
+      "largest_loss_rs": {
+        "baseline": -9823.0,
+        "candidate": -10510.0,
+        "diff": -687.0,
+        "pct_diff": 6.99
+      },
+      "max_consecutive_losses": {
+        "baseline": 2,
+        "candidate": 2,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 5.582,
+        "candidate": 3.681,
+        "diff": -1.901,
+        "pct_diff": -34.06
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3845.98,
+        "candidate": 2646.55,
+        "diff": -1199.43,
+        "pct_diff": -31.19
+      },
+      "sessions_traded": {
+        "baseline": 24,
+        "candidate": 23,
+        "diff": -1,
+        "pct_diff": -4.17
+      },
+      "friday_trades": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "reversal_trades": {
+        "baseline": 20,
+        "candidate": 5,
+        "diff": -15,
+        "pct_diff": -75.0
+      },
+      "breakout_trades": {
+        "baseline": 4,
+        "candidate": 18,
+        "diff": 14,
+        "pct_diff": 350.0
+      }
+    }
+  },
+  "by_instrument": {
+    "NIFTY": {
+      "total_trades": {
+        "baseline": 64,
+        "candidate": 67,
+        "diff": 3,
+        "pct_diff": 4.69
+      },
+      "win_rate": {
+        "baseline": 0.7812,
+        "candidate": 0.6269,
+        "diff": -0.1543,
+        "pct_diff": -19.75
+      },
+      "net_pnl_rs": {
+        "baseline": 198543.5,
+        "candidate": 32654.0,
+        "diff": -165889.5,
+        "pct_diff": -83.55
+      },
+      "total_R": {
+        "baseline": 26.857,
+        "candidate": 5.802,
+        "diff": -21.055,
+        "pct_diff": -78.4
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3102.24,
+        "candidate": 487.37,
+        "diff": -2614.87,
+        "pct_diff": -84.29
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4196,
+        "candidate": 0.0866,
+        "diff": -0.333,
+        "pct_diff": -79.36
+      },
+      "profit_factor": {
+        "baseline": 3.679,
+        "candidate": 1.225,
+        "diff": -2.454,
+        "pct_diff": -66.7
+      },
+      "max_drawdown_rs": {
+        "baseline": 11924.0,
+        "candidate": 48747.0,
+        "diff": 36823.0,
+        "pct_diff": 308.81
+      },
+      "max_drawdown_R": {
+        "baseline": 1.47,
+        "candidate": 5.94,
+        "diff": 4.47,
+        "pct_diff": 304.08
+      },
+      "largest_loss_rs": {
+        "baseline": -8347.0,
+        "candidate": -10495.25,
+        "diff": -2148.25,
+        "pct_diff": 25.74
+      },
+      "max_consecutive_losses": {
+        "baseline": 2,
+        "candidate": 3,
+        "diff": 1,
+        "pct_diff": 50.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 25.236,
+        "candidate": 4.15,
+        "diff": -21.086,
+        "pct_diff": -83.56
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3102.24,
+        "candidate": 487.37,
+        "diff": -2614.87,
+        "pct_diff": -84.29
+      },
+      "sessions_traded": {
+        "baseline": 64,
+        "candidate": 67,
+        "diff": 3,
+        "pct_diff": 4.69
+      },
+      "friday_trades": {
+        "baseline": 6,
+        "candidate": 13,
+        "diff": 7,
+        "pct_diff": 116.67
+      },
+      "reversal_trades": {
+        "baseline": 58,
+        "candidate": 7,
+        "diff": -51,
+        "pct_diff": -87.93
+      },
+      "breakout_trades": {
+        "baseline": 6,
+        "candidate": 60,
+        "diff": 54,
+        "pct_diff": 900.0
+      }
+    },
+    "BANKNIFTY": {
+      "total_trades": {
+        "baseline": 63,
+        "candidate": 65,
+        "diff": 2,
+        "pct_diff": 3.17
+      },
+      "win_rate": {
+        "baseline": 0.7302,
+        "candidate": 0.6,
+        "diff": -0.1302,
+        "pct_diff": -17.83
+      },
+      "net_pnl_rs": {
+        "baseline": 196341.0,
+        "candidate": 5459.5,
+        "diff": -190881.5,
+        "pct_diff": -97.22
+      },
+      "total_R": {
+        "baseline": 24.039,
+        "candidate": 2.184,
+        "diff": -21.855,
+        "pct_diff": -90.91
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3116.52,
+        "candidate": 83.99,
+        "diff": -3032.53,
+        "pct_diff": -97.31
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.3816,
+        "candidate": 0.0336,
+        "diff": -0.348,
+        "pct_diff": -91.19
+      },
+      "profit_factor": {
+        "baseline": 2.751,
+        "candidate": 1.033,
+        "diff": -1.718,
+        "pct_diff": -62.45
+      },
+      "max_drawdown_rs": {
+        "baseline": 23967.0,
+        "candidate": 47127.0,
+        "diff": 23160.0,
+        "pct_diff": 96.63
+      },
+      "max_drawdown_R": {
+        "baseline": 2.28,
+        "candidate": 5.03,
+        "diff": 2.75,
+        "pct_diff": 120.61
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 3,
+        "candidate": 3,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 22.652,
+        "candidate": 0.63,
+        "diff": -22.022,
+        "pct_diff": -97.22
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3116.52,
+        "candidate": 83.99,
+        "diff": -3032.53,
+        "pct_diff": -97.31
+      },
+      "sessions_traded": {
+        "baseline": 63,
+        "candidate": 65,
+        "diff": 2,
+        "pct_diff": 3.17
+      },
+      "friday_trades": {
+        "baseline": 5,
+        "candidate": 14,
+        "diff": 9,
+        "pct_diff": 180.0
+      },
+      "reversal_trades": {
+        "baseline": 57,
+        "candidate": 15,
+        "diff": -42,
+        "pct_diff": -73.68
+      },
+      "breakout_trades": {
+        "baseline": 6,
+        "candidate": 50,
+        "diff": 44,
+        "pct_diff": 733.33
+      }
+    }
+  },
+  "by_instrument_oos": {
+    "NIFTY": {
+      "total_trades": {
+        "baseline": 24,
+        "candidate": 23,
+        "diff": -1,
+        "pct_diff": -4.17
+      },
+      "win_rate": {
+        "baseline": 0.7083,
+        "candidate": 0.6957,
+        "diff": -0.0126,
+        "pct_diff": -1.78
+      },
+      "net_pnl_rs": {
+        "baseline": 92303.5,
+        "candidate": 60870.75,
+        "diff": -31432.75,
+        "pct_diff": -34.05
+      },
+      "total_R": {
+        "baseline": 12.689,
+        "candidate": 8.944,
+        "diff": -3.745,
+        "pct_diff": -29.51
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3845.98,
+        "candidate": 2646.55,
+        "diff": -1199.43,
+        "pct_diff": -31.19
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.5287,
+        "candidate": 0.3889,
+        "diff": -0.1398,
+        "pct_diff": -26.44
+      },
+      "profit_factor": {
+        "baseline": 2.91,
+        "candidate": 2.068,
+        "diff": -0.842,
+        "pct_diff": -28.93
+      },
+      "max_drawdown_rs": {
+        "baseline": 20486.0,
+        "candidate": 17296.75,
+        "diff": -3189.25,
+        "pct_diff": -15.57
+      },
+      "max_drawdown_R": {
+        "baseline": 2.44,
+        "candidate": 2.0,
+        "diff": -0.44,
+        "pct_diff": -18.03
+      },
+      "largest_loss_rs": {
+        "baseline": -9823.0,
+        "candidate": -10510.0,
+        "diff": -687.0,
+        "pct_diff": 6.99
+      },
+      "max_consecutive_losses": {
+        "baseline": 2,
+        "candidate": 2,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 11.732,
+        "candidate": 7.737,
+        "diff": -3.995,
+        "pct_diff": -34.05
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3845.98,
+        "candidate": 2646.55,
+        "diff": -1199.43,
+        "pct_diff": -31.19
+      },
+      "sessions_traded": {
+        "baseline": 24,
+        "candidate": 23,
+        "diff": -1,
+        "pct_diff": -4.17
+      },
+      "friday_trades": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "reversal_trades": {
+        "baseline": 20,
+        "candidate": 5,
+        "diff": -15,
+        "pct_diff": -75.0
+      },
+      "breakout_trades": {
+        "baseline": 4,
+        "candidate": 18,
+        "diff": 14,
+        "pct_diff": 350.0
+      }
+    },
+    "BANKNIFTY": {
+      "total_trades": {
+        "baseline": 24,
+        "candidate": 23,
+        "diff": -1,
+        "pct_diff": -4.17
+      },
+      "win_rate": {
+        "baseline": 0.7083,
+        "candidate": 0.6957,
+        "diff": -0.0126,
+        "pct_diff": -1.78
+      },
+      "net_pnl_rs": {
+        "baseline": 92303.5,
+        "candidate": 60870.75,
+        "diff": -31432.75,
+        "pct_diff": -34.05
+      },
+      "total_R": {
+        "baseline": 12.689,
+        "candidate": 8.944,
+        "diff": -3.745,
+        "pct_diff": -29.51
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3845.98,
+        "candidate": 2646.55,
+        "diff": -1199.43,
+        "pct_diff": -31.19
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.5287,
+        "candidate": 0.3889,
+        "diff": -0.1398,
+        "pct_diff": -26.44
+      },
+      "profit_factor": {
+        "baseline": 2.91,
+        "candidate": 2.068,
+        "diff": -0.842,
+        "pct_diff": -28.93
+      },
+      "max_drawdown_rs": {
+        "baseline": 20486.0,
+        "candidate": 17296.75,
+        "diff": -3189.25,
+        "pct_diff": -15.57
+      },
+      "max_drawdown_R": {
+        "baseline": 2.44,
+        "candidate": 2.0,
+        "diff": -0.44,
+        "pct_diff": -18.03
+      },
+      "largest_loss_rs": {
+        "baseline": -9823.0,
+        "candidate": -10510.0,
+        "diff": -687.0,
+        "pct_diff": 6.99
+      },
+      "max_consecutive_losses": {
+        "baseline": 2,
+        "candidate": 2,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 10.649,
+        "candidate": 7.023,
+        "diff": -3.626,
+        "pct_diff": -34.05
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3845.98,
+        "candidate": 2646.55,
+        "diff": -1199.43,
+        "pct_diff": -31.19
+      },
+      "sessions_traded": {
+        "baseline": 24,
+        "candidate": 23,
+        "diff": -1,
+        "pct_diff": -4.17
+      },
+      "friday_trades": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "reversal_trades": {
+        "baseline": 20,
+        "candidate": 5,
+        "diff": -15,
+        "pct_diff": -75.0
+      },
+      "breakout_trades": {
+        "baseline": 4,
+        "candidate": 18,
+        "diff": 14,
+        "pct_diff": 350.0
+      }
+    }
+  },
+  "all_variants_vs_baseline": {
+    "combined_parity": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 132,
+        "diff": 5,
+        "pct_diff": 3.94
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6136,
+        "diff": -0.1423,
+        "pct_diff": -18.83
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 38113.5,
+        "diff": -356771.0,
+        "pct_diff": -90.35
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 7.986,
+        "diff": -42.91,
+        "pct_diff": -84.31
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 288.74,
+        "diff": -2820.59,
+        "pct_diff": -90.71
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0605,
+        "diff": -0.3403,
+        "pct_diff": -84.91
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.124,
+        "diff": -1.996,
+        "pct_diff": -63.97
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 81112.75,
+        "diff": 54742.25,
+        "pct_diff": 207.59
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 9.15,
+        "diff": 6.08,
+        "pct_diff": 198.05
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 2.305,
+        "diff": -21.577,
+        "pct_diff": -90.35
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 288.74,
+        "diff": -2820.59,
+        "pct_diff": -90.71
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 132,
+        "diff": 5,
+        "pct_diff": 3.94
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 27,
+        "diff": 16,
+        "pct_diff": 145.45
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 22,
+        "diff": -93,
+        "pct_diff": -80.87
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "reversal_only": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 121,
+        "diff": -6,
+        "pct_diff": -4.72
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6281,
+        "diff": -0.1278,
+        "pct_diff": -16.91
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 68537.5,
+        "diff": -326347.0,
+        "pct_diff": -82.64
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 11.418,
+        "diff": -39.478,
+        "pct_diff": -77.57
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 566.43,
+        "diff": -2542.9,
+        "pct_diff": -81.78
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0944,
+        "diff": -0.3064,
+        "pct_diff": -76.45
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.232,
+        "diff": -1.888,
+        "pct_diff": -60.51
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 71528.0,
+        "diff": 45157.5,
+        "pct_diff": 171.24
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 7.69,
+        "diff": 4.62,
+        "pct_diff": 150.49
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -13895.5,
+        "diff": -2689.5,
+        "pct_diff": 24.0
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 5,
+        "diff": 1,
+        "pct_diff": 25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 4.145,
+        "diff": -19.737,
+        "pct_diff": -82.64
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 566.43,
+        "diff": -2542.9,
+        "pct_diff": -81.78
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 121,
+        "diff": -6,
+        "pct_diff": -4.72
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 25,
+        "diff": 14,
+        "pct_diff": 127.27
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 121,
+        "diff": 6,
+        "pct_diff": 5.22
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "breakout_only": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 110,
+        "diff": -17,
+        "pct_diff": -13.39
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6091,
+        "diff": -0.1468,
+        "pct_diff": -19.42
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -24859.5,
+        "diff": -419744.0,
+        "pct_diff": -106.3
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 0.056,
+        "diff": -50.84,
+        "pct_diff": -99.89
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -226.0,
+        "diff": -3335.33,
+        "pct_diff": -107.27
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0005,
+        "diff": -0.4003,
+        "pct_diff": -99.88
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.909,
+        "diff": -2.211,
+        "pct_diff": -70.87
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 93917.25,
+        "diff": 67546.75,
+        "pct_diff": 256.15
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 10.45,
+        "diff": 7.38,
+        "pct_diff": 240.39
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -1.503,
+        "diff": -25.385,
+        "pct_diff": -106.29
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -226.0,
+        "diff": -3335.33,
+        "pct_diff": -107.27
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 110,
+        "diff": -17,
+        "pct_diff": -13.39
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 22,
+        "diff": 11,
+        "pct_diff": 100.0
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 0,
+        "diff": -115,
+        "pct_diff": -100.0
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "breakout_retest": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 110,
+        "diff": -17,
+        "pct_diff": -13.39
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6182,
+        "diff": -0.1377,
+        "pct_diff": -18.22
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -16867.5,
+        "diff": -411752.0,
+        "pct_diff": -104.27
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 0.994,
+        "diff": -49.902,
+        "pct_diff": -98.05
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -153.34,
+        "diff": -3262.67,
+        "pct_diff": -104.93
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.009,
+        "diff": -0.3918,
+        "pct_diff": -97.75
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.938,
+        "diff": -2.182,
+        "pct_diff": -69.94
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 93491.25,
+        "diff": 67120.75,
+        "pct_diff": 254.53
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 10.35,
+        "diff": 7.28,
+        "pct_diff": 237.13
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -1.02,
+        "diff": -24.902,
+        "pct_diff": -104.27
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -153.34,
+        "diff": -3262.67,
+        "pct_diff": -104.93
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 110,
+        "diff": -17,
+        "pct_diff": -13.39
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 22,
+        "diff": 11,
+        "pct_diff": 100.0
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 0,
+        "diff": -115,
+        "pct_diff": -100.0
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "combined_retest": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 132,
+        "diff": 5,
+        "pct_diff": 3.94
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6212,
+        "diff": -0.1347,
+        "pct_diff": -17.82
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 46105.5,
+        "diff": -348779.0,
+        "pct_diff": -88.32
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 8.924,
+        "diff": -41.972,
+        "pct_diff": -82.47
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 349.28,
+        "diff": -2760.05,
+        "pct_diff": -88.77
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0676,
+        "diff": -0.3332,
+        "pct_diff": -83.13
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.151,
+        "diff": -1.969,
+        "pct_diff": -63.11
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 80686.75,
+        "diff": 54316.25,
+        "pct_diff": 205.97
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 9.07,
+        "diff": 6.0,
+        "pct_diff": 195.44
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 2.788,
+        "diff": -21.094,
+        "pct_diff": -88.33
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 349.28,
+        "diff": -2760.05,
+        "pct_diff": -88.77
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 132,
+        "diff": 5,
+        "pct_diff": 3.94
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 27,
+        "diff": 16,
+        "pct_diff": 145.45
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 22,
+        "diff": -93,
+        "pct_diff": -80.87
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "combined_structure": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 131,
+        "diff": 4,
+        "pct_diff": 3.15
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.7634,
+        "diff": 0.0075,
+        "pct_diff": 0.99
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 52000.25,
+        "diff": -342884.25,
+        "pct_diff": -86.83
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 140.695,
+        "diff": 89.799,
+        "pct_diff": 176.44
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 396.95,
+        "diff": -2712.38,
+        "pct_diff": -87.23
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 1.074,
+        "diff": 0.6732,
+        "pct_diff": 167.96
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.354,
+        "diff": -1.766,
+        "pct_diff": -56.6
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 46764.0,
+        "diff": 20393.5,
+        "pct_diff": 77.33
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 10.95,
+        "diff": 7.88,
+        "pct_diff": 256.68
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -5047.0,
+        "diff": 6159.0,
+        "pct_diff": -54.96
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 3.145,
+        "diff": -20.737,
+        "pct_diff": -86.83
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 396.95,
+        "diff": -2712.38,
+        "pct_diff": -87.23
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 131,
+        "diff": 4,
+        "pct_diff": 3.15
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 26,
+        "diff": 15,
+        "pct_diff": 136.36
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 22,
+        "diff": -93,
+        "pct_diff": -80.87
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 109,
+        "diff": 97,
+        "pct_diff": 808.33
+      }
+    },
+    "combined_conflict_reject": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 125,
+        "diff": -2,
+        "pct_diff": -1.57
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6,
+        "diff": -0.1559,
+        "pct_diff": -20.62
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -20933.0,
+        "diff": -415817.5,
+        "pct_diff": -105.3
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 0.725,
+        "diff": -50.171,
+        "pct_diff": -98.58
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -167.46,
+        "diff": -3276.79,
+        "pct_diff": -105.39
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0058,
+        "diff": -0.395,
+        "pct_diff": -98.55
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.931,
+        "diff": -2.189,
+        "pct_diff": -70.16
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 87737.5,
+        "diff": 61367.0,
+        "pct_diff": 232.71
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 9.71,
+        "diff": 6.64,
+        "pct_diff": 216.29
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -1.266,
+        "diff": -25.148,
+        "pct_diff": -105.3
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -167.46,
+        "diff": -3276.79,
+        "pct_diff": -105.39
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 125,
+        "diff": -2,
+        "pct_diff": -1.57
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 26,
+        "diff": 15,
+        "pct_diff": 136.36
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 15,
+        "diff": -100,
+        "pct_diff": -86.96
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "combined_shadow_000": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 136,
+        "diff": 9,
+        "pct_diff": 7.09
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6029,
+        "diff": -0.153,
+        "pct_diff": -20.24
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -6946.75,
+        "diff": -401831.25,
+        "pct_diff": -101.76
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 2.451,
+        "diff": -48.445,
+        "pct_diff": -95.18
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -51.08,
+        "diff": -3160.41,
+        "pct_diff": -101.64
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.018,
+        "diff": -0.3828,
+        "pct_diff": -95.51
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.979,
+        "diff": -2.141,
+        "pct_diff": -68.62
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 93086.25,
+        "diff": 66715.75,
+        "pct_diff": 252.99
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 10.59,
+        "diff": 7.52,
+        "pct_diff": 244.95
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -0.42,
+        "diff": -24.302,
+        "pct_diff": -101.76
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -51.08,
+        "diff": -3160.41,
+        "pct_diff": -101.64
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 136,
+        "diff": 9,
+        "pct_diff": 7.09
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 28,
+        "diff": 17,
+        "pct_diff": 154.55
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 26,
+        "diff": -89,
+        "pct_diff": -77.39
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "combined_shadow_400": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 132,
+        "diff": 5,
+        "pct_diff": 3.94
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6061,
+        "diff": -0.1498,
+        "pct_diff": -19.82
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -1411.0,
+        "diff": -396295.5,
+        "pct_diff": -100.36
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 3.263,
+        "diff": -47.633,
+        "pct_diff": -93.59
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -10.69,
+        "diff": -3120.02,
+        "pct_diff": -100.34
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0247,
+        "diff": -0.3761,
+        "pct_diff": -93.84
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.996,
+        "diff": -2.124,
+        "pct_diff": -68.08
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 82006.5,
+        "diff": 55636.0,
+        "pct_diff": 210.98
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 9.12,
+        "diff": 6.05,
+        "pct_diff": 197.07
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -0.085,
+        "diff": -23.967,
+        "pct_diff": -100.36
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -10.69,
+        "diff": -3120.02,
+        "pct_diff": -100.34
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 132,
+        "diff": 5,
+        "pct_diff": 3.94
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 27,
+        "diff": 16,
+        "pct_diff": 145.45
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 22,
+        "diff": -93,
+        "pct_diff": -80.87
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "combined_trigger_close": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 131,
+        "diff": 4,
+        "pct_diff": 3.15
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6183,
+        "diff": -0.1376,
+        "pct_diff": -18.2
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 29986.25,
+        "diff": -364898.25,
+        "pct_diff": -92.41
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 7.036,
+        "diff": -43.86,
+        "pct_diff": -86.18
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 228.9,
+        "diff": -2880.43,
+        "pct_diff": -92.64
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0537,
+        "diff": -0.3471,
+        "pct_diff": -86.6
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.096,
+        "diff": -2.024,
+        "pct_diff": -64.87
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 85790.25,
+        "diff": 59419.75,
+        "pct_diff": 225.33
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 9.71,
+        "diff": 6.64,
+        "pct_diff": 216.29
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 1.813,
+        "diff": -22.069,
+        "pct_diff": -92.41
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 228.9,
+        "diff": -2880.43,
+        "pct_diff": -92.64
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 131,
+        "diff": 4,
+        "pct_diff": 3.15
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 27,
+        "diff": 16,
+        "pct_diff": 145.45
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 21,
+        "diff": -94,
+        "pct_diff": -81.74
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 110,
+        "diff": 98,
+        "pct_diff": 816.67
+      }
+    },
+    "reversal_A1": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 29,
+        "diff": -98,
+        "pct_diff": -77.17
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.7241,
+        "diff": -0.0318,
+        "pct_diff": -4.21
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 45996.0,
+        "diff": -348888.5,
+        "pct_diff": -88.35
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 6.001,
+        "diff": -44.895,
+        "pct_diff": -88.21
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 1586.07,
+        "diff": -1523.26,
+        "pct_diff": -48.99
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.2069,
+        "diff": -0.1939,
+        "pct_diff": -48.38
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 2.131,
+        "diff": -0.989,
+        "pct_diff": -31.7
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 12661.5,
+        "diff": -13709.0,
+        "pct_diff": -51.99
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 1.47,
+        "diff": -1.6,
+        "pct_diff": -52.12
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -8132.5,
+        "diff": 3073.5,
+        "pct_diff": -27.43
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 2,
+        "diff": -2,
+        "pct_diff": -50.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 2.782,
+        "diff": -21.1,
+        "pct_diff": -88.35
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 1586.07,
+        "diff": -1523.26,
+        "pct_diff": -48.99
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 29,
+        "diff": -98,
+        "pct_diff": -77.17
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 8,
+        "diff": -3,
+        "pct_diff": -27.27
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 29,
+        "diff": -86,
+        "pct_diff": -74.78
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "reversal_A2": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 12,
+        "diff": -115,
+        "pct_diff": -90.55
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.75,
+        "diff": -0.0059,
+        "pct_diff": -0.78
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 4383.0,
+        "diff": -390501.5,
+        "pct_diff": -98.89
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 0.86,
+        "diff": -50.036,
+        "pct_diff": -98.31
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 365.25,
+        "diff": -2744.08,
+        "pct_diff": -88.25
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0717,
+        "diff": -0.3291,
+        "pct_diff": -82.11
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.17,
+        "diff": -1.95,
+        "pct_diff": -62.5
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 18896.25,
+        "diff": -7474.25,
+        "pct_diff": -28.34
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 1.98,
+        "diff": -1.09,
+        "pct_diff": -35.5
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -9992.5,
+        "diff": 1213.5,
+        "pct_diff": -10.83
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 2,
+        "diff": -2,
+        "pct_diff": -50.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 0.265,
+        "diff": -23.617,
+        "pct_diff": -98.89
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 365.25,
+        "diff": -2744.08,
+        "pct_diff": -88.25
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 12,
+        "diff": -115,
+        "pct_diff": -90.55
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 3,
+        "diff": -8,
+        "pct_diff": -72.73
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 12,
+        "diff": -103,
+        "pct_diff": -89.57
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "reversal_A3": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 37,
+        "diff": -90,
+        "pct_diff": -70.87
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.7838,
+        "diff": 0.0279,
+        "pct_diff": 3.69
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 57196.0,
+        "diff": -337688.5,
+        "pct_diff": -85.52
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 7.642,
+        "diff": -43.254,
+        "pct_diff": -84.99
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 1545.84,
+        "diff": -1563.49,
+        "pct_diff": -50.28
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.2065,
+        "diff": -0.1943,
+        "pct_diff": -48.48
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 2.303,
+        "diff": -0.817,
+        "pct_diff": -26.19
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 18272.5,
+        "diff": -8098.0,
+        "pct_diff": -30.71
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 1.97,
+        "diff": -1.1,
+        "pct_diff": -35.83
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -9287.5,
+        "diff": 1918.5,
+        "pct_diff": -17.12
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 3.459,
+        "diff": -20.423,
+        "pct_diff": -85.52
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 1545.84,
+        "diff": -1563.49,
+        "pct_diff": -50.28
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 37,
+        "diff": -90,
+        "pct_diff": -70.87
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 9,
+        "diff": -2,
+        "pct_diff": -18.18
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 37,
+        "diff": -78,
+        "pct_diff": -67.83
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "reversal_A4": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 25,
+        "diff": -102,
+        "pct_diff": -80.31
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.76,
+        "diff": 0.0041,
+        "pct_diff": 0.54
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 81454.0,
+        "diff": -313430.5,
+        "pct_diff": -79.37
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 10.404,
+        "diff": -40.492,
+        "pct_diff": -79.56
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 3258.16,
+        "diff": 148.83,
+        "pct_diff": 4.79
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.4162,
+        "diff": 0.0154,
+        "pct_diff": 3.84
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 3.865,
+        "diff": 0.745,
+        "pct_diff": 23.88
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 16898.75,
+        "diff": -9471.75,
+        "pct_diff": -35.92
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 1.99,
+        "diff": -1.08,
+        "pct_diff": -35.18
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -8710.0,
+        "diff": 2496.0,
+        "pct_diff": -22.27
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 4.926,
+        "diff": -18.956,
+        "pct_diff": -79.37
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 3258.16,
+        "diff": 148.83,
+        "pct_diff": 4.79
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 25,
+        "diff": -102,
+        "pct_diff": -80.31
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 3,
+        "diff": -8,
+        "pct_diff": -72.73
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 25,
+        "diff": -90,
+        "pct_diff": -78.26
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "reversal_B1": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 37,
+        "diff": -90,
+        "pct_diff": -70.87
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.4865,
+        "diff": -0.2694,
+        "pct_diff": -35.64
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -104903.0,
+        "diff": -499787.5,
+        "pct_diff": -126.57
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": -11.807,
+        "diff": -62.703,
+        "pct_diff": -123.2
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -2835.22,
+        "diff": -5944.55,
+        "pct_diff": -191.18
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": -0.3191,
+        "diff": -0.7199,
+        "pct_diff": -179.62
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.226,
+        "diff": -2.894,
+        "pct_diff": -92.76
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 97467.75,
+        "diff": 71097.25,
+        "pct_diff": 269.61
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 11.32,
+        "diff": 8.25,
+        "pct_diff": 268.73
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11344.0,
+        "diff": -138.0,
+        "pct_diff": 1.23
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -6.344,
+        "diff": -30.226,
+        "pct_diff": -126.56
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -2835.22,
+        "diff": -5944.55,
+        "pct_diff": -191.18
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 37,
+        "diff": -90,
+        "pct_diff": -70.87
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 6,
+        "diff": -5,
+        "pct_diff": -45.45
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 37,
+        "diff": -78,
+        "pct_diff": -67.83
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "reversal_B2": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 22,
+        "diff": -105,
+        "pct_diff": -82.68
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.7727,
+        "diff": 0.0168,
+        "pct_diff": 2.22
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 18583.75,
+        "diff": -376300.75,
+        "pct_diff": -95.29
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 3.369,
+        "diff": -47.527,
+        "pct_diff": -93.38
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 844.72,
+        "diff": -2264.61,
+        "pct_diff": -72.83
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.1531,
+        "diff": -0.2477,
+        "pct_diff": -61.8
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.429,
+        "diff": -1.691,
+        "pct_diff": -54.2
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 15166.5,
+        "diff": -11204.0,
+        "pct_diff": -42.49
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 1.78,
+        "diff": -1.29,
+        "pct_diff": -42.02
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -13895.5,
+        "diff": -2689.5,
+        "pct_diff": 24.0
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 2,
+        "diff": -2,
+        "pct_diff": -50.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 1.124,
+        "diff": -22.758,
+        "pct_diff": -95.29
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 844.72,
+        "diff": -2264.61,
+        "pct_diff": -72.83
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 22,
+        "diff": -105,
+        "pct_diff": -82.68
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 6,
+        "diff": -5,
+        "pct_diff": -45.45
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 22,
+        "diff": -93,
+        "pct_diff": -80.87
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "reversal_B3": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 39,
+        "diff": -88,
+        "pct_diff": -69.29
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.641,
+        "diff": -0.1149,
+        "pct_diff": -15.2
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -33856.75,
+        "diff": -428741.25,
+        "pct_diff": -108.57
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": -3.061,
+        "diff": -53.957,
+        "pct_diff": -106.01
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -868.12,
+        "diff": -3977.45,
+        "pct_diff": -127.92
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": -0.0785,
+        "diff": -0.4793,
+        "pct_diff": -119.59
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.696,
+        "diff": -2.424,
+        "pct_diff": -77.69
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 81815.0,
+        "diff": 55444.5,
+        "pct_diff": 210.25
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 9.05,
+        "diff": 5.98,
+        "pct_diff": 194.79
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -10270.0,
+        "diff": 936.0,
+        "pct_diff": -8.35
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -2.048,
+        "diff": -25.93,
+        "pct_diff": -108.58
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -868.12,
+        "diff": -3977.45,
+        "pct_diff": -127.92
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 39,
+        "diff": -88,
+        "pct_diff": -69.29
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 9,
+        "diff": -2,
+        "pct_diff": -18.18
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 39,
+        "diff": -76,
+        "pct_diff": -66.09
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "reversal_B4": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 36,
+        "diff": -91,
+        "pct_diff": -71.65
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.5833,
+        "diff": -0.1726,
+        "pct_diff": -22.83
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 6765.5,
+        "diff": -388119.0,
+        "pct_diff": -98.29
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 1.58,
+        "diff": -49.316,
+        "pct_diff": -96.9
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 187.93,
+        "diff": -2921.4,
+        "pct_diff": -93.96
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0439,
+        "diff": -0.3569,
+        "pct_diff": -89.05
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.086,
+        "diff": -2.034,
+        "pct_diff": -65.19
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 43545.5,
+        "diff": 17175.0,
+        "pct_diff": 65.13
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 4.9,
+        "diff": 1.83,
+        "pct_diff": 59.61
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -9070.0,
+        "diff": 2136.0,
+        "pct_diff": -19.06
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 0.409,
+        "diff": -23.473,
+        "pct_diff": -98.29
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 187.93,
+        "diff": -2921.4,
+        "pct_diff": -93.96
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 36,
+        "diff": -91,
+        "pct_diff": -71.65
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 8,
+        "diff": -3,
+        "pct_diff": -27.27
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 36,
+        "diff": -79,
+        "pct_diff": -68.7
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 0,
+        "diff": -12,
+        "pct_diff": -100.0
+      }
+    },
+    "breakout_up": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 55,
+        "diff": -72,
+        "pct_diff": -56.69
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.5455,
+        "diff": -0.2104,
+        "pct_diff": -27.83
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": -43960.5,
+        "diff": -438845.0,
+        "pct_diff": -111.13
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": -3.545,
+        "diff": -54.441,
+        "pct_diff": -106.97
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": -799.28,
+        "diff": -3908.61,
+        "pct_diff": -125.71
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": -0.0645,
+        "diff": -0.4653,
+        "pct_diff": -116.09
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 0.711,
+        "diff": -2.409,
+        "pct_diff": -77.21
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 73854.75,
+        "diff": 47484.25,
+        "pct_diff": 180.07
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 8.56,
+        "diff": 5.49,
+        "pct_diff": 178.83
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -11786.5,
+        "diff": -580.5,
+        "pct_diff": 5.18
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 4,
+        "diff": 0,
+        "pct_diff": 0.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": -2.659,
+        "diff": -26.541,
+        "pct_diff": -111.13
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": -799.28,
+        "diff": -3908.61,
+        "pct_diff": -125.71
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 55,
+        "diff": -72,
+        "pct_diff": -56.69
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 14,
+        "diff": 3,
+        "pct_diff": 27.27
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 0,
+        "diff": -115,
+        "pct_diff": -100.0
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 55,
+        "diff": 43,
+        "pct_diff": 358.33
+      }
+    },
+    "breakout_dn": {
+      "total_trades": {
+        "baseline": 127,
+        "candidate": 69,
+        "diff": -58,
+        "pct_diff": -45.67
+      },
+      "win_rate": {
+        "baseline": 0.7559,
+        "candidate": 0.6812,
+        "diff": -0.0747,
+        "pct_diff": -9.88
+      },
+      "net_pnl_rs": {
+        "baseline": 394884.5,
+        "candidate": 9979.5,
+        "diff": -384905.0,
+        "pct_diff": -97.47
+      },
+      "total_R": {
+        "baseline": 50.896,
+        "candidate": 3.194,
+        "diff": -47.702,
+        "pct_diff": -93.72
+      },
+      "avg_net_per_trade_rs": {
+        "baseline": 3109.33,
+        "candidate": 144.63,
+        "diff": -2964.7,
+        "pct_diff": -95.35
+      },
+      "avg_R_per_trade": {
+        "baseline": 0.4008,
+        "candidate": 0.0463,
+        "diff": -0.3545,
+        "pct_diff": -88.45
+      },
+      "profit_factor": {
+        "baseline": 3.12,
+        "candidate": 1.065,
+        "diff": -2.055,
+        "pct_diff": -65.87
+      },
+      "max_drawdown_rs": {
+        "baseline": 26370.5,
+        "candidate": 31811.0,
+        "diff": 5440.5,
+        "pct_diff": 20.63
+      },
+      "max_drawdown_R": {
+        "baseline": 3.07,
+        "candidate": 3.38,
+        "diff": 0.31,
+        "pct_diff": 10.1
+      },
+      "largest_loss_rs": {
+        "baseline": -11206.0,
+        "candidate": -10171.0,
+        "diff": 1035.0,
+        "pct_diff": -9.24
+      },
+      "max_consecutive_losses": {
+        "baseline": 4,
+        "candidate": 3,
+        "diff": -1,
+        "pct_diff": -25.0
+      },
+      "return_on_capital_pct": {
+        "baseline": 23.882,
+        "candidate": 0.604,
+        "diff": -23.278,
+        "pct_diff": -97.47
+      },
+      "expectancy_daily_rs": {
+        "baseline": 3109.33,
+        "candidate": 144.63,
+        "diff": -2964.7,
+        "pct_diff": -95.35
+      },
+      "sessions_traded": {
+        "baseline": 127,
+        "candidate": 69,
+        "diff": -58,
+        "pct_diff": -45.67
+      },
+      "friday_trades": {
+        "baseline": 11,
+        "candidate": 10,
+        "diff": -1,
+        "pct_diff": -9.09
+      },
+      "reversal_trades": {
+        "baseline": 115,
+        "candidate": 0,
+        "diff": -115,
+        "pct_diff": -100.0
+      },
+      "breakout_trades": {
+        "baseline": 12,
+        "candidate": 69,
+        "diff": 57,
+        "pct_diff": 475.0
+      }
+    }
+  }
+}

@@ -1,0 +1,86 @@
+{
+  "app/research/cpr_trigger_engine.py": {
+    "sha256": "2316f56cd315e7db763d89d58667e9a143c62098a914d4ca08ec437f199ec80c",
+    "size": 38634,
+    "mtime": 1792239512.549674,
+    "class": "code"
+  },
+  "app/research/cpr_strategy_engine.py": {
+    "sha256": "523a03c5caf9aea144e53e576642f662c98ba0d0033775749785a5da12380e64",
+    "size": 28045,
+    "mtime": 1790576963.4134705,
+    "class": "code"
+  },
+  "app/live/engine.py": {
+    "sha256": "61df16172e758a4824f87caba1c1b819a588af635cfe7e360677083f76cf8f92",
+    "size": 33170,
+    "mtime": 1792241202.6802351,
+    "class": "code"
+  },
+  "app/paper_trade/engine.py": {
+    "sha256": "4344d7c30c542b5a0fc189591bf90fe543361b457f4c8c696f763ffef936098c",
+    "size": 10896,
+    "mtime": 1792317340.1254847,
+    "class": "code"
+  },
+  "app/api/app.py": {
+    "sha256": "0203086472af510290110edb29868e28bd6fbab68a43f1a0efdcefb6085fb663",
+    "size": 57121,
+    "mtime": 1792317340.1334848,
+    "class": "code"
+  },
+  "app/research/backtest.py": {
+    "sha256": "656f735ce8d7a80851db10f4a60b89715c9224866bc58fda5a6f9dc50755f576",
+    "size": 13795,
+    "mtime": 1790576982.6027713,
+    "class": "code"
+  },
+  "app/core/db.py": {
+    "sha256": "8f2391356f7a5ebf5d69603e931b0813f0e1e42026be5a7c670deebec2fae047",
+    "size": 974,
+    "mtime": 1790575934.514313,
+    "class": "code"
+  },
+  "scripts/tg_alerts.py": {
+    "sha256": "7676ff58e590c884d06b7cf2069fa493f527c66f6c02b64f9fbd5f3ab445897e",
+    "size": 40087,
+    "mtime": 1792317340.1304848,
+    "class": "code"
+  },
+  "scripts/paper_confluence.py": {
+    "sha256": "ac26fd230ba2f8111d6e2f18bbb011d8db5afd63b2f07b5e93a466b8ca9b0d9e",
+    "size": 47664,
+    "mtime": 1792244759.32574,
+    "class": "code"
+  },
+  "config/settings.json": {
+    "sha256": "8aff897ec2973b6d936c789ba7f10d26f8c6078924dcee2ba245b51e6ac9c543",
+    "size": 615,
+    "mtime": 1790177182.888544,
+    "class": "code"
+  },
+  "frontend/index.html": {
+    "sha256": "8d1f490446e867a286ad3cecccae27cc11a447c51f1091b9f13a5609cfb53209",
+    "size": 77563,
+    "mtime": 1792665302.036789,
+    "class": "service_generated"
+  },
+  "frontend/paper.html": {
+    "sha256": "eadab305de820cde77b0fa6460e06e3f4ce5c4319357c0d6cea43d2cdbe2a31a",
+    "size": 42101,
+    "mtime": 1792664137.7059295,
+    "class": "service_generated"
+  },
+  "frontend/signals.html": {
+    "sha256": "8264befb420bc63ead3e4a70ca2688bbc080c42b972521ae0d6e4dab85fae063",
+    "size": 49430,
+    "mtime": 1792664143.6100185,
+    "class": "service_generated"
+  },
+  "frontend/alerts.html": {
+    "sha256": "2635c2cec1e360fced5d350720df3ecc966b1ee9e34ddd5614351c73a3c9d62b",
+    "size": 60966,
+    "mtime": 1792645269.199503,
+    "class": "service_generated"
+  }
+}

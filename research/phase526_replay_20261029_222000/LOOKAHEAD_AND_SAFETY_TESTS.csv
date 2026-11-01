@@ -1,0 +1,15 @@
+test_id,test,method,expected,actual,result
+LA1,Future candle perturbation,Synthetic,Identical signals,Identical,PASS
+LA2,Future row truncation,Synthetic,Identical in first 58,Identical,PASS
+LA3,Timestamp boundaries,Synthetic,0 violations,0 violations,PASS
+LA4,Entry price availability,Synthetic,All available,All available,PASS
+LA5,Completed candle handling,DB inspection,All complete,All complete,PASS
+LA6,Session isolation,Synthetic,Identical,Identical,PASS
+LA7,Indicator warm-up,Code inspection,Documented,Documented,PASS
+LA8,Duplicate candle handling,Synthetic,Documented,Documented,PASS
+LA9,Missing candle handling,Synthetic,No crash,No crash,PASS
+LA10,Stop/target ordering,Code inspection,STOP when both hit,STOP assumed,PASS
+LA11,Deterministic replay,Synthetic,Identical,Identical,PASS
+LA12,Same-candle execution,Code inspection,Next candle,Next candle open,PASS
+LA13,Timezone handling,DB inspection,All +05:30,All +05:30,PASS
+LA14,Future data in _trade_for,Code inspection,No global access,No global access,PASS

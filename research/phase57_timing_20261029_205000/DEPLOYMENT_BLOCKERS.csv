@@ -1,0 +1,14 @@
+blocker_id,description,severity,status,phase56a_status,phase57_status,evidence
+B1,Dirty working tree (1842 uncommitted files),HIGH,OPEN,OPEN,OPEN,git status: 439 modified + 1403 untracked
+B2,No production backup rehearsal performed,MEDIUM,OPEN,OPEN,OPEN,Only test DB backup/restore tested
+B3,Daily trade limit not implemented,MEDIUM,OPEN,OPEN,OPEN,Not coded in paper_scalp_live.py
+B4,Systemd unit for paper_scalp_live not enabled,MEDIUM,OPEN,OPEN,OPEN,No enabled unit found
+B5,Feature flag HLC_ONLY_MODE not implemented,MEDIUM,OPEN,OPEN,OPEN,Not in codebase
+B6,Live verification of sub-10s latency not possible (market closed),HIGH,OPEN,OPEN,OPEN,All audit windows outside market hours
+B7,Candle ingestion delay exceeding 5-min entry window,HIGH,OPEN,RESOLVED,RESOLVED,Historical data: median 8.6s, P95 78.4s, max 85.6s — all within 5-min window
+B8,No daily trade limit enforcement in scalp path,MEDIUM,OPEN,OPEN,OPEN,Not coded
+B9,Integration tests do not exercise actual production functions,MEDIUM,OPEN,RESOLVED,RESOLVED,16/16 production function tests PASS using actual functions
+B10,No isolated test environment for production code paths,MEDIUM,OPEN,RESOLVED,RESOLVED,Isolated test DB with actual function calls
+B11,CPR retirement not safe (active dependencies),LOW,OPEN,OPEN,OPEN,Phase 5.3 dependency map
+B12,No rollback rehearsal performed,MEDIUM,OPEN,OPEN,OPEN,Design only
+B13,Live-session latency not measured,HIGH,OPEN,OPEN,OPEN,Market closed during all audit windows

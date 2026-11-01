@@ -1,0 +1,98 @@
+[
+  {
+    "test_id": "T1",
+    "flag_value": "(absent)",
+    "config_value": "(absent)",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T2",
+    "flag_value": "false",
+    "config_value": "(absent)",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T3",
+    "flag_value": "true",
+    "config_value": "(absent)",
+    "expected": true,
+    "actual": true,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T4",
+    "flag_value": "'' (empty)",
+    "config_value": "(absent)",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T5",
+    "flag_value": "'   ' (whitespace)",
+    "config_value": "(absent)",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T6",
+    "flag_value": "garbage (invalid)",
+    "config_value": "(absent)",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T7",
+    "flag_value": "0",
+    "config_value": "(absent)",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T8",
+    "flag_value": "no",
+    "config_value": "(absent)",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T9",
+    "flag_value": "CPR function exists",
+    "config_value": "N/A",
+    "expected": true,
+    "actual": true,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T10",
+    "flag_value": "HLC selection when enabled",
+    "config_value": "(absent)",
+    "expected": true,
+    "actual": true,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T11",
+    "flag_value": "No broker execution",
+    "config_value": "N/A",
+    "expected": false,
+    "actual": false,
+    "result": "PASS"
+  },
+  {
+    "test_id": "T12",
+    "flag_value": "Expiry guards intact",
+    "config_value": "N/A",
+    "expected": true,
+    "actual": true,
+    "result": "PASS"
+  }
+]

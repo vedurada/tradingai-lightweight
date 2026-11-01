@@ -1,0 +1,212 @@
+{
+  "file_count": 41,
+  "files": [
+    {
+      "bytes": 9075,
+      "path": "tests/test_annotation.py",
+      "sha256": "f63b61570c118fb0cd07800d9e7b452f7c5c8a3a6bb50894ac63fc17dacdf3d5"
+    },
+    {
+      "bytes": 3932,
+      "path": "tests/test_prodlib.py",
+      "sha256": "e4c618d8a74a31fe08599ff9a49bf00f14534415cbee1bd47fbb10d275468b57"
+    },
+    {
+      "bytes": 4967,
+      "path": "tests/test_variants.py",
+      "sha256": "d7cf5656d8832dfcf1f7ced64f9e7055642885839871fdcc5ba4ace8c368d194"
+    },
+    {
+      "bytes": 20705,
+      "path": "src/analysis.py",
+      "sha256": "40c9a58faec3ee867001680fe8560cc75c5ab55b894cafd3d01b8cc7a41b9c18"
+    },
+    {
+      "bytes": 17234,
+      "path": "src/annotation.py",
+      "sha256": "c3faf74d28267ba5d656da3fea74f1f08d493085025b8d556c5cb3f7f6192260"
+    },
+    {
+      "bytes": 9704,
+      "path": "src/audit.py",
+      "sha256": "f584a800ddf0adaa6e69c83cce92f5420a55dfa942f28eed396b3ff0a8f8b083"
+    },
+    {
+      "bytes": 14656,
+      "path": "src/execgap.py",
+      "sha256": "a127a54a9f698b468f21d67e0d1c3ab8176683b711aaade8c86e88ad9cb36f5e"
+    },
+    {
+      "bytes": 15273,
+      "path": "src/integrity.py",
+      "sha256": "3e342767273f96b196efee729bd3f0cbd9f6aa995cd28cea74c26c2e35b7f277"
+    },
+    {
+      "bytes": 10195,
+      "path": "src/prodlib.py",
+      "sha256": "7b5b95bd895d1ae7d85fc1fe750881ad968ccc884d4f6c751be9d3e618ee40fe"
+    },
+    {
+      "bytes": 44039,
+      "path": "src/reports.py",
+      "sha256": "db1477c7591a035a9d8f8977dd04d4d4bcc6f5cd6c298d3055edd7ab9aa6dcdd"
+    },
+    {
+      "bytes": 18444,
+      "path": "src/shadowstudy.py",
+      "sha256": "e1cc286ddffcf07bea7e8909f37e3cfc2ea96c282592ca2af89133b84bf251fb"
+    },
+    {
+      "bytes": 5975,
+      "path": "src/variants.py",
+      "sha256": "8de3a2dc9071be3dfb4690d38b1d2da21ad6c98a9984b4c66496210d60179d0b"
+    },
+    {
+      "bytes": 3201,
+      "path": "src/wconfig.py",
+      "sha256": "62e60b72c252c172676f92799e9047644f2de86811fda5f22e2f924ae9eacea7"
+    },
+    {
+      "bytes": 6646,
+      "path": "reports/AUDIT_REPORT.md",
+      "sha256": "59bc5bad6875d3fb8b606bbb63409f116a0c61c76bd824c145f47527813cf29b"
+    },
+    {
+      "bytes": 5915,
+      "path": "reports/EXECUTION_MODEL_GAP_ANALYSIS.md",
+      "sha256": "999e2685943df84e4082bc8607f293fe0a35917d4387b105f4df7053d2df7d5a"
+    },
+    {
+      "bytes": 7472,
+      "path": "reports/INTEGRITY_FINAL.md",
+      "sha256": "2afd4554c4103182cb67e4b459fbf52a2298eadd34c5d534bdba58b31c19783b"
+    },
+    {
+      "bytes": 12289,
+      "path": "reports/RESULTS.md",
+      "sha256": "ab62ad635a0ef1d5b21b5d426ce97903179f76c245c37c5a1ae463388a635f83"
+    },
+    {
+      "bytes": 5391,
+      "path": "reports/SHADOW_ANNOTATION_METHODOLOGY.md",
+      "sha256": "addf6ed323273226dcebde695490e848d61ae57771268703c74cd89593d8c133"
+    },
+    {
+      "bytes": 11756,
+      "path": "outputs/audit.json",
+      "sha256": "33e134a2431b36e698e1f42cdc71065bd9d7379e1476e1a0bf6ef6d76a465cef"
+    },
+    {
+      "bytes": 277,
+      "path": "outputs/audit_log.txt",
+      "sha256": "aeff8421bef81f8116531958c0dc8d3368e94af303123c3677f3412a705957be"
+    },
+    {
+      "bytes": 287,
+      "path": "outputs/baseline_log.txt",
+      "sha256": "6b8df95a41a6ebdcd5dcd9ab0f97b5b8cc62e7501c42b49350c826809745e6c0"
+    },
+    {
+      "bytes": 31956,
+      "path": "outputs/baseline_manifest.json",
+      "sha256": "4cd9cf9d1d96dc4486673055429f7c665668ce770749eec7a977c3ebdba17c75"
+    },
+    {
+      "bytes": 850,
+      "path": "outputs/execgap_log.txt",
+      "sha256": "e77c5c059cc44586bdda43b2f95077d73d8cd215f4b31f621b5e02da88aefd0f"
+    },
+    {
+      "bytes": 3366,
+      "path": "outputs/execution_gap.csv",
+      "sha256": "19c13400be56cd1556f7ca3b30bcbabb7316fcd8c0481f5a72511feff18aad82"
+    },
+    {
+      "bytes": 11865,
+      "path": "outputs/execution_gap.json",
+      "sha256": "ad4e5ba29ea9cb8364a8beac0beb63362f88e9133a7daf9cbc2b6d9008bb125d"
+    },
+    {
+      "bytes": 4576,
+      "path": "outputs/integrity.json",
+      "sha256": "c9b396ef682e2c2955bba639ad8e34a19d3efa4dfe9c72453bf0ccd3842d7013"
+    },
+    {
+      "bytes": 818,
+      "path": "outputs/integrity_log.txt",
+      "sha256": "d071832f8efbeeaf0e90a91fb7224d6d64795a0dbda09dcb1ab432a32551463b"
+    },
+    {
+      "bytes": 546,
+      "path": "outputs/production_parity.txt",
+      "sha256": "c8e86e89a6f1f2774d2731146bdcff2633732620fc51f961a0431f1fec5b2631"
+    },
+    {
+      "bytes": 771,
+      "path": "outputs/reports_log.txt",
+      "sha256": "956198d3f5c556d343431d1e9d3d628e9dad95681b101c92d1cc5317fbc14e68"
+    },
+    {
+      "bytes": 506,
+      "path": "outputs/run_log.txt",
+      "sha256": "6cfe0ab4f7d89e7dcd2b64d0cba6ad4de1887f2c737076c212dd787bac65b2d5"
+    },
+    {
+      "bytes": 284225,
+      "path": "outputs/shadow_annotations.csv",
+      "sha256": "6e83968fd3b0e1720c1cad4c92602ce55af1582b9b6f876ebd55001c19db799d"
+    },
+    {
+      "bytes": 1021047,
+      "path": "outputs/shadow_annotations.json",
+      "sha256": "98843b0ac28ce116dcab1bce359e062d6698adb6308c823f6e60089ea97adf14"
+    },
+    {
+      "bytes": 132187,
+      "path": "outputs/shadow_results.json",
+      "sha256": "aee09ad9d214fb9598ac0c6b3f82c47152d9474a262dafd74f4ed96d6dd631dd"
+    },
+    {
+      "bytes": 99,
+      "path": "outputs/test_output.txt",
+      "sha256": "82ee3038905e162affa0a9a3065935658d959a9021cc2b3cd016a2ed2348acaf"
+    },
+    {
+      "bytes": 3196,
+      "path": "outputs/touch_break_comparison.csv",
+      "sha256": "39746b424a8c7d752fcdd5e715678203b19737de79b9b242e2b40320bbb728fb"
+    },
+    {
+      "bytes": 4155,
+      "path": "outputs/verdict.json",
+      "sha256": "87ce8baf7284c8f7e3e4639464e7ed7aac248b481545104c9e812253e20082a3"
+    },
+    {
+      "bytes": 12161024,
+      "path": "snapshots/tradingai_snapshot.db",
+      "sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f"
+    },
+    {
+      "bytes": 32768,
+      "path": "snapshots/tradingai_snapshot.db-shm",
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "bytes": 0,
+      "path": "snapshots/tradingai_snapshot.db-wal",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 1309,
+      "path": "tools/make_manifest.py",
+      "sha256": "0b51501860b70b01a08ab94ccd4ae23bee7139ab40235e789e6ac9a4690af5b7"
+    },
+    {
+      "bytes": 5772,
+      "path": "tools/production_parity.py",
+      "sha256": "56f172ff07de38de701b2bb95d22094b2fc8ac691b8a093f917135a227103703"
+    }
+  ],
+  "generated_at": "2026-10-22T19:34:17+05:30",
+  "run_dir": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249"
+}

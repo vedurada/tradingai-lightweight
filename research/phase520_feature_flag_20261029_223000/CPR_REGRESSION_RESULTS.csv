@@ -1,0 +1,6 @@
+test_id,check,method,expected,actual,result
+CR1,_cpr_book_signal still exists,Code inspection,Function exists,Function exists,PASS
+CR2,_hlc_book_signal still exists,Code inspection,Function exists,Function exists,PASS
+CR3,evaluate() calls correct function based on flag,Code inspection,Flag-based selection,Flag-based selection,PASS
+CR4,No syntax errors,py_compile,OK,OK,PASS
+CR5,Import succeeds,Python import,OK,OK,PASS

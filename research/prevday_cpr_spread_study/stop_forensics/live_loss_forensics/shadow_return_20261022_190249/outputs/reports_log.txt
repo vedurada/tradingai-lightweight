@@ -1,0 +1,5 @@
+report -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/reports/AUDIT_REPORT.md
+report -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/reports/SHADOW_ANNOTATION_METHODOLOGY.md
+report -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/reports/RESULTS.md
+report -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/reports/EXECUTION_MODEL_GAP_ANALYSIS.md
+report -> /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/reports/INTEGRITY_FINAL.md

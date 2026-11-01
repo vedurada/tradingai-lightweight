@@ -27,12 +27,12 @@ select{padding:.4rem;margin:.3rem}
 <h1>Scalp Model — HLC 3-Bar Alignment</h1>
 <div class="card">
 <h2>Signal generation</h2>
-<p>Signal fires when 3 consecutive 5-minute bars all move the same direction across high, low and close: each bar's high, low and close all rise (bullish) or all fall (bearish) versus the previous bar. Evaluated on the full 5-minute history, so alignment can span sessions.</p>
+<p>Signal fires when 3 consecutive 5-minute bars all move the same direction across high, low and close: each bar's high, low and close all rise (bullish) or all fall (bearish) versus the previous bar. Evaluated on the full 5-minute history, so alignment can span sessions. Every completed alignment is a separate signal; multiple trades per session are possible.</p>
 <h2>Entry</h2>
 <p>Entry at the open of the candle immediately after the third aligned bar. No lookahead.</p>
 <h2>Exit</h2>
-<p>Stop = signal candle low − 1 (bull) / high + 1 (bear). Target = entry ± 1.5 × risk. Otherwise flat at 15:20 open. Underlying-price measures only.</p>
-<p class="note">No Telegram/social alerts. Live trades persisted by watcher; EOD backtest logged daily.</p>
+<p>Stop = signal candle low − 1 (bull) / high + 1 (bear). Target = entry ± 1.5 × risk. Otherwise flat at the 15:25 close. Underlying-price measures only.</p>
+<p class="note">Telegram alerts are posted for every completed signal. Live trades are persisted by the watcher; the EOD replay is logged daily.</p>
 </div>
 <div class="card">
 <label>Instrument</label>
@@ -40,7 +40,7 @@ select{padding:.4rem;margin:.3rem}
 <button class="btn" id="btnLive">Live trades</button>
 <button class="btn alt" id="btnBacktest">Backtest</button>
 <p class="note" id="status"></p>
-<div style="overflow-x:auto"><table id="tbl"><thead><tr><th>Date</th><th>Source</th><th>Direction</th><th>Level</th><th>Entry time</th><th>Entry</th><th>Exit/mark date and time</th><th>Exit/mark</th><th>Net spot P&amp;L</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody></tbody></table></div>
+<div style="overflow-x:auto"><table id="tbl"><thead><tr><th>Date</th><th>Instrument</th><th>Source</th><th>Direction</th><th>Level</th><th>Entry time</th><th>Entry</th><th>Exit/mark date and time</th><th>Exit/mark</th><th>Spot P&amp;L (points, gross)</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody></tbody></table></div>
 </div>
 </div>
 <script>
@@ -49,7 +49,7 @@ function num(v){return (v===null||v===undefined||!isFinite(Number(v)))?'—':Num
 function row(t,source){
   const tr=document.createElement('tr');
   const pts=t.points; const outcome=t.win_loss||t.result||t.status||'';
-  [t.trade_date|| (t.created_at||'').slice(0,10), source, t.direction, t.level, (t.entry_time||'').slice(0,16).replace('T',' '), num(t.entry), (t.exit_time||'').slice(0,16).replace('T',' '), num(t.exit), num(pts), outcome, t.exit_reason||''].forEach(x=>{const td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
+  [t.trade_date|| (t.created_at||'').slice(0,10), t.instrument||'—', source, t.direction, t.level, (t.entry_time||'').slice(0,16).replace('T',' '), num(t.entry), (t.exit_time||'').slice(0,16).replace('T',' '), num(t.exit), num(pts), outcome, t.exit_reason||''].forEach(x=>{const td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
   const oc=tr.childNodes[9]; if(oc) oc.className=(outcome==='WIN'?'win':(outcome==='LOSS'?'loss':''));
   return tr;
 }
@@ -59,7 +59,7 @@ async function runLive(){
   const d=(await r.json()).data||{};
   const tb=$('tbl').querySelector('tbody'); tb.innerHTML='';
   (d.trades||[]).forEach(t=>{ tb.appendChild(row(t,t.source||'LIVE')); });
-  if(!(d.trades||[]).length) tb.innerHTML='<tr><td colspan="11">No live trades.</td></tr>';
+  if(!(d.trades||[]).length) tb.innerHTML='<tr><td colspan="12">No live trades.</td></tr>';
   $('status').textContent='Loaded '+(d.trades||[]).length+' live trades.';
 }
 async function runBacktest(){
@@ -69,7 +69,7 @@ async function runBacktest(){
   const d=(await r.json()).data||{};
   const tb=$('tbl').querySelector('tbody'); tb.innerHTML='';
   (d.trades||[]).slice().reverse().forEach(t=>{ tb.appendChild(row(t,'BACKTEST')); });
-  if(!(d.trades||[]).length) tb.innerHTML='<tr><td colspan="11">No trades.</td></tr>';
+  if(!(d.trades||[]).length) tb.innerHTML='<tr><td colspan="12">No trades.</td></tr>';
   $('status').textContent='Backtest: '+(d.signals||0)+' trades, win rate '+(d.win_rate||0)+'%, total R '+(d.total_R||0)+'.';
 }
 $('btnLive').addEventListener('click',runLive);

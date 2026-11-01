@@ -1,0 +1,20 @@
+component,file,current_status,change_required,change_type,notes
+scalp_engine.py,app/research/scalp_engine.py,ACTIVE (HLC canonical),None - already correct,-,No changes needed
+paper_scalp_live.py,scripts/paper_scalp_live.py,ACTIVE (HLC paper trader),Add daily trade limit enforcement,code,MAX_TRADES_PER_DAY not enforced in scalp path
+tg_alerts.py,scripts/tg_alerts.py,ACTIVE (HLC alerts),None - already correct,-,Already polls HLC strategy
+live/engine.py,app/live/engine.py,CPR default,Change default from _cpr_book_signal to _hlc_book_signal,code,Requires feature flag
+api/app.py,app/api/app.py,Mixed (HLC + CPR),Change HLC from overlay to primary display,code,Requires feature flag
+paper_trade/engine.py,app/paper_trade/engine.py,Shared (scalp + CPR),None - shared infrastructure,-,No changes needed
+paper_trade/performance.py,app/paper_trade/performance.py,Shared,none,-,No changes needed
+market/provider.py,app/market/provider.py,Shared,none,-,No changes needed
+market/collector.py,app/market/collector.py,Shared,none,-,No changes needed
+core/db.py,app/core/db.py,Shared,none,-,No changes needed
+core/config.py,app/core/config.py,Shared,none,-,No changes needed
+core/qualification.py,app/core/qualification.py,CPR path,Remove from live engine constructor if CPR retired,code,Only after CPR fully retired
+strategies/engine.py,app/strategies/engine.py,CPR path,Remove if CPR retired,code,Only after CPR fully retired
+scenarios/engine.py,app/scenarios/engine.py,CPR path,Remove if CPR retired,code,Only after CPR fully retired
+risk/engine.py,app/risk/engine.py,Shared,none,-,No changes needed
+decision/view.py,app/decision/view.py,Shared,none,-,No changes needed
+cpr_trigger_engine.py,app/research/cpr_trigger_engine.py,CPR trigger,Retain for rollback,-,Do not retire until CPR fully retired
+cpr_strategy_engine.py,app/research/cpr_strategy_engine.py,CPR strategy,Retain for rollback,-,Do not retire until CPR fully retired
+qualification.py,app/core/qualification.py,CPR qualification,Retain for rollback,-,Used by live engine constructor

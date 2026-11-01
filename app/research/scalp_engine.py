@@ -52,26 +52,40 @@ def _scan_signals(candles):
         down = all(f[0] < 0 and f[1] < 0 and f[2] < 0 for f in tri)
         if not (up or down):
             continue
-        if i + 1 >= len(candles):
-            continue
         sigs.append((i, 'BULL' if up else 'BEAR'))
+    # Also detect a signal at the last candle using only the 3 most recent
+    # candles (no entry candle needed for signal detection). This allows the
+    # live engine to fire as soon as the signal candle is completed and
+    # ingested, without waiting for the entry candle (~5 min ingestion delay).
+    if len(candles) >= 3:
+        i = len(candles) - 1
+        c2, c1, c0 = candles[i-2], candles[i-1], candles[i]
+        up = (c0['high'] > c1['high'] > c2['high'] and
+              c0['low'] > c1['low'] > c2['low'] and
+              c0['close'] > c1['close'] > c2['close'])
+        down = (c0['high'] < c1['high'] < c2['high'] and
+                c0['low'] < c1['low'] < c2['low'] and
+                c0['close'] < c1['close'] < c2['close'])
+        if up or down:
+            sigs.append((i, 'BULL' if up else 'BEAR'))
     return sigs, feats
 
 
 def _trade_for(candles, idx, direction):
     c = candles[idx]
+    if idx + 1 >= len(candles):
+        return None
     nc = candles[idx + 1]
+    entry = nc['open']
     if direction == 'BULL':
-        entry = nc['open']
-        stop = c['low'] - 1.0
-        risk = entry - stop
-        target = entry + risk * 1.5
+        stop = float(c['low']) - 1.0
+        risk = float(entry) - stop
+        target = float(entry) + risk * 1.5
     else:
-        entry = nc['open']
-        stop = c['high'] + 1.0
-        risk = stop - entry
-        target = entry - risk * 1.5
-    if risk <= 0 or risk > 40:
+        stop = float(c['high']) + 1.0
+        risk = stop - float(entry)
+        target = float(entry) - risk * 1.5
+    if risk <= 0:
         return None
     pnl_gross = None
     exit_px = None
@@ -126,6 +140,8 @@ def _trade_for(candles, idx, direction):
         'direction': direction,
         'level': level,
         'entry': round(float(entry), 2),
+        'stop': round(float(stop), 2),
+        'target': round(float(target), 2),
         'entry_time': nc['timestamp'],
         'exit': round(float(exit_px), 2),
         'exit_time': exit_ts,
@@ -155,6 +171,9 @@ def run_range(instrument, date_start, date_end):
     rs = [t['r_multiple'] for t in trades]
     n = len(rs)
     w = sum(1 for t in trades if (t['r_multiple'] or 0) > 0)
+    in_range = [c for c in candles if date_start <= c['date'] <= date_end]
+    sessions = len({c['date'] for c in in_range})
+    trade_days = len({t['trade_date'] for t in trades})
     by_level = {}
     for t in trades:
         k = f"{t['direction']}/{t['level']}"
@@ -164,8 +183,8 @@ def run_range(instrument, date_start, date_end):
         if (t['r_multiple'] or 0) > 0:
             e['wins'] += 1
     return {'instrument': inst, 'date_start': date_start, 'date_end': date_end,
-            'days': len({c['date'] for c in candles}),
-            'signals': n, 'no_signal_days': 0, 'wins': w,
+            'days': sessions,
+            'signals': n, 'no_signal_days': max(0, sessions - trade_days), 'wins': w,
             'losses': sum(1 for t in trades if (t['r_multiple'] or 0) < 0),
             'win_rate': round(100 * w / n, 1) if n else 0,
             'total_R': round(sum(rs), 2) if n else 0,
@@ -202,6 +221,64 @@ def run_opens_range(instrument, date_start, date_end, variant='plain',
     return r
 
 
+def _live_signal(candles, idx, direction, inst, day_iso, variant):
+    """One completed signal for display/live execution (no future fills).
+
+    If the entry candle (idx+1) is not yet in the data (not ingested into
+    market_candles_5m), entry/entry_time/target/risk are returned as None.
+    The caller (paper_scalp_live.py) resolves the entry price from the live
+    provider at trade creation time.
+    """
+    from datetime import timedelta as _td
+    c = candles[idx]
+    entry = None
+    entry_time = None
+    trade_date = str(c['timestamp'])[:10]
+    stop = float(c['low']) - 1.0 if direction == 'BULL' else float(c['high']) + 1.0
+    if idx + 1 < len(candles):
+        nc = candles[idx + 1]
+        entry = float(nc['open'])
+        entry_time = nc['timestamp']
+        trade_date = nc['timestamp'][:10]
+    else:
+        # Entry candle not yet ingested: compute its timestamp as 5 minutes
+        # after the signal candle (5-minute bar boundaries).
+        signal_dt = datetime.fromisoformat(str(c['timestamp']).replace('Z', '+00:00'))
+        entry_dt = signal_dt + _td(minutes=5)
+        entry_time = entry_dt.isoformat()
+        trade_date = str(entry_dt)[:10]
+    target = None
+    risk = None
+    if entry is not None:
+        if direction == 'BULL':
+            risk = entry - stop
+        else:
+            risk = stop - entry
+        if risk > 0:
+            if direction == 'BULL':
+                target = entry + risk * 1.5
+            else:
+                target = entry - risk * 1.5
+    return {'instrument': inst, 'variant': variant, 'date': day_iso,
+            'state': 'SIGNAL', 'direction': direction,
+            'level': 'H1_UP' if direction == 'BULL' else 'H1_DOWN',
+            'signal_time': c['timestamp'], 'trade_date': trade_date,
+            'entry': round(entry, 2) if entry is not None else None,
+            'entry_time': entry_time,
+            'stop': round(stop, 2),
+            'target': round(target, 2) if target is not None else None,
+            'risk': round(risk, 2) if risk is not None else None,
+            'levels': None, 'note': None}
+
+
+def today_signals(instrument, now_ist=None, variant='plain'):
+    """Every completed qualifying signal whose entry day is today."""
+    st = today_state(instrument, now_ist=now_ist, variant=variant)
+    if isinstance(st, dict) and isinstance(st.get('signals'), list):
+        return st['signals']
+    return []
+
+
 def today_state(instrument, now_ist=None, variant='plain'):
     inst = (instrument or '').upper()
     if inst not in VALID:
@@ -215,46 +292,31 @@ def today_state(instrument, now_ist=None, variant='plain'):
     all_candles = _load_candles(inst)
     candles = [c for c in all_candles if c['timestamp'] <= now.isoformat()]
     sigs, _ = _scan_signals(candles)
-    # first signal whose entry day == today
-    today_sig = None
+    # ALL completed signals whose entry day is today (canonical research).
+    completed = []
     for idx, direction in sigs:
-        if candles[idx + 1]['date'] == day_iso:
-            today_sig = (idx, direction)
-            break
-    if today_sig is None:
-        # maybe signal candle today but entry next day
-        for idx, direction in sigs:
-            if candles[idx]['date'] == day_iso:
-                today_sig = (idx, direction)
-                break
-    if today_sig is None:
-        return {'instrument': inst, 'variant': variant, 'date': day_iso,
-                'state': 'WATCH', 'reason': 'NO_SIGNAL_YET',
-                'candles_so_far': len(candles)}
-    idx, direction = today_sig
-    c = candles[idx]
-    nc = candles[idx + 1] if idx + 1 < len(candles) else None
-    entry = entry_time = note = None
-    if nc is not None and nc['date'] == day_iso:
-        entry = round(float(nc['open']), 2)
-        entry_time = nc['timestamp']
-    elif nc is not None:
-        note = 'ENTRY_AT_NEXT_OPEN'
-    else:
-        note = 'ENTRY_AT_NEXT_OPEN'
-    if entry is not None:
-        stop = entry * (0.995 if direction == 'BULL' else 1.005)
-        tgt = entry * (1.02 if direction == 'BULL' else 0.98)
-        stop, tgt = round(stop, 2), round(tgt, 2)
-    else:
-        stop = tgt = None
-    return {'instrument': inst, 'variant': variant, 'date': day_iso,
-            'state': 'SIGNAL', 'direction': direction,
-            'level': 'H1_UP' if direction == 'BULL' else 'H1_DOWN',
-            'signal_time': c['timestamp'],
-            'entry': entry, 'entry_time': entry_time, 'stop': stop, 'target': tgt,
-            'levels': None, 'note': note, 'candles_so_far': len(candles),
+        # Entry candle may not yet be ingested into market_candles_5m (yfinance
+        # provides completed candles with ~5 min delay). If idx+1 is out of
+        # range, the entry candle is not yet available; _live_signal will
+        # return a signal with entry=None, and the caller resolves the entry
+        # price from the live provider at trade creation time.
+        if idx + 1 < len(candles) and candles[idx + 1]['date'] != day_iso:
+            continue
+        s = _live_signal(candles, idx, direction, inst, day_iso, variant)
+        if s is not None:
+            completed.append(s)
+    base = {'instrument': inst, 'variant': variant, 'date': day_iso,
+            'signals': completed, 'signal_count': len(completed),
+            'candles_so_far': len(candles),
             'last_candle': candles[-1]['timestamp'] if candles else None}
+    if not completed:
+        base.update({'state': 'WATCH', 'reason': 'NO_SIGNAL_YET'})
+        return base
+    latest = dict(completed[-1])
+    base.update(latest)
+    base['signals'] = completed
+    base['signal_count'] = len(completed)
+    return base
 
 
 def scalp_signal(*a, **k):

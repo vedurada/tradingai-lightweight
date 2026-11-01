@@ -1,0 +1,8 @@
+{
+  "q10": 0.025842600000000004,
+  "q25": 0.06782625,
+  "q75": 0.20044325000000002,
+  "q90": 0.3009111,
+  "n_is_sessions": 80,
+  "note": "previous-session CPR width (percent), IS sessions only"
+}

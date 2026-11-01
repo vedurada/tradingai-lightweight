@@ -1,0 +1,45 @@
+file_path,purpose,strategy,importers,frontend_refs,job_refs,shared_functionality,evidence,retire_candidate,retire_status
+app/research/scalp_engine.py,HLC 3-bar signal engine,HLC 3-Bar Scalp,paper_scalp_live.py tg_alerts.py live/engine.py api/app.py,"Yes (scalp.html, nifty.html, banknifty.html)","Yes (paper_scalp_live, tg_alerts)",No - HLC-specific,"Canonical HLC implementation; 10+ importers",NO,HLC_REQUIRED
+app/research/scalp_signal_store.py,HLC signal persistence,HLC 3-Bar Scalp,paper_scalp_live.py tg_alerts.py,"No","Yes (paper_scalp_live, tg_alerts)",No - HLC-specific,"Persistent signal identity; 19 rows in DB",NO,HLC_REQUIRED
+app/research/scalp_validation.py,HLC candle validation,HLC 3-Bar Scalp,paper_scalp_live.py,"No","Yes (paper_scalp_live)",No - HLC-specific,"Candle validation helpers",NO,HLC_REQUIRED
+app/research/scalp_reconcile.py,HLC reconciliation,HLC 3-Bar Scalp,tg_alerts.py,"No","Yes (tg_alerts --reconcile)",No - HLC-specific,"Reconciles live vs EOD paper trades",NO,HLC_REQUIRED
+app/research/scalp_alert_events.py,P0.14 alert pipeline,HLC 3-Bar Scalp,Tests only,"No","No (not wired)",No - HLC-specific,"In-memory only; NOT wired into live runtime",MAYBE,UNKNOWN_OR_SHARED
+app/strategies/scalp.py,HLC strategy adapter,HLC 3-Bar Scalp,app/api/app.py,"No","Yes (API routes)",Delegates to scalp_engine,"Thin wrapper; no independent logic",NO,HLC_REQUIRED
+app/live/engine.py,Live decision engine,CPR Trigger (default) + HLC (display),"app/api/app.py, app/decision/view.py","Yes (nifty.html, banknifty.html)","Yes (gunicorn API)",Yes - shared infrastructure,"CPR is live decision engine; HLC is display overlay",NO,SHARED_INFRASTRUCTURE
+app/research/cpr_trigger_engine.py,CPR trigger engine,CPR Trigger,"live/engine.py, paper_trade/engine.py, paper_confluence.py, signal_articles.py, engine_walkforward.py","Yes (backtest.html)","Yes (paper_confluence, signal_articles)",Yes - shared with paper_trade monitor,"Used by live engine (rollback), monitor, paper_confluence, signal_articles",NO,UNRELATED_STRATEGY
+app/research/cpr_strategy_engine.py,CPR strategy engine,CPR Strategy,"app/api/app.py (/api/strategy/cpr)","Yes (indices/*.html)","Yes (API endpoint)",Yes - used by intraday session,"CPR calculation, classification, pivot levels",NO,UNRELATED_STRATEGY
+app/research/cpr_gap_walkforward_engine.py,CPR gap walkforward,CPR Walkforward,"app/api/app.py (/api/backtest/cpr-walkforward)","No","Yes (API endpoint)",No - CPR-specific,"CPR gap walk-forward backtest",NO,UNRELATED_STRATEGY
+app/research/backtest.py,Historical backtest engine,QualificationEngine (CPR),"app/research/replay.py, app/research/live_sim.py","Yes (backtest.html)","Yes (replay.py, live_sim.py)",Yes - uses shared IntradayExitEngine,"Historical backtest engine; separate from scalp",NO,UNRELATED_STRATEGY
+app/research/contrarian_analyzer.py,Contrarian analysis,Contrarian,"Unknown","No","Unknown",Unknown,"No HLC dependency identified; unknown callers",NO,UNKNOWN_OR_SHARED
+app/research/prevday_price_action_engine.py,Prev-day price action,Prev-day PA,"Unknown","No","Unknown",Unknown,"No HLC dependency identified; unknown callers",NO,UNKNOWN_OR_SHARED
+app/research/live_paper_replay.py,Live paper replay,CPR Replay,"Unknown","No","Unknown",Yes - replay helper,"May be used by tests",NO,UNKNOWN_OR_SHARED
+app/research/live_sim.py,Live simulation,CPR Sim,"Unknown","No","Unknown",Yes - simulation helper,"May be used by tests",NO,UNKNOWN_OR_SHARED
+app/research/replay.py,Replay engine,CPR Replay,"app/api/app.py","Yes (indices/*.html)","Yes (API endpoint)",Yes - replay engine,"Used by /api/research/replay endpoint",NO,UNRELATED_STRATEGY
+app/core/qualification.py,Trade qualification,QualificationEngine (CPR),"app/live/engine.py, app/research/backtest.py","No","Yes (live engine constructor)",Yes - used by live engine,"Used by live engine constructor (not default path)",NO,SHARED_INFRASTRUCTURE
+app/strategies/engine.py,Credit spread selection,QualificationEngine (CPR),"app/core/qualification.py","No","Yes (qualification)",Yes - used by qualification,"Credit spread selection; used by CPR path",NO,SHARED_INFRASTRUCTURE
+scripts/paper_scalp_live.py,Live paper trading loop,HLC 3-Bar Scalp,"N/A (standalone script)","No","No (not in cron/systemd)",No - HLC-specific,"Live paper trading; uses scalp_engine.today_signals()",NO,HLC_REQUIRED
+scripts/tg_alerts.py,Telegram alerts,HLC 3-Bar Scalp + CPR,"N/A (standalone script)","Yes (alerts.html)","Yes (cron)","Yes - shared alerting infrastructure","Polls /api/strategy/scalp (HLC); also handles CPR reconcile",NO,HLC_REQUIRED
+scripts/paper_confluence.py,Paper confluence,CPR Confluence,"N/A (standalone script)","No","Yes (cron 15:45)","No - CPR-specific","Paper confluence/topup using CPR triggers",NO,UNRELATED_STRATEGY
+scripts/engine_walkforward.py,Walk-forward backtest,CPR Walkforward,"N/A (standalone script)","No","No (manual)","No - CPR-specific","Walk-forward using CPR trigger engine",NO,UNRELATED_STRATEGY
+scripts/signal_articles.py,Signal article generation,CPR Signals,"N/A (standalone script)","No","Yes (cron 15:45)","No - CPR-specific","Signal article generation using CPR triggers",NO,UNRELATED_STRATEGY
+scripts/shadow_friday.py,Shadow Friday analysis,CPR Shadow,"N/A (standalone script)","No","No (manual)","No - CPR-specific","Shadow Friday analysis for CPR",NO,UNRELATED_STRATEGY
+scripts/veto_paper_book.py,Veto paper book,CPR Veto,"N/A (standalone script)","No","Yes (cron 15:52)","No - CPR-specific","Veto paper book using CPR",NO,UNRELATED_STRATEGY
+scripts/veto_score.py,Veto scoring,CPR Veto,"N/A (standalone script)","No","Yes (cron 15:52)","No - CPR-specific","Veto scoring using CPR",NO,UNRELATED_STRATEGY
+app/market/provider.py,Market data provider,Shared,"All strategies","No","Yes (all)","Yes - shared data source","yfinance data for all strategies",NO,SHARED_INFRASTRUCTURE
+app/market/collector.py,Market data collector,Shared,"systemd timer","No","Yes (systemd timer)","Yes - shared data collection","Stores completed 5m candles for all",NO,SHARED_INFRASTRUCTURE
+app/market/cache.py,Provider cache,Shared,"provider.py","No","Yes (provider)","Yes - shared cache","SQLite read-through cache",NO,SHARED_INFRASTRUCTURE
+app/core/db.py,Database access,Shared,"All","No","Yes (all)","Yes - shared DB access","Per-request SQLite connections",NO,SHARED_INFRASTRUCTURE
+app/core/config.py,Configuration,Shared,"All","No","Yes (all)","Yes - shared config","Instruments and settings",NO,SHARED_INFRASTRUCTURE
+app/paper_trade/engine.py,Paper trade engine,HLC + CPR,"API, paper_scalp_live, tg_alerts","Yes (paper.html)","Yes (all)","Yes - shared persistence","Persists paper trades; scalp branch + CPR exits_opens branch",NO,SHARED_INFRASTRUCTURE
+app/paper_trade/performance.py,Paper trade performance,HLC + CPR,"API endpoints","Yes (paper.html)","Yes (API)","Yes - shared performance","Performance aggregation",NO,SHARED_INFRASTRUCTURE
+app/risk/engine.py,Risk validation,Shared,"qualification.py","No","Yes (qualification)","Yes - shared risk","Risk cap + RR floor validation",NO,SHARED_INFRASTRUCTURE
+app/scenarios/engine.py,Scenario engine,Shared,"qualification.py","No","Yes (qualification)","Yes - shared scenarios","Scenario candidate generation",NO,SHARED_INFRASTRUCTURE
+app/api/app.py,API routes,Mixed (HLC + CPR),"Frontend, tg_alerts","Yes (all)","Yes (all)","Yes - shared API","All API endpoints",NO,SHARED_INFRASTRUCTURE
+app/decision/view.py,Decision view,Shared,"API","Yes (indices/*.html)","Yes (API)","Yes - shared decision","Read-only decision composer",NO,SHARED_INFRASTRUCTURE
+app/research/scalp_alert_events.py,P0.14 alert pipeline,HLC 3-Bar Scalp,Tests only,"No","No (not wired)","No - HLC-specific","In-memory only; NOT wired into live runtime",MAYBE,UNKNOWN_OR_SHARED
+app/research/live_paper_replay.py,Live paper replay,CPR Replay,Unknown,"No","Unknown",Yes - replay helper,"May be used by tests",NO,UNKNOWN_OR_SHARED
+app/research/live_sim.py,Live simulation,CPR Sim,Unknown,"No","Unknown",Yes - simulation helper,"May be used by tests",NO,UNKNOWN_OR_SHARED
+app/research/replay.py,Replay engine,CPR Replay,"app/api/app.py","Yes (indices/*.html)","Yes (API)","Yes - replay engine","Used by /api/research/replay endpoint",NO,UNRELATED_STRATEGY
+app/research/contrarian_analyzer.py,Contrarian analysis,Contrarian,Unknown,"No","Unknown",Unknown,"No HLC dependency identified; unknown callers",NO,UNKNOWN_OR_SHARED
+app/research/prevday_price_action_engine.py,Prev-day price action,Prev-day PA,Unknown,"No","Unknown",Unknown,"No HLC dependency identified; unknown callers",NO,UNKNOWN_OR_SHARED
+app/research/cpr_gap_walkforward_engine.py,CPR gap walkforward,CPR Walkforward,"app/api/app.py","No","Yes (API endpoint)",No - CPR-specific,"CPR gap walk-forward backtest",NO,UNRELATED_STRATEGY

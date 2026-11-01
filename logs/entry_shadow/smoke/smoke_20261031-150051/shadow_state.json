@@ -1,0 +1,285 @@
+{
+  "signals": {
+    "SS-65EC12195874": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54681.3515625,
+        "fill_ts": "2026-10-30T10:06:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-B25D4E8136F2": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54849.6015625,
+        "fill_ts": "2026-10-30T11:41:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-994FCB1392E0": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54767.1484375,
+        "fill_ts": "2026-10-30T13:36:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-973520AEEF6A": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54720.55078125,
+        "fill_ts": "2026-10-30T13:41:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-4E71C019FB04": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54713.44921875,
+        "fill_ts": "2026-10-30T13:46:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-748DF94E6575": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54705.25,
+        "fill_ts": "2026-10-30T13:51:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-D2292E3357D6": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54693.05078125,
+        "fill_ts": "2026-10-30T14:21:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-EB0402AD6DBE": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54742.25,
+        "fill_ts": "2026-10-30T14:26:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-07E55E9BA987": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54689.1484375,
+        "fill_ts": "2026-10-30T14:46:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-987CFD569F81": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 54634.69921875,
+        "fill_ts": "2026-10-30T14:51:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-EFD9BFF2ACE6": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 22938.599609375,
+        "fill_ts": "2026-10-30T10:16:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-5640ED8EF923": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 22972.44921875,
+        "fill_ts": "2026-10-30T11:01:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-E3DDFC5FE05F": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 22990.30078125,
+        "fill_ts": "2026-10-30T11:06:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-21BB1F4FB2E3": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 23004.25,
+        "fill_ts": "2026-10-30T11:11:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-D5CAD4414B6F": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 23009.94921875,
+        "fill_ts": "2026-10-30T11:16:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-6AF24C500F91": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 23012.599609375,
+        "fill_ts": "2026-10-30T14:06:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-0D164C181530": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 23025.19921875,
+        "fill_ts": "2026-10-30T14:16:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-A52C0AD51C72": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 23040.849609375,
+        "fill_ts": "2026-10-30T14:21:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-9A88E9EA1B47": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 23059.80078125,
+        "fill_ts": "2026-10-30T14:26:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    },
+    "SS-437AF36ECA97": {
+      "retries": 0,
+      "events": {
+        "proposal": true,
+        "outcome": true
+      },
+      "proposal": {
+        "source": "1m_open",
+        "price": 23072.900390625,
+        "fill_ts": "2026-10-30T14:41:00+05:30",
+        "latency_s": 60.0,
+        "late": true
+      }
+    }
+  },
+  "last_poll": "2026-10-31T15:00:50.536686+05:30"
+}

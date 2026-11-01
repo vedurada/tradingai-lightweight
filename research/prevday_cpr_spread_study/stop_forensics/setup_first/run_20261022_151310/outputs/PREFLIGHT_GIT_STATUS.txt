@@ -1,0 +1,237 @@
+ M app/api/app.py
+ M app/paper_trade/engine.py
+ M app/paper_trade/performance.py
+ M data/veto_score_audit.jsonl
+ M frontend/alerts.html
+ M frontend/index.html
+ M frontend/paper.html
+ M frontend/rss.xml
+ M frontend/signals.html
+ M research/cpr_daily_signals_BANKNIFTY.csv
+ M research/cpr_daily_signals_INDIA_VIX.csv
+ M research/cpr_daily_signals_NIFTY.csv
+ M research/cpr_integrity_report_BANKNIFTY.json
+ M research/cpr_integrity_report_INDIA_VIX.json
+ M research/cpr_integrity_report_NIFTY.json
+ M research/cpr_strategy_results_BANKNIFTY.csv
+ M research/cpr_strategy_results_INDIA_VIX.csv
+ M research/cpr_strategy_results_NIFTY.csv
+ M research/cpr_trade_ledger_BANKNIFTY.csv
+ M research/cpr_trade_ledger_INDIA_VIX.csv
+ M research/cpr_trade_ledger_NIFTY.csv
+ M scripts/tg_alerts.py
+?? backups/phase2-deploy-20261018-152530/app/api/app.py
+?? backups/phase2-deploy-20261018-152530/app/paper_trade/engine.py
+?? backups/phase2-deploy-20261018-152530/app/paper_trade/performance.py
+?? backups/phase2-deploy-20261018-152530/scripts/tg_alerts.py
+?? backups/pre-remediation-src/app.py
+?? backups/pre-remediation-src/engine.py
+?? backups/pre-remediation-src/tg_alerts.py
+?? backups/signal_notes_pre_engine_20261017.tgz
+?? backups/tradingai-20261018-1412-pre-remediation.db.gz
+?? frontend/signals/plain/2026-10-19_BANKNIFTY_BEAR_BELOW_CPR.html
+?? frontend/signals/plain/2026-10-19_INDIA_VIX_VIX_GAUGE.html
+?? frontend/signals/plain/2026-10-19_NIFTY_BEAR_PDH.html
+?? frontend/signals/plain/2026-10-21_BANKNIFTY_BEAR_R1.html
+?? frontend/signals/plain/2026-10-21_INDIA_VIX_VIX_GAUGE.html
+?? frontend/signals/plain/2026-10-21_NIFTY_BEAR_R1.html
+?? frontend/signals/plain/2026-10-22_BANKNIFTY_BEAR_BELOW_CPR.html
+?? frontend/signals/plain/2026-10-22_INDIA_VIX_VIX_GAUGE.html
+?? frontend/signals/plain/2026-10-22_NIFTY_BEAR_BELOW_CPR.html
+?? research/cpr_reversal_breakout/README.md
+?? research/cpr_reversal_breakout/baseline_results.json
+?? research/cpr_reversal_breakout/candidate_results.json
+?? research/cpr_reversal_breakout/comparison.json
+?? research/cpr_reversal_breakout/comparison_report.md
+?? research/cpr_reversal_breakout/daily_results.csv
+?? research/cpr_reversal_breakout/data_quality_report.json
+?? research/cpr_reversal_breakout/data_quality_report.md
+?? research/cpr_reversal_breakout/gates.json
+?? research/cpr_reversal_breakout/outputs/README.md
+?? research/cpr_reversal_breakout/outputs/baseline_results.json
+?? research/cpr_reversal_breakout/outputs/candidate_results.json
+?? research/cpr_reversal_breakout/outputs/comparison.json
+?? research/cpr_reversal_breakout/outputs/comparison_report.md
+?? research/cpr_reversal_breakout/outputs/daily_results.csv
+?? research/cpr_reversal_breakout/outputs/data_quality_report.json
+?? research/cpr_reversal_breakout/outputs/data_quality_report.md
+?? research/cpr_reversal_breakout/outputs/gates.json
+?? research/cpr_reversal_breakout/outputs/pytest.xml
+?? research/cpr_reversal_breakout/outputs/run_manifest.json
+?? research/cpr_reversal_breakout/outputs/strategy_config.json
+?? research/cpr_reversal_breakout/outputs/test_plan.md
+?? research/cpr_reversal_breakout/outputs/test_results.csv
+?? research/cpr_reversal_breakout/outputs/trades.csv
+?? research/cpr_reversal_breakout/run_manifest.json
+?? research/cpr_reversal_breakout/src/baseline.py
+?? research/cpr_reversal_breakout/src/candidate.py
+?? research/cpr_reversal_breakout/src/common.py
+?? research/cpr_reversal_breakout/src/data_quality.py
+?? research/cpr_reversal_breakout/src/metrics.py
+?? research/cpr_reversal_breakout/src/run_all.py
+?? research/cpr_reversal_breakout/src/runner.py
+?? research/cpr_reversal_breakout/strategy_config.json
+?? research/cpr_reversal_breakout/test_plan.md
+?? research/cpr_reversal_breakout/test_results.csv
+?? research/cpr_reversal_breakout/tests/conftest.py
+?? research/cpr_reversal_breakout/tests/test_research.py
+?? research/cpr_reversal_breakout/trades.csv
+?? research/cpr_reversal_breakout/walkforward_results.json
+?? research/prevday_cpr_spread_study/README.md
+?? research/prevday_cpr_spread_study/__init__.py
+?? research/prevday_cpr_spread_study/outputs/bootstrap_ci.json
+?? research/prevday_cpr_spread_study/outputs/confirmatory_results.json
+?? research/prevday_cpr_spread_study/outputs/data_quality_report.json
+?? research/prevday_cpr_spread_study/outputs/feature_table_NIFTY.csv
+?? research/prevday_cpr_spread_study/outputs/frozen_selection.json
+?? research/prevday_cpr_spread_study/outputs/gates.json
+?? research/prevday_cpr_spread_study/outputs/model_comparison.json
+?? research/prevday_cpr_spread_study/outputs/production_baseline.json
+?? research/prevday_cpr_spread_study/outputs/robustness.json
+?? research/prevday_cpr_spread_study/outputs/run_manifest.json
+?? research/prevday_cpr_spread_study/outputs/signal_ledger.csv
+?? research/prevday_cpr_spread_study/outputs/signal_pit_check.json
+?? research/prevday_cpr_spread_study/outputs/stop_target_matrix.csv
+?? research/prevday_cpr_spread_study/outputs/trade_ledger.csv
+?? research/prevday_cpr_spread_study/outputs/trades_all_variants.csv
+?? research/prevday_cpr_spread_study/outputs/walkforward_results.json
+?? research/prevday_cpr_spread_study/spec.md
+?? research/prevday_cpr_spread_study/src/__init__.py
+?? research/prevday_cpr_spread_study/src/data.py
+?? research/prevday_cpr_spread_study/src/execution.py
+?? research/prevday_cpr_spread_study/src/features.py
+?? research/prevday_cpr_spread_study/src/make_reports.py
+?? research/prevday_cpr_spread_study/src/metrics.py
+?? research/prevday_cpr_spread_study/src/run_all.py
+?? research/prevday_cpr_spread_study/src/runner.py
+?? research/prevday_cpr_spread_study/src/signals.py
+?? research/prevday_cpr_spread_study/stop_forensics/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/baseline_reconciliation.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/baseline_trades.csv
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/combined_step.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/cushion_analysis.csv
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/cushion_summary.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/data_quality.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_a_arm_metrics.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_a_arms.csv
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_a_metrics.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_b_gates.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_b_metrics.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_b_paired.csv
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_b_paired_metrics.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/experiment_b_selection.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/hypothetical_trades.csv
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/run_manifest.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/snapshot_meta.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/stopout_analysis.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/outputs/structural_diagnostics.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/run_manifest.json
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/spec_addon.md
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/src/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/src/cushion.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/src/execution_ext.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/src/metrics_ext.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/src/records.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/src/run_addon.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/src/structures.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/tests/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/addon_stop_placement/tests/test_addon.py
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E1_k1.00.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E1_k1.25.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E1_k1.50.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E2_x0.10pct.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E2_x0.25pct.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E3_retest.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E4_until_1100.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E4_until_1300.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E5_skip_q10.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E5_skip_q90.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E6_reentry.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_E7_conflict.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/arm_metrics.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/baseline_config_fingerprint.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/baseline_reconciliation.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/baseline_trades.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/conflicts_e7.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/cpr_stats_is.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/data_quality.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/gates.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/removed_signals.csv
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/run_manifest.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/selection.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/snapshot_meta.json
+?? research/prevday_cpr_spread_study/stop_forensics/outputs/stop_forensics.csv
+?? research/prevday_cpr_spread_study/stop_forensics/run_manifest.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/PREFLIGHT.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/PREFLIGHT.md
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/PREFLIGHT_GIT.txt
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/PREFLIGHT_GIT_STATUS.txt
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/PREFLIGHT_GUNICORN.txt
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/PREFLIGHT_PROCESSES.txt
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/baseline_counts.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/baseline_reconciliation.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/baseline_trades.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/data_quality.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/db_meta_preflight.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_A_funnel.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_B.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_B_trades_C1.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_B_trades_C2.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_C.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_C_trades_S0.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_C_trades_S1.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_C_trades_S2.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_C_trades_S4.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_C_trades_S5.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_D.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/experiment_D_trades.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/git_branch.txt
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/git_head.txt
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/git_status_preflight.txt
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/integrity_final.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/opportunity_accounting.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/protected_hashes_preflight.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/robustness.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/run_manifest.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/selection.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/setup_state_rows.csv
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/snapshot_meta.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/stop_out_forensics.json
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/spec_setup_first.md
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/config.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/deliverables.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/engine.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/gates.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/integrity.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/records.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/reporting.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/run_study.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/setups.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/stops.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/src/structures.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/conftest.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/test_accounting.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/test_engine.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/test_isolation.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/test_prefix_invariance.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/test_stops.py
+?? research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/tests/test_structures.py
+?? research/prevday_cpr_spread_study/stop_forensics/spec.md
+?? research/prevday_cpr_spread_study/stop_forensics/src/__init__.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/accounting.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/candidates.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/data.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/execution.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/forensics.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/metrics.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/prod.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/run_all.py
+?? research/prevday_cpr_spread_study/stop_forensics/src/snapshot.py
+?? research/prevday_cpr_spread_study/stop_forensics/tests/test_forensics.py
+?? research/prevday_cpr_spread_study/tests/test_research.py
+?? tests/conftest.py

@@ -1,0 +1,10 @@
+flag_value,config_value,actual_result,approved_design,match
+(absent),(absent),True (HLC),False (CPR),NO
+false,(absent),False (CPR),False (CPR),YES
+true,(absent),True (HLC),True (HLC),YES
+'' (empty),(absent),True (HLC),False (CPR),NO
+garbage (invalid),(absent),True (HLC),False (CPR),NO
+0,(absent),False (CPR),False (CPR),YES
+no,(absent),False (CPR),False (CPR),YES
+1,(absent),True (HLC),True (HLC),YES
+yes,(absent),True (HLC),True (HLC),YES

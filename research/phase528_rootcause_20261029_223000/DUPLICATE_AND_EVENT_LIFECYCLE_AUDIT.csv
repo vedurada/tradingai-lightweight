@@ -1,0 +1,7 @@
+check,method,result,evidence
+Exact duplicate trade IDs,Compare (instrument, entry_time, direction),0 exact duplicates,All 974 keys unique
+Last-candle detection,Code inspection of _scan_signals,Generates extra signals at last position,Last-candle block appends signal at len(candles)-1
+Candle-by-candle processing,Code inspection of phase512_backtest.py,Processes every candle not just day boundaries,for ci candle in enumerate(candles)
+Different eligibility rules,Compare phase512 vs phase512_backtest2,Phase 1 filters by idx+1==ci Phase 2 filters by entry_date==day,Different filtering
+Mode C blocking,Code inspection,First script tracks open_trade across all candles,May block or allow differently
+CSV vs JSON writer,Code inspection,Both use csv.DictWriter and json.dump,Same format different source data

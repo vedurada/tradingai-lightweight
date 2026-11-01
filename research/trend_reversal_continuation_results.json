@@ -1,0 +1,238 @@
+{
+  "range": {
+    "instrument": "NIFTY",
+    "start": "2026-07-06",
+    "end": "2026-10-22",
+    "sessions": 76
+  },
+  "method": {
+    "swing": "2-left/2-right fractal; pivot is usable only after two right-hand candles complete",
+    "reversal": "confirmed swing low/high followed within 12 bars by a close cross above/below simple SMA20, MACD(12,26,9) line aligned with signal",
+    "continuation": "confirmed higher-high+higher-low or lower-high+lower-low structure; 4-bar pullback near SMA20; close breaks prior candle high/low in trend direction with MACD aligned",
+    "execution": "one trade per day per strategy; first qualifying setup before 15:00; next 5-minute open; 0.5% stop, 2% target, subsequent opens, 15:20 EOD; <30 adverse points counts as labeled WIN; costs shown as estimated 0.10R/trade"
+  },
+  "baseline_current_cpr": {
+    "trades": 43,
+    "label_wins": 32,
+    "label_losses": 11,
+    "label_win_rate_pct": 74.4,
+    "raw_positive": 30,
+    "raw_positive_rate_pct": 69.8,
+    "gross_R": 16.66,
+    "net_R_after_0.10R_cost": 12.36,
+    "points": 1905.2
+  },
+  "variants": {
+    "reversal": {
+      "overall": {
+        "trades": 75,
+        "label_wins": 49,
+        "label_losses": 26,
+        "label_win_rate_pct": 65.3,
+        "raw_positive": 34,
+        "raw_positive_rate_pct": 45.3,
+        "gross_R": 2.45,
+        "net_R_after_0.10R_cost": -5.05,
+        "points": 235.2
+      },
+      "first_half": {
+        "trades": 40,
+        "label_wins": 31,
+        "label_losses": 9,
+        "label_win_rate_pct": 77.5,
+        "raw_positive": 19,
+        "raw_positive_rate_pct": 47.5,
+        "gross_R": 2.21,
+        "net_R_after_0.10R_cost": -1.79,
+        "points": 220.5
+      },
+      "second_half": {
+        "trades": 35,
+        "label_wins": 18,
+        "label_losses": 17,
+        "label_win_rate_pct": 51.4,
+        "raw_positive": 15,
+        "raw_positive_rate_pct": 42.9,
+        "gross_R": 0.25,
+        "net_R_after_0.10R_cost": -3.25,
+        "points": 14.7
+      },
+      "by_setup": {
+        "swing_high_sma20_cross": {
+          "trades": 38,
+          "label_wins": 26,
+          "label_losses": 12,
+          "label_win_rate_pct": 68.4,
+          "raw_positive": 20,
+          "raw_positive_rate_pct": 52.6,
+          "gross_R": 6.26,
+          "net_R_after_0.10R_cost": 2.46,
+          "points": 740.6
+        },
+        "swing_low_sma20_cross": {
+          "trades": 37,
+          "label_wins": 23,
+          "label_losses": 14,
+          "label_win_rate_pct": 62.2,
+          "raw_positive": 14,
+          "raw_positive_rate_pct": 37.8,
+          "gross_R": -3.8,
+          "net_R_after_0.10R_cost": -7.5,
+          "points": -505.4
+        }
+      },
+      "skipped_no_signal": 0,
+      "skipped_missing_eod": 1
+    },
+    "continuation": {
+      "overall": {
+        "trades": 67,
+        "label_wins": 44,
+        "label_losses": 23,
+        "label_win_rate_pct": 65.7,
+        "raw_positive": 30,
+        "raw_positive_rate_pct": 44.8,
+        "gross_R": 0.52,
+        "net_R_after_0.10R_cost": -6.18,
+        "points": -80.7
+      },
+      "first_half": {
+        "trades": 37,
+        "label_wins": 26,
+        "label_losses": 11,
+        "label_win_rate_pct": 70.3,
+        "raw_positive": 19,
+        "raw_positive_rate_pct": 51.4,
+        "gross_R": -0.04,
+        "net_R_after_0.10R_cost": -3.74,
+        "points": -63.2
+      },
+      "second_half": {
+        "trades": 30,
+        "label_wins": 18,
+        "label_losses": 12,
+        "label_win_rate_pct": 60.0,
+        "raw_positive": 11,
+        "raw_positive_rate_pct": 36.7,
+        "gross_R": 0.56,
+        "net_R_after_0.10R_cost": -2.44,
+        "points": -17.5
+      },
+      "by_setup": {
+        "uptrend_pullback_resume": {
+          "trades": 30,
+          "label_wins": 18,
+          "label_losses": 12,
+          "label_win_rate_pct": 60.0,
+          "raw_positive": 10,
+          "raw_positive_rate_pct": 33.3,
+          "gross_R": -4.81,
+          "net_R_after_0.10R_cost": -7.81,
+          "points": -697.6
+        },
+        "downtrend_pullback_resume": {
+          "trades": 37,
+          "label_wins": 26,
+          "label_losses": 11,
+          "label_win_rate_pct": 70.3,
+          "raw_positive": 20,
+          "raw_positive_rate_pct": 54.1,
+          "gross_R": 5.34,
+          "net_R_after_0.10R_cost": 1.64,
+          "points": 616.9
+        }
+      },
+      "skipped_no_signal": 8,
+      "skipped_missing_eod": 1
+    },
+    "combined": {
+      "overall": {
+        "trades": 75,
+        "label_wins": 51,
+        "label_losses": 24,
+        "label_win_rate_pct": 68.0,
+        "raw_positive": 35,
+        "raw_positive_rate_pct": 46.7,
+        "gross_R": 7.09,
+        "net_R_after_0.10R_cost": -0.41,
+        "points": 731.0
+      },
+      "first_half": {
+        "trades": 40,
+        "label_wins": 30,
+        "label_losses": 10,
+        "label_win_rate_pct": 75.0,
+        "raw_positive": 18,
+        "raw_positive_rate_pct": 45.0,
+        "gross_R": 1.48,
+        "net_R_after_0.10R_cost": -2.52,
+        "points": 132.9
+      },
+      "second_half": {
+        "trades": 35,
+        "label_wins": 21,
+        "label_losses": 14,
+        "label_win_rate_pct": 60.0,
+        "raw_positive": 17,
+        "raw_positive_rate_pct": 48.6,
+        "gross_R": 5.61,
+        "net_R_after_0.10R_cost": 2.11,
+        "points": 598.1
+      },
+      "by_setup": {
+        "uptrend_pullback_resume": {
+          "trades": 5,
+          "label_wins": 4,
+          "label_losses": 1,
+          "label_win_rate_pct": 80.0,
+          "raw_positive": 2,
+          "raw_positive_rate_pct": 40.0,
+          "gross_R": -0.25,
+          "net_R_after_0.10R_cost": -0.75,
+          "points": -51.3
+        },
+        "swing_high_sma20_cross": {
+          "trades": 33,
+          "label_wins": 22,
+          "label_losses": 11,
+          "label_win_rate_pct": 66.7,
+          "raw_positive": 16,
+          "raw_positive_rate_pct": 48.5,
+          "gross_R": 5.83,
+          "net_R_after_0.10R_cost": 2.53,
+          "points": 685.9
+        },
+        "swing_low_sma20_cross": {
+          "trades": 28,
+          "label_wins": 18,
+          "label_losses": 10,
+          "label_win_rate_pct": 64.3,
+          "raw_positive": 11,
+          "raw_positive_rate_pct": 39.3,
+          "gross_R": -1.81,
+          "net_R_after_0.10R_cost": -4.62,
+          "points": -278.4
+        },
+        "downtrend_pullback_resume": {
+          "trades": 9,
+          "label_wins": 7,
+          "label_losses": 2,
+          "label_win_rate_pct": 77.8,
+          "raw_positive": 6,
+          "raw_positive_rate_pct": 66.7,
+          "gross_R": 3.33,
+          "net_R_after_0.10R_cost": 2.43,
+          "points": 374.8
+        }
+      },
+      "skipped_no_signal": 0,
+      "skipped_missing_eod": 1
+    }
+  },
+  "skipped": {
+    "continuation": 8,
+    "reversal_missing_eod": 1,
+    "continuation_missing_eod": 1,
+    "combined_missing_eod": 1
+  }
+}

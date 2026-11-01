@@ -1,0 +1,2 @@
+source_db,baseline_name,status,n_trades,n_nifty,n_banknifty,n_bearish,n_bullish,net_r,is_trades,val_trades,oos_trades,is_net_r,val_net_r,oos_net_r,note
+/opt/tradingai/research/prevday_cpr_spread_study/level_pattern_time_study/run_20261022_193742/research_copy/tradingai_research.db,baseline_plain,PENDING_REPRODUCTION,127,64,63,115,12,38.2,69,34,24,,,,Reference figures reported by the earlier wait-for-setup study; must be re-derived against the currently verified source before any candidate comparison can be made.

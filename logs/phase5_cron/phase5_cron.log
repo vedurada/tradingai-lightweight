@@ -1,0 +1,27 @@
+2026-10-31T15:47:38+0530 START run=20261031T154738-pre-1093557 stage=pre date=2026-11-03 dry_run=1 out_dir=/opt/tradingai/reports
+2026-10-31T15:47:38+0530 DRY-RUN run=20261031T154738-pre-1093557 validation=passed date=2026-11-03 stage=pre
+2026-10-31T15:47:38+0530 FINISH run=20261031T154738-pre-1093557 stage=pre date=2026-11-03 exit_code=0
+----- output begin -----
+Dry-run validation passed; no collection executed
+date=2026-11-03 stage=pre out_dir=/opt/tradingai/reports
+----- output end -----
+2026-10-31T15:47:38+0530 START run=20261031T154738-post-1093570 stage=post date=2026-11-03 dry_run=1 out_dir=/opt/tradingai/reports
+2026-10-31T15:47:38+0530 DRY-RUN run=20261031T154738-post-1093570 validation=passed date=2026-11-03 stage=post
+2026-10-31T15:47:38+0530 FINISH run=20261031T154738-post-1093570 stage=post date=2026-11-03 exit_code=0
+----- output begin -----
+Dry-run validation passed; no collection executed
+date=2026-11-03 stage=post out_dir=/opt/tradingai/reports
+----- output end -----
+2026-10-31T15:47:38+0530 START run=20261031T154738-daily-1093583 stage=daily date=2026-11-03 dry_run=1 out_dir=/opt/tradingai/reports
+2026-10-31T15:47:38+0530 DRY-RUN run=20261031T154738-daily-1093583 validation=passed date=2026-11-03 stage=daily
+2026-10-31T15:47:38+0530 FINISH run=20261031T154738-daily-1093583 stage=daily date=2026-11-03 exit_code=0
+----- output begin -----
+Dry-run validation passed; no collection executed
+date=2026-11-03 stage=daily out_dir=/opt/tradingai/reports
+----- output end -----
+2026-10-31T15:47:38+0530 START run=20261031T154738-daily-1093596 stage=daily date=2026-10-31 dry_run=1 out_dir=/opt/tradingai/reports
+2026-10-31T15:47:38+0530 SKIP run=20261031T154738-daily-1093596 reason=date_outside_phase5_window date=2026-10-31
+2026-10-31T15:47:38+0530 FINISH run=20261031T154738-daily-1093596 stage=daily date=2026-10-31 exit_code=0
+----- output begin -----
+Date outside Phase 5 window: 2026-10-31
+----- output end -----

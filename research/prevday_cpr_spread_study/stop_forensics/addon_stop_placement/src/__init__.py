@@ -1,0 +1,1 @@
+"""Add-on study package."""

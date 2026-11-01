@@ -1,0 +1,104 @@
+{
+ "all_checks_pass": true,
+ "checks": {
+  "branch_unchanged": true,
+  "git_additions_inside_study_tree": true,
+  "git_no_removals": true,
+  "git_no_status_changes": true,
+  "head_unchanged": true,
+  "live_db_content_unchanged_except_live_cache": true,
+  "live_db_main_file_unchanged": true,
+  "live_db_unchanged": true,
+  "no_artifacts_outside_run_dir": true,
+  "no_service_restart": true,
+  "protected_files_unchanged": true,
+  "same_service_pids": true,
+  "snapshot_unchanged": true,
+  "study_never_opened_the_live_db": true
+ },
+ "external_reference": {
+  "branch": "production-2026-10-01",
+  "gunicorn_pids": [
+   "193117",
+   "212809",
+   "4085944"
+  ],
+  "head": "879c9769a3e9118014f04173a643466d0197ae16",
+  "live_db_sha256": "455d8da024f6abae1283318958decf4f5e9d598397e6da67002c092011b0b2d9",
+  "live_db_wal_sha256": "0b487589c3279d03985db54fb759c63d95bcfbfee292d7be24ba2d856d3134b2",
+  "source": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/run_20261022_172521/outputs/integrity_final.json"
+ },
+ "generated_at": "2026-10-22T19:33:52+05:30",
+ "git_added": 88,
+ "git_added_inside_study_tree": 88,
+ "git_added_outside_study_tree": [],
+ "git_baseline_file": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/outputs/PREFLIGHT_GIT_STATUS.txt",
+ "git_baseline_lines": 237,
+ "git_changed_status": [],
+ "git_removed": [],
+ "live_db_content_vs_snapshot": {
+  "ai_explanations": {
+   "differs": false,
+   "live_rows": 0,
+   "same": true,
+   "snapshot_rows": 0
+  }
+ },
+ "live_db_wal_changed_by_live_services": true,
+ "live_db_wal_sha256_at_baseline": "0b487589c3279d03985db54fb759c63d95bcfbfee292d7be24ba2d856d3134b2",
+ "live_db_wal_sha256_now": "a574f76604869e8086ad9f0b0a3d723f842d4f8ffe1521f96b3415dace0b7668",
+ "measured": {
+  "branch": "production-2026-10-01",
+  "git_status_lines": 325,
+  "git_status_sha256": "87d476bcaeaaddea9d49a2a8dc1bd3c3f196ad118b301fd3b9eee927e1edaf2b",
+  "gunicorn_ages_seconds": {
+   "193117": 1788892190,
+   "212809": 1788884148,
+   "4085944": 1789235085
+  },
+  "gunicorn_pids": [
+   "193117",
+   "212809",
+   "4085944"
+  ],
+  "head": "879c9769a3e9118014f04173a643466d0197ae16",
+  "live_db_sha256": "455d8da024f6abae1283318958decf4f5e9d598397e6da67002c092011b0b2d9",
+  "live_db_wal_sha256": "a574f76604869e8086ad9f0b0a3d723f842d4f8ffe1521f96b3415dace0b7668",
+  "measured_at": "2026-10-22T19:33:52+05:30",
+  "protected_hashes": {
+   "app/api/app.py": "0203086472af510290110edb29868e28bd6fbab68a43f1a0efdcefb6085fb663",
+   "app/core/db.py": "8f2391356f7a5ebf5d69603e931b0813f0e1e42026be5a7c670deebec2fae047",
+   "app/live/engine.py": "61df16172e758a4824f87caba1c1b819a588af635cfe7e360677083f76cf8f92",
+   "app/paper_trade/engine.py": "4344d7c30c542b5a0fc189591bf90fe543361b457f4c8c696f763ffef936098c",
+   "app/paper_trade/performance.py": "8e7b2d56bc8f7184baf85c014ce91c836e7b0e4280717364fc166828a07d20de",
+   "app/research/backtest.py": "656f735ce8d7a80851db10f4a60b89715c9224866bc58fda5a6f9dc50755f576",
+   "app/research/cpr_strategy_engine.py": "523a03c5caf9aea144e53e576642f662c98ba0d0033775749785a5da12380e64",
+   "app/research/cpr_trigger_engine.py": "2316f56cd315e7db763d89d58667e9a143c62098a914d4ca08ec437f199ec80c",
+   "config/settings.json": "8aff897ec2973b6d936c789ba7f10d26f8c6078924dcee2ba245b51e6ac9c543",
+   "scripts/paper_confluence.py": "ac26fd230ba2f8111d6e2f18bbb011d8db5afd63b2f07b5e93a466b8ca9b0d9e",
+   "scripts/tg_alerts.py": "7676ff58e590c884d06b7cf2069fa493f527c66f6c02b64f9fbd5f3ab445897e"
+  },
+  "snapshot_sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f"
+ },
+ "phase1_reference": {
+  "branch": "production-2026-10-01",
+  "captured_at": "2026-10-22T19:02:39+05:30",
+  "git_status_lines": 291,
+  "git_status_modified": 22,
+  "git_status_untracked": 269,
+  "gunicorn_master_age_seconds": 361039,
+  "gunicorn_pids": [
+   "193117",
+   "212809",
+   "4085944"
+  ],
+  "head": "879c9769a3e9118014f04173a643466d0197ae16",
+  "live_db_sha256": "455d8da024f6abae1283318958decf4f5e9d598397e6da67002c092011b0b2d9",
+  "live_db_wal_sha256": "0b487589c3279d03985db54fb759c63d95bcfbfee292d7be24ba2d856d3134b2",
+  "note": "Phase 1 audit, before the annotation engine, the analysis and the execution-gap module were written or executed",
+  "research_tree_only": true,
+  "snapshot_sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f"
+ },
+ "run_dir": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249",
+ "study_live_db_open_violations": []
+}

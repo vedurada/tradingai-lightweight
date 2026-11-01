@@ -1,0 +1,41 @@
+# Phase 5.29 — Audit Execution Log
+# Audit date: 2026-10-29
+# Host: webserver (Oracle VM)
+# Mode: READ-ONLY research
+
+## Actions Performed
+
+1. Verified hostname: webserver (Oracle VM)
+2. Read Phase 5.28 report and artifacts
+3. Ran two independent replay runs (Run1: 729, Run2: 729, 0 diffs)
+4. Ran 4 last-candle deterministic tests (4/4 PASS)
+5. Investigated 29 scalp signals (27 matched, 2 unmatched)
+6. Investigated 30 HLC paper trades (26 exact, 4 probable)
+7. Reassessed 245 extra CSV rows (all CLOSE_ENTRY_TIME)
+8. Reproduced 729-trade metrics exactly
+9. Created all 12 required deliverables
+
+## Files Modified
+
+NONE. This is a read-only audit. No production files were modified.
+
+## Files Created (in research directory)
+
+- PHASE529_REPORT.md
+- SOURCE_HASHES_AND_COUNTS.md
+- REPLAY_RUN_1_SUMMARY.md
+- REPLAY_RUN_2_SUMMARY.md
+- TRADE_LEVEL_REPLAY_DIFF.csv
+- LAST_CANDLE_DETERMINISTIC_TESTS.csv
+- UNMATCHED_SCALP_SIGNAL_INVESTIGATION.csv
+- FOUR_HLC_MATCH_INVESTIGATION.csv
+- 245_ROW_REASSESSMENT.csv
+- METRIC_REPRODUCTION.csv
+- PRODUCTION_UNCHANGED_CHECK.md
+- AUDIT_LOG.txt
+- run1/, run2/ (replay output directories)
+- run1_summary.json, run2_summary.json
+
+## Production Changes
+
+NONE. No production files, database records, services, configuration or trading behavior changed.

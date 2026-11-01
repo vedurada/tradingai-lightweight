@@ -1,0 +1,10 @@
+{
+  "status": "NOT RUN",
+  "reason": "pre-check failed; the single OOS look is not spent on a candidate whose components did not both beat VAL",
+  "condition_a_e3_val_beats_baseline": true,
+  "val_baseline_net_R": 0.381,
+  "val_e3_net_R": 0.4732,
+  "condition_b_selected_val_beats_paired": false,
+  "val_selected_net_R": 0.2057,
+  "val_paired_baseline_net_R": 0.2094
+}

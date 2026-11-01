@@ -1,0 +1,13 @@
+metric,value
+trades,881
+wins,865
+losses,15
+flat_trades,1
+win_rate,98.18
+gross_winning_points,19577.24
+gross_losing_points,12.2
+net_points,19565.04
+profit_factor,1604.69
+avg_win,22.63
+avg_loss,0.81
+expectancy,19221.49

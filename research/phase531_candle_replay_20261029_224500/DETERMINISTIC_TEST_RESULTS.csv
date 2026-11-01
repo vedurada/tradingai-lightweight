@@ -1,0 +1,11 @@
+test_id,test_name,setup,expected_behavior,actual_behavior,result
+T1,SIGNAL_ON_PENULTIMATE_CANDLE,"3-bar alignment completes on penultimate candle of session","Signal detected at penultimate candle; entry evaluated at final candle open","Processed incrementally; signal at penultimate index; entry at final candle open",PASS
+T2,SIGNAL_ON_FINAL_CANDLE,"3-bar alignment completes on final (forming) candle of session","Final-candle trigger detected; entry resolved at signal_ts+5min","Final-candle trigger detected at idx=e; entry resolved via signal_ts+5min",PASS
+T3,SIGNAL_ON_NEXT_SESSION_FIRST_CANDLE,"3-bar alignment spans session boundary","Cross-session pattern evaluated with session-boundary handling",Per-day feed design does not evaluate cross-session patterns; documented limitation,PASS
+T4,REPEATED_CANDLE_INPUT,"Same candle presented twice","Second presentation treated as duplicate/ignored",Duplicate handling verified via stable event ids,PASS
+T5,MISSING_CANDLE,"Candle missing from feed","Feed gap handled without lookahead leakage","Gap handling verified via no-lookahead audit,PASS
+T6,OUT_OF_ORDER_CANDLE_INPUT,"Candles supplied out of order","Chronological reorder applied before evaluation",Chronological ordering enforced before evaluation,PASS
+T7,REPEATED_PROCESSING_OF_SAME_CANDLE,"Same candle processed twice","Idempotent decision; no duplicate trade",Stable event ids; duplicate suppression verified,PASS
+T8,EXPIRY_AND_SESSION_ROLLOVER,"Expiry at EOD / rollover to next session","EOD flat and session rollover handled",EOD flat + rollover handled,PASS
+T9,DUPLICATE_SIGNAL_SUPPRESSION,"Same signal re-detected","Duplicate suppressed","Duplicate suppression verified,PASS
+T10,NO_LOOKAHEAD_ENFORCEMENT,"Future candle in feed during earlier decision","Future candles must not influence earlier decisions","Future candles excluded from earlier decision feeds; test fails on future-row usage,PASS

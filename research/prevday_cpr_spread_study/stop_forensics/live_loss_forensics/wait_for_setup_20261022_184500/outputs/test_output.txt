@@ -1,0 +1,27 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-9.1.1, pluggy-1.6.0 -- /usr/bin/python3
+rootdir: /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/wait_for_setup_20261022_184500
+plugins: anyio-4.15.1
+collecting ... collected 19 items
+
+tests/test_prodlib.py::test_calculate_cpr_matches_production_math PASSED [  5%]
+tests/test_prodlib.py::test_day_levels_bundle PASSED                     [ 10%]
+tests/test_prodlib.py::test_bear_trigger_priority PASSED                 [ 15%]
+tests/test_prodlib.py::test_exits_opens_stop_before_target_and_gap PASSED [ 21%]
+tests/test_prodlib.py::test_exits_opens_bull_direction PASSED            [ 26%]
+tests/test_prodlib.py::test_decay_win_tolerance_boundary PASSED          [ 31%]
+tests/test_prodlib.py::test_friday_skip_only_beer PASSED                 [ 36%]
+tests/test_prodlib.py::test_level_price_mapping PASSED                   [ 42%]
+tests/test_prodlib.py::test_evaluate_outcome_flat_at_eod PASSED          [ 47%]
+tests/test_variants.py::test_v1_fills_at_the_level_when_the_range_covers_it PASSED [ 52%]
+tests/test_variants.py::test_v1_expires_when_the_level_is_never_retested PASSED [ 57%]
+tests/test_variants.py::test_v1_no_level_price_is_refused PASSED         [ 63%]
+tests/test_variants.py::test_v1x_has_no_expiry_but_still_respects_the_entry_window PASSED [ 68%]
+tests/test_variants.py::test_v2_waits_for_a_rejection_close_then_enters_at_the_next_open PASSED [ 73%]
+tests/test_variants.py::test_v2_breakdown_needs_a_close_back_above_the_band PASSED [ 78%]
+tests/test_variants.py::test_v3_needs_a_retest_after_the_confirmation PASSED [ 84%]
+tests/test_variants.py::test_v3_reports_no_retest PASSED                 [ 89%]
+tests/test_variants.py::test_v4_no_chase_flip_can_flip_the_direction PASSED [ 94%]
+tests/test_variants.py::test_variants_do_not_look_ahead PASSED           [100%]
+
+============================== 19 passed in 0.09s ==============================

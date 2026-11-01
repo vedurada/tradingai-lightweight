@@ -108,14 +108,22 @@ def _fetch_history(symbol, period, interval):
     """history() with executor timeout + 1 bounded retry. Returns df or raises."""
     last = None
     for attempt in range(1, _MAX_ATTEMPTS + 1):
+        ex = ThreadPoolExecutor(max_workers=1)
         try:
-            with ThreadPoolExecutor(max_workers=1) as ex:
-                fut = ex.submit(yf.Ticker(symbol).history, period=period, interval=interval)
-                return fut.result(timeout=_FETCH_TIMEOUT_S)
+            fut = ex.submit(yf.Ticker(symbol).history, period=period, interval=interval)
+            return fut.result(timeout=_FETCH_TIMEOUT_S)
         except Exception as e:  # noqa - classified below
             last = e
             log.warning('provider fetch symbol=%s attempt=%d/%d err=%s',
                         symbol, attempt, _MAX_ATTEMPTS, str(e)[:160])
+        finally:
+            # Never block the caller on a hung yfinance thread: result()
+            # already enforced the bound. wait=False leaves the daemon-ish
+            # worker to finish; the request returns TIMEOUT instead.
+            try:
+                ex.shutdown(wait=False, cancel_futures=True)
+            except TypeError:
+                ex.shutdown(wait=False)
     raise last
 
 

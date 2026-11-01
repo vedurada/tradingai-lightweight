@@ -1,0 +1,242 @@
+{
+  "study": "stop_forensics",
+  "baseline": "app.research.cpr_trigger_engine.run_opens_range(inst, '2026-07-06', '2026-10-21', 'plain')",
+  "baseline_config_fingerprint": {
+    "engine_file": "/opt/tradingai/app/research/cpr_trigger_engine.py",
+    "engine_sha256": "2316f56cd315e7db763d89d58667e9a143c62098a914d4ca08ec437f199ec80c",
+    "call": "run_opens_range(instrument, '2026-07-06', '2026-10-21', 'plain')",
+    "stop_pct": 0.005,
+    "target_pct": 0.02,
+    "open_window": [
+      "09:20",
+      "15:20"
+    ],
+    "flat": "15:20 open",
+    "flags": {
+      "SHORT_ONLY": true,
+      "SKIP_FRIDAY": true,
+      "SHADOW_SKIP_FRIDAY": true,
+      "BREAKOUT_ADDON": true,
+      "NO_CHASE_BEAR": false,
+      "NO_CHASE_BAND_PCT": 0.0015,
+      "OPEN_STOP_PCT": 0.005,
+      "OPEN_TARGET_PCT": 0.02,
+      "OPEN_MIN": "09:20",
+      "OPEN_MAX": "15:20",
+      "OPEN_EOD": "15:20",
+      "MIN_CANDLES": 10
+    }
+  },
+  "range": [
+    "2026-07-06",
+    "2026-10-21"
+  ],
+  "instruments": [
+    "NIFTY",
+    "BANKNIFTY"
+  ],
+  "splits": {
+    "in_sample": [
+      "2026-07-06",
+      "2026-08-31"
+    ],
+    "validation": [
+      "2026-09-01",
+      "2026-09-30"
+    ],
+    "out_of_sample": [
+      "2026-10-01",
+      "2026-10-21"
+    ]
+  },
+  "snapshot": {
+    "snapshot_path": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/outputs/snapshot/tradingai_snapshot.db",
+    "snapshot_sha256": "1187d0eae268bdf3d6b71e0bcf88f02ebde8ad2a8e90ceb9aab4e4ff7b51f76b",
+    "snapshot_size_bytes": 12132352,
+    "snapshot_created_at": "2026-10-22T13:50:38.016243+05:30",
+    "source": {
+      "path": "/opt/tradingai/database/tradingai.db",
+      "size_bytes": 12132352,
+      "mtime": "2026-10-22T13:43:56.804975+05:30"
+    },
+    "source_sha256_at_snapshot": "40743da501edb0061211597ae3527f98aba60e96519507a4ff86c90a011d5544",
+    "method": "reused existing snapshot (not re-copied)"
+  },
+  "working_copy": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/outputs/snapshot/working_copy.db",
+  "dq_status": "PASS",
+  "dq_problems": [],
+  "baseline_trades": 129,
+  "reconciliation": {
+    "NIFTY": {
+      "production_trades": 65,
+      "resimulated_trades": 65,
+      "matched": 65,
+      "issues": [],
+      "production_booked_total_R": 30.135,
+      "resimulated_realized_total_R": 29.894,
+      "difference_R": -0.241,
+      "consistent": true
+    },
+    "BANKNIFTY": {
+      "production_trades": 64,
+      "resimulated_trades": 64,
+      "matched": 64,
+      "issues": [],
+      "production_booked_total_R": 27.367,
+      "resimulated_realized_total_R": 26.596,
+      "difference_R": -0.771,
+      "consistent": true
+    }
+  },
+  "selection": {
+    "family": "E3",
+    "setting": "E3_retest",
+    "family_best": {
+      "E1": {
+        "setting": "E1_k1.00",
+        "val_net_R_per_trade": 0.4122,
+        "status": "ELIGIBLE",
+        "tied_settings": [
+          "E1_k1.00",
+          "E1_k1.25",
+          "E1_k1.50"
+        ]
+      },
+      "E2": {
+        "setting": "E2_x0.10pct",
+        "val_net_R_per_trade": 0.4577,
+        "status": "ELIGIBLE",
+        "tied_settings": [
+          "E2_x0.10pct"
+        ]
+      },
+      "E3": {
+        "setting": "E3_retest",
+        "val_net_R_per_trade": 0.4732,
+        "status": "ELIGIBLE",
+        "tied_settings": [
+          "E3_retest"
+        ]
+      },
+      "E4": {
+        "setting": "E4_until_1100",
+        "val_net_R_per_trade": 0.4129,
+        "status": "ELIGIBLE",
+        "tied_settings": [
+          "E4_until_1100",
+          "E4_until_1300"
+        ]
+      },
+      "E5": {
+        "setting": "E5_skip_q90",
+        "val_net_R_per_trade": 0.4497,
+        "status": "ELIGIBLE",
+        "tied_settings": [
+          "E5_skip_q90"
+        ]
+      },
+      "E6": {
+        "setting": "E6_reentry",
+        "val_net_R_per_trade": 0.3337,
+        "status": "ELIGIBLE",
+        "tied_settings": [
+          "E6_reentry"
+        ]
+      },
+      "E7": {
+        "setting": "E7_conflict",
+        "val_net_R_per_trade": 0.4055,
+        "status": "ELIGIBLE",
+        "tied_settings": [
+          "E7_conflict"
+        ]
+      }
+    },
+    "rule": "within a family: highest VAL net R per trade with >= 10 VAL trades; ties (< 0.02 R) broken towards the more conservative setting; primary = family with the best VAL score",
+    "oos_touched_before_selection": false
+  },
+  "selected_family": "E3",
+  "selected_setting": "E3_retest",
+  "oos_baseline": {
+    "n": 26,
+    "gross_R": 18.934,
+    "net_R": 16.334,
+    "net_R_per_trade": 0.6282,
+    "expectancy_per_trade": 0.7282,
+    "expectancy_per_session": 0.6282,
+    "max_dd_r": -1.591,
+    "pf": 4.086,
+    "pf_note": null,
+    "wins": 19,
+    "losses": 7,
+    "flat": 0,
+    "sum_pts": 3215.0,
+    "sessions": 26,
+    "largest_loss_r": -1.188,
+    "largest_loss_pts": -325.6,
+    "stop_count": 5,
+    "target_count": 0,
+    "eod_count": 21,
+    "mean_mae_r": 0.526,
+    "max_mae_r": 1.6433,
+    "mean_stop_overshoot_r": 0.0724,
+    "max_stop_overshoot_r": 0.1878
+  },
+  "oos_candidate": {
+    "n": 22,
+    "gross_R": 14.104,
+    "net_R": 11.904,
+    "net_R_per_trade": 0.5411,
+    "expectancy_per_trade": 0.6411,
+    "expectancy_per_session": 0.5411,
+    "max_dd_r": -1.591,
+    "pf": 3.463,
+    "pf_note": null,
+    "wins": 16,
+    "losses": 6,
+    "flat": 0,
+    "sum_pts": 2447.1,
+    "sessions": 22,
+    "largest_loss_r": -1.101,
+    "largest_loss_pts": -125.15,
+    "stop_count": 5,
+    "target_count": 0,
+    "eod_count": 17,
+    "mean_mae_r": 0.544,
+    "max_mae_r": 1.2819,
+    "mean_stop_overshoot_r": 0.042,
+    "max_stop_overshoot_r": 0.1014
+  },
+  "bootstrap": {
+    "n_boot": 2000,
+    "seed": 20261022,
+    "method": "paired session-block bootstrap, 6 chronological blocks resampled with replacement",
+    "ci_low": -0.2268,
+    "ci_high": 0.0587,
+    "p_two_sided": 0.257,
+    "mean_diff": -0.081961,
+    "n_effective": 2000
+  },
+  "gates_overall": "FAIL",
+  "eligible_for_human_review": false,
+  "stopped_trades_forensics_rows": 13,
+  "unplanned_runs": [],
+  "spec_amendments": [
+    "A1 (2026-10-22, before the first candidate run): E2/E3 level-group semantics and the conservative tie-break were made explicit.",
+    "A2 (2026-10-22, before the first candidate run): E7 was implemented as a filter-only arm; a direction flip is not traded because the deployed configuration suppresses BULL base triggers.",
+    "A3 (2026-10-22, before the first candidate run): the six-block walk-forward was specified over the full range with the frozen parameters."
+  ],
+  "implementation_corrections": [
+    "E1 tie-break direction corrected to the pre-registered conservative direction (smaller k). The primary family (best VAL score) was already decided by score and is unaffected.",
+    "The walk-forward blocks were recomputed over the full range with the frozen parameters, as pre-registered in spec.md 1.3 (the first run restricted them to the OOS window and left the early blocks empty)."
+  ],
+  "e7_summary": {
+    "conflict_sessions": {
+      "NIFTY": 55,
+      "BANKNIFTY": 48
+    },
+    "e7_removed_signals": 54,
+    "sessions_where_opposite_direction_ranked_better": 54,
+    "note": "A direction flip is reported descriptively only: flipping would trade a BULL base trigger that the deployed SHORT_ONLY configuration suppresses."
+  }
+}

@@ -1,0 +1,208 @@
+{
+  "_readme": "Pre-registration for the CPR reversal/breakout candidate study. Parameters and the full variant list are declared HERE before any result was produced. No threshold may be changed after results are seen; any additional run must be appended to 'unplanned_runs' with a reason.",
+  "strategy_id": "cpr_reversal_breakout_candidate_v1",
+  "created": "2026-10-19",
+  "research_scope": "Underlying (spot) signal study. Historical option premiums are absent from this deployment, so credit-spread premium P&L is NOT claimed anywhere in this research (see data_quality_report.md).",
+  "production_baseline": {
+    "engine": "app.research.cpr_trigger_engine.run_opens_range",
+    "variant": "plain",
+    "endpoint": "POST /api/backtest/cpr-triggers",
+    "live_parity": "app/live/engine.py::_cpr_book_signal -> book_scan (identical trigger math)",
+    "flags_in_effect_on_run_date": {
+      "SHORT_ONLY": true,
+      "SKIP_FRIDAY": true,
+      "SHADOW_SKIP_FRIDAY": true,
+      "BREAKOUT_ADDON": true,
+      "NO_CHASE_BEAR": false,
+      "LIVE_VARIANT": "plain"
+    },
+    "execution": "entry = next candle open in [09:20,15:20); exits at subsequent opens; stop 0.5% checked before target 2%; flat at the 15:20 open; first trigger per session; sessions with fewer than 10 scan candles or without a 15:20 candle are skipped",
+    "labelling": "win/loss via production decay_win (short-premium tolerance: NIFTY 30 pts, BANKNIFTY 60 pts)",
+    "reported_cost": "COST_R_PER_TRADE = 0.10R per round trip (production display placeholder)"
+  },
+  "data": {
+    "table": "market_candles_5m",
+    "interval": "5m",
+    "timezone": "Asia/Kolkata (+05:30)",
+    "candle_timestamp_convention": "timestamp == candle OPEN",
+    "instruments": ["NIFTY", "BANKNIFTY"],
+    "available_range": ["2026-07-06", "2026-10-19"],
+    "scan_filter": "timestamp[11:16] < '15:25' (production)",
+    "min_session_candles": 10,
+    "source": "yfinance / yfinance-backfill"
+  },
+  "periods": {
+    "in_sample": ["2026-07-06", "2026-08-31"],
+    "validation": ["2026-09-01", "2026-09-30"],
+    "out_of_sample": ["2026-10-01", "2026-10-19"],
+    "full": ["2026-07-06", "2026-10-19"],
+    "_note": "Chronological, no shuffling. Rule development only in in_sample; variant selection only in validation; out_of_sample is untouched until the final comparison."
+  },
+  "walkforward": {
+    "n_blocks": 6,
+    "block_split": "contiguous equal-count blocks of session dates over the full range",
+    "selection": "expanding_prior_best_on_net_R",
+    "_note": "Rules are fixed, not fitted; blocks measure stability, and the selection track measures whether validation-style choice generalises forward."
+  },
+  "levels": {
+    "definition": "previous session max-high / min-low / last-close",
+    "cpr": "pp=(H+L+C)/3, bc=(H+L)/2, tc=2*pp-bc (swapped if inverted) - production calculate_cpr",
+    "pivots": "r1=2*pp-L, s1=2*pp-H, r2=pp+(H-L), s2=pp-(H-L) - production pivot_levels",
+    "pdh_pdl": "previous session high / low",
+    "point_in_time": "strictly prior session only (SQL: substr(timestamp,1,10) < day)"
+  },
+  "execution_model": {
+    "entry": "open of the candle AFTER the trigger candle, must satisfy 09:20 <= time < 15:20",
+    "exits": "subsequent candle OPENS only; stop checked before target; flat at the 15:20 open; session without a 15:20 candle is dropped",
+    "parity": "identical to the baseline so that the comparison isolates signal selection",
+    "exit_model_parity": {
+      "stop_pct": 0.005,
+      "target_pct": 0.02
+    },
+    "exit_model_structure": {
+      "stop": "reversal: rejection candle extreme; breakout: the broken level",
+      "target": "next relevant level beyond entry (PP/BC/TC/S1/S2/PDL downward, PP/TC/BC/R1/R2/PDH upward); none -> run to stop or 15:20",
+      "same_walk": "opens-only walk, stop first, flat 15:20"
+    },
+    "max_trades_per_session_instrument": 1,
+    "max_trades_per_day_instrument": 1
+  },
+  "reversal_rules": {
+    "bearish_rejection_requires": [
+      "high >= level (the level is tested)",
+      "close < level (closes back below: a close beyond the level is a break, not a rejection)",
+      "close < open (bearish body)",
+      "upper shadow / candle range >= min_shadow_frac"
+    ],
+    "bullish_hold_requires": [
+      "low <= level (the level is tested)",
+      "close > level (holds or reclaims; a close through the level is a breakdown)",
+      "close > open (bullish body)",
+      "lower shadow / candle range >= min_shadow_frac"
+    ],
+    "entry_trigger_bear": "first later candle whose LOW breaks the confirmation candle's low; entry at the next open",
+    "entry_trigger_bull": "first later candle whose HIGH breaks the confirmation candle's high; entry at the next open",
+    "wick_only": "a wick through a level that closes beyond it never confirms a reversal",
+    "params": {
+      "require_bearish_body": true,
+      "require_bullish_body": true,
+      "min_shadow_frac": 0.25,
+      "trigger_require_close": false
+    },
+    "families": {
+      "A1": "R1 rejection", "A2": "R2 rejection",
+      "A3": "CPR resistance (TC)", "A4": "PDH rejection",
+      "B1": "S1 bounce", "B2": "S2 bounce",
+      "B3": "CPR support (BC)", "B4": "PDL reclaim"
+    },
+    "family_scan_order": "candle-major, then level order A2,A1,A4,A3 / B2,B1,B4,B3 (production tie order)"
+  },
+  "breakout_rules": {
+    "up_levels": ["R1", "R2", "PDH", "TC"],
+    "down_levels": ["S1", "S2", "PDL", "BC"],
+    "confirmation": "completed candle CLOSE beyond the level with the previous close on the other side (fresh cross; wick-only breaks never confirm)",
+    "follow_through": {
+      "default": 1,
+      "meaning": "the next `follow_through` candles must all CLOSE beyond the level; entry at the open of the candle after them. A close back through the level is observed BEFORE entry, so a failed break is a legal pre-entry filter."
+    },
+    "retest_variant": "wait for a pullback to within retest_band of the level that then CLOSES back beyond it; entry at the next open. Failures are detected in the same forward walk, always before entry.",
+    "failed_break_rule": "first cross of a level that fails (close back through within the check window, or before the holding retest) disqualifies that level for the session",
+    "reward_filter": "distance from entry to the next relevant level must be >= min_level_rr x (exit stop risk); unmeasurable (no next level) -> not filtered, flagged in evidence",
+    "friday": "candidate applies NO Friday skip (tested under the same criteria as other sessions); the baseline's Friday gate is preserved unchanged",
+    "params": {
+      "require_retest": false,
+      "follow_through": 1,
+      "retest_band": 0.0010,
+      "min_level_rr": 1.0,
+      "fail_window_observed_before_entry": true
+    }
+  },
+  "combined_rules": {
+    "hierarchy": [
+      "1. confirmed breakout wins",
+      "2. else confirmed reversal",
+      "3. conflicting bull+bear reversals in one session -> earliest confirmation wins (tie -> BEAR, production priority); conflict_rule='reject' tested as an ablation",
+      "4. one trade per session per instrument; extra candidates counted as duplicates",
+      "5. frequency/position limits from execution_model",
+      "6. nothing met the conditions -> NO TRADE"
+    ]
+  },
+  "costs": {
+    "brokerage_rs": 40.0,
+    "brokerage_note": "production BROKERAGE_RS (per round trip)",
+    "slippage_pts": 0.5,
+    "slippage_note": "production SLIPPAGE_PTS (points, per round trip)",
+    "r_cost_grid_reported_rs": [0.0, 0.1, 0.2, 0.3],
+    "production_display_cost_r": 0.1,
+    "sensitivity": "net expectancy is reported at every grid point for both sides",
+    "charges_note": "exchange charges/STT/GST/stamp duty are not separately modelled because no real order is executed in this system (paper only); the brokerage+slippage model is applied IDENTICALLY to baseline and candidate."
+  },
+  "capital": {
+    "method": "risk_derived",
+    "max_risk_pct_per_trade": 0.01,
+    "formula": "capital_base = risk_rs / 0.01 where risk_rs = entry x stop_pct x lot",
+    "lot_sizes": {"NIFTY": 65, "BANKNIFTY": 30},
+    "note": "Same denominator for baseline and candidate: one position open at a time, flat overnight, so peak capital = capital_base. Also reported as return on a flat 100000 Rs/instrument production-research reference."
+  },
+  "risk_limits": {
+    "max_drawdown_pct_of_capital": 20.0,
+    "max_drawdown_ratio_vs_baseline": 1.5,
+    "min_profit_factor_total": 1.0,
+    "min_profit_factor_oos": 1.0,
+    "min_oos_trades_total": 15,
+    "min_oos_trades_per_instrument": 5,
+    "max_single_loss_pct_of_capital": 5.0,
+    "_small_sample_warning": "out-of-sample holds 12 sessions x 2 instruments; every OOS win rate must be reported with its sample size and interval."
+  },
+  "promotion_gates": {
+    "G1_oos_expectancy": "candidate OOS net expectancy per trade > baseline OOS net expectancy per trade",
+    "G2_survives_costs": "candidate advantage still > 0 on the reported cost grid (at least at the production 0.10R cost)",
+    "G3_drawdown_within_limits": "G3a max drawdown <= max_drawdown_pct_of_capital; G3b <= 1.5x baseline; G3c largest single loss <= max_single_loss_pct_of_capital",
+    "G4_trade_quality": "profit factor >= 1.0 (total and OOS)",
+    "G5_no_bias": "unit tests + data-quality + PIT/look-ahead tests all PASS and the cost/execution model is identical",
+    "G6_robustness": "net expectancy positive in >= 2 of 3 periods and >= 2 of 3 walk-forward blocks per instrument; both instruments not materially negative",
+    "G7_credit_spread_economics": "requires real historical option premiums; BLOCKED if option history is absent",
+    "_rule": "Any gate that cannot be executed -> INCONCLUSIVE, never PASS. Even a full pass stops at human review."
+  },
+  "base_params": {
+    "mode": "combined",
+    "exit_model": "parity",
+    "require_bearish_body": true,
+    "require_bullish_body": true,
+    "min_shadow_frac": 0.25,
+    "trigger_require_close": false,
+    "reversal_families": null,
+    "breakout_families": null,
+    "breakout_sides": ["UP", "DN"],
+    "require_retest": false,
+    "follow_through": 1,
+    "retest_band": 0.0010,
+    "min_level_rr": 1.0,
+    "conflict_rule": "earliest_wins"
+  },
+  "variants": [
+    {"id": "combined_parity", "role": "PRIMARY", "overrides": {}},
+    {"id": "reversal_only", "role": "ablation", "overrides": {"mode": "reversal"}},
+    {"id": "breakout_only", "role": "ablation", "overrides": {"mode": "breakout"}},
+    {"id": "breakout_retest", "role": "ablation", "overrides": {"mode": "breakout", "require_retest": true}},
+    {"id": "combined_retest", "role": "secondary", "overrides": {"require_retest": true}},
+    {"id": "combined_structure", "role": "secondary", "overrides": {"exit_model": "structure"}},
+    {"id": "combined_conflict_reject", "role": "ablation", "overrides": {"conflict_rule": "reject"}},
+    {"id": "combined_shadow_000", "role": "threshold_sensitivity", "overrides": {"min_shadow_frac": 0.0}},
+    {"id": "combined_shadow_400", "role": "threshold_sensitivity", "overrides": {"min_shadow_frac": 0.40}},
+    {"id": "combined_trigger_close", "role": "threshold_sensitivity", "overrides": {"trigger_require_close": true}},
+    {"id": "reversal_A1", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["A1"]}},
+    {"id": "reversal_A2", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["A2"]}},
+    {"id": "reversal_A3", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["A3"]}},
+    {"id": "reversal_A4", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["A4"]}},
+    {"id": "reversal_B1", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["B1"]}},
+    {"id": "reversal_B2", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["B2"]}},
+    {"id": "reversal_B3", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["B3"]}},
+    {"id": "reversal_B4", "role": "level_family", "overrides": {"mode": "reversal", "reversal_families": ["B4"]}},
+    {"id": "breakout_up", "role": "level_family", "overrides": {"mode": "breakout", "breakout_sides": ["UP"]}},
+    {"id": "breakout_dn", "role": "level_family", "overrides": {"mode": "breakout", "breakout_sides": ["DN"]}}
+  ],
+  "selection_set": ["combined_parity", "reversal_only", "breakout_only", "breakout_retest", "combined_retest", "combined_structure"],
+  "primary_variant": "combined_parity",
+  "unplanned_runs": []
+}

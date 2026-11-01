@@ -1,0 +1,345 @@
+{
+  "signals": {
+    "SS-65EC12195874": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-B25D4E8136F2": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-994FCB1392E0": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-973520AEEF6A": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-4E71C019FB04": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-748DF94E6575": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-D2292E3357D6": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-EB0402AD6DBE": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-07E55E9BA987": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-987CFD569F81": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-EFD9BFF2ACE6": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-5640ED8EF923": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-E3DDFC5FE05F": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-21BB1F4FB2E3": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-D5CAD4414B6F": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-6AF24C500F91": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-0D164C181530": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-A52C0AD51C72": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-9A88E9EA1B47": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    },
+    "SS-437AF36ECA97": {
+      "retries": 0,
+      "events": {
+        "unresolved": true,
+        "outcome": true
+      },
+      "unresolved": {
+        "retries": 0,
+        "availability": {
+          "db_5m": true,
+          "provider_5m": true,
+          "one_min": true,
+          "quote": true
+        },
+        "provider_failure": false
+      }
+    }
+  },
+  "last_poll": "2026-10-31T15:00:32.525695+05:30"
+}

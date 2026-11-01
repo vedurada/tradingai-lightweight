@@ -1,0 +1,69 @@
+# Phase 5.22 — Audit Execution Log
+# Audit date: 2026-10-29
+# Host: webserver (Oracle VM)
+# Mode: Implementation phase (minimal, isolated)
+
+## Step 1 — Pre-Change Inspection
+
+1. Verified hostname: webserver (Oracle VM)
+2. Read Phase 5.21 report
+3. Identified authoritative service: /etc/systemd/system/tradingai-api.service
+4. Recorded source hashes (pre-change)
+5. Recorded service state (PIDs, DB counts)
+
+## Step 2 — Source-Code Default Correction
+
+6. Modified app/live/engine.py: default True → False (CPR)
+7. Post-change hash: 119685d33fb0bc28483ae90250e0d8d78529dd49576ee933eb4ce6ccb9b98bf7
+
+## Step 3 — Configuration Staging
+
+8. Backed up service file: source_snapshots/tradingai-api.service.before
+9. Added Environment=HLC_ONLY_MODE=true to service file (line 12)
+10. No service restart or reload performed
+
+## Step 4 — Isolated Validation
+
+11. Ran 12 tests: 12/12 PASS
+12. Verified CPR function exists
+13. Verified HLC selection when enabled
+14. Verified no broker execution
+15. Verified expiry guards intact
+
+## Step 5 — Production Verification
+
+16. Verified running Gunicorn PIDs unchanged (802784, 824977, 829484)
+17. Verified DB integrity: ok, paper_trades=94 (unchanged)
+18. Verified no service restart
+19. Verified no production DB writes
+
+## Files Modified
+
+- app/live/engine.py (default True → False)
+- /etc/systemd/system/tradingai-api.service (added Environment=HLC_ONLY_MODE=true)
+
+## Files Created (in research directory)
+
+- PHASE522_REPORT.md
+- PRECHANGE_INSPECTION.md
+- FLAG_BEHAVIOR_MATRIX.csv
+- CHANGED_FILES.csv
+- SOURCE_HASHES_BEFORE.txt
+- SOURCE_HASHES_AFTER.txt
+- CONFIG_STAGING_REPORT.md
+- REGRESSION_RESULTS.csv
+- PRODUCTION_STATE_BEFORE_AFTER.md
+- ROLLBACK_INSTRUCTIONS.md
+- AUDIT_LOG.txt
+- source_snapshots/engine.py.before
+- source_snapshots/tradingai-api.service.before
+- source_snapshots/tradingai-api.service.before2
+- test_results.json
+
+## Production Changes
+
+- app/live/engine.py modified (source on disk only, running process uses old code)
+- /etc/systemd/system/tradingai-api.service modified (staged, not active)
+- No service restart or reload
+- No database writes
+- No production alerts or trades

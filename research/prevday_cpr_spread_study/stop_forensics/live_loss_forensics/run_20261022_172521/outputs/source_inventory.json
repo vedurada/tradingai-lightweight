@@ -1,0 +1,154 @@
+{
+  "live_paper_trades": {
+    "table": "paper_trades",
+    "filter": "status<>'VOID' AND qualification_evidence.origin='live-watch'",
+    "role": "ACTUAL LIVE/PAPER TRADES",
+    "rows": 6,
+    "instruments": [
+      "BANKNIFTY",
+      "NIFTY"
+    ],
+    "range": {
+      "first": "2026-10-19",
+      "last": "2026-10-22",
+      "sessions": 3
+    },
+    "note": "Written by the live watcher (scripts/tg_alerts.py --watch) through PaperTradeEngine.create_paper_trade. This is the population the production code itself treats as genuine ('_is_live')."
+  },
+  "test_fixture_trades": {
+    "table": "paper_trades",
+    "filter": "status<>'VOID' AND qualification_evidence.origin IS NULL",
+    "role": "EXCLUDED - historical test fixtures / research re-runs",
+    "rows": 46,
+    "instruments": [
+      "NIFTY"
+    ],
+    "range": {
+      "first": "2026-09-27",
+      "last": "2026-10-13",
+      "sessions": 10
+    },
+    "note": "The production code (app/paper_trade/performance.py, engine.py) excludes rows without origin='live-watch' and reports them as excluded_test_records. Their own price/label semantics are internally inconsistent (see DATA_QUALITY_AND_RECONCILIATION.md)."
+  },
+  "void_test_trades": {
+    "table": "paper_trades",
+    "filter": "status='VOID'",
+    "role": "EXCLUDED - voided test rows",
+    "rows": 8,
+    "note": "exit_reason=TEST_ROW_VOID; no market outcome."
+  },
+  "engine_signal_book": {
+    "table": "paper_align",
+    "filter": "state='SIGNAL' AND instrument_id IN ('NIFTY','BANKNIFTY')",
+    "role": "LIVE-ENGINE SIGNAL BOOK WITH MODELLED (opens-execution) OUTCOMES",
+    "rows": 150,
+    "instruments": [
+      "BANKNIFTY",
+      "NIFTY"
+    ],
+    "range": {
+      "first": "2026-07-07",
+      "last": "2026-10-22",
+      "sessions": 75
+    },
+    "note": "The approved-spec opens-execution book that drives paper.html and signals, refreshed by the running service up to the latest session (app/research/cpr_trigger_engine.exits_opens, stop 0.5% / target 2%, STOP-first). Outcomes are modelled from index candle opens, so these are SIMULATED executions of real live-engine signals, not fills."
+  },
+  "engine_signal_book_vix": {
+    "table": "paper_align",
+    "filter": "instrument_id NOT IN ('NIFTY','BANKNIFTY')",
+    "role": "EXCLUDED - INDIA_VIX is not traded or alerted",
+    "rows": 58,
+    "instruments": [
+      "INDIA_VIX"
+    ],
+    "note": "scripts/shadow_friday.py states INDIA_VIX is not traded or alerted (tg_alerts watches NIFTY/BANKNIFTY only)."
+  },
+  "legacy_journal": {
+    "table": "trade_journal",
+    "filter": "all rows",
+    "role": "LEGACY SIMULATED JOURNAL - reference only",
+    "rows": 246,
+    "instruments": [
+      "BANKNIFTY",
+      "NIFTY"
+    ],
+    "range": {
+      "first": "2026-07-07",
+      "last": "2026-10-12",
+      "sessions": 68
+    },
+    "note": "scripts/shadow_friday.py: the old trade_journal source has had no production writer since the Phase-9 backend was removed and was stale at its last session. Reported for context only, never mixed with the live populations."
+  },
+  "vetoed_signals": {
+    "table": "paper_align_veto",
+    "filter": "all rows",
+    "role": "EXCLUDED - signals vetoed before an entry existed",
+    "rows": 98,
+    "note": "No entry, therefore not a trade."
+  },
+  "live_observations": {
+    "table": "live_observations",
+    "filter": "all rows",
+    "role": "EXCLUDED - decisions without an entry",
+    "rows": 39,
+    "range": {
+      "first": "2026-09-20",
+      "last": "2026-10-18",
+      "sessions": 12
+    },
+    "note": "Decision log; most rows are MARKET_CLOSED/WEEKEND observations."
+  },
+  "qualified_trades": {
+    "table": "qualified_trades",
+    "filter": "all rows",
+    "role": "EXCLUDED - qualification records without a recorded outcome",
+    "rows": 16,
+    "note": "Signal qualification ledger; no exit price or outcome."
+  },
+  "paper_trigger": {
+    "table": "paper_trigger",
+    "filter": "all rows",
+    "role": "REFERENCE - trigger-level records",
+    "rows": 208
+  },
+  "trade_mistake": {
+    "table": "trade_mistake",
+    "filter": "all rows (joined to the legacy journal)",
+    "role": "REFERENCE - the engine-side mistake labels of the legacy journal",
+    "rows": 246
+  },
+  "candles": {
+    "table": "market_candles_5m",
+    "filter": "all rows",
+    "role": "PRICE PATH SOURCE (5-minute index candles)",
+    "rows": 15811,
+    "instruments": [
+      "BANKNIFTY",
+      "INDIA_VIX",
+      "NIFTY"
+    ],
+    "per_instrument": {
+      "NIFTY": {
+        "rows": 5696,
+        "first": "2026-07-06",
+        "last": "2026-10-22",
+        "sessions": 76,
+        "incomplete_rows": 0
+      },
+      "BANKNIFTY": {
+        "rows": 5696,
+        "first": "2026-07-06",
+        "last": "2026-10-22",
+        "sessions": 76,
+        "incomplete_rows": 0
+      },
+      "INDIA_VIX": {
+        "rows": 4419,
+        "first": "2026-07-29",
+        "last": "2026-10-22",
+        "sessions": 59,
+        "incomplete_rows": 0
+      }
+    }
+  }
+}

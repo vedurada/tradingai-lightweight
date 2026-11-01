@@ -1,0 +1,39 @@
+============================= test session starts ==============================
+platform linux -- Python 3.10.12, pytest-9.1.1, pluggy-1.6.0 -- /usr/bin/python3
+rootdir: /opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/run_20261022_172521
+plugins: anyio-4.15.1
+collecting ... collected 31 items
+
+tests/test_no_lookahead.py::test_entry_time_structure_does_not_depend_on_the_future PASSED [  3%]
+tests/test_no_lookahead.py::test_pre_entry_features_do_not_depend_on_the_future PASSED [  6%]
+tests/test_no_lookahead.py::test_confirmation_window_ends_at_the_entry PASSED [  9%]
+tests/test_no_lookahead.py::test_classification_is_deterministic PASSED  [ 12%]
+tests/test_paths.py::test_bull_excursion_uses_low_as_adverse PASSED      [ 16%]
+tests/test_paths.py::test_bear_excursion_uses_high_as_adverse PASSED     [ 19%]
+tests/test_paths.py::test_excursion_window_stops_at_the_exit_bar PASSED  [ 22%]
+tests/test_paths.py::test_forward_path_is_signed_and_measures_the_excursion PASSED [ 25%]
+tests/test_paths.py::test_forward_path_of_a_bear_is_mirrored PASSED      [ 29%]
+tests/test_paths.py::test_post_exit_category_is_mutually_exclusive PASSED [ 32%]
+tests/test_paths.py::test_first_touch_reports_the_earlier_level PASSED   [ 35%]
+tests/test_paths.py::test_reconstructed_paths_are_consistent PASSED      [ 38%]
+tests/test_reconciliation.py::test_populations_are_never_mixed PASSED    [ 41%]
+tests/test_reconciliation.py::test_live_population_contains_only_live_watch_rows PASSED [ 45%]
+tests/test_reconciliation.py::test_engine_book_excludes_vix PASSED       [ 48%]
+tests/test_reconciliation.py::test_no_open_trade_is_counted_as_a_loss PASSED [ 51%]
+tests/test_reconciliation.py::test_label_must_agree_with_its_own_arithmetic PASSED [ 54%]
+tests/test_reconciliation.py::test_loss_rows_have_a_negative_outcome PASSED [ 58%]
+tests/test_reconciliation.py::test_recomputed_pnl_matches_the_production_formula PASSED [ 61%]
+tests/test_reconciliation.py::test_denominators_add_up PASSED            [ 64%]
+tests/test_reconciliation.py::test_no_duplicate_trade_ids PASSED         [ 67%]
+tests/test_reconciliation.py::test_lot_sizes[NIFTY-65] PASSED            [ 70%]
+tests/test_reconciliation.py::test_lot_sizes[BANKNIFTY-30] PASSED        [ 74%]
+tests/test_taxonomy_and_phase3.py::test_every_loss_has_a_primary_category_in_every_dimension PASSED [ 77%]
+tests/test_taxonomy_and_phase3.py::test_stop_dimension_is_not_applicable_outside_stop_exits PASSED [ 80%]
+tests/test_taxonomy_and_phase3.py::test_secondary_categories_never_repeat_the_primary PASSED [ 83%]
+tests/test_taxonomy_and_phase3.py::test_control_group_is_built_from_the_same_population PASSED [ 87%]
+tests/test_taxonomy_and_phase3.py::test_control_rows_carry_the_group_label PASSED [ 90%]
+tests/test_taxonomy_and_phase3.py::test_phase3_headline_figures_are_reproduced PASSED [ 93%]
+tests/test_taxonomy_and_phase3.py::test_phase3_reason_counts_use_the_identified_setup_as_denominator PASSED [ 96%]
+tests/test_taxonomy_and_phase3.py::test_comparison_rows_carry_denominators PASSED [100%]
+
+======================== 31 passed in 78.99s (0:01:18) =========================

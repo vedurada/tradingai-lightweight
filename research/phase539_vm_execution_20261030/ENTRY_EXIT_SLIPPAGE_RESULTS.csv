@@ -1,0 +1,7 @@
+scenario,entry_slip,exit_slip,trades_evaluated,wins,losses,flats,excluded,net_points,profit_factor
+C1,0.5,0,881,0,0,0,0,0,0
+C2,1.0,0,881,0,0,0,0,0,0
+C3,2.0,0,881,0,0,0,0,0,0
+D1,0,0.5,881,0,0,0,0,0,0
+D2,0,1.0,881,0,0,0,0,0,0
+D3,0,2.0,881,0,0,0,0,0,0

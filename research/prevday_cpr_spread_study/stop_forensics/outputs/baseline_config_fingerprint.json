@@ -1,0 +1,26 @@
+{
+  "engine_file": "/opt/tradingai/app/research/cpr_trigger_engine.py",
+  "engine_sha256": "2316f56cd315e7db763d89d58667e9a143c62098a914d4ca08ec437f199ec80c",
+  "call": "run_opens_range(instrument, '2026-07-06', '2026-10-21', 'plain')",
+  "stop_pct": 0.005,
+  "target_pct": 0.02,
+  "open_window": [
+    "09:20",
+    "15:20"
+  ],
+  "flat": "15:20 open",
+  "flags": {
+    "SHORT_ONLY": true,
+    "SKIP_FRIDAY": true,
+    "SHADOW_SKIP_FRIDAY": true,
+    "BREAKOUT_ADDON": true,
+    "NO_CHASE_BEAR": false,
+    "NO_CHASE_BAND_PCT": 0.0015,
+    "OPEN_STOP_PCT": 0.005,
+    "OPEN_TARGET_PCT": 0.02,
+    "OPEN_MIN": "09:20",
+    "OPEN_MAX": "15:20",
+    "OPEN_EOD": "15:20",
+    "MIN_CANDLES": 10
+  }
+}

@@ -1,0 +1,11 @@
+gate_id,criterion,status,evidence
+G1,CSV/JSON reconciliation,UNRESOLVED,245 extra CSV rows unexplained
+G2,Historical entry-price availability,PASS,729/729 trades have available entry prices
+G3,Next-candle sensitivity reproducibility,PASS,Reproduced: WR 44.35%, PF 1.25
+G4,Conservative execution robustness,FAIL,One-candle-later entry degrades severely
+G5,Options-level profitability,NOT TESTED,No option quote data
+G6,Production safety,CONFIRMED UNCHANGED,No production changes
+G7,Overnight signal carry,UNRESOLVED,17-hour delay not addressed
+G8,Slippage model accuracy,FAIL,Approximation produces counterintuitive results
+G9,Data coverage,SUFFICIENT (3.5 months),81 sessions
+G10,Concentration risk,MODERATE,BANKNIFTY 72.5% of points

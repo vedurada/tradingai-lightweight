@@ -1,0 +1,12 @@
+criterion,status,evidence
+1. Service health throughout session,PASS (static),API health OK
+2. HLC explicitly selected,PASS,HLC_ONLY_MODE=true
+3. Fresh completed candles processed,NOT RUN,Market closed
+4. Measured ingestion latency,NOT RUN,Market closed
+5. Expiry/session-age protections,NOT RUN,Market closed
+6. Duplicate prevention,NOT RUN,Market closed
+7. Paper trade lifecycle,NOT RUN,Market closed
+8. No unexplained DB changes,PASS,Counts unchanged
+9. No broker execution,PASS,No broker code path
+10. No unexplained errors,PASS,Logs clean
+11. Genuine live evidence,NOT RUN,Market closed

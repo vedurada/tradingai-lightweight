@@ -1,0 +1,10 @@
+metric,original_729,with_expiry_723,change
+trades,729,723,-6
+wins,528,522,-6
+losses,201,201,0
+win_rate,72.43,72.20,-0.23
+total_points,19210.95,17857.91,-1353.04
+profit_factor,3.47,3.30,-0.17
+max_drawdown,442.40,442.40,0
+expectancy_R,0.794,0.792,-0.002
+max_consec_losses,6,6,0

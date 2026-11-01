@@ -74,7 +74,7 @@ def mark_failed(conn, signal_id, reason):
     init_schema(conn)
     now = datetime.now(_IST).isoformat()
     conn.execute(
-        "UPDATE scalp_signals SET status='NEW', last_error=?, updated_at=? WHERE signal_id=? AND status!='TRADED'",
+        "UPDATE scalp_signals SET status='NEW', last_error=?, updated_at=? WHERE signal_id=? AND status='NEW' AND status!='EXPIRED'",
         (str(reason)[:500], now, signal_id))
     conn.commit()
 
@@ -91,3 +91,17 @@ def recover_new_signals(conn):
     init_schema(conn)
     return conn.execute(
         "SELECT signal_id, instrument_id, trade_date, direction, reference_price, reference_stop, reference_target, source_candle_ts FROM scalp_signals WHERE status='NEW'").fetchall()
+
+def mark_expired(conn, signal_id, reason=None):
+    init_schema(conn)
+    now = datetime.now(_IST).isoformat()
+    if reason:
+        conn.execute(
+            "UPDATE scalp_signals SET status='EXPIRED', last_error=?, updated_at=? WHERE signal_id=? AND status='NEW' ",
+            (str(reason)[:500], now, signal_id))
+    else:
+        conn.execute(
+            "UPDATE scalp_signals SET status='EXPIRED', updated_at=? WHERE signal_id=? AND status='NEW' ",
+            (now, signal_id))
+    conn.commit()
+

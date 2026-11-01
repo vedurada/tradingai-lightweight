@@ -1,0 +1,29 @@
+# Phase 5.41 — Phase 5.40 Review
+
+## Phase 5.40 Status
+IN_PROGRESS — unified HLC integration phase.
+
+## Key Deliverables
+- VM_HOST_VERIFICATION.txt: VERIFIED ORACLE VM.
+- COMPLETE_ENGINE_CALL_GRAPH.md: AUDIT IN PROGRESS.
+- SIGNAL_ENGINE_DUPLICATION_AUDIT.md: AUDIT IN PROGRESS.
+- CANONICAL_HLC_ENGINE_SPEC.md: AUDIT IN_PROGRESS.
+- LIVE_SIGNAL_INTEGRATION.md: PENDING.
+- PAPER_TRADE_INTEGRATION.md: PENDING.
+- BACKTEST_INTEGRATION.md: PENDING.
+- TELEGRAM_AND_FRONTEND_INTEGRATION.md: PENDING.
+- DATABASE_BACKUP_AND_RESET_AUDIT.md: PENDING.
+- FRESH_HLC_BACKTEST_REPORT.md: PENDING.
+- END_TO_END_TEST_RESULTS.md: PENDING.
+- DEPLOYMENT_AND_ROLLBACK_REPORT.md: PENDING.
+- FINAL_PRODUCTION_VERIFICATION.md: PENDING.
+- PHASE540_FINAL_REPORT.md: IN_PROGRESS.
+
+## Outstanding Work
+- Complete engine call graph audit.
+- Canonical engine integration.
+- Live/paper/backtest/Telegram/frontend validation.
+- DB backup/reset.
+- Fresh backtest.
+- E2E tests.
+- Deployment readiness.

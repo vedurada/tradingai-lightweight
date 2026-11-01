@@ -1,0 +1,509 @@
+{
+  "comparison": [
+    {
+      "metric": "entry_extension_pct",
+      "label": "Entry extension from the entry-time level (%)",
+      "losers_n": 55,
+      "losers_mean": 0.0781,
+      "losers_median": 0.1108,
+      "winners_n": 82,
+      "winners_mean": 0.0567,
+      "winners_median": 0.067,
+      "difference_mean_loser_minus_winner": 0.0214
+    },
+    {
+      "metric": "entry_to_stop_pct",
+      "label": "Entry-to-stop distance (% of entry)",
+      "losers_n": 55,
+      "losers_mean": 0.5,
+      "losers_median": 0.5,
+      "winners_n": 82,
+      "winners_mean": 0.5,
+      "winners_median": 0.5,
+      "difference_mean_loser_minus_winner": 0.0
+    },
+    {
+      "metric": "entry_to_target_pct",
+      "label": "Entry-to-target distance (% of entry)",
+      "losers_n": 55,
+      "losers_mean": 2.0,
+      "losers_median": 2.0,
+      "winners_n": 82,
+      "winners_mean": 2.0,
+      "winners_median": 2.0,
+      "difference_mean_loser_minus_winner": 0.0
+    },
+    {
+      "metric": "risk_pts",
+      "label": "Entry-to-stop distance (index points)",
+      "losers_n": 55,
+      "losers_mean": 204.9222,
+      "losers_median": 272.16,
+      "winners_n": 82,
+      "winners_mean": 201.4266,
+      "winners_median": 198.53,
+      "difference_mean_loser_minus_winner": 3.4956
+    },
+    {
+      "metric": "mae_hl_r",
+      "label": "MAE (R, high/low)",
+      "losers_n": 55,
+      "losers_mean": 1.031,
+      "losers_median": 1.0011,
+      "winners_n": 82,
+      "winners_mean": 0.3354,
+      "winners_median": 0.2727,
+      "difference_mean_loser_minus_winner": 0.6956
+    },
+    {
+      "metric": "mfe_hl_r",
+      "label": "MFE (R, high/low)",
+      "losers_n": 55,
+      "losers_mean": 0.387,
+      "losers_median": 0.3047,
+      "winners_n": 82,
+      "winners_mean": 1.3346,
+      "winners_median": 1.1249,
+      "difference_mean_loser_minus_winner": -0.9476
+    },
+    {
+      "metric": "mae_open_r",
+      "label": "MAE (R, opens only)",
+      "losers_n": 55,
+      "losers_mean": 1.031,
+      "losers_median": 1.0011,
+      "winners_n": 82,
+      "winners_mean": 0.3354,
+      "winners_median": 0.2727,
+      "difference_mean_loser_minus_winner": 0.6956
+    },
+    {
+      "metric": "mfe_open_r",
+      "label": "MFE (R, opens only)",
+      "losers_n": 55,
+      "losers_mean": 0.387,
+      "losers_median": 0.3047,
+      "winners_n": 82,
+      "winners_mean": 1.3346,
+      "winners_median": 1.1249,
+      "difference_mean_loser_minus_winner": -0.9476
+    },
+    {
+      "metric": "rr_vs_frozen_target",
+      "label": "Reward/risk against the frozen 2 % target",
+      "losers_n": 55,
+      "losers_mean": 4.0,
+      "losers_median": 4.0,
+      "winners_n": 82,
+      "winners_mean": 4.0,
+      "winners_median": 4.0,
+      "difference_mean_loser_minus_winner": 0.0
+    },
+    {
+      "metric": "pre_entry_move_pct",
+      "label": "Pre-entry 12-bar move in the trade direction (%)",
+      "losers_n": 55,
+      "losers_mean": 0.09,
+      "losers_median": 0.0827,
+      "winners_n": 82,
+      "winners_mean": 0.0752,
+      "winners_median": 0.0815,
+      "difference_mean_loser_minus_winner": 0.0148
+    },
+    {
+      "metric": "pre_entry_range_pct",
+      "label": "Pre-entry 12-bar range (%)",
+      "losers_n": 55,
+      "losers_mean": 0.3785,
+      "losers_median": 0.3629,
+      "winners_n": 82,
+      "winners_mean": 0.3674,
+      "winners_median": 0.3202,
+      "difference_mean_loser_minus_winner": 0.0111
+    },
+    {
+      "metric": "minutes_to_entry",
+      "label": "Entry time (minutes after 09:15)",
+      "losers_n": 55,
+      "losers_mean": 9.0909,
+      "losers_median": 5,
+      "winners_n": 82,
+      "winners_mean": 6.7683,
+      "winners_median": 5.0,
+      "difference_mean_loser_minus_winner": 2.3226
+    },
+    {
+      "metric": "distance_to_nearest_level_pct",
+      "label": "Distance to the nearest opposing known level (%)",
+      "losers_n": 55,
+      "losers_mean": 0.174,
+      "losers_median": 0.1316,
+      "winners_n": 82,
+      "winners_mean": 0.1441,
+      "winners_median": 0.0802,
+      "difference_mean_loser_minus_winner": 0.0299
+    },
+    {
+      "metric": "bars_held",
+      "label": "Bars held",
+      "losers_n": 55,
+      "losers_mean": 51.3818,
+      "losers_median": 70,
+      "winners_n": 82,
+      "winners_mean": 71.0122,
+      "winners_median": 71.0,
+      "difference_mean_loser_minus_winner": -19.6304
+    },
+    {
+      "metric": "stop_overshoot_r",
+      "label": "Stop overshoot at the exit (R, stop exits only)",
+      "losers_n": 25,
+      "losers_mean": 0.1184,
+      "losers_median": 0.0733,
+      "winners_n": 0,
+      "winners_mean": null,
+      "winners_median": null,
+      "difference_mean_loser_minus_winner": null
+    },
+    {
+      "metric": "level_crossings_after_entry",
+      "label": "Level crossings after the entry",
+      "losers_n": 55,
+      "losers_mean": 2.6909,
+      "losers_median": 2,
+      "winners_n": 82,
+      "winners_mean": 3.4878,
+      "winners_median": 2.5,
+      "difference_mean_loser_minus_winner": -0.7969
+    }
+  ],
+  "categorical": [
+    {
+      "dimension": "A - entry timing",
+      "value": "ENTRY_AFTER_EXCESSIVE_EXTENSION",
+      "losses_n": 6,
+      "losses_denominator": 55,
+      "losses_pct": 10.91,
+      "winners_n": 4,
+      "winners_denominator": 82,
+      "winners_pct": 4.88
+    },
+    {
+      "dimension": "A - entry timing",
+      "value": "ENTRY_AFTER_MARKET_COMPLETED_MOST_OF_MOVE",
+      "losses_n": 2,
+      "losses_denominator": 55,
+      "losses_pct": 3.64,
+      "winners_n": 4,
+      "winners_denominator": 82,
+      "winners_pct": 4.88
+    },
+    {
+      "dimension": "A - entry timing",
+      "value": "ENTRY_AT_TRIGGER_WITHOUT_ZONE_RETEST",
+      "losses_n": 1,
+      "losses_denominator": 55,
+      "losses_pct": 1.82,
+      "winners_n": 2,
+      "winners_denominator": 82,
+      "winners_pct": 2.44
+    },
+    {
+      "dimension": "A - entry timing",
+      "value": "ENTRY_BEFORE_CONFIRMATION",
+      "losses_n": 33,
+      "losses_denominator": 55,
+      "losses_pct": 60.0,
+      "winners_n": 54,
+      "winners_denominator": 82,
+      "winners_pct": 65.85
+    },
+    {
+      "dimension": "A - entry timing",
+      "value": "NO_DEMONSTRABLE_TIMING_PROBLEM",
+      "losses_n": 13,
+      "losses_denominator": 55,
+      "losses_pct": 23.64,
+      "winners_n": 18,
+      "winners_denominator": 82,
+      "winners_pct": 21.95
+    },
+    {
+      "dimension": "B - market structure",
+      "value": "DIRECTIONAL_CONTINUATION_AGAINST_POSITION",
+      "losses_n": 16,
+      "losses_denominator": 55,
+      "losses_pct": 29.09,
+      "winners_n": 1,
+      "winners_denominator": 82,
+      "winners_pct": 1.22
+    },
+    {
+      "dimension": "B - market structure",
+      "value": "FAILED_BREAKOUT_OR_BREAKDOWN",
+      "losses_n": 26,
+      "losses_denominator": 55,
+      "losses_pct": 47.27,
+      "winners_n": 28,
+      "winners_denominator": 82,
+      "winners_pct": 34.15
+    },
+    {
+      "dimension": "B - market structure",
+      "value": "NO_DEMONSTRABLE_STRUCTURE_PROBLEM",
+      "losses_n": 3,
+      "losses_denominator": 55,
+      "losses_pct": 5.45,
+      "winners_n": 27,
+      "winners_denominator": 82,
+      "winners_pct": 32.93
+    },
+    {
+      "dimension": "B - market structure",
+      "value": "ORDINARY_PULLBACK_WITHIN_LARGER_MOVE",
+      "losses_n": 0,
+      "losses_denominator": 55,
+      "losses_pct": 0.0,
+      "winners_n": 1,
+      "winners_denominator": 82,
+      "winners_pct": 1.22
+    },
+    {
+      "dimension": "B - market structure",
+      "value": "RANGE_CHOP_OR_REPEATED_LEVEL_CROSSINGS",
+      "losses_n": 8,
+      "losses_denominator": 55,
+      "losses_pct": 14.55,
+      "winners_n": 11,
+      "winners_denominator": 82,
+      "winners_pct": 13.41
+    },
+    {
+      "dimension": "B - market structure",
+      "value": "REJECTION_AT_PRE_EXISTING_LEVEL",
+      "losses_n": 2,
+      "losses_denominator": 55,
+      "losses_pct": 3.64,
+      "winners_n": 14,
+      "winners_denominator": 82,
+      "winners_pct": 17.07
+    },
+    {
+      "dimension": "C - stop behaviour",
+      "value": "NOT_A_STOP_EXIT",
+      "losses_n": 30,
+      "losses_denominator": 55,
+      "losses_pct": 54.55,
+      "winners_n": 82,
+      "winners_denominator": 82,
+      "winners_pct": 100.0
+    },
+    {
+      "dimension": "C - stop behaviour",
+      "value": "STOP_HIT_DURING_CHOPPY_PRICE_ACTION",
+      "losses_n": 15,
+      "losses_denominator": 55,
+      "losses_pct": 27.27,
+      "winners_n": 0,
+      "winners_denominator": 82,
+      "winners_pct": 0.0
+    },
+    {
+      "dimension": "C - stop behaviour",
+      "value": "STOP_HIT_THEN_PRICE_CONTINUED_AGAINST",
+      "losses_n": 7,
+      "losses_denominator": 55,
+      "losses_pct": 12.73,
+      "winners_n": 0,
+      "winners_denominator": 82,
+      "winners_pct": 0.0
+    },
+    {
+      "dimension": "C - stop behaviour",
+      "value": "STOP_HIT_THEN_PRICE_REVERSED_TOWARD_TARGET",
+      "losses_n": 2,
+      "losses_denominator": 55,
+      "losses_pct": 3.64,
+      "winners_n": 0,
+      "winners_denominator": 82,
+      "winners_pct": 0.0
+    },
+    {
+      "dimension": "C - stop behaviour",
+      "value": "STOP_WAS_BEYOND_THE_AVAILABLE_STRUCTURAL_INVALIDATION_POINT",
+      "losses_n": 1,
+      "losses_denominator": 55,
+      "losses_pct": 1.82,
+      "winners_n": 0,
+      "winners_denominator": 82,
+      "winners_pct": 0.0
+    },
+    {
+      "dimension": "D - setup-first discipline",
+      "value": "ENTRY_FOLLOWED_VALID_ZONE_ARRIVAL_AND_CONFIRMATION",
+      "losses_n": 16,
+      "losses_denominator": 55,
+      "losses_pct": 29.09,
+      "winners_n": 21,
+      "winners_denominator": 82,
+      "winners_pct": 25.61
+    },
+    {
+      "dimension": "D - setup-first discipline",
+      "value": "ZONE_REACHED_BUT_CONFIRMATION_ABSENT",
+      "losses_n": 39,
+      "losses_denominator": 55,
+      "losses_pct": 70.91,
+      "winners_n": 61,
+      "winners_denominator": 82,
+      "winners_pct": 74.39
+    },
+    {
+      "dimension": "Recorded setup level",
+      "value": "ABOVE_CPR",
+      "losses_n": 11,
+      "losses_denominator": 55,
+      "losses_pct": 20.0,
+      "winners_n": 11,
+      "winners_denominator": 82,
+      "winners_pct": 13.41
+    },
+    {
+      "dimension": "Recorded setup level",
+      "value": "BELOW_CPR",
+      "losses_n": 25,
+      "losses_denominator": 55,
+      "losses_pct": 45.45,
+      "winners_n": 42,
+      "winners_denominator": 82,
+      "winners_pct": 51.22
+    },
+    {
+      "dimension": "Recorded setup level",
+      "value": "PDH",
+      "losses_n": 3,
+      "losses_denominator": 55,
+      "losses_pct": 5.45,
+      "winners_n": 8,
+      "winners_denominator": 82,
+      "winners_pct": 9.76
+    },
+    {
+      "dimension": "Recorded setup level",
+      "value": "PDL",
+      "losses_n": 1,
+      "losses_denominator": 55,
+      "losses_pct": 1.82,
+      "winners_n": 1,
+      "winners_denominator": 82,
+      "winners_pct": 1.22
+    },
+    {
+      "dimension": "Recorded setup level",
+      "value": "R1",
+      "losses_n": 9,
+      "losses_denominator": 55,
+      "losses_pct": 16.36,
+      "winners_n": 16,
+      "winners_denominator": 82,
+      "winners_pct": 19.51
+    },
+    {
+      "dimension": "Recorded setup level",
+      "value": "R2",
+      "losses_n": 5,
+      "losses_denominator": 55,
+      "losses_pct": 9.09,
+      "winners_n": 4,
+      "winners_denominator": 82,
+      "winners_pct": 4.88
+    },
+    {
+      "dimension": "Recorded setup level",
+      "value": "S1",
+      "losses_n": 1,
+      "losses_denominator": 55,
+      "losses_pct": 1.82,
+      "winners_n": 0,
+      "winners_denominator": 82,
+      "winners_pct": 0.0
+    },
+    {
+      "dimension": "Exit type",
+      "value": "EOD",
+      "losses_n": 30,
+      "losses_denominator": 55,
+      "losses_pct": 54.55,
+      "winners_n": 81,
+      "winners_denominator": 82,
+      "winners_pct": 98.78
+    },
+    {
+      "dimension": "Exit type",
+      "value": "STOP",
+      "losses_n": 25,
+      "losses_denominator": 55,
+      "losses_pct": 45.45,
+      "winners_n": 0,
+      "winners_denominator": 82,
+      "winners_pct": 0.0
+    },
+    {
+      "dimension": "Exit type",
+      "value": "TARGET",
+      "losses_n": 0,
+      "losses_denominator": 55,
+      "losses_pct": 0.0,
+      "winners_n": 1,
+      "winners_denominator": 82,
+      "winners_pct": 1.22
+    },
+    {
+      "dimension": "Direction",
+      "value": "BEAR",
+      "losses_n": 42,
+      "losses_denominator": 55,
+      "losses_pct": 76.36,
+      "winners_n": 70,
+      "winners_denominator": 82,
+      "winners_pct": 85.37
+    },
+    {
+      "dimension": "Direction",
+      "value": "BULL",
+      "losses_n": 13,
+      "losses_denominator": 55,
+      "losses_pct": 23.64,
+      "winners_n": 12,
+      "winners_denominator": 82,
+      "winners_pct": 14.63
+    },
+    {
+      "dimension": "Instrument",
+      "value": "BANKNIFTY",
+      "losses_n": 29,
+      "losses_denominator": 55,
+      "losses_pct": 52.73,
+      "winners_n": 41,
+      "winners_denominator": 82,
+      "winners_pct": 50.0
+    },
+    {
+      "dimension": "Instrument",
+      "value": "NIFTY",
+      "losses_n": 26,
+      "losses_denominator": 55,
+      "losses_pct": 47.27,
+      "winners_n": 41,
+      "winners_denominator": 82,
+      "winners_pct": 50.0
+    }
+  ],
+  "clustering": {
+    "loss_sessions": 55,
+    "max_losses_in_one_session": 1,
+    "sessions_with_more_than_one_loss": 0
+  },
+  "losers": 55,
+  "winners": 82
+}

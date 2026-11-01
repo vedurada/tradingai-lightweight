@@ -1,0 +1,7 @@
+case_id,type,instrument,timestamp,direction,candle_replay_match_count,classification,evidence
+SS-DFD2B7DFE704,signal,NIFTY,2026-10-27T11:10:00+05:30,BEAR,1,PROBABLE_MATCH,1 candle-by-candle BEAR trade found near recorded signal; entry/exit at 2026-10-27T11:10:00+05:30; exit_reason=EOD
+SS-55CC79460843,signal,BANKNIFTY,2026-10-29T09:30:00+05:30,BULL,0,UNCLASSIFIABLE,No candle-by-candle trade found for recorded signal
+PT-6C19D5601E,trade,NIFTY,2026-10-27T11:15:00+05:30,BEAR,1,PROBABLE_MATCH,1 candle-by-candle BEAR trade found; entry=2026-10-27T11:15:00+05:30 exit=2026-10-27T11:15:00+05:30 exit_reason=TARGET
+PT-1AFB06CC01,trade,NIFTY,2026-10-28T11:00:00+05:30,BULL,1,PROBABLE_MATCH,1 candle-by-candle BULL trade found; entry=2026-10-28T11:00:00+05:30 exit=2026-10-28T11:00:00+05:30 exit_reason=TARGET
+PT-58E0E20BA3,trade,NIFTY,2026-10-28T12:05:00+05:30,BULL,1,PROBABLE_MATCH,1 candle-by-candle BULL trade found; entry=2026-10-28T12:05:00+05:30 exit=2026-10-28T12:05:00+05:30 exit_reason=EOD
+PT-7F4FF31032,trade,NIFTY,2026-10-28T12:50:00+05:30,BULL,1,PROBABLE_MATCH,1 candle-by-candle BULL trade found; entry=2026-10-28T12:50:00+05:30 exit=2026-10-28T12:50:00+05:30 exit_reason=TARGET

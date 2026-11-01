@@ -1,0 +1,5 @@
+metric,reference,run1,run2,match
+trades,729,881,881,NO
+win_rate,72.43,98.18,98.18,NO
+total_points,19210.95,19565.04,19565.04,NO
+profit_factor,3.47,1604.69,1604.69,NO

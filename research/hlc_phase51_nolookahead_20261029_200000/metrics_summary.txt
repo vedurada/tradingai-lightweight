@@ -1,0 +1,26 @@
+Phase 5.1 — HLC Three-Day Historical Simulation
+Sessions: 2026-10-27, 2026-10-28, 2026-10-29
+Instruments: NIFTY, BANKNIFTY
+
+Combined Results:
+  trades: 63
+  signals: 63
+  executed: 63
+  wins: 36
+  losses: 27
+  flats: 0
+  win_rate: 57.14
+  net_points: 713.94
+  avg_points_per_trade: 11.33
+  avg_win_points: 49.87
+  avg_loss_points: -40.05
+  total_r: 22.218
+  avg_r: 0.353
+  max_drawdown_pts: 246.45
+  max_drawdown_r: 3.0
+  stop_exits: 27
+  target_exits: 32
+  eod_exits: 4
+  same_candle_ambiguities: 0
+  entry_candle_exits: 21
+  max_consecutive_losses: 3

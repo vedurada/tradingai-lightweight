@@ -1,0 +1,16 @@
+app.research.scalp_engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.paper_trade.engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.live.engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.core.db -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.research.scalp_validation -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.research.scalp_signal_store -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.research.cpr_trigger_engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.research.cpr_strategy_engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.decision.view -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.market.nse_calendar -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.market.provider -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.core.qualification -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.scenarios.engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.strategies.engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.risk.engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+BAD_COUNT= 0

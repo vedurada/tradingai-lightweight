@@ -1,0 +1,205 @@
+{
+  "G-A_oos_improvement": {
+    "baseline_oos_net_R_per_trade": 0.6282,
+    "candidate_oos_net_R_per_trade": 0.5411,
+    "pass": false
+  },
+  "G-B_not_trade_count_artifact": {
+    "pass": false,
+    "cost_grid_candidate": {
+      "0.00": 0.6411,
+      "0.10": 0.5411,
+      "0.20": 0.4411,
+      "0.30": 0.3411
+    },
+    "cost_grid_baseline": {
+      "0.00": 0.7282,
+      "0.10": 0.6282,
+      "0.20": 0.5282,
+      "0.30": 0.4282
+    },
+    "removed_signal_count": 39,
+    "removed_signal_net_R_per_trade": 0.4989,
+    "removed_signal_net_R": 19.456,
+    "note": "counterfactual expectancy of the signals the filter removed"
+  },
+  "G-C_risk": {
+    "baseline_max_dd_r": -1.591,
+    "candidate_max_dd_r": -1.591,
+    "max_dd_le_1_5x_baseline": true,
+    "baseline_largest_loss_r": -1.188,
+    "candidate_largest_loss_r": -1.101,
+    "baseline_mean_mae_r": 0.526,
+    "candidate_mean_mae_r": 0.544,
+    "mae_not_worse": false,
+    "capital_base_subgates": "INCONCLUSIVE",
+    "capital_base_note": "No production-confirmed capital base exists for this research, so \"max drawdown <= 20% of capital\" and \"largest loss <= 5% of capital\" cannot be evaluated. No capital figure is invented and index points are never equated to rupees."
+  },
+  "G-D_stability": {
+    "periods": {
+      "IS": {
+        "base_n": 69,
+        "cand_n": 50,
+        "base_net_R_per_trade": 0.2073,
+        "cand_net_R_per_trade": 0.1442,
+        "positive": false
+      },
+      "VAL": {
+        "base_n": 34,
+        "cand_n": 18,
+        "base_net_R_per_trade": 0.381,
+        "cand_net_R_per_trade": 0.4732,
+        "positive": true
+      },
+      "OOS": {
+        "base_n": 26,
+        "cand_n": 22,
+        "base_net_R_per_trade": 0.6282,
+        "cand_net_R_per_trade": 0.5411,
+        "positive": false
+      }
+    },
+    "n_periods_positive": 1,
+    "walk_forward_blocks": [
+      {
+        "block": 1,
+        "sessions": 13,
+        "base_n": 23,
+        "cand_n": 16,
+        "base_net_R_per_trade": 0.5537,
+        "cand_net_R_per_trade": 0.2882,
+        "positive": false
+      },
+      {
+        "block": 2,
+        "sessions": 13,
+        "base_n": 22,
+        "cand_n": 15,
+        "base_net_R_per_trade": 0.0267,
+        "cand_net_R_per_trade": 0.0435,
+        "positive": true
+      },
+      {
+        "block": 3,
+        "sessions": 13,
+        "base_n": 22,
+        "cand_n": 17,
+        "base_net_R_per_trade": 0.0426,
+        "cand_net_R_per_trade": 0.107,
+        "positive": true
+      },
+      {
+        "block": 4,
+        "sessions": 13,
+        "base_n": 21,
+        "cand_n": 11,
+        "base_net_R_per_trade": 0.3208,
+        "cand_net_R_per_trade": 0.5797,
+        "positive": true
+      },
+      {
+        "block": 5,
+        "sessions": 13,
+        "base_n": 21,
+        "cand_n": 12,
+        "base_net_R_per_trade": 0.3863,
+        "cand_net_R_per_trade": 0.181,
+        "positive": false
+      },
+      {
+        "block": 6,
+        "sessions": 10,
+        "base_n": 20,
+        "cand_n": 19,
+        "base_net_R_per_trade": 0.7242,
+        "cand_net_R_per_trade": 0.6316,
+        "positive": false
+      }
+    ],
+    "walk_forward_note": "six chronological blocks over the full range with the frozen parameters; blocks 1-2 are in-sample for the parameter selection and are reported for context",
+    "n_blocks_positive": 3,
+    "instruments": {
+      "NIFTY": {
+        "base_n": 13,
+        "cand_n": 11,
+        "base_net_R_per_trade": 0.8602,
+        "cand_net_R_per_trade": 0.7195,
+        "positive": false
+      },
+      "BANKNIFTY": {
+        "base_n": 13,
+        "cand_n": 11,
+        "base_net_R_per_trade": 0.3962,
+        "cand_net_R_per_trade": 0.3627,
+        "positive": false
+      }
+    },
+    "n_instruments_positive": 0,
+    "neighbour_stability": {
+      "family": "E3",
+      "settings": {
+        "E3_retest": {
+          "val_n": 18,
+          "val_net_R_per_trade": 0.4732,
+          "val_positive": true,
+          "oos_n": 22,
+          "oos_net_R_per_trade": 0.5411,
+          "oos_positive": false,
+          "is_selected": false
+        }
+      },
+      "n_settings": 1,
+      "n_positive_both_val_and_oos": 0,
+      "n_evaluated": 1,
+      "stability_pct": 0.0
+    },
+    "neighbour_stability_pct": null,
+    "neighbour_stability_note": "NOT APPLICABLE: this family has a single pre-registered setting, so no neighbouring parameter exists to test",
+    "pass": false
+  },
+  "G-E_evidence_sufficiency": {
+    "n_oos_candidate": 22,
+    "n_oos_baseline": 26,
+    "n_oos_nifty": 11,
+    "n_oos_banKNIFTY": 11,
+    "n_oos_trade_threshold_met": true,
+    "n_per_instrument_threshold_met": true,
+    "bootstrap_ci_low": -0.2268,
+    "bootstrap_ci_high": 0.0587,
+    "ci_straddles_zero": true,
+    "bootstrap_method": "paired session-block bootstrap, 6 chronological blocks resampled with replacement",
+    "bootstrap_n": 2000,
+    "bootstrap_seed": 20261022,
+    "pass": false
+  },
+  "G-F_integrity": {
+    "prefix_property_checked": true,
+    "point_in_time_checked": true,
+    "levels_from_previous_session_only": true,
+    "identical_execution_model": true,
+    "identical_cost_model": true,
+    "gap_aware_accounting": true,
+    "dq_status": "PASS",
+    "dq_problems": [],
+    "pass": true
+  },
+  "G-G_scope": {
+    "index_level_only": true,
+    "option_premium_claims": "NONE",
+    "bid_ask_claims": "NONE",
+    "rupee_profit_claims": "NONE",
+    "pass": true
+  },
+  "E7_status": {
+    "conflict_sessions": {
+      "NIFTY": 55,
+      "BANKNIFTY": 48
+    },
+    "status": "EVALUATED",
+    "note": "Conflicts are detected empirically with the production trigger functions: sessions whose first trigger candle qualifies for BOTH directions. The production engine resolves such a conflict deterministically (BEAR before BULL); E7 is implemented filter-only, so no BULL trade is introduced."
+  },
+  "OVERALL": "FAIL",
+  "ELIGIBLE_FOR_HUMAN_REVIEW": false,
+  "capital_subgates": "INCONCLUSIVE",
+  "decision": "NOT ELIGIBLE - candidate does not pass the hard gates"
+}

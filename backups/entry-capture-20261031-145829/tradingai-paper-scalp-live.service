@@ -1,0 +1,22 @@
+[Unit]
+Description=TradingAI Live Paper Scalp Trader (HLC 3-Bar, Mode C)
+After=network-online.target tradingai-api.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+Group=ubuntu
+WorkingDirectory=/opt/tradingai
+ExecStart=/usr/bin/python3 /opt/tradingai/scripts/paper_scalp_live.py
+Restart=always
+RestartSec=10
+TimeoutStartSec=60
+TimeoutStopSec=60
+KillMode=mixed
+StandardOutput=append:/opt/tradingai/logs/paper_scalp_live.log
+StandardError=append:/opt/tradingai/logs/paper_scalp_live.err.log
+# No broker order placement — paper trading only, simulated fills
+
+[Install]
+WantedBy=multi-user.target

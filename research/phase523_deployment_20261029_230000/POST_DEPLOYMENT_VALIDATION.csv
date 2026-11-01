@@ -1,0 +1,13 @@
+check_id,check,method,expected,actual,result
+PD1,Service active,systemctl is-active,active,active,PASS
+PD2,API health,curl /api/health,OK,OK,PASS
+PD3,New PID,pgrep,Changed from 802784,863268,PASS
+PD4,HLC_ONLY_MODE in env,proc environ,HLC_ONLY_MODE=true,HLC_ONLY_MODE=true,PASS
+PD5,_hlc_only_mode() with true,Python import,True,True,PASS
+PD6,_hlc_only_mode() missing→CPR,Python import,False,False,PASS
+PD7,DB integrity,PRAGMA integrity_check,ok,ok,PASS
+PD8,paper_trades count,SELECT COUNT,94,94,PASS
+PD9,scalp_signals count,SELECT COUNT,29,29,PASS
+PD10,No new alerts,Log inspection,No new alerts,No new alerts,PASS
+PD11,No new trades,Log inspection,No new trades,No new trades,PASS
+PD12,Logs clean,Log inspection,No errors,No errors,PASS

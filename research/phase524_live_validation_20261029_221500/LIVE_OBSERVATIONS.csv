@@ -1,0 +1,2 @@
+observation_id,timestamp_ist,instrument,completed_candle,ingestion_delay_sec,signal_id,direction,status,rejection_reason,notes
+# NOT RUN - Market closed (2026-10-29 22:15 IST)

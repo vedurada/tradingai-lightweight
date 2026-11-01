@@ -1,0 +1,48 @@
+{
+  "selected": "S4",
+  "criterion": "highest VAL net R/trade among S1-S5 with >=10 VAL trades; ties <0.02R to the smaller mean stop distance",
+  "best_val_net_R": "S4",
+  "tie_candidates": [
+    "S4"
+  ],
+  "eligible": [
+    "S4"
+  ],
+  "val_net_R_per_trade": {
+    "S1": -0.0471,
+    "S2": -0.2469,
+    "S3": 1.209,
+    "S4": 0.2057,
+    "S5": -0.1274
+  },
+  "val_n": {
+    "S1": 2,
+    "S2": 4,
+    "S3": 5,
+    "S4": 18,
+    "S5": 3
+  },
+  "val_mean_stop_distance_pct": {
+    "S1": 0.003353,
+    "S2": 0.004167,
+    "S3": 0.004484,
+    "S4": 0.007507,
+    "S5": 0.003459
+  },
+  "selection_used": "VAL only; OOS not consulted",
+  "ranking_consistency": {
+    "NIFTY": {
+      "best_val_variant": "S4",
+      "values": {
+        "S4": 0.2476
+      }
+    },
+    "BANKNIFTY": {
+      "best_val_variant": "S4",
+      "values": {
+        "S4": 0.1638
+      }
+    }
+  },
+  "ranking_ok": true
+}

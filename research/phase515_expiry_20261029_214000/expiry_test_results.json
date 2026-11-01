@@ -1,0 +1,107 @@
+[
+  {
+    "test_id": "ET1",
+    "scenario": "Signal age just below threshold (1 min before expiry)",
+    "expected": "ACCEPTED",
+    "actual": "ACCEPTED: None",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET2",
+    "scenario": "Signal age exactly at threshold (expiry boundary)",
+    "expected": "REJECTED (expired)",
+    "actual": "REJECTED: entry_window_expired",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET3",
+    "scenario": "Signal age just above threshold (1 min after expiry)",
+    "expected": "REJECTED (expired)",
+    "actual": "REJECTED: entry_window_expired",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET4",
+    "scenario": "Cross-session (yesterday 15:25 \u2192 today 09:15)",
+    "expected": "REJECTED (cross_session)",
+    "actual": "REJECTED: cross_session_signal",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET5",
+    "scenario": "Friday signal observed on Monday",
+    "expected": "REJECTED (cross_session)",
+    "actual": "REJECTED: cross_session_signal",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET6",
+    "scenario": "Market holiday signal",
+    "expected": "REJECTED (cross_session)",
+    "actual": "REJECTED: cross_session_signal",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET7",
+    "scenario": "Future-dated signal",
+    "expected": "REJECTED (future_dated)",
+    "actual": "REJECTED: future_dated_signal",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET8",
+    "scenario": "Missing signal time",
+    "expected": "REJECTED (missing_signal_time)",
+    "actual": "REJECTED: missing_signal_time",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET9",
+    "scenario": "Malformed timestamp",
+    "expected": "REJECTED (malformed_timestamp)",
+    "actual": "REJECTED: malformed_timestamp",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET10",
+    "scenario": "Timezone mismatch (UTC signal)",
+    "expected": "Any (documented)",
+    "actual": "REJECTED: entry_before_signal_completion",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET11",
+    "scenario": "Duplicate processing (same signal twice)",
+    "expected": "Both same result",
+    "actual": "ACCEPTED/ACCEPTED",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET12",
+    "scenario": "Process restart with expired signal",
+    "expected": "REJECTED (expired)",
+    "actual": "ACCEPTED: None",
+    "result": "FAIL"
+  },
+  {
+    "test_id": "ET13",
+    "scenario": "Entry before signal completion",
+    "expected": "REJECTED (entry_before_signal)",
+    "actual": "REJECTED: entry_before_signal_completion",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET14",
+    "scenario": "Entry after expiry",
+    "expected": "ACCEPTED (at boundary, not expired)",
+    "actual": "ACCEPTED (now == entry_window_end)",
+    "result": "PASS"
+  },
+  {
+    "test_id": "ET15",
+    "scenario": "Open trade monitoring after rejection",
+    "expected": "Design: monitor() independent",
+    "actual": "PASS (design)",
+    "result": "PASS"
+  }
+]

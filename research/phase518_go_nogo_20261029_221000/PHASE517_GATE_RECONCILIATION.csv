@@ -1,0 +1,13 @@
+gate_id,gate,phase517_status,phase518_status,evidence
+OG1,Market-data timer,IMPLEMENTED AND TESTED,IMPLEMENTED AND TESTED,tradingai-market-data.timer
+OG2,paper_scalp_live service,NOT IMPLEMENTED,NOT IMPLEMENTED,No enabled systemd unit
+OG3,Telegram alert watcher,IMPLEMENTED AND TESTED,IMPLEMENTED AND TESTED,cron every minute
+OG4,Telegram duplicate suppression,IMPLEMENTED AND TESTED,IMPLEMENTED AND TESTED,fired key
+OG5,Backup procedure,DOCUMENTED ONLY,DOCUMENTED ONLY,Phase 5.8
+OG6,Restore rehearsal,NOT VERIFIED,NOT VERIFIED,Isolated test DB only
+OG7,Rollback procedure,DOCUMENTED ONLY,DOCUMENTED ONLY,Phase 5.8
+OG8,Feature flag,NOT IMPLEMENTED,NOT IMPLEMENTED,Designed only
+OG9,Daily trade limit,NOT IMPLEMENTED,NOT IMPLEMENTED,Designed only
+OG10,Working tree safety,NOT VERIFIED,NOT VERIFIED,1842 dirty files
+OG11,CPR retention,IMPLEMENTED AND TESTED,IMPLEMENTED AND TESTED,_cpr_book_signal retained
+OG12,Broker execution disabled,IMPLEMENTED AND TESTED,IMPLEMENTED AND TESTED,No broker calls

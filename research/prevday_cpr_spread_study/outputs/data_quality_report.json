@@ -1,0 +1,80 @@
+{
+  "excluded_sessions": {
+    "2026-10-22": "in_progress (30 bars) - EXCLUDED"
+  },
+  "first_ts": "2026-07-06T09:15:00+05:30",
+  "instrument": "NIFTY",
+  "last_ts": "2026-10-22T12:15:00+05:30",
+  "ohlc_violations": 0,
+  "option_history": {
+    "historical_option_premiums_available": false,
+    "option_contracts_rows": 0,
+    "option_snapshots_rows": 0
+  },
+  "pit_recompute_checked": 71,
+  "pit_recompute_mismatches": 0,
+  "rows": 5658,
+  "session_days": 76,
+  "sessions_missing_eod_bar": {
+    "2026-09-21": [
+      "15:20",
+      "15:25"
+    ],
+    "2026-10-22": [
+      "12:20",
+      "12:25",
+      "12:30",
+      "12:35",
+      "12:40",
+      "12:45",
+      "12:50",
+      "12:55",
+      "13:00",
+      "13:05",
+      "13:10",
+      "13:15",
+      "13:20",
+      "13:25",
+      "13:30",
+      "13:35",
+      "13:40",
+      "13:45",
+      "13:50",
+      "13:55",
+      "14:00",
+      "14:05",
+      "14:10",
+      "14:15",
+      "14:20",
+      "14:25",
+      "14:30",
+      "14:35",
+      "14:40",
+      "14:45",
+      "14:50",
+      "14:55",
+      "15:00",
+      "15:05",
+      "15:10",
+      "15:15",
+      "15:20",
+      "15:25"
+    ]
+  },
+  "short_sessions": {
+    "2026-09-21": 73,
+    "2026-10-15": 73,
+    "2026-10-22": 37
+  },
+  "signal_recompute_checked": 1840,
+  "signal_recompute_mismatches": 0,
+  "usable_range": [
+    "2026-07-06",
+    "2026-10-21"
+  ],
+  "usable_sessions": 75,
+  "volume_all_zero": true,
+  "volume_values_present": [
+    0.0
+  ]
+}

@@ -1,0 +1,30 @@
+[
+  {
+    "test_id": "B1",
+    "scenario": "SQLite backup via backup API",
+    "expected": "Integrity OK, counts match",
+    "actual": "Integrity=ok, match=True",
+    "result": "PASS"
+  },
+  {
+    "test_id": "B2",
+    "scenario": "SQLite restore via backup API",
+    "expected": "Integrity OK, counts match original",
+    "actual": "Integrity=ok, match=True",
+    "result": "PASS"
+  },
+  {
+    "test_id": "B3",
+    "scenario": "Simulated failed restore (corrupt DB)",
+    "expected": "Integrity check fails",
+    "actual": "Integrity check failed: True",
+    "result": "PASS"
+  },
+  {
+    "test_id": "B4",
+    "scenario": "Original test DB unchanged after backup/restore",
+    "expected": "Counts and integrity match pre-backup",
+    "actual": "Counts={'paper_trades': 1, 'scalp_signals': 0, 'daily_trade_locks': 0}, integrity=ok",
+    "result": "PASS"
+  }
+]

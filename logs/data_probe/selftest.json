@@ -1,0 +1,108 @@
+{
+  "at": "2026-10-31T15:13:32+05:30",
+  "close": "2026-10-30T15:25:00+05:30",
+  "readonly": [
+    true,
+    "OperationalError: attempt to write a readonly database"
+  ],
+  "instruments": {
+    "NIFTY": {
+      "target_close": "2026-10-30T15:25:00+05:30",
+      "signal_candle_start": "2026-10-30T15:20:00+05:30",
+      "db_5m_signal": {
+        "present": true,
+        "open": 23010.0,
+        "is_complete": true,
+        "ingested_at": "2026-10-30T15:25:01+05:30",
+        "ingest_after_close_s": 1.1
+      },
+      "db_5m_entry": {
+        "present": true,
+        "open": 23010.0,
+        "is_complete": true,
+        "ingested_at": "2026-10-30T15:30:03+05:30",
+        "ingest_after_close_s": 3.9
+      },
+      "provider_5m_signal": {
+        "present": true,
+        "open": 23010.0,
+        "data_ts": "2026-10-30T15:20:00+05:30"
+      },
+      "provider_5m_entry": {
+        "present": true,
+        "open": 23010.0,
+        "data_ts": "2026-10-30T15:25:00+05:30"
+      },
+      "provider_1m_entry": {
+        "present": true,
+        "open": 23010.0,
+        "data_ts": "2026-10-30T15:25:00+05:30"
+      },
+      "quote": {
+        "present": true,
+        "price": 23053.1,
+        "data_ts": "2026-10-30T15:31:11+05:30",
+        "age_s": 85344.1,
+        "state": "STALE"
+      },
+      "fetch_ms": {
+        "5m": 2090.7,
+        "1m": 709.9
+      },
+      "errors": {
+        "5m": null,
+        "1m": null
+      },
+      "provider_outage": false
+    },
+    "BANKNIFTY": {
+      "target_close": "2026-10-30T15:25:00+05:30",
+      "signal_candle_start": "2026-10-30T15:20:00+05:30",
+      "db_5m_signal": {
+        "present": true,
+        "open": 54641.6015625,
+        "is_complete": true,
+        "ingested_at": "2026-10-30T15:25:01+05:30",
+        "ingest_after_close_s": 1.9
+      },
+      "db_5m_entry": {
+        "present": true,
+        "open": 54641.6015625,
+        "is_complete": true,
+        "ingested_at": "2026-10-30T15:30:04+05:30",
+        "ingest_after_close_s": 4.5
+      },
+      "provider_5m_signal": {
+        "present": true,
+        "open": 54641.6015625,
+        "data_ts": "2026-10-30T15:20:00+05:30"
+      },
+      "provider_5m_entry": {
+        "present": true,
+        "open": 54641.6015625,
+        "data_ts": "2026-10-30T15:25:00+05:30"
+      },
+      "provider_1m_entry": {
+        "present": true,
+        "open": 54641.6015625,
+        "data_ts": "2026-10-30T15:25:00+05:30"
+      },
+      "quote": {
+        "present": true,
+        "price": 54686.95,
+        "data_ts": "2026-10-30T15:31:11+05:30",
+        "age_s": 85344.8,
+        "state": "STALE"
+      },
+      "fetch_ms": {
+        "5m": 133.2,
+        "1m": 586.9
+      },
+      "errors": {
+        "5m": null,
+        "1m": null
+      },
+      "provider_outage": false
+    }
+  }
+}

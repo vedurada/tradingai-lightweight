@@ -1,0 +1,21 @@
+{
+  "checks": 4800,
+  "failed": 0,
+  "per_check": {
+    "bear_trigger": 600,
+    "breakout_trigger": 300,
+    "bull_trigger": 600,
+    "calculate_cpr": 400,
+    "day_levels": 400,
+    "decay_win": 600,
+    "entry_levels": 600,
+    "exits_opens": 600,
+    "no_chase_fill": 300,
+    "pivot_levels": 400
+  },
+  "source_files": {
+    "strategy": "/opt/tradingai/app/research/cpr_strategy_engine.py",
+    "trigger": "/opt/tradingai/app/research/cpr_trigger_engine.py"
+  },
+  "note": "production functions extracted with ast; modules never imported"
+}

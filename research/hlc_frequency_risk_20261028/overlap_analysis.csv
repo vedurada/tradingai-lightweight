@@ -1,0 +1,7 @@
+instrument,mode,executed_trades,max_simultaneous_positions,days_with_multi_trades,max_trades_per_day,max_aggregate_risk_pts,avg_time_in_trade_min
+NIFTY,A_one_trade_per_day,80,1,0,1,47.4,15.0
+NIFTY,B_every_signal_overlapping,505,4,78,14,147.55,19.1
+NIFTY,C_one_open_position,388,1,78,10,94.65,20.2
+BANKNIFTY,A_one_trade_per_day,78,1,0,1,275.3,33.7
+BANKNIFTY,B_every_signal_overlapping,441,3,77,15,376.7,19.9
+BANKNIFTY,C_one_open_position,345,1,74,11,275.3,22.1

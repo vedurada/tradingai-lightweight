@@ -1,0 +1,63 @@
+# Phase 5.3 — Database Backup Verification
+
+## Database Integrity Check
+
+PRAGMA integrity_check: OK
+
+## Schema Verification
+
+All 23 tables present:
+- ai_explanations
+- backtest_decisions
+- backtest_outcomes
+- backtest_runs
+- backtest_trades
+- contrarian_verdicts
+- data_quality_events
+- daily_trade_locks
+- historical_sessions
+- instruments
+- market_candles_5m
+- market_levels
+- market_snapshots
+- option_contracts
+- option_snapshots
+- paper_align
+- paper_align_veto
+- paper_pivot
+- paper_scalp
+- paper_spreads
+- paper_trade_events
+- paper_trades
+- pipeline_runs
+- research_daily_decisions
+- rule_events
+- rule_registry
+- scalp_signals
+- scenario_candidates
+- scenario_definitions
+- scenario_matches
+- shadow_verdicts
+- system_health
+- trade_candidates
+- trade_journal
+- trade_mistake
+- volatility_snapshots
+
+## Strategy-Related Table Counts
+
+| Table | Rows | Strategy |
+|-------|------|----------|
+| scalp_signals | 19 | HLC 3-Bar Scalp |
+| paper_trades (SCALP_HLC) | 94 | HLC 3-Bar Scalp |
+| paper_scalp | 215 | HLC 3-Bar Scalp (EOD backtest) |
+| qualified_trades | 10 | CPR/QualificationEngine (legacy) |
+| daily_trade_locks | 10 | CPR/QualificationEngine (legacy) |
+| paper_align | Unknown | CPR Trigger (legacy) |
+| backtest_runs | 2293 | Mixed (all RUNNING) |
+| backtest_trades | 0 | Empty |
+
+## Backup Method
+
+Read-only audit — no database backup was created because no modifications were made.
+If a backup were needed, use: sqlite3 DB_PATH ".backup backup_path"

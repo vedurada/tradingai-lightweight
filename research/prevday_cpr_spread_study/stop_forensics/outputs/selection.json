@@ -1,0 +1,67 @@
+{
+  "family": "E3",
+  "setting": "E3_retest",
+  "family_best": {
+    "E1": {
+      "setting": "E1_k1.00",
+      "val_net_R_per_trade": 0.4122,
+      "status": "ELIGIBLE",
+      "tied_settings": [
+        "E1_k1.00",
+        "E1_k1.25",
+        "E1_k1.50"
+      ]
+    },
+    "E2": {
+      "setting": "E2_x0.10pct",
+      "val_net_R_per_trade": 0.4577,
+      "status": "ELIGIBLE",
+      "tied_settings": [
+        "E2_x0.10pct"
+      ]
+    },
+    "E3": {
+      "setting": "E3_retest",
+      "val_net_R_per_trade": 0.4732,
+      "status": "ELIGIBLE",
+      "tied_settings": [
+        "E3_retest"
+      ]
+    },
+    "E4": {
+      "setting": "E4_until_1100",
+      "val_net_R_per_trade": 0.4129,
+      "status": "ELIGIBLE",
+      "tied_settings": [
+        "E4_until_1100",
+        "E4_until_1300"
+      ]
+    },
+    "E5": {
+      "setting": "E5_skip_q90",
+      "val_net_R_per_trade": 0.4497,
+      "status": "ELIGIBLE",
+      "tied_settings": [
+        "E5_skip_q90"
+      ]
+    },
+    "E6": {
+      "setting": "E6_reentry",
+      "val_net_R_per_trade": 0.3337,
+      "status": "ELIGIBLE",
+      "tied_settings": [
+        "E6_reentry"
+      ]
+    },
+    "E7": {
+      "setting": "E7_conflict",
+      "val_net_R_per_trade": 0.4055,
+      "status": "ELIGIBLE",
+      "tied_settings": [
+        "E7_conflict"
+      ]
+    }
+  },
+  "rule": "within a family: highest VAL net R per trade with >= 10 VAL trades; ties (< 0.02 R) broken towards the more conservative setting; primary = family with the best VAL score",
+  "oos_touched_before_selection": false
+}

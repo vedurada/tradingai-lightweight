@@ -1,0 +1,3 @@
+file_path,change_type,backup_path,description
+app/live/engine.py,modified,source_snapshots/engine.py.before,Changed default return from True to False in _hlc_only_mode()
+/etc/systemd/system/tradingai-api.service,modified,source_snapshots/tradingai-api.service.before,Added Environment=HLC_ONLY_MODE=true

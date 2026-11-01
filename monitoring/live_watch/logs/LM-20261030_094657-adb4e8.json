@@ -1,0 +1,19 @@
+{
+  "run_id": "LM-20261030_094657-adb4e8",
+  "start": "2026-10-30T09:46:57.502703+05:30",
+  "finish": "2026-10-30T09:46:57.507607+05:30",
+  "duration_s": 0.004904,
+  "status": "RUNNING",
+  "strategy_mode": "SCALP_HLC",
+  "market_state": "IN_SESSION",
+  "data_freshness": {
+    "NIFTY": "FRESH",
+    "BANKNIFTY": "FRESH"
+  },
+  "signals": 29,
+  "paper_trades": 94,
+  "alerts": 33,
+  "detected_problems": [],
+  "recovery_attempts": [],
+  "errors": []
+}

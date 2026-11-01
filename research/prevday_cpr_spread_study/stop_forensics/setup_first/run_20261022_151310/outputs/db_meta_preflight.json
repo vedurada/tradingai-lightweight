@@ -1,0 +1,33 @@
+{
+  "live_db": {
+    "tradingai.db": {
+      "size": 12161024,
+      "mtime": 1792668007.7948315,
+      "sha256": "455d8da024f6abae1283318958decf4f5e9d598397e6da67002c092011b0b2d9"
+    },
+    "tradingai.db-wal": {
+      "size": 4243632,
+      "mtime": 1792668017.93099,
+      "sha256": null
+    },
+    "tradingai.db-shm": {
+      "size": 32768,
+      "mtime": 1792668017.93599,
+      "sha256": null
+    }
+  },
+  "snapshot": {
+    "snapshot_path": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/snapshots/tradingai_snapshot.db",
+    "snapshot_sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f",
+    "snapshot_size_bytes": 12161024,
+    "snapshot_created_at": "2026-10-22T17:14:44.552093+05:30",
+    "source": {
+      "path": "/opt/tradingai/database/tradingai.db",
+      "size_bytes": 12161024,
+      "mtime": "2026-10-22T16:50:07.794832+05:30"
+    },
+    "source_sha256_at_snapshot": "455d8da024f6abae1283318958decf4f5e9d598397e6da67002c092011b0b2d9",
+    "method": "sqlite3 Connection.backup from a mode=ro source (consistent image)",
+    "work_copy": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/setup_first/run_20261022_151310/snapshots/working_copy.db"
+  }
+}

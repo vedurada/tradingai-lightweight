@@ -1,0 +1,5 @@
+metric,day_by_day_candle_replay_reference,candle_by_candle_replay,day_by_day_authoritative
+trades,729,881,729
+win_rate_pct,72.43,98.18,72.43
+total_points,19210.95,19565.04,19210.95
+profit_factor,3.47,1604.69,3.47

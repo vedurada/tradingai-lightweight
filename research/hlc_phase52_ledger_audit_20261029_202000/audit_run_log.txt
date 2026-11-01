@@ -1,0 +1,20 @@
+Phase 5.2 Independent Audit
+Date: 2026-10-29T20:13:16.533661+05:30
+Host: webserver (Oracle VM)
+Database: /opt/tradingai/database/tradingai.db
+Phase 5.1 dir: /opt/tradingai/research/hlc_phase51_nolookahead_20261029_200000
+
+Input files:
+  trades.csv: 63 rows
+  signals_and_rejections.csv: 99 rows
+
+Results:
+  Total trades: 63
+  Wins: 36, Losses: 27, Flats: 0
+  Win rate: 57.14%
+  Total points: 713.94
+  Total R: 22.218, Avg R: 0.353
+  Max DD (pts): 246.45
+  Max DD (R): 3.000
+  Discrepancies: 0
+  Signals: 99 (TRADED: 63, EXPIRED: 0, SKIPPED: 36, IGNORED: 0)

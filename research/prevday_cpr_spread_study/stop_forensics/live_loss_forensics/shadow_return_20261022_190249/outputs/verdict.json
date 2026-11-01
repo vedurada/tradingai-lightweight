@@ -1,0 +1,22 @@
+{
+ "verdict": "INCONCLUSIVE - INSUFFICIENT DATA OR EXECUTION FIDELITY",
+ "verdict_long": "INCONCLUSIVE - INSUFFICIENT DATA OR EXECUTION FIDELITY",
+ "decided_at": "2026-10-22",
+ "lines": [
+  "**FINAL VERDICT: INCONCLUSIVE - INSUFFICIENT DATA OR EXECUTION FIDELITY.**",
+  "",
+  "The shadow setup-return measurement was executed end to end: 289 setups across three populations were annotated causally (return within 12 completed bars, rejection-close confirmation at or after the return, censoring at the session end), the two hypothetical filters were priced with the production execution model, and the execution gap was measured trade by trade.",
+  "",
+  "Why it is not **SUPPORTED FOR FURTHER RESEARCH**: the annotation does not separate winners from losers. In every population the setups that returned to their level had a win rate that was *not* higher than the setups that did not (Book A TOUCH 60.7% vs 63.6%, Book A BREAK 57.5% vs 66.7%, Book B TOUCH 66.7% vs 75.0%, Book B BREAK 77.3% vs 70.2%); every Fisher p-value is at or above 0.39 and every bootstrap interval of the win-rate difference contains zero. Turned into filters, the annotation destroys R in every family and both books (Book A TOUCH +20.977R -> +14.226R, Book A BREAK +15.631R -> -2.555R under WAIT_RETURN_12B), because a filter that skips setups discards more winners than losers (Book A TOUCH: 14 winners and 8 losers skipped).",
+  "",
+  "Why it is not **NOT SUPPORTED**: nothing here refutes the hypothesis of a setup return in the stronger sense. The live-trade sample (6 trades, 3 per family) is far too small to measure a difference, the Book A/B populations are engine replays on the stored candles rather than live fills, and the discriminating test on 50-100 setups per cell has the wrong power to exclude a moderate effect. The direction of the point estimates is actually *against* the hypothesis (a returned setup was slightly less likely to win), but that is not evidence of harm at this sample size.",
+  "",
+  "Why **EXECUTION FIDELITY** is part of the verdict: the six recorded live trades cannot be replayed from the stored data. All six exits were filled intrabar on the live tick feed (4 targets, 2 stops); the opens model reproduces 2 of 6 exit prices and reasons and 0 of 6 exit *events* (every exit timestamp differs, by 6.2 minutes up to 66 hours). In 3 of 6 trades the recorded exit price lies outside the range of the stored 5-minute bar that contains the exit timestamp, so the live price feed and the stored yfinance series are not the same price series. The database holds no tick or 1-minute series, no option snapshot, no spread credit and no intrabar observation for the trade window, and the live watcher exits a setup that can be held for days while the opens model flats at 15:20 the same day.",
+  "",
+  "What would settle it: (a) a tick or 1-minute price series stored alongside the live trades, so the live watcher fills can be replayed exactly; (b) the same shadow annotation run on a materially larger live population (the live population is 6 setups in 76 sessions, the engine replay is 133); (c) the option chain and spread at the trade time, so the live P&L itself becomes reproducible. Until then the setup-return annotation is a well-defined label with a measurable base rate, but it is not a validated trading signal and it must not be deployed as a filter.",
+  "",
+  "Integrity: all checks pass - the production tree, the 11 protected files, the live database content, the three gunicorn processes and HEAD/branch are unchanged; every artifact is inside the run directory; the only external change during the study was the live services' own write-ahead-log and provider-cache activity.",
+  "",
+  "Note carried forward: the previous wait-for-setup study reported that the opens model reproduced 0 of 6 live exits. That number was an artefact of a direction-mapping bug (the live-watch rows store `BEAR`, not `BEARISH`, so all six trades were replayed as long trades). The corrected figure is 2 of 6 exit prices and reasons and 0 of 6 exit events, and the previous study's live-trade conclusions must be read with that correction."
+ ]
+}

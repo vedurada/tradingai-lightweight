@@ -1,0 +1,8 @@
+{
+  "path": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/run_20261022_172521/snapshots/tradingai_snapshot.db",
+  "size": 12161024,
+  "sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f",
+  "source_db": "/opt/tradingai/database/tradingai.db",
+  "source_db_sha256_at_backup": "455d8da024f6abae1283318958decf4f5e9d598397e6da67002c092011b0b2d9",
+  "backup_method": "sqlite3 .backup (consistent online backup)"
+}

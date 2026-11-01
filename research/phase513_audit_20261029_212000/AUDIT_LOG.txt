@@ -1,0 +1,39 @@
+# Phase 5.13 — Audit Execution Log
+# Audit date: 2026-10-29
+# Host: webserver (Oracle VM)
+# Mode: READ-ONLY research audit
+
+## Actions Performed
+
+1. Verified hostname: webserver (Oracle VM)
+2. Loaded TRADE_LEDGER.csv (974 rows) — found discrepancy (expected 729)
+3. Loaded JSON files (729 trades) — reliable source
+4. Independently recomputed all metrics from JSON — all match reported values
+5. Identified test set: 161 trades in 17 days (Oct 6-29)
+6. Ran 14 lookahead tests — 14/14 PASS
+7. Ran 5 execution sensitivity scenarios
+8. Analyzed monthly performance, direction, concentration
+9. Identified material discrepancy: TRADE_LEDGER.csv has 245 extra rows
+10. Created all 9 required deliverables
+
+## Files Modified
+
+NONE. This is a read-only audit. No production files were modified.
+
+## Files Created (in research directory)
+
+- PHASE513_REPORT.md
+- LEDGER_RECONCILIATION.csv
+- OUT_OF_SAMPLE_REVALIDATION.md
+- EXECUTION_SENSITIVITY.csv
+- MONTHLY_AND_REGIME_ROBUSTNESS.csv
+- LOOKAHEAD_INDEPENDENT_AUDIT.md
+- DISCREPANCIES_AND_LIMITATIONS.md
+- PAPER_VALIDATION_GATE.csv
+- AUDIT_LOG.txt
+- reconciliation.json
+- sensitivity.json
+
+## Production Changes
+
+NONE. No production files, database records, services, configuration or trading behavior changed.

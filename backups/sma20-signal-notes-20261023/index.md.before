@@ -1,0 +1,204 @@
+# Signal research notes
+
+Per-session, per-index research stories over the paper_align book. Auto-drafted; curate before republication.
+
+## Book: plain
+
+### NIFTY
+
+- [NIFTY 2026-07-07: a bearish PDH setup that paid +0.58R](plain/2026-07-07_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-07-07 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.58R)
+- [NIFTY 2026-07-08: a bearish BELOW_CPR setup that paid +3.15R](plain/2026-07-08_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-08 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+3.15R)
+- [NIFTY 2026-07-09: a bearish BELOW_CPR setup that won on spread decay at -0.13R](plain/2026-07-09_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-09 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (-0.13R)
+- [NIFTY 2026-07-13: a bearish BELOW_CPR setup that hit its stop at -1.00R](plain/2026-07-13_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-13 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-1.00R)
+- [NIFTY 2026-07-14: a bearish BELOW_CPR setup that paid +0.55R](plain/2026-07-14_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-14 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.55R)
+- [NIFTY 2026-07-15: a bearish R1 setup that paid +0.58R](plain/2026-07-15_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-07-15 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.58R)
+- [NIFTY 2026-07-16: a bearish BELOW_CPR setup that paid +0.06R](plain/2026-07-16_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-16 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.06R)
+- [NIFTY 2026-07-17: a bullish BRK_R2 setup that paid +0.45R](plain/2026-07-17_NIFTY_BULL_BRK_R2.md) — > **Index:** NIFTY | **Session:** 2026-07-17 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_R2 | **Result:** WIN (+0.45R)
+- [NIFTY 2026-07-20: a bearish BELOW_CPR setup that closed out at -0.29R](plain/2026-07-20_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-20 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.29R)
+- [NIFTY 2026-07-21: a bearish BELOW_CPR setup that paid +0.05R](plain/2026-07-21_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-21 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.05R)
+- [NIFTY 2026-07-22: a bearish BELOW_CPR setup that paid +0.65R](plain/2026-07-22_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-22 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.65R)
+- [NIFTY 2026-07-23: a bearish BELOW_CPR setup that paid +0.41R](plain/2026-07-23_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-07-23 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.41R)
+- [NIFTY 2026-07-27: a bearish R2 setup that closed out at -0.68R](plain/2026-07-27_NIFTY_BEAR_R2.md) — > **Index:** NIFTY | **Session:** 2026-07-27 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** LOSS (-0.68R)
+- [NIFTY 2026-07-28: a bearish PDH setup that paid +0.21R](plain/2026-07-28_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-07-28 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.21R)
+- [NIFTY 2026-07-29: a bearish R2 setup that closed out at -0.47R](plain/2026-07-29_NIFTY_BEAR_R2.md) — > **Index:** NIFTY | **Session:** 2026-07-29 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** LOSS (-0.47R)
+- [NIFTY 2026-07-30: a bearish PDH setup that closed out at -0.33R](plain/2026-07-30_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-07-30 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** LOSS (-0.33R)
+- [NIFTY 2026-07-31: a bullish BRK_PDH setup that paid +0.23R](plain/2026-07-31_NIFTY_BULL_BRK_PDH.md) — > **Index:** NIFTY | **Session:** 2026-07-31 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_PDH | **Result:** WIN (+0.23R)
+- [NIFTY 2026-08-03: a bearish R2 setup that closed out at -0.35R](plain/2026-08-03_NIFTY_BEAR_R2.md) — > **Index:** NIFTY | **Session:** 2026-08-03 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** LOSS (-0.35R)
+- [NIFTY 2026-08-04: a bearish BELOW_CPR setup that paid +1.15R](plain/2026-08-04_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-04 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+1.15R)
+- [NIFTY 2026-08-05: a bearish PDH setup that paid +0.54R](plain/2026-08-05_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-08-05 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.54R)
+- [NIFTY 2026-08-06: a bearish PDH setup that paid +0.34R](plain/2026-08-06_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-08-06 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.34R)
+- [NIFTY 2026-08-10: a bearish BELOW_CPR setup that won on spread decay at -0.02R](plain/2026-08-10_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-10 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (-0.02R)
+- [NIFTY 2026-08-11: a bearish BELOW_CPR setup that paid +0.43R](plain/2026-08-11_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-11 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.43R)
+- [NIFTY 2026-08-12: a bearish BELOW_CPR setup that paid +0.37R](plain/2026-08-12_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-12 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.37R)
+- [NIFTY 2026-08-13: a bearish BELOW_CPR setup that won on spread decay at -0.07R](plain/2026-08-13_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-13 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (-0.07R)
+- [NIFTY 2026-08-17: a bearish BELOW_CPR setup that closed out at -0.28R](plain/2026-08-17_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-17 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.28R)
+- [NIFTY 2026-08-18: a bearish BELOW_CPR setup that paid +0.60R](plain/2026-08-18_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-18 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.60R)
+- [NIFTY 2026-08-19: a bearish BELOW_CPR setup that paid +0.59R](plain/2026-08-19_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-19 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.59R)
+- [NIFTY 2026-08-20: a bearish R1 setup that won on spread decay at -0.16R](plain/2026-08-20_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-08-20 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (-0.16R)
+- [NIFTY 2026-08-24: a bearish R1 setup that paid +0.99R](plain/2026-08-24_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-08-24 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.99R)
+- [NIFTY 2026-08-25: a bearish BELOW_CPR setup that closed out at -0.62R](plain/2026-08-25_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-25 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.62R)
+- [NIFTY 2026-08-26: a bearish PDH setup that paid +0.33R](plain/2026-08-26_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-08-26 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.33R)
+- [NIFTY 2026-08-27: a bearish BELOW_CPR setup that paid +0.76R](plain/2026-08-27_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-27 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.76R)
+- [NIFTY 2026-08-31: a bearish BELOW_CPR setup that paid +0.14R](plain/2026-08-31_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-08-31 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.14R)
+- [NIFTY 2026-09-01: a bearish BELOW_CPR setup that paid +0.52R](plain/2026-09-01_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-01 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.52R)
+- [NIFTY 2026-09-02: a bearish BELOW_CPR setup that closed out at -0.49R](plain/2026-09-02_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-02 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.49R)
+- [NIFTY 2026-09-03: a bearish R2 setup that paid +0.54R](plain/2026-09-03_NIFTY_BEAR_R2.md) — > **Index:** NIFTY | **Session:** 2026-09-03 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** WIN (+0.54R)
+- [NIFTY 2026-09-04: a bullish BRK_TC setup that won on spread decay at -0.09R](plain/2026-09-04_NIFTY_BULL_BRK_TC.md) — > **Index:** NIFTY | **Session:** 2026-09-04 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_TC | **Result:** WIN (-0.09R)
+- [NIFTY 2026-09-07: a bearish BELOW_CPR setup that paid +0.83R](plain/2026-09-07_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-07 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.83R)
+- [NIFTY 2026-09-08: a bearish BELOW_CPR setup that paid +0.45R](plain/2026-09-08_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-08 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.45R)
+- [NIFTY 2026-09-09: a bearish BELOW_CPR setup that paid +0.32R](plain/2026-09-09_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-09 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.32R)
+- [NIFTY 2026-09-10: a bearish BELOW_CPR setup that paid +0.34R](plain/2026-09-10_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-10 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.34R)
+- [NIFTY 2026-09-15: a bearish R2 setup that paid +2.80R](plain/2026-09-15_NIFTY_BEAR_R2.md) — > **Index:** NIFTY | **Session:** 2026-09-15 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** WIN (+2.80R)
+- [NIFTY 2026-09-16: a bearish BELOW_CPR setup that hit its stop at -1.00R](plain/2026-09-16_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-16 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-1.00R)
+- [NIFTY 2026-09-17: a bearish PDH setup that won on spread decay at -0.08R](plain/2026-09-17_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-09-17 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (-0.08R)
+- [NIFTY 2026-09-18: a bullish BRK_R1 setup that won on spread decay at -0.21R](plain/2026-09-18_NIFTY_BULL_BRK_R1.md) — > **Index:** NIFTY | **Session:** 2026-09-18 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_R1 | **Result:** WIN (-0.21R)
+- [NIFTY 2026-09-22: a bearish PDH setup that paid +0.83R](plain/2026-09-22_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-09-22 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.83R)
+- [NIFTY 2026-09-23: a bearish R1 setup that paid +0.14R](plain/2026-09-23_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-09-23 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.14R)
+- [NIFTY 2026-09-24: a bearish BELOW_CPR setup that paid +1.22R](plain/2026-09-24_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-24 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+1.22R)
+- [NIFTY 2026-09-28: a bearish BELOW_CPR setup that paid +1.41R](plain/2026-09-28_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-28 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+1.41R)
+- [NIFTY 2026-09-29: a bearish BELOW_CPR setup that closed flat](plain/2026-09-29_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-09-29 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** FLAT (+0.00R)
+- [NIFTY 2026-09-30: a bearish PDH setup that paid +1.22R](plain/2026-09-30_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-09-30 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+1.22R)
+- [NIFTY 2026-10-01: a bearish BELOW_CPR setup that paid +0.98R](plain/2026-10-01_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-10-01 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.98R)
+- [NIFTY 2026-10-05: a bearish PDH setup that paid +0.66R](plain/2026-10-05_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-10-05 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.66R)
+- [NIFTY 2026-10-06: a bearish PDH setup that hit its stop at -1.00R](plain/2026-10-06_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-10-06 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** LOSS (-1.00R)
+- [NIFTY 2026-10-07: a bearish BELOW_CPR setup that paid +0.06R](plain/2026-10-07_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-10-07 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.06R)
+- [NIFTY 2026-10-08: a bearish BELOW_CPR setup that paid +2.79R](plain/2026-10-08_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-10-08 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+2.79R)
+- [NIFTY 2026-10-09: a bullish BRK_TC setup that paid +1.26R](plain/2026-10-09_NIFTY_BULL_BRK_TC.md) — > **Index:** NIFTY | **Session:** 2026-10-09 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_TC | **Result:** WIN (+1.26R)
+- [NIFTY 2026-10-12: a bearish R1 setup that paid +2.38R](plain/2026-10-12_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-10-12 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+2.38R)
+- [NIFTY 2026-10-13: a bearish R1 setup that hit its stop at -1.00R](plain/2026-10-13_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-10-13 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** LOSS (-1.00R)
+- [NIFTY 2026-10-14: a bearish PDH setup that paid +0.53R](plain/2026-10-14_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-10-14 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.53R)
+- [NIFTY 2026-10-15: a bearish R1 setup that hit its stop at -1.00R](plain/2026-10-15_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-10-15 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** LOSS (-1.00R)
+- [NIFTY 2026-10-16: a bullish BRK_TC setup that paid +1.26R](plain/2026-10-16_NIFTY_BULL_BRK_TC.md) — > **Index:** NIFTY | **Session:** 2026-10-16 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_TC | **Result:** WIN (+1.26R)
+- [NIFTY 2026-10-19: BEAR WIN](plain/2026-10-19_NIFTY_BEAR_PDH.md) — > **Index:** NIFTY | **Session:** 2026-10-19 | **Signal:** BEARISH at PDH | **Result:** WIN (+2.42R) | **Note:** auto-drafted by LLM — curate and review before republishing
+- [NIFTY Bearish Breakout | 21 Oct 2026](plain/2026-10-21_NIFTY_BEAR_R1.md) — > **Index:** NIFTY | **Session:** 2026-10-21 | **Signal:** BEARISH at R1 | **Result:** WIN (+3.28R) | **Note:** auto-drafted by LLM — curate and review before republishing
+- [NIFTY Bearish CPR Session: 2026-10-22](plain/2026-10-22_NIFTY_BEAR_BELOW_CPR.md) — > **Index:** NIFTY | **Session:** 2026-10-22 | **Signal:** BEARISH at BELOW_CPR | **Result:** LOSS (-1.00R) | **Note:** auto-drafted by LLM — curate and review before republishing
+
+### BANKNIFTY
+
+- [BANKNIFTY 2026-07-07: a bearish R1 setup that paid +0.88R](plain/2026-07-07_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-07 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.88R)
+- [BANKNIFTY 2026-07-08: a bearish BELOW_CPR setup that paid +4.00R](plain/2026-07-08_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-08 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+4.00R)
+- [BANKNIFTY 2026-07-09: a bullish BRK_TC setup that won on spread decay at -0.19R](plain/2026-07-09_BANKNIFTY_BULL_BRK_TC.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-09 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_TC | **Result:** WIN (-0.19R)
+- [BANKNIFTY 2026-07-10: a bullish BRK_R2 setup that paid +0.65R](plain/2026-07-10_BANKNIFTY_BULL_BRK_R2.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-10 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_R2 | **Result:** WIN (+0.65R)
+- [BANKNIFTY 2026-07-13: a bearish BELOW_CPR setup that hit its stop at -1.00R](plain/2026-07-13_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-13 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-07-14: a bearish BELOW_CPR setup that paid +0.85R](plain/2026-07-14_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-14 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.85R)
+- [BANKNIFTY 2026-07-15: a bearish R1 setup that paid +0.40R](plain/2026-07-15_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-15 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.40R)
+- [BANKNIFTY 2026-07-16: a bearish BELOW_CPR setup that paid +0.61R](plain/2026-07-16_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-16 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.61R)
+- [BANKNIFTY 2026-07-17: a bullish BRK_R1 setup that paid +2.19R](plain/2026-07-17_BANKNIFTY_BULL_BRK_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-17 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_R1 | **Result:** WIN (+2.19R)
+- [BANKNIFTY 2026-07-20: a bearish BELOW_CPR setup that closed out at -0.44R](plain/2026-07-20_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-20 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.44R)
+- [BANKNIFTY 2026-07-21: a bearish R1 setup that paid +1.34R](plain/2026-07-21_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-21 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+1.34R)
+- [BANKNIFTY 2026-07-22: a bearish BELOW_CPR setup that paid +1.15R](plain/2026-07-22_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-22 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+1.15R)
+- [BANKNIFTY 2026-07-23: a bearish BELOW_CPR setup that paid +0.70R](plain/2026-07-23_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-23 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.70R)
+- [BANKNIFTY 2026-07-27: a bearish R1 setup that paid +0.62R](plain/2026-07-27_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-27 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.62R)
+- [BANKNIFTY 2026-07-28: a bearish BELOW_CPR setup that paid +0.55R](plain/2026-07-28_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-28 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.55R)
+- [BANKNIFTY 2026-07-29: a bearish R1 setup that closed out at -0.56R](plain/2026-07-29_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-29 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** LOSS (-0.56R)
+- [BANKNIFTY 2026-07-30: a bearish BELOW_CPR setup that closed out at -0.65R](plain/2026-07-30_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-30 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.65R)
+- [BANKNIFTY 2026-07-31: a bullish BRK_PDH setup that paid +0.05R](plain/2026-07-31_BANKNIFTY_BULL_BRK_PDH.md) — > **Index:** BANKNIFTY | **Session:** 2026-07-31 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_PDH | **Result:** WIN (+0.05R)
+- [BANKNIFTY 2026-08-03: a bearish R2 setup that hit its stop at -1.00R](plain/2026-08-03_BANKNIFTY_BEAR_R2.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-03 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-08-04: a bearish BELOW_CPR setup that paid +1.12R](plain/2026-08-04_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-04 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+1.12R)
+- [BANKNIFTY 2026-08-05: a bearish BELOW_CPR setup that paid +0.21R](plain/2026-08-05_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-05 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.21R)
+- [BANKNIFTY 2026-08-06: a bearish PDH setup that closed out at -0.23R](plain/2026-08-06_BANKNIFTY_BEAR_PDH.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-06 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** LOSS (-0.23R)
+- [BANKNIFTY 2026-08-10: a bearish R1 setup that paid +0.95R](plain/2026-08-10_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-10 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.95R)
+- [BANKNIFTY 2026-08-11: a bearish BELOW_CPR setup that won on spread decay at -0.09R](plain/2026-08-11_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-11 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (-0.09R)
+- [BANKNIFTY 2026-08-12: a bearish BELOW_CPR setup that hit its stop at -1.00R](plain/2026-08-12_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-12 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-08-13: a bearish BELOW_CPR setup that won on spread decay at -0.08R](plain/2026-08-13_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-13 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (-0.08R)
+- [BANKNIFTY 2026-08-17: a bearish BELOW_CPR setup that hit its stop at -1.00R](plain/2026-08-17_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-17 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-08-18: a bearish BELOW_CPR setup that paid +0.36R](plain/2026-08-18_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-18 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.36R)
+- [BANKNIFTY 2026-08-19: a bearish BELOW_CPR setup that won on spread decay at -0.01R](plain/2026-08-19_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-19 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (-0.01R)
+- [BANKNIFTY 2026-08-20: a bearish R2 setup that paid +0.30R](plain/2026-08-20_BANKNIFTY_BEAR_R2.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-20 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** WIN (+0.30R)
+- [BANKNIFTY 2026-08-24: a bearish R1 setup that paid +1.33R](plain/2026-08-24_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-24 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+1.33R)
+- [BANKNIFTY 2026-08-25: a bearish BELOW_CPR setup that paid +0.01R](plain/2026-08-25_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-25 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.01R)
+- [BANKNIFTY 2026-08-26: a bearish R1 setup that closed out at -0.23R](plain/2026-08-26_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-26 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** LOSS (-0.23R)
+- [BANKNIFTY 2026-08-27: a bearish R1 setup that paid +1.04R](plain/2026-08-27_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-27 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+1.04R)
+- [BANKNIFTY 2026-08-31: a bearish BELOW_CPR setup that paid +0.10R](plain/2026-08-31_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-08-31 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.10R)
+- [BANKNIFTY 2026-09-01: a bearish BELOW_CPR setup that paid +0.83R](plain/2026-09-01_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-01 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.83R)
+- [BANKNIFTY 2026-09-02: a bearish BELOW_CPR setup that closed out at -0.48R](plain/2026-09-02_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-02 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.48R)
+- [BANKNIFTY 2026-09-03: a bearish R2 setup that paid +0.51R](plain/2026-09-03_BANKNIFTY_BEAR_R2.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-03 | **Variant:** plain (all sessions) | **Signal:** BEAR at R2 | **Result:** WIN (+0.51R)
+- [BANKNIFTY 2026-09-07: a bearish BELOW_CPR setup that paid +0.58R](plain/2026-09-07_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-07 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.58R)
+- [BANKNIFTY 2026-09-08: a bearish BELOW_CPR setup that paid +0.58R](plain/2026-09-08_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-08 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.58R)
+- [BANKNIFTY 2026-09-09: a bearish BELOW_CPR setup that paid +0.41R](plain/2026-09-09_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-09 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.41R)
+- [BANKNIFTY 2026-09-10: a bearish BELOW_CPR setup that paid +0.37R](plain/2026-09-10_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-10 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.37R)
+- [BANKNIFTY 2026-09-15: a bearish R1 setup that paid +2.65R](plain/2026-09-15_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-15 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+2.65R)
+- [BANKNIFTY 2026-09-16: a bearish BELOW_CPR setup that hit its stop at -1.00R](plain/2026-09-16_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-16 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-09-17: a bearish R1 setup that paid +1.27R](plain/2026-09-17_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-17 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+1.27R)
+- [BANKNIFTY 2026-09-22: a bearish PDH setup that paid +1.07R](plain/2026-09-22_BANKNIFTY_BEAR_PDH.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-22 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+1.07R)
+- [BANKNIFTY 2026-09-23: a bearish R1 setup that won on spread decay at -0.02R](plain/2026-09-23_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-23 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (-0.02R)
+- [BANKNIFTY 2026-09-24: a bearish BELOW_CPR setup that paid +0.69R](plain/2026-09-24_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-24 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.69R)
+- [BANKNIFTY 2026-09-28: a bearish BELOW_CPR setup that paid +1.72R](plain/2026-09-28_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-28 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+1.72R)
+- [BANKNIFTY 2026-09-29: a bearish BELOW_CPR setup that closed out at -0.44R](plain/2026-09-29_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-29 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.44R)
+- [BANKNIFTY 2026-09-30: a bearish R1 setup that hit its stop at -1.00R](plain/2026-09-30_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-09-30 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-10-01: a bearish BELOW_CPR setup that closed out at -0.26R](plain/2026-10-01_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-01 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-0.26R)
+- [BANKNIFTY 2026-10-05: a bearish R1 setup that paid +1.53R](plain/2026-10-05_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-05 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+1.53R)
+- [BANKNIFTY 2026-10-06: a bearish R1 setup that paid +0.56R](plain/2026-10-06_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-06 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** WIN (+0.56R)
+- [BANKNIFTY 2026-10-07: a bearish BELOW_CPR setup that hit its stop at -1.00R](plain/2026-10-07_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-07 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-10-08: a bearish BELOW_CPR setup that paid +1.07R](plain/2026-10-08_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-08 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+1.07R)
+- [BANKNIFTY 2026-10-09: a bullish BRK_R1 setup that paid +0.94R](plain/2026-10-09_BANKNIFTY_BULL_BRK_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-09 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_R1 | **Result:** WIN (+0.94R)
+- [BANKNIFTY 2026-10-12: a bearish BELOW_CPR setup that paid +0.73R](plain/2026-10-12_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-12 | **Variant:** plain (all sessions) | **Signal:** BEAR at BELOW_CPR | **Result:** WIN (+0.73R)
+- [BANKNIFTY 2026-10-13: a bearish R1 setup that closed out at -0.52R](plain/2026-10-13_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-13 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** LOSS (-0.52R)
+- [BANKNIFTY 2026-10-14: a bearish PDH setup that paid +0.55R](plain/2026-10-14_BANKNIFTY_BEAR_PDH.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-14 | **Variant:** plain (all sessions) | **Signal:** BEAR at PDH | **Result:** WIN (+0.55R)
+- [BANKNIFTY 2026-10-15: a bearish R1 setup that hit its stop at -1.00R](plain/2026-10-15_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-15 | **Variant:** plain (all sessions) | **Signal:** BEAR at R1 | **Result:** LOSS (-1.00R)
+- [BANKNIFTY 2026-10-16: a bullish BRK_TC setup that paid +0.01R](plain/2026-10-16_BANKNIFTY_BULL_BRK_TC.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-16 | **Variant:** plain (all sessions) | **Signal:** BULL at BRK_TC | **Result:** WIN (+0.01R)
+- [BANKNIFTY Log: 2026-10-19](plain/2026-10-19_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-19 | **Signal:** BEARISH at BELOW_CPR | **Result:** WIN (+0.74R) | **Note:** auto-drafted by LLM — curate and review before republishing
+- [BANKNIFTY Bearish R1 Break, 21 Oct 2026](plain/2026-10-21_BANKNIFTY_BEAR_R1.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-21 | **Signal:** BEARISH at R1 | **Result:** WIN (+3.33R) | **Note:** auto-drafted by LLM — curate and review before republishing
+- [BANKNIFTY Bearish Failure Below CPR](plain/2026-10-22_BANKNIFTY_BEAR_BELOW_CPR.md) — > **Index:** BANKNIFTY | **Session:** 2026-10-22 | **Signal:** BEARISH at BELOW_CPR | **Result:** LOSS (-1.00R) | **Note:** auto-drafted by LLM — curate and review before republishing
+
+### INDIA_VIX
+
+- [India VIX Log: 2026-07-30 — volatility gauge, volatility expanding](plain/2026-07-30_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-07-31 — volatility gauge, volatility contracting](plain/2026-07-31_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-03 — volatility gauge, volatility expanding](plain/2026-08-03_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-04 — volatility gauge, volatility expanding](plain/2026-08-04_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-05 — volatility gauge, volatility contracting](plain/2026-08-05_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-06 — volatility gauge, volatility expanding](plain/2026-08-06_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-07 — volatility gauge, volatility flat](plain/2026-08-07_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-10 — volatility gauge, volatility expanding](plain/2026-08-10_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-11 — volatility gauge, volatility contracting](plain/2026-08-11_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-12 — volatility gauge, volatility contracting](plain/2026-08-12_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-13 — volatility gauge, volatility contracting](plain/2026-08-13_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-14 — volatility gauge, volatility contracting](plain/2026-08-14_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-17 — volatility gauge, volatility flat](plain/2026-08-17_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-18 — volatility gauge, volatility expanding](plain/2026-08-18_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-19 — volatility gauge, volatility contracting](plain/2026-08-19_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-20 — volatility gauge, volatility contracting](plain/2026-08-20_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-21 — volatility gauge, volatility expanding](plain/2026-08-21_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-24 — volatility gauge, volatility expanding](plain/2026-08-24_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-25 — volatility gauge, volatility contracting](plain/2026-08-25_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-26 — volatility gauge, volatility contracting](plain/2026-08-26_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-27 — volatility gauge, volatility expanding](plain/2026-08-27_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-28 — volatility gauge, volatility contracting](plain/2026-08-28_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-08-31 — volatility gauge, volatility expanding](plain/2026-08-31_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-01 — volatility gauge, volatility expanding](plain/2026-09-01_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-02 — volatility gauge, volatility expanding](plain/2026-09-02_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-03 — volatility gauge, volatility contracting](plain/2026-09-03_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-04 — volatility gauge, volatility contracting](plain/2026-09-04_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-07 — volatility gauge, volatility expanding](plain/2026-09-07_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-08 — volatility gauge, volatility flat](plain/2026-09-08_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-09 — volatility gauge, volatility expanding](plain/2026-09-09_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-10 — volatility gauge, volatility contracting](plain/2026-09-10_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-11 — volatility gauge, volatility expanding](plain/2026-09-11_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-15 — volatility gauge, volatility expanding](plain/2026-09-15_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-16 — volatility gauge, volatility contracting](plain/2026-09-16_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-17 — volatility gauge, volatility contracting](plain/2026-09-17_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-18 — volatility gauge, volatility contracting](plain/2026-09-18_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-21 — volatility gauge, volatility contracting](plain/2026-09-21_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-22 — volatility gauge, volatility contracting](plain/2026-09-22_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-23 — volatility gauge, volatility contracting](plain/2026-09-23_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-24 — volatility gauge, volatility expanding](plain/2026-09-24_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-25 — volatility gauge, volatility contracting](plain/2026-09-25_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-28 — volatility gauge, volatility expanding](plain/2026-09-28_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-29 — volatility gauge, volatility contracting](plain/2026-09-29_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-09-30 — volatility gauge, volatility expanding](plain/2026-09-30_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-01 — volatility gauge, volatility expanding](plain/2026-10-01_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-05 — volatility gauge, volatility expanding](plain/2026-10-05_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-06 — volatility gauge, volatility contracting](plain/2026-10-06_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-07 — volatility gauge, volatility expanding](plain/2026-10-07_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-08 — volatility gauge, volatility expanding](plain/2026-10-08_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-09 — volatility gauge, volatility contracting](plain/2026-10-09_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-12 — volatility gauge, volatility expanding](plain/2026-10-12_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-13 — volatility gauge, volatility contracting](plain/2026-10-13_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-14 — volatility gauge, volatility expanding](plain/2026-10-14_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-15 — volatility gauge, volatility contracting](plain/2026-10-15_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-16 — volatility gauge, volatility contracting](plain/2026-10-16_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-19 — volatility gauge, volatility expanding](plain/2026-10-19_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-21 — volatility gauge, volatility expanding](plain/2026-10-21_INDIA_VIX_VIX_GAUGE.md) — 
+- [India VIX Log: 2026-10-22 — volatility gauge, volatility flat](plain/2026-10-22_INDIA_VIX_VIX_GAUGE.md) — 
+

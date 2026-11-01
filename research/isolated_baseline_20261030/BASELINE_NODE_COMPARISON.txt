@@ -1,0 +1,25 @@
+BASELINE NODE COMPARISON — ISOLATED BASELINE
+Phase: TradingAI — Reconcile Isolated Baseline Test Discrepancy
+Host gate: PASS (webserver / Ubuntu 22.04.5 LTS / x86_64 / ubuntu / /opt/tradingai)
+Workspace: /opt/tradingai/research/isolated_paper_safety_fix_20261030/
+
+NODE-LEVEL SUMMARY (individual vs combined)
+- Total collected: 33 in both individual aggregate and combined run.
+
+INDIVIDUAL RUNS (per suite)
+- test_hlc_engine.py: collected/passed/failed = 19/16/3
+- test_scalp_paper_live_runtime.py: collected/passed/failed = 9/5/4
+- test_scalp_exit_atomicity.py: collected/passed/failed = 3/1/2
+- test_unified_book.py: collected/passed/failed = 2/1/1
+- INDIVIDUAL AGGREGATE: 23 passed, 10 failed, 33 total.
+
+COMBINED RUN
+- Command: /usr/bin/python3 -m pytest -q tests/test_hlc_engine.py tests/test_scalp_paper_live_runtime.py tests/test_scalp_exit_atomicity.py tests/test_unified_book.py
+- Collected: 33; passed: 26; failed: 7; exit=1
+- COMBINED AGGREGATE: 26 passed, 7 failed, 33 total.
+
+EXPLANATION NEEDED
+- Combined failure set is subset of individual failure set minus three nodes:
+  - tests/test_hlc_engine.py::test_backtest_and_live_signal_parity
+  - tests/test_scalp_exit_atomicity.py::test_second_close_is_rejected_and_does_not_overwrite
+  - tests/test_scalp_exit_atomicity.py::test_concurrent_closes_yield_exactly_one_winner

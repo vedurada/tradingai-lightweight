@@ -1,0 +1,5 @@
+instrument,run_id,trades,wins,losses,flats,gross_win_points,gross_loss_points,net_points,profit_factor
+NIFTY,RUN1,516,378,138,0,9294.81,-2482.3,6812.51,3.7444
+NIFTY,RUN2,516,378,138,0,9294.81,-2482.3,6812.51,3.7444
+BANKNIFTY,RUN1,458,332,126,0,24854.56,-7368.6,17485.96,3.373
+BANKNIFTY,RUN2,458,332,126,0,24854.56,-7368.6,17485.96,3.373

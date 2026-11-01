@@ -1,0 +1,85 @@
+{
+  "G1_oos_expectancy": {
+    "definition": "candidate OOS net expectancy per trade > baseline OOS net expectancy per trade",
+    "baseline_oos_avg_net_rs": 3845.98,
+    "candidate_oos_avg_net_rs": 2646.55,
+    "baseline_oos_trades": 24,
+    "candidate_oos_trades": 23,
+    "status": "FAIL"
+  },
+  "G2_survives_costs": {
+    "definition": "candidate advantage still > 0 on the reported cost grid (at least at the production 0.10R cost)",
+    "oos_net_R_by_cost": {
+      "baseline": {
+        "0.00R": 12.69,
+        "0.10R": 10.29,
+        "0.20R": 7.89,
+        "0.30R": 5.49
+      },
+      "candidate": {
+        "0.00R": 8.94,
+        "0.10R": 6.64,
+        "0.20R": 4.34,
+        "0.30R": 2.04
+      }
+    },
+    "beats_baseline_at_0.10R": false,
+    "never_worse_any_cost": false,
+    "status": "FAIL"
+  },
+  "G3_drawdown_within_limits": {
+    "definition": "G3a max drawdown <= max_drawdown_pct_of_capital; G3b <= 1.5x baseline; G3c largest single loss <= max_single_loss_pct_of_capital",
+    "candidate_max_dd_rs": 81112.75,
+    "candidate_dd_pct_capital": 4.91,
+    "limit_dd_pct_capital": 20.0,
+    "baseline_max_dd_rs": 26370.5,
+    "ratio_vs_baseline": 3.076,
+    "ratio_effective_limit_rs": 39555.75,
+    "ratio_limit_note": "max(1.5 x baseline DD, ratio_floor_pct_of_capital x capital)",
+    "largest_loss_rs": -11786.5,
+    "largest_loss_pct_capital": 0.71,
+    "limit_single_loss_pct": 5.0,
+    "status": "FAIL"
+  },
+  "G4_trade_quality": {
+    "definition": "profit factor >= 1.0 (total and OOS)",
+    "profit_factor_total": 1.124,
+    "profit_factor_oos": 2.068,
+    "oos_trades_total": 23,
+    "oos_trades_by_instrument": {
+      "NIFTY": 12,
+      "BANKNIFTY": 11
+    },
+    "min_oos_trades_total": 15,
+    "min_oos_trades_per_instrument": 5,
+    "sample_sufficient": true,
+    "status": "PASS"
+  },
+  "G5_no_bias": {
+    "definition": "unit tests + data-quality + PIT/look-ahead tests all PASS and the cost/execution model is identical",
+    "tests_total": 34,
+    "tests_failed": 0,
+    "failed_tests": [],
+    "pit_levels_pass": true,
+    "structure_clean": true,
+    "identical_execution_cost_model": true,
+    "status": "PASS"
+  },
+  "G6_robustness": {
+    "definition": "net expectancy positive in >= 2 of 3 periods and >= 2 of 3 walk-forward blocks per instrument; both instruments not materially negative",
+    "positive_periods": "2/3",
+    "positive_walkforward_blocks": "4/6",
+    "instruments_positive_oos": "2/2",
+    "status": "PASS"
+  },
+  "G7_credit_spread_economics": {
+    "definition": "requires real historical option premiums; BLOCKED if option history is absent",
+    "option_history_available": false,
+    "note": "UNAVAILABLE -> this run is an UNDERLYING (spot) signal study only; credit-spread P&L cannot be claimed from these inputs",
+    "status": "BLOCKED"
+  },
+  "_final": {
+    "status": "FAIL",
+    "rule": "any FAIL -> FAIL; else any BLOCKED/INCONCLUSIVE -> INCONCLUSIVE; else PASS (review only, never auto-deploy)"
+  }
+}

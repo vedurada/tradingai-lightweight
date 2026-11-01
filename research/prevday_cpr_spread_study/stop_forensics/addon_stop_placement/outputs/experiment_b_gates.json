@@ -1,0 +1,188 @@
+{
+  "variant": "S4",
+  "gates": {
+    "G-A_oos_improvement": {
+      "baseline_oos_net_R_per_trade": 0.6453,
+      "candidate_oos_net_R_per_trade": 0.6589,
+      "baseline_oos_n": 9,
+      "candidate_oos_n": 9,
+      "pass": true
+    },
+    "G-A2_oos_points_not_worse": {
+      "baseline_oos_points_per_trade": 90.611,
+      "candidate_oos_points_per_trade": 90.611,
+      "pass": true,
+      "note": "a lower-risk stop can raise R per trade purely by shrinking the denominator; the index-point test prevents that from counting as an improvement"
+    },
+    "G-B_not_cost_artifact": {
+      "pass": true,
+      "cost_grid_candidate": {
+        "0.00": 0.7589,
+        "0.10": 0.6589,
+        "0.20": 0.5589,
+        "0.30": 0.4589
+      },
+      "cost_grid_baseline": {
+        "0.00": 0.7453,
+        "0.10": 0.6453,
+        "0.20": 0.5453,
+        "0.30": 0.4453
+      },
+      "removed_signal_count_oos": 17,
+      "removed_signal_b0_net_R_per_trade": 0.6192,
+      "removed_signal_selection_not_explained_by_stop": true,
+      "note": "the B0 outcome of the signals the variant refuses (NO TRADE) is reported; a gain explained by dropping good signals is not a stop improvement"
+    },
+    "G-C_risk": {
+      "baseline_max_dd_r": -1.446,
+      "candidate_max_dd_r": -1.504,
+      "max_dd_le_1_5x_baseline": true,
+      "baseline_largest_loss_r": -1.188,
+      "candidate_largest_loss_r": -1.164,
+      "largest_loss_not_worse": true,
+      "baseline_mean_mae_r": 0.5678,
+      "candidate_mean_mae_r": 0.5806,
+      "mae_not_worse": false,
+      "capital_base_subgates": "INCONCLUSIVE",
+      "capital_base_note": "no production-confirmed capital base exists, so percentage-of-capital sub-gates cannot be evaluated; index points are never equated to rupees",
+      "pass": false
+    },
+    "G-D_stability": {
+      "periods": {
+        "IS": {
+          "baseline": 0.2956,
+          "candidate": 0.2383,
+          "positive": false
+        },
+        "VAL": {
+          "baseline": 0.2094,
+          "candidate": 0.2057,
+          "positive": false
+        },
+        "OOS": {
+          "baseline": 0.6453,
+          "candidate": 0.6589,
+          "positive": true
+        }
+      },
+      "n_periods_positive": 1,
+      "walk_forward_blocks": [
+        {
+          "block": 1,
+          "sessions": 11,
+          "candidate_n": 10,
+          "baseline_n": 10,
+          "candidate_net_R_per_trade": 0.2909,
+          "baseline_net_R_per_trade": 0.4438,
+          "positive": false
+        },
+        {
+          "block": 2,
+          "sessions": 11,
+          "candidate_n": 8,
+          "baseline_n": 8,
+          "candidate_net_R_per_trade": 0.3603,
+          "baseline_net_R_per_trade": 0.4922,
+          "positive": false
+        },
+        {
+          "block": 3,
+          "sessions": 11,
+          "candidate_n": 8,
+          "baseline_n": 8,
+          "candidate_net_R_per_trade": -0.0447,
+          "baseline_net_R_per_trade": -0.0999,
+          "positive": true
+        },
+        {
+          "block": 4,
+          "sessions": 11,
+          "candidate_n": 13,
+          "baseline_n": 13,
+          "candidate_net_R_per_trade": 0.3422,
+          "baseline_net_R_per_trade": 0.2569,
+          "positive": true
+        },
+        {
+          "block": 5,
+          "sessions": 11,
+          "candidate_n": 9,
+          "baseline_n": 9,
+          "candidate_net_R_per_trade": 0.0761,
+          "baseline_net_R_per_trade": 0.1831,
+          "positive": false
+        },
+        {
+          "block": 6,
+          "sessions": 11,
+          "candidate_n": 7,
+          "baseline_n": 7,
+          "candidate_net_R_per_trade": 0.8199,
+          "baseline_net_R_per_trade": 0.7557,
+          "positive": true
+        }
+      ],
+      "n_blocks_positive": 3,
+      "instruments_oos": {
+        "BANKNIFTY": {
+          "baseline": -0.0119,
+          "candidate": 0.0822,
+          "positive": true
+        },
+        "NIFTY": {
+          "baseline": 1.1711,
+          "candidate": 1.1203,
+          "positive": false
+        }
+      },
+      "n_instruments_positive": 1,
+      "variant_ranking_consistent": true,
+      "note": "variant ranking consistency replaces neighbour stability: the selected stop variant must also be the best VAL variant in each instrument separately",
+      "pass": false
+    },
+    "G-E_evidence_sufficiency": {
+      "n_oos_candidate": 9,
+      "n_oos_baseline": 9,
+      "n_oos_nifty": 5,
+      "n_oos_banknifty": 4,
+      "bootstrap_ci_low": 0.0136,
+      "bootstrap_ci_high": 0.0136,
+      "bootstrap_p_two_sided": 0.0,
+      "ci_straddles_zero": false,
+      "pass": false
+    },
+    "G-F_integrity": {
+      "no_lookahead_checks": true,
+      "same_signal_set_as_baseline": true,
+      "target_unchanged": true,
+      "stops_on_correct_side_within_bounds": true,
+      "identical_execution_model": true,
+      "identical_cost_model": true,
+      "gap_aware_accounting": true,
+      "dq_status": "PASS",
+      "dq_problems": [],
+      "pass": true
+    },
+    "G-G_scope": {
+      "index_level_only": true,
+      "option_premium_claims": "NONE",
+      "bid_ask_claims": "NONE",
+      "rupee_profit_claims": "NONE",
+      "pass": true
+    },
+    "G-I_intrabar_robustness": {
+      "baseline_intrabar_net_R_per_trade": 0.6662,
+      "candidate_intrabar_net_R_per_trade": 0.6772,
+      "baseline_intrabar_points_per_trade": 96.331,
+      "candidate_intrabar_points_per_trade": 95.719,
+      "pass": true,
+      "note": "conservative intrabar model, stop assumed first on ambiguous bars"
+    },
+    "oos_independence": "PARTIAL",
+    "oos_independence_note": "the 2026-10-01..10-21 window and baseline signal set were examined in the parent study; a pass is exploratory and can never be eligible for review without fresh forward data",
+    "OVERALL": "INCONCLUSIVE",
+    "ELIGIBLE_FOR_HUMAN_REVIEW": false,
+    "decision": "INCONCLUSIVE - insufficient evidence (VAL or OOS trade count)"
+  },
+  "no_trade_count": 74
+}

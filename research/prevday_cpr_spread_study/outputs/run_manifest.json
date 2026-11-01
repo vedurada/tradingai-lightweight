@@ -1,0 +1,60 @@
+{
+  "cost_grid_R": [
+    0.0,
+    0.05,
+    0.1,
+    0.15,
+    0.2
+  ],
+  "frozen_selection": {
+    "config": {
+      "accept2": false
+    },
+    "model": "B",
+    "stop": "STRUCT_10",
+    "stop_cfg": {
+      "buffer_pts": 10.0,
+      "type": "STRUCT"
+    },
+    "target": "STRUCT",
+    "target_cfg": {
+      "type": "STRUCT"
+    },
+    "time_exit": "EOD",
+    "variant_id": "aa8e713bd8"
+  },
+  "frozen_selection_hash": "92afc2d5d2b7d35acf54cc78bd7b92484493ec36adf1ce36023aebf4ff2ed121",
+  "generated_utc": "2026-10-22T06:51:36Z",
+  "git_commit": "879c9769a3e9118014f04173a643466d0197ae16",
+  "git_status_entries": 106,
+  "instrument": "NIFTY",
+  "n_model_configs": 27,
+  "n_sessions_used": 75,
+  "n_variants": 675,
+  "n_variants_eligible": 3,
+  "primary_cost_r": 0.1,
+  "production_writes": "none - study used a snapshot copy; production DB never opened for writing",
+  "seed": 20261022,
+  "session_range": [
+    "2026-07-06",
+    "2026-10-21"
+  ],
+  "snapshot_path": "/opt/tradingai/research/prevday_cpr_spread_study/outputs/snapshot.db",
+  "snapshot_sha256": "c1c94ec0e6dcae06ae53ea0c1a078705eaccc87a3063c167bf08d15a473ac6dd",
+  "spec_sha256": "6aa0e2e1276a268e471d62cd34e4f14e1f52c6258010e88c7fb69b5ca04c94cc",
+  "splits": {
+    "IS": [
+      "2026-07-06",
+      "2026-08-31"
+    ],
+    "OOS": [
+      "2026-10-01",
+      "2026-10-21"
+    ],
+    "VAL": [
+      "2026-09-01",
+      "2026-09-30"
+    ]
+  },
+  "study_dir": "/opt/tradingai/research/prevday_cpr_spread_study"
+}

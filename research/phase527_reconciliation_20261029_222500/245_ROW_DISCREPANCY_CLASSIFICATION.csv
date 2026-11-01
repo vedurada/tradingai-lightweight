@@ -1,0 +1,975 @@
+row_idx,instrument,entry_time,direction,points,classification,reason
+0,NIFTY,2026-07-06T10:25:00+05:30,BULL,16.5,MATCHED,Present in authoritative JSON ledger
+1,NIFTY,2026-07-06T13:10:00+05:30,BULL,0.75,MATCHED,Present in authoritative JSON ledger
+2,NIFTY,2026-07-06T13:50:00+05:30,BEAR,14.77,MATCHED,Present in authoritative JSON ledger
+3,NIFTY,2026-07-06T13:55:00+05:30,BEAR,7.55,MATCHED,Present in authoritative JSON ledger
+4,NIFTY,2026-07-07T11:10:00+05:30,BULL,8.1,MATCHED,Present in authoritative JSON ledger
+5,NIFTY,2026-07-07T12:15:00+05:30,BEAR,18.0,MATCHED,Present in authoritative JSON ledger
+6,NIFTY,2026-07-07T13:15:00+05:30,BEAR,11.45,MATCHED,Present in authoritative JSON ledger
+7,NIFTY,2026-07-07T15:10:00+05:30,BEAR,7.85,MATCHED,Present in authoritative JSON ledger
+8,NIFTY,2026-07-07T15:15:00+05:30,BEAR,12.83,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+9,NIFTY,2026-07-07T15:20:00+05:30,BEAR,20.55,MATCHED,Present in authoritative JSON ledger
+10,NIFTY,2026-07-07T15:25:00+05:30,BEAR,13.5,MATCHED,Present in authoritative JSON ledger
+11,NIFTY,2026-07-08T09:15:00+05:30,BEAR,-24.9,MATCHED,Present in authoritative JSON ledger
+12,NIFTY,2026-07-08T09:35:00+05:30,BEAR,2.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+13,NIFTY,2026-07-08T09:50:00+05:30,BULL,0.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+14,NIFTY,2026-07-08T11:40:00+05:30,BEAR,6.23,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+15,NIFTY,2026-07-08T11:45:00+05:30,BEAR,8.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+16,NIFTY,2026-07-08T13:50:00+05:30,BEAR,56.5,MATCHED,Present in authoritative JSON ledger
+17,NIFTY,2026-07-08T13:55:00+05:30,BEAR,54.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+18,NIFTY,2026-07-08T14:00:00+05:30,BEAR,35.65,MATCHED,Present in authoritative JSON ledger
+19,NIFTY,2026-07-08T14:05:00+05:30,BEAR,52.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+20,NIFTY,2026-07-08T14:10:00+05:30,BEAR,28.9,MATCHED,Present in authoritative JSON ledger
+21,NIFTY,2026-07-09T11:25:00+05:30,BULL,34.27,MATCHED,Present in authoritative JSON ledger
+22,NIFTY,2026-07-09T12:40:00+05:30,BEAR,14.4,MATCHED,Present in authoritative JSON ledger
+23,NIFTY,2026-07-09T13:55:00+05:30,BEAR,4.6,MATCHED,Present in authoritative JSON ledger
+24,NIFTY,2026-07-09T14:00:00+05:30,BEAR,4.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+25,NIFTY,2026-07-09T14:05:00+05:30,BEAR,8.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+26,NIFTY,2026-07-09T15:25:00+05:30,BULL,13.3,MATCHED,Present in authoritative JSON ledger
+27,NIFTY,2026-07-10T09:15:00+05:30,BULL,37.65,MATCHED,Present in authoritative JSON ledger
+28,NIFTY,2026-07-10T09:40:00+05:30,BULL,1.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+29,NIFTY,2026-07-10T09:45:00+05:30,BULL,9.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+30,NIFTY,2026-07-10T11:15:00+05:30,BEAR,6.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+31,NIFTY,2026-07-10T13:35:00+05:30,BULL,9.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+32,NIFTY,2026-07-10T13:40:00+05:30,BULL,-0.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+33,NIFTY,2026-07-10T14:25:00+05:30,BULL,10.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+34,NIFTY,2026-07-13T09:40:00+05:30,BULL,7.05,MATCHED,Present in authoritative JSON ledger
+35,NIFTY,2026-07-13T09:45:00+05:30,BULL,15.98,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+36,NIFTY,2026-07-13T09:50:00+05:30,BULL,8.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+37,NIFTY,2026-07-13T09:55:00+05:30,BULL,3.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+38,NIFTY,2026-07-13T10:25:00+05:30,BULL,15.9,MATCHED,Present in authoritative JSON ledger
+39,NIFTY,2026-07-13T12:45:00+05:30,BULL,1.35,MATCHED,Present in authoritative JSON ledger
+40,NIFTY,2026-07-13T12:50:00+05:30,BULL,12.15,MATCHED,Present in authoritative JSON ledger
+41,NIFTY,2026-07-13T13:25:00+05:30,BEAR,22.65,MATCHED,Present in authoritative JSON ledger
+42,NIFTY,2026-07-13T14:10:00+05:30,BULL,12.55,MATCHED,Present in authoritative JSON ledger
+43,NIFTY,2026-07-13T14:15:00+05:30,BULL,8.55,MATCHED,Present in authoritative JSON ledger
+44,NIFTY,2026-07-13T14:20:00+05:30,BULL,6.4,MATCHED,Present in authoritative JSON ledger
+45,NIFTY,2026-07-13T15:05:00+05:30,BEAR,10.73,MATCHED,Present in authoritative JSON ledger
+46,NIFTY,2026-07-13T15:10:00+05:30,BEAR,9.55,MATCHED,Present in authoritative JSON ledger
+47,NIFTY,2026-07-13T15:15:00+05:30,BEAR,9.85,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+48,NIFTY,2026-07-14T09:40:00+05:30,BEAR,6.25,MATCHED,Present in authoritative JSON ledger
+49,NIFTY,2026-07-14T09:45:00+05:30,BEAR,8.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+50,NIFTY,2026-07-14T11:40:00+05:30,BEAR,13.35,MATCHED,Present in authoritative JSON ledger
+51,NIFTY,2026-07-14T12:45:00+05:30,BULL,2.5,MATCHED,Present in authoritative JSON ledger
+52,NIFTY,2026-07-15T09:25:00+05:30,BULL,4.75,MATCHED,Present in authoritative JSON ledger
+53,NIFTY,2026-07-15T09:30:00+05:30,BULL,12.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+54,NIFTY,2026-07-15T10:15:00+05:30,BULL,10.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+55,NIFTY,2026-07-15T10:35:00+05:30,BEAR,9.52,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+56,NIFTY,2026-07-15T12:30:00+05:30,BEAR,1.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+57,NIFTY,2026-07-15T12:35:00+05:30,BEAR,13.12,MATCHED,Present in authoritative JSON ledger
+58,NIFTY,2026-07-16T09:35:00+05:30,BEAR,3.9,MATCHED,Present in authoritative JSON ledger
+59,NIFTY,2026-07-16T10:50:00+05:30,BULL,3.4,MATCHED,Present in authoritative JSON ledger
+60,NIFTY,2026-07-16T10:55:00+05:30,BULL,13.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+61,NIFTY,2026-07-16T11:00:00+05:30,BULL,2.9,MATCHED,Present in authoritative JSON ledger
+62,NIFTY,2026-07-16T11:15:00+05:30,BEAR,10.95,MATCHED,Present in authoritative JSON ledger
+63,NIFTY,2026-07-16T13:35:00+05:30,BEAR,23.25,MATCHED,Present in authoritative JSON ledger
+64,NIFTY,2026-07-16T13:40:00+05:30,BEAR,18.6,MATCHED,Present in authoritative JSON ledger
+65,NIFTY,2026-07-17T09:25:00+05:30,BULL,15.38,MATCHED,Present in authoritative JSON ledger
+66,NIFTY,2026-07-17T09:45:00+05:30,BULL,5.9,MATCHED,Present in authoritative JSON ledger
+67,NIFTY,2026-07-17T10:15:00+05:30,BULL,16.57,MATCHED,Present in authoritative JSON ledger
+68,NIFTY,2026-07-17T11:40:00+05:30,BULL,10.2,MATCHED,Present in authoritative JSON ledger
+69,NIFTY,2026-07-17T13:50:00+05:30,BEAR,24.45,MATCHED,Present in authoritative JSON ledger
+70,NIFTY,2026-07-17T14:05:00+05:30,BULL,2.15,MATCHED,Present in authoritative JSON ledger
+71,NIFTY,2026-07-17T14:10:00+05:30,BULL,11.4,MATCHED,Present in authoritative JSON ledger
+72,NIFTY,2026-07-17T14:15:00+05:30,BULL,43.2,MATCHED,Present in authoritative JSON ledger
+73,NIFTY,2026-07-20T10:00:00+05:30,BULL,3.3,MATCHED,Present in authoritative JSON ledger
+74,NIFTY,2026-07-20T10:05:00+05:30,BULL,7.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+75,NIFTY,2026-07-20T10:10:00+05:30,BULL,8.25,MATCHED,Present in authoritative JSON ledger
+76,NIFTY,2026-07-20T10:15:00+05:30,BULL,17.33,MATCHED,Present in authoritative JSON ledger
+77,NIFTY,2026-07-20T12:45:00+05:30,BEAR,13.9,MATCHED,Present in authoritative JSON ledger
+78,NIFTY,2026-07-21T10:20:00+05:30,BEAR,12.52,MATCHED,Present in authoritative JSON ledger
+79,NIFTY,2026-07-21T13:00:00+05:30,BEAR,8.8,MATCHED,Present in authoritative JSON ledger
+80,NIFTY,2026-07-21T13:30:00+05:30,BULL,8.9,MATCHED,Present in authoritative JSON ledger
+81,NIFTY,2026-07-21T13:35:00+05:30,BULL,8.85,MATCHED,Present in authoritative JSON ledger
+82,NIFTY,2026-07-21T13:40:00+05:30,BULL,0.4,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+83,NIFTY,2026-07-22T09:35:00+05:30,BEAR,2.2,MATCHED,Present in authoritative JSON ledger
+84,NIFTY,2026-07-22T11:25:00+05:30,BULL,2.0,MATCHED,Present in authoritative JSON ledger
+85,NIFTY,2026-07-22T11:30:00+05:30,BULL,4.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+86,NIFTY,2026-07-22T12:00:00+05:30,BEAR,17.62,MATCHED,Present in authoritative JSON ledger
+87,NIFTY,2026-07-22T13:50:00+05:30,BEAR,5.45,MATCHED,Present in authoritative JSON ledger
+88,NIFTY,2026-07-23T09:15:00+05:30,BEAR,-10.8,MATCHED,Present in authoritative JSON ledger
+89,NIFTY,2026-07-23T10:00:00+05:30,BULL,19.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+90,NIFTY,2026-07-23T10:05:00+05:30,BULL,2.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+91,NIFTY,2026-07-23T10:45:00+05:30,BULL,4.4,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+92,NIFTY,2026-07-23T11:20:00+05:30,BEAR,7.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+93,NIFTY,2026-07-23T11:25:00+05:30,BEAR,9.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+94,NIFTY,2026-07-23T12:30:00+05:30,BEAR,23.33,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+95,NIFTY,2026-07-23T12:35:00+05:30,BEAR,12.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+96,NIFTY,2026-07-23T12:40:00+05:30,BEAR,21.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+97,NIFTY,2026-07-23T12:45:00+05:30,BEAR,3.85,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+98,NIFTY,2026-07-23T13:10:00+05:30,BEAR,1.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+99,NIFTY,2026-07-23T15:05:00+05:30,BULL,26.48,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+100,NIFTY,2026-07-24T09:35:00+05:30,BEAR,19.35,MATCHED,Present in authoritative JSON ledger
+101,NIFTY,2026-07-24T09:40:00+05:30,BEAR,13.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+102,NIFTY,2026-07-24T09:45:00+05:30,BEAR,8.4,MATCHED,Present in authoritative JSON ledger
+103,NIFTY,2026-07-24T10:10:00+05:30,BEAR,10.3,MATCHED,Present in authoritative JSON ledger
+104,NIFTY,2026-07-24T10:45:00+05:30,BULL,8.7,MATCHED,Present in authoritative JSON ledger
+105,NIFTY,2026-07-24T11:45:00+05:30,BULL,16.0,MATCHED,Present in authoritative JSON ledger
+106,NIFTY,2026-07-24T11:50:00+05:30,BULL,5.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+107,NIFTY,2026-07-24T13:20:00+05:30,BULL,-1.15,MATCHED,Present in authoritative JSON ledger
+108,NIFTY,2026-07-24T14:00:00+05:30,BULL,14.1,MATCHED,Present in authoritative JSON ledger
+109,NIFTY,2026-07-27T11:25:00+05:30,BULL,10.35,MATCHED,Present in authoritative JSON ledger
+110,NIFTY,2026-07-27T11:30:00+05:30,BULL,0.45,MATCHED,Present in authoritative JSON ledger
+111,NIFTY,2026-07-27T13:30:00+05:30,BEAR,17.75,MATCHED,Present in authoritative JSON ledger
+112,NIFTY,2026-07-27T13:55:00+05:30,BULL,5.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+113,NIFTY,2026-07-27T14:00:00+05:30,BULL,11.05,MATCHED,Present in authoritative JSON ledger
+114,NIFTY,2026-07-27T14:05:00+05:30,BULL,6.5,MATCHED,Present in authoritative JSON ledger
+115,NIFTY,2026-07-27T14:10:00+05:30,BULL,-0.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+116,NIFTY,2026-07-28T10:40:00+05:30,BULL,12.25,MATCHED,Present in authoritative JSON ledger
+117,NIFTY,2026-07-28T10:45:00+05:30,BULL,10.1,MATCHED,Present in authoritative JSON ledger
+118,NIFTY,2026-07-28T10:50:00+05:30,BULL,5.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+119,NIFTY,2026-07-28T11:30:00+05:30,BEAR,11.7,MATCHED,Present in authoritative JSON ledger
+120,NIFTY,2026-07-29T09:45:00+05:30,BULL,6.15,MATCHED,Present in authoritative JSON ledger
+121,NIFTY,2026-07-29T12:25:00+05:30,BEAR,6.55,MATCHED,Present in authoritative JSON ledger
+122,NIFTY,2026-07-29T13:05:00+05:30,BULL,12.98,MATCHED,Present in authoritative JSON ledger
+123,NIFTY,2026-07-29T13:10:00+05:30,BULL,4.5,MATCHED,Present in authoritative JSON ledger
+124,NIFTY,2026-07-29T13:25:00+05:30,BEAR,1.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+125,NIFTY,2026-07-29T15:10:00+05:30,BEAR,6.98,MATCHED,Present in authoritative JSON ledger
+126,NIFTY,2026-07-29T15:15:00+05:30,BEAR,9.7,MATCHED,Present in authoritative JSON ledger
+127,NIFTY,2026-07-29T15:20:00+05:30,BEAR,5.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+128,NIFTY,2026-07-30T12:55:00+05:30,BEAR,1.0,MATCHED,Present in authoritative JSON ledger
+129,NIFTY,2026-07-30T13:00:00+05:30,BEAR,8.85,MATCHED,Present in authoritative JSON ledger
+130,NIFTY,2026-07-31T12:45:00+05:30,BULL,11.1,MATCHED,Present in authoritative JSON ledger
+131,NIFTY,2026-07-31T14:40:00+05:30,BEAR,12.45,MATCHED,Present in authoritative JSON ledger
+132,NIFTY,2026-08-03T12:15:00+05:30,BULL,5.1,MATCHED,Present in authoritative JSON ledger
+133,NIFTY,2026-08-04T10:05:00+05:30,BEAR,11.4,MATCHED,Present in authoritative JSON ledger
+134,NIFTY,2026-08-04T10:30:00+05:30,BEAR,7.42,MATCHED,Present in authoritative JSON ledger
+135,NIFTY,2026-08-04T10:35:00+05:30,BEAR,3.0,MATCHED,Present in authoritative JSON ledger
+136,NIFTY,2026-08-04T11:30:00+05:30,BEAR,9.4,MATCHED,Present in authoritative JSON ledger
+137,NIFTY,2026-08-04T11:50:00+05:30,BEAR,2.0,MATCHED,Present in authoritative JSON ledger
+138,NIFTY,2026-08-04T11:55:00+05:30,BEAR,10.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+139,NIFTY,2026-08-04T12:00:00+05:30,BEAR,18.08,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+140,NIFTY,2026-08-04T12:05:00+05:30,BEAR,11.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+141,NIFTY,2026-08-04T12:35:00+05:30,BEAR,17.33,MATCHED,Present in authoritative JSON ledger
+142,NIFTY,2026-08-04T12:40:00+05:30,BEAR,7.8,MATCHED,Present in authoritative JSON ledger
+143,NIFTY,2026-08-04T14:15:00+05:30,BULL,22.05,MATCHED,Present in authoritative JSON ledger
+144,NIFTY,2026-08-05T10:45:00+05:30,BULL,15.0,MATCHED,Present in authoritative JSON ledger
+145,NIFTY,2026-08-05T10:50:00+05:30,BULL,7.7,MATCHED,Present in authoritative JSON ledger
+146,NIFTY,2026-08-05T10:55:00+05:30,BULL,19.35,MATCHED,Present in authoritative JSON ledger
+147,NIFTY,2026-08-05T11:00:00+05:30,BULL,4.8,MATCHED,Present in authoritative JSON ledger
+148,NIFTY,2026-08-05T11:30:00+05:30,BEAR,16.8,MATCHED,Present in authoritative JSON ledger
+149,NIFTY,2026-08-05T11:55:00+05:30,BEAR,2.75,MATCHED,Present in authoritative JSON ledger
+150,NIFTY,2026-08-05T15:10:00+05:30,BULL,34.73,MATCHED,Present in authoritative JSON ledger
+151,NIFTY,2026-08-06T09:50:00+05:30,BULL,2.1,MATCHED,Present in authoritative JSON ledger
+152,NIFTY,2026-08-06T11:15:00+05:30,BULL,10.1,MATCHED,Present in authoritative JSON ledger
+153,NIFTY,2026-08-06T11:20:00+05:30,BULL,5.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+154,NIFTY,2026-08-06T12:55:00+05:30,BEAR,3.6,MATCHED,Present in authoritative JSON ledger
+155,NIFTY,2026-08-06T14:05:00+05:30,BULL,1.45,MATCHED,Present in authoritative JSON ledger
+156,NIFTY,2026-08-06T14:10:00+05:30,BULL,6.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+157,NIFTY,2026-08-07T12:15:00+05:30,BEAR,3.7,MATCHED,Present in authoritative JSON ledger
+158,NIFTY,2026-08-07T12:30:00+05:30,BULL,9.2,MATCHED,Present in authoritative JSON ledger
+159,NIFTY,2026-08-07T12:35:00+05:30,BULL,0.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+160,NIFTY,2026-08-07T15:10:00+05:30,BULL,12.82,MATCHED,Present in authoritative JSON ledger
+161,NIFTY,2026-08-10T09:35:00+05:30,BEAR,6.2,MATCHED,Present in authoritative JSON ledger
+162,NIFTY,2026-08-10T10:20:00+05:30,BULL,17.6,MATCHED,Present in authoritative JSON ledger
+163,NIFTY,2026-08-10T10:25:00+05:30,BULL,0.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+164,NIFTY,2026-08-10T12:50:00+05:30,BEAR,4.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+165,NIFTY,2026-08-10T12:55:00+05:30,BEAR,4.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+166,NIFTY,2026-08-10T13:35:00+05:30,BULL,0.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+167,NIFTY,2026-08-10T13:40:00+05:30,BULL,5.92,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+168,NIFTY,2026-08-10T14:40:00+05:30,BEAR,1.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+169,NIFTY,2026-08-10T14:45:00+05:30,BEAR,10.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+170,NIFTY,2026-08-11T10:15:00+05:30,BEAR,5.9,MATCHED,Present in authoritative JSON ledger
+171,NIFTY,2026-08-11T10:45:00+05:30,BEAR,6.0,MATCHED,Present in authoritative JSON ledger
+172,NIFTY,2026-08-11T11:45:00+05:30,BULL,6.52,MATCHED,Present in authoritative JSON ledger
+173,NIFTY,2026-08-11T14:55:00+05:30,BULL,4.4,MATCHED,Present in authoritative JSON ledger
+174,NIFTY,2026-08-11T15:00:00+05:30,BULL,6.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+175,NIFTY,2026-08-12T14:25:00+05:30,BULL,5.85,MATCHED,Present in authoritative JSON ledger
+176,NIFTY,2026-08-12T14:30:00+05:30,BULL,13.88,MATCHED,Present in authoritative JSON ledger
+177,NIFTY,2026-08-13T09:50:00+05:30,BULL,3.6,MATCHED,Present in authoritative JSON ledger
+178,NIFTY,2026-08-13T10:45:00+05:30,BULL,8.55,MATCHED,Present in authoritative JSON ledger
+179,NIFTY,2026-08-13T11:05:00+05:30,BEAR,1.05,MATCHED,Present in authoritative JSON ledger
+180,NIFTY,2026-08-13T11:30:00+05:30,BULL,5.8,MATCHED,Present in authoritative JSON ledger
+181,NIFTY,2026-08-13T11:35:00+05:30,BULL,11.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+182,NIFTY,2026-08-13T12:00:00+05:30,BULL,19.95,MATCHED,Present in authoritative JSON ledger
+183,NIFTY,2026-08-13T14:10:00+05:30,BEAR,4.6,MATCHED,Present in authoritative JSON ledger
+184,NIFTY,2026-08-13T14:55:00+05:30,BEAR,7.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+185,NIFTY,2026-08-14T10:25:00+05:30,BEAR,3.6,MATCHED,Present in authoritative JSON ledger
+186,NIFTY,2026-08-14T10:30:00+05:30,BEAR,10.8,MATCHED,Present in authoritative JSON ledger
+187,NIFTY,2026-08-14T10:50:00+05:30,BULL,2.35,MATCHED,Present in authoritative JSON ledger
+188,NIFTY,2026-08-14T12:15:00+05:30,BULL,7.0,MATCHED,Present in authoritative JSON ledger
+189,NIFTY,2026-08-14T12:20:00+05:30,BULL,2.35,MATCHED,Present in authoritative JSON ledger
+190,NIFTY,2026-08-14T12:40:00+05:30,BEAR,6.15,MATCHED,Present in authoritative JSON ledger
+191,NIFTY,2026-08-14T14:15:00+05:30,BEAR,3.25,MATCHED,Present in authoritative JSON ledger
+192,NIFTY,2026-08-14T14:20:00+05:30,BEAR,1.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+193,NIFTY,2026-08-14T14:25:00+05:30,BEAR,7.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+194,NIFTY,2026-08-17T10:20:00+05:30,BEAR,11.45,MATCHED,Present in authoritative JSON ledger
+195,NIFTY,2026-08-17T10:45:00+05:30,BEAR,0.95,MATCHED,Present in authoritative JSON ledger
+196,NIFTY,2026-08-17T11:55:00+05:30,BULL,7.95,MATCHED,Present in authoritative JSON ledger
+197,NIFTY,2026-08-17T12:25:00+05:30,BULL,4.15,MATCHED,Present in authoritative JSON ledger
+198,NIFTY,2026-08-17T12:30:00+05:30,BULL,5.2,MATCHED,Present in authoritative JSON ledger
+199,NIFTY,2026-08-17T12:35:00+05:30,BULL,2.35,MATCHED,Present in authoritative JSON ledger
+200,NIFTY,2026-08-17T12:40:00+05:30,BULL,9.38,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+201,NIFTY,2026-08-17T12:45:00+05:30,BULL,12.9,MATCHED,Present in authoritative JSON ledger
+202,NIFTY,2026-08-17T12:50:00+05:30,BULL,7.35,MATCHED,Present in authoritative JSON ledger
+203,NIFTY,2026-08-17T14:50:00+05:30,BULL,7.05,MATCHED,Present in authoritative JSON ledger
+204,NIFTY,2026-08-18T10:50:00+05:30,BEAR,10.7,MATCHED,Present in authoritative JSON ledger
+205,NIFTY,2026-08-18T11:20:00+05:30,BEAR,3.15,MATCHED,Present in authoritative JSON ledger
+206,NIFTY,2026-08-18T11:25:00+05:30,BEAR,6.52,MATCHED,Present in authoritative JSON ledger
+207,NIFTY,2026-08-19T09:50:00+05:30,BULL,4.4,MATCHED,Present in authoritative JSON ledger
+208,NIFTY,2026-08-19T10:20:00+05:30,BEAR,9.4,MATCHED,Present in authoritative JSON ledger
+209,NIFTY,2026-08-19T12:10:00+05:30,BEAR,5.65,MATCHED,Present in authoritative JSON ledger
+210,NIFTY,2026-08-19T14:05:00+05:30,BULL,-2.2,MATCHED,Present in authoritative JSON ledger
+211,NIFTY,2026-08-20T11:15:00+05:30,BEAR,6.0,MATCHED,Present in authoritative JSON ledger
+212,NIFTY,2026-08-20T11:20:00+05:30,BEAR,0.85,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+213,NIFTY,2026-08-20T12:50:00+05:30,BULL,3.3,MATCHED,Present in authoritative JSON ledger
+214,NIFTY,2026-08-20T14:45:00+05:30,BEAR,0.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+215,NIFTY,2026-08-20T15:10:00+05:30,BEAR,3.6,MATCHED,Present in authoritative JSON ledger
+216,NIFTY,2026-08-21T10:50:00+05:30,BULL,9.38,MATCHED,Present in authoritative JSON ledger
+217,NIFTY,2026-08-21T12:05:00+05:30,BEAR,2.1,MATCHED,Present in authoritative JSON ledger
+218,NIFTY,2026-08-21T12:10:00+05:30,BEAR,2.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+219,NIFTY,2026-08-21T14:25:00+05:30,BULL,3.5,MATCHED,Present in authoritative JSON ledger
+220,NIFTY,2026-08-24T10:20:00+05:30,BULL,0.55,MATCHED,Present in authoritative JSON ledger
+221,NIFTY,2026-08-24T10:50:00+05:30,BEAR,1.9,MATCHED,Present in authoritative JSON ledger
+222,NIFTY,2026-08-24T11:10:00+05:30,BEAR,10.95,MATCHED,Present in authoritative JSON ledger
+223,NIFTY,2026-08-24T13:25:00+05:30,BULL,2.95,MATCHED,Present in authoritative JSON ledger
+224,NIFTY,2026-08-24T15:00:00+05:30,BULL,6.15,MATCHED,Present in authoritative JSON ledger
+225,NIFTY,2026-08-25T09:45:00+05:30,BEAR,2.75,MATCHED,Present in authoritative JSON ledger
+226,NIFTY,2026-08-25T09:50:00+05:30,BEAR,16.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+227,NIFTY,2026-08-25T13:40:00+05:30,BULL,1.55,MATCHED,Present in authoritative JSON ledger
+228,NIFTY,2026-08-25T14:30:00+05:30,BULL,13.5,MATCHED,Present in authoritative JSON ledger
+229,NIFTY,2026-08-25T14:50:00+05:30,BULL,13.85,MATCHED,Present in authoritative JSON ledger
+230,NIFTY,2026-08-25T14:55:00+05:30,BULL,15.7,MATCHED,Present in authoritative JSON ledger
+231,NIFTY,2026-08-26T10:10:00+05:30,BEAR,2.85,MATCHED,Present in authoritative JSON ledger
+232,NIFTY,2026-08-26T10:15:00+05:30,BEAR,11.77,MATCHED,Present in authoritative JSON ledger
+233,NIFTY,2026-08-26T10:20:00+05:30,BEAR,16.0,MATCHED,Present in authoritative JSON ledger
+234,NIFTY,2026-08-27T10:00:00+05:30,BEAR,4.85,MATCHED,Present in authoritative JSON ledger
+235,NIFTY,2026-08-27T11:20:00+05:30,BEAR,7.15,MATCHED,Present in authoritative JSON ledger
+236,NIFTY,2026-08-27T14:05:00+05:30,BEAR,5.25,MATCHED,Present in authoritative JSON ledger
+237,NIFTY,2026-08-27T14:20:00+05:30,BULL,5.95,MATCHED,Present in authoritative JSON ledger
+238,NIFTY,2026-08-27T14:25:00+05:30,BULL,9.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+239,NIFTY,2026-08-28T11:30:00+05:30,BEAR,10.1,MATCHED,Present in authoritative JSON ledger
+240,NIFTY,2026-08-28T11:35:00+05:30,BEAR,7.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+241,NIFTY,2026-08-28T12:35:00+05:30,BULL,3.65,MATCHED,Present in authoritative JSON ledger
+242,NIFTY,2026-08-31T11:35:00+05:30,BULL,-0.45,MATCHED,Present in authoritative JSON ledger
+243,NIFTY,2026-08-31T11:40:00+05:30,BULL,2.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+244,NIFTY,2026-08-31T11:45:00+05:30,BULL,5.15,MATCHED,Present in authoritative JSON ledger
+245,NIFTY,2026-08-31T11:50:00+05:30,BULL,24.15,MATCHED,Present in authoritative JSON ledger
+246,NIFTY,2026-08-31T14:05:00+05:30,BEAR,4.75,MATCHED,Present in authoritative JSON ledger
+247,NIFTY,2026-08-31T14:45:00+05:30,BULL,18.23,MATCHED,Present in authoritative JSON ledger
+248,NIFTY,2026-09-01T09:45:00+05:30,BEAR,8.95,MATCHED,Present in authoritative JSON ledger
+249,NIFTY,2026-09-01T10:10:00+05:30,BULL,2.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+250,NIFTY,2026-09-01T10:15:00+05:30,BULL,11.25,MATCHED,Present in authoritative JSON ledger
+251,NIFTY,2026-09-01T10:20:00+05:30,BULL,10.2,MATCHED,Present in authoritative JSON ledger
+252,NIFTY,2026-09-01T11:15:00+05:30,BULL,12.9,MATCHED,Present in authoritative JSON ledger
+253,NIFTY,2026-09-01T13:00:00+05:30,BEAR,6.45,MATCHED,Present in authoritative JSON ledger
+254,NIFTY,2026-09-01T13:05:00+05:30,BEAR,10.1,MATCHED,Present in authoritative JSON ledger
+255,NIFTY,2026-09-01T13:10:00+05:30,BEAR,15.6,MATCHED,Present in authoritative JSON ledger
+256,NIFTY,2026-09-01T13:15:00+05:30,BEAR,1.7,MATCHED,Present in authoritative JSON ledger
+257,NIFTY,2026-09-01T13:50:00+05:30,BEAR,24.45,MATCHED,Present in authoritative JSON ledger
+258,NIFTY,2026-09-02T10:25:00+05:30,BULL,6.2,MATCHED,Present in authoritative JSON ledger
+259,NIFTY,2026-09-02T11:30:00+05:30,BEAR,5.05,MATCHED,Present in authoritative JSON ledger
+260,NIFTY,2026-09-02T12:35:00+05:30,BULL,2.2,MATCHED,Present in authoritative JSON ledger
+261,NIFTY,2026-09-02T12:40:00+05:30,BULL,8.48,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+262,NIFTY,2026-09-02T15:00:00+05:30,BEAR,12.0,MATCHED,Present in authoritative JSON ledger
+263,NIFTY,2026-09-03T09:40:00+05:30,BULL,10.95,MATCHED,Present in authoritative JSON ledger
+264,NIFTY,2026-09-03T10:35:00+05:30,BEAR,3.5,MATCHED,Present in authoritative JSON ledger
+265,NIFTY,2026-09-03T10:40:00+05:30,BEAR,10.58,MATCHED,Present in authoritative JSON ledger
+266,NIFTY,2026-09-03T11:10:00+05:30,BEAR,3.15,MATCHED,Present in authoritative JSON ledger
+267,NIFTY,2026-09-03T11:30:00+05:30,BULL,4.15,MATCHED,Present in authoritative JSON ledger
+268,NIFTY,2026-09-03T11:35:00+05:30,BULL,8.85,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+269,NIFTY,2026-09-03T11:50:00+05:30,BEAR,5.4,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+270,NIFTY,2026-09-03T11:55:00+05:30,BEAR,2.35,MATCHED,Present in authoritative JSON ledger
+271,NIFTY,2026-09-03T12:00:00+05:30,BEAR,8.55,MATCHED,Present in authoritative JSON ledger
+272,NIFTY,2026-09-03T12:05:00+05:30,BEAR,8.75,MATCHED,Present in authoritative JSON ledger
+273,NIFTY,2026-09-03T13:15:00+05:30,BULL,9.23,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+274,NIFTY,2026-09-03T14:45:00+05:30,BEAR,-0.35,MATCHED,Present in authoritative JSON ledger
+275,NIFTY,2026-09-03T15:05:00+05:30,BEAR,1.85,MATCHED,Present in authoritative JSON ledger
+276,NIFTY,2026-09-04T09:35:00+05:30,BEAR,3.35,MATCHED,Present in authoritative JSON ledger
+277,NIFTY,2026-09-04T09:50:00+05:30,BULL,18.9,MATCHED,Present in authoritative JSON ledger
+278,NIFTY,2026-09-04T09:55:00+05:30,BULL,2.4,MATCHED,Present in authoritative JSON ledger
+279,NIFTY,2026-09-04T10:00:00+05:30,BULL,5.62,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+280,NIFTY,2026-09-04T10:25:00+05:30,BULL,11.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+281,NIFTY,2026-09-04T11:30:00+05:30,BULL,4.75,MATCHED,Present in authoritative JSON ledger
+282,NIFTY,2026-09-04T11:35:00+05:30,BULL,8.77,MATCHED,Present in authoritative JSON ledger
+283,NIFTY,2026-09-04T12:20:00+05:30,BEAR,7.85,MATCHED,Present in authoritative JSON ledger
+284,NIFTY,2026-09-04T13:15:00+05:30,BULL,9.3,MATCHED,Present in authoritative JSON ledger
+285,NIFTY,2026-09-04T13:45:00+05:30,BULL,2.35,MATCHED,Present in authoritative JSON ledger
+286,NIFTY,2026-09-07T09:55:00+05:30,BEAR,2.2,MATCHED,Present in authoritative JSON ledger
+287,NIFTY,2026-09-07T11:00:00+05:30,BEAR,10.73,MATCHED,Present in authoritative JSON ledger
+288,NIFTY,2026-09-07T11:05:00+05:30,BEAR,5.15,MATCHED,Present in authoritative JSON ledger
+289,NIFTY,2026-09-07T11:10:00+05:30,BEAR,2.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+290,NIFTY,2026-09-07T12:55:00+05:30,BEAR,0.25,MATCHED,Present in authoritative JSON ledger
+291,NIFTY,2026-09-07T14:45:00+05:30,BEAR,4.75,MATCHED,Present in authoritative JSON ledger
+292,NIFTY,2026-09-08T09:25:00+05:30,BEAR,8.1,MATCHED,Present in authoritative JSON ledger
+293,NIFTY,2026-09-08T12:20:00+05:30,BULL,6.55,MATCHED,Present in authoritative JSON ledger
+294,NIFTY,2026-09-08T12:25:00+05:30,BULL,3.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+295,NIFTY,2026-09-08T12:30:00+05:30,BULL,0.85,MATCHED,Present in authoritative JSON ledger
+296,NIFTY,2026-09-08T12:35:00+05:30,BULL,2.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+297,NIFTY,2026-09-08T13:30:00+05:30,BEAR,9.6,MATCHED,Present in authoritative JSON ledger
+298,NIFTY,2026-09-08T14:10:00+05:30,BULL,-0.45,MATCHED,Present in authoritative JSON ledger
+299,NIFTY,2026-09-08T14:15:00+05:30,BULL,7.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+300,NIFTY,2026-09-09T09:55:00+05:30,BEAR,5.85,MATCHED,Present in authoritative JSON ledger
+301,NIFTY,2026-09-09T10:00:00+05:30,BEAR,16.43,MATCHED,Present in authoritative JSON ledger
+302,NIFTY,2026-09-09T10:05:00+05:30,BEAR,4.2,MATCHED,Present in authoritative JSON ledger
+303,NIFTY,2026-09-09T12:00:00+05:30,BEAR,7.35,MATCHED,Present in authoritative JSON ledger
+304,NIFTY,2026-09-09T12:05:00+05:30,BEAR,7.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+305,NIFTY,2026-09-09T12:35:00+05:30,BULL,9.6,MATCHED,Present in authoritative JSON ledger
+306,NIFTY,2026-09-09T12:40:00+05:30,BULL,8.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+307,NIFTY,2026-09-09T14:35:00+05:30,BEAR,19.55,MATCHED,Present in authoritative JSON ledger
+308,NIFTY,2026-09-09T14:40:00+05:30,BEAR,4.85,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+309,NIFTY,2026-09-09T14:45:00+05:30,BEAR,0.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+310,NIFTY,2026-09-10T10:05:00+05:30,BEAR,12.82,MATCHED,Present in authoritative JSON ledger
+311,NIFTY,2026-09-10T10:10:00+05:30,BEAR,3.4,MATCHED,Present in authoritative JSON ledger
+312,NIFTY,2026-09-10T10:40:00+05:30,BULL,11.75,MATCHED,Present in authoritative JSON ledger
+313,NIFTY,2026-09-10T15:05:00+05:30,BEAR,1.6,MATCHED,Present in authoritative JSON ledger
+314,NIFTY,2026-09-11T10:05:00+05:30,BULL,12.05,MATCHED,Present in authoritative JSON ledger
+315,NIFTY,2026-09-11T10:10:00+05:30,BULL,11.6,MATCHED,Present in authoritative JSON ledger
+316,NIFTY,2026-09-11T11:10:00+05:30,BULL,29.4,MATCHED,Present in authoritative JSON ledger
+317,NIFTY,2026-09-11T11:15:00+05:30,BULL,3.8,MATCHED,Present in authoritative JSON ledger
+318,NIFTY,2026-09-11T14:00:00+05:30,BULL,57.45,MATCHED,Present in authoritative JSON ledger
+319,NIFTY,2026-09-15T09:30:00+05:30,BEAR,16.28,MATCHED,Present in authoritative JSON ledger
+320,NIFTY,2026-09-15T09:55:00+05:30,BEAR,9.25,MATCHED,Present in authoritative JSON ledger
+321,NIFTY,2026-09-15T10:50:00+05:30,BEAR,3.7,MATCHED,Present in authoritative JSON ledger
+322,NIFTY,2026-09-15T13:20:00+05:30,BEAR,12.0,MATCHED,Present in authoritative JSON ledger
+323,NIFTY,2026-09-15T14:15:00+05:30,BEAR,30.2,MATCHED,Present in authoritative JSON ledger
+324,NIFTY,2026-09-16T10:30:00+05:30,BULL,16.58,MATCHED,Present in authoritative JSON ledger
+325,NIFTY,2026-09-16T14:50:00+05:30,BULL,2.3,MATCHED,Present in authoritative JSON ledger
+326,NIFTY,2026-09-17T10:00:00+05:30,BULL,7.25,MATCHED,Present in authoritative JSON ledger
+327,NIFTY,2026-09-17T10:05:00+05:30,BULL,12.3,MATCHED,Present in authoritative JSON ledger
+328,NIFTY,2026-09-17T10:10:00+05:30,BULL,2.25,MATCHED,Present in authoritative JSON ledger
+329,NIFTY,2026-09-17T12:15:00+05:30,BULL,5.55,MATCHED,Present in authoritative JSON ledger
+330,NIFTY,2026-09-17T12:20:00+05:30,BULL,5.8,MATCHED,Present in authoritative JSON ledger
+331,NIFTY,2026-09-17T13:25:00+05:30,BEAR,20.25,MATCHED,Present in authoritative JSON ledger
+332,NIFTY,2026-09-17T13:30:00+05:30,BEAR,8.15,MATCHED,Present in authoritative JSON ledger
+333,NIFTY,2026-09-18T12:35:00+05:30,BULL,5.25,MATCHED,Present in authoritative JSON ledger
+334,NIFTY,2026-09-18T12:40:00+05:30,BULL,6.75,MATCHED,Present in authoritative JSON ledger
+335,NIFTY,2026-09-18T15:10:00+05:30,BEAR,2.0,MATCHED,Present in authoritative JSON ledger
+336,NIFTY,2026-09-21T10:50:00+05:30,BULL,4.65,MATCHED,Present in authoritative JSON ledger
+337,NIFTY,2026-09-21T10:55:00+05:30,BULL,-0.1,MATCHED,Present in authoritative JSON ledger
+338,NIFTY,2026-09-21T11:00:00+05:30,BULL,2.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+339,NIFTY,2026-09-21T11:05:00+05:30,BULL,4.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+340,NIFTY,2026-09-21T11:10:00+05:30,BULL,3.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+341,NIFTY,2026-09-21T13:25:00+05:30,BULL,5.7,MATCHED,Present in authoritative JSON ledger
+342,NIFTY,2026-09-21T13:30:00+05:30,BULL,5.9,MATCHED,Present in authoritative JSON ledger
+343,NIFTY,2026-09-21T13:55:00+05:30,BULL,8.93,MATCHED,Present in authoritative JSON ledger
+344,NIFTY,2026-09-21T15:10:00+05:30,BEAR,9.98,MATCHED,Present in authoritative JSON ledger
+345,NIFTY,2026-09-22T10:25:00+05:30,BEAR,6.8,MATCHED,Present in authoritative JSON ledger
+346,NIFTY,2026-09-22T10:30:00+05:30,BEAR,12.0,MATCHED,Present in authoritative JSON ledger
+347,NIFTY,2026-09-22T10:35:00+05:30,BEAR,22.1,MATCHED,Present in authoritative JSON ledger
+348,NIFTY,2026-09-22T10:40:00+05:30,BEAR,16.85,MATCHED,Present in authoritative JSON ledger
+349,NIFTY,2026-09-22T12:50:00+05:30,BEAR,8.5,MATCHED,Present in authoritative JSON ledger
+350,NIFTY,2026-09-22T12:55:00+05:30,BEAR,1.95,MATCHED,Present in authoritative JSON ledger
+351,NIFTY,2026-09-22T13:00:00+05:30,BEAR,12.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+352,NIFTY,2026-09-22T13:35:00+05:30,BULL,1.35,MATCHED,Present in authoritative JSON ledger
+353,NIFTY,2026-09-22T14:15:00+05:30,BULL,1.85,MATCHED,Present in authoritative JSON ledger
+354,NIFTY,2026-09-23T12:10:00+05:30,BULL,6.75,MATCHED,Present in authoritative JSON ledger
+355,NIFTY,2026-09-23T12:15:00+05:30,BULL,4.55,MATCHED,Present in authoritative JSON ledger
+356,NIFTY,2026-09-23T14:10:00+05:30,BULL,8.95,MATCHED,Present in authoritative JSON ledger
+357,NIFTY,2026-09-24T11:10:00+05:30,BEAR,4.45,MATCHED,Present in authoritative JSON ledger
+358,NIFTY,2026-09-24T13:45:00+05:30,BEAR,6.5,MATCHED,Present in authoritative JSON ledger
+359,NIFTY,2026-09-24T13:50:00+05:30,BEAR,24.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+360,NIFTY,2026-09-24T13:55:00+05:30,BEAR,14.45,MATCHED,Present in authoritative JSON ledger
+361,NIFTY,2026-09-25T10:05:00+05:30,BULL,18.1,MATCHED,Present in authoritative JSON ledger
+362,NIFTY,2026-09-25T10:10:00+05:30,BULL,1.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+363,NIFTY,2026-09-25T10:30:00+05:30,BEAR,21.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+364,NIFTY,2026-09-25T11:05:00+05:30,BULL,10.85,MATCHED,Present in authoritative JSON ledger
+365,NIFTY,2026-09-25T11:10:00+05:30,BULL,3.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+366,NIFTY,2026-09-25T11:15:00+05:30,BULL,4.2,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+367,NIFTY,2026-09-25T12:45:00+05:30,BEAR,8.25,MATCHED,Present in authoritative JSON ledger
+368,NIFTY,2026-09-25T12:50:00+05:30,BEAR,6.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+369,NIFTY,2026-09-25T12:55:00+05:30,BEAR,12.97,MATCHED,Present in authoritative JSON ledger
+370,NIFTY,2026-09-28T09:25:00+05:30,BEAR,17.55,MATCHED,Present in authoritative JSON ledger
+371,NIFTY,2026-09-28T09:30:00+05:30,BEAR,15.2,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+372,NIFTY,2026-09-28T09:35:00+05:30,BEAR,29.77,MATCHED,Present in authoritative JSON ledger
+373,NIFTY,2026-09-28T09:40:00+05:30,BEAR,5.0,MATCHED,Present in authoritative JSON ledger
+374,NIFTY,2026-09-28T12:55:00+05:30,BEAR,1.7,MATCHED,Present in authoritative JSON ledger
+375,NIFTY,2026-09-28T13:00:00+05:30,BEAR,6.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+376,NIFTY,2026-09-29T09:25:00+05:30,BEAR,29.32,MATCHED,Present in authoritative JSON ledger
+377,NIFTY,2026-09-29T09:30:00+05:30,BEAR,6.35,MATCHED,Present in authoritative JSON ledger
+378,NIFTY,2026-09-29T09:35:00+05:30,BEAR,29.02,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+379,NIFTY,2026-09-29T10:10:00+05:30,BEAR,6.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+380,NIFTY,2026-09-29T12:25:00+05:30,BEAR,32.1,MATCHED,Present in authoritative JSON ledger
+381,NIFTY,2026-09-29T12:30:00+05:30,BEAR,27.3,MATCHED,Present in authoritative JSON ledger
+382,NIFTY,2026-09-30T10:15:00+05:30,BULL,3.15,MATCHED,Present in authoritative JSON ledger
+383,NIFTY,2026-09-30T10:20:00+05:30,BULL,8.77,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+384,NIFTY,2026-09-30T13:45:00+05:30,BEAR,5.2,MATCHED,Present in authoritative JSON ledger
+385,NIFTY,2026-09-30T14:35:00+05:30,BEAR,16.27,MATCHED,Present in authoritative JSON ledger
+386,NIFTY,2026-10-01T12:15:00+05:30,BEAR,19.28,MATCHED,Present in authoritative JSON ledger
+387,NIFTY,2026-10-01T12:20:00+05:30,BEAR,15.35,MATCHED,Present in authoritative JSON ledger
+388,NIFTY,2026-10-01T12:25:00+05:30,BEAR,14.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+389,NIFTY,2026-10-01T12:55:00+05:30,BEAR,46.43,MATCHED,Present in authoritative JSON ledger
+390,NIFTY,2026-10-01T13:25:00+05:30,BEAR,4.65,MATCHED,Present in authoritative JSON ledger
+391,NIFTY,2026-10-01T14:00:00+05:30,BEAR,29.0,MATCHED,Present in authoritative JSON ledger
+392,NIFTY,2026-10-05T11:45:00+05:30,BEAR,7.85,MATCHED,Present in authoritative JSON ledger
+393,NIFTY,2026-10-05T11:50:00+05:30,BEAR,0.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+394,NIFTY,2026-10-05T12:25:00+05:30,BULL,15.0,MATCHED,Present in authoritative JSON ledger
+395,NIFTY,2026-10-05T13:40:00+05:30,BULL,51.67,MATCHED,Present in authoritative JSON ledger
+396,NIFTY,2026-10-06T09:55:00+05:30,BULL,15.65,MATCHED,Present in authoritative JSON ledger
+397,NIFTY,2026-10-06T10:35:00+05:30,BULL,11.2,MATCHED,Present in authoritative JSON ledger
+398,NIFTY,2026-10-06T10:40:00+05:30,BULL,4.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+399,NIFTY,2026-10-06T12:40:00+05:30,BULL,8.4,MATCHED,Present in authoritative JSON ledger
+400,NIFTY,2026-10-06T14:25:00+05:30,BEAR,20.25,MATCHED,Present in authoritative JSON ledger
+401,NIFTY,2026-10-07T10:25:00+05:30,BULL,18.38,MATCHED,Present in authoritative JSON ledger
+402,NIFTY,2026-10-07T12:20:00+05:30,BEAR,6.2,MATCHED,Present in authoritative JSON ledger
+403,NIFTY,2026-10-07T12:25:00+05:30,BEAR,15.55,MATCHED,Present in authoritative JSON ledger
+404,NIFTY,2026-10-07T12:55:00+05:30,BEAR,12.23,MATCHED,Present in authoritative JSON ledger
+405,NIFTY,2026-10-07T13:00:00+05:30,BEAR,9.0,MATCHED,Present in authoritative JSON ledger
+406,NIFTY,2026-10-07T13:05:00+05:30,BEAR,26.33,MATCHED,Present in authoritative JSON ledger
+407,NIFTY,2026-10-07T13:45:00+05:30,BULL,1.45,MATCHED,Present in authoritative JSON ledger
+408,NIFTY,2026-10-07T14:25:00+05:30,BULL,13.35,MATCHED,Present in authoritative JSON ledger
+409,NIFTY,2026-10-08T09:25:00+05:30,BEAR,14.75,MATCHED,Present in authoritative JSON ledger
+410,NIFTY,2026-10-08T09:45:00+05:30,BEAR,4.6,MATCHED,Present in authoritative JSON ledger
+411,NIFTY,2026-10-08T13:50:00+05:30,BEAR,3.05,MATCHED,Present in authoritative JSON ledger
+412,NIFTY,2026-10-08T15:05:00+05:30,BEAR,6.0,MATCHED,Present in authoritative JSON ledger
+413,NIFTY,2026-10-09T09:40:00+05:30,BULL,16.6,MATCHED,Present in authoritative JSON ledger
+414,NIFTY,2026-10-09T09:45:00+05:30,BULL,17.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+415,NIFTY,2026-10-09T09:50:00+05:30,BULL,14.05,MATCHED,Present in authoritative JSON ledger
+416,NIFTY,2026-10-09T11:35:00+05:30,BEAR,4.55,MATCHED,Present in authoritative JSON ledger
+417,NIFTY,2026-10-09T11:40:00+05:30,BEAR,14.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+418,NIFTY,2026-10-09T12:55:00+05:30,BULL,10.75,MATCHED,Present in authoritative JSON ledger
+419,NIFTY,2026-10-09T13:45:00+05:30,BULL,7.0,MATCHED,Present in authoritative JSON ledger
+420,NIFTY,2026-10-12T11:00:00+05:30,BEAR,22.0,MATCHED,Present in authoritative JSON ledger
+421,NIFTY,2026-10-13T09:30:00+05:30,BULL,21.3,MATCHED,Present in authoritative JSON ledger
+422,NIFTY,2026-10-13T09:35:00+05:30,BULL,26.7,MATCHED,Present in authoritative JSON ledger
+423,NIFTY,2026-10-13T09:40:00+05:30,BULL,13.95,MATCHED,Present in authoritative JSON ledger
+424,NIFTY,2026-10-13T09:45:00+05:30,BULL,26.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+425,NIFTY,2026-10-13T10:20:00+05:30,BEAR,0.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+426,NIFTY,2026-10-13T10:25:00+05:30,BEAR,14.92,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+427,NIFTY,2026-10-13T10:30:00+05:30,BEAR,12.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+428,NIFTY,2026-10-13T10:35:00+05:30,BEAR,24.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+429,NIFTY,2026-10-13T13:45:00+05:30,BULL,1.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+430,NIFTY,2026-10-13T14:10:00+05:30,BULL,2.2,MATCHED,Present in authoritative JSON ledger
+431,NIFTY,2026-10-13T14:40:00+05:30,BULL,6.0,MATCHED,Present in authoritative JSON ledger
+432,NIFTY,2026-10-13T14:45:00+05:30,BULL,28.5,MATCHED,Present in authoritative JSON ledger
+433,NIFTY,2026-10-13T14:50:00+05:30,BULL,11.35,MATCHED,Present in authoritative JSON ledger
+434,NIFTY,2026-10-14T11:30:00+05:30,BEAR,1.35,MATCHED,Present in authoritative JSON ledger
+435,NIFTY,2026-10-14T12:55:00+05:30,BEAR,32.77,MATCHED,Present in authoritative JSON ledger
+436,NIFTY,2026-10-14T13:00:00+05:30,BEAR,51.38,MATCHED,Present in authoritative JSON ledger
+437,NIFTY,2026-10-14T13:05:00+05:30,BEAR,21.4,MATCHED,Present in authoritative JSON ledger
+438,NIFTY,2026-10-14T13:10:00+05:30,BEAR,28.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+439,NIFTY,2026-10-14T13:45:00+05:30,BULL,37.27,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+440,NIFTY,2026-10-14T13:50:00+05:30,BULL,19.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+441,NIFTY,2026-10-14T14:10:00+05:30,BEAR,15.82,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+442,NIFTY,2026-10-15T09:35:00+05:30,BULL,4.05,MATCHED,Present in authoritative JSON ledger
+443,NIFTY,2026-10-15T10:00:00+05:30,BULL,8.4,MATCHED,Present in authoritative JSON ledger
+444,NIFTY,2026-10-15T10:05:00+05:30,BULL,17.25,MATCHED,Present in authoritative JSON ledger
+445,NIFTY,2026-10-15T10:10:00+05:30,BULL,22.5,MATCHED,Present in authoritative JSON ledger
+446,NIFTY,2026-10-15T10:40:00+05:30,BULL,7.88,MATCHED,Present in authoritative JSON ledger
+447,NIFTY,2026-10-15T10:45:00+05:30,BULL,17.55,MATCHED,Present in authoritative JSON ledger
+448,NIFTY,2026-10-15T12:40:00+05:30,BULL,6.25,MATCHED,Present in authoritative JSON ledger
+449,NIFTY,2026-10-15T13:35:00+05:30,BULL,9.4,MATCHED,Present in authoritative JSON ledger
+450,NIFTY,2026-10-16T10:00:00+05:30,BULL,25.05,MATCHED,Present in authoritative JSON ledger
+451,NIFTY,2026-10-16T10:05:00+05:30,BULL,10.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+452,NIFTY,2026-10-16T10:10:00+05:30,BULL,21.38,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+453,NIFTY,2026-10-16T10:15:00+05:30,BULL,46.0,MATCHED,Present in authoritative JSON ledger
+454,NIFTY,2026-10-16T13:15:00+05:30,BULL,8.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+455,NIFTY,2026-10-16T13:20:00+05:30,BULL,0.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+456,NIFTY,2026-10-19T12:00:00+05:30,BEAR,23.25,MATCHED,Present in authoritative JSON ledger
+457,NIFTY,2026-10-19T13:20:00+05:30,BEAR,21.65,MATCHED,Present in authoritative JSON ledger
+458,NIFTY,2026-10-19T13:25:00+05:30,BEAR,5.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+459,NIFTY,2026-10-21T09:25:00+05:30,BULL,3.0,MATCHED,Present in authoritative JSON ledger
+460,NIFTY,2026-10-21T09:30:00+05:30,BULL,26.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+461,NIFTY,2026-10-21T09:55:00+05:30,BEAR,9.0,MATCHED,Present in authoritative JSON ledger
+462,NIFTY,2026-10-21T10:00:00+05:30,BEAR,32.47,MATCHED,Present in authoritative JSON ledger
+463,NIFTY,2026-10-21T10:05:00+05:30,BEAR,20.95,MATCHED,Present in authoritative JSON ledger
+464,NIFTY,2026-10-21T10:10:00+05:30,BEAR,35.92,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+465,NIFTY,2026-10-21T11:40:00+05:30,BEAR,11.9,MATCHED,Present in authoritative JSON ledger
+466,NIFTY,2026-10-21T12:10:00+05:30,BEAR,38.75,MATCHED,Present in authoritative JSON ledger
+467,NIFTY,2026-10-21T12:15:00+05:30,BEAR,18.2,MATCHED,Present in authoritative JSON ledger
+468,NIFTY,2026-10-21T12:20:00+05:30,BEAR,8.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+469,NIFTY,2026-10-21T13:40:00+05:30,BEAR,5.2,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+470,NIFTY,2026-10-21T13:45:00+05:30,BEAR,20.48,MATCHED,Present in authoritative JSON ledger
+471,NIFTY,2026-10-21T14:15:00+05:30,BEAR,6.55,MATCHED,Present in authoritative JSON ledger
+472,NIFTY,2026-10-21T14:20:00+05:30,BEAR,7.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+473,NIFTY,2026-10-22T11:00:00+05:30,BULL,2.3,MATCHED,Present in authoritative JSON ledger
+474,NIFTY,2026-10-22T11:05:00+05:30,BULL,5.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+475,NIFTY,2026-10-22T11:10:00+05:30,BULL,16.27,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+476,NIFTY,2026-10-22T12:10:00+05:30,BEAR,24.9,MATCHED,Present in authoritative JSON ledger
+477,NIFTY,2026-10-22T12:15:00+05:30,BEAR,8.77,MATCHED,Present in authoritative JSON ledger
+478,NIFTY,2026-10-22T13:55:00+05:30,BULL,22.35,MATCHED,Present in authoritative JSON ledger
+479,NIFTY,2026-10-23T09:55:00+05:30,BEAR,28.8,MATCHED,Present in authoritative JSON ledger
+480,NIFTY,2026-10-23T10:00:00+05:30,BEAR,48.4,MATCHED,Present in authoritative JSON ledger
+481,NIFTY,2026-10-23T10:05:00+05:30,BEAR,38.05,MATCHED,Present in authoritative JSON ledger
+482,NIFTY,2026-10-23T10:10:00+05:30,BEAR,17.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+483,NIFTY,2026-10-23T10:15:00+05:30,BEAR,43.5,MATCHED,Present in authoritative JSON ledger
+484,NIFTY,2026-10-23T11:35:00+05:30,BEAR,4.65,MATCHED,Present in authoritative JSON ledger
+485,NIFTY,2026-10-23T12:50:00+05:30,BEAR,2.1,MATCHED,Present in authoritative JSON ledger
+486,NIFTY,2026-10-23T13:35:00+05:30,BULL,29.55,MATCHED,Present in authoritative JSON ledger
+487,NIFTY,2026-10-23T13:40:00+05:30,BULL,66.45,MATCHED,Present in authoritative JSON ledger
+488,NIFTY,2026-10-26T11:05:00+05:30,BEAR,18.6,MATCHED,Present in authoritative JSON ledger
+489,NIFTY,2026-10-26T11:10:00+05:30,BEAR,19.5,MATCHED,Present in authoritative JSON ledger
+490,NIFTY,2026-10-26T12:45:00+05:30,BEAR,17.25,MATCHED,Present in authoritative JSON ledger
+491,NIFTY,2026-10-26T13:20:00+05:30,BULL,7.55,MATCHED,Present in authoritative JSON ledger
+492,NIFTY,2026-10-27T11:05:00+05:30,BEAR,13.65,MATCHED,Present in authoritative JSON ledger
+493,NIFTY,2026-10-27T11:10:00+05:30,BEAR,1.4,MATCHED,Present in authoritative JSON ledger
+494,NIFTY,2026-10-27T11:15:00+05:30,BEAR,4.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+495,NIFTY,2026-10-27T11:35:00+05:30,BULL,11.1,MATCHED,Present in authoritative JSON ledger
+496,NIFTY,2026-10-27T12:35:00+05:30,BULL,7.8,MATCHED,Present in authoritative JSON ledger
+497,NIFTY,2026-10-27T12:40:00+05:30,BULL,26.55,MATCHED,Present in authoritative JSON ledger
+498,NIFTY,2026-10-27T13:00:00+05:30,BEAR,10.2,MATCHED,Present in authoritative JSON ledger
+499,NIFTY,2026-10-27T13:05:00+05:30,BEAR,21.95,MATCHED,Present in authoritative JSON ledger
+500,NIFTY,2026-10-27T13:10:00+05:30,BEAR,22.8,MATCHED,Present in authoritative JSON ledger
+501,NIFTY,2026-10-27T14:35:00+05:30,BULL,21.83,MATCHED,Present in authoritative JSON ledger
+502,NIFTY,2026-10-28T09:45:00+05:30,BULL,46.4,MATCHED,Present in authoritative JSON ledger
+503,NIFTY,2026-10-28T10:05:00+05:30,BEAR,3.75,MATCHED,Present in authoritative JSON ledger
+504,NIFTY,2026-10-28T11:00:00+05:30,BULL,30.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+505,NIFTY,2026-10-28T12:00:00+05:30,BULL,7.95,MATCHED,Present in authoritative JSON ledger
+506,NIFTY,2026-10-28T12:05:00+05:30,BULL,13.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+507,NIFTY,2026-10-28T12:45:00+05:30,BULL,8.9,MATCHED,Present in authoritative JSON ledger
+508,NIFTY,2026-10-28T12:50:00+05:30,BULL,15.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+509,NIFTY,2026-10-28T12:55:00+05:30,BULL,31.5,MATCHED,Present in authoritative JSON ledger
+510,NIFTY,2026-10-28T14:00:00+05:30,BEAR,13.85,MATCHED,Present in authoritative JSON ledger
+511,NIFTY,2026-10-28T14:50:00+05:30,BULL,14.1,MATCHED,Present in authoritative JSON ledger
+512,NIFTY,2026-10-29T10:25:00+05:30,BULL,27.0,MATCHED,Present in authoritative JSON ledger
+513,NIFTY,2026-10-29T10:30:00+05:30,BULL,15.25,MATCHED,Present in authoritative JSON ledger
+514,NIFTY,2026-10-29T13:05:00+05:30,BULL,9.95,MATCHED,Present in authoritative JSON ledger
+515,NIFTY,2026-10-29T14:25:00+05:30,BULL,21.3,MATCHED,Present in authoritative JSON ledger
+516,BANKNIFTY,2026-07-06T11:40:00+05:30,BEAR,36.1,MATCHED,Present in authoritative JSON ledger
+517,BANKNIFTY,2026-07-06T12:05:00+05:30,BULL,49.35,MATCHED,Present in authoritative JSON ledger
+518,BANKNIFTY,2026-07-06T12:10:00+05:30,BULL,90.9,MATCHED,Present in authoritative JSON ledger
+519,BANKNIFTY,2026-07-06T15:25:00+05:30,BEAR,30.97,MATCHED,Present in authoritative JSON ledger
+520,BANKNIFTY,2026-07-07T11:10:00+05:30,BULL,2.75,MATCHED,Present in authoritative JSON ledger
+521,BANKNIFTY,2026-07-07T11:30:00+05:30,BULL,2.9,MATCHED,Present in authoritative JSON ledger
+522,BANKNIFTY,2026-07-07T13:15:00+05:30,BEAR,11.25,MATCHED,Present in authoritative JSON ledger
+523,BANKNIFTY,2026-07-07T15:20:00+05:30,BEAR,37.5,MATCHED,Present in authoritative JSON ledger
+524,BANKNIFTY,2026-07-07T15:25:00+05:30,BEAR,23.9,MATCHED,Present in authoritative JSON ledger
+525,BANKNIFTY,2026-07-08T09:15:00+05:30,BEAR,-20.65,MATCHED,Present in authoritative JSON ledger
+526,BANKNIFTY,2026-07-08T09:50:00+05:30,BULL,24.4,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+527,BANKNIFTY,2026-07-08T11:40:00+05:30,BEAR,31.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+528,BANKNIFTY,2026-07-08T11:45:00+05:30,BEAR,35.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+529,BANKNIFTY,2026-07-08T13:00:00+05:30,BULL,24.53,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+530,BANKNIFTY,2026-07-08T13:50:00+05:30,BEAR,201.15,MATCHED,Present in authoritative JSON ledger
+531,BANKNIFTY,2026-07-08T13:55:00+05:30,BEAR,204.9,MATCHED,Present in authoritative JSON ledger
+532,BANKNIFTY,2026-07-08T14:00:00+05:30,BEAR,109.1,MATCHED,Present in authoritative JSON ledger
+533,BANKNIFTY,2026-07-08T14:05:00+05:30,BEAR,152.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+534,BANKNIFTY,2026-07-08T14:10:00+05:30,BEAR,90.75,MATCHED,Present in authoritative JSON ledger
+535,BANKNIFTY,2026-07-08T14:45:00+05:30,BEAR,77.85,MATCHED,Present in authoritative JSON ledger
+536,BANKNIFTY,2026-07-08T14:50:00+05:30,BEAR,38.95,MATCHED,Present in authoritative JSON ledger
+537,BANKNIFTY,2026-07-08T15:20:00+05:30,BULL,13.95,MATCHED,Present in authoritative JSON ledger
+538,BANKNIFTY,2026-07-09T09:45:00+05:30,BULL,30.45,MATCHED,Present in authoritative JSON ledger
+539,BANKNIFTY,2026-07-09T09:50:00+05:30,BULL,13.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+540,BANKNIFTY,2026-07-09T10:35:00+05:30,BEAR,35.25,MATCHED,Present in authoritative JSON ledger
+541,BANKNIFTY,2026-07-09T14:00:00+05:30,BEAR,30.22,MATCHED,Present in authoritative JSON ledger
+542,BANKNIFTY,2026-07-09T14:05:00+05:30,BEAR,10.85,MATCHED,Present in authoritative JSON ledger
+543,BANKNIFTY,2026-07-09T15:25:00+05:30,BULL,13.8,MATCHED,Present in authoritative JSON ledger
+544,BANKNIFTY,2026-07-10T09:15:00+05:30,BULL,140.75,MATCHED,Present in authoritative JSON ledger
+545,BANKNIFTY,2026-07-10T09:20:00+05:30,BULL,111.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+546,BANKNIFTY,2026-07-10T10:20:00+05:30,BULL,23.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+547,BANKNIFTY,2026-07-10T10:50:00+05:30,BULL,27.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+548,BANKNIFTY,2026-07-10T13:05:00+05:30,BULL,116.1,MATCHED,Present in authoritative JSON ledger
+549,BANKNIFTY,2026-07-10T13:20:00+05:30,BEAR,67.5,MATCHED,Present in authoritative JSON ledger
+550,BANKNIFTY,2026-07-10T13:40:00+05:30,BULL,33.65,MATCHED,Present in authoritative JSON ledger
+551,BANKNIFTY,2026-07-13T09:45:00+05:30,BULL,71.47,MATCHED,Present in authoritative JSON ledger
+552,BANKNIFTY,2026-07-13T09:50:00+05:30,BULL,14.35,MATCHED,Present in authoritative JSON ledger
+553,BANKNIFTY,2026-07-13T10:30:00+05:30,BULL,46.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+554,BANKNIFTY,2026-07-13T12:50:00+05:30,BULL,32.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+555,BANKNIFTY,2026-07-13T14:10:00+05:30,BULL,26.17,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+556,BANKNIFTY,2026-07-13T14:15:00+05:30,BULL,78.95,MATCHED,Present in authoritative JSON ledger
+557,BANKNIFTY,2026-07-13T14:20:00+05:30,BULL,11.8,MATCHED,Present in authoritative JSON ledger
+558,BANKNIFTY,2026-07-13T14:35:00+05:30,BEAR,29.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+559,BANKNIFTY,2026-07-13T14:50:00+05:30,BULL,34.28,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+560,BANKNIFTY,2026-07-14T09:40:00+05:30,BEAR,13.25,MATCHED,Present in authoritative JSON ledger
+561,BANKNIFTY,2026-07-14T09:45:00+05:30,BEAR,20.4,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+562,BANKNIFTY,2026-07-14T11:05:00+05:30,BULL,13.85,MATCHED,Present in authoritative JSON ledger
+563,BANKNIFTY,2026-07-14T11:10:00+05:30,BULL,28.5,MATCHED,Present in authoritative JSON ledger
+564,BANKNIFTY,2026-07-14T13:40:00+05:30,BEAR,11.55,MATCHED,Present in authoritative JSON ledger
+565,BANKNIFTY,2026-07-14T13:55:00+05:30,BULL,26.15,MATCHED,Present in authoritative JSON ledger
+566,BANKNIFTY,2026-07-14T14:00:00+05:30,BULL,8.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+567,BANKNIFTY,2026-07-14T15:05:00+05:30,BULL,5.55,MATCHED,Present in authoritative JSON ledger
+568,BANKNIFTY,2026-07-15T09:20:00+05:30,BULL,68.9,MATCHED,Present in authoritative JSON ledger
+569,BANKNIFTY,2026-07-15T09:25:00+05:30,BULL,49.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+570,BANKNIFTY,2026-07-15T09:30:00+05:30,BULL,87.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+571,BANKNIFTY,2026-07-15T12:55:00+05:30,BEAR,118.8,MATCHED,Present in authoritative JSON ledger
+572,BANKNIFTY,2026-07-15T15:15:00+05:30,BULL,12.05,MATCHED,Present in authoritative JSON ledger
+573,BANKNIFTY,2026-07-15T15:20:00+05:30,BULL,4.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+574,BANKNIFTY,2026-07-16T10:30:00+05:30,BEAR,58.35,MATCHED,Present in authoritative JSON ledger
+575,BANKNIFTY,2026-07-16T11:15:00+05:30,BEAR,27.75,MATCHED,Present in authoritative JSON ledger
+576,BANKNIFTY,2026-07-16T13:35:00+05:30,BEAR,57.15,MATCHED,Present in authoritative JSON ledger
+577,BANKNIFTY,2026-07-16T13:40:00+05:30,BEAR,35.5,MATCHED,Present in authoritative JSON ledger
+578,BANKNIFTY,2026-07-16T13:55:00+05:30,BULL,47.85,MATCHED,Present in authoritative JSON ledger
+579,BANKNIFTY,2026-07-16T14:00:00+05:30,BULL,15.1,MATCHED,Present in authoritative JSON ledger
+580,BANKNIFTY,2026-07-17T09:25:00+05:30,BULL,31.95,MATCHED,Present in authoritative JSON ledger
+581,BANKNIFTY,2026-07-17T09:30:00+05:30,BULL,71.4,MATCHED,Present in authoritative JSON ledger
+582,BANKNIFTY,2026-07-17T10:45:00+05:30,BEAR,18.15,MATCHED,Present in authoritative JSON ledger
+583,BANKNIFTY,2026-07-17T14:15:00+05:30,BULL,199.65,MATCHED,Present in authoritative JSON ledger
+584,BANKNIFTY,2026-07-17T14:50:00+05:30,BULL,2.05,MATCHED,Present in authoritative JSON ledger
+585,BANKNIFTY,2026-07-17T14:55:00+05:30,BULL,33.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+586,BANKNIFTY,2026-07-20T10:05:00+05:30,BULL,7.55,MATCHED,Present in authoritative JSON ledger
+587,BANKNIFTY,2026-07-20T10:10:00+05:30,BULL,7.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+588,BANKNIFTY,2026-07-20T10:15:00+05:30,BULL,32.55,MATCHED,Present in authoritative JSON ledger
+589,BANKNIFTY,2026-07-20T12:45:00+05:30,BEAR,33.9,MATCHED,Present in authoritative JSON ledger
+590,BANKNIFTY,2026-07-20T13:00:00+05:30,BULL,7.6,MATCHED,Present in authoritative JSON ledger
+591,BANKNIFTY,2026-07-20T13:05:00+05:30,BULL,21.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+592,BANKNIFTY,2026-07-20T13:10:00+05:30,BULL,51.75,MATCHED,Present in authoritative JSON ledger
+593,BANKNIFTY,2026-07-20T13:15:00+05:30,BULL,21.05,MATCHED,Present in authoritative JSON ledger
+594,BANKNIFTY,2026-07-20T13:20:00+05:30,BULL,60.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+595,BANKNIFTY,2026-07-20T14:05:00+05:30,BULL,44.7,MATCHED,Present in authoritative JSON ledger
+596,BANKNIFTY,2026-07-20T14:10:00+05:30,BULL,63.83,MATCHED,Present in authoritative JSON ledger
+597,BANKNIFTY,2026-07-20T14:40:00+05:30,BEAR,9.2,MATCHED,Present in authoritative JSON ledger
+598,BANKNIFTY,2026-07-20T14:45:00+05:30,BEAR,12.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+599,BANKNIFTY,2026-07-21T09:35:00+05:30,BEAR,37.7,MATCHED,Present in authoritative JSON ledger
+600,BANKNIFTY,2026-07-21T11:45:00+05:30,BEAR,2.5,MATCHED,Present in authoritative JSON ledger
+601,BANKNIFTY,2026-07-21T14:35:00+05:30,BEAR,32.25,MATCHED,Present in authoritative JSON ledger
+602,BANKNIFTY,2026-07-22T09:25:00+05:30,BEAR,70.27,MATCHED,Present in authoritative JSON ledger
+603,BANKNIFTY,2026-07-22T09:30:00+05:30,BEAR,37.95,MATCHED,Present in authoritative JSON ledger
+604,BANKNIFTY,2026-07-22T09:35:00+05:30,BEAR,10.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+605,BANKNIFTY,2026-07-22T10:55:00+05:30,BULL,15.52,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+606,BANKNIFTY,2026-07-22T11:45:00+05:30,BEAR,22.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+607,BANKNIFTY,2026-07-22T11:50:00+05:30,BEAR,29.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+608,BANKNIFTY,2026-07-22T11:55:00+05:30,BEAR,21.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+609,BANKNIFTY,2026-07-22T12:00:00+05:30,BEAR,41.55,MATCHED,Present in authoritative JSON ledger
+610,BANKNIFTY,2026-07-22T13:50:00+05:30,BEAR,12.55,MATCHED,Present in authoritative JSON ledger
+611,BANKNIFTY,2026-07-22T14:10:00+05:30,BEAR,1.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+612,BANKNIFTY,2026-07-23T09:15:00+05:30,BEAR,28.45,MATCHED,Present in authoritative JSON ledger
+613,BANKNIFTY,2026-07-23T09:55:00+05:30,BULL,30.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+614,BANKNIFTY,2026-07-23T10:00:00+05:30,BULL,58.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+615,BANKNIFTY,2026-07-23T10:05:00+05:30,BULL,25.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+616,BANKNIFTY,2026-07-23T11:15:00+05:30,BEAR,70.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+617,BANKNIFTY,2026-07-23T11:20:00+05:30,BEAR,10.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+618,BANKNIFTY,2026-07-23T11:25:00+05:30,BEAR,55.42,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+619,BANKNIFTY,2026-07-23T12:30:00+05:30,BEAR,58.27,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+620,BANKNIFTY,2026-07-24T09:35:00+05:30,BEAR,27.35,MATCHED,Present in authoritative JSON ledger
+621,BANKNIFTY,2026-07-24T09:40:00+05:30,BEAR,38.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+622,BANKNIFTY,2026-07-24T09:45:00+05:30,BEAR,51.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+623,BANKNIFTY,2026-07-24T10:45:00+05:30,BULL,15.05,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+624,BANKNIFTY,2026-07-24T12:25:00+05:30,BULL,105.67,MATCHED,Present in authoritative JSON ledger
+625,BANKNIFTY,2026-07-24T13:20:00+05:30,BULL,-0.25,MATCHED,Present in authoritative JSON ledger
+626,BANKNIFTY,2026-07-24T13:25:00+05:30,BULL,38.33,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+627,BANKNIFTY,2026-07-24T13:40:00+05:30,BEAR,19.05,MATCHED,Present in authoritative JSON ledger
+628,BANKNIFTY,2026-07-24T14:00:00+05:30,BULL,78.23,MATCHED,Present in authoritative JSON ledger
+629,BANKNIFTY,2026-07-24T14:20:00+05:30,BEAR,43.05,MATCHED,Present in authoritative JSON ledger
+630,BANKNIFTY,2026-07-27T09:55:00+05:30,BEAR,16.85,MATCHED,Present in authoritative JSON ledger
+631,BANKNIFTY,2026-07-27T10:00:00+05:30,BEAR,30.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+632,BANKNIFTY,2026-07-27T11:00:00+05:30,BULL,-2.05,MATCHED,Present in authoritative JSON ledger
+633,BANKNIFTY,2026-07-27T13:00:00+05:30,BEAR,9.05,MATCHED,Present in authoritative JSON ledger
+634,BANKNIFTY,2026-07-27T14:05:00+05:30,BULL,44.77,MATCHED,Present in authoritative JSON ledger
+635,BANKNIFTY,2026-07-27T14:10:00+05:30,BULL,22.15,MATCHED,Present in authoritative JSON ledger
+636,BANKNIFTY,2026-07-28T09:50:00+05:30,BEAR,15.22,MATCHED,Present in authoritative JSON ledger
+637,BANKNIFTY,2026-07-28T10:45:00+05:30,BULL,5.4,MATCHED,Present in authoritative JSON ledger
+638,BANKNIFTY,2026-07-28T12:45:00+05:30,BEAR,14.5,MATCHED,Present in authoritative JSON ledger
+639,BANKNIFTY,2026-07-29T10:05:00+05:30,BULL,87.3,MATCHED,Present in authoritative JSON ledger
+640,BANKNIFTY,2026-07-29T11:05:00+05:30,BULL,36.45,MATCHED,Present in authoritative JSON ledger
+641,BANKNIFTY,2026-07-29T12:10:00+05:30,BULL,4.65,MATCHED,Present in authoritative JSON ledger
+642,BANKNIFTY,2026-07-30T10:45:00+05:30,BULL,22.5,MATCHED,Present in authoritative JSON ledger
+643,BANKNIFTY,2026-07-30T11:50:00+05:30,BEAR,13.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+644,BANKNIFTY,2026-07-30T12:15:00+05:30,BULL,35.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+645,BANKNIFTY,2026-07-30T14:40:00+05:30,BULL,6.3,MATCHED,Present in authoritative JSON ledger
+646,BANKNIFTY,2026-07-30T14:45:00+05:30,BULL,23.7,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+647,BANKNIFTY,2026-07-31T09:35:00+05:30,BEAR,95.4,MATCHED,Present in authoritative JSON ledger
+648,BANKNIFTY,2026-07-31T12:10:00+05:30,BULL,39.45,MATCHED,Present in authoritative JSON ledger
+649,BANKNIFTY,2026-07-31T13:05:00+05:30,BULL,46.15,MATCHED,Present in authoritative JSON ledger
+650,BANKNIFTY,2026-07-31T15:20:00+05:30,BEAR,4.65,MATCHED,Present in authoritative JSON ledger
+651,BANKNIFTY,2026-07-31T15:25:00+05:30,BEAR,13.5,MATCHED,Present in authoritative JSON ledger
+652,BANKNIFTY,2026-08-03T09:35:00+05:30,BULL,52.65,MATCHED,Present in authoritative JSON ledger
+653,BANKNIFTY,2026-08-03T09:40:00+05:30,BULL,67.3,MATCHED,Present in authoritative JSON ledger
+654,BANKNIFTY,2026-08-03T10:50:00+05:30,BULL,4.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+655,BANKNIFTY,2026-08-04T09:50:00+05:30,BULL,0.45,MATCHED,Present in authoritative JSON ledger
+656,BANKNIFTY,2026-08-04T10:30:00+05:30,BEAR,40.57,MATCHED,Present in authoritative JSON ledger
+657,BANKNIFTY,2026-08-04T10:55:00+05:30,BEAR,8.95,MATCHED,Present in authoritative JSON ledger
+658,BANKNIFTY,2026-08-04T13:30:00+05:30,BEAR,12.05,MATCHED,Present in authoritative JSON ledger
+659,BANKNIFTY,2026-08-04T14:15:00+05:30,BULL,44.15,MATCHED,Present in authoritative JSON ledger
+660,BANKNIFTY,2026-08-05T10:45:00+05:30,BULL,44.1,MATCHED,Present in authoritative JSON ledger
+661,BANKNIFTY,2026-08-05T11:30:00+05:30,BEAR,27.45,MATCHED,Present in authoritative JSON ledger
+662,BANKNIFTY,2026-08-05T15:10:00+05:30,BULL,41.45,MATCHED,Present in authoritative JSON ledger
+663,BANKNIFTY,2026-08-07T12:15:00+05:30,BEAR,19.2,MATCHED,Present in authoritative JSON ledger
+664,BANKNIFTY,2026-08-07T12:30:00+05:30,BULL,11.45,MATCHED,Present in authoritative JSON ledger
+665,BANKNIFTY,2026-08-07T14:25:00+05:30,BULL,0.55,MATCHED,Present in authoritative JSON ledger
+666,BANKNIFTY,2026-08-07T14:50:00+05:30,BEAR,38.1,MATCHED,Present in authoritative JSON ledger
+667,BANKNIFTY,2026-08-10T09:30:00+05:30,BEAR,126.5,MATCHED,Present in authoritative JSON ledger
+668,BANKNIFTY,2026-08-10T12:55:00+05:30,BEAR,2.8,MATCHED,Present in authoritative JSON ledger
+669,BANKNIFTY,2026-08-10T14:45:00+05:30,BEAR,32.62,MATCHED,Present in authoritative JSON ledger
+670,BANKNIFTY,2026-08-11T09:40:00+05:30,BEAR,8.2,MATCHED,Present in authoritative JSON ledger
+671,BANKNIFTY,2026-08-12T10:15:00+05:30,BULL,17.4,MATCHED,Present in authoritative JSON ledger
+672,BANKNIFTY,2026-08-12T10:20:00+05:30,BULL,20.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+673,BANKNIFTY,2026-08-12T14:50:00+05:30,BULL,42.83,MATCHED,Present in authoritative JSON ledger
+674,BANKNIFTY,2026-08-12T14:55:00+05:30,BULL,57.15,MATCHED,Present in authoritative JSON ledger
+675,BANKNIFTY,2026-08-13T09:25:00+05:30,BEAR,6.15,MATCHED,Present in authoritative JSON ledger
+676,BANKNIFTY,2026-08-13T09:50:00+05:30,BULL,17.35,MATCHED,Present in authoritative JSON ledger
+677,BANKNIFTY,2026-08-13T10:10:00+05:30,BEAR,35.18,MATCHED,Present in authoritative JSON ledger
+678,BANKNIFTY,2026-08-13T10:15:00+05:30,BEAR,26.15,MATCHED,Present in authoritative JSON ledger
+679,BANKNIFTY,2026-08-13T11:35:00+05:30,BULL,10.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+680,BANKNIFTY,2026-08-13T12:55:00+05:30,BEAR,25.72,MATCHED,Present in authoritative JSON ledger
+681,BANKNIFTY,2026-08-13T13:00:00+05:30,BEAR,17.95,MATCHED,Present in authoritative JSON ledger
+682,BANKNIFTY,2026-08-14T09:25:00+05:30,BEAR,27.35,MATCHED,Present in authoritative JSON ledger
+683,BANKNIFTY,2026-08-14T09:45:00+05:30,BULL,43.5,MATCHED,Present in authoritative JSON ledger
+684,BANKNIFTY,2026-08-14T10:25:00+05:30,BEAR,9.15,MATCHED,Present in authoritative JSON ledger
+685,BANKNIFTY,2026-08-14T10:30:00+05:30,BEAR,23.78,MATCHED,Present in authoritative JSON ledger
+686,BANKNIFTY,2026-08-14T11:55:00+05:30,BEAR,-0.45,MATCHED,Present in authoritative JSON ledger
+687,BANKNIFTY,2026-08-14T12:00:00+05:30,BEAR,10.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+688,BANKNIFTY,2026-08-14T12:20:00+05:30,BULL,29.55,MATCHED,Present in authoritative JSON ledger
+689,BANKNIFTY,2026-08-14T14:05:00+05:30,BULL,24.4,MATCHED,Present in authoritative JSON ledger
+690,BANKNIFTY,2026-08-14T14:25:00+05:30,BEAR,8.3,MATCHED,Present in authoritative JSON ledger
+691,BANKNIFTY,2026-08-17T10:20:00+05:30,BEAR,61.05,MATCHED,Present in authoritative JSON ledger
+692,BANKNIFTY,2026-08-17T11:10:00+05:30,BEAR,17.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+693,BANKNIFTY,2026-08-17T11:55:00+05:30,BULL,34.27,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+694,BANKNIFTY,2026-08-17T12:00:00+05:30,BULL,0.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+695,BANKNIFTY,2026-08-17T12:50:00+05:30,BULL,49.4,MATCHED,Present in authoritative JSON ledger
+696,BANKNIFTY,2026-08-17T12:55:00+05:30,BULL,76.72,MATCHED,Present in authoritative JSON ledger
+697,BANKNIFTY,2026-08-17T13:00:00+05:30,BULL,47.05,MATCHED,Present in authoritative JSON ledger
+698,BANKNIFTY,2026-08-17T14:50:00+05:30,BULL,32.17,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+699,BANKNIFTY,2026-08-18T10:50:00+05:30,BEAR,42.08,MATCHED,Present in authoritative JSON ledger
+700,BANKNIFTY,2026-08-18T11:55:00+05:30,BULL,23.45,MATCHED,Present in authoritative JSON ledger
+701,BANKNIFTY,2026-08-18T12:00:00+05:30,BULL,29.0,MATCHED,Present in authoritative JSON ledger
+702,BANKNIFTY,2026-08-19T09:30:00+05:30,BEAR,60.75,MATCHED,Present in authoritative JSON ledger
+703,BANKNIFTY,2026-08-19T09:50:00+05:30,BULL,72.3,MATCHED,Present in authoritative JSON ledger
+704,BANKNIFTY,2026-08-19T12:10:00+05:30,BEAR,35.95,MATCHED,Present in authoritative JSON ledger
+705,BANKNIFTY,2026-08-19T14:20:00+05:30,BEAR,14.4,MATCHED,Present in authoritative JSON ledger
+706,BANKNIFTY,2026-08-19T14:35:00+05:30,BULL,57.98,MATCHED,Present in authoritative JSON ledger
+707,BANKNIFTY,2026-08-20T10:35:00+05:30,BEAR,1.7,MATCHED,Present in authoritative JSON ledger
+708,BANKNIFTY,2026-08-20T12:25:00+05:30,BEAR,7.6,MATCHED,Present in authoritative JSON ledger
+709,BANKNIFTY,2026-08-20T12:30:00+05:30,BEAR,15.38,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+710,BANKNIFTY,2026-08-20T12:50:00+05:30,BULL,-0.25,MATCHED,Present in authoritative JSON ledger
+711,BANKNIFTY,2026-08-20T13:25:00+05:30,BEAR,16.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+712,BANKNIFTY,2026-08-20T14:05:00+05:30,BEAR,21.15,MATCHED,Present in authoritative JSON ledger
+713,BANKNIFTY,2026-08-20T15:10:00+05:30,BEAR,21.6,MATCHED,Present in authoritative JSON ledger
+714,BANKNIFTY,2026-08-21T09:45:00+05:30,BULL,17.25,MATCHED,Present in authoritative JSON ledger
+715,BANKNIFTY,2026-08-21T09:50:00+05:30,BULL,43.88,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+716,BANKNIFTY,2026-08-21T10:05:00+05:30,BEAR,38.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+717,BANKNIFTY,2026-08-24T09:50:00+05:30,BEAR,40.65,MATCHED,Present in authoritative JSON ledger
+718,BANKNIFTY,2026-08-24T09:55:00+05:30,BEAR,7.05,MATCHED,Present in authoritative JSON ledger
+719,BANKNIFTY,2026-08-24T10:45:00+05:30,BEAR,8.92,MATCHED,Present in authoritative JSON ledger
+720,BANKNIFTY,2026-08-24T10:50:00+05:30,BEAR,37.73,MATCHED,Present in authoritative JSON ledger
+721,BANKNIFTY,2026-08-24T10:55:00+05:30,BEAR,50.7,MATCHED,Present in authoritative JSON ledger
+722,BANKNIFTY,2026-08-24T11:00:00+05:30,BEAR,35.9,MATCHED,Present in authoritative JSON ledger
+723,BANKNIFTY,2026-08-24T11:05:00+05:30,BEAR,63.7,MATCHED,Present in authoritative JSON ledger
+724,BANKNIFTY,2026-08-24T11:10:00+05:30,BEAR,38.9,MATCHED,Present in authoritative JSON ledger
+725,BANKNIFTY,2026-08-24T13:25:00+05:30,BULL,22.65,MATCHED,Present in authoritative JSON ledger
+726,BANKNIFTY,2026-08-25T09:30:00+05:30,BULL,96.08,MATCHED,Present in authoritative JSON ledger
+727,BANKNIFTY,2026-08-25T10:20:00+05:30,BEAR,38.3,MATCHED,Present in authoritative JSON ledger
+728,BANKNIFTY,2026-08-25T10:50:00+05:30,BULL,55.7,MATCHED,Present in authoritative JSON ledger
+729,BANKNIFTY,2026-08-25T12:00:00+05:30,BULL,27.1,MATCHED,Present in authoritative JSON ledger
+730,BANKNIFTY,2026-08-25T12:25:00+05:30,BEAR,39.45,MATCHED,Present in authoritative JSON ledger
+731,BANKNIFTY,2026-08-25T13:10:00+05:30,BEAR,47.03,MATCHED,Present in authoritative JSON ledger
+732,BANKNIFTY,2026-08-26T09:25:00+05:30,BULL,56.75,MATCHED,Present in authoritative JSON ledger
+733,BANKNIFTY,2026-08-26T13:20:00+05:30,BEAR,20.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+734,BANKNIFTY,2026-08-27T12:15:00+05:30,BEAR,24.3,MATCHED,Present in authoritative JSON ledger
+735,BANKNIFTY,2026-08-27T12:20:00+05:30,BEAR,35.85,MATCHED,Present in authoritative JSON ledger
+736,BANKNIFTY,2026-08-27T13:05:00+05:30,BULL,37.12,MATCHED,Present in authoritative JSON ledger
+737,BANKNIFTY,2026-08-27T13:10:00+05:30,BULL,65.1,MATCHED,Present in authoritative JSON ledger
+738,BANKNIFTY,2026-08-27T14:05:00+05:30,BEAR,26.25,MATCHED,Present in authoritative JSON ledger
+739,BANKNIFTY,2026-08-27T14:20:00+05:30,BULL,25.1,MATCHED,Present in authoritative JSON ledger
+740,BANKNIFTY,2026-08-28T11:05:00+05:30,BEAR,28.12,MATCHED,Present in authoritative JSON ledger
+741,BANKNIFTY,2026-08-28T11:25:00+05:30,BEAR,42.98,MATCHED,Present in authoritative JSON ledger
+742,BANKNIFTY,2026-08-28T11:30:00+05:30,BEAR,9.45,MATCHED,Present in authoritative JSON ledger
+743,BANKNIFTY,2026-08-28T13:00:00+05:30,BEAR,16.7,MATCHED,Present in authoritative JSON ledger
+744,BANKNIFTY,2026-08-28T13:40:00+05:30,BULL,10.05,MATCHED,Present in authoritative JSON ledger
+745,BANKNIFTY,2026-08-31T09:45:00+05:30,BEAR,15.05,MATCHED,Present in authoritative JSON ledger
+746,BANKNIFTY,2026-08-31T09:50:00+05:30,BEAR,22.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+747,BANKNIFTY,2026-08-31T09:55:00+05:30,BEAR,13.4,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+748,BANKNIFTY,2026-08-31T11:25:00+05:30,BULL,15.2,MATCHED,Present in authoritative JSON ledger
+749,BANKNIFTY,2026-08-31T11:30:00+05:30,BULL,3.9,MATCHED,Present in authoritative JSON ledger
+750,BANKNIFTY,2026-08-31T11:35:00+05:30,BULL,27.67,MATCHED,Present in authoritative JSON ledger
+751,BANKNIFTY,2026-08-31T11:40:00+05:30,BULL,15.1,MATCHED,Present in authoritative JSON ledger
+752,BANKNIFTY,2026-08-31T11:45:00+05:30,BULL,0.2,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+753,BANKNIFTY,2026-08-31T11:50:00+05:30,BULL,42.3,MATCHED,Present in authoritative JSON ledger
+754,BANKNIFTY,2026-08-31T14:40:00+05:30,BULL,40.45,MATCHED,Present in authoritative JSON ledger
+755,BANKNIFTY,2026-09-01T10:20:00+05:30,BULL,37.45,MATCHED,Present in authoritative JSON ledger
+756,BANKNIFTY,2026-09-01T11:15:00+05:30,BULL,61.9,MATCHED,Present in authoritative JSON ledger
+757,BANKNIFTY,2026-09-01T11:20:00+05:30,BULL,1.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+758,BANKNIFTY,2026-09-01T13:00:00+05:30,BEAR,16.5,MATCHED,Present in authoritative JSON ledger
+759,BANKNIFTY,2026-09-01T13:05:00+05:30,BEAR,10.15,MATCHED,Present in authoritative JSON ledger
+760,BANKNIFTY,2026-09-01T13:10:00+05:30,BEAR,15.52,MATCHED,Present in authoritative JSON ledger
+761,BANKNIFTY,2026-09-01T13:15:00+05:30,BEAR,60.2,MATCHED,Present in authoritative JSON ledger
+762,BANKNIFTY,2026-09-01T13:45:00+05:30,BEAR,29.92,MATCHED,Present in authoritative JSON ledger
+763,BANKNIFTY,2026-09-01T13:50:00+05:30,BEAR,83.03,MATCHED,Present in authoritative JSON ledger
+764,BANKNIFTY,2026-09-02T12:35:00+05:30,BULL,9.5,MATCHED,Present in authoritative JSON ledger
+765,BANKNIFTY,2026-09-02T12:40:00+05:30,BULL,24.3,MATCHED,Present in authoritative JSON ledger
+766,BANKNIFTY,2026-09-02T14:05:00+05:30,BULL,28.35,MATCHED,Present in authoritative JSON ledger
+767,BANKNIFTY,2026-09-02T15:00:00+05:30,BEAR,11.5,MATCHED,Present in authoritative JSON ledger
+768,BANKNIFTY,2026-09-03T09:40:00+05:30,BULL,36.95,MATCHED,Present in authoritative JSON ledger
+769,BANKNIFTY,2026-09-03T10:35:00+05:30,BEAR,19.2,MATCHED,Present in authoritative JSON ledger
+770,BANKNIFTY,2026-09-03T11:30:00+05:30,BULL,15.8,MATCHED,Present in authoritative JSON ledger
+771,BANKNIFTY,2026-09-03T15:00:00+05:30,BEAR,12.5,MATCHED,Present in authoritative JSON ledger
+772,BANKNIFTY,2026-09-03T15:05:00+05:30,BEAR,18.98,MATCHED,Present in authoritative JSON ledger
+773,BANKNIFTY,2026-09-04T13:15:00+05:30,BULL,15.15,MATCHED,Present in authoritative JSON ledger
+774,BANKNIFTY,2026-09-04T13:20:00+05:30,BULL,0.15,MATCHED,Present in authoritative JSON ledger
+775,BANKNIFTY,2026-09-07T11:10:00+05:30,BEAR,3.55,MATCHED,Present in authoritative JSON ledger
+776,BANKNIFTY,2026-09-07T14:25:00+05:30,BULL,35.02,MATCHED,Present in authoritative JSON ledger
+777,BANKNIFTY,2026-09-07T14:45:00+05:30,BEAR,6.05,MATCHED,Present in authoritative JSON ledger
+778,BANKNIFTY,2026-09-08T11:40:00+05:30,BEAR,17.6,MATCHED,Present in authoritative JSON ledger
+779,BANKNIFTY,2026-09-08T14:45:00+05:30,BEAR,20.3,MATCHED,Present in authoritative JSON ledger
+780,BANKNIFTY,2026-09-09T10:20:00+05:30,BULL,40.5,MATCHED,Present in authoritative JSON ledger
+781,BANKNIFTY,2026-09-09T12:00:00+05:30,BEAR,33.4,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+782,BANKNIFTY,2026-09-09T12:05:00+05:30,BEAR,35.3,MATCHED,Present in authoritative JSON ledger
+783,BANKNIFTY,2026-09-09T12:35:00+05:30,BULL,40.7,MATCHED,Present in authoritative JSON ledger
+784,BANKNIFTY,2026-09-09T12:40:00+05:30,BULL,29.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+785,BANKNIFTY,2026-09-09T14:35:00+05:30,BEAR,39.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+786,BANKNIFTY,2026-09-09T14:40:00+05:30,BEAR,43.9,MATCHED,Present in authoritative JSON ledger
+787,BANKNIFTY,2026-09-09T14:45:00+05:30,BEAR,9.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+788,BANKNIFTY,2026-09-10T10:05:00+05:30,BEAR,22.6,MATCHED,Present in authoritative JSON ledger
+789,BANKNIFTY,2026-09-10T10:25:00+05:30,BULL,9.75,MATCHED,Present in authoritative JSON ledger
+790,BANKNIFTY,2026-09-10T11:10:00+05:30,BULL,43.12,MATCHED,Present in authoritative JSON ledger
+791,BANKNIFTY,2026-09-10T12:30:00+05:30,BEAR,12.85,MATCHED,Present in authoritative JSON ledger
+792,BANKNIFTY,2026-09-10T13:00:00+05:30,BEAR,6.85,MATCHED,Present in authoritative JSON ledger
+793,BANKNIFTY,2026-09-10T14:15:00+05:30,BEAR,18.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+794,BANKNIFTY,2026-09-10T15:05:00+05:30,BEAR,6.55,MATCHED,Present in authoritative JSON ledger
+795,BANKNIFTY,2026-09-11T10:05:00+05:30,BULL,24.1,MATCHED,Present in authoritative JSON ledger
+796,BANKNIFTY,2026-09-11T10:10:00+05:30,BULL,41.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+797,BANKNIFTY,2026-09-11T11:10:00+05:30,BULL,120.45,MATCHED,Present in authoritative JSON ledger
+798,BANKNIFTY,2026-09-11T12:40:00+05:30,BULL,19.15,MATCHED,Present in authoritative JSON ledger
+799,BANKNIFTY,2026-09-11T13:55:00+05:30,BULL,12.97,MATCHED,Present in authoritative JSON ledger
+800,BANKNIFTY,2026-09-11T14:00:00+05:30,BULL,107.6,MATCHED,Present in authoritative JSON ledger
+801,BANKNIFTY,2026-09-11T14:35:00+05:30,BULL,56.17,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+802,BANKNIFTY,2026-09-15T09:30:00+05:30,BEAR,53.4,MATCHED,Present in authoritative JSON ledger
+803,BANKNIFTY,2026-09-15T11:50:00+05:30,BEAR,15.6,MATCHED,Present in authoritative JSON ledger
+804,BANKNIFTY,2026-09-15T12:35:00+05:30,BULL,9.05,MATCHED,Present in authoritative JSON ledger
+805,BANKNIFTY,2026-09-15T12:40:00+05:30,BULL,28.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+806,BANKNIFTY,2026-09-15T14:05:00+05:30,BEAR,46.0,MATCHED,Present in authoritative JSON ledger
+807,BANKNIFTY,2026-09-15T14:10:00+05:30,BEAR,74.1,MATCHED,Present in authoritative JSON ledger
+808,BANKNIFTY,2026-09-15T14:15:00+05:30,BEAR,46.2,MATCHED,Present in authoritative JSON ledger
+809,BANKNIFTY,2026-09-15T14:40:00+05:30,BULL,14.92,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+810,BANKNIFTY,2026-09-16T10:25:00+05:30,BULL,10.7,MATCHED,Present in authoritative JSON ledger
+811,BANKNIFTY,2026-09-16T10:30:00+05:30,BULL,42.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+812,BANKNIFTY,2026-09-16T10:35:00+05:30,BULL,16.85,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+813,BANKNIFTY,2026-09-16T10:40:00+05:30,BULL,30.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+814,BANKNIFTY,2026-09-16T10:45:00+05:30,BULL,32.6,MATCHED,Present in authoritative JSON ledger
+815,BANKNIFTY,2026-09-16T10:50:00+05:30,BULL,27.9,MATCHED,Present in authoritative JSON ledger
+816,BANKNIFTY,2026-09-16T11:15:00+05:30,BEAR,8.0,MATCHED,Present in authoritative JSON ledger
+817,BANKNIFTY,2026-09-17T10:25:00+05:30,BEAR,10.05,MATCHED,Present in authoritative JSON ledger
+818,BANKNIFTY,2026-09-17T10:30:00+05:30,BEAR,39.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+819,BANKNIFTY,2026-09-17T14:50:00+05:30,BEAR,3.4,MATCHED,Present in authoritative JSON ledger
+820,BANKNIFTY,2026-09-17T14:55:00+05:30,BEAR,4.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+821,BANKNIFTY,2026-09-18T09:30:00+05:30,BEAR,38.25,MATCHED,Present in authoritative JSON ledger
+822,BANKNIFTY,2026-09-18T10:25:00+05:30,BEAR,-2.6,MATCHED,Present in authoritative JSON ledger
+823,BANKNIFTY,2026-09-18T10:45:00+05:30,BEAR,1.65,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+824,BANKNIFTY,2026-09-18T11:15:00+05:30,BEAR,12.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+825,BANKNIFTY,2026-09-18T12:40:00+05:30,BULL,40.12,MATCHED,Present in authoritative JSON ledger
+826,BANKNIFTY,2026-09-18T13:25:00+05:30,BEAR,10.55,MATCHED,Present in authoritative JSON ledger
+827,BANKNIFTY,2026-09-18T15:05:00+05:30,BEAR,16.4,MATCHED,Present in authoritative JSON ledger
+828,BANKNIFTY,2026-09-21T12:00:00+05:30,BULL,11.95,MATCHED,Present in authoritative JSON ledger
+829,BANKNIFTY,2026-09-21T12:15:00+05:30,BEAR,23.33,MATCHED,Present in authoritative JSON ledger
+830,BANKNIFTY,2026-09-21T12:20:00+05:30,BEAR,37.2,MATCHED,Present in authoritative JSON ledger
+831,BANKNIFTY,2026-09-21T13:55:00+05:30,BULL,32.55,MATCHED,Present in authoritative JSON ledger
+832,BANKNIFTY,2026-09-21T14:55:00+05:30,BEAR,8.75,MATCHED,Present in authoritative JSON ledger
+833,BANKNIFTY,2026-09-21T15:00:00+05:30,BEAR,34.65,MATCHED,Present in authoritative JSON ledger
+834,BANKNIFTY,2026-09-22T10:40:00+05:30,BEAR,62.4,MATCHED,Present in authoritative JSON ledger
+835,BANKNIFTY,2026-09-22T11:40:00+05:30,BEAR,4.45,MATCHED,Present in authoritative JSON ledger
+836,BANKNIFTY,2026-09-22T11:45:00+05:30,BEAR,24.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+837,BANKNIFTY,2026-09-22T13:00:00+05:30,BEAR,31.88,MATCHED,Present in authoritative JSON ledger
+838,BANKNIFTY,2026-09-23T14:55:00+05:30,BEAR,31.88,MATCHED,Present in authoritative JSON ledger
+839,BANKNIFTY,2026-09-23T15:00:00+05:30,BEAR,37.05,MATCHED,Present in authoritative JSON ledger
+840,BANKNIFTY,2026-09-24T09:40:00+05:30,BEAR,80.5,MATCHED,Present in authoritative JSON ledger
+841,BANKNIFTY,2026-09-24T10:20:00+05:30,BEAR,23.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+842,BANKNIFTY,2026-09-24T11:00:00+05:30,BULL,-1.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+843,BANKNIFTY,2026-09-25T09:40:00+05:30,BEAR,40.7,MATCHED,Present in authoritative JSON ledger
+844,BANKNIFTY,2026-09-25T10:05:00+05:30,BULL,96.67,MATCHED,Present in authoritative JSON ledger
+845,BANKNIFTY,2026-09-25T11:00:00+05:30,BULL,29.4,MATCHED,Present in authoritative JSON ledger
+846,BANKNIFTY,2026-09-25T11:05:00+05:30,BULL,35.8,MATCHED,Present in authoritative JSON ledger
+847,BANKNIFTY,2026-09-25T11:10:00+05:30,BULL,2.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+848,BANKNIFTY,2026-09-25T11:15:00+05:30,BULL,4.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+849,BANKNIFTY,2026-09-25T12:45:00+05:30,BEAR,23.1,MATCHED,Present in authoritative JSON ledger
+850,BANKNIFTY,2026-09-25T12:50:00+05:30,BEAR,35.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+851,BANKNIFTY,2026-09-25T15:05:00+05:30,BEAR,62.9,MATCHED,Present in authoritative JSON ledger
+852,BANKNIFTY,2026-09-28T09:25:00+05:30,BEAR,46.27,MATCHED,Present in authoritative JSON ledger
+853,BANKNIFTY,2026-09-28T09:30:00+05:30,BEAR,37.58,MATCHED,Present in authoritative JSON ledger
+854,BANKNIFTY,2026-09-28T09:35:00+05:30,BEAR,102.0,MATCHED,Present in authoritative JSON ledger
+855,BANKNIFTY,2026-09-28T10:45:00+05:30,BEAR,16.4,MATCHED,Present in authoritative JSON ledger
+856,BANKNIFTY,2026-09-28T11:10:00+05:30,BEAR,11.9,MATCHED,Present in authoritative JSON ledger
+857,BANKNIFTY,2026-09-29T09:25:00+05:30,BEAR,130.85,MATCHED,Present in authoritative JSON ledger
+858,BANKNIFTY,2026-09-29T09:30:00+05:30,BEAR,20.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+859,BANKNIFTY,2026-09-29T09:35:00+05:30,BEAR,84.45,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+860,BANKNIFTY,2026-09-29T10:10:00+05:30,BEAR,22.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+861,BANKNIFTY,2026-09-29T12:30:00+05:30,BEAR,175.8,MATCHED,Present in authoritative JSON ledger
+862,BANKNIFTY,2026-09-29T13:55:00+05:30,BULL,3.4,MATCHED,Present in authoritative JSON ledger
+863,BANKNIFTY,2026-09-30T10:15:00+05:30,BULL,7.55,MATCHED,Present in authoritative JSON ledger
+864,BANKNIFTY,2026-09-30T10:30:00+05:30,BEAR,64.43,MATCHED,Present in authoritative JSON ledger
+865,BANKNIFTY,2026-09-30T11:30:00+05:30,BULL,40.1,MATCHED,Present in authoritative JSON ledger
+866,BANKNIFTY,2026-09-30T14:30:00+05:30,BEAR,6.7,MATCHED,Present in authoritative JSON ledger
+867,BANKNIFTY,2026-09-30T14:35:00+05:30,BEAR,24.38,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+868,BANKNIFTY,2026-09-30T14:40:00+05:30,BEAR,10.75,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+869,BANKNIFTY,2026-10-01T10:30:00+05:30,BULL,54.75,MATCHED,Present in authoritative JSON ledger
+870,BANKNIFTY,2026-10-01T10:35:00+05:30,BULL,2.8,MATCHED,Present in authoritative JSON ledger
+871,BANKNIFTY,2026-10-01T11:05:00+05:30,BEAR,50.8,MATCHED,Present in authoritative JSON ledger
+872,BANKNIFTY,2026-10-01T11:40:00+05:30,BULL,45.6,MATCHED,Present in authoritative JSON ledger
+873,BANKNIFTY,2026-10-01T12:15:00+05:30,BEAR,39.4,MATCHED,Present in authoritative JSON ledger
+874,BANKNIFTY,2026-10-01T12:20:00+05:30,BEAR,78.3,MATCHED,Present in authoritative JSON ledger
+875,BANKNIFTY,2026-10-01T12:25:00+05:30,BEAR,36.35,MATCHED,Present in authoritative JSON ledger
+876,BANKNIFTY,2026-10-01T12:55:00+05:30,BEAR,108.9,MATCHED,Present in authoritative JSON ledger
+877,BANKNIFTY,2026-10-01T14:55:00+05:30,BULL,13.55,MATCHED,Present in authoritative JSON ledger
+878,BANKNIFTY,2026-10-05T11:45:00+05:30,BEAR,22.0,MATCHED,Present in authoritative JSON ledger
+879,BANKNIFTY,2026-10-05T12:25:00+05:30,BULL,42.38,MATCHED,Present in authoritative JSON ledger
+880,BANKNIFTY,2026-10-05T13:40:00+05:30,BULL,118.42,MATCHED,Present in authoritative JSON ledger
+881,BANKNIFTY,2026-10-06T09:40:00+05:30,BULL,11.1,MATCHED,Present in authoritative JSON ledger
+882,BANKNIFTY,2026-10-06T11:05:00+05:30,BULL,36.75,MATCHED,Present in authoritative JSON ledger
+883,BANKNIFTY,2026-10-06T12:40:00+05:30,BULL,26.0,MATCHED,Present in authoritative JSON ledger
+884,BANKNIFTY,2026-10-06T12:45:00+05:30,BULL,4.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+885,BANKNIFTY,2026-10-06T15:00:00+05:30,BEAR,26.35,MATCHED,Present in authoritative JSON ledger
+886,BANKNIFTY,2026-10-07T09:35:00+05:30,BEAR,73.25,MATCHED,Present in authoritative JSON ledger
+887,BANKNIFTY,2026-10-07T10:15:00+05:30,BULL,105.38,MATCHED,Present in authoritative JSON ledger
+888,BANKNIFTY,2026-10-07T12:15:00+05:30,BEAR,11.0,MATCHED,Present in authoritative JSON ledger
+889,BANKNIFTY,2026-10-07T12:20:00+05:30,BEAR,39.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+890,BANKNIFTY,2026-10-07T12:25:00+05:30,BEAR,29.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+891,BANKNIFTY,2026-10-07T14:25:00+05:30,BULL,85.42,MATCHED,Present in authoritative JSON ledger
+892,BANKNIFTY,2026-10-07T15:10:00+05:30,BEAR,52.42,MATCHED,Present in authoritative JSON ledger
+893,BANKNIFTY,2026-10-08T11:50:00+05:30,BULL,17.15,MATCHED,Present in authoritative JSON ledger
+894,BANKNIFTY,2026-10-08T14:05:00+05:30,BEAR,14.95,MATCHED,Present in authoritative JSON ledger
+895,BANKNIFTY,2026-10-08T14:35:00+05:30,BULL,61.0,MATCHED,Present in authoritative JSON ledger
+896,BANKNIFTY,2026-10-09T09:35:00+05:30,BULL,47.5,MATCHED,Present in authoritative JSON ledger
+897,BANKNIFTY,2026-10-09T09:40:00+05:30,BULL,27.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+898,BANKNIFTY,2026-10-09T11:35:00+05:30,BEAR,23.55,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+899,BANKNIFTY,2026-10-09T11:40:00+05:30,BEAR,43.28,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+900,BANKNIFTY,2026-10-09T12:55:00+05:30,BULL,21.25,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+901,BANKNIFTY,2026-10-09T14:35:00+05:30,BEAR,4.7,MATCHED,Present in authoritative JSON ledger
+902,BANKNIFTY,2026-10-12T10:55:00+05:30,BEAR,67.73,MATCHED,Present in authoritative JSON ledger
+903,BANKNIFTY,2026-10-12T11:00:00+05:30,BEAR,69.65,MATCHED,Present in authoritative JSON ledger
+904,BANKNIFTY,2026-10-12T12:00:00+05:30,BULL,2.6,MATCHED,Present in authoritative JSON ledger
+905,BANKNIFTY,2026-10-13T09:30:00+05:30,BULL,20.2,MATCHED,Present in authoritative JSON ledger
+906,BANKNIFTY,2026-10-13T09:35:00+05:30,BULL,21.55,MATCHED,Present in authoritative JSON ledger
+907,BANKNIFTY,2026-10-13T09:40:00+05:30,BULL,78.08,MATCHED,Present in authoritative JSON ledger
+908,BANKNIFTY,2026-10-13T09:45:00+05:30,BULL,66.3,MATCHED,Present in authoritative JSON ledger
+909,BANKNIFTY,2026-10-13T10:35:00+05:30,BEAR,21.25,MATCHED,Present in authoritative JSON ledger
+910,BANKNIFTY,2026-10-13T14:35:00+05:30,BULL,35.35,MATCHED,Present in authoritative JSON ledger
+911,BANKNIFTY,2026-10-13T14:40:00+05:30,BULL,17.3,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+912,BANKNIFTY,2026-10-13T14:45:00+05:30,BULL,88.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+913,BANKNIFTY,2026-10-14T11:50:00+05:30,BULL,4.2,MATCHED,Present in authoritative JSON ledger
+914,BANKNIFTY,2026-10-14T11:55:00+05:30,BULL,12.2,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+915,BANKNIFTY,2026-10-14T12:55:00+05:30,BEAR,42.67,MATCHED,Present in authoritative JSON ledger
+916,BANKNIFTY,2026-10-14T13:00:00+05:30,BEAR,98.7,MATCHED,Present in authoritative JSON ledger
+917,BANKNIFTY,2026-10-14T13:05:00+05:30,BEAR,48.3,MATCHED,Present in authoritative JSON ledger
+918,BANKNIFTY,2026-10-14T13:10:00+05:30,BEAR,86.9,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+919,BANKNIFTY,2026-10-15T09:55:00+05:30,BULL,23.65,MATCHED,Present in authoritative JSON ledger
+920,BANKNIFTY,2026-10-15T10:30:00+05:30,BULL,27.08,MATCHED,Present in authoritative JSON ledger
+921,BANKNIFTY,2026-10-15T14:05:00+05:30,BEAR,42.5,MATCHED,Present in authoritative JSON ledger
+922,BANKNIFTY,2026-10-15T14:55:00+05:30,BEAR,29.25,MATCHED,Present in authoritative JSON ledger
+923,BANKNIFTY,2026-10-19T09:55:00+05:30,BEAR,97.65,MATCHED,Present in authoritative JSON ledger
+924,BANKNIFTY,2026-10-19T13:20:00+05:30,BEAR,56.95,MATCHED,Present in authoritative JSON ledger
+925,BANKNIFTY,2026-10-19T13:25:00+05:30,BEAR,18.5,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+926,BANKNIFTY,2026-10-21T09:35:00+05:30,BULL,25.15,MATCHED,Present in authoritative JSON ledger
+927,BANKNIFTY,2026-10-21T09:50:00+05:30,BEAR,61.1,MATCHED,Present in authoritative JSON ledger
+928,BANKNIFTY,2026-10-21T09:55:00+05:30,BEAR,45.0,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+929,BANKNIFTY,2026-10-21T10:00:00+05:30,BEAR,59.2,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+930,BANKNIFTY,2026-10-21T10:05:00+05:30,BEAR,54.05,MATCHED,Present in authoritative JSON ledger
+931,BANKNIFTY,2026-10-21T10:10:00+05:30,BEAR,75.45,MATCHED,Present in authoritative JSON ledger
+932,BANKNIFTY,2026-10-21T11:15:00+05:30,BEAR,66.75,MATCHED,Present in authoritative JSON ledger
+933,BANKNIFTY,2026-10-21T11:20:00+05:30,BEAR,60.25,MATCHED,Present in authoritative JSON ledger
+934,BANKNIFTY,2026-10-21T11:25:00+05:30,BEAR,28.6,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+935,BANKNIFTY,2026-10-21T11:30:00+05:30,BEAR,66.45,MATCHED,Present in authoritative JSON ledger
+936,BANKNIFTY,2026-10-21T11:35:00+05:30,BEAR,57.75,MATCHED,Present in authoritative JSON ledger
+937,BANKNIFTY,2026-10-21T11:40:00+05:30,BEAR,48.45,MATCHED,Present in authoritative JSON ledger
+938,BANKNIFTY,2026-10-21T12:10:00+05:30,BEAR,117.7,MATCHED,Present in authoritative JSON ledger
+939,BANKNIFTY,2026-10-21T12:15:00+05:30,BEAR,7.6,MATCHED,Present in authoritative JSON ledger
+940,BANKNIFTY,2026-10-21T12:20:00+05:30,BEAR,8.35,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+941,BANKNIFTY,2026-10-22T09:50:00+05:30,BULL,59.4,MATCHED,Present in authoritative JSON ledger
+942,BANKNIFTY,2026-10-22T10:20:00+05:30,BULL,58.2,MATCHED,Present in authoritative JSON ledger
+943,BANKNIFTY,2026-10-22T10:25:00+05:30,BULL,-0.25,MATCHED,Present in authoritative JSON ledger
+944,BANKNIFTY,2026-10-22T10:30:00+05:30,BULL,44.33,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+945,BANKNIFTY,2026-10-22T10:35:00+05:30,BULL,18.95,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+946,BANKNIFTY,2026-10-22T13:50:00+05:30,BULL,2.9,MATCHED,Present in authoritative JSON ledger
+947,BANKNIFTY,2026-10-22T13:55:00+05:30,BULL,52.12,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+948,BANKNIFTY,2026-10-23T09:55:00+05:30,BEAR,85.5,MATCHED,Present in authoritative JSON ledger
+949,BANKNIFTY,2026-10-23T10:00:00+05:30,BEAR,121.3,MATCHED,Present in authoritative JSON ledger
+950,BANKNIFTY,2026-10-23T10:05:00+05:30,BEAR,85.5,MATCHED,Present in authoritative JSON ledger
+951,BANKNIFTY,2026-10-23T10:10:00+05:30,BEAR,31.15,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+952,BANKNIFTY,2026-10-23T11:15:00+05:30,BULL,46.8,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+953,BANKNIFTY,2026-10-23T12:50:00+05:30,BEAR,83.78,MATCHED,Present in authoritative JSON ledger
+954,BANKNIFTY,2026-10-23T13:15:00+05:30,BEAR,6.0,MATCHED,Present in authoritative JSON ledger
+955,BANKNIFTY,2026-10-23T13:35:00+05:30,BULL,96.97,MATCHED,Present in authoritative JSON ledger
+956,BANKNIFTY,2026-10-23T13:40:00+05:30,BULL,131.3,MATCHED,Present in authoritative JSON ledger
+957,BANKNIFTY,2026-10-26T10:25:00+05:30,BEAR,41.5,MATCHED,Present in authoritative JSON ledger
+958,BANKNIFTY,2026-10-26T13:20:00+05:30,BULL,16.15,MATCHED,Present in authoritative JSON ledger
+959,BANKNIFTY,2026-10-27T11:35:00+05:30,BULL,25.2,MATCHED,Present in authoritative JSON ledger
+960,BANKNIFTY,2026-10-27T11:50:00+05:30,BEAR,0.0,MATCHED,Present in authoritative JSON ledger
+961,BANKNIFTY,2026-10-27T12:20:00+05:30,BEAR,8.75,MATCHED,Present in authoritative JSON ledger
+962,BANKNIFTY,2026-10-27T12:40:00+05:30,BULL,45.9,MATCHED,Present in authoritative JSON ledger
+963,BANKNIFTY,2026-10-27T13:00:00+05:30,BEAR,21.45,MATCHED,Present in authoritative JSON ledger
+964,BANKNIFTY,2026-10-27T13:05:00+05:30,BEAR,80.78,MATCHED,Present in authoritative JSON ledger
+965,BANKNIFTY,2026-10-27T13:10:00+05:30,BEAR,57.15,MATCHED,Present in authoritative JSON ledger
+966,BANKNIFTY,2026-10-28T11:00:00+05:30,BULL,63.1,MATCHED,Present in authoritative JSON ledger
+967,BANKNIFTY,2026-10-28T11:05:00+05:30,BULL,2.45,MATCHED,Present in authoritative JSON ledger
+968,BANKNIFTY,2026-10-29T09:30:00+05:30,BULL,21.3,MATCHED,Present in authoritative JSON ledger
+969,BANKNIFTY,2026-10-29T09:35:00+05:30,BULL,31.1,CLOSE_ENTRY_TIME,Entry time within 1 hour of a JSON trade on same day/instrument
+970,BANKNIFTY,2026-10-29T12:45:00+05:30,BEAR,29.7,MATCHED,Present in authoritative JSON ledger
+971,BANKNIFTY,2026-10-29T14:00:00+05:30,BULL,54.23,MATCHED,Present in authoritative JSON ledger
+972,BANKNIFTY,2026-10-29T14:20:00+05:30,BULL,12.15,MATCHED,Present in authoritative JSON ledger
+973,BANKNIFTY,2026-10-29T14:25:00+05:30,BULL,74.1,MATCHED,Present in authoritative JSON ledger

@@ -1,0 +1,37 @@
+# Phase 5.16 — Audit Execution Log
+# Audit date: 2026-10-29
+# Host: webserver (Oracle VM)
+# Mode: READ-ONLY research audit
+
+## Actions Performed
+
+1. Verified hostname: webserver (Oracle VM)
+2. Verified Phase 5.15 evidence (6 overnight, 723/729 accepted, 14/15 tests, 245-row discrepancy)
+3. Resolved ET10 timezone mismatch (canonical policy documented, 8 tests pass)
+4. Ran 14 production function tests using actual _entry_time_guard (14/14 PASS)
+5. Reconciled expiry replay (723/729 accepted, 6 rejected)
+6. Audited 6 excluded trades (all winners, +1,353.04 points)
+7. Documented 245-row discrepancy as UNRESOLVED
+8. Recorded source file hashes
+9. Created all 10 required deliverables
+
+## Files Modified
+
+NONE. This is a read-only audit. No production files were modified.
+
+## Files Created (in research directory)
+
+- PHASE516_REPORT.md
+- TIMESTAMP_SEMANTICS.md
+- ET10_TIMEZONE_TESTS.csv
+- PRODUCTION_FUNCTION_TESTS.csv
+- EXPIRY_REPLAY_RECONCILIATION.csv
+- SIX_EXCLUDED_TRADES_AUDIT.csv
+- LEDGER_245_ROW_DISCREPANCY.md
+- PAPER_VALIDATION_GATE.csv
+- SOURCE_HASHES.txt
+- AUDIT_LOG.txt
+
+## Production Changes
+
+NONE. No production files, database records, services, configuration or trading behavior changed.

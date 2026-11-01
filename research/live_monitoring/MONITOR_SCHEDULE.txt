@@ -1,0 +1,10 @@
+#TRADINGAI — MONITOR SCHEDULE
+
+Interval: every 15 minutes
+Timezone: Asia/Kolkata
+Window: 09:15 IST - 15:30 IST, Mon-Fri, exchange holidays respected
+Monitor command: /usr/bin/python3 /opt/tradingai/monitoring/live_watch/live_monitor.py
+Timer: /etc/systemd/system/tradingai-live-monitor.timer
+Service: /etc/systemd/system/tradingai-live-monitor.service
+
+Status: SCHEDULE_CREATED_NOT_ENABLED

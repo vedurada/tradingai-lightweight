@@ -1,0 +1,86 @@
+{
+  "date_start": "2026-07-06",
+  "date_end": "2026-10-19",
+  "generated_from": "market_candles_5m (read-only)",
+  "structure": {
+    "duplicate_candles": 0,
+    "ohlc_violations": 0,
+    "timezone_offsets": {
+      "+05:30": 15361
+    },
+    "rows_not_marked_complete": 0
+  },
+  "coverage": {
+    "NIFTY": {
+      "sessions_with_data": 74,
+      "first_session": "2026-07-06",
+      "last_session": "2026-10-19",
+      "short_sessions": {
+        "2026-09-21": 73,
+        "2026-10-15": 73
+      },
+      "expected_session_days_without_data": [],
+      "data_on_non_session_days": [],
+      "first_candle_min": "2026-07-06T09:15:00+05:30",
+      "last_candle_max": "2026-10-19T15:25:00+05:30"
+    },
+    "BANKNIFTY": {
+      "sessions_with_data": 74,
+      "first_session": "2026-07-06",
+      "last_session": "2026-10-19",
+      "short_sessions": {
+        "2026-09-21": 73,
+        "2026-10-15": 73
+      },
+      "expected_session_days_without_data": [],
+      "data_on_non_session_days": [],
+      "first_candle_min": "2026-07-06T09:15:00+05:30",
+      "last_candle_max": "2026-10-19T15:25:00+05:30"
+    }
+  },
+  "option_history": {
+    "option_snapshots": {
+      "rows": 0,
+      "min": null,
+      "max": null
+    },
+    "option_contracts": {
+      "rows": 0,
+      "min": null,
+      "max": null
+    },
+    "historical_option_premiums_available": false,
+    "consequence": "UNAVAILABLE -> this run is an UNDERLYING (spot) signal study only; credit-spread P&L cannot be claimed from these inputs"
+  },
+  "pit_level_check": {
+    "levels_checked": 146,
+    "mismatches": 0,
+    "examples": [],
+    "verdict": "PASS"
+  },
+  "sources": [
+    {
+      "source": "yfinance",
+      "data_state": "LIVE",
+      "n": 6663,
+      "mn": "2026-07-29T09:25:00+05:30",
+      "mx": "2026-10-19T15:25:00+05:30"
+    },
+    {
+      "source": "yfinance-backfill",
+      "data_state": "LIVE",
+      "n": 8698,
+      "mn": "2026-07-06T09:15:00+05:30",
+      "mx": "2026-09-25T09:15:00+05:30"
+    }
+  ],
+  "verdict": {
+    "issues": [
+      "NIFTY: short sessions {'2026-09-21': 73, '2026-10-15': 73}",
+      "BANKNIFTY: short sessions {'2026-09-21': 73, '2026-10-15': 73}",
+      "NO historical option premiums -> credit-spread P&L test not executable (labelled limitation)"
+    ],
+    "blocking": [],
+    "status": "PASS_WITH_LIMITATIONS"
+  }
+}

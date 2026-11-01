@@ -1,0 +1,33 @@
+{
+ "counts": {
+  "entered": 24551,
+  "entry_records": 45459,
+  "events": 32848,
+  "pattern_instances": 5051,
+  "skipped": 20908
+ },
+ "generated_at": "2026-10-22T20:12:36.371085+05:30",
+ "partition_boundary_dates": {
+  "IS_last": "2026-08-26",
+  "OOS_first": "2026-07-31",
+  "OOS_last": "2026-10-22",
+  "VALIDATION_last": "2026-07-30"
+ },
+ "partitions": {
+  "IS": 38,
+  "OOS": 19,
+  "VALIDATION": 19
+ },
+ "sessions_total": 76,
+ "source_db": "/opt/tradingai/research/prevday_cpr_spread_study/level_pattern_time_study/run_20261022_193742/research_copy/tradingai_research.db",
+ "tolerance_variants": {
+  "fixed": {
+   "BANKNIFTY": 25.0,
+   "NIFTY": 10.0
+  },
+  "vol": {
+   "BANKNIFTY": "0.25 x previous session mean 5m bar range",
+   "NIFTY": "0.25 x previous session mean 5m bar range"
+  }
+ }
+}

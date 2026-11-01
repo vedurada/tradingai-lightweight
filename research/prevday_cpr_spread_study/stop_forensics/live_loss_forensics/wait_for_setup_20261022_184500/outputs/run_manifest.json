@@ -1,0 +1,137 @@
+{
+  "file_count": 26,
+  "files": [
+    {
+      "bytes": 3932,
+      "path": "tests/test_prodlib.py",
+      "sha256": "e4c618d8a74a31fe08599ff9a49bf00f14534415cbee1bd47fbb10d275468b57"
+    },
+    {
+      "bytes": 4967,
+      "path": "tests/test_variants.py",
+      "sha256": "d7cf5656d8832dfcf1f7ced64f9e7055642885839871fdcc5ba4ace8c368d194"
+    },
+    {
+      "bytes": 6559,
+      "path": "src/integrity.py",
+      "sha256": "a5e4f75c8eb6be6e2b2187d0c3c8d973f4e1c38bf68e6f74a37baf26049d4b2f"
+    },
+    {
+      "bytes": 10195,
+      "path": "src/prodlib.py",
+      "sha256": "7b5b95bd895d1ae7d85fc1fe750881ad968ccc884d4f6c751be9d3e618ee40fe"
+    },
+    {
+      "bytes": 5975,
+      "path": "src/variants.py",
+      "sha256": "8de3a2dc9071be3dfb4690d38b1d2da21ad6c98a9984b4c66496210d60179d0b"
+    },
+    {
+      "bytes": 23735,
+      "path": "src/waitstudy.py",
+      "sha256": "626b23657a06d6d641792a5c6a12ed3d72ab133114eaed2fc8097114848f869c"
+    },
+    {
+      "bytes": 2958,
+      "path": "src/wconfig.py",
+      "sha256": "ac412f1a4db0b3c7742e842c922fa68aa6b0fa02533b75bd5b5bbff2401e1a41"
+    },
+    {
+      "bytes": 21182,
+      "path": "src/wreport.py",
+      "sha256": "3bf39a92f721b6f355949e7b984032a926de5e42698d6193f733f25f3c514c72"
+    },
+    {
+      "bytes": 21443,
+      "path": "reports/WAIT_FOR_SETUP_ANALYSIS.md",
+      "sha256": "56ce185247d3efbf9e3993de80ae30ad7b16544e3d05e2e932fae4ea0cbd1905"
+    },
+    {
+      "bytes": 71977,
+      "path": "outputs/deep_analysis.json",
+      "sha256": "965f438e555c458276453b283b3c9fb586efdbdffc49a738a67c753810205ce1"
+    },
+    {
+      "bytes": 43880,
+      "path": "outputs/deep_analysis_log.txt",
+      "sha256": "db938a55d0b4f64800cecf6d2a6f707b08a64fd65ccb67db91254e581d849227"
+    },
+    {
+      "bytes": 2361,
+      "path": "outputs/integrity.json",
+      "sha256": "60146f48b08d430fb6cca8f38a173f3c4a6007689ead288627fc9e64d552a3de"
+    },
+    {
+      "bytes": 8344,
+      "path": "outputs/live_trade_counterfactual.csv",
+      "sha256": "74e1ad7ad8d559f2f2b013cbf28fed91e7df1661332bb4ad797636ec479f6560"
+    },
+    {
+      "bytes": 546,
+      "path": "outputs/production_parity.txt",
+      "sha256": "c8e86e89a6f1f2774d2731146bdcff2633732620fc51f961a0431f1fec5b2631"
+    },
+    {
+      "bytes": 16828,
+      "path": "outputs/replay_parity.csv",
+      "sha256": "fd62005b7cf9f8d77419a45cd6bbfcdbd3fe9c03c604986bdf886155f405b1ee"
+    },
+    {
+      "bytes": 2396,
+      "path": "outputs/run_log.txt",
+      "sha256": "52e67c63b6cd0b81b84cd758c3e8e57a44e0db2b5393df3ba937b56b5f6330f7"
+    },
+    {
+      "bytes": 2020,
+      "path": "outputs/test_output.txt",
+      "sha256": "aa2a8665719a9b2f2cf8fbf841ce5d6719b6e826ca0dcb21ad2dc90ca64c23b1"
+    },
+    {
+      "bytes": 3268,
+      "path": "outputs/variant_summary.csv",
+      "sha256": "0c748ba4d5c4b704f8dd88adff2f826c72cef93ce8534904a6e8db02c5f1becf"
+    },
+    {
+      "bytes": 17582,
+      "path": "outputs/wait_study_summary.json",
+      "sha256": "50aad75e9abd99aa1cf616c5d2d64f82c359ba81439ce38ec64f25b206524dcc"
+    },
+    {
+      "bytes": 361413,
+      "path": "outputs/wait_variant_trades.csv",
+      "sha256": "3e49040a0c4d961113be2ad1acc51fdcfe025faa3059519d45c6b56baf08f731"
+    },
+    {
+      "bytes": 12161024,
+      "path": "snapshots/tradingai_snapshot.db",
+      "sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f"
+    },
+    {
+      "bytes": 32768,
+      "path": "snapshots/tradingai_snapshot.db-shm",
+      "sha256": "fd4c9fda9cd3f9ae7c962b0ddf37232294d55580e1aa165aa06129b8549389eb"
+    },
+    {
+      "bytes": 0,
+      "path": "snapshots/tradingai_snapshot.db-wal",
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "bytes": 10531,
+      "path": "tools/deep_analysis.py",
+      "sha256": "bd0e4ac48a2332a6ac5ed751c738aa4cc9d700350240bace997010096fce53d8"
+    },
+    {
+      "bytes": 1309,
+      "path": "tools/make_manifest.py",
+      "sha256": "0b51501860b70b01a08ab94ccd4ae23bee7139ab40235e789e6ac9a4690af5b7"
+    },
+    {
+      "bytes": 5772,
+      "path": "tools/production_parity.py",
+      "sha256": "56f172ff07de38de701b2bb95d22094b2fc8ac691b8a093f917135a227103703"
+    }
+  ],
+  "generated_at": "2026-10-22T18:53:38+05:30",
+  "run_dir": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/wait_for_setup_20261022_184500"
+}

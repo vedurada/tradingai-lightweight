@@ -1,0 +1,13 @@
+{
+  "last_candle": {
+    "BANKNIFTY": "2026-10-30T15:25:00+05:30",
+    "NIFTY": "2026-10-30T15:25:00+05:30"
+  },
+  "log_offsets": {
+    "paper_err_log": 262615,
+    "paper_log": 63
+  },
+  "report_generated": "2026-11-01",
+  "seen_signals": {},
+  "seen_trades": {}
+}

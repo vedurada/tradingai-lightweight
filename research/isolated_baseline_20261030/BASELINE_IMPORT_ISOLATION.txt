@@ -1,0 +1,27 @@
+BASELINE IMPORT ISOLATION — ISOLATED WORKSPACE
+Phase: TradingAI — Complete Pre-Fix Snapshot and Isolated Baseline
+Host gate: PASS (webserver / Ubuntu 22.04.5 LTS / x86_64 / ubuntu / /opt/tradingai)
+Workspace: /opt/tradingai/research/isolated_paper_safety_fix_20261030/
+
+COMMAND:
+PYTHONPATH=/opt/tradingai/research/isolated_paper_safety_fix_20261030 /usr/bin/python3 /tmp/iso_final_proof.py
+
+RESULT (final proof run):
+app.research.scalp_engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.paper_trade.engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.live.engine -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.core.db -> /opt/tradingai/research/isolated_paper_safety_fix_20261030/app  ISOLATED=True
+app.research.scalp_validation -> ISOLATED=True
+app.research.scalp_signal_store -> ISOLATED=True
+app.research.cpr_trigger_engine -> ISOLATED=True
+app.research.cpr_strategy_engine -> ISOLATED=True
+app.decision.view -> ISOLATED=True
+app.market.nse_calendar -> ISOLATED=True
+app.market.provider -> ISOLATED=True
+app.core.qualification -> ISOLATED=True
+app.scenarios.engine -> ISOLATED=True
+app.strategies.engine -> ISOLATED=True
+app.risk.engine -> ISOLATED=True
+BAD_COUNT=0
+
+VERDICT: PASS — all required project modules resolved inside isolated workspace; no project module resolved from /opt/tradingai/app.

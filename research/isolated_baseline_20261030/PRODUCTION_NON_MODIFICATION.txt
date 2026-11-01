@@ -1,0 +1,26 @@
+PRODUCTION NON-MODIFICATION — BASELINE EXECUTION
+Phase: TradingAI — Complete Pre-Fix Snapshot and Isolated Baseline
+Host gate: PASS (webserver / Ubuntu 22.04.5 LTS / x86_64 / ubuntu / /opt/tradingai)
+Execution: isolated workspace tests only; production source/tests/config/service units/DB untouched.
+
+PRODUCTION SHA256 (must match pre-execution originals):
+- /opt/tradingai/app/research/scalp_engine.py : 127c09d6dfcf4ac930d116d311d56b21005fff84acf40eab8aca01ba7aaf7e23
+- /opt/tradingai/app/strategies/scalp.py : 7711ad0683ebca88080e1ebbb5efcc3e8e61ba8a994f47282eb380de12f50c82
+- /opt/tradingai/app/paper_trade/engine.py : da8109c6f764865617c72fc30d87ca6d8d909bc83ba57af060d047d72017c0f7
+- /opt/tradingai/app/live/engine.py : 119685d33fb0bc28483ae90250e0d8d78529dd49576ee933eb4ce6ccb9b98bf7
+- /opt/tradingai/tests/test_hlc_engine.py : b022697045cfe8685030a5724bf21723a183acd2d3bca6abe0f5f57875e170e2
+- /opt/tradingai/tests/test_scalp_paper_live_runtime.py : ea0338fcc6008363bc7f63c2e3e03719702d88fb73f4b2a4f876415110d92816
+- /opt/tradingai/tests/test_scalp_exit_atomicity.py : dbd90629d28ac6d5b7eecfe15590aef73d617f94d8fd0940034e079feb8dcdc1
+- /opt/tradingai/tests/test_unified_book.py : 509c9754c29bc57d2111d9e91a265dbb04d85dff8a7a04df53cf013e252b781b
+
+SERVICE / CONFIG STATE:
+- tradingai-api service: active
+- tradingai-live-monitor.timer: inactive
+- nginx: active
+- HLC_ONLY_MODE: true (Environment=HLC_ONLY_MODE=true)
+
+DATABASE (read-only):
+- integrity_check: ok
+- paper_trades=94, scalp_signals=36, market_candles_5m=17026, paper_trade_events=33, trade_journal=246
+
+NO production source/test/config/DB/service/restart/broker changes were performed in this execution.

@@ -1,0 +1,14 @@
+annotations: 289
+
+== A_RECORDED_BOOK 150
+   TOUCH     n= 50 ok= 50 returned= 28 (56.0%) confirm= 17
+   BREAK     n=100 ok=100 returned= 40 (40.0%) confirm= 24
+
+== B_CURRENT_ENGINE_REPLAY 133
+   TOUCH     n= 52 ok= 52 returned= 36 (69.2%) confirm= 26
+   BREAK     n= 69 ok= 69 returned= 22 (31.9%) confirm= 11
+   BREAKOUT  n= 12 ok= 12 returned= 11 (91.7%) confirm=  3
+
+== C_LIVE_TRADES 6
+   TOUCH     n=  3 ok=  3 returned=  3 (100.0%) confirm=  3
+   BREAK     n=  3 ok=  3 returned=  0 (0.0%) confirm=  0

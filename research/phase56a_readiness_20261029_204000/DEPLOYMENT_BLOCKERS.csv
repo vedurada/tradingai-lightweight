@@ -1,0 +1,13 @@
+blocker_id,description,severity,status,evidence
+B1,Dirty working tree (1842 uncommitted files),HIGH,OPEN,git status: 439 modified + 1403 untracked
+B2,No production backup rehearsal performed,MEDIUM,OPEN,Only test DB backup/restore tested
+B3,Daily trade limit not implemented,MEDIUM,OPEN,Not coded in paper_scalp_live.py
+B4,Systemd unit for paper_scalp_live not enabled,MEDIUM,OPEN,No enabled unit found
+B5,Feature flag HLC_ONLY_MODE not implemented,MEDIUM,OPEN,Not in codebase
+B6,Live verification of sub-10s latency not possible (market closed),HIGH,OPEN,All audit windows outside market hours
+B7,Fundamental timing constraint: candle ingestion 5-6min vs 5min entry window,HIGH,OPEN,Phase 4.9 analysis
+B8,No daily trade limit enforcement in scalp path,MEDIUM,OPEN,Not coded
+B9,6 of 8 integration tests are design-level (not exercising production code),MEDIUM,OPEN,Test report
+B10,No isolated test environment for production code paths,MEDIUM,OPEN,Tests use mock DB only
+B11,CPR retirement not safe (active dependencies),LOW,OPEN,Phase 5.3 dependency map
+B12,No rollback rehearsal performed,MEDIUM,OPEN,Design only

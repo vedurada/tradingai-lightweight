@@ -1,0 +1,479 @@
+{
+ "availability": {
+  "live_observations": 39,
+  "live_observations_latest": "2026-10-18T11:35:18.010265+05:30",
+  "market_candles_5m": 15811,
+  "option_snapshots": 0,
+  "options_provider_cache": 3,
+  "options_provider_cache_rows": [
+   {
+    "cache_key": "BANKNIFTY|options|chain",
+    "data_ts": null,
+    "fetch_ts": 1792303516.182247,
+    "payload": "{\"state\": \"OPTIONS_UNAVAILABLE\", \"instrument\": \"BANKNIFTY\", \"contracts\": [], \"error\": \"NO_OPTIONS_DATA_FROM_PROVIDER\", \"underlying\": null, \"timestamp\": null, \"expiries\": [], \"data_age\": null}",
+    "state": "OPTIONS_UNAVAILABLE"
+   },
+   {
+    "cache_key": "TEST_CACHE|options|chain",
+    "data_ts": "2020-01-01T00:00:00+05:30",
+    "fetch_ts": 1792303516.216104,
+    "payload": "{\"state\": \"TEST\", \"timestamp\": \"2020-01-01T00:00:00+05:30\"}",
+    "state": "OPTIONS_STALE"
+   },
+   {
+    "cache_key": "NIFTY|options|chain",
+    "data_ts": null,
+    "fetch_ts": 1792303516.3410225,
+    "payload": "{\"state\": \"OPTIONS_UNAVAILABLE\", \"instrument\": \"NIFTY\", \"contracts\": [], \"error\": \"NO_OPTIONS_DATA_FROM_PROVIDER\", \"underlying\": null, \"timestamp\": null, \"expiries\": [], \"data_age\": null}",
+    "state": "OPTIONS_UNAVAILABLE"
+   }
+  ],
+  "paper_spreads": 26,
+  "paper_spreads_credit_null": 26,
+  "paper_trades": 60,
+  "paper_trades_latest": "2026-10-22T09:20:03.536873+05:30",
+  "table_count": 42,
+  "tables": [
+   "ai_explanations",
+   "backtest_decisions",
+   "backtest_outcomes",
+   "backtest_runs",
+   "backtest_trades",
+   "contrarian_verdicts",
+   "daily_trade_locks",
+   "data_quality_events",
+   "historical_sessions",
+   "instruments",
+   "live_observations",
+   "market_candles_5m",
+   "market_levels",
+   "market_snapshots",
+   "option_contracts",
+   "option_snapshots",
+   "options_provider_cache",
+   "paper_align",
+   "paper_align_veto",
+   "paper_pivot",
+   "paper_spreads",
+   "paper_trade_events",
+   "paper_trades",
+   "paper_trigger",
+   "pipeline_runs",
+   "provider_cache",
+   "qualified_trades",
+   "research_daily_decisions",
+   "rule_events",
+   "rule_registry",
+   "scenario_candidates",
+   "scenario_definitions",
+   "scenario_matches",
+   "schema_version",
+   "shadow_verdicts",
+   "sqlite_sequence",
+   "system_health",
+   "trade_candidates",
+   "trade_journal",
+   "trade_mistake",
+   "trading_sessions",
+   "volatility_snapshots"
+  ],
+  "tick_or_minute_tables": [
+   "backtest_trades",
+   "daily_trade_locks",
+   "paper_trade_events",
+   "paper_trades",
+   "qualified_trades",
+   "trade_candidates",
+   "trade_journal",
+   "trade_mistake"
+  ]
+ },
+ "candles": {
+  "per_instrument": {
+   "BANKNIFTY": {
+    "bars_per_session_max": 75,
+    "bars_per_session_min": 73,
+    "data_state": {
+     "LIVE": 5696
+    },
+    "first": "2026-07-06T09:15:00+05:30",
+    "is_complete": {
+     "1": 5696
+    },
+    "last": "2026-10-22T15:25:00+05:30",
+    "ohlc_inconsistent_rows": 0,
+    "rows": 5696,
+    "session_end_minutes": "15:25",
+    "session_id_null_rows": 5696,
+    "session_start_minutes": "09:15",
+    "sessions": 76,
+    "sessions_with_75_bars": 74,
+    "source": {
+     "yfinance": 1347,
+     "yfinance-backfill": 4349
+    },
+    "volume": {
+     "0": 5696
+    }
+   },
+   "INDIA_VIX": {
+    "bars_per_session_max": 75,
+    "bars_per_session_min": 73,
+    "data_state": {
+     "LIVE": 4419
+    },
+    "first": "2026-07-29T09:25:00+05:30",
+    "is_complete": {
+     "1": 4419
+    },
+    "last": "2026-10-22T15:25:00+05:30",
+    "ohlc_inconsistent_rows": 0,
+    "rows": 4419,
+    "session_end_minutes": "15:25",
+    "session_id_null_rows": 4419,
+    "session_start_minutes": "09:15",
+    "sessions": 59,
+    "sessions_with_75_bars": 56,
+    "source": {
+     "yfinance": 4419
+    },
+    "volume": {
+     "0": 4419
+    }
+   },
+   "NIFTY": {
+    "bars_per_session_max": 75,
+    "bars_per_session_min": 73,
+    "data_state": {
+     "LIVE": 5696
+    },
+    "first": "2026-07-06T09:15:00+05:30",
+    "is_complete": {
+     "1": 5696
+    },
+    "last": "2026-10-22T15:25:00+05:30",
+    "ohlc_inconsistent_rows": 0,
+    "rows": 5696,
+    "session_end_minutes": "15:25",
+    "session_id_null_rows": 5696,
+    "session_start_minutes": "09:15",
+    "sessions": 76,
+    "sessions_with_75_bars": 74,
+    "source": {
+     "yfinance": 1347,
+     "yfinance-backfill": 4349
+    },
+    "volume": {
+     "0": 5696
+    }
+   }
+  },
+  "session_date_equals_timestamp_date": true,
+  "total_rows": 15811
+ },
+ "families": {
+  "BREAK": [
+   "BELOW_CPR",
+   "ABOVE_CPR"
+  ],
+  "BREAKOUT": [],
+  "TOUCH": [
+   "R1",
+   "R2",
+   "PDH",
+   "S1",
+   "S2",
+   "PDL"
+  ]
+ },
+ "generated_at": "2026-10-22 14:02:49",
+ "live_trades": {
+  "columns": [
+   "trade_id",
+   "instrument_id",
+   "scenario",
+   "strategy",
+   "objective",
+   "direction",
+   "legs",
+   "strikes",
+   "expiry",
+   "entry",
+   "stop",
+   "target",
+   "max_risk",
+   "expected_reward",
+   "entry_time",
+   "exit_time",
+   "exit_price",
+   "exit_reason",
+   "paper_pnl",
+   "mfe",
+   "mae",
+   "holding_time",
+   "status",
+   "qualification_evidence",
+   "created_at",
+   "updated_at"
+  ],
+  "count": 6,
+  "direction_values": [
+   "BEAR"
+  ],
+  "trades": [
+   {
+    "direction": "BEAR",
+    "direction_in_evidence": "BEAR",
+    "entry_price": 23152.05,
+    "entry_time": "2026-10-19T09:20:00+05:30",
+    "exit_price": 22687.75,
+    "exit_reason": "TARGET",
+    "exit_time": "2026-10-21T14:16:03.032099+05:30",
+    "holding_time": null,
+    "instrument": "NIFTY",
+    "level": "PDH",
+    "mae": null,
+    "mfe": null,
+    "objective": "DIRECTIONAL",
+    "paper_pnl": 30107.0,
+    "scenario": "PDH",
+    "scenario_in_evidence": "PDH",
+    "signal_time": "2026-10-19T09:15:00+05:30",
+    "status": "CLOSED",
+    "stop_price": 23267.81,
+    "strategy": "Bear Call Spread",
+    "target_price": 22689.01,
+    "trade_id": "PT-417466A63E"
+   },
+   {
+    "direction": "BEAR",
+    "direction_in_evidence": "BEAR",
+    "entry_price": 55671.05,
+    "entry_time": "2026-10-19T09:20:00+05:30",
+    "exit_price": 54538.15,
+    "exit_reason": "TARGET",
+    "exit_time": "2026-10-22T09:42:04.036024+05:30",
+    "holding_time": null,
+    "instrument": "BANKNIFTY",
+    "level": "BELOW_CPR",
+    "mae": null,
+    "mfe": null,
+    "objective": "DIRECTIONAL",
+    "paper_pnl": 33932.0,
+    "scenario": "BELOW_CPR",
+    "scenario_in_evidence": "BELOW_CPR",
+    "signal_time": "2026-10-19T09:15:00+05:30",
+    "status": "CLOSED",
+    "stop_price": 55949.41,
+    "strategy": "Bear Call Spread",
+    "target_price": 54557.63,
+    "trade_id": "PT-AF3DDA3296"
+   },
+   {
+    "direction": "BEAR",
+    "direction_in_evidence": "BEAR",
+    "entry_price": 23113.15,
+    "entry_time": "2026-10-21T09:35:00+05:30",
+    "exit_price": 22608.95,
+    "exit_reason": "TARGET",
+    "exit_time": "2026-10-22T09:27:02.815579+05:30",
+    "holding_time": null,
+    "instrument": "NIFTY",
+    "level": "R1",
+    "mae": null,
+    "mfe": null,
+    "objective": "DIRECTIONAL",
+    "paper_pnl": 32700.5,
+    "scenario": "R1",
+    "scenario_in_evidence": "R1",
+    "signal_time": "2026-10-21T09:30:00+05:30",
+    "status": "CLOSED",
+    "stop_price": 23228.72,
+    "strategy": "Bear Call Spread",
+    "target_price": 22650.89,
+    "trade_id": "PT-4840A4C4F8"
+   },
+   {
+    "direction": "BEAR",
+    "direction_in_evidence": "BEAR",
+    "entry_price": 55810.45,
+    "entry_time": "2026-10-21T09:35:00+05:30",
+    "exit_price": 54614.05,
+    "exit_reason": "TARGET",
+    "exit_time": "2026-10-22T09:32:03.441129+05:30",
+    "holding_time": null,
+    "instrument": "BANKNIFTY",
+    "level": "R1",
+    "mae": null,
+    "mfe": null,
+    "objective": "DIRECTIONAL",
+    "paper_pnl": 35837.0,
+    "scenario": "R1",
+    "scenario_in_evidence": "R1",
+    "signal_time": "2026-10-21T09:30:00+05:30",
+    "status": "CLOSED",
+    "stop_price": 56089.5,
+    "strategy": "Bear Call Spread",
+    "target_price": 54694.24,
+    "trade_id": "PT-16D172AB8C"
+   },
+   {
+    "direction": "BEAR",
+    "direction_in_evidence": "BEAR",
+    "entry_price": 22608.95,
+    "entry_time": "2026-10-22T09:20:00+05:30",
+    "exit_price": 22726.1,
+    "exit_reason": "STOP",
+    "exit_time": "2026-10-22T10:31:09.212874+05:30",
+    "holding_time": null,
+    "instrument": "NIFTY",
+    "level": "BELOW_CPR",
+    "mae": null,
+    "mfe": null,
+    "objective": "DIRECTIONAL",
+    "paper_pnl": -7687.25,
+    "scenario": "BELOW_CPR",
+    "scenario_in_evidence": "BELOW_CPR",
+    "signal_time": "2026-10-22T09:15:00+05:30",
+    "status": "CLOSED",
+    "stop_price": 22721.99,
+    "strategy": "Bear Call Spread",
+    "target_price": 22156.77,
+    "trade_id": "PT-75B9351E8B"
+   },
+   {
+    "direction": "BEAR",
+    "direction_in_evidence": "BEAR",
+    "entry_price": 54699.3,
+    "entry_time": "2026-10-22T09:20:00+05:30",
+    "exit_price": 54994.15,
+    "exit_reason": "STOP",
+    "exit_time": "2026-10-22T10:31:09.220578+05:30",
+    "holding_time": null,
+    "instrument": "BANKNIFTY",
+    "level": "BELOW_CPR",
+    "mae": null,
+    "mfe": null,
+    "objective": "DIRECTIONAL",
+    "paper_pnl": -8900.5,
+    "scenario": "BELOW_CPR",
+    "scenario_in_evidence": "BELOW_CPR",
+    "signal_time": "2026-10-22T09:15:00+05:30",
+    "status": "CLOSED",
+    "stop_price": 54972.8,
+    "strategy": "Bear Call Spread",
+    "target_price": 53605.31,
+    "trade_id": "PT-2E382EDB68"
+   }
+  ]
+ },
+ "production_sources": {
+  "constants": [
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 39,
+    "text": "STOP_PCT = 0.01"
+   },
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 130,
+    "text": "_BREAKOUT_UP = (('BRK_R1', 'r1'), ('BRK_R2', 'r2'),"
+   },
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 132,
+    "text": "_BREAKOUT_DN = (('BRK_S1', 's1'), ('BRK_S2', 's2'),"
+   },
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 137,
+    "text": "_ENTRY_LEVELS = ("
+   },
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 625,
+    "text": "OPEN_MIN = '09:20'"
+   },
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 626,
+    "text": "OPEN_MAX = '15:20'"
+   },
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 627,
+    "text": "OPEN_EOD = '15:20'"
+   },
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 628,
+    "text": "MIN_CANDLES = 10"
+   }
+  ],
+  "entry_levels": [
+   {
+    "day_level_key": "r2",
+    "direction": "BEAR",
+    "level": "R2"
+   },
+   {
+    "day_level_key": "r1",
+    "direction": "BEAR",
+    "level": "R1"
+   },
+   {
+    "day_level_key": "pdh",
+    "direction": "BEAR",
+    "level": "PDH"
+   },
+   {
+    "day_level_key": "bc",
+    "direction": "BEAR",
+    "level": "BC"
+   },
+   {
+    "day_level_key": "tc",
+    "direction": "BULL",
+    "level": "TC"
+   },
+   {
+    "day_level_key": "s1",
+    "direction": "BULL",
+    "level": "S1"
+   },
+   {
+    "day_level_key": "s2",
+    "direction": "BULL",
+    "level": "S2"
+   },
+   {
+    "day_level_key": "pdl",
+    "direction": "BULL",
+    "level": "PDL"
+   }
+  ],
+  "files": {
+   "strategy_engine": {
+    "path": "/opt/tradingai/app/research/cpr_strategy_engine.py",
+    "sha256": "523a03c5caf9aea144e53e576642f662c98ba0d0033775749785a5da12380e64"
+   },
+   "trigger_engine": {
+    "path": "/opt/tradingai/app/research/cpr_trigger_engine.py",
+    "sha256": "2316f56cd315e7db763d89d58667e9a143c62098a914d4ca08ec437f199ec80c"
+   }
+  },
+  "scan_rule": [
+   {
+    "file": "app/research/cpr_trigger_engine.py",
+    "line": 769,
+    "text": "if c['timestamp'][11:16] < '15:25']"
+   }
+  ]
+ },
+ "return_window_bars": 12,
+ "snapshot": {
+  "mode": "read-only",
+  "path": "/opt/tradingai/research/prevday_cpr_spread_study/stop_forensics/live_loss_forensics/shadow_return_20261022_190249/snapshots/tradingai_snapshot.db",
+  "sha256": "48dd8d13e464334b6b1a527bab3f2beda627596f7260ef42e7696e4e7397a17f"
+ }
+}

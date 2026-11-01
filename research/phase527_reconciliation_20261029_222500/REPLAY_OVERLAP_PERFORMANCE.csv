@@ -1,0 +1,4 @@
+instrument,trades,wins,losses,win_rate,total_points,profit_factor,max_drawdown,expectancy_R
+NIFTY,109,87,22,79.82,2337.54,5.10,90.20,0.982
+BANKNIFTY,96,67,29,69.79,4375.88,3.08,277.45,0.763
+COMBINED,205,154,51,75.12,6713.42,3.51,283.86,0.879

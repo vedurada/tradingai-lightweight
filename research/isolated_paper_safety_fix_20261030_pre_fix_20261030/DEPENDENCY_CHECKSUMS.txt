@@ -1,0 +1,33 @@
+ISOLATED DEPENDENCY CHECKSUMS — CHECKPOINT: DEPENDENCY CLOSURE AND IMPORT PROOF
+
+HOST GATE: PASS (webserver / Ubuntu 22.04 / x86_64 / /home/ubuntu / ubuntu)
+
+INITIAL EIGHT COPIED FILES (isolated copies, before any edit):
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/research/scalp_engine.py : 127c09d6dfcf4ac930d116d311d56b21005fff84acf40eab8aca01ba7aaf7e23
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/strategies/scalp.py : 7711ad0683ebca88080e1ebbb5efcc3e8e61ba8a994f47282eb380de12f50c82
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/paper_trade/engine.py : da8109c6f764865617c72fc30d87ca6d8d909bc83ba57af060d047d72017c0f7
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/live/engine.py : 119685d33fb0bc28483ae90250e0d8d78529dd49576ee933eb4ce6ccb9b98bf7
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/tests/test_hlc_engine.py : b022697045cfe8685030a5724bf21723a183acd2d3bca6abe0f5f57875e170e2
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/tests/test_scalp_paper_live_runtime.py : ea0338fcc6008363bc7f63c2e3e03719702d88fb73f4b2a4f876415110d92816
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/tests/test_scalp_exit_atomicity.py : dbd90629d28ac6d5b7eecfe15590aef73d617f94d8fd0940034e079feb8dcdc1
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/tests/test_unified_book.py : 509c9754c29bc57d2111d9e91a265dbb04d85dff8a7a04df53cf013e252b781b
+
+COPIED DEPENDENCIES (isolated copies, before any edit):
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/research/scalp_validation.py : 3464851fdc9ec54874e59cd5b68e761f26e3a4b683f25bb7a33197240c8382ac
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/research/scalp_signal_store.py : 00a0aa944b388b1b36889a888bf546f7b2a592f89f9347bebbd6360a8dcf0ab8
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/research/cpr_trigger_engine.py : 7023cc23f559bfcd8fe69db50fe59b9d2fca25a60ac2b0b1b767aa246a0e1dd0
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/research/cpr_strategy_engine.py : 523a03c5caf9aea144e53e576642f662c98ba0d0033775749785a5da12380e64
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/decision/view.py : 085ac8142bf4b6e7aba95a6ec3d1a90906e71118ec5947b993d14a5a16ad9b33
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/scripts/paper_scalp_live.py : e3c61da1534b8ebc92fc7caf703d8273e2edeb239f91b35148429784becc97d6
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/scripts/tg_alerts.py : c481214acb8a29111f41c3c0a7e38f98dfde5c81b94ba1b1696d8751dc952e1e
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/market/cache.py : 832eee762a0e2365482509a30696a4db6610f54d885b7f75778829089dabb419
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/market/collector.py : 4ad20bf7f6d690243faeacc2c0032ce98c28b02c82cfb9f9e65e0799548954bf
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/market/events_calendar.py : 9615aff372b395388b1580272abb14be577f7a72b6fdd0800a288e511021c192
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/market/flight.py : 3cc75f0e61ec2f203214114b34b2234e5e4a5745b30c27e00482462217d88bfa
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/market/nse_calendar.py : 0598a06a39f0289c770356a78e668f8959a56c71d16eec1985eca2c8ee8788f5
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/market/provider.py : b120d95216d1cfe7ad75927932280255112851660736bb5b7afa6ba4679381c2
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/scenarios/engine.py : d3913260efb4c7d49e1c47161c0e78853872ccb1f52e6cf5ce4b028790821a9e
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/strategies/engine.py : 2d8ac22f32fffb34eccea05c4879a6098d4d304cc823cce8a3216ba20cf13314
+- /opt/tradingai/research/isolated_paper_safety_fix_20261030/app/risk/engine.py : c378843b777ec30c35f4077581d35c2196103cbaba61c29f95cbd12ced11fb3b
+
+PRODUCTION DATABASE: NOT COPIED. ISOLATED TEST DATABASES / FIXTURES USED ONLY.

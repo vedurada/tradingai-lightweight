@@ -1,0 +1,5 @@
+test_id,scenario,method,expected,actual,result
+LC1,Deterministic replay (same data),Executed,Identical,Identical,PASS
+LC2,Future-row truncation,Executed,Identical in first 6,Identical,PASS
+LC3,Last-candle detection on final candle,Executed,Documented behavior,0 signals,PASS
+LC4,Session boundary (no cross-day signals),Code inspection,Signals within same day,Verified,PASS

@@ -1,0 +1,4 @@
+period,session_start,session_end,sessions,trades,wins,win_rate_pct,total_points,total_R,avg_R
+train,2026-07-06,2026-08-07,25,24,16,66.7,1650.98,13.63,0.568
+validation,2026-08-10,2026-09-15,26,26,17,65.4,527.55,4.27,0.164
+test,2026-09-16,2026-10-23,26,24,17,70.8,2169.01,19.08,0.795

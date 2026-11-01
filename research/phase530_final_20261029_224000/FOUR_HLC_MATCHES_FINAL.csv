@@ -1,0 +1,5 @@
+paper_trade_id,instrument,entry_time,direction,replay_match,classification,evidence
+PT-6C19D5601E,NIFTY,2026-10-27T11:15:00+05:30,BEAR,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction. Replay entries at 11:05, 11:10, 13:00, 13:05, 13:10. No exact entry time match. Likely intermediate signal.
+PT-1AFB06CC01,NIFTY,2026-10-28T11:00:00+05:30,BULL,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction. Replay entries at 09:45, 12:00, 12:45, 12:55, 14:50. No exact entry time match.
+PT-58E0E20BA3,NIFTY,2026-10-28T12:05:00+05:30,BULL,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction. Replay entries at 12:00, 12:45. No exact entry time match.
+PT-7F4FF31032,NIFTY,2026-10-28T12:50:00+05:30,BULL,NO_MATCH,PROBABLE_MATCH,Same day/instrument/direction. Replay entries at 12:45, 12:55. No exact entry time match.

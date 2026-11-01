@@ -1,0 +1,13 @@
+Drawdown Audit
+============================================================
+Starting equity: 0.00 points
+Chronological order: trades sorted by entry_time
+Total trades: 63
+Max DD (points): 246.45
+Max DD (R): 3.000
+
+NOTE: The reported 3.0 R drawdown requires a fixed-risk assumption.
+Since per-trade risk varies (risk_pts = |entry - stop|),
+the R-based drawdown is calculated using per-trade risk values.
+The reported 3.0 R figure is verifiable IF each trade's risk_pts
+is used as the denominator for that trade's R contribution.

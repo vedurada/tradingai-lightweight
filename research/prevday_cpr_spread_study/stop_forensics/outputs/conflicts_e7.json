@@ -1,0 +1,727 @@
+{
+  "NIFTY": [
+    {
+      "session_date": "2026-07-07",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 57
+    },
+    {
+      "session_date": "2026-07-08",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-10",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-13",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 46
+    },
+    {
+      "session_date": "2026-07-14",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 21
+    },
+    {
+      "session_date": "2026-07-15",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 45
+    },
+    {
+      "session_date": "2026-07-17",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-20",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 13
+    },
+    {
+      "session_date": "2026-07-22",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-23",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 66
+    },
+    {
+      "session_date": "2026-07-24",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-27",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-28",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 39
+    },
+    {
+      "session_date": "2026-07-29",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-31",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 73
+    },
+    {
+      "session_date": "2026-08-03",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-04",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 66
+    },
+    {
+      "session_date": "2026-08-05",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 1
+    },
+    {
+      "session_date": "2026-08-07",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 70
+    },
+    {
+      "session_date": "2026-08-11",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-12",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 73
+    },
+    {
+      "session_date": "2026-08-14",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 29
+    },
+    {
+      "session_date": "2026-08-17",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 43
+    },
+    {
+      "session_date": "2026-08-18",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 71
+    },
+    {
+      "session_date": "2026-08-19",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-20",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-21",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 7
+    },
+    {
+      "session_date": "2026-08-24",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 63
+    },
+    {
+      "session_date": "2026-08-25",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 34
+    },
+    {
+      "session_date": "2026-08-26",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 13
+    },
+    {
+      "session_date": "2026-08-31",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-02",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-03",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 66
+    },
+    {
+      "session_date": "2026-09-07",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-08",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-09",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-10",
+      "trigger_idx": 1,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 53
+    },
+    {
+      "session_date": "2026-09-11",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 62
+    },
+    {
+      "session_date": "2026-09-15",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 30
+    },
+    {
+      "session_date": "2026-09-18",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 13
+    },
+    {
+      "session_date": "2026-09-21",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 65
+    },
+    {
+      "session_date": "2026-09-22",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 22
+    },
+    {
+      "session_date": "2026-09-24",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-25",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 18
+    },
+    {
+      "session_date": "2026-09-28",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-29",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-10-01",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-10-06",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 70
+    },
+    {
+      "session_date": "2026-10-07",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 44
+    },
+    {
+      "session_date": "2026-10-08",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-10-12",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 19
+    },
+    {
+      "session_date": "2026-10-14",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 27
+    },
+    {
+      "session_date": "2026-10-15",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 71
+    },
+    {
+      "session_date": "2026-10-16",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 66
+    },
+    {
+      "session_date": "2026-10-19",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 50
+    }
+  ],
+  "BANKNIFTY": [
+    {
+      "session_date": "2026-07-07",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 7
+    },
+    {
+      "session_date": "2026-07-08",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-10",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-13",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 5
+    },
+    {
+      "session_date": "2026-07-15",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 54
+    },
+    {
+      "session_date": "2026-07-20",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 56
+    },
+    {
+      "session_date": "2026-07-21",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 3
+    },
+    {
+      "session_date": "2026-07-22",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-23",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-24",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 38
+    },
+    {
+      "session_date": "2026-07-27",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-28",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 50
+    },
+    {
+      "session_date": "2026-07-29",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-07-30",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 51
+    },
+    {
+      "session_date": "2026-07-31",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 51
+    },
+    {
+      "session_date": "2026-08-03",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-04",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 58
+    },
+    {
+      "session_date": "2026-08-07",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 56
+    },
+    {
+      "session_date": "2026-08-10",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 70
+    },
+    {
+      "session_date": "2026-08-11",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-14",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 67
+    },
+    {
+      "session_date": "2026-08-17",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 58
+    },
+    {
+      "session_date": "2026-08-19",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-20",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-24",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 59
+    },
+    {
+      "session_date": "2026-08-25",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 1
+    },
+    {
+      "session_date": "2026-08-26",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-08-27",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 29
+    },
+    {
+      "session_date": "2026-08-28",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 69
+    },
+    {
+      "session_date": "2026-09-01",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 46
+    },
+    {
+      "session_date": "2026-09-02",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 72
+    },
+    {
+      "session_date": "2026-09-03",
+      "trigger_idx": 0,
+      "bear_level": "R2",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-04",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 12
+    },
+    {
+      "session_date": "2026-09-07",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-08",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-09",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-11",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 66
+    },
+    {
+      "session_date": "2026-09-15",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 15
+    },
+    {
+      "session_date": "2026-09-21",
+      "trigger_idx": 0,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 28
+    },
+    {
+      "session_date": "2026-09-24",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-28",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S2",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-29",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "PDL",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-09-30",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 74
+    },
+    {
+      "session_date": "2026-10-05",
+      "trigger_idx": 0,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 9
+    },
+    {
+      "session_date": "2026-10-07",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 48
+    },
+    {
+      "session_date": "2026-10-09",
+      "trigger_idx": 2,
+      "bear_level": "R1",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 72
+    },
+    {
+      "session_date": "2026-10-14",
+      "trigger_idx": 3,
+      "bear_level": "PDH",
+      "bull_level": "ABOVE_CPR",
+      "both_trigger_bars_in_session": 13
+    },
+    {
+      "session_date": "2026-10-19",
+      "trigger_idx": 0,
+      "bear_level": "BELOW_CPR",
+      "bull_level": "S1",
+      "both_trigger_bars_in_session": 68
+    }
+  ]
+}

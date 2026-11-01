@@ -1,0 +1,21 @@
+{
+  "run_id": "LM-20261030_093916-75cd24",
+  "start": "2026-10-30T09:39:16.197820+05:30",
+  "finish": "2026-10-30T09:39:16.203238+05:30",
+  "duration_s": 0.005418,
+  "status": "RUNNING",
+  "strategy_mode": "SCALP_HLC",
+  "market_state": "IN_SESSION",
+  "data_freshness": {
+    "NIFTY": "FRESH",
+    "BANKNIFTY": "FRESH"
+  },
+  "signals": 29,
+  "paper_trades": 94,
+  "alerts": 33,
+  "detected_problems": [],
+  "recovery_attempts": [],
+  "errors": [
+    "'list' object has no attribute 'get'"
+  ]
+}

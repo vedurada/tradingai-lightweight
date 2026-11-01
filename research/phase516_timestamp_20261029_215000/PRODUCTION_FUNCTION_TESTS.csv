@@ -1,0 +1,18 @@
+test_id,function_tested,method,scenario,expected,actual,result,evidence
+PF1,_entry_time_guard,Executed (isolated),Signal 4 min before expiry,ACCEPTED,ACCEPTED,PASS,phase516
+PF2,_entry_time_guard,Executed (isolated),Signal at expiry boundary,REJECTED,REJECTED,PASS,phase516
+PF3,_entry_time_guard,Executed (isolated),Signal 6 min after expiry,REJECTED,REJECTED,PASS,phase516
+PF4,_entry_time_guard,Executed (isolated),Cross-session signal,REJECTED,REJECTED,PASS,phase516
+PF5,_entry_time_guard,Executed (isolated),Friday to Monday,REJECTED,REJECTED,PASS,phase516
+PF6,_entry_time_guard,Executed (isolated),Future-dated signal,REJECTED,REJECTED,PASS,phase516
+PF7,_entry_time_guard,Executed (isolated),Missing timestamp,REJECTED,REJECTED,PASS,phase516
+PF8,_entry_time_guard,Executed (isolated),Malformed timestamp,REJECTED,REJECTED,PASS,phase516
+PF9,_entry_time_guard,Executed (isolated),Duplicate processing,Same result,Same result,PASS,phase516
+PF10,_entry_time_guard,Executed (isolated),Entry before signal,REJECTED,REJECTED,PASS,phase516
+PF11,_entry_time_guard,Executed (isolated),Entry after expiry,REJECTED,REJECTED,PASS,phase516
+PF12,_entry_time_guard,Executed (isolated),Timezone (UTC vs IST),Same decision,Same decision,PASS,phase516
+PF13,_entry_time_guard,Executed (isolated),Signal at threshold,ACCEPTED,ACCEPTED,PASS,phase516
+PF14,_entry_time_guard,Executed (isolated),Open trade monitoring,Preserved,Preserved,PASS,phase516
+PF15,scalp_signals persistence,Code inspection,Signal stored with source_candle_ts,Verified,Verified,PASS,code review
+PF16,Mode C enforcement,Code inspection,One open position per instrument,Verified,Verified,PASS,code review
+PF17,monitor() independence,Code inspection,Monitor runs regardless of entry guard,Verified,Verified,PASS,code review

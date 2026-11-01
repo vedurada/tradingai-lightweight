@@ -1,0 +1,42 @@
+# Phase 5.21 — Audit Execution Log
+# Audit date: 2026-10-29
+# Host: webserver (Oracle VM)
+# Mode: READ-ONLY audit
+
+## Actions Performed
+
+1. Verified hostname: webserver (Oracle VM)
+2. Recorded source file hashes (6 files + DB)
+3. Read Phase 5.20 report and evidence
+4. Inspected _hlc_only_mode() implementation
+5. Traced evaluate() signal-selection path
+6. Verified production path (gunicorn PIDs, env, config)
+7. Ran 10 isolated flag behavior tests (7 match design, 3 mismatch)
+8. Verified production DB unchanged (94/29/217/16936 rows)
+9. Verified service state unchanged
+10. Created all 9 required deliverables
+
+## Key Finding
+
+Phase 5.20 implementation defaults to HLC (True) instead of CPR (False) as approved design requires. 3 of 5 primary flag cases fail the approved fail-safe policy. No unsafe changes were made, but implementation does not match approved design.
+
+## Files Modified
+
+NONE. This is a read-only audit. No production files were modified.
+
+## Files Created (in research directory)
+
+- PHASE521_REPORT.md
+- PHASE520_EVIDENCE_REVIEW.md
+- FLAG_BEHAVIOR_MATRIX.csv
+- PRODUCTION_PATH_FINDINGS.md
+- REGRESSION_RESULTS.csv
+- SOURCE_HASHES.txt
+- PRODUCTION_STATE_BEFORE_AFTER.md
+- RECOMMENDED_NEXT_ACTION.md
+- AUDIT_LOG.txt
+- flag_behavior_results.json
+
+## Production Changes
+
+NONE. No production files, database records, services, configuration or trading behavior changed.

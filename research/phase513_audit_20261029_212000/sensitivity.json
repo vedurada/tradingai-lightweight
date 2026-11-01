@@ -1,0 +1,62 @@
+[
+  {
+    "scenario": "S1: Baseline (original)",
+    "n": 729,
+    "wins": 528,
+    "losses": 201,
+    "win_rate": 72.43,
+    "total_points": 19210.95,
+    "profit_factor": 3.47,
+    "avg_R": 0.794,
+    "max_drawdown": 442.4,
+    "max_consec_losses": 6
+  },
+  {
+    "scenario": "S2: One-candle-later entry",
+    "n": 974,
+    "wins": 432,
+    "losses": 542,
+    "win_rate": 44.35,
+    "total_points": 7167.92,
+    "profit_factor": 1.25,
+    "avg_R": 0.073,
+    "max_drawdown": 3097.22,
+    "max_consec_losses": 20
+  },
+  {
+    "scenario": "S3: Slippage (1 point worse entry)",
+    "n": 729,
+    "wins": 528,
+    "losses": 201,
+    "win_rate": 72.43,
+    "total_points": 19789.47,
+    "profit_factor": 3.49,
+    "avg_R": 0.749,
+    "max_drawdown": 445.4,
+    "max_consec_losses": 6
+  },
+  {
+    "scenario": "S4: Transaction costs (0.5 pts/trade)",
+    "n": 729,
+    "wins": 528,
+    "losses": 201,
+    "win_rate": 72.43,
+    "total_points": 18846.45,
+    "profit_factor": 3.4,
+    "avg_R": 0.767,
+    "max_drawdown": 446.4,
+    "max_consec_losses": 6
+  },
+  {
+    "scenario": "S5: Skip Oct 15 (missing data day)",
+    "n": 717,
+    "wins": 518,
+    "losses": 199,
+    "win_rate": 72.25,
+    "total_points": 18697.93,
+    "profit_factor": 3.42,
+    "avg_R": 0.789,
+    "max_drawdown": 442.4,
+    "max_consec_losses": 6
+  }
+]
