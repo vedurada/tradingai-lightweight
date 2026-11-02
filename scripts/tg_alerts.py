@@ -584,6 +584,52 @@ def latest_price(inst):
             pass
 
 
+def open_option_trades_for_today(inst, today):
+    """Open OPTION paper trades for (inst, today) from paper_option_trades."""
+    db = os.environ.get('TRADINGAI_DB_PATH') or os.path.join(BASE, 'database', 'tradingai.db')
+    conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        rows = conn.execute(
+            'SELECT trade_id, instrument, direction, option_type, expiry, strike, '
+            'spot_at_signal, premium_entry, stop_spot, target_spot, status, created_at '
+            'FROM paper_option_trades WHERE instrument=? AND substr(created_at,1,10)=? '
+            'AND status="OPEN" ORDER BY created_at DESC',
+            (inst, today)).fetchall()
+        return [dict(r) for r in rows]
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
+def closed_option_trade_by_id(trade_id):
+    """Resolve an already-CLOSED option trade by trade_id."""
+    import sqlite3
+    db = os.environ.get('TRADINGAI_DB_PATH') or os.path.join(BASE, 'database', 'tradingai.db')
+    conn = sqlite3.connect(f"file:{db}?mode=ro", uri=True)
+    conn.row_factory = sqlite3.Row
+    try:
+        row = conn.execute(
+            'SELECT trade_id, instrument, direction, option_type, expiry, strike, '
+            'spot_at_signal, premium_entry, stop_spot, target_spot, premium_exit, '
+            'exit_reason, pnl_points, pnl_rupees, status, created_at, updated_at '
+            'FROM paper_option_trades WHERE trade_id=?',
+            (trade_id,)).fetchone()
+        if not row:
+            return None
+        d = dict(row)
+        if str(d.get('status')) != 'CLOSED' or d.get('premium_exit') is None:
+            return None
+        return d
+    finally:
+        try:
+            conn.close()
+        except Exception:
+            pass
+
+
 STALE_ENTRY_MIN = 20
 LAST_ENTRY_CUTOFF = (15, 25)
 
@@ -1103,6 +1149,121 @@ def do_watch(lock_path='/tmp/tg_watch.lock'):
                           message_id=None)
                 rebuild_page()
                 print(f"exit sent for {key}: {reason} ok=True (tg={tg_delivered}, fb={fb_delivered})")
+
+        # --- Option trade ENTRY alerts (new ATM CE/PE trades) ---
+        try:
+            for sym, inst in INSTRUMENTS:
+                opts = open_option_trades_for_today(inst, today)
+                for o in opts:
+                    oid = o.get('trade_id')
+                    if not oid:
+                        continue
+                    opt_key = f"OPT|{oid}"
+                    if opt_key in st.get('option_alerted', set()):
+                        continue
+                    direction = (o.get('direction') or '').upper()
+                    opt_type = o.get('option_type') or ''
+                    strike = o.get('strike')
+                    premium = o.get('premium_entry')
+                    expiry = o.get('expiry')
+                    created = o.get('created_at') or ''
+                    try:
+                        created_dt = parse_ts(created)
+                        created_txt = created_dt.strftime('%d %b %H:%M') if created_dt else created
+                    except Exception:
+                        created_txt = created
+                    text = (f"{inst} OPTION ENTRY\n{created_txt}\n"
+                            f"Direction: {direction}\n"
+                            f"Type: {opt_type} ATM {fmt(strike)}\n"
+                            f"Expiry: {expiry}\n"
+                            f"Premium: {fmt(premium)}\n"
+                            f"Stop spot: {fmt(o.get('stop_spot'))}\n"
+                            f"Target spot: {fmt(o.get('target_spot'))}\n"
+                            f"Paper trade (shadow only, no Zerodha order)")
+                    # Telegram
+                    try:
+                        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': text})
+                        tg_ok = bool(r.get('ok'))
+                    except Exception as e:
+                        print(f'option entry tg failed {oid}: {e}')
+                        tg_ok = False
+                    # Facebook
+                    try:
+                        fr = fb_post(text)
+                        fb_ok = bool(fr is not None and isinstance(fr, dict) and fr.get('ok'))
+                    except Exception as e:
+                        print(f'option entry fb failed {oid}: {e}')
+                        fb_ok = False
+                    if tg_ok or fb_ok:
+                        st.setdefault('option_alerted', set()).add(opt_key)
+                        log_alert({'type': 'option_entry', 'inst': inst, 'key': opt_key,
+                                   'tg_text': text,
+                                   'direction': direction, 'option_type': opt_type,
+                                   'strike': strike, 'premium': premium,
+                                   'expiry': expiry},
+                                  delivered=tg_ok, message_id=None)
+                        save_state(st)
+                        print(f'option entry alert sent for {oid} (tg={tg_ok}, fb={fb_ok})')
+        except Exception as e:
+            print(f'option entry watch failed: {e}')
+
+        # --- Option trade EXIT alerts (closed option trades) ---
+        try:
+            for sym, inst in INSTRUMENTS:
+                opts = open_option_trades_for_today(inst, today)
+                for o in opts:
+                    oid = o.get('trade_id')
+                    if not oid:
+                        continue
+                    opt_key = f"OPT|{oid}"
+                    # Only check CLOSED trades not yet alerted as exit
+                    if str(o.get('status')) != 'CLOSED':
+                        continue
+                    exit_opt_key = f"OPT_EXIT|{oid}"
+                    if exit_opt_key in st.get('option_alerted', set()):
+                        continue
+                    direction = (o.get('direction') or '').upper()
+                    opt_type = o.get('option_type') or ''
+                    strike = o.get('strike')
+                    premium_entry = o.get('premium_entry')
+                    premium_exit = o.get('premium_exit')
+                    pnl_pts = o.get('pnl_points')
+                    pnl_rupees = o.get('pnl_rupees')
+                    exit_reason = o.get('exit_reason') or 'EOD'
+                    exit_text = (f"{inst} OPTION EXIT\n{today}\n"
+                                 f"Direction: {direction}\n"
+                                 f"Type: {opt_type} ATM {fmt(strike)}\n"
+                                 f"Premium Entry: {fmt(premium_entry)}\n"
+                                 f"Premium Exit: {fmt(premium_exit)}\n"
+                                 f"P&L: {fmt(pnl_pts)} pts / {fmt(pnl_rupees)} rupees\n"
+                                 f"Reason: {exit_reason}\n"
+                                 f"Paper trade (shadow only, no Zerodha order)")
+                    # Telegram
+                    try:
+                        r = tg('sendMessage', {'chat_id': CHANNEL, 'text': exit_text})
+                        tg_ok = bool(r.get('ok'))
+                    except Exception as e:
+                        print(f'option exit tg failed {oid}: {e}')
+                        tg_ok = False
+                    # Facebook
+                    try:
+                        fr = fb_post(exit_text)
+                        fb_ok = bool(fr is not None and isinstance(fr, dict) and fr.get('ok'))
+                    except Exception as e:
+                        print(f'option exit fb failed {oid}: {e}')
+                        fb_ok = False
+                    if tg_ok or fb_ok:
+                        st.setdefault('option_alerted', set()).add(exit_opt_key)
+                        log_alert({'type': 'option_exit', 'inst': inst, 'key': exit_opt_key,
+                                   'tg_text': exit_text,
+                                   'direction': direction, 'option_type': opt_type,
+                                   'strike': strike, 'pnl_points': pnl_pts,
+                                   'pnl_rupees': pnl_rupees, 'reason': exit_reason},
+                                  delivered=tg_ok, message_id=None)
+                        save_state(st)
+                        print(f'option exit alert sent for {oid}: {exit_reason} (tg={tg_ok}, fb={fb_ok})')
+        except Exception as e:
+            print(f'option exit watch failed: {e}')
 
         # --- Paper trade monitoring ---
         try:

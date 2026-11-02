@@ -15,7 +15,11 @@ from app.paper_trade.engine import PaperTradeEngine
 from app.core.db import get_conn
 from app.market.provider import MarketDataProvider
 
+sys.path.insert(0, os.path.join(BASE, "scripts"))
+from options_trading_engine import OptionsEngine
+
 INSTRUMENTS = ("NIFTY", "BANKNIFTY")
+OPTIONS_ENGINE = OptionsEngine()
 POLL_SECONDS = 5
 LOCK_PATH = os.path.join(BASE, "logs", "paper_scalp_live.lock")
 STATE_PATH = os.path.join(BASE, "logs", "paper_scalp_live.state.json")
@@ -319,6 +323,27 @@ def run_once(state):
                             ms_create = (time.perf_counter() - t1) * 1000
                             if tid:
                                 n_created += 1
+                                # Create matching option trade (ATM CE for BULL, ATM PE for BEAR)
+                                try:
+                                    opt_res = OPTIONS_ENGINE.on_signal(
+                                        instrument=inst,
+                                        direction=st.get("direction"),
+                                        signal_time=signal_ts,
+                                        entry_spot=st.get("entry"),
+                                        stop_spot=st.get("stop"),
+                                        target_spot=st.get("target"),
+                                        signal_id=sid,
+                                    )
+                                    if opt_res.get("status") == "TRADE_CREATED":
+                                        print(f"{inst} option trade {opt_res.get('trade_id')} "
+                                              f"{opt_res.get('option_type')} {opt_res.get('strike')} "
+                                              f"premium={opt_res.get('premium_entry')} "
+                                              f"(signal {signal_ts})", flush=True)
+                                    elif opt_res.get("status") == "NO_TRADE":
+                                        print(f"{inst} option trade skipped: {opt_res.get('reason')} "
+                                              f"(signal {signal_ts})", flush=True)
+                                except Exception as e:
+                                    print(f"{inst} option trade create failed: {e}", flush=True)
                             print(f"[timing] inst={inst} stage=create ms={ms_create:.1f} "
                                   f"signal={signal_ts} created={bool(tid)}", flush=True)
                         finally:
@@ -334,6 +359,18 @@ def run_once(state):
             PaperTradeEngine().monitor(inst)
         except Exception as e:
             print(f"{inst} monitor failed: {e}", flush=True)
+        # Check option position exits (stop/target/EOD)
+        try:
+            spot = latest_candle(inst)
+            spot_price = float(c["close"]) if c and c.get("close") else None
+            if spot_price:
+                opt_exits = OPTIONS_ENGINE.check_exits(current_spot=spot_price)
+                for ex in opt_exits:
+                    print(f"{inst} option exit {ex['trade_id']} {ex['exit_reason']} "
+                          f"pnl={ex.get('pnl_points')} pts / {ex.get('pnl_rupees')} "
+                          f"rupees (exit_spot={ex.get('exit_spot')})", flush=True)
+        except Exception as e:
+            print(f"{inst} option exit check failed: {e}", flush=True)
         ms_monitor = (time.perf_counter() - t_mon) * 1000
         if c:
             state[inst] = c['timestamp']

@@ -184,6 +184,35 @@ def trade_for(conn, trade_id):
     return rows[0] if rows else None
 
 
+def option_for_signal(conn, signal_id):
+    """Return option paper trade linked to a signal_id, or None."""
+    if not signal_id:
+        return None
+    rows = query(
+        conn,
+        "SELECT trade_id, instrument, direction, option_type, expiry, strike, "
+        "spot_at_signal, premium_entry, stop_spot, target_spot, premium_exit, "
+        "exit_reason, pnl_points, pnl_rupees, status "
+        "FROM paper_option_trades WHERE signal_id=? LIMIT 1",
+        (signal_id,),
+    )
+    return rows[0] if rows else None
+
+
+def option_trades_for_latest_session(conn, inst):
+    """Return option paper trades for the latest session of an instrument."""
+    return query(
+        conn,
+        "SELECT trade_id, instrument, direction, option_type, expiry, strike, "
+        "spot_at_signal, premium_entry, stop_spot, target_spot, premium_exit, "
+        "exit_reason, pnl_points, pnl_rupees, status, created_at, updated_at "
+        "FROM paper_option_trades "
+        "WHERE instrument=? "
+        "ORDER BY created_at DESC LIMIT ?",
+        (inst, MAX_ROWS),
+    )
+
+
 def r_multiple(trade):
     if not trade:
         return None
@@ -280,6 +309,19 @@ def build_rows(conn, inst, now, data_stale, price):
         target = trade["target"] if trade else sig["reference_target"]
         exit_price = trade["exit_price"] if trade else None
         exit_reason = (trade["exit_reason"] if trade else None) or "\u2014"
+        # Option trade linked to this signal (ATM CE/PE)
+        opt = option_for_signal(conn, sid)
+        opt_strike = fmt_num(opt["strike"]) if opt and opt.get("strike") is not None else "\u2014"
+        opt_premium = fmt_num(opt["premium_entry"]) if opt and opt.get("premium_entry") is not None else "\u2014"
+        opt_exit_premium = fmt_num(opt["premium_exit"]) if opt and opt.get("premium_exit") is not None else "\u2014"
+        opt_pnl = fmt_num(opt["pnl_rupees"]) if opt and opt.get("pnl_rupees") is not None else "\u2014"
+        opt_pnl_css = ""
+        if opt and opt.get("pnl_rupees") is not None:
+            try:
+                _pnl_val = float(opt["pnl_rupees"])
+                opt_pnl_css = "pos" if _pnl_val > 0 else ("neg" if _pnl_val < 0 else "")
+            except (TypeError, ValueError):
+                opt_pnl_css = ""
         rm = r_multiple(trade)
         rm_txt = "\u2014" if rm is None else f"{rm:+.2f}R"
         et_dt = parse_ts(trade["entry_time"]) if trade else None
@@ -303,6 +345,10 @@ def build_rows(conn, inst, now, data_stale, price):
             f'<td>{html.escape(str(exit_reason))}</td>'
             f'<td class="mono">{rm_txt}</td>'
             f'<td class="mono {pts_css}">{pts_txt}</td>'
+            f'<td class="mono">{opt_strike}</td>'
+            f'<td class="mono">{opt_premium}</td>'
+            f'<td class="mono">{opt_exit_premium}</td>'
+            f'<td class="mono {opt_pnl_css}">{opt_pnl}</td>'
             f'<td>{status_cell(status, data_stale, sig_age)}</td>'
             "</tr>"
         )
@@ -310,6 +356,54 @@ def build_rows(conn, inst, now, data_stale, price):
         if latest is None:
             latest = (when, direction, status)
     return rows_html, latest
+
+
+def build_option_rows(conn, inst, now, data_stale, price):
+    """Render HTML rows for option paper trades."""
+    rows_html = []
+    for opt in option_trades_for_latest_session(conn, inst):
+        oid = opt["trade_id"]
+        direction = (opt["direction"] or "\u2014").upper()
+        option_type = opt["option_type"] or "\u2014"
+        expiry = opt["expiry"] or "\u2014"
+        strike = fmt_num(opt["strike"])
+        spot_at_signal = fmt_num(opt["spot_at_signal"])
+        premium_entry = fmt_num(opt["premium_entry"])
+        stop_spot = fmt_num(opt["stop_spot"])
+        target_spot = fmt_num(opt["target_spot"])
+        premium_exit = fmt_num(opt["premium_exit"])
+        exit_reason = (opt["exit_reason"] or "\u2014")
+        pnl_pts = fmt_num(opt["pnl_points"])
+        pnl_rupees = fmt_num(opt["pnl_rupees"])
+        status = (opt["status"] or "OPEN").upper()
+        created = opt["created_at"] or "\u2014"
+        try:
+            created_dt = parse_ts(created)
+            created_txt = created_dt.strftime("%Y-%m-%d %H:%M") if created_dt else created
+        except Exception:
+            created_txt = created
+        dir_css = "bull" if direction == "BULL" else ("bear" if direction == "BEAR" else "")
+        opt_css = "pos" if (opt["pnl_rupees"] or 0) > 0 else ("neg" if (opt["pnl_rupees"] or 0) < 0 else "")
+        row = (
+            "<tr>"
+            f'<td class="mono">{created_txt}</td>'
+            f'<td class="{dir_css}">{html.escape(direction)}</td>'
+            f'<td class="mono">{html.escape(option_type)}</td>'
+            f'<td class="mono">{html.escape(str(expiry))}</td>'
+            f'<td class="mono">{strike}</td>'
+            f'<td class="mono">{spot_at_signal}</td>'
+            f'<td class="mono">{premium_entry}</td>'
+            f'<td class="mono">{stop_spot}</td>'
+            f'<td class="mono">{target_spot}</td>'
+            f'<td class="mono">{premium_exit}</td>'
+            f'<td>{html.escape(str(exit_reason))}</td>'
+            f'<td class="mono {opt_css}">{pnl_pts}</td>'
+            f'<td class="mono {opt_css}">{pnl_rupees}</td>'
+            f'<td>{status_cell(status, data_stale, None)}</td>'
+            "</tr>"
+        )
+        rows_html.append(row)
+    return rows_html
 
 
 def build_section(conn, inst, now, market_open):
@@ -334,11 +428,26 @@ def build_section(conn, inst, now, market_open):
             "<table><thead><tr>"
             "<th>Signal time (IST)</th><th>Entry time (IST)</th><th>Dir</th>"
             "<th>Entry</th><th>Stop</th><th>Target</th><th>Exit</th>"
-            "<th>Exit reason</th><th>R</th><th>P&amp;L (pts)</th><th>Status</th>"
+            "<th>Exit reason</th><th>R</th><th>P&amp;L (pts)</th>"
+            "<th>Strike</th><th>Entry Premium</th><th>Exit Premium</th><th>P&amp;L (₹)</th><th>Status</th>"
             "</tr></thead><tbody>" + "".join(rows_html) + "</tbody></table>"
         )
     else:
         body = '<p class="empty">No persisted signals for the latest session.</p>'
+
+    # Option trades section
+    opt_rows = build_option_rows(conn, inst, now, data_stale, price)
+    if opt_rows:
+        opt_body = (
+            "<table><thead><tr>"
+            "<th>Created (IST)</th><th>Dir</th><th>Type</th><th>Expiry</th>"
+            "<th>Strike</th><th>Spot@Signal</th><th>Premium Entry</th>"
+            "<th>Stop Spot</th><th>Target Spot</th><th>Premium Exit</th>"
+            "<th>Exit Reason</th><th>P&amp;L (pts)</th><th>P&amp;L (₹)</th><th>Status</th>"
+            "</tr></thead><tbody>" + "".join(opt_rows) + "</tbody></table>"
+        )
+    else:
+        opt_body = '<p class="empty">No option trades for the latest session.</p>'
 
     if latest:
         latest_txt = (
@@ -358,7 +467,10 @@ def build_section(conn, inst, now, market_open):
         &nbsp;|&nbsp; Price: <span class="mono">{price_txt}</span>
       </div>
       {latest_txt}
+      <h3>Spot Signals (HLC 3-Bar)</h3>
       {body}
+      <h3>Option Trades (ATM {inst} Weekly)</h3>
+      {opt_body}
     </section>
     """
 
@@ -406,6 +518,7 @@ def render(db_path, now):
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta http-equiv="refresh" content="30">
 <title>TradingAI \u2014 Live HLC 3-Bar Dashboard</title>
 <style>
 :root {{ color-scheme: dark; }}
@@ -455,7 +568,7 @@ footer {{ margin-top: 2rem; color: #6b7590; font-size: .76rem; line-height: 1.5;
 {stale_banner}
 {''.join(sections)}
 <footer>
-  Read-only view of signals persisted by the existing HLC 3-Bar paper engine.
+  Read-only view of spot signals and option trades persisted by the HLC 3-Bar paper engine.
   This page never creates signals and never writes to the database.
   Rule: 3-bar H/L/C alignment \u2192 entry at next candle open; stop = signal low/high \u00b11pt;
   target = 1.5R; exit on stop/target or EOD 15:25 IST.
