@@ -209,11 +209,26 @@ All SMA9 API endpoints returned HTTP 200; both services active and enabled.
 Final dashboard check (15:46:43 IST):
 
 - status badge: **STOPPED** (market CLOSED)
-- today trades: **17**, today P&L: **121.25**
+- today trades: **17**, today P&L: **121.25 pts** → **₹7,881.25** at the actual lot size
 - history rows: **30**
 - zero console/page errors, auto-refresh OK, no open positions
 - API restored and serving (`/api/sma9/*` → HTTP 200) after moving back from
   `/opt/tradingai/tobe_deleted/` during the dashboard restore.
+
+### P&L lot size — actual, not fabricated
+
+- Realized P&L is stored per unit premium: `pnl_points = exit − entry` (BUY-only).
+- The ₹ conversion uses the **actual lot size** from the authoritative source
+  (`app/options/economics.LOT_SIZES`; NSE lots effective 30-Dec-2025: **NIFTY 65**,
+  **BANKNIFTY 30**).
+- Live closed trades today (2026-11-06): **17 trades, +121.25 pts**
+  → **₹7,881.25** total at the actual lot size of 65 (~₹534.93 per trade, 1 lot each).
+- The earlier figure of **₹9,093.75** was derived using a **fabricated lot size of 75**
+  and is **withdrawn**. No fabricated lot size is used anywhere in the live P&L path.
+- Expandable, date-grouped trade log:
+  `/opt/tradingai/reports/sma9_live_trades_log_20261106.html`
+  (regenerated with the actual lot size; per-trade ₹ P&L + day/total shown; total
+  **₹7,881.25**). Generator: `/opt/tradingai/reports/sma9_trade_log.py`.
 
 ### Live paper trading after the lock
 
@@ -230,6 +245,10 @@ The scanner continued to enter/exit on candle boundaries under the sandbox:
 Snapshot at 15:06 IST: **12 live trades, +68.15 points**.
 
 Final live snapshot (by 15:30 IST, market close): **17 live trades, +121.25 points**.
+
+P&L at the actual lot size: **+121.25 pts × 65 = ₹7,881.25** (17 closed trades, all CE,
+BUY-only; 1 lot per trade). The **₹9,093.75** figure previously shown used a fabricated
+lot size of 75 and was withdrawn.
 
 ---
 
@@ -343,6 +362,9 @@ Final state at 15:47 IST:
 - nginx → **active**; public dashboard `https://tradingai.in/live/index.html` → **HTTP 200**
 - Public dashboard now reports 17 today trades / **+121.25 pts**, 30 history rows,
   market CLOSED, status STOPPED, zero console/page errors.
+- Live P&L recomputed with the **actual lot size** (NIFTY **65** from the authoritative
+  lot source): **17 closed trades, +121.25 pts, ₹7,881.25** — the earlier **₹9,093.75**
+  figure (fabricated lot size 75) was withdrawn.
 - Full system verifier (`ops/verify_system.py`) currently cannot complete because it
   also reads the legacy main DB (`database/tradingai.db`) that was intentionally moved
   to `tobe_deleted/`; the SMA9 DB (`database/sma9.db`) is intact and the integrity check
