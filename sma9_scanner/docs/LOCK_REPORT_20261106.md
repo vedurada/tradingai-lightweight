@@ -365,6 +365,8 @@ Final state at 15:47 IST:
 - Live P&L recomputed with the **actual lot size** (NIFTY **65** from the authoritative
   lot source): **17 closed trades, +121.25 pts, ₹7,881.25** — the earlier **₹9,093.75**
   figure (fabricated lot size 75) was withdrawn.
+- Legacy audit breakdown line (`CE: x/y compliant | PE: ... Top reasons: ...`) hidden
+  from the public dashboard (`#audit-detail` → `display:none`) per operator request.
 - Full system verifier (`ops/verify_system.py`) currently cannot complete because it
   also reads the legacy main DB (`database/tradingai.db`) that was intentionally moved
   to `tobe_deleted/`; the SMA9 DB (`database/sma9.db`) is intact and the integrity check
