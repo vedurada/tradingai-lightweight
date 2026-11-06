@@ -1,0 +1,47 @@
+[Unit]
+Description=TradingAI SMA9 ATM CE/PE BUY-ONLY Live Paper Scanner (5s)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=sma9
+# Share the API's group so SQLite WAL/journal files created by the scanner are
+# readable/writable by the ubuntu API process (see UMask below).
+Group=ubuntu
+WorkingDirectory=/opt/tradingai
+Environment=SMA9_DB_PATH=/opt/tradingai/database/sma9.db
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/tradingai/sma9_lib
+ExecStart=/usr/bin/python3 /opt/tradingai/sma9_scanner/app/live_sma9_scanner.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/tradingai/logs/live_sma9_scanner.log
+StandardError=append:/opt/tradingai/logs/live_sma9_scanner.log
+
+# Sandbox / privilege hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=/opt/tradingai/database /opt/tradingai/logs
+ReadOnlyPaths=/opt/tradingai/sma9_scanner /opt/tradingai/sma9_lib
+# Group read/write (not world) so the ubuntu API can share SQLite -wal/-shm.
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target
