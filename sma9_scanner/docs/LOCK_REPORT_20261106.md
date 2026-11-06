@@ -143,7 +143,7 @@ Installed timer:
 Latest check:
 
 ```
-SMA9 integrity OK 2026-11-06T15:06:22+05:30
+SMA9 integrity OK 2026-11-06T15:47:15+05:30
 ```
 
 A mismatch prints `SMA9 INTEGRITY FAILURE` and exits non-zero.
@@ -206,11 +206,14 @@ All SMA9 API endpoints returned HTTP 200; both services active and enabled.
 
 `https://tradingai.in/live/index.html`
 
-- status: ACTIVE, market OPEN, poll 5s (actual 5s)
-- zero console errors, zero page errors
-- auto-refresh works without navigation
-- CE card live (BUY/open), PE card WAIT/flat
-- 11 today trades, P&L 57.40 at the time of the check
+Final dashboard check (15:46:43 IST):
+
+- status badge: **STOPPED** (market CLOSED)
+- today trades: **17**, today P&L: **121.25**
+- history rows: **30**
+- zero console/page errors, auto-refresh OK, no open positions
+- API restored and serving (`/api/sma9/*` → HTTP 200) after moving back from
+  `/opt/tradingai/tobe_deleted/` during the dashboard restore.
 
 ### Live paper trading after the lock
 
@@ -225,6 +228,8 @@ The scanner continued to enter/exit on candle boundaries under the sandbox:
 | 15:05 | new CE entry 176.30 (open) | — |
 
 Snapshot at 15:06 IST: **12 live trades, +68.15 points**.
+
+Final live snapshot (by 15:30 IST, market close): **17 live trades, +121.25 points**.
 
 ---
 
@@ -314,3 +319,31 @@ The original `database/tradingai.db` was never modified and still holds the
 - Integrity log: `/opt/tradingai/logs/sma9_integrity.log`
 - Live log: `/opt/tradingai/logs/live_sma9_scanner.log`
 - Dashboard: `https://tradingai.in/live/index.html`
+
+---
+
+## 11. Final state update — 2026-11-06 (IST, post-cleanup restore)
+
+After the "move all other files/folders to `tobe_deleted`" cleanup, the tradingai
+API / frontend / config had been moved out of `/opt/tradingai`. The user then asked
+to restore the dashboard, so the following were moved back from
+`/opt/tradingai/tobe_deleted/` into `/opt/tradingai/`:
+
+- unit: `tradingai-api.service`
+- code: `api/`, `app/`
+- runtime: `config/`, `zerodha_credentials.py`
+- logs: gunicorn logs
+- frontend: `frontend/`
+
+Final state at 15:47 IST:
+
+- `tradingai-sma9-scanner.service` → **active**
+- `tradingai-sma9-integrity.timer` → **active**
+- `tradingai-api.service` → **active** (restored; `/api/sma9/*` → HTTP 200)
+- nginx → **active**; public dashboard `https://tradingai.in/live/index.html` → **HTTP 200**
+- Public dashboard now reports 17 today trades / **+121.25 pts**, 30 history rows,
+  market CLOSED, status STOPPED, zero console/page errors.
+- Full system verifier (`ops/verify_system.py`) currently cannot complete because it
+  also reads the legacy main DB (`database/tradingai.db`) that was intentionally moved
+  to `tobe_deleted/`; the SMA9 DB (`database/sma9.db`) is intact and the integrity check
+  passes.
