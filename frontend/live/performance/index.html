@@ -55,6 +55,11 @@
     .cell-trades { color: #64748b; font-size: 0.68rem; margin-left: 0.25rem; }
     .legend { color: #64748b; font-size: 0.72rem; margin-top: 0.4rem; }
     .err-text { color: #fb7185; font-size: 0.7rem; }
+    .scanner-select { background: #141a2c; color: #e8eaf0; border: 1px solid #334155; border-radius: 6px; padding: 0.38rem 0.6rem; font-size: 0.82rem; }
+    .scanner-select:focus { outline: none; border-color: #00e5ff; }
+    .scanner-link { color: #00e5ff; text-decoration: none; cursor: pointer; }
+    .scanner-link:hover { text-decoration: underline; }
+    .detail-title { color: #00e5ff; }
 </style>
 </head>
 <body>
@@ -110,6 +115,27 @@
 </section>
 
 <section class="section">
+    <h2>Day-wise Detail &mdash; <span class="detail-title" id="detail-scanner-label">--</span></h2>
+    <div class="controls">
+        <label for="scanner-select" class="neutral" style="font-size:0.8rem;">Scanner</label>
+        <select id="scanner-select" class="scanner-select" aria-label="Select scanner"></select>
+        <button class="action secondary" type="button" id="detail-csv-btn">Export this scanner</button>
+        <span class="neutral" style="font-size:0.78rem;">Full day-by-day metrics for the selected scanner.</span>
+    </div>
+    <div style="overflow-x:auto;">
+        <table id="detail-table">
+            <thead><tr>
+                <th>Date</th><th>Trades</th><th>Wins</th><th>Losses</th><th>Flat</th>
+                <th>Win Rate</th><th>P&amp;L (pts)</th><th>Avg</th><th>Best</th><th>Worst</th>
+            </tr></thead>
+            <tbody id="detail-body"><tr><td colspan="10" class="empty">Loading...</td></tr></tbody>
+            <tfoot id="detail-foot"></tfoot>
+        </table>
+    </div>
+    <div class="legend" id="detail-legend">Only days with closed trades are listed. Click a scanner name in the totals table below to switch.</div>
+</section>
+
+<section class="section">
     <h2>Per-Scanner Totals</h2>
     <div style="overflow-x:auto;">
         <table id="totals-table">
@@ -128,11 +154,43 @@ const API_URL = '/api/performance/daily';
 const REFRESH_SECONDS = 30;
 const REPORT_START = '2026-11-13';
 
-const state = { days: 3650, from: null, to: null, data: null };
+const state = { days: 3650, from: null, to: null, scanner: null, data: null };
 let countdown = REFRESH_SECONDS;
 let timer = null;
 
 const $ = (id) => document.getElementById(id);
+
+function readUrlState() {
+    const params = new URLSearchParams(window.location.search);
+    const days = params.get('days');
+    const from = params.get('from');
+    const to = params.get('to');
+    const scanner = params.get('scanner');
+    if (scanner) state.scanner = scanner;
+    if (from && to) {
+        state.from = from < REPORT_START ? REPORT_START : from;
+        state.to = to;
+        const f = document.getElementById('from-date');
+        const t = document.getElementById('to-date');
+        if (f) f.value = state.from;
+        if (t) t.value = state.to;
+    } else if (days && Number(days) > 0) {
+        state.days = Number(days);
+    }
+}
+
+function writeUrlState() {
+    const params = new URLSearchParams();
+    if (state.from && state.to) {
+        params.set('from', state.from);
+        params.set('to', state.to);
+    } else {
+        params.set('days', String(state.days));
+    }
+    if (state.scanner) params.set('scanner', state.scanner);
+    const qs = params.toString();
+    history.replaceState(null, '', qs ? '?' + qs : window.location.pathname);
+}
 
 function fmtPts(v) {
     if (v === null || v === undefined || isNaN(v)) return '--';
@@ -176,6 +234,7 @@ async function load() {
         state.data = json;
         render(json);
         setBadge('LIVE');
+        writeUrlState();
     } catch (err) {
         setBadge('ERROR', 'err');
         $('matrix-body').innerHTML = `<tr><td colspan="9" class="empty err-text">${esc(err.message)}</td></tr>`;
@@ -194,6 +253,10 @@ function render(data) {
     $('generated').textContent = new Date(data.generated_at).toLocaleString('en-IN', { hour12: false });
     if (data.report_start) {
         $('from-date').min = data.report_start;
+    }
+    if (state.from && data.from !== state.from) {
+        state.from = data.from;
+        $('from-date').value = data.from;
     }
 
     // ---- summary cards ----
@@ -286,7 +349,7 @@ function render(data) {
         const trs = summary.map((s) => {
             const err = s.error ? ` <span class="err-text" title="${esc(s.error)}">!</span>` : '';
             return '<tr>' +
-                `<td>${esc(s.label)}${err}</td>` +
+                `<td><a class="scanner-link" href="#" data-scanner="${esc(s.key)}">${esc(s.label)}</a>${err}</td>` +
                 `<td class="mono">${s.trades || 0}</td>` +
                 `<td class="mono pos">${s.wins || 0}</td>` +
                 `<td class="mono neg">${s.losses || 0}</td>` +
@@ -305,6 +368,123 @@ function render(data) {
     $('totals-legend').textContent = errored.length
         ? 'Unavailable: ' + errored.join(', ')
         : 'All scanner databases read successfully (read-only).';
+
+    populateScannerSelect(scanners);
+    renderDetail(data);
+}
+
+function populateScannerSelect(scanners) {
+    const sel = $('scanner-select');
+    const wanted = scanners.map((s) => s.key).join(',');
+    const existing = Array.from(sel.options).map((o) => o.value).join(',');
+    if (existing !== wanted) {
+        sel.innerHTML = scanners.map((s) =>
+            `<option value="${esc(s.key)}">${esc(s.label)}</option>`).join('');
+    }
+    if (!state.scanner || !scanners.some((s) => s.key === state.scanner)) {
+        state.scanner = scanners.length ? scanners[0].key : null;
+    }
+    if (state.scanner) sel.value = state.scanner;
+}
+
+function dayWinRate(c) {
+    const trades = Number(c.trades) || 0;
+    return trades ? (Number(c.wins || 0) / trades * 100) : 0;
+}
+
+function renderDetail(data) {
+    const scanners = data.scanners || [];
+    const summary = data.summary || [];
+    const days = data.days || [];
+    const key = state.scanner;
+    const item = summary.find((s) => s.key === key) || {};
+    const meta = scanners.find((s) => s.key === key) || {};
+    const label = item.label || meta.label || '--';
+    $('detail-scanner-label').textContent = label;
+
+    const rows = [];
+    for (const d of days) {
+        const c = (d.scanners || {})[key];
+        if (!c) continue;
+        rows.push('<tr>' +
+            `<td class="mono">${esc(d.date)}</td>` +
+            `<td class="mono">${c.trades || 0}</td>` +
+            `<td class="mono pos">${c.wins || 0}</td>` +
+            `<td class="mono neg">${c.losses || 0}</td>` +
+            `<td class="mono neutral">${c.flat || 0}</td>` +
+            `<td class="mono">${dayWinRate(c).toFixed(2)}%</td>` +
+            `<td class="mono ${cls(c.pnl_points)}"><strong>${fmtPts(c.pnl_points)}</strong></td>` +
+            `<td class="mono ${cls(c.avg_pnl)}">${fmtPts(c.avg_pnl)}</td>` +
+            `<td class="mono pos">${fmtPts(c.best)}</td>` +
+            `<td class="mono neg">${fmtPts(c.worst)}</td>` +
+            '</tr>');
+    }
+    $('detail-body').innerHTML = rows.length
+        ? rows.join('')
+        : '<tr><td colspan="10" class="empty">No closed trades for this scanner in the selected range</td></tr>';
+
+    if (rows.length) {
+        $('detail-foot').innerHTML = '<tr>' +
+            '<td>Total</td>' +
+            `<td class="mono">${item.trades || 0}</td>` +
+            `<td class="mono pos">${item.wins || 0}</td>` +
+            `<td class="mono neg">${item.losses || 0}</td>` +
+            `<td class="mono neutral">${item.flat || 0}</td>` +
+            `<td class="mono">${(item.win_rate || 0).toFixed(2)}%</td>` +
+            `<td class="mono ${cls(item.pnl_points)}">${fmtPts(item.pnl_points)}</td>` +
+            `<td class="mono ${cls(item.avg_pnl)}">${fmtPts(item.avg_pnl)}</td>` +
+            `<td class="mono pos">${fmtPts(item.best)}</td>` +
+            `<td class="mono neg">${fmtPts(item.worst)}</td>` +
+            '</tr>';
+    } else {
+        $('detail-foot').innerHTML = '';
+    }
+    $('detail-legend').textContent = rows.length
+        ? `${rows.length} trading day${rows.length === 1 ? '' : 's'} shown. Click a scanner name in the totals table below to switch.`
+        : 'Only days with closed trades are listed. Click a scanner name in the totals table below to switch.';
+}
+
+function downloadCsv(filename, text) {
+    const blob = new Blob([text], { type: 'text/csv;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+}
+
+function exportDetailCsv() {
+    const data = state.data;
+    if (!data || !state.scanner) return;
+    const item = (data.summary || []).find((s) => s.key === state.scanner) || {};
+    const header = ['date', 'trades', 'wins', 'losses', 'flat', 'win_rate',
+                    'pnl_points', 'avg_pnl', 'best', 'worst'];
+    const lines = [header.join(',')];
+    for (const d of (data.days || [])) {
+        const c = (d.scanners || {})[state.scanner];
+        if (!c) continue;
+        lines.push([
+            d.date, c.trades || 0, c.wins || 0, c.losses || 0, c.flat || 0,
+            dayWinRate(c).toFixed(2),
+            Number(c.pnl_points || 0).toFixed(2),
+            Number(c.avg_pnl || 0).toFixed(2),
+            Number(c.best || 0).toFixed(2),
+            Number(c.worst || 0).toFixed(2),
+        ].join(','));
+    }
+    lines.push([
+        'TOTAL', item.trades || 0, item.wins || 0, item.losses || 0, item.flat || 0,
+        Number(item.win_rate || 0).toFixed(2),
+        Number(item.pnl_points || 0).toFixed(2),
+        Number(item.avg_pnl || 0).toFixed(2),
+        Number(item.best || 0).toFixed(2),
+        Number(item.worst || 0).toFixed(2),
+    ].join(','));
+    downloadCsv(`scanner_${state.scanner}_${data.from}_${data.to}.csv`,
+                lines.join('\n') + '\n');
 }
 
 function exportCsv() {
@@ -348,6 +528,7 @@ document.querySelectorAll('.range-btn').forEach((btn) => {
         $('from-date').value = '';
         $('to-date').value = '';
         setActiveRange(state.days);
+        writeUrlState();
         load();
     });
 });
@@ -366,10 +547,30 @@ $('apply-btn').addEventListener('click', () => {
     state.from = from < REPORT_START ? REPORT_START : from;
     state.to = to;
     setActiveRange(null);
+    writeUrlState();
     load();
 });
 
+$('scanner-select').addEventListener('change', (e) => {
+    state.scanner = e.target.value;
+    writeUrlState();
+    if (state.data) renderDetail(state.data);
+});
+
+$('totals-body').addEventListener('click', (e) => {
+    const link = e.target.closest('a[data-scanner]');
+    if (!link) return;
+    e.preventDefault();
+    state.scanner = link.dataset.scanner;
+    $('scanner-select').value = state.scanner;
+    writeUrlState();
+    if (state.data) renderDetail(state.data);
+    document.getElementById('detail-scanner-label')
+        .scrollIntoView({ behavior: 'smooth', block: 'center' });
+});
+
 $('csv-btn').addEventListener('click', exportCsv);
+$('detail-csv-btn').addEventListener('click', exportDetailCsv);
 
 timer = setInterval(() => {
     countdown -= 1;
@@ -380,7 +581,8 @@ timer = setInterval(() => {
     }
 }, 1000);
 
-setActiveRange(state.days);
+readUrlState();
+setActiveRange(state.from && state.to ? null : state.days);
 load();
 </script>
 </body>
