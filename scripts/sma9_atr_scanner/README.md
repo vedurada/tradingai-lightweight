@@ -60,6 +60,25 @@ sudo journalctl -u tradingai-sma9-atr-scanner -n 50
 tail -f /opt/tradingai/logs/live_sma9_atr_scanner.log
 ```
 
+## Pre-open verification
+
+Two read-only checks can be run before the market opens:
+
+```
+# Simulated 09:15-09:26 session with a fake clock/feed, temp DB only
+python3 scripts/sma9_atr_scanner/ops/dryrun_market_open.py
+
+# Real Kite path: instruments -> expiry -> ATM contracts -> quotes ->
+# candles -> SMA9 -> ATR stop preview (writes nothing)
+python3 scripts/sma9_atr_scanner/ops/real_feed_check.py
+```
+
+The scanner is enabled at boot and `Restart=always`. It is also in the
+`ALL_UNITS` restart list in `/opt/tradingai/refresh_token.sh`, so the daily
+Zerodha token refresh restarts it with the new token, exactly like the other
+scanners. The token is read once at process start, so a token refresh without
+a restart would leave the process on the expired token.
+
 ## Report
 
 The day-wise report (`/api/performance/daily`) includes this scanner under

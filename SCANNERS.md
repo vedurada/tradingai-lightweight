@@ -447,6 +447,23 @@ same-day restart resumes the exact stop and high-water mark; a position from
 an earlier session is closed at the current LTP (`STALE_RECOVERY_EXIT`) rather
 than carried.
 
+**Pre-open operations:** the unit is `enabled` at boot and uses
+`Restart=always`, and it is in the `ALL_UNITS` list of
+`/opt/tradingai/refresh_token.sh`, so the daily token refresh restarts it with
+the new token exactly like the other scanners. The token is read once at
+process start, so a refresh without a restart would leave it on the expired
+token. Two read-only checks cover the open:
+
+```bash
+python3 /opt/tradingai/sma9_atr_scanner/ops/dryrun_market_open.py   # fake clock/feed, temp DB
+python3 /opt/tradingai/sma9_atr_scanner/ops/real_feed_check.py      # real Kite data, writes nothing
+```
+
+The first drives the deployed runner through pre-market → 09:15 open → 09:20
+entry → stop at LTP → re-entry → restart recovery. The second verifies the
+real instrument dump, nearest expiry, ATM CE/PE contracts, quotes, candles,
+SMA9 evaluation and ATR stop preview.
+
 ---
 
 ## 6. Data model (SQLite)
