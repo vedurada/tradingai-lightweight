@@ -44,7 +44,8 @@
     .range-btn { background: #141a2c; color: #cbd5e1; border: 1px solid #334155; border-radius: 6px; padding: 0.35rem 0.8rem; font-size: 0.8rem; font-weight: 600; cursor: pointer; }
     .range-btn:hover { border-color: #00e5ff; color: #00e5ff; }
     .range-btn.active { background: #06301f; border-color: #15803d; color: #34d399; }
-    .controls input[type="date"] { background: #141a2c; color: #e8eaf0; border: 1px solid #334155; border-radius: 6px; padding: 0.32rem 0.5rem; font-size: 0.8rem; }
+    .controls input[type="date"] { background: #141a2c; color: #e8eaf0; border: 1px solid #334155; border-radius: 6px; padding: 0.32rem 0.5rem; font-size: 0.8rem; cursor: pointer; }
+    .controls input[type="date"]::-webkit-calendar-picker-indicator { cursor: pointer; }
     .controls button.action { background: #00e5ff; color: #04121a; border: 0; border-radius: 6px; padding: 0.38rem 0.9rem; font-size: 0.8rem; font-weight: 700; cursor: pointer; }
     .controls button.action.secondary { background: #141a2c; color: #cbd5e1; border: 1px solid #334155; }
     .controls button.action:hover { opacity: 0.88; }
@@ -530,6 +531,28 @@ document.querySelectorAll('.range-btn').forEach((btn) => {
         setActiveRange(state.days);
         writeUrlState();
         load();
+    });
+});
+
+// Date fields: clicking anywhere opens the native calendar instead of
+// letting the user type a date by hand. Typing still works via keyboard
+// (Enter/Space re-opens the calendar) so the control stays accessible.
+document.querySelectorAll('input[type="date"]').forEach((el) => {
+    const openCalendar = () => {
+        if (typeof el.showPicker !== 'function') return;
+        try {
+            el.showPicker();
+        } catch (err) {
+            /* picker already open or blocked by the browser */
+        }
+    };
+    el.addEventListener('click', openCalendar);
+    el.addEventListener('focus', openCalendar);
+    el.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            openCalendar();
+        }
     });
 });
 
