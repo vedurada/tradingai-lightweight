@@ -78,15 +78,15 @@
         <button class="range-btn" type="button" data-days="7">7D</button>
         <button class="range-btn" type="button" data-days="30">30D</button>
         <button class="range-btn" type="button" data-days="90">90D</button>
-        <button class="range-btn active" type="button" data-days="3650" title="From 2026-11-13, when SL + trail went live">Since SL+trail</button>
+        <button class="range-btn active" type="button" data-days="3650" title="From 2026-11-16, the first full day with SL + trail on every scanner">Since SL+trail</button>
         <span class="neutral" style="font-size:0.78rem;margin:0 0.2rem;">or</span>
-        <input type="date" id="from-date" aria-label="From date" min="2026-11-13">
+        <input type="date" id="from-date" aria-label="From date" min="2026-11-16">
         <span class="neutral">to</span>
         <input type="date" id="to-date" aria-label="To date">
         <button class="action" type="button" id="apply-btn">Apply</button>
         <button class="action secondary" type="button" id="csv-btn">Export CSV</button>
     </div>
-    <div class="sub">Only trades from <strong>2026-11-13</strong> onward are included &mdash; the date the trailing stop and fixed stop-loss went live for all scanners. Earlier trades used the previous same-candle exit model and are excluded. P&amp;L is in option points; paper trading only.</div>
+    <div class="sub">Only trades from <strong>2026-11-16</strong> onward are shown &mdash; the first full trading day with the trailing stop and fixed stop-loss live on every scanner. Older trades are kept in the databases but are not displayed here. P&amp;L is in option points; paper trading only.</div>
 </section>
 
 <section class="section">
@@ -152,7 +152,7 @@
 <script>
 const API_URL = '/api/performance/daily';
 const REFRESH_SECONDS = 30;
-const REPORT_START = '2026-11-13';
+const REPORT_START = '2026-11-16';
 
 const state = { days: 3650, from: null, to: null, scanner: null, data: null };
 let countdown = REFRESH_SECONDS;

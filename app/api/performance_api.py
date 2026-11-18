@@ -28,10 +28,11 @@ IST = ZoneInfo("Asia/Kolkata")
 BASE = os.environ.get("TRADINGAI_BASE", "/opt/tradingai")
 DB_DIR = os.path.join(BASE, "database")
 
-# Both the trailing stop and the fixed stop-loss went live for every scanner
-# on 2026-11-13. Earlier trades used the previous exit model (same-candle
-# exit), so the report starts here to keep the numbers comparable.
-REPORT_START = date(2026, 11, 13)
+# Both the trailing stop and the fixed stop-loss were fully live for every
+# scanner from 2026-11-16 (2026-11-13 was a transition day that still had
+# same-candle exits). Older trades stay in the databases but are not shown
+# on the website.
+REPORT_START = date(2026, 11, 16)
 
 # key -> database/table metadata. `date_col` may be an expression.
 SCANNERS = [
@@ -201,8 +202,8 @@ def daily_performance():
     if end < REPORT_START:
         return jsonify({
             "success": True,
-            "from": start.isoformat(),
-            "to": end.isoformat(),
+            "from": REPORT_START.isoformat(),
+            "to": REPORT_START.isoformat(),
             "report_start": REPORT_START.isoformat(),
             "generated_at": datetime.now(IST).isoformat(),
             "scanners": [{"key": s["key"], "label": s["label"]} for s in SCANNERS],
