@@ -46,6 +46,17 @@ SCANNERS = [
         "open_table": "sma9_open_positions",
     },
     {
+        "key": "sma9_atr",
+        "label": "SMA9 ATR",
+        "db": "sma9_atr.db",
+        "table": "sma9_atr_trades",
+        "date_col": "trade_date",
+        "where": "status = 'CLOSED'",
+        "open_table": "sma9_atr_open_positions",
+        # Standalone volatility-scaled-stop scanner; first live day 2026-11-19.
+        "min_date": "2026-11-19",
+    },
+    {
         "key": "sma9_high",
         "label": "SMA9 HIGH",
         "db": "sma9_high.db",
