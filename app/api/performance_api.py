@@ -28,6 +28,11 @@ IST = ZoneInfo("Asia/Kolkata")
 BASE = os.environ.get("TRADINGAI_BASE", "/opt/tradingai")
 DB_DIR = os.path.join(BASE, "database")
 
+# Both the trailing stop and the fixed stop-loss went live for every scanner
+# on 2026-11-13. Earlier trades used the previous exit model (same-candle
+# exit), so the report starts here to keep the numbers comparable.
+REPORT_START = date(2026, 11, 13)
+
 # key -> database/table metadata. `date_col` may be an expression.
 SCANNERS = [
     {
@@ -190,6 +195,23 @@ def daily_performance():
         return jsonify({"success": False,
                         "error": "'from' must be on or before 'to'"}), 400
 
+    # Never report trades from before the unified SL + trail model.
+    if start < REPORT_START:
+        start = REPORT_START
+    if end < REPORT_START:
+        return jsonify({
+            "success": True,
+            "from": start.isoformat(),
+            "to": end.isoformat(),
+            "report_start": REPORT_START.isoformat(),
+            "generated_at": datetime.now(IST).isoformat(),
+            "scanners": [{"key": s["key"], "label": s["label"]} for s in SCANNERS],
+            "days": [],
+            "summary": [],
+            "totals": {"trades": 0, "wins": 0, "losses": 0, "flat": 0,
+                       "pnl_points": 0.0, "win_rate": 0.0, "avg_pnl": 0.0},
+        })
+
     start_s, end_s = start.isoformat(), end.isoformat()
 
     by_day: dict[str, dict] = {}
@@ -260,6 +282,7 @@ def daily_performance():
         "success": True,
         "from": start_s,
         "to": end_s,
+        "report_start": REPORT_START.isoformat(),
         "generated_at": datetime.now(IST).isoformat(),
         "scanners": [{"key": s["key"], "label": s["label"]} for s in SCANNERS],
         "days": days,
