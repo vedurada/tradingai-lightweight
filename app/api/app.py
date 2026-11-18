@@ -22,6 +22,7 @@ from app.options.contract import OptionsFreshness as OF, VALID_INSTRUMENTS
 from app.options.cache import recompute_age
 from app.api.e2_economics import bp as _e2_economics_bp
 from app.api.zerodha_paper_report import bp as zerodha_paper_bp
+from app.api.performance_api import bp as performance_bp
 
 app = Flask(__name__)
 # Trust exactly one hop (nginx on this host). Cloudflare/frontend IPs arrive
@@ -58,6 +59,7 @@ limiter = Limiter(app=app, key_func=_client_key, default_limits=["60 per minute"
 # routes. Inherits the global default_limits above via before_request.
 app.register_blueprint(_e2_economics_bp)
 app.register_blueprint(zerodha_paper_bp, url_prefix="/api/zerodha-paper")
+app.register_blueprint(performance_bp)
 
 market = MarketDataProvider()
 qual = QualificationEngine(settings)
