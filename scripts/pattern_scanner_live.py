@@ -321,6 +321,13 @@ class PatternScannerLive:
                 if px is not None:
                     prices[sym] = px
 
+        # Feed the quoted option prices FIRST, so the spot tick below manages
+        # exits and detects new entries with this poll's quotes. Previously the
+        # spot tick ran first and used the previous poll's (possibly minutes
+        # old) option price.
+        for sym, price in prices.items():
+            self.ps.on_tick(sym, price, now)
+
         if spot is not None:
             self.ps.on_tick("NIFTY_SPOT", spot, now)
             # Resolve ATM from the cached instrument index (no download).
@@ -328,11 +335,6 @@ class PatternScannerLive:
                 ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
                 if ce_sym and pe_sym:
                     self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
-
-        # Feed the quoted option prices. On a reband the new ATM symbols are
-        # quoted on the next poll (one 5s delay) to keep one quote call/poll.
-        for sym, price in prices.items():
-            self.ps.on_tick(sym, price, now)
 
         # Write status to file for API to read
         try:

@@ -99,6 +99,10 @@ SCANNERS = [
         "where": "lower(status) = 'closed'",
         # Pattern positions live in the same table as the closed rows.
         "open_where": "lower(status) = 'active'",
+        # Rows before 2026-11-18 came from the old engine (bullish signals that
+        # bought PE options, no spot reference, expired contracts whose prices
+        # cannot be verified). Keep them in the DB, but do not report them.
+        "min_date": "2026-11-18",
     },
 ]
 
@@ -113,6 +117,9 @@ def _connect(db_name: str) -> sqlite3.Connection:
 def _scan_daily(scanner: dict, start: str, end: str) -> list[dict]:
     """Closed-trade aggregates per day for one scanner."""
     date_col = scanner["date_col"]
+    # A scanner may have a later verified start than the report-wide start.
+    if scanner.get("min_date") and start < scanner["min_date"]:
+        start = scanner["min_date"]
     sql = f"""
         SELECT {date_col} AS day,
                COUNT(*) AS trades,

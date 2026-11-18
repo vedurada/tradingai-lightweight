@@ -16,7 +16,9 @@ candles — no lookahead, no future data.
 Pattern detection runs on NIFTY SPOT 5m candles:
   - Bullish pattern  → buy ATM CE (weekly expiry)
   - Bearish pattern  → buy ATM PE (weekly expiry)
-Entry uses the latest sampled option LTP at the spot candle close.
+Entry uses the exact option's live LTP at the tick that closes the spot candle;
+the recorded entry timestamp is that tick time, not the candle start. Quotes
+older than MAX_QUOTE_AGE_SEC are never used for an entry or exit.
 SL and trail are calculated on spot price only — never on option premium.
 """
 
@@ -40,6 +42,7 @@ BE_LOCK_PROFIT = 6.0     # one-time breakeven lock at +6.0 points
 BE_LOCK_STOP = 2.0       # lock in +2.0 points
 STOP_LOSS_PCT = 0.05     # fixed 5% stop (premium-based scanners only)
 SPOT_SL_POINTS = 12.0    # fixed spot SL distance in NIFTY points (pattern scanner)
+MAX_QUOTE_AGE_SEC = 20.0  # never enter/exit on an option quote older than this
 
 # NIFTY option strike step
 STRIKE_STEP = 50
@@ -946,7 +949,7 @@ class CandleBuffer:
 # Option position with dynamic SL management
 # --------------------------------------------------------------------------- #
 class OptionPosition:
-    """Long CE/PE position using the shared trail + fixed 5% stop model."""
+    """Long CE/PE position using the shared trail + fixed 12-point spot stop."""
 
     def __init__(self, trade_id: str, pattern_name: str, instrument: str,
                  direction: str, entry_price: float, entry_spot: float,
@@ -968,6 +971,7 @@ class OptionPosition:
             self.sl_spot = round(entry_spot + SPOT_SL_POINTS, 2)
         else:
             self.sl_spot = round(entry_spot - SPOT_SL_POINTS, 2)
+        self.initial_sl = self.sl_spot  # initial spot stop (never moves)
         self.stop_loss = self.sl_spot   # effective stop on spot, persisted
         self.hwm = entry_spot           # peak spot (bullish trail)
         self.lwm = entry_spot           # trough spot (bearish trail)
@@ -1147,6 +1151,12 @@ class PatternScanner:
         # Latest sampled option LTPs (used as entry price for spot-signal trades)
         self.last_ce_ltp: Optional[float] = None
         self.last_pe_ltp: Optional[float] = None
+        # Exact per-symbol quotes: symbol -> (price, quote timestamp).
+        # The ATM strike moves during the day, so a position's option is often
+        # no longer the current ATM CE/PE. Never price an exit off the other
+        # leg or off a stale quote.
+        self.last_ltp: Dict[str, tuple] = {}
+        self._stale_warned: Dict[str, datetime] = {}
 
         # Active positions: key = f"{pattern_name}:{instrument}"
         self.positions: Dict[str, OptionPosition] = {}
@@ -1202,6 +1212,10 @@ class PatternScanner:
     # ---- tick processing ----
     def on_tick(self, symbol: str, price: float, ts: Optional[datetime] = None):
         ts = ts or now_ist()
+        # Record every option quote by its own symbol before managing
+        # positions, so a position on an older strike still has a live price.
+        if symbol != "NIFTY_SPOT":
+            self.last_ltp[symbol] = (float(price), ts)
         # Manage active positions on every tick, before this tick is folded
         # into the candle buffer. A position entered at a candle's close is
         # therefore first managed on the following tick, never on its own
@@ -1213,7 +1227,7 @@ class PatternScanner:
             buffer = self._ensure_buffer(symbol, "OPT")
         completed = buffer.on_tick(price, ts)
         if completed is not None:
-            self._on_candle_completed(buffer, completed)
+            self._on_candle_completed(buffer, completed, ts)
         if symbol == "NIFTY_SPOT":
             self.last_spot = price
             self.last_update = ts.isoformat()
@@ -1222,7 +1236,44 @@ class PatternScanner:
         elif symbol == self.pe_symbol:
             self.last_pe_ltp = price
 
-    def _on_candle_completed(self, buffer: CandleBuffer, completed: dict):
+    def _fresh_ltp(self, symbol: Optional[str], now: datetime,
+                   max_age: float = MAX_QUOTE_AGE_SEC) -> Optional[float]:
+        """Latest quote for exactly `symbol`, or None if missing/stale."""
+        if not symbol:
+            return None
+        item = self.last_ltp.get(symbol)
+        if not item:
+            return None
+        price, ts = item
+        try:
+            age = (now - ts).total_seconds()
+        except TypeError:
+            return None
+        if age < 0:
+            age = 0.0
+        if age > max_age:
+            return None
+        return float(price)
+
+    def _warn_stale(self, kind: str, symbol: Optional[str], now: datetime):
+        """Rate-limited warning so a feed outage does not flood the log."""
+        key = f"{kind}:{symbol}"
+        last = self._stale_warned.get(key)
+        if last is not None and (now - last).total_seconds() < 60:
+            return
+        self._stale_warned[key] = now
+        item = self.last_ltp.get(symbol) if symbol else None
+        age = None
+        if item:
+            try:
+                age = round((now - item[1]).total_seconds(), 1)
+            except TypeError:
+                age = None
+        print(f"[pattern_scanner] SKIP {kind} {symbol}: no fresh quote "
+              f"(age={age}s)")
+
+    def _on_candle_completed(self, buffer: CandleBuffer, completed: dict,
+                             tick_ts: Optional[datetime] = None):
         ts = completed["timestamp"]
         instrument_type = buffer.instrument_type
         symbol = buffer.symbol
@@ -1238,7 +1289,7 @@ class PatternScanner:
                 self._refresh_option_instruments(self.last_spot)
 
             # Pattern detection runs on SPOT candles only
-            self._detect_and_enter(buffer.candles, ts)
+            self._detect_and_enter(buffer.candles, ts, entry_ts=tick_ts)
             return
 
         # CE or PE: buffer candles only; pattern detection now runs on SPOT.
@@ -1246,18 +1297,31 @@ class PatternScanner:
         if instrument_type not in ("CE", "PE"):
             return
 
-    def _detect_and_enter(self, candles: List[dict], ts: str):
+    def _detect_and_enter(self, candles: List[dict], ts: str,
+                          entry_ts: Optional[datetime] = None):
         """Run bullish + bearish pattern detection on SPOT candles.
 
         Bullish  → buy ATM CE (weekly), entry at latest CE LTP.
         Bearish  → buy ATM PE (weekly), entry at latest PE LTP.
         Entry price uses the live option LTP sampled at the spot candle close,
         not the spot close itself.
+
+        `ts` is the completed signal candle's start; `entry_ts` is the tick
+        time at which the candle actually closed and the trade was placed.
+        The trade timestamp is the real entry time, not the candle start.
         """
         if len(candles) < 3:
             return
         if not self.ce_symbol or not self.pe_symbol:
             return
+
+        if entry_ts is None:
+            entry_ts = now_ist()
+        if isinstance(entry_ts, datetime):
+            entry_dt = entry_ts
+        else:
+            entry_dt = datetime.fromisoformat(str(entry_ts))
+        entry_ts_s = entry_dt.isoformat()
 
         i = len(candles) - 1
         atr_list = self._compute_atr_list(candles)
@@ -1319,18 +1383,20 @@ class PatternScanner:
             if not self._can_enter(ts):
                 continue
 
-            # Select option instrument and entry price by direction
+            # Select option instrument and entry price by direction.
+            # Price the exact symbol being bought, never a stale quote or the
+            # opposite leg left over from a previous ATM strike.
             if direction == "BULLISH":
                 symbol = self.ce_symbol
-                entry_price = self.last_ce_ltp
                 opt_type = "CE"
             else:
                 symbol = self.pe_symbol
-                entry_price = self.last_pe_ltp
                 opt_type = "PE"
 
+            entry_price = self._fresh_ltp(symbol, entry_dt)
             if not symbol or entry_price is None:
-                # No live option quote yet — cannot enter; wait for next tick
+                # No live quote for this exact option — do not invent a price.
+                self._warn_stale("entry", symbol, entry_dt)
                 continue
 
             key = f"{pattern}:{symbol}"
@@ -1344,13 +1410,14 @@ class PatternScanner:
                 direction=direction,
                 entry_price=float(entry_price),
                 entry_spot=float(self.last_spot),
-                entry_ts=ts,
-                session_date=session_date(ts),
+                entry_ts=entry_ts_s,
+                session_date=session_date(entry_ts_s),
             )
             self.positions[key] = pos
             self._persist_position(pos, db_pattern=f"{pattern}:{opt_type}")
             print(f"[pattern_scanner] ENTRY {direction} {symbol} "
-                  f"pattern={pattern} entry={pos.entry_price:.2f} ts={ts}")
+                  f"pattern={pattern} entry={pos.entry_price:.2f} "
+                  f"ts={entry_ts_s}")
 
     def _manage_positions_tick(self, symbol: str, ltp: float,
                                ts: datetime):
@@ -1377,12 +1444,12 @@ class PatternScanner:
                 self._persist_trailing(pos)
 
             if trail_hit is not None:
-                # Exit the option at its current sampled LTP (not at spot).
-                opt_ltp = (self.last_ce_ltp
-                           if pos.instrument == self.ce_symbol
-                           else self.last_pe_ltp)
+                # Exit the option at its own latest quote (not at spot, and
+                # never at the other leg / a stale price).
+                opt_ltp = self._fresh_ltp(pos.instrument, ts)
                 if opt_ltp is None:
-                    continue  # no option quote yet; wait for next tick
+                    self._warn_stale("trail-exit", pos.instrument, ts)
+                    continue  # wait for a fresh quote
                 exit_px = round(float(opt_ltp), 2)
                 pos.close("TRAIL_STOP_EXIT", ts_iso, exit_price=exit_px)
                 self.closed_positions.append(pos)
@@ -1396,11 +1463,10 @@ class PatternScanner:
 
             sl_hit = pos.check_stop_loss(ltp)
             if sl_hit is not None:
-                opt_ltp = (self.last_ce_ltp
-                           if pos.instrument == self.ce_symbol
-                           else self.last_pe_ltp)
+                opt_ltp = self._fresh_ltp(pos.instrument, ts)
                 if opt_ltp is None:
-                    continue
+                    self._warn_stale("sl-exit", pos.instrument, ts)
+                    continue  # wait for a fresh quote
                 exit_px = round(float(opt_ltp), 2)
                 pos.close("STOP_LOSS_SPOT", ts_iso, exit_price=exit_px)
                 self.closed_positions.append(pos)
@@ -1625,7 +1691,7 @@ class PatternScanner:
                 "instrument": pos.instrument,
                 "direction": pos.direction,
                 "entry_price": pos.entry_price,
-                "initial_sl": pos.initial_sl,
+                "initial_sl": pos.sl_spot,
                 "stop_loss": pos.stop_loss,
                 "hwm": round(pos.hwm, 2),
                 "be_locked": pos.be_locked,

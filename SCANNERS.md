@@ -372,7 +372,8 @@ There is no ATR stop and no 15:15 square-off.
   - **Bearish** pattern → **LONG ATM PE** (buy PE, weekly expiry)
 - **Position type:** long-only on both sides — there is **no short CE and no short PE**.
   A bullish SPOT signal goes long CE; a bearish SPOT signal goes long PE.
-- **Entry price:** the latest sampled option LTP (CE for bullish, PE for bearish) at the spot candle close — not the spot close itself.
+- **Entry price:** the exact option's live LTP (CE for bullish, PE for bearish) sampled on the tick that closes the spot candle — not the spot close, and never a stale or opposite-leg quote. Quotes older than `MAX_QUOTE_AGE_SEC` (20s) are rejected, so a missed quote skips the entry instead of inventing a price.
+- **Entry timestamp:** the actual tick time at which the trade was placed, not the signal candle's start.
 - **Entry timing:** no new entries at or after 15:15 IST.
 - **One per key:** at most one active position per `pattern_name:instrument`.
 - **Entry tick skip:** a position entered at a candle's close is first managed on the following tick, never on its own entry tick.
@@ -382,14 +383,14 @@ There is no ATR stop and no 15:15 square-off.
 - **BULLISH (long CE):** `hwm = max(hwm, spot)`; at `hwm − entry_spot ≥ 5` trail activates (`stop = entry_spot`), then `stop = max(stop, hwm − 5)` ratchets up; one-time BE lock at `hwm − entry_spot ≥ 6` → `stop = max(stop, entry_spot + 2)`. Exit `TRAIL_STOP_EXIT` when `stop > entry_spot` and `spot ≤ stop`.
 - **BEARISH (long PE):** `lwm = min(lwm, spot)`; at `entry_spot − lwm ≥ 5` trail activates (`stop = entry_spot`), then `stop = min(stop, lwm + 5)` ratchets down; one-time BE lock at `entry_spot − lwm ≥ 6` → `stop = min(stop, entry_spot − 2)`. Exit `TRAIL_STOP_EXIT` when `stop < entry_spot` and `spot ≥ stop`.
 - **Fixed 12-point spot stop (`STOP_LOSS_SPOT`):** `sl_spot = round(entry_spot − 12, 2)` for CE; `sl_spot = round(entry_spot + 12, 2)` for PE. The distance is always **12 NIFTY points**, independent of the index level (no percentage scaling). Exit when `spot ≤ sl_spot` (CE) or `spot ≥ sl_spot` (PE). Checked after the trail exit.
-- **Exit price:** the option's current sampled LTP at the moment spot breaches the stop — not the spot level itself.
+- **Exit price:** the position's own option LTP at the moment spot breaches the stop — not the spot level, and never the current ATM's opposite leg. A stale quote (>20s) defers the exit until a fresh one arrives.
 - If neither fires the position stays open across candles and overnight. No candle-close or time-based exit.
 
 SL and trail are calculated on NIFTY spot price only — never on option premium.
 
 **Persisted state:** `stop_loss`, `hwm`, `lwm`, `entry_spot`, `be_locked`, `trailing_update_cnt`, `mfe_points` and `mae_points` are written on every trail change (`_persist_trailing`) and again on exit (`_persist_exit`). Each trail change is appended to `pattern_scanner_stop_changes`. Open positions are reloaded on startup (`_load_open_positions`), so a restart resumes the trail correctly. `_ensure_schema` adds the `hwm`/`lwm`/`entry_spot`/`be_locked` columns idempotently.
 
-**Runner quoting:** every 5-second poll quotes the current ATM CE/PE **and** every instrument with an active position, so a position keeps being managed after the ATM band moves.
+**Runner quoting:** every 5-second poll quotes the current ATM CE/PE **and** every instrument with an active position, so a position keeps being managed after the ATM band moves. Quotes are fed to the engine **before** the spot tick, so each entry/exit uses this poll's price rather than the previous poll's.
 
 - No target. Paper trading only.
 
