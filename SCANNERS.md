@@ -23,12 +23,12 @@ and its API namespace returns 404. The code tree and DB remain on disk.
 | 4 | `sma9_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 5 | `sma9_high_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9 & LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 6 | `no_sma_trail` | Trail | self-contained entry (LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
-| 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles | trail stop, then 5% stop; otherwise hold |
+| 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles | trail stop, then fixed 12-point spot stop; otherwise hold |
 
 There is **no time-based or candle-close exit** on any of the 7 scanners:
-if neither the trail nor the fixed 5% stop fires, the position stays open
+if neither the trail nor the fixed stop fires, the position stays open
 across candles (including overnight) until one of them does. `pattern_scanner`
-uses the same trail/stop model as the other 6 (see §5.5).
+uses the same trail mechanics but a fixed 12-point spot stop (see §5.5).
 
 Each of the 6 trail/SL scanners is a **fully independent stack**: own code
 directory, own Python library directory, own SQLite database, own unprivileged
@@ -237,9 +237,9 @@ the API at the same instant.
 | `no_sma_trail` | `no_sma_trail` | `PREV_HIGH_BUY_ONLY` | 2.1.0 | — | 5.0 / 5.0 | 4.2 | `nosmatrail` | `tradingai-no_sma_trail-scanner` |
 | `pattern_scanner` | — | — | — | — | 5.0 / 5.0 | — | `ubuntu` | `pattern-scanner-live` |
 
-**Stop loss:** all 7 scanners use a fixed stop at **entry premium × 0.95** for CE (or × 1.05 for PE) — 5% of the entry price, `STOP_LOSS_5PCT` — and the same trail: activate at +5 pts (stop → entry), ratchet `peak − 5` (or `trough + 5` for PE), one-time breakeven lock at +6 (stop ≥ entry + 2, or ≤ entry − 2 for PE). The trail exit is evaluated first; the 5% stop is the additional floor.
+**Stop loss:** the six premium-based scanners use a fixed stop at **entry premium × 0.95** for CE (or × 1.05 for PE) — 5% of the entry price, `STOP_LOSS_5PCT` — and the same trail: activate at +5 pts (stop → entry), ratchet `peak − 5` (or `trough + 5` for PE), one-time breakeven lock at +6 (stop ≥ entry + 2, or ≤ entry − 2 for PE). The trail exit is evaluated first; the 5% stop is the additional floor.
 
-**`pattern_scanner` exception:** its stop/trail levels are derived from **NIFTY SPOT price** (not option premium). Initial SL = 0.05% of entry spot price; trail mechanics identical but applied to spot. The option is exited at its current LTP when spot breaches the stop.
+**`pattern_scanner` exception:** its stop/trail levels are derived from **NIFTY SPOT price** (not option premium). Initial SL = a **fixed 12 NIFTY points** from the entry spot (no percentage scaling — the same 12-point distance at 18,000, 25,000 or 30,000); trail mechanics identical but applied to spot. The option is exited at its current LTP when spot breaches the stop.
 
 DB path is always `/opt/tradingai/database/<key>.db`.
 API namespace is always `/api/<slug>/` (slug = key with `_` → `-`).
@@ -363,7 +363,7 @@ else:
 
 ### 5.5 Pattern scanner (`pattern_scanner`)
 
-Pattern-based entries on NIFTY SPOT 5m candles with the **same trail + 5% stop exit model as §5.4**.
+Pattern-based entries on NIFTY SPOT 5m candles with the **same trail model as §5.4**, but a **fixed 12-point spot stop** instead of the premium 5% stop.
 There is no ATR stop and no 15:15 square-off.
 
 - **Signal source:** NIFTY SPOT 5-minute candles (completed candles only).
@@ -377,11 +377,11 @@ There is no ATR stop and no 15:15 square-off.
 - **One per key:** at most one active position per `pattern_name:instrument`.
 - **Entry tick skip:** a position entered at a candle's close is first managed on the following tick, never on its own entry tick.
 
-**Exit:** tick-level on NIFTY SPOT price, trail first, then the fixed 0.05% spot stop. Direction-aware:
+**Exit:** tick-level on NIFTY SPOT price, trail first, then the fixed 12-point spot stop. Direction-aware:
 
 - **BULLISH (long CE):** `hwm = max(hwm, spot)`; at `hwm − entry_spot ≥ 5` trail activates (`stop = entry_spot`), then `stop = max(stop, hwm − 5)` ratchets up; one-time BE lock at `hwm − entry_spot ≥ 6` → `stop = max(stop, entry_spot + 2)`. Exit `TRAIL_STOP_EXIT` when `stop > entry_spot` and `spot ≤ stop`.
 - **BEARISH (long PE):** `lwm = min(lwm, spot)`; at `entry_spot − lwm ≥ 5` trail activates (`stop = entry_spot`), then `stop = min(stop, lwm + 5)` ratchets down; one-time BE lock at `entry_spot − lwm ≥ 6` → `stop = min(stop, entry_spot − 2)`. Exit `TRAIL_STOP_EXIT` when `stop < entry_spot` and `spot ≥ stop`.
-- **Fixed 0.05% spot stop (`STOP_LOSS_5PCT`):** `sl_spot = round(entry_spot × 0.9995, 2)` for CE; `sl_spot = round(entry_spot × 1.0005, 2)` for PE. Exit when `spot ≤ sl_spot` (CE) or `spot ≥ sl_spot` (PE). Checked after the trail exit.
+- **Fixed 12-point spot stop (`STOP_LOSS_SPOT`):** `sl_spot = round(entry_spot − 12, 2)` for CE; `sl_spot = round(entry_spot + 12, 2)` for PE. The distance is always **12 NIFTY points**, independent of the index level (no percentage scaling). Exit when `spot ≤ sl_spot` (CE) or `spot ≥ sl_spot` (PE). Checked after the trail exit.
 - **Exit price:** the option's current sampled LTP at the moment spot breaches the stop — not the spot level itself.
 - If neither fires the position stays open across candles and overnight. No candle-close or time-based exit.
 
@@ -426,11 +426,12 @@ Family-specific columns:
 | NO-SMA | `prev_high`, `breakout` |
 | Trail | `prev_high`, `breakout`, and `hwm`, `stop`, `be_locked` in `open_positions`; base trade id in `consumed_base_trades` |
 
-`exit_reason` is `STOP_LOSS_5PCT` or `TRAIL_STOP_EXIT` for the 7 scanners.
+`exit_reason` is `STOP_LOSS_5PCT` or `TRAIL_STOP_EXIT` for the six premium-based scanners.
 There is no candle-close, minute-10, or session-end reason on any of them.
 `pattern_scanner` uses its own tables (`pattern_scanner_positions`,
-`pattern_scanner_stop_changes` in `database/tradingai.db`) and the **same two
-reasons**: `TRAIL_STOP_EXIT` or `STOP_LOSS_5PCT` (no `SQUARE_OFF`).
+`pattern_scanner_stop_changes` in `database/tradingai.db`) and reasons
+`TRAIL_STOP_EXIT` or `STOP_LOSS_SPOT` (fixed 12-point spot stop; older rows
+may still show `STOP_LOSS_5PCT` from the previous percentage model). No `SQUARE_OFF`.
 `pnl_points = exit_price - entry_price` (BUY-only, one lot notional is not
 applied).
 

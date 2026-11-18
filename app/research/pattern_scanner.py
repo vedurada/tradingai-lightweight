@@ -4,8 +4,8 @@
 Implements the DYNAMIC_CANDLE_SL_TRAIL_V1 research on the TradingAI VM.
 
 Live-traded instrument: NIFTY ATM CE/PE (current week expiry), LONG only.
-Exit model: trail + fixed 0.05% spot stop, calculated on NIFTY SPOT price.
-  SPOT_SL_PCT = 0.0005 (0.05% of entry spot price)
+Exit model: trail + fixed 12-point spot stop, calculated on NIFTY SPOT price.
+  SPOT_SL_POINTS = 12.0 (fixed spot points from entry, independent of NIFTY level)
   TRAIL = 5.0, ACTIVATE = 5.0, BE_LOCK_PROFIT = 6.0, BE_LOCK_STOP = 2.0
   All stop/trail levels are derived from NIFTY spot; options are exited at
   their current LTP when spot breaches the stop.
@@ -38,7 +38,8 @@ TRAIL = 5.0              # stop = peak - 5.0 points
 ACTIVATE = 5.0           # trail activates at +5.0 points (stop -> breakeven)
 BE_LOCK_PROFIT = 6.0     # one-time breakeven lock at +6.0 points
 BE_LOCK_STOP = 2.0       # lock in +2.0 points
-STOP_LOSS_PCT = 0.05     # fixed 5% stop
+STOP_LOSS_PCT = 0.05     # fixed 5% stop (premium-based scanners only)
+SPOT_SL_POINTS = 12.0    # fixed spot SL distance in NIFTY points (pattern scanner)
 
 # NIFTY option strike step
 STRIKE_STEP = 50
@@ -959,14 +960,14 @@ class OptionPosition:
         self.entry_ts = entry_ts
         self.session_date = session_date
 
-        # Trail/SL calculated on NIFTY spot price (0.05% initial SL).
-        # Stop/trail levels are spot levels; options are exited at their
-        # current LTP when spot breaches the stop.
-        SPOT_SL_PCT = 0.0005  # 0.05% of entry spot price
+        # Trail/SL calculated on NIFTY spot price (fixed 12-point initial SL).
+        # The SL distance is a constant number of spot points regardless of the
+        # NIFTY level. Stop/trail levels are spot levels; options are exited at
+        # their current LTP when spot breaches the stop.
         if direction == "BEARISH":
-            self.sl_spot = round(entry_spot * (1.0 + SPOT_SL_PCT), 2)
+            self.sl_spot = round(entry_spot + SPOT_SL_POINTS, 2)
         else:
-            self.sl_spot = round(entry_spot * (1.0 - SPOT_SL_PCT), 2)
+            self.sl_spot = round(entry_spot - SPOT_SL_POINTS, 2)
         self.stop_loss = self.sl_spot   # effective stop on spot, persisted
         self.hwm = entry_spot           # peak spot (bullish trail)
         self.lwm = entry_spot           # trough spot (bearish trail)
@@ -991,7 +992,7 @@ class OptionPosition:
             "timestamp": entry_ts,
             "old_sl": entry_spot,
             "new_sl": self.sl_spot,
-            "method": "SPOT_0.05PCT",
+            "method": "SPOT_FIXED_12PT",
             "reason": "initial_sl",
         })
 
@@ -1083,7 +1084,7 @@ class OptionPosition:
         return None
 
     def check_stop_loss(self, spot_ltp: float) -> Optional[float]:
-        """Fixed 0.05% spot stop: exit when spot crosses sl_spot."""
+        """Fixed 12-point spot stop: exit when spot crosses sl_spot."""
         if spot_ltp is None:
             return None
         if self.direction == "BEARISH":
@@ -1353,7 +1354,7 @@ class PatternScanner:
 
     def _manage_positions_tick(self, symbol: str, ltp: float,
                                ts: datetime):
-        """Spot-based trail + 0.05% spot SL.
+        """Spot-based trail + fixed 12-point spot SL.
 
         Evaluated only on NIFTY_SPOT ticks. Trail/SL levels are spot levels;
         when spot breaches a stop, the respective option is exited at its
@@ -1401,11 +1402,11 @@ class PatternScanner:
                 if opt_ltp is None:
                     continue
                 exit_px = round(float(opt_ltp), 2)
-                pos.close("STOP_LOSS_5PCT", ts_iso, exit_price=exit_px)
+                pos.close("STOP_LOSS_SPOT", ts_iso, exit_price=exit_px)
                 self.closed_positions.append(pos)
                 del self.positions[key]
                 self._persist_exit(pos)
-                print(f"[pattern_scanner] STOP_LOSS_5PCT {pos.instrument} "
+                print(f"[pattern_scanner] STOP_LOSS_SPOT {pos.instrument} "
                       f"entry_spot={pos.entry_spot:.2f} entry_opt={pos.entry_price:.2f} "
                       f"exit_opt={pos.exit_price:.2f} pnl={pos.pnl_points:.2f}")
 
@@ -1499,9 +1500,12 @@ class PatternScanner:
                 session_date=(d.get("session_date")
                               or session_date(d["entry_ts"])),
             )
-            # Re-derive spot-based SL from entry_spot (initial_sl column now
-            # holds the spot SL value).
-            pos.sl_spot = float(d["initial_sl"])
+            # Re-derive the fixed spot SL from entry_spot under the current
+            # rule, so a recovered position uses the same model after restart.
+            if pos.direction == "BEARISH":
+                pos.sl_spot = round(entry_spot + SPOT_SL_POINTS, 2)
+            else:
+                pos.sl_spot = round(entry_spot - SPOT_SL_POINTS, 2)
             pos.stop_loss = float(d["stop_loss"])
             pos.hwm = (float(d["hwm"]) if d.get("hwm") is not None
                        else entry_spot)
@@ -1514,6 +1518,9 @@ class PatternScanner:
                               or (pos.direction == "BEARISH"
                                   and pos.stop_loss < pos.entry_spot)
                               else None)
+            if pos.trail_stop is None:
+                # Trail not active yet: the fixed spot SL is the live stop.
+                pos.stop_loss = pos.sl_spot
             pos.trailing_update_count = int(d.get("trailing_update_cnt") or 0)
             pos.mfe_points = float(d.get("mfe_points") or 0.0)
             pos.mae_points = float(d.get("mae_points") or 0.0)
