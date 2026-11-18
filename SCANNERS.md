@@ -1,8 +1,9 @@
 # TradingAI Paper Scanners — Master Documentation
 
-Complete reference for the 7 paper scanners running on the TradingAI VM:
-6 BUY-only NIFTY option-premium scanners plus `pattern_scanner`, all sharing
-the same trail + fixed 5% stop-loss exit model.
+Complete reference for the 8 paper scanners running on the TradingAI VM:
+7 BUY-only NIFTY option-premium scanners plus `pattern_scanner`, all sharing
+the same trail exit model. Six option scanners use a fixed 5% stop; the
+standalone `sma9_atr` scanner uses a volatility-scaled (ATR) stop.
 
 `green15` is retired: stopped, disabled on boot, removed from the launcher,
 and its API namespace returns 404. The code tree and DB remain on disk.
@@ -24,13 +25,15 @@ and its API namespace returns 404. The code tree and DB remain on disk.
 | 5 | `sma9_high_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9 & LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 6 | `no_sma_trail` | Trail | self-contained entry (LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles | trail stop, then fixed 12-point spot stop; otherwise hold |
+| 8 | `sma9_atr` | ATR stop | prev close > SMA9 **and** forming open > SMA9 | trail stop, then ATR-scaled stop (fills at live LTP); otherwise hold |
 
-There is **no time-based or candle-close exit** on any of the 7 scanners:
+There is **no time-based or candle-close exit** on any of the 8 scanners:
 if neither the trail nor the fixed stop fires, the position stays open
 across candles (including overnight) until one of them does. `pattern_scanner`
 uses the same trail mechanics but a fixed 12-point spot stop (see §5.5).
+`sma9_atr` replaces only the initial stop distance (see §5.6).
 
-Each of the 6 trail/SL scanners is a **fully independent stack**: own code
+Each of the 7 trail/SL scanners is a **fully independent stack**: own code
 directory, own Python library directory, own SQLite database, own unprivileged
 service user, own systemd unit, own API namespace and own dashboard page.
 Nothing is shared except the host, the Kite credentials, the Flask API process
@@ -71,7 +74,7 @@ Automatic check: `tradingai-token-check.timer` at **08:45 IST, Mon–Fri**.
 
 ### 2.3 Python packages
 
-**Runtime third-party dependency (all 7 scanners):**
+**Runtime third-party dependency (all 8 scanners):**
 
 ```
 kiteconnect==5.2.2
@@ -144,7 +147,7 @@ Consequences:
 - The **last entry candle is 15:10** (no new entries at/after 15:15).
 - Nothing opens at or after **15:15:00**.
 - **Exits and trail stops are not gated** — open positions still exit normally
-  after 15:15 (all 7 scanners hold indefinitely until the trail or 5% stop
+  after 15:15 (all 8 scanners hold indefinitely until the trail or stop
   fires; there is no session-end square-off).
 - The window is fixed wall-clock, so on a special session (e.g. 14:00–17:00)
   entries are still limited to 09:20–15:15.
@@ -179,7 +182,7 @@ Never commit `.env.zerodha`, `zerodha_credentials.py`, or any token to git.
 
 ### 3.4 Per-scanner environment (systemd)
 
-Each of the 6 trail/SL scanner units sets:
+Each of the 7 trail/SL scanner units sets:
 
 ```ini
 Environment=<KEY>_DB_PATH=/opt/tradingai/database/<key>.db
@@ -398,6 +401,52 @@ The live runner is `scripts/pattern_scanner_live.py` (systemd
 `pattern-scanner-live.service`); the engine is
 `app/research/pattern_scanner.py`.
 
+### 5.6 ATR-stop scanner (`sma9_atr`)
+
+Added 2026-11-18, first live day 2026-11-19. It is an isolated clone of
+`sma9` with **one** behavioural change: the initial stop is scaled to the
+option premium's own volatility instead of a fixed 5%.
+
+**Entry** — identical to `sma9`: previous completed 5m candle close > SMA9
+**and** forming candle open > SMA9; paper BUY at the live LTP, ATM CE/PE,
+long only, entry window 09:20–15:15.
+
+**Initial stop:**
+
+```
+atr      = mean True Range of the option premium over 14 completed 5m candles
+distance = clamp(0.70 * atr, 5% * entry, 30% * entry)
+stop     = entry - distance
+```
+
+If LTP <= stop the trade closes at the **actual live LTP**, not at the
+theoretical stop price (`STOP_LOSS_ATR`). If the contract has fewer than 15
+completed candles, the stop falls back to 10% of entry
+(`stop_source='fallback_pct'`).
+
+**Trail** — unchanged from `sma9`: +5 activates breakeven, then peak − 5;
+breakeven lock at +6 moves the stop to entry + 2 (`TRAIL_STOP_EXIT`).
+No time-based exit.
+
+**Why:** the fixed 5% stop shrinks in absolute points as premium decays while
+ATM option noise stays roughly constant (~11–15 points). On 2026-11-17
+(0 DTE) the 5% stop was 2.34 points against ~14 points of 5m noise: 68% of
+trades stopped out and 39 of 65 sat inside losing streaks. ATR scaling keeps
+the stop outside the noise band on cheap contracts and close to the old 5%
+distance on expensive ones.
+
+**Isolation:** own code `/opt/tradingai/sma9_atr_scanner/`, DB
+`database/sma9_atr.db`, tables `sma9_atr_trades` / `sma9_atr_open_positions` /
+`sma9_atr_scan_state`, systemd `tradingai-sma9-atr-scanner.service`, log
+`logs/live_sma9_atr_scanner.log`, report key `sma9_atr`. The service runs as
+the existing `sma9` user but shares no code, DB, state or unit with `sma9`.
+
+**Persisted state:** `atr_at_entry`, `stop_price`, `stop_k`,
+`stop_distance_pct`, `stop_source`, `hwm`, `trail_stop`, `be_locked`. A
+same-day restart resumes the exact stop and high-water mark; a position from
+an earlier session is closed at the current LTP (`STALE_RECOVERY_EXIT`) rather
+than carried.
+
 ---
 
 ## 6. Data model (SQLite)
@@ -525,7 +574,7 @@ systemctl list-timers tradingai-token-check.timer
 # 2. If TOKEN_INVALID, refresh before 09:15
 sudo /opt/tradingai/refresh_token.sh <REQUEST_TOKEN>
 
-# 3. All 7 scanners + API active
+# 3. All 8 scanners + API active
 systemctl is-active tradingai-api \
   tradingai-sma9-scanner tradingai-sma9-high-scanner \
   tradingai-no-sma-scanner \
@@ -652,9 +701,10 @@ edit and restart `pattern-scanner-live.service` normally.
   ```
 
 - **BUY only.** CE and PE are long-only; there is no short/sell-to-open path.
-- **Fixed 5% stop on all 7 scanners.** Every position exits at
+- **Fixed 5% stop on the six base scanners.** Every position exits at
   `round(entry × 0.95, 2)` if LTP falls that far (`STOP_LOSS_5PCT`); the trail
-  stop is the preferred, higher exit and is evaluated first.
+  stop is the preferred, higher exit and is evaluated first. `sma9_atr` uses
+  an ATR-scaled stop instead (see §5.6), filled at the live LTP.
 - **`pattern_scanner`** uses the same trail + 5% stop model (5-pt trail,
   +5 activate, +6 breakeven lock at +2). It has no ATR stop and no time exit.
 - **No time-based exit** on any scanner; positions hold across candles and
