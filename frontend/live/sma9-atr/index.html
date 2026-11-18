@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - SMA9 ATR Stop Live Dashboard</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0b0c15;
+        color: #e8eaf0;
+        padding: 1.5rem;
+    }
+    h1 { color: #00e5ff; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    h2 { color: #9ad7ff; font-size: 1.05rem; margin: 0 0 0.6rem; }
+    .meta { color: #9aa4bf; font-size: 0.85rem; margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .section { border-top: 1px solid #1e2438; padding-top: 1rem; margin-bottom: 1.5rem; }
+    .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .badge.active, .badge.ACTIVE { background: #06301f; color: #34d399; }
+    .badge.stale, .badge.STALE { background: #3a2a06; color: #fbbf24; }
+    .badge.stopped, .badge.STOPPED, .badge.NOT_RUNNING { background: #3a0f14; color: #fb7185; }
+    .badge.idle, .badge.IDLE_MARKET_CLOSED { background: #232838; color: #94a3b8; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 0.5rem; }
+    th { background: #141a2c; color: #00e5ff; text-align: left; padding: 0.5rem 0.4rem; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+    td { padding: 0.4rem 0.4rem; border-bottom: 1px solid #1c2236; white-space: nowrap; }
+    tbody tr:hover { background: #121827; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .pos { color: #34d399; }
+    .neg { color: #fb7185; }
+    .neutral { color: #94a3b8; }
+    .empty { color: #9aa4bf; font-style: italic; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+    .stat-card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: 0.9rem; }
+    .stat-card .label { color: #9aa4bf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.4rem; font-weight: 600; margin-top: 0.2rem; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1rem; }
+    .option-card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: 1rem; }
+    .option-card h3 { font-size: 1rem; color: #00e5ff; margin-bottom: 0.6rem; }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 0.8rem; font-size: 0.85rem; }
+    .kv .k { color: #9aa4bf; }
+    .kv .v { font-family: ui-monospace, Menlo, Consolas, monospace; text-align: right; }
+    .pill { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .pill.yes { background: #06301f; color: #34d399; }
+    .pill.no { background: #232838; color: #94a3b8; }
+    .position-box { margin-top: 0.8rem; padding: 0.7rem; border-radius: 6px; background: #0b2440; border: 1px solid #1d4ed8; font-size: 0.82rem; }
+    .position-box.flat { background: #111827; border-color: #334155; color: #94a3b8; }
+    .refresh-indicator { color: #9aa4bf; font-size: 0.8rem; }
+    .refresh-indicator .countdown { color: #fbbf24; font-weight: 700; }
+    .sub { color: #9aa4bf; font-size: 0.78rem; margin-bottom: 0.5rem; }
+    .back-link { color: #cbd5e1; text-decoration: none; font-size: 0.85rem; }
+    .back-link:hover { color: #00e5ff; }
+</style>
+</head>
+<body>
+<h1>TradingAI - SMA9 ATR Stop Live Dashboard</h1>
+<div class="meta">
+    <a href="/live/scalp/" class="back-link">&larr; Back to Launcher</a>
+    <a href="/live/performance/?scanner=sma9_atr" class="back-link">Day-wise Performance &rarr;</a>
+    <span>Updated: <span id="generated">--</span> IST</span>
+    <span class="badge" id="scanner-status-badge">--</span>
+    <span id="scanner-status-text">--</span>
+    <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">5</span>s auto-refresh (no page reload)</span>
+</div>
+<div class="sub">Volatility-scaled stop: <b>stop = entry &minus; clamp(0.70 &times; premium ATR(14), 5%&ndash;30% of entry)</b> (10% fallback when ATR is unavailable). Stops and trails fill at the live LTP. Entry and trail rules are identical to SMA9.</div>
+
+<section class="section">
+    <h2>Live Scanner &amp; Market</h2>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="label">NIFTY Spot</div><div class="value mono" id="spot">--</div></div>
+        <div class="stat-card"><div class="label">ATM Strike</div><div class="value mono" id="atm">--</div></div>
+        <div class="stat-card"><div class="label">Expiry</div><div class="value mono" id="expiry">--</div></div>
+        <div class="stat-card"><div class="label">Last Scan</div><div class="value mono" id="last-scan">--</div></div>
+        <div class="stat-card"><div class="label">Poll Interval</div><div class="value mono" id="poll">--</div></div>
+        <div class="stat-card"><div class="label">Market</div><div class="value mono" id="market">--</div></div>
+    </div>
+</section>
+
+<section class="section">
+    <h2>ATM Option Evaluation (independent CE / PE)</h2>
+    <div class="option-grid">
+        <div class="option-card" id="card-CE"><h3>ATM CE</h3><div class="empty">Waiting for scanner...</div></div>
+        <div class="option-card" id="card-PE"><h3>ATM PE</h3><div class="empty">Waiting for scanner...</div></div>
+    </div>
+</section>
+
+<section class="section">
+    <h2>Open Paper Positions (LIVE) <span class="sub" id="open-pos-count"></span></h2>
+    <div class="sub">Currently open paper BUY positions. ATR and stop are fixed at entry; Trail is the live ratcheted exit. Shown even when the ATM strike has rolled to a different contract; a row disappears here when the scanner closes it and writes it to "Today's LIVE Paper Trades".</div>
+    <table>
+        <thead><tr>
+            <th>Trade ID</th><th>Option</th><th>Strike</th><th>Expiry</th><th>Contract</th>
+            <th>Entry Time (IST)</th><th>Entry</th><th>ATR</th><th>Stop</th><th>Trail</th>
+            <th>Live LTP</th><th>Unrealized (pts)</th><th>Status</th>
+        </tr></thead>
+        <tbody id="open-pos-tbody"><tr><td colspan="13" class="empty">No open positions</td></tr></tbody>
+    </table>
+</section>
+
+<section class="section">
+    <h2>Today's LIVE Paper Trades <span class="sub" id="today-date"></span></h2>
+    <div class="sub">Rows written by the live scanner (dataset=LIVE). Pick a date to view past closed trades.
+        <input type="date" id="trade-date-picker" style="margin-left:0.5rem;background:#141a2c;color:#e8eaf0;border:1px solid #334155;border-radius:4px;padding:0.2rem;">
+        <button id="trade-date-load" style="margin-left:0.3rem;background:#1d4ed8;color:#fff;border:none;border-radius:4px;padding:0.2rem 0.6rem;cursor:pointer;">Load</button>
+    </div>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="label">Today Trades</div><div class="value mono" id="today-trades">0</div></div>
+        <div class="stat-card"><div class="label">Wins</div><div class="value mono pos" id="today-wins">0</div></div>
+        <div class="stat-card"><div class="label">Losses</div><div class="value mono neg" id="today-losses">0</div></div>
+        <div class="stat-card"><div class="label">Today P&amp;L (pts)</div><div class="value mono" id="today-pnl">0.00</div></div>
+    </div>
+    <table>
+        <thead><tr>
+            <th>Trade ID</th><th>Option</th><th>Strike</th><th>Entry Time (IST)</th>
+            <th>Entry</th><th>ATR</th><th>Stop</th>
+            <th>Exit Time (IST)</th><th>Exit</th><th>SMA9</th>
+            <th>P&amp;L (pts)</th><th>Status</th><th>Exit Reason</th>
+        </tr></thead>
+        <tbody id="today-tbody"><tr><td colspan="13" class="empty">No live paper trades today</td></tr></tbody>
+    </table>
+</section>
+
+<section class="section">
+    <h2>Recent LIVE Paper Trades (all dates)</h2>
+    <div class="sub">Last 50 rows written by the live scanner across all dates (dataset=LIVE), newest first. Use this to review past closed trades.</div>
+    <table>
+        <thead><tr>
+            <th>Trade ID</th><th>Option</th><th>Strike</th><th>Entry Time (IST)</th>
+            <th>Entry</th><th>ATR</th><th>Stop</th>
+            <th>Exit Time (IST)</th><th>Exit</th><th>SMA9</th>
+            <th>P&amp;L (pts)</th><th>Status</th><th>Exit Reason</th>
+        </tr></thead>
+        <tbody id="recent-live-tbody"><tr><td colspan="13" class="empty">No live paper trades yet</td></tr></tbody>
+    </table>
+</section>
+
+<script>
+// ============================================================================
+// SMA9 ATR STOP dashboard - independent 5 second refresh
+// ============================================================================
+const API_BASE = '/api/sma9-atr';
+const REFRESH_MS = 5000;
+let refreshTimer = null;
+let countdownTimer = null;
+let countdown = REFRESH_MS / 1000;
+
+async function apiGet(path) {
+    try {
+        const resp = await fetch(API_BASE + path, {
+            headers: { 'Accept': 'application/json' },
+            cache: 'no-store'
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return await resp.json();
+    } catch (e) {
+        console.error('API error ' + path + ':', e);
+        return { success: false, error: e.message };
+    }
+}
+
+function n(v, digits = 2) {
+    if (v === null || v === undefined || v === '') return '--';
+    const x = parseFloat(v);
+    if (isNaN(x)) return '--';
+    return x.toFixed(digits);
+}
+
+function esc(v) {
+    if (v === null || v === undefined) return '';
+    return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function istTime(ts) {
+    if (!ts) return '--';
+    try {
+        return new Date(ts).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false });
+    } catch (e) { return ts; }
+}
+
+function pill(ok, textYes = 'YES', textNo = 'NO') {
+    return `<span class="pill ${ok ? 'yes' : 'no'}">${ok ? textYes : textNo}</span>`;
+}
+
+function renderOptionCard(opt, data) {
+    const el = document.getElementById('card-' + opt);
+    if (!data || data.error) {
+        el.innerHTML = `<h3>ATM ${opt}</h3><div class="empty">${esc((data && data.error) || 'No data')}</div>`;
+        return;
+    }
+    const pos = data.position;
+    const posHtml = pos
+        ? `<div class="position-box">
+             <b>OPEN PAPER BUY</b><br>
+             Entry: <span class="mono">${n(pos.entry_price)}</span> at ${esc(istTime(pos.entry_timestamp))}<br>
+             ATR(14): <span class="mono">${n(pos.atr_at_entry)}</span>
+             &middot; Stop: <span class="mono">${n(pos.stop_price)}</span>
+             (${n((pos.stop_distance_pct || 0) * 100)}%${pos.stop_source ? ', ' + esc(pos.stop_source) : ''})<br>
+             HWM: <span class="mono">${n(pos.hwm)}</span>
+             &middot; Trail: <span class="mono">${n(pos.stop)}</span>
+             &middot; BE locked: ${pill(pos.be_locked)}<br>
+             Candle: ${esc(istTime(pos.entry_candle_start))} &rarr; ${esc(istTime(pos.entry_candle_end))}<br>
+             Trade: ${esc(pos.trade_id)}
+           </div>`
+        : `<div class="position-box flat">Flat - no open position</div>`;
+    el.innerHTML = `
+        <h3>ATM ${opt} <span class="mono" style="font-size:0.8rem;color:#94a3b8">${esc(data.tradingsymbol || '')}</span></h3>
+        <div class="kv">
+            <span class="k">Live LTP</span><span class="v">${n(data.ltp)}</span>
+            <span class="k">Premium ATR(14)</span><span class="v">${n(data.atr)}</span>
+            <span class="k">Stop preview at current LTP</span><span class="v">${n(data.stop_preview)}</span>
+            <span class="k">SMA9 (completed candles)</span><span class="v">${n(data.sma9)}</span>
+            <span class="k">Previous candle close</span><span class="v">${n(data.prev_close)}</span>
+            <span class="k">Current candle open</span><span class="v">${n(data.current_open)}</span>
+            <span class="k">Condition A: prev close &gt; SMA9</span><span class="v">${pill(data.condition_a)}</span>
+            <span class="k">Condition B: current open &gt; SMA9</span><span class="v">${pill(data.condition_b)}</span>
+            <span class="k">Qualified (A or B)</span><span class="v">${pill(data.qualified)}</span>
+            <span class="k">Confirmation: LTP &gt; SMA9</span><span class="v">${pill(data.confirmation)}</span>
+            <span class="k">BUY signal</span><span class="v">${pill(data.signal, 'BUY', 'WAIT')}</span>
+        </div>
+        <div class="sub" style="margin-top:0.5rem">${esc(data.reason || '')}</div>
+        ${posHtml}
+    `;
+}
+
+function renderOpenPositions(rows, options) {
+    const tbody = document.getElementById('open-pos-tbody');
+    const countEl = document.getElementById('open-pos-count');
+    if (countEl) countEl.textContent = '(' + ((rows && rows.length) || 0) + ' open)';
+    if (!tbody) return;
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" class="empty">No open positions</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.map(p => {
+        const opt = (options || {})[p.option_type] || {};
+        const livePos = opt.position || {};
+        const ltp = (livePos.trade_id && livePos.trade_id === p.trade_id) ? opt.ltp : null;
+        const entry = parseFloat(p.entry_price);
+        const upnl = (ltp !== null && ltp !== undefined && !isNaN(entry))
+            ? (parseFloat(ltp) - entry) : null;
+        const upnlCls = upnl === null ? 'neutral' : upnl > 0 ? 'pos' : upnl < 0 ? 'neg' : 'neutral';
+        return `<tr>
+            <td class="mono">${esc(p.trade_id)}</td>
+            <td class="mono ${p.option_type === 'CE' ? 'pos' : 'neutral'}">${esc(p.option_type)}</td>
+            <td class="mono">${n(p.strike, 0)}</td>
+            <td class="mono">${esc(p.expiry)}</td>
+            <td class="mono">${esc(p.tradingsymbol)}</td>
+            <td class="mono">${esc(istTime(p.entry_timestamp))}</td>
+            <td class="mono">${n(p.entry_price)}</td>
+            <td class="mono">${n(p.atr_at_entry)}</td>
+            <td class="mono neg">${n(p.stop_price)}</td>
+            <td class="mono">${n(p.trail_stop)}</td>
+            <td class="mono">${n(ltp)}</td>
+            <td class="mono ${upnlCls}">${upnl === null ? '--' : n(upnl)}</td>
+            <td class="mono pos">OPEN</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderTrades(tbodyId, rows, mode) {
+    const tbody = document.getElementById(tbodyId);
+    if (!rows || rows.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="13" class="empty">No rows</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = rows.map(t => {
+        const pnl = parseFloat(t.pnl_points || 0);
+        if (mode === 'today') {
+            return `<tr>
+                <td class="mono">${esc(t.trade_id)}</td>
+                <td class="mono ${t.option_type === 'CE' ? 'pos' : 'neutral'}">${esc(t.option_type)}</td>
+                <td class="mono">${n(t.strike, 0)}</td>
+                <td class="mono">${esc(istTime(t.entry_timestamp))}</td>
+                <td class="mono">${n(t.entry_price)}</td>
+                <td class="mono">${n(t.atr_at_entry)}</td>
+                <td class="mono neg">${n(t.stop_price)}</td>
+                <td class="mono">${esc(istTime(t.exit_timestamp))}</td>
+                <td class="mono">${n(t.exit_price)}</td>
+                <td class="mono">${n(t.sma9_value)}</td>
+                <td class="mono ${pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'neutral'}">${n(pnl)}</td>
+                <td class="mono">${esc(t.status)}</td>
+                <td class="mono">${esc(t.exit_reason)}</td>
+            </tr>`;
+        }
+        return `<tr>
+            <td class="mono">${esc(t.trade_id)}</td>
+            <td class="mono ${t.option_type === 'CE' ? 'pos' : 'neutral'}">${esc(t.option_type)}</td>
+            <td class="mono">${n(t.strike, 0)}</td>
+            <td class="mono">${esc(istTime(t.signal_timestamp))}</td>
+            <td class="mono">${n(t.entry_price)}</td>
+            <td class="mono">${n(t.atr_at_entry)}</td>
+            <td class="mono neg">${n(t.stop_price)}</td>
+            <td class="mono">${n(t.exit_price)}</td>
+            <td class="mono">${n(t.sma9_value)}</td>
+            <td class="mono">${n(t.prev_close)}</td>
+            <td class="mono">${t.condition_a ? 'Y' : 'N'}</td>
+            <td class="mono">${t.condition_b ? 'Y' : 'N'}</td>
+            <td class="mono ${pnl > 0 ? 'pos' : pnl < 0 ? 'neg' : 'neutral'}">${n(pnl)}</td>
+        </tr>`;
+    }).join('');
+}
+
+function renderStatus(st, live) {
+    const badge = document.getElementById('scanner-status-badge');
+    const status = (live && live.status) || st.status || 'UNKNOWN';
+    badge.textContent = status;
+    badge.className = 'badge ' + status;
+    document.getElementById('scanner-status-text').textContent =
+        (live && live.scanner_name) || st.scanner_name || 'SMA9 ATR Scanner';
+    document.getElementById('spot').textContent = n(live && live.spot);
+    document.getElementById('atm').textContent = n(live && live.atm_strike, 0);
+    document.getElementById('expiry').textContent = (live && live.expiry) || '--';
+    document.getElementById('last-scan').textContent = live && live.last_scan_at ? istTime(live.last_scan_at) : '--';
+    const poll = (live && live.poll_seconds) || st.poll_seconds || 5;
+    const actual = live && live.actual_interval_seconds;
+    document.getElementById('poll').textContent = poll + 's' + (actual ? ' (actual ' + actual + 's)' : '');
+    document.getElementById('market').textContent = live && live.market_open ? 'OPEN' : 'CLOSED';
+}
+
+async function refresh() {
+    try {
+        const datePicker = document.getElementById('trade-date-picker');
+    const pickedDate = datePicker && datePicker.value ? datePicker.value : '';
+    const todayUrl = pickedDate ? ('/today?trade_date=' + pickedDate) : '/today';
+    const [liveResp, todayResp, statusResp, recentLiveResp, openPosResp] = await Promise.all([
+            apiGet('/live-status'),
+            apiGet(todayUrl),
+            apiGet('/scanner-status'),
+            apiGet('/recent-trades?dataset=LIVE&limit=50'),
+            apiGet('/open-positions')
+        ]);
+
+        const live = (liveResp && liveResp.success && liveResp.data) ? liveResp.data : {};
+        renderStatus(statusResp || {}, live);
+
+        const options = live.options || {};
+        renderOptionCard('CE', options.CE);
+        renderOptionCard('PE', options.PE);
+
+        // Open positions, independent of the current ATM contract.
+        const openPos = openPosResp && openPosResp.success ? openPosResp.positions : [];
+        renderOpenPositions(openPos, options);
+
+        // Today's LIVE paper trades only.
+        const today = todayResp && todayResp.success ? todayResp : { trades: [] };
+        document.getElementById('today-date').textContent = today.trade_date ? '(' + today.trade_date + ')' : '';
+        document.getElementById('today-trades').textContent = today.count || 0;
+        document.getElementById('today-wins').textContent = today.wins || 0;
+        document.getElementById('today-losses').textContent = today.losses || 0;
+        const todayPnlEl = document.getElementById('today-pnl');
+        todayPnlEl.textContent = n(today.pnl_points || 0);
+        todayPnlEl.className = 'value mono ' + ((today.pnl_points || 0) > 0 ? 'pos' : (today.pnl_points || 0) < 0 ? 'neg' : 'neutral');
+        renderTrades('today-tbody', today.trades, 'today');
+
+        // Recent LIVE paper trades across all dates.
+        const recentLive = recentLiveResp && recentLiveResp.success ? recentLiveResp.trades : [];
+        renderTrades('recent-live-tbody', recentLive, 'today');
+
+
+
+        document.getElementById('generated').textContent =
+            new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false });
+    } catch (e) {
+        console.error('Refresh failed:', e);
+    } finally {
+        countdown = REFRESH_MS / 1000;
+    }
+}
+
+function startAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    if (countdownTimer) clearInterval(countdownTimer);
+    refreshTimer = setInterval(refresh, REFRESH_MS);
+    countdownTimer = setInterval(() => {
+        countdown = countdown <= 1 ? REFRESH_MS / 1000 : countdown - 1;
+        document.getElementById('refresh-countdown').textContent = countdown;
+    }, 1000);
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const dp = document.getElementById('trade-date-picker');
+    if (dp && !dp.value) {
+        const d = new Date();
+        dp.value = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata' }).format(d);
+    }
+    const btn = document.getElementById('trade-date-load');
+    if (btn) btn.addEventListener('click', () => refresh());
+    if (dp) dp.addEventListener('change', () => refresh());
+    refresh();
+    startAutoRefresh();
+});
+
+document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) refresh();
+});
+</script>
+</body>
+</html>

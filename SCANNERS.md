@@ -511,6 +511,11 @@ GET /api/<slug>/open-positions
 `<slug>` values: `sma9`, `sma9-high`,
 `no-sma`, `sma9-trail`, `sma9-high-trail`, `no-sma-trail`.
 
+`sma9-atr` exposes the same set except `legacy-audit` (8 endpoints):
+`signals`, `trades`, `daily-summary`, `scanner-status`, `live-status`,
+`recent-trades`, `today`, `open-positions`. It reads `database/sma9_atr.db`
+read-only; the scanner is the only writer.
+
 `pattern_scanner` has its own namespace (not the 9-endpoint set):
 
 ```
@@ -547,6 +552,7 @@ curl -sk -H 'Host: tradingai.in' \
 | Scanner | Dashboard |
 |---|---|
 | sma9 | https://tradingai.in/live/sma9/ |
+| sma9_atr | https://tradingai.in/live/sma9-atr/ |
 | sma9_high | https://tradingai.in/live/sma9-high/ |
 | no_sma | https://tradingai.in/live/no-sma/ |
 | sma9_trail | https://tradingai.in/live/sma9-trail/ |
@@ -555,10 +561,12 @@ curl -sk -H 'Host: tradingai.in' \
 | pattern_scanner | https://tradingai.in/live/pattern_scanner/ |
 
 Every active scanner has a button on `https://tradingai.in/live/scalp/` (the
-base three, the three trail scanners, and `pattern_scanner`). All 7 active
-pages share the same dark theme, badge/table styling, a `Back to Launcher`
-link, and 5-second auto-refresh without a page reload. The retired `green15`
-page remains on disk but is unlinked.
+base three, `sma9_atr`, the three trail scanners, and `pattern_scanner`). All 8
+active pages share the same dark theme, badge/table styling, a
+`Back to Launcher` link, and 5-second auto-refresh without a page reload. The
+`sma9-atr` page additionally shows the entry ATR(14), the fixed ATR stop, the
+live trail stop and BE lock, plus an ATR stop preview for each ATM option. The
+retired `green15` page remains on disk but is unlinked.
 
 ---
 
