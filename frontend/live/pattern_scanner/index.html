@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - PATTERN SCANNER BUY-ONLY Live Dashboard</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0b0c15;
+        color: #e8eaf0;
+        padding: 1.5rem;
+    }
+    h1 { color: #00e5ff; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    h2 { color: #9ad7ff; font-size: 1.05rem; margin: 0 0 0.6rem; }
+    h3 { color: #9ad7ff; font-size: 0.95rem; margin: 1rem 0 0.4rem; }
+    .meta { color: #9aa4bf; font-size: 0.85rem; margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .section { border-top: 1px solid #1e2438; padding-top: 1rem; margin-bottom: 1.5rem; }
+    .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .badge.active, .badge.ACTIVE, .badge.RUNNING { background: #06301f; color: #34d399; }
+    .badge.stale, .badge.STALE { background: #3a2a06; color: #fbbf24; }
+    .badge.stopped, .badge.STOPPED, .badge.NOT_RUNNING { background: #3a0f14; color: #fb7185; }
+    .badge.idle, .badge.IDLE_MARKET_CLOSED, .badge.MARKET_CLOSED { background: #232838; color: #94a3b8; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 0.5rem; }
+    th { background: #141a2c; color: #00e5ff; text-align: left; padding: 0.5rem 0.4rem; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+    td { padding: 0.4rem 0.4rem; border-bottom: 1px solid #1c2236; white-space: nowrap; }
+    tbody tr:hover { background: #121827; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .pos { color: #34d399; }
+    .neg { color: #fb7185; }
+    .neutral { color: #94a3b8; }
+    .empty { color: #9aa4bf; font-style: italic; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+    .stat-card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: 0.9rem; }
+    .stat-card .label { color: #9aa4bf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.4rem; font-weight: 600; margin-top: 0.2rem; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1rem; }
+    .option-card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: 1rem; }
+    .option-card h3 { font-size: 1rem; color: #00e5ff; margin-bottom: 0.6rem; }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 0.8rem; font-size: 0.85rem; }
+    .kv .k { color: #9aa4bf; }
+    .kv .v { font-family: ui-monospace, Menlo, Consolas, monospace; text-align: right; }
+    .pill { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .pill.yes { background: #06301f; color: #34d399; }
+    .pill.no { background: #232838; color: #94a3b8; }
+    .refresh-indicator { color: #9aa4bf; font-size: 0.8rem; }
+    .refresh-indicator .countdown { color: #fbbf24; font-weight: 700; }
+    .sub { color: #9aa4bf; font-size: 0.78rem; margin-bottom: 0.5rem; }
+    .pattern-badge { display: inline-block; padding: 0.15rem 0.4rem; border-radius: 4px; font-size: 0.65rem; font-weight: 600; margin: 0.15rem; }
+    .pattern-badge.traded { background: #06301f; color: #34d399; border: 1px solid #15803d; }
+    .pattern-badge.idle { background: #141a2c; color: #64748b; border: 1px solid #334155; }
+    .back-link { color: #cbd5e1; text-decoration: none; font-size: 0.85rem; }
+    .back-link:hover { color: #00e5ff; }
+</style>
+</head>
+<body>
+<h1>TradingAI - PATTERN SCANNER BUY-ONLY Live Dashboard</h1>
+<div class="meta">
+    <a href="/live/scalp/" class="back-link">&larr; Back to Launcher</a>
+    <span>Updated: <span id="generated">--</span> IST</span>
+    <span class="badge" id="scanner-status-badge">--</span>
+    <span id="scanner-status-text">--</span>
+    <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">5</span>s auto-refresh (no page reload)</span>
+</div>
+
+<section class="section">
+    <h2>Scanner Info</h2>
+    <div class="sub">Detects ~37 bullish and ~37 bearish candlestick patterns on NIFTY SPOT 5-minute candles. Bullish signal → LONG ATM CE (weekly); bearish signal → LONG ATM PE (weekly). Long-only CE/PE — no short CE, no short PE. Entry at the spot candle close using the live option LTP. Exit: spot-based trailing stop (+5 activate, 5pt trail, +6 breakeven lock at +2) and a fixed 0.05% spot stop-loss. SL/trail calculated on NIFTY spot; option exited at its LTP when spot breaches. No target, no time-based exit. Paper trading.</div>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="label">NIFTY Spot</div><div class="value mono" id="spot">--</div></div>
+        <div class="stat-card"><div class="label">ATM Strike</div><div class="value mono" id="atm">--</div></div>
+        <div class="stat-card"><div class="label">Expiry</div><div class="value mono" id="expiry">--</div></div>
+        <div class="stat-card"><div class="label">CE Symbol</div><div class="value mono" id="ce" style="font-size:0.9rem;">--</div></div>
+        <div class="stat-card"><div class="label">PE Symbol</div><div class="value mono" id="pe" style="font-size:0.9rem;">--</div></div>
+        <div class="stat-card"><div class="label">Market</div><div class="value mono" id="market">--</div></div>
+        <div class="stat-card"><div class="label">Active Trades</div><div class="value mono" id="active-count">0</div></div>
+        <div class="stat-card"><div class="label">Total P&amp;L (pts)</div><div class="value mono" id="total-pnl">0.00</div></div>
+    </div>
+    <div class="sub" style="margin-top:0.5rem;">Runs automatically from the 09:15 market open. Positions are held across candles and overnight; exits come only from the spot-based trailing stop or the 0.05% spot stop-loss &mdash; no manual start, stop, or refresh needed.</div>
+</section>
+
+<section class="section">
+    <h2>ATM Option Evaluation (independent CE / PE)</h2>
+    <div class="option-grid">
+        <div class="option-card" id="card-CE"><h3>ATM CE</h3><div class="empty">Waiting for scanner...</div></div>
+        <div class="option-card" id="card-PE"><h3>ATM PE</h3><div class="empty">Waiting for scanner...</div></div>
+    </div>
+</section>
+
+<section class="section">
+    <h2>Active Positions</h2>
+    <table>
+        <thead><tr>
+            <th>Pattern</th><th>Instrument</th><th>Direction</th><th>Entry Time</th>
+            <th>Entry</th><th>Stop-Loss</th><th>Trail Updates</th><th>MFE</th><th>MAE</th>
+        </tr></thead>
+        <tbody id="active-tbody"><tr><td colspan="9" class="empty">No active positions</td></tr></tbody>
+    </table>
+</section>
+
+<section class="section">
+    <h2>Recent Closed Trades</h2>
+    <table>
+        <thead><tr>
+            <th>Pattern</th><th>Instrument</th><th>Direction</th><th>Entry Time</th>
+            <th>Exit Time</th><th>Exit Price</th><th>Reason</th><th>P&amp;L (pts)</th><th>Hold (min)</th>
+        </tr></thead>
+        <tbody id="closed-tbody"><tr><td colspan="9" class="empty">No closed trades yet</td></tr></tbody>
+    </table>
+</section>
+
+<section class="section">
+    <h2>Pattern Performance Summary</h2>
+    <table>
+        <thead><tr>
+            <th>Pattern</th><th>Signals</th><th>Wins</th><th>Losses</th><th>Win Rate</th>
+            <th>Total P&amp;L</th><th>Avg P&amp;L</th><th>Avg MFE</th><th>Avg MAE</th><th>Avg Hold</th>
+        </tr></thead>
+        <tbody id="pattern-tbody"><tr><td colspan="10" class="empty">No pattern data yet</td></tr></tbody>
+    </table>
+</section>
+
+<section class="section">
+    <h2>All ~37 Bullish & ~37 Bearish Patterns (Monitored)</h2>
+    <div id="all-patterns" style="line-height:2;"></div>
+</section>
+
+<script>
+const API_BASE = '/api/pattern_scanner';
+const REFRESH_MS = 5000;
+let refreshTimer = null;
+let countdownTimer = null;
+let countdown = REFRESH_MS / 1000;
+
+async function apiGet(path) {
+    try {
+        const resp = await fetch(API_BASE + path, { headers: { 'Accept': 'application/json' }, cache: 'no-store' });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        return await resp.json();
+    } catch (e) { console.error('API error ' + path + ':', e); return { success: false, error: e.message }; }
+}
+
+function n(v, digits = 2) { if (v === null || v === undefined || v === '') return '--'; const x = parseFloat(v); if (isNaN(x)) return '--'; return x.toFixed(digits); }
+function esc(v) { if (v === null || v === undefined) return ''; return String(v).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+function istTime(ts) { if (!ts) return '--'; try { return new Date(ts).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false }); } catch (e) { return ts; } }
+
+async function load() {
+    try {
+        const [st, inst, closed, psummary] = await Promise.all([
+            apiGet('/status'),
+            apiGet('/instruments'),
+            apiGet('/closed-trades?limit=20'),
+            apiGet('/pattern-summary'),
+        ]);
+        const d = (st.data || {});
+        const idata = (inst.data || {});
+        const cdata = (closed.data || {});
+        const pdata = (psummary.data || {});
+
+        // Status badge
+        const badge = document.getElementById('scanner-status-badge');
+        const stText = document.getElementById('scanner-status-text');
+        const status = d.status || 'STOPPED';
+        badge.textContent = status;
+        badge.className = 'badge ' + status;
+        stText.textContent = 'Market: ' + (d.market_open ? 'OPEN' : 'CLOSED');
+
+        // Stats
+        document.getElementById('spot').textContent = n(d.last_spot);
+        document.getElementById('atm').textContent = idata.atm_strike !== null ? idata.atm_strike : '--';
+        document.getElementById('expiry').textContent = idata.expiry || '--';
+        document.getElementById('ce').textContent = idata.ce_symbol || '--';
+        document.getElementById('pe').textContent = idata.pe_symbol || '--';
+        document.getElementById('market').textContent = d.market_open ? 'OPEN' : 'CLOSED';
+        document.getElementById('active-count').textContent = d.active_count || 0;
+        document.getElementById('total-pnl').textContent = n(d.total_closed_pnl);
+        document.getElementById('generated').textContent = new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata', hour12: false });
+
+        // ATM Option cards
+        const ceCard = document.getElementById('card-CE');
+        const peCard = document.getElementById('card-PE');
+        const ceSym = idata.ce_symbol || '--';
+        const peSym = idata.pe_symbol || '--';
+        const ceActive = (d.active_trades || []).filter(t => t.instrument === ceSym);
+        const peActive = (d.active_trades || []).filter(t => t.instrument === peSym);
+        ceCard.innerHTML = `<h3>ATM CE <span class="mono" style="font-size:0.8rem;color:#94a3b8">${esc(ceSym)}</span></h3>
+            <div class="kv">
+                <span class="k">ATM Strike</span><span class="v">${idata.atm_strike !== null ? idata.atm_strike : '--'}</span>
+                <span class="k">Expiry</span><span class="v">${idata.expiry || '--'}</span>
+                <span class="k">Active Positions</span><span class="v">${ceActive.length}</span>
+                ${ceActive.length ? ceActive.map(p => `<span class="k">Pattern</span><span class="v">${esc(p.pattern_name)}</span>
+                <span class="k">Entry</span><span class="v">${n(p.entry_price)}</span>
+                <span class="k">Stop-Loss</span><span class="v">${n(p.stop_loss)}</span>
+                <span class="k">Trail Updates</span><span class="v">${p.trailing_update_count || 0}</span>`).join('') : '<span class="k">Status</span><span class="v">Flat - no open position</span>'}
+            </div>`;
+        peCard.innerHTML = `<h3>ATM PE <span class="mono" style="font-size:0.8rem;color:#94a3b8">${esc(peSym)}</span></h3>
+            <div class="kv">
+                <span class="k">ATM Strike</span><span class="v">${idata.atm_strike !== null ? idata.atm_strike : '--'}</span>
+                <span class="k">Expiry</span><span class="v">${idata.expiry || '--'}</span>
+                <span class="k">Active Positions</span><span class="v">${peActive.length}</span>
+                ${peActive.length ? peActive.map(p => `<span class="k">Pattern</span><span class="v">${esc(p.pattern_name)}</span>
+                <span class="k">Entry</span><span class="v">${n(p.entry_price)}</span>
+                <span class="k">Stop-Loss</span><span class="v">${n(p.stop_loss)}</span>
+                <span class="k">Trail Updates</span><span class="v">${p.trailing_update_count || 0}</span>`).join('') : '<span class="k">Status</span><span class="v">Flat - no open position</span>'}
+            </div>`;
+
+        // Active positions
+        const activeTbody = document.getElementById('active-tbody');
+        const active = d.active_trades || [];
+        if (active.length) {
+            activeTbody.innerHTML = active.map(p => `<tr>
+                <td>${esc(p.pattern_name)}</td><td>${esc(p.instrument)}</td><td>${esc(p.direction)}</td>
+                <td>${istTime(p.entry_ts)}</td><td class="mono">${n(p.entry_price)}</td>
+                <td class="mono">${n(p.stop_loss)}</td><td>${p.trailing_update_count || 0}</td>
+                <td class="mono pos">${n(p.mfe_points)}</td><td class="mono neg">${n(p.mae_points)}</td>
+            </tr>`).join('');
+        } else {
+            activeTbody.innerHTML = '<tr><td colspan="9" class="empty">No active positions</td></tr>';
+        }
+
+        // Closed trades
+        const closedTbody = document.getElementById('closed-tbody');
+        const closedTrades = cdata.trades || [];
+        if (closedTrades.length) {
+            closedTbody.innerHTML = closedTrades.map(p => {
+                const pnl = p.pnl_points || 0;
+                const cls = pnl >= 0 ? 'pos' : 'neg';
+                return `<tr>
+                    <td>${esc(p.pattern_name)}</td><td>${esc(p.instrument)}</td><td>${esc(p.direction)}</td>
+                    <td>${istTime(p.entry_ts)}</td><td>${istTime(p.exit_ts)}</td>
+                    <td class="mono">${n(p.exit_price)}</td><td>${esc(p.exit_reason)}</td>
+                    <td class="mono ${cls}">${(pnl >= 0 ? '+' : '') + pnl.toFixed(2)}</td>
+                    <td>${p.holding_minutes !== null ? p.holding_minutes : '--'}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            closedTbody.innerHTML = '<tr><td colspan="9" class="empty">No closed trades yet</td></tr>';
+        }
+
+        // Pattern summary
+        const patternTbody = document.getElementById('pattern-tbody');
+        const patterns = pdata.patterns || [];
+        if (patterns.length) {
+            patternTbody.innerHTML = patterns.map(p => {
+                const pnl = p.total_pnl || 0;
+                const cls = pnl >= 0 ? 'pos' : 'neg';
+                const wr = p.win_rate || 0;
+                return `<tr>
+                    <td>${esc(p.pattern_name)}</td><td>${p.total_signals || 0}</td>
+                    <td class="pos">${p.wins || 0}</td><td class="neg">${p.losses || 0}</td>
+                    <td class="${wr >= 50 ? 'pos' : 'neg'}">${wr}%</td>
+                    <td class="mono ${cls}">${(pnl >= 0 ? '+' : '') + pnl.toFixed(2)}</td>
+                    <td class="mono">${n(p.avg_pnl)}</td><td class="mono">${n(p.avg_mfe)}</td>
+                    <td class="mono">${n(p.avg_mae)}</td><td>${p.avg_hold_min || '--'}</td>
+                </tr>`;
+            }).join('');
+        } else {
+            patternTbody.innerHTML = '<tr><td colspan="10" class="empty">No pattern data yet (market closed or no trades)</td></tr>';
+        }
+
+        // All patterns
+        const allPatterns = ['Abandoned Baby Bottom','Ascending Triangle','Bullish Counterattack Lines','Bullish Engulfing','Bullish Flag','Bullish Gap Continuation Sequence','Bullish Harami','Bullish Harami Cross','Bullish Kicker','Bullish Mat Hold','Bullish Meeting Lines','Bullish Pennant','Bullish Rectangle','Bullish Separating Lines','Bullish Stick Sandwich','Bullish Three-Line Strike','Double Bottom','Four Consecutive Bullish Candles','Hammer','Homing Pigeon','Inverse Head and Shoulders','Matching Low','Morning Doji Star','Morning Star','Piercing Line','Rising Three Methods','Rising Wedge','Three Inside Up','Three Outside Up','Three Stars in the South','Three White Soldiers','Thrusting Pattern','Triple Bottom','Tweezer Bottom','Unique Three River','Upside Gap Three Methods','Upside Tasuki Gap'];
+        const tradedSet = new Set(patterns.map(p => p.pattern_name));
+        const apDiv = document.getElementById('all-patterns');
+        apDiv.innerHTML = allPatterns.map(p => {
+            const traded = tradedSet.has(p);
+            const cls = traded ? 'pattern-badge traded' : 'pattern-badge idle';
+            return `<span class="${cls}">${esc(p)}</span>`;
+        }).join('');
+
+    } catch (e) {
+        console.error('Load error:', e);
+    }
+}
+
+function startCountdown() {
+    countdown = REFRESH_MS / 1000;
+    if (countdownTimer) clearInterval(countdownTimer);
+    countdownTimer = setInterval(() => {
+        countdown--;
+        if (countdown <= 0) countdown = REFRESH_MS / 1000;
+        const el = document.getElementById('refresh-countdown');
+        if (el) el.textContent = countdown;
+    }, 1000);
+}
+
+load();
+startCountdown();
+setInterval(load, REFRESH_MS);
+</script>
+</body>
+</html>
