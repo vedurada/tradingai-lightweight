@@ -1438,6 +1438,10 @@ class PatternScanner:
         # Spot-based exits are evaluated only on spot ticks.
         if symbol != "NIFTY_SPOT":
             return
+        # The runner starts at 09:00 to warm the feed; do not manage exits
+        # on pre-open quotes.  Trading (including exits) begins at 09:15.
+        if ts.time() < FIRST_CANDLE_START:
+            return
 
         ts_iso = ts.isoformat()
         for key in list(self.positions.keys()):

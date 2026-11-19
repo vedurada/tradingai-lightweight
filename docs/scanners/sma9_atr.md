@@ -37,7 +37,8 @@ entry       = paper BUY at round(live LTP, 2)
 No previous-high breakout and no separate LTP > SMA9 gate. At most one entry
 per 5-minute candle per option; entry window `09:20 <= now < 15:15` IST; CE and
 PE independent. Scanning starts at 09:00 IST; the first signal candle is 09:15,
-so the first possible entry is 09:20.
+so the first possible entry is 09:20. 09:00–09:15 is warm-up only: no entry
+is evaluated and no exit is managed.
 
 ## Stop
 

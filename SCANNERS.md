@@ -153,10 +153,10 @@ ENTRY_START <= now.time() < ENTRY_END
 Consequences:
 
 - **Scanning starts at 09:00 IST**, before the exchange opens, so the feed,
-  token and status heartbeat are warm before the first candle. Between 09:00
-  and 09:15 the scanners poll but the exchange has not published the current
-  5-minute candle, so `forming_is_current` is false and nothing is evaluated or
-  entered.
+  token and status heartbeat are warm before the first candle. **09:00–09:15 is
+  warm-up only:** the scanners poll and refresh quotes/status, but they do not
+  evaluate entries and **do not manage exits**. `EXCHANGE_OPEN = 09:15` gates
+  position management in every premium runner.
 - The **09:15 candle is never entered**.
 - The **last entry candle is 15:10** (no new entries at/after 15:15).
 - Nothing opens at or after **15:15:00**.
@@ -169,8 +169,10 @@ Consequences:
 `market_is_open()` now runs 09:00–15:30, matching the scan start. Entry
 permission still comes only from the 09:20–15:15 window above; the 09:00–09:15
 warm-up cannot open a position because the current 5-minute candle is not yet
-published. `pattern_scanner` additionally ignores all ticks before 09:15 in its
-candle buffer, so no synthetic pre-open candles are created.
+published. Exit management is additionally gated on `EXCHANGE_OPEN = 09:15`, so
+a pre-open quote can never fire a trail or stop. `pattern_scanner` ignores all
+ticks before 09:15 in its candle buffer and in its spot exit manager, so no
+synthetic pre-open candles are created and no pre-open exit can fire.
 
 ### 3.2 Contract selection
 

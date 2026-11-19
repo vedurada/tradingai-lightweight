@@ -35,9 +35,10 @@ sides; there is no short CE and no short PE.
   skips the entry rather than inventing a price.
 - **Entry timestamp:** the actual tick time, not the signal candle's start.
 - **Scan start:** the live runner starts at 09:00 IST to warm the feed and
-  status, but its candle buffer ignores every tick before 09:15. No synthetic
-  pre-open candles are created; the first completed signal candle is 09:15 and
-  the first possible entry is 09:20.
+  status, but 09:00–09:15 is warm-up only: its candle buffer ignores every tick
+  before 09:15, and its spot exit manager ignores them too. No synthetic
+  pre-open candles are created and no pre-open exit can fire; the first
+  completed signal candle is 09:15 and the first possible entry is 09:20.
 - **One per key:** at most one active position per `pattern_name:instrument`.
 - **Entry tick skip:** a position entered at a candle close is first managed on
   the following tick, never on its own entry tick.

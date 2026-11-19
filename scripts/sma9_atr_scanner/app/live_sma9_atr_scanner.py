@@ -68,6 +68,7 @@ LOG_PATH = os.path.join(BASE, "logs", "live_sma9_atr_scanner.log")
 
 MARKET_OPEN = dtime(9, 0)
 MARKET_CLOSE = dtime(15, 30)
+EXCHANGE_OPEN = dtime(9, 15)  # real trading starts; 09:00-09:15 is warm-up only
 ENTRY_START = dtime(9, 20)
 ENTRY_END = dtime(15, 15)
 # Special trading sessions (e.g. muhurat trading) that fall outside the
@@ -129,7 +130,9 @@ def entry_window_is_open(dt):
     The scanner starts at 09:00 (the exchange session is 09:15-15:30), but
     new paper entries are allowed only from 09:20 (so the 09:15 candle is
     never entered) and are blocked at 15:15
-    (last entry candle is 15:10).  Exits are not affected.
+    (last entry candle is 15:10).  The entry cutoff does not close a
+    position, but exits are not managed before the 09:15 exchange open
+    (09:00-09:15 is warm-up only).
     """
     if not market_is_open(dt):
         return False
@@ -668,7 +671,7 @@ class Sma9AtrLiveScanner:
                     reason="waiting for current 5-minute candle")
             entry_made = False
 
-            if state.position is not None:
+            if state.position is not None and now.time() >= EXCHANGE_OPEN:
                 stop_hit = state.update_trail(ltp)
                 sl_hit = state.check_stop_loss(ltp)
                 if stop_hit is not None:

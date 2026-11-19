@@ -82,6 +82,7 @@ service, status file, tables and dashboard.
 
 No scanner has a time-based or candle-close exit. If neither the trail nor the
 stop fires, the position stays open across candles and overnight. The 09:15
-candle is never entered. Between 09:00 and 09:15 the premium scanners poll but
-wait for the exchange to publish the current 5-minute candle; `pattern_scanner`
-ignores pre-09:15 ticks so it cannot build synthetic candles.
+candle is never entered. Between 09:00 and 09:15 the scanners poll and refresh
+quotes/status, but that window is **warm-up only**: no entries are evaluated and
+no exits are managed (`EXCHANGE_OPEN = 09:15`). `pattern_scanner` ignores
+pre-09:15 ticks in both its candle buffer and its spot exit manager.
