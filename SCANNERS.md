@@ -200,6 +200,12 @@ Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONPATH=/opt/tradingai/<key>_lib
 ```
 
+`PYTHONPATH` is `<key>_scanner` (not `_lib`) for the three self-contained
+scanners that carry their engine in the tree: `sma9_atr` and `sma9_1min_atr`
+use only that path (they rely on the system Python for `kiteconnect`), while
+`sma9_1min_poll` uses
+`/opt/tradingai/sma9_1min_poll_scanner:/opt/tradingai/sma9_lib`.
+
 and runs:
 
 ```ini
@@ -863,8 +869,10 @@ edit and restart `pattern-scanner-live.service` normally.
 
 | Item | Location |
 |---|---|
-| GitHub repo | `trail_build/out` (branches: `main` + 7 trail branches) |
-| Trail branches | `sma9-trail`, `sma9-high-trail`, `no-sma-trail` |
+| GitHub repo | `vedurada/tradingai-lightweight`, branch `feature/zerodha-paper-trading` |
+| New scanners | `scripts/sma9_atr_scanner/`, `scripts/sma9_1min_poll_scanner/`, `scripts/sma9_1min_atr_scanner/` |
+| Legacy trail build | `trail_build/out` (branches: `main` + 7 trail branches) |
+| Trail branches | `sma9-trail`, `sma9-high-trail`, `no-sma-trail` (retired) |
 | Local base sources | `/Users/satya/sma9_work/high_build/` (+ `out_nosma/`) |
 | Local trail sources | `/Users/satya/sma9_work/trail_build/out/<key>_scanner/app/` |
 | Trail template | `/Users/satya/sma9_work/trail_build/build_trail.py` (keeps the 09:20–15:15 window) |

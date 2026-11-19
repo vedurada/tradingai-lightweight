@@ -88,11 +88,17 @@ tail -f /opt/tradingai/logs/live_sma9_1min_atr_scanner.log
 ```
 python3 tests/test_sma9_1min_atr_engine.py
 sudo python3 ops/dryrun_market_open.py
+sudo python3 ops/real_feed_check.py      # read-only, real Kite data
 ```
 
 The dry run uses a throw-away database and a fake feed; it never touches the
 live DB or the broker. Set `SMA9_1MIN_ATR_RUNNER` to test a local copy of the
 runner instead of the deployed one.
+
+On the first live day, `ops/post_open_check.sh [HH:MM]` waits until the given
+IST time (default 09:22), then samples the unit, log, heartbeat cadence, ATR
+stop/trail state, trades, open positions and API into
+`/tmp/post_open_sma91matr_<date>.log`.
 
 ## Why
 
