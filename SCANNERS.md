@@ -705,7 +705,15 @@ systemctl list-timers tradingai-token-check.timer
 
 # 2. If TOKEN_INVALID, refresh before 09:15
 sudo /opt/tradingai/refresh_token.sh <REQUEST_TOKEN>
+```
 
+`refresh_token.sh` exchanges the token, then restarts **all 9 units**: the API,
+the 7 paper scanners, and `pattern-scanner-live`. Every scanner reads the
+access token once at process start, so a token swap without a restart leaves
+that process on the old token and it starts logging
+`Incorrect api_key or access_token`.
+
+```bash
 # 3. All 8 scanners + API active
 systemctl is-active tradingai-api \
   tradingai-sma9-scanner tradingai-sma9-high-scanner \
@@ -820,6 +828,28 @@ edit and restart `pattern-scanner-live.service` normally.
 - If `Too many requests` appears in logs, check for overlapping restarts or a
   runaway historical fetch before changing offsets.
 
+### 8.7 Zerodha connectivity check
+
+Read-only, writes nothing, places no order:
+
+```bash
+# full path: auth -> NFO instruments -> spot + ATM CE/PE quotes -> 5m candles
+sudo runuser -u ubuntu -g ubuntu -- \
+  python3 /opt/tradingai/scripts/ops/kite_connectivity_probe.py
+
+# every scanner user: credentials file readable + token accepted
+for u in sma9 sma9high sma91m sma91matr sma9trail sma9trailhigh; do
+  sudo runuser -u "$u" -g ubuntu -- \
+    python3 /opt/tradingai/scripts/ops/kite_connectivity_probe.py --light
+done
+```
+
+`sma9` covers both `sma9` and `sma9_atr` (same service user). `--light` calls
+only `profile()` so the loop stays inside the quote limit. A green probe plus
+today's `Loaded <n> NIFTY option instruments` line in each scanner log is the
+full connectivity evidence; instrument load alone already requires a valid
+token.
+
 ---
 
 ## 9. Safety guarantees
@@ -854,7 +884,7 @@ edit and restart `pattern-scanner-live.service` normally.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Incorrect api_key or access_token`, zero trades | daily token expired | `sudo /opt/tradingai/refresh_token.sh <REQUEST_TOKEN>` |
+| `Incorrect api_key or access_token`, zero trades | daily token expired, or a scanner was started before the token swap | `sudo /opt/tradingai/refresh_token.sh <REQUEST_TOKEN>` (restarts every scanner, incl. `pattern-scanner-live`); if only one scanner errors, `systemctl restart <unit>` |
 | `Too many requests` | quote/historical burst, overlapping restarts | stagger restarts; check offsets; wait for the 1 s / 3 s window |
 | `attempt to write a readonly database` | DB ownership/mode after redeploy | `chown <user>:ubuntu <db> && chmod 664 <db>` |
 | `SSLEOFError` / `UNEXPECTED_EOF_WHILE_READING` during startup | transient Kite TLS reset | self-heals via `Restart=always` (~5 s); no action unless repeated |
