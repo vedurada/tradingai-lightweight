@@ -8,8 +8,8 @@ The exact deployed file
 is driven through the same branches its main loop uses, with a fake clock and
 a fake Kite feed:
 
-  09:10  pre-market branch   -> writes heartbeat, no scan
-  09:15  open                -> resolves spot/ATM/expiry/contracts, no entry
+  08:55  pre-market branch   -> writes heartbeat, no scan
+  09:00  scanner starts      -> resolves spot/ATM/expiry/contracts, no entry
   09:20  entry window        -> BUY at live LTP, ATR stop + ATR trail persisted
   09:21  same candle again   -> no duplicate entry
   09:22  LTP below the stop  -> STOP_LOSS_ATR filled at the actual LTP
@@ -54,7 +54,7 @@ spec.loader.exec_module(mod)
 IST = ZoneInfo("Asia/Kolkata")
 assert mod.DB_PATH == DRY_DB, f"refusing to run: DB_PATH={mod.DB_PATH}"
 
-clock = {"now": datetime(2026, 11, 19, 9, 10, 0, tzinfo=IST)}
+clock = {"now": datetime(2026, 11, 19, 8, 55, 0, tzinfo=IST)}
 mod.now_ist = lambda: clock["now"]
 
 FAILS = []
@@ -186,9 +186,9 @@ def main():
     check("sleep targets the next minute",
           len(sleeps) == 1 and abs(sleeps[0] - 55.0) < 0.01, sleeps)
 
-    # ---------------------------------------------------------------- 09:10
-    print("\n[09:10] pre-market (process already running since yesterday)")
-    at(9, 10)
+    # ---------------------------------------------------------------- 08:55
+    print("\n[08:55] pre-market (process already running since yesterday)")
+    at(8, 55)
     branch, st = loop_step(scanner)
     check("pre-market branch selected", branch == "pre-market", branch)
     check("no scan attempted before open", st.get("last_scan_at") is None)
@@ -200,9 +200,9 @@ def main():
     check("status reports 60s poll",
           json.loads(state_rows[0]["value"])["poll_seconds"] == 60)
 
-    # ---------------------------------------------------------------- 09:15
-    print("\n[09:15] market open")
-    at(9, 15, 5)
+    # ---------------------------------------------------------------- 09:00
+    print("\n[09:00] scanner starts")
+    at(9, 0, 5)
     branch, st = loop_step(scanner)
     check("scan branch selected", branch == "scan", branch)
     check("spot resolved", st.get("spot") == 25237.5, st.get("spot"))
@@ -216,9 +216,9 @@ def main():
     check("PE contract resolved",
           st["options"]["PE"]["tradingsymbol"].endswith("25250PE"),
           st["options"]["PE"].get("tradingsymbol"))
-    check("09:15 candle is not tradable yet",
+    check("09:00 scan is not tradable yet",
           not mod.entry_window_is_open(clock["now"]))
-    check("no entry at 09:15",
+    check("no entry at 09:00",
           not any(s.position for s in scanner.states.values()))
     check("heartbeat has last_scan_at", st.get("last_scan_at") is not None)
 

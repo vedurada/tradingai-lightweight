@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Read-only real-feed check for the deployed sma9_1min_atr scanner.
 
-Exercises the live Kite path the scanner will use at 09:15 tomorrow:
+Exercises the live Kite path the scanner will use from 09:00 tomorrow (09:15 exchange open):
 instrument dump -> nearest expiry -> ATM CE/PE contracts -> quotes ->
 5-minute candles -> SMA9 evaluation -> ATR stop preview.
 

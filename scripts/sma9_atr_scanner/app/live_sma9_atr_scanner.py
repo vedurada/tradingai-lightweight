@@ -66,12 +66,12 @@ DB_PATH = os.environ.get("SMA9_ATR_DB_PATH",
                          os.path.join(BASE, "database", "sma9_atr.db"))
 LOG_PATH = os.path.join(BASE, "logs", "live_sma9_atr_scanner.log")
 
-MARKET_OPEN = dtime(9, 15)
+MARKET_OPEN = dtime(9, 0)
 MARKET_CLOSE = dtime(15, 30)
 ENTRY_START = dtime(9, 20)
 ENTRY_END = dtime(15, 15)
 # Special trading sessions (e.g. muhurat trading) that fall outside the
-# normal weekday 09:15-15:30 window.  Date (ISO) -> (open, close) time.
+# normal weekday 09:00-15:30 window.  Date (ISO) -> (open, close) time.
 MUHURAT_SESSIONS = {
     "2026-11-08": (dtime(14, 0), dtime(17, 0)),
 }
@@ -126,8 +126,9 @@ def market_is_open(dt: datetime) -> bool:
 def entry_window_is_open(dt):
     """True only inside the 09:20:00-15:14:59 entry window.
 
-    The session is 09:15-15:30, but new paper entries are allowed only from
-    09:20 (so the 09:15 candle is never entered) and are blocked at 15:15
+    The scanner starts at 09:00 (the exchange session is 09:15-15:30), but
+    new paper entries are allowed only from 09:20 (so the 09:15 candle is
+    never entered) and are blocked at 15:15
     (last entry candle is 15:10).  Exits are not affected.
     """
     if not market_is_open(dt):

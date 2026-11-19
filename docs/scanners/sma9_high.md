@@ -35,6 +35,8 @@ entry       = paper BUY at round(live LTP, 2)
 - Entry can fire on any 5-second poll while the signal holds.
 - At most one entry per 5-minute candle per option.
 - Entry window: `09:20 <= now < 15:15` IST. CE and PE independent.
+- Scanning starts at 09:00 IST; the exchange publishes the first 5-minute
+  candle at 09:15, so the first possible entry is 09:20.
 
 ## Exit
 

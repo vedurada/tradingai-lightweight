@@ -31,8 +31,12 @@ from typing import Optional, List, Dict, Any, Callable
 
 IST = timezone(timedelta(hours=5, minutes=30))
 
-MARKET_OPEN = time(9, 15)
+MARKET_OPEN = time(9, 0)
 MARKET_CLOSE = time(15, 30)
+# Kite publishes no 5-minute candle before 09:15.  The live runner
+# starts polling at 09:00 so the feed is warm, but pre-open ticks must
+# not create synthetic candles or feed pattern detection.
+FIRST_CANDLE_START = time(9, 15)
 NO_NEW_ENTRY_AFTER = time(15, 15)
 
 # Shared trail / SL model — identical to the six trail/SL scanners.
@@ -916,6 +920,8 @@ class CandleBuffer:
     def on_tick(self, price: float, ts: datetime):
         """Process a tick. Returns the completed candle dict if a bucket rolled."""
         key = floor_5min(ts)
+        if key.time() < FIRST_CANDLE_START:
+            return None
         completed = None
         if self.current_start is None:
             self.current_start = key

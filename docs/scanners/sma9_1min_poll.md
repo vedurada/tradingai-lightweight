@@ -34,6 +34,8 @@ entry       = paper BUY at round(live LTP, 2)
   separate LTP > SMA9 gate**; LTP > SMA9 is reported for information only.
 - At most one entry per 5-minute candle per option.
 - Entry window: `09:20 <= now < 15:15` IST.
+- Scanning starts at 09:00 IST; the exchange publishes the first 5-minute
+  candle at 09:15, so the first possible entry is 09:20.
 - The scanner refuses to treat the previous completed candle as the forming one
   when the exchange has not published the current 5-minute candle yet, so a
   slow Kite response cannot create a phantom signal.
@@ -83,13 +85,13 @@ this is a deliberate property of the strategy, not a defect.
 systemctl status tradingai-sma9-1min-poll-scanner
 tail -f /opt/tradingai/logs/live_sma9_1min_poll_scanner.log
 
-# fake clock/feed, temp DB; drives pre-market -> 09:15 -> 09:20 entry -> exit
+# fake clock/feed, temp DB; drives pre-market -> 09:00 -> 09:20 entry -> exit
 python3 /opt/tradingai/sma9_1min_poll_scanner/ops/dryrun_market_open.py
 ```
 
 The unit is enabled at boot, `Restart=always`, and in `ALL_UNITS` of
 `refresh_token.sh`. Its log line is `SMA9 1MIN POLL ready`; the first
-post-open scan is at 09:15:00 and the first possible entry at 09:20.
+scan starts at 09:00:00 and the first possible entry is at 09:20.
 
 ## Relationships
 

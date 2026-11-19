@@ -65,7 +65,7 @@ tail -f /opt/tradingai/logs/live_sma9_atr_scanner.log
 Two read-only checks can be run before the market opens:
 
 ```
-# Simulated 09:15-09:26 session with a fake clock/feed, temp DB only
+# Simulated 08:55-09:26 session with a fake clock/feed, temp DB only
 python3 scripts/sma9_atr_scanner/ops/dryrun_market_open.py
 
 # Real Kite path: instruments -> expiry -> ATM contracts -> quotes ->

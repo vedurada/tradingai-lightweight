@@ -41,6 +41,8 @@ entry       = paper BUY at round(live LTP, 2)
   separate LTP > SMA9 gate**; LTP > SMA9 is reported for information only.
 - At most one entry per 5-minute candle per option.
 - Entry window: `09:20 <= now < 15:15` IST. CE and PE independent.
+- Scanning starts at 09:00 IST; the exchange publishes the first 5-minute
+  candle at 09:15, so the first possible entry is 09:20.
 - The scanner waits for the exchange to publish the current 5-minute candle
   before evaluating the forming candle, so a boundary cannot create a
   zero-duration trade.
@@ -121,7 +123,7 @@ Persisted in `sma9_1min_atr_open_positions`: `atr_at_entry`, `stop_price`,
 systemctl status tradingai-sma9-1min-atr-scanner
 tail -f /opt/tradingai/logs/live_sma9_1min_atr_scanner.log
 
-# fake clock/feed, temp DB: pre-market -> 09:15 -> 09:20 entry -> ATR stop ->
+# fake clock/feed, temp DB: pre-market -> 09:00 -> 09:20 entry -> ATR stop ->
 # re-entry -> ATR trail ratchet -> restart recovery -> stale prior-day position
 python3 /opt/tradingai/sma9_1min_atr_scanner/ops/dryrun_market_open.py
 

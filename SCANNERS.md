@@ -74,7 +74,7 @@ but has its own service, status file, DB tables and dashboard.
 |---|---|
 | Product | Kite Connect (market data) |
 | API key / secret | stored in `/opt/tradingai/.env.zerodha` (mode `640 ubuntu:ubuntu`) |
-| Access token | **expires every day**; must be refreshed before 09:15 IST |
+| Access token | **expires every day**; must be refreshed before 09:00 IST |
 | Rate limits | quotes ≈ 1 request/second per API key; historical ≈ 3 requests/second per API key |
 | Instruments | NIFTY options (nearest expiry), NIFTY spot quote |
 
@@ -136,7 +136,7 @@ Canonical requirements file: [`docs/requirements.txt`](requirements.txt).
 | Constant | Value | Meaning |
 |---|---|---|
 | `IST` | `Asia/Kolkata` | all timestamps |
-| `MARKET_OPEN` | `09:15` | session open (status reporting) |
+| `MARKET_OPEN` | `09:00` | scanning/status start (exchange opens 09:15) |
 | `MARKET_CLOSE` | `15:30` | session close (status reporting) |
 | `ENTRY_START` | `09:20` | first allowed entry |
 | `ENTRY_END` | `15:15` | entry cutoff (exclusive) |
@@ -152,6 +152,11 @@ ENTRY_START <= now.time() < ENTRY_END
 
 Consequences:
 
+- **Scanning starts at 09:00 IST**, before the exchange opens, so the feed,
+  token and status heartbeat are warm before the first candle. Between 09:00
+  and 09:15 the scanners poll but the exchange has not published the current
+  5-minute candle, so `forming_is_current` is false and nothing is evaluated or
+  entered.
 - The **09:15 candle is never entered**.
 - The **last entry candle is 15:10** (no new entries at/after 15:15).
 - Nothing opens at or after **15:15:00**.
@@ -161,8 +166,11 @@ Consequences:
 - The window is fixed wall-clock, so on a special session (e.g. 14:00–17:00)
   entries are still limited to 09:20–15:15.
 
-`market_is_open()` remains 09:15–15:30 and is used only for status/IDLE
-reporting, not for entry permission.
+`market_is_open()` now runs 09:00–15:30, matching the scan start. Entry
+permission still comes only from the 09:20–15:15 window above; the 09:00–09:15
+warm-up cannot open a position because the current 5-minute candle is not yet
+published. `pattern_scanner` additionally ignores all ticks before 09:15 in its
+candle buffer, so no synthetic pre-open candles are created.
 
 ### 3.2 Contract selection
 
@@ -496,7 +504,7 @@ python3 /opt/tradingai/sma9_atr_scanner/ops/dryrun_market_open.py   # fake clock
 python3 /opt/tradingai/sma9_atr_scanner/ops/real_feed_check.py      # real Kite data, writes nothing
 ```
 
-The first drives the deployed runner through pre-market → 09:15 open → 09:20
+The first drives the deployed runner through pre-market → 09:00 scan start → 09:20
 entry → stop at LTP → re-entry → restart recovery. The second verifies the
 real instrument dump, nearest expiry, ATM CE/PE contracts, quotes, candles,
 SMA9 evaluation and ATR stop preview.
@@ -560,7 +568,7 @@ exact stop. A position from an earlier session is closed at the current LTP
 python3 /opt/tradingai/sma9_1min_atr_scanner/ops/dryrun_market_open.py
 ```
 
-It drives the deployed runner through pre-market → 09:15 open → 09:20 entry →
+It drives the deployed runner through pre-market → 09:00 scan start → 09:20 entry →
 ATR stop at the LTP → re-entry → ATR trail ratchet → restart recovery →
 stale prior-day position, with a throw-away DB and a fake feed. The unit is
 `enabled`, `Restart=always`, and listed in `ALL_UNITS` in
@@ -656,7 +664,7 @@ POST /api/pattern_scanner/stop
 
 The `start`/`stop` POSTs are **ops-only** (they wrap `systemctl start|stop`
 on `pattern-scanner-live`). The dashboard has no manual start/stop/refresh
-buttons: the service is enabled at boot, runs itself from the 09:15 open, holds
+buttons: the service is enabled at boot, runs itself from the 09:00 scan start, holds
 positions until the trail or 5% stop fires, and the page auto-refreshes every
 5 s. `stop` halts the service immediately and leaves open rows in the DB; they
 are reloaded and managed again on the next start.
@@ -756,7 +764,7 @@ done
 systemctl show tradingai-sma9-scanner -p ActiveState -p NRestarts
 
 # errors (auth, rate limit, DB, TLS, tracebacks)
-sudo journalctl --since '09:15' --no-pager \
+sudo journalctl --since '09:00' --no-pager \
   | grep -iE 'Incorrect api_key|Too many requests|readonly database|SSLEOF|Traceback'
 
 # all 7 premium-scanner APIs return 200

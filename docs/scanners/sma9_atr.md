@@ -36,7 +36,8 @@ entry       = paper BUY at round(live LTP, 2)
 
 No previous-high breakout and no separate LTP > SMA9 gate. At most one entry
 per 5-minute candle per option; entry window `09:20 <= now < 15:15` IST; CE and
-PE independent.
+PE independent. Scanning starts at 09:00 IST; the first signal candle is 09:15,
+so the first possible entry is 09:20.
 
 ## Stop
 
@@ -111,7 +112,7 @@ Persisted in `sma9_atr_open_positions`: `atr_at_entry`, `stop_price`,
 systemctl status tradingai-sma9-atr-scanner
 tail -f /opt/tradingai/logs/live_sma9_atr_scanner.log
 
-# fake clock/feed, temp DB: pre-market -> 09:15 -> 09:20 entry -> ATR stop ->
+# fake clock/feed, temp DB: pre-market -> 09:00 -> 09:20 entry -> ATR stop ->
 # re-entry -> restart recovery
 python3 /opt/tradingai/sma9_atr_scanner/ops/dryrun_market_open.py
 

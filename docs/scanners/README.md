@@ -73,7 +73,8 @@ service, status file, tables and dashboard.
 
 | Constant | Value |
 |---|---|
-| Market open (scanning starts) | 09:15 IST |
+| Scanning starts | 09:00 IST |
+| Exchange opens | 09:15 IST |
 | First entry | 09:20 IST |
 | Last entry | before 15:15 IST |
 | Candle size | 5 minutes |
@@ -81,4 +82,6 @@ service, status file, tables and dashboard.
 
 No scanner has a time-based or candle-close exit. If neither the trail nor the
 stop fires, the position stays open across candles and overnight. The 09:15
-candle is never entered.
+candle is never entered. Between 09:00 and 09:15 the premium scanners poll but
+wait for the exchange to publish the current 5-minute candle; `pattern_scanner`
+ignores pre-09:15 ticks so it cannot build synthetic candles.

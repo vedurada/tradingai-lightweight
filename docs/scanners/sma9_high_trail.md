@@ -31,6 +31,8 @@ entry       = paper BUY at round(live LTP, 2)
 - No separate LTP > SMA9 gate; B is the breakout.
 - At most one entry per 5-minute candle per option.
 - Entry window: `09:20 <= now < 15:15` IST.
+- Scanning starts at 09:00 IST; the exchange publishes the first 5-minute
+  candle at 09:15, so the first possible entry is 09:20.
 
 ## Exit
 

@@ -20,7 +20,7 @@ import threading
 from datetime import datetime, time, timezone, timedelta
 
 IST = timezone(timedelta(hours=5, minutes=30))
-MARKET_OPEN = time(9, 15)
+MARKET_OPEN = time(9, 0)
 MARKET_CLOSE = time(15, 30)
 
 VM_ROOT = os.environ.get("TRADINGAI_BASE", "/opt/tradingai")

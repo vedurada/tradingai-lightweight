@@ -34,6 +34,10 @@ sides; there is no short CE and no short PE.
   Quotes older than `MAX_QUOTE_AGE_SEC` (20 s) are rejected, so a missed quote
   skips the entry rather than inventing a price.
 - **Entry timestamp:** the actual tick time, not the signal candle's start.
+- **Scan start:** the live runner starts at 09:00 IST to warm the feed and
+  status, but its candle buffer ignores every tick before 09:15. No synthetic
+  pre-open candles are created; the first completed signal candle is 09:15 and
+  the first possible entry is 09:20.
 - **One per key:** at most one active position per `pattern_name:instrument`.
 - **Entry tick skip:** a position entered at a candle close is first managed on
   the following tick, never on its own entry tick.
