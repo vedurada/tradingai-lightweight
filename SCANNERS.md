@@ -42,7 +42,7 @@ uses the same trail mechanics but a fixed 12-point spot stop (see §5.5).
 every 5 seconds: they sample the forming candle once per minute, so a spike
 between two polls is not seen (see §5.3, §5.7).
 
-Each of the 7 trail/SL scanners is a **fully independent stack**: own code
+Each of the 7 premium scanners is a **fully independent stack**: own code
 directory, own Python library directory, own SQLite database, own unprivileged
 service user, own systemd unit, own API namespace and own dashboard page.
 Nothing is shared except the host, the Kite credentials, the Flask API process
@@ -191,7 +191,7 @@ Never commit `.env.zerodha`, `zerodha_credentials.py`, or any token to git.
 
 ### 3.4 Per-scanner environment (systemd)
 
-Each of the 7 trail/SL scanner units sets:
+Each of the 7 premium scanner units sets:
 
 ```ini
 Environment=<KEY>_DB_PATH=/opt/tradingai/database/<key>.db
@@ -248,6 +248,7 @@ the API at the same instant.
 | Key | Strategy id | Strategy type | Ver | SMA | Trail / activate | off | User | systemd unit |
 |---|---|---|---|---|---|---|---|---|
 | `sma9` | `sma9_only` | `SMA9_BUY_ONLY` | 2.7.0 | 9 | — | 0 | `sma9` | `tradingai-sma9-scanner` |
+| `sma9_atr` | `sma9_atr` | `SMA9_ATR_STOP_BUY_ONLY` | 1.0.0 | 9 | — | 0 | `sma9` | `tradingai-sma9-atr-scanner` |
 | `sma9_high` | `sma9_high` | `SMA9_HIGH_BUY_ONLY` | 1.8.0 | 9 | — | 2.4 | `sma9high` | `tradingai-sma9-high-scanner` |
 | `sma9_1min_poll` | `sma9_1min_poll` | `SMA9_1MIN_POLL_BUY_ONLY` | 1.0.0 | 9 | — | — (60s) | `sma91m` | `tradingai-sma9-1min-poll-scanner` |
 | `sma9_trail` | `sma9_trail` | `SMA_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 1.2 | `sma9trail` | `tradingai-sma9_trail-scanner` |
@@ -261,10 +262,12 @@ offset.
 
 **Stop loss:** the five fixed-stop premium scanners (`sma9`, `sma9_high`,
 `sma9_1min_poll`, `sma9_trail`, `sma9_high_trail`) use a fixed stop at **entry
-premium × 0.95** for CE (or × 1.05 for PE) — 5% of the entry price,
-`STOP_LOSS_5PCT` — and the same trail: activate at +5 pts (stop → entry),
-ratchet `peak − 5` (or `trough + 5` for PE), one-time breakeven lock at +6
-(stop ≥ entry + 2, or ≤ entry − 2 for PE). The trail exit is evaluated first;
+premium × 0.95** for both CE and PE — 5% below the entry price, because every
+leg is bought long and a falling premium is the loss (`STOP_LOSS_5PCT`). They
+share the same trail: activate at +5 pts (stop → entry),
+ratchet `peak − 5` on the premium high-water mark (the same rule for CE and PE,
+because both are bought long and profit when premium rises), one-time breakeven
+lock at +6 (stop ≥ entry + 2). The trail exit is evaluated first;
 the 5% stop is the additional floor. `sma9_1min_poll` evaluates both on its
 60-second cadence. `sma9_atr` and `sma9_1min_atr` replace the 5% floor with an
 ATR-scaled stop (`STOP_LOSS_ATR`, filled at the live LTP); `sma9_1min_atr`
@@ -613,7 +616,7 @@ service user must be able to `BEGIN IMMEDIATE`.
 
 ### 7.1 API
 
-All 14 trail/SL namespaces expose the same 9 read-only endpoints:
+All 7 premium-scanner namespaces expose the same 9 read-only endpoints:
 
 ```
 GET /api/<slug>/signals
@@ -627,15 +630,16 @@ GET /api/<slug>/legacy-audit
 GET /api/<slug>/open-positions
 ```
 
-`<slug>` values: `sma9`, `sma9-high`, `sma9-1min-poll`, `sma9-trail`,
-`sma9-high-trail`. The retired `no-sma` and `no-sma-trail` endpoints remain so
-the archived pages still load.
-
-`sma9-atr`, `sma9-1min-poll` and `sma9-1min-atr` expose the same set except
-`legacy-audit` (8 endpoints): `signals`, `trades`, `daily-summary`,
-`scanner-status`, `live-status`, `recent-trades`, `today`, `open-positions`.
-They read `database/sma9_atr.db`, `database/sma9_1min_poll.db` and
+The full 9-endpoint set is served for `sma9`, `sma9-high`, `sma9-trail` and
+`sma9-high-trail`. The three newer scanners (`sma9-atr`, `sma9-1min-poll`,
+`sma9-1min-atr`) expose the same set **except `legacy-audit`** (8 endpoints):
+`signals`, `trades`, `daily-summary`, `scanner-status`, `live-status`,
+`recent-trades`, `today`, `open-positions`. They read
+`database/sma9_atr.db`, `database/sma9_1min_poll.db` and
 `database/sma9_1min_atr.db` respectively; the scanner is the only writer.
+
+The retired `no-sma` and `no-sma-trail` endpoints remain so the archived pages
+still load.
 
 `pattern_scanner` has its own namespace (not the 9-endpoint set):
 
@@ -681,9 +685,10 @@ curl -sk -H 'Host: tradingai.in' \
 | sma9_high_trail | https://tradingai.in/live/sma9-high-trail/ |
 | pattern_scanner | https://tradingai.in/live/pattern_scanner/ |
 
-Every active scanner has a button on `https://tradingai.in/live/scalp/` (the
-base three, `sma9_atr`, `sma9_1min_poll`, `sma9_1min_atr`, the two trail
-scanners, and `pattern_scanner`). All 8 active pages share the same dark theme,
+Every active scanner has a button on `https://tradingai.in/live/scalp/` — the
+eight buttons are `sma9`, `sma9-atr`, `sma9-high`, `sma9-1min-poll`,
+`sma9-1min-atr`, `sma9-trail`, `sma9-high-trail` and `pattern_scanner`. All 8
+active pages share the same dark theme,
 badge/table styling, a `Back to Launcher` link, and auto-refresh without a page
 reload (5 s for the 5-second scanners, 15 s for the 1-minute scanners). The
 `sma9-atr` page additionally shows the entry ATR(14), the fixed ATR stop, the
@@ -716,7 +721,8 @@ that process on the old token and it starts logging
 ```bash
 # 3. All 8 scanners + API active
 systemctl is-active tradingai-api \
-  tradingai-sma9-scanner tradingai-sma9-high-scanner \
+  tradingai-sma9-scanner tradingai-sma9-atr-scanner \
+  tradingai-sma9-high-scanner \
   tradingai-sma9-1min-poll-scanner tradingai-sma9-1min-atr-scanner \
   tradingai-sma9_trail-scanner \
   tradingai-sma9_high_trail-scanner pattern-scanner-live
@@ -733,7 +739,8 @@ Restart scanners in staggered waves (3 s apart) so 8 instrument downloads do
 not hit Kite at once:
 
 ```bash
-for u in tradingai-sma9-scanner tradingai-sma9-high-scanner \
+for u in tradingai-sma9-scanner tradingai-sma9-atr-scanner \
+         tradingai-sma9-high-scanner \
          tradingai-sma9-1min-poll-scanner tradingai-sma9-1min-atr-scanner \
          tradingai-sma9_trail-scanner \
          tradingai-sma9_high_trail-scanner pattern-scanner-live; do
@@ -752,9 +759,9 @@ systemctl show tradingai-sma9-scanner -p ActiveState -p NRestarts
 sudo journalctl --since '09:15' --no-pager \
   | grep -iE 'Incorrect api_key|Too many requests|readonly database|SSLEOF|Traceback'
 
-# all 14 trail/SL APIs return 200
-for k in sma9 sma9-high sma9-1min-poll \
-         sma9-trail sma9-high-trail sma9-1min-atr; do
+# all 7 premium-scanner APIs return 200
+for k in sma9 sma9-atr sma9-high sma9-1min-poll \
+         sma9-1min-atr sma9-trail sma9-high-trail; do
   printf '%s=%s ' "$k" "$(curl -sk -o /dev/null -w '%{http_code}' \
     -H 'Host: tradingai.in' "https://127.0.0.1/api/$k/scanner-status")"
 done; echo
@@ -778,13 +785,15 @@ rotating user. Files are `root:ubuntu 660`, and the logrotate stanza includes
 sudo chown root:ubuntu /opt/tradingai/logs/*.log
 ```
 
-### 8.5 Code locks (6 active trail/SL scanners)
+### 8.5 Code locks (7 active premium scanner trees)
 
-The 6 active trail/SL scanner directories are protected: `root:root`, files mode
-`444`, directories `555`, `chattr +i` on every file and directory, with a
-SHA256 `MANIFEST.sha256` and an integrity timer for the original base/HIGH
-families. `sma9_1min_poll` and `sma9_1min_atr` are installed `root:root`, files
-`444`, directories `555` (no integrity timer).
+The 7 active premium scanner directories are protected: `root:root`, files mode
+`444`, directories `555`. The original base/HIGH families (`sma9`, `sma9_high`)
+and their trail copies (`sma9_trail`, `sma9_high_trail`) additionally use
+`chattr +i` on every file and directory, with a SHA256 `MANIFEST.sha256` and an
+integrity timer. `sma9_atr`, `sma9_1min_poll` and `sma9_1min_atr` are installed
+`root:root`, files `444`, directories `555`, without `chattr +i` or an
+integrity timer.
 
 ```bash
 # verify
@@ -813,15 +822,16 @@ edit and restart `pattern-scanner-live.service` normally.
 
 ### 8.6 Rate-limit hygiene
 
-- Base plain scanners (`sma9`, `sma9_1min_poll`, `sma9_1min_atr`): **2 quote
-  calls per tick** — one spot-only refresh for ATM selection, plus one batched
-  spot+CE+PE quote. Offset 0. The 1-minute scanners tick once per minute, so
-  their Kite call rate is 1/12th of the 5-second scanners.
-- Base HIGH scanners: same **2-call** pattern, offsets 1.2 / 2.4 / 3.6 s.
-- Trail scanners: **1 local base-status HTTP call + 1 batched spot+CE+PE quote
-  per tick** (extra quote calls only on a failed batch or a newly missing
-  contract), offsets 0.6–4.2 s. The base-status call is local and does not use
-  Kite quota.
+- Base plain scanners (`sma9`, `sma9_atr`, `sma9_1min_poll`, `sma9_1min_atr`):
+  **2 quote calls per tick** — one spot-only refresh for ATM selection, plus
+  one batched spot+CE+PE quote. Offset 0. The 1-minute scanners tick once per
+  minute, so their Kite call rate is 1/12th of the 5-second scanners.
+- Base HIGH scanner (`sma9_high`): same **2-call** pattern, offset 2.4 s.
+- Trail scanners (`sma9_trail`, `sma9_high_trail`): self-contained since the
+  2.1.0 rewrite — **1 batched spot+CE+PE quote per tick** plus historical
+  candles only when a new 5-minute candle appears (extra quote calls only on a
+  failed batch or a newly missing contract). Offsets 1.2 s / 3.0 s. They no
+  longer make a base-status HTTP call.
 - Historical candles are fetched only when a new 5-minute candle appears (or
   at exit), never on every poll.
 - Kite limits: quotes ≈1 req/s, historical ≈3 req/s per API key.
@@ -869,8 +879,10 @@ token.
   stop is the preferred, higher exit and is evaluated first. `sma9_atr` and
   `sma9_1min_atr` use an ATR-scaled stop instead (see §5.6, §5.7), filled at
   the live LTP.
-- **`pattern_scanner`** uses the same trail + 5% stop model (5-pt trail,
-  +5 activate, +6 breakeven lock at +2). It has no ATR stop and no time exit.
+- **`pattern_scanner`** uses the same trail shape (5-point trail, +5 activate,
+  +6 breakeven lock at +2) but on **NIFTY spot**, with a fixed **12-point spot
+  stop** (`STOP_LOSS_SPOT`), not a percentage premium stop. It has no ATR stop
+  and no time exit.
 - **No time-based exit** on any scanner; positions hold across candles and
   overnight until the trail or 5% stop fires.
 - **Secrets** live only in `/opt/tradingai/.env.zerodha` and the local git
@@ -900,18 +912,22 @@ token.
 | Item | Location |
 |---|---|
 | GitHub repo | `vedurada/tradingai-lightweight`, branch `feature/zerodha-paper-trading` |
-| New scanners | `scripts/sma9_atr_scanner/`, `scripts/sma9_1min_poll_scanner/`, `scripts/sma9_1min_atr_scanner/` |
-| Legacy trail build | `trail_build/out` (branches: `main` + 7 trail branches) |
-| Trail branches | `sma9-trail`, `sma9-high-trail`, `no-sma-trail` (retired) |
-| Local base sources | `/Users/satya/sma9_work/high_build/` (+ `out_nosma/`) |
-| Local trail sources | `/Users/satya/sma9_work/trail_build/out/<key>_scanner/app/` |
+| Newer scanner sources (git-tracked) | `scripts/sma9_atr_scanner/`, `scripts/sma9_1min_poll_scanner/`, `scripts/sma9_1min_atr_scanner/` |
+| Pattern runner (git-tracked) | `scripts/pattern_scanner_live.py`, `app/research/pattern_scanner.py` |
+| Connectivity probe | `scripts/ops/kite_connectivity_probe.py` |
+| Per-scanner docs | `docs/scanners/` (this repo) |
+| Master doc | `SCANNERS.md` (this file) |
+| Local build workspace | `/Users/satya/sma9_work/` — base/HIGH/ATM/GREEN15 builders, trail build, and analysis scripts |
 | Trail template | `/Users/satya/sma9_work/trail_build/build_trail.py` (keeps the 09:20–15:15 window) |
-| Base HIGH/NO-SMA builders | `high_build/build_high.py`, `high_build/build_nosma.py` |
-| Local mirror of this doc | `/Users/satya/sma9_work/docs_build/` |
+| Base HIGH builder | `/Users/satya/sma9_work/high_build/build_high.py` |
+| VM deployment | `/opt/tradingai/<key>_scanner/` + `database/` + `logs/` + systemd units |
 
-The base seven scanners do not have their own GitHub branches; their sources
-are kept in sync locally and on the VM. The entry-window change is present in
-all 6 active deployed files and in the trail build template.
+The older premium scanner trees (`sma9`, `sma9_high`, `sma9_trail`,
+`sma9_high_trail`) are maintained in the local build workspace and deployed to
+the VM; only the three newer scanner trees are tracked in this repository. The
+retired `sma3`/`sma20` families and their branches are no longer part of the
+active source set. The 09:20–15:15 entry window is present in all 7 deployed
+premium scanner files and in the trail build template.
 
 ---
 
@@ -921,6 +937,8 @@ all 6 active deployed files and in the trail build template.
 |---|---|
 | `SCANNERS.md` (this file) | everything: requirements, dependencies, common config, matrix, operations |
 | `docs/requirements.txt` | canonical Python requirements |
+| `docs/scanners/README.md` | index + logical one-line description of each active scanner |
 | `docs/scanners/<key>.md` | per-scanner entry/exit rules, constants, runtime, commands |
+| `docs/scanners/retired.md` | retired scanners, archives and replacement mapping |
 | `/opt/tradingai/TOKEN_REFRESH.md` | daily Kite token runbook |
 | `<key>_scanner/docs/SECURITY_AND_OPERATIONS.md` | base-scanner lock policy (base 7 only) |
