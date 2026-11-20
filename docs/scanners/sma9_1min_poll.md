@@ -96,7 +96,7 @@ BE-locked trail, so it is replaced with the v1.1.0 ATR stop and trail state.
 | Log | `/opt/tradingai/logs/live_sma9_1min_poll_scanner.log` |
 | API | `/api/sma9-1min-poll/*` (8 read-only endpoints) |
 | Dashboard | `/live/sma9-1min-poll/` |
-| Performance report | key `sma9_1min_poll`, label `SMA9 1MIN POLL ATR`, from 2026-11-19 |
+| Performance report | key `sma9_1min_poll`, label `SMA9 5S POLL ATR`, from 2026-11-19 |
 
 Health thresholds used by the page/API: `ACTIVE` if the last scan is within
 15 s, `STALE` beyond 15 s while the market is open, and `IDLE_MARKET_CLOSED`
@@ -115,7 +115,7 @@ python3 /opt/tradingai/sma9_1min_poll_scanner/ops/real_feed_check.py
 ```
 
 The unit is enabled at boot, `Restart=always`, and in `ALL_UNITS` of
-`refresh_token.sh`. Its log line is `SMA9 1MIN POLL ATR scanner ready`; the first
+`refresh_token.sh`. Its log line is `SMA9 5S POLL ATR scanner ready`; the first
 scan starts at 09:00:00 and the first possible entry is at 09:20.
 
 ## Relationships

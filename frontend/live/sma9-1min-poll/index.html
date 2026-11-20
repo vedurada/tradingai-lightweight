@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradingAI - SMA9 1-MIN POLL ATR Live Dashboard</title>
+<title>TradingAI - SMA9 5S POLL ATR Live Dashboard</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -53,7 +53,7 @@
 </style>
 </head>
 <body>
-<h1>TradingAI - SMA9 1-MIN POLL ATR Live Dashboard</h1>
+<h1>TradingAI - SMA9 5S POLL ATR Live Dashboard</h1>
 <div class="meta">
     <a href="/live/scalp/" class="back-link">&larr; Back to Launcher</a>
     <a href="/live/performance/?scanner=sma9_1min_poll" class="back-link">Day-wise Performance &rarr;</a>
@@ -137,7 +137,7 @@
 
 <script>
 // ============================================================================
-// SMA9 1-MIN POLL ATR dashboard - 5 second refresh (identity retained)
+// SMA9 5S POLL ATR dashboard - 5 second refresh (identity retained)
 // ============================================================================
 const API_BASE = '/api/sma9-1min-poll';
 const REFRESH_MS = 5000;
@@ -310,7 +310,7 @@ function renderStatus(st, live) {
     badge.textContent = status;
     badge.className = 'badge ' + status;
     document.getElementById('scanner-status-text').textContent =
-        (live && live.scanner_name) || st.scanner_name || 'SMA9 1-MIN POLL ATR Scanner';
+        (live && live.scanner_name) || st.scanner_name || 'SMA9 5S POLL ATR Scanner';
     document.getElementById('spot').textContent = n(live && live.spot);
     document.getElementById('atm').textContent = n(live && live.atm_strike, 0);
     document.getElementById('expiry').textContent = (live && live.expiry) || '--';

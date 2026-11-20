@@ -1,4 +1,4 @@
-# SMA9 1-Min Poll Scanner (identity retained, 5-second ATR upgrade)
+# SMA9 5S Poll Scanner (identity retained)
 
 A paper-trading scanner that keeps the original `sma9_1min_poll` identity but,
 from v1.1.0, polls every **5 seconds** and uses the `sma9_atr` v1.1.0 exit model.

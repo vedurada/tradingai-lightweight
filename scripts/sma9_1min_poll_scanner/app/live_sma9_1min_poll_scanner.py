@@ -88,7 +88,7 @@ def session_close_time(dt):
 POLL_SECONDS = 5
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
-SCANNER_NAME = "SMA9 1MIN POLL ATR - ATM Option Strike (BUY ONLY)"
+SCANNER_NAME = "SMA9 5S POLL ATR - ATM Option Strike (BUY ONLY)"
 
 # systemd appends stdout/stderr to LOG_PATH; a FileHandler here would double
 # every line.
@@ -807,7 +807,7 @@ class Sma9OneMinPollLiveScanner:
 # Entry point
 # ---------------------------------------------------------------------------
 def main() -> int:
-    logger.info("SMA9 1MIN POLL ATR-STOP scanner starting (poll=%ss, db=%s, k=%.2f)",
+    logger.info("SMA9 5S POLL ATR-STOP scanner starting (poll=%ss, db=%s, k=%.2f)",
                 POLL_SECONDS, DB_PATH, STOP_K)
     init_db()
     try:
@@ -825,7 +825,7 @@ def main() -> int:
         logger.error("Open-position recovery failed: %s", exc)
         traceback.print_exc()
 
-    logger.info("SMA9 1MIN POLL ATR scanner ready")
+    logger.info("SMA9 5S POLL ATR scanner ready")
     try:
         while True:
             now = now_ist()
@@ -852,9 +852,9 @@ def main() -> int:
                     pass
             sleep_to_next_tick()
     except KeyboardInterrupt:
-        logger.info("SMA9 1MIN POLL ATR scanner stopping (SIGINT)")
+        logger.info("SMA9 5S POLL ATR scanner stopping (SIGINT)")
     finally:
-        logger.info("SMA9 1MIN POLL ATR scanner stopped")
+        logger.info("SMA9 5S POLL ATR scanner stopped")
     return 0
 
 

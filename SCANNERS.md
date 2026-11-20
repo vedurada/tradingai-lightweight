@@ -338,7 +338,7 @@ confirmation gate**.
 
 Exit: same trail-first, then fixed 5% stop as the base SMA scanners.
 
-### 5.3 SMA9 1-minute poll identity (`sma9_1min_poll`)
+### 5.3 SMA9 5s poll identity (`sma9_1min_poll`)
 
 ```
 signal = prev.close > SMA9 AND forming.open > SMA9
