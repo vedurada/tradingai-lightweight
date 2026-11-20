@@ -9,13 +9,15 @@ Entry (per option, from its own 5-minute candles):
     A) previous completed candle CLOSE > SMA9
     AND
     B) current forming candle OPEN > SMA9
+    AND
+    C) current SMA9 > previous SMA9
   Entry: paper BUY immediately at the live LTP (no broker order)
 
 Exit:
     1) ATR-scaled initial stop, filled at the ACTUAL live LTP
        distance = clamp(0.70 * premium ATR(14), 5% of entry, 30% of entry)
-    2) trailing stop: +5 activate -> breakeven, then peak - 5;
-       breakeven lock at +6 -> +2
+    2) ATR trail only: stop = peak - that same ATR distance, once the
+       premium has moved above entry; no +5 activation and no breakeven lock
     3) otherwise hold (no time-based exit)
 
 Polling is exactly every 5 seconds during market hours.  One batched quote
@@ -82,10 +84,10 @@ def session_open_time(dt):
 
 def session_close_time(dt):
     return MUHURAT_SESSIONS.get(dt.date().isoformat(), (MARKET_OPEN, MARKET_CLOSE))[1]
-POLL_SECONDS = 60
+POLL_SECONDS = 5
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
-SCANNER_NAME = "SMA9 1MIN ATR Stop - ATM Option Strike (BUY ONLY)"
+SCANNER_NAME = "SMA9 5S ATR Stop - ATM Option Strike (BUY ONLY)"
 STRATEGY_ID = STRATEGY_ID
 STRATEGY_VERSION = STRATEGY_VERSION
 STRATEGY_TYPE = STRATEGY_TYPE
@@ -144,9 +146,10 @@ def market_close_dt(dt: datetime) -> datetime:
 
 
 def sleep_to_next_tick() -> None:
-    """Sleep until the next wall-clock minute boundary (60-second poll)."""
+    """Sleep until the next 5-second wall-clock boundary."""
     now = now_ist()
-    target = now.replace(second=0, microsecond=0) + timedelta(minutes=1)
+    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
+    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
     time.sleep(max(0.2, (target - now_ist()).total_seconds()))
 
 
@@ -156,11 +159,11 @@ def sleep_to_next_tick() -> None:
 TRADE_COLUMNS = (
     "trade_id, strategy_id, instrument, trade_date, option_type, strike, "
     "expiry, signal_timestamp, entry_timestamp, entry_price, exit_timestamp, "
-    "exit_price, exit_reason, pnl_points, status, sma9_value, candle_open, "
-    "candle_high, candle_low, candle_close, created_at, updated_at, dataset, "
-    "prev_close, condition_a, condition_b, ltp_at_entry, entry_candle_start, "
-    "entry_candle_end, atr_at_entry, stop_price, stop_k, stop_distance_pct, "
-    "stop_source"
+    "exit_price, exit_reason, pnl_points, status, sma9_value, prev_sma9, "
+    "candle_open, candle_high, candle_low, candle_close, created_at, "
+    "updated_at, dataset, prev_close, condition_a, condition_b, condition_c, "
+    "ltp_at_entry, entry_candle_start, entry_candle_end, atr_at_entry, "
+    "stop_price, stop_k, stop_distance_pct, stop_source, trail_distance"
 )
 
 
@@ -194,6 +197,7 @@ def init_db() -> None:
             pnl_points REAL NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'CLOSED',
             sma9_value REAL,
+            prev_sma9 REAL,
             candle_open REAL,
             candle_high REAL,
             candle_low REAL,
@@ -204,6 +208,7 @@ def init_db() -> None:
             prev_close REAL,
             condition_a INTEGER,
             condition_b INTEGER,
+            condition_c INTEGER,
             ltp_at_entry REAL,
             entry_candle_start TEXT,
             entry_candle_end TEXT,
@@ -211,7 +216,8 @@ def init_db() -> None:
             stop_price REAL,
             stop_k REAL,
             stop_distance_pct REAL,
-            stop_source TEXT
+            stop_source TEXT,
+            trail_distance REAL
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_1min_atr_trades_date
             ON sma9_1min_atr_trades(trade_date);
@@ -234,10 +240,12 @@ def init_db() -> None:
             entry_candle_end TEXT NOT NULL,
             entry_price REAL NOT NULL,
             sma9 REAL NOT NULL,
+            prev_sma9 REAL,
             prev_close REAL,
             current_open REAL,
             condition_a INTEGER,
             condition_b INTEGER,
+            condition_c INTEGER,
             ltp_at_entry REAL,
             atr_at_entry REAL,
             stop_price REAL,
@@ -258,6 +266,18 @@ def init_db() -> None:
         );
         """
     )
+    # Idempotent migration for databases created by v1.0.0.
+    new_columns = {
+        "sma9_1min_atr_trades": ("prev_sma9", "condition_c", "trail_distance"),
+        "sma9_1min_atr_open_positions": ("prev_sma9", "condition_c"),
+    }
+    for table, columns in new_columns.items():
+        existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        for column in columns:
+            if column not in existing:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} REAL"
+                             if column != "condition_c" else
+                             f"ALTER TABLE {table} ADD COLUMN {column} INTEGER")
     conn.commit()
     conn.close()
 
@@ -284,18 +304,20 @@ def save_open_position(pos: Position) -> None:
             """INSERT OR REPLACE INTO sma9_1min_atr_open_positions
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
-                entry_price, sma9, prev_close, current_open, condition_a,
-                condition_b, ltp_at_entry, atr_at_entry, stop_price, stop_k,
-                stop_distance_pct, stop_source, trail_distance, hwm,
-                trail_stop, be_locked,
+                entry_price, sma9, prev_sma9, prev_close, current_open,
+                condition_a, condition_b, condition_c, ltp_at_entry,
+                atr_at_entry, stop_price, stop_k, stop_distance_pct,
+                stop_source, trail_distance, hwm, trail_stop, be_locked,
                 updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
                 pos.entry_candle_start.isoformat(), pos.entry_candle_end.isoformat(),
-                pos.entry_price, pos.sma9, pos.prev_close, pos.current_open,
+                pos.entry_price, pos.sma9, pos.prev_sma9, pos.prev_close,
+                pos.current_open,
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
+                1 if pos.condition_c else 0,
                 pos.ltp_at_entry, pos.atr_at_entry, pos.stop_price, pos.stop_k,
                 pos.stop_distance_pct, pos.stop_source, pos.trail_distance,
                 pos.hwm, pos.stop,
@@ -326,6 +348,15 @@ def load_open_positions() -> dict:
     result = {}
     for r in rows:
         d = dict(r)
+        entry_price = d["entry_price"]
+        trail_distance = d.get("trail_distance")
+        hwm = d.get("hwm") if d.get("hwm") is not None else entry_price
+        if trail_distance is None:
+            # v1.0.0 row without the distance: reconstruct it from the ATR
+            # frozen at entry.
+            _, trail_distance, _, _ = compute_stop(entry_price, d.get("atr_at_entry"))
+        # Discard the old BE-locked trail state under the v1.1.0 ATR-only rule.
+        stop = round(hwm - trail_distance, 2) if hwm > entry_price else None
         result[d["option_type"]] = Position(
             option_type=d["option_type"],
             trade_id=d["trade_id"],
@@ -336,22 +367,24 @@ def load_open_positions() -> dict:
             entry_timestamp=datetime.fromisoformat(d["entry_timestamp"]),
             entry_candle_start=datetime.fromisoformat(d["entry_candle_start"]),
             entry_candle_end=datetime.fromisoformat(d["entry_candle_end"]),
-            entry_price=d["entry_price"],
+            entry_price=entry_price,
             sma9=d["sma9"],
             prev_close=d["prev_close"],
             current_open=d["current_open"],
             condition_a=bool(d["condition_a"]),
             condition_b=bool(d["condition_b"]),
+            condition_c=bool(d.get("condition_c")),
+            prev_sma9=d.get("prev_sma9"),
             ltp_at_entry=d["ltp_at_entry"],
             atr_at_entry=d.get("atr_at_entry"),
             stop_price=d.get("stop_price"),
             stop_k=d.get("stop_k"),
             stop_distance_pct=d.get("stop_distance_pct"),
             stop_source=d.get("stop_source"),
-            trail_distance=d.get("trail_distance"),
-            hwm=d.get("hwm") if d.get("hwm") is not None else d["entry_price"],
-            stop=d.get("trail_stop"),
-            be_locked=bool(d.get("be_locked")),
+            trail_distance=trail_distance,
+            hwm=hwm,
+            stop=stop,
+            be_locked=False,
         )
     return result
 
@@ -710,10 +743,13 @@ class Sma9OneMinAtrLiveScanner:
                     save_open_position(new_pos)
                     entry_made = True
                     logger.info(
-                        "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s "
+                        "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f prev_sma9=%.2f "
+                        "A=%s B=%s C=%s candle=%s "
                         "atr=%s stop=%.2f trail=%.2f dist_pct=%.2f%% src=%s",
                         opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
-                        new_pos.sma9, new_pos.condition_a, new_pos.condition_b,
+                        new_pos.sma9, new_pos.prev_sma9 or 0.0,
+                        new_pos.condition_a, new_pos.condition_b,
+                        new_pos.condition_c,
                         new_pos.entry_candle_start.isoformat(),
                         new_pos.atr_at_entry, new_pos.stop_price,
                         new_pos.trail_distance or 0.0,
@@ -727,10 +763,12 @@ class Sma9OneMinAtrLiveScanner:
                 "expiry": expiry_str,
                 "ltp": ltp,
                 "sma9": round(ev.sma9, 2) if ev.sma9 is not None else None,
+                "prev_sma9": round(ev.prev_sma9, 2) if ev.prev_sma9 is not None else None,
                 "prev_close": ev.prev_close,
                 "current_open": ev.current_open,
                 "condition_a": ev.condition_a,
                 "condition_b": ev.condition_b,
+                "condition_c": ev.condition_c,
                 "qualified": ev.qualified,
                 "confirmation": ev.confirmation,
                 "signal": ev.signal,
@@ -775,7 +813,7 @@ class Sma9OneMinAtrLiveScanner:
 # Entry point
 # ---------------------------------------------------------------------------
 def main() -> int:
-    logger.info("SMA9 1MIN ATR-STOP scanner starting (poll=%ss, db=%s, k=%.2f)",
+    logger.info("SMA9 5S ATR-STOP scanner starting (poll=%ss, db=%s, k=%.2f)",
                 POLL_SECONDS, DB_PATH, STOP_K)
     init_db()
     try:
@@ -793,7 +831,7 @@ def main() -> int:
         logger.error("Open-position recovery failed: %s", exc)
         traceback.print_exc()
 
-    logger.info("SMA9 1MIN ATR scanner ready")
+    logger.info("SMA9 5S ATR scanner ready")
     try:
         while True:
             now = now_ist()
@@ -820,9 +858,9 @@ def main() -> int:
                     pass
             sleep_to_next_tick()
     except KeyboardInterrupt:
-        logger.info("SMA9 1MIN ATR scanner stopping (SIGINT)")
+        logger.info("SMA9 5S ATR scanner stopping (SIGINT)")
     finally:
-        logger.info("SMA9 1MIN ATR scanner stopped")
+        logger.info("SMA9 5S ATR scanner stopped")
     return 0
 
 

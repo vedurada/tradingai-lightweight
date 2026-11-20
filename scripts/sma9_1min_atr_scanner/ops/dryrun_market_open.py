@@ -10,16 +10,16 @@ a fake Kite feed:
 
   08:55  pre-market branch   -> writes heartbeat, no scan
   09:00  scanner starts      -> resolves spot/ATM/expiry/contracts, no entry
-  09:20  entry window        -> BUY at live LTP, ATR stop + ATR trail persisted
+  09:20  entry window        -> BUY at live LTP, A/B/C recorded, ATR stop + trail
   09:21  same candle again   -> no duplicate entry
   09:22  LTP below the stop  -> STOP_LOSS_ATR filled at the actual LTP
   09:25  next candle         -> re-entry
-  09:26  higher LTP          -> ATR trail ratchets and is persisted
+  09:26  higher LTP          -> ATR trail ratchets and is persisted, no BE lock
   restart                    -> open position + stop + trail recovered
   restart after candle end   -> same-session position survives
   prior-day position         -> STALE_RECOVERY_EXIT at the current LTP
 
-It also checks that the poll is minute-aligned and reports 60 seconds.
+It also checks that the poll is 5-second aligned and reports 5 seconds.
 
 No network, no broker, no writes to the live DB: SMA9_1MIN_ATR_DB_PATH points
 at a throw-away file.  Exit code 0 only if every assertion passes.
@@ -173,8 +173,8 @@ def main():
     scanner = mod.Sma9OneMinAtrLiveScanner(feed)
 
     # ---------------------------------------------------------------- poll
-    print("[poll] 60-second minute-aligned sleep")
-    at(9, 10, 5)
+    print("[poll] 5-second wall-clock-aligned sleep")
+    at(9, 10, 7)
     sleeps = []
     real_sleep = mod.time.sleep
     mod.time.sleep = lambda s: sleeps.append(s)
@@ -182,9 +182,9 @@ def main():
         mod.sleep_to_next_tick()
     finally:
         mod.time.sleep = real_sleep
-    check("poll constant is 60s", mod.POLL_SECONDS == 60, mod.POLL_SECONDS)
-    check("sleep targets the next minute",
-          len(sleeps) == 1 and abs(sleeps[0] - 55.0) < 0.01, sleeps)
+    check("poll constant is 5s", mod.POLL_SECONDS == 5, mod.POLL_SECONDS)
+    check("sleep targets the next 5-second tick",
+          len(sleeps) == 1 and abs(sleeps[0] - 3.0) < 0.01, sleeps)
 
     # ---------------------------------------------------------------- 08:55
     print("\n[08:55] pre-market (process already running since yesterday)")
@@ -197,8 +197,10 @@ def main():
     check("heartbeat written", len(state_rows) == 1)
     check("market reported closed",
           json.loads(state_rows[0]["value"])["market_open"] is False)
-    check("status reports 60s poll",
-          json.loads(state_rows[0]["value"])["poll_seconds"] == 60)
+    check("status reports 5s poll",
+          json.loads(state_rows[0]["value"])["poll_seconds"] == 5)
+    check("status reports v1.1.0",
+          json.loads(state_rows[0]["value"])["scanner_version"] == "1.1.0")
 
     # ---------------------------------------------------------------- 09:00
     print("\n[09:00] scanner starts")
@@ -236,6 +238,10 @@ def main():
               ce.entry_price)
         check("condition A recorded", ce.condition_a is True)
         check("condition B recorded", ce.condition_b is True)
+        check("condition C recorded (SMA9 rising)",
+              ce.condition_c is True and ce.prev_sma9 is not None
+              and ce.sma9 > ce.prev_sma9,
+              f"sma9={ce.sma9} prev={ce.prev_sma9}")
         check("ATR captured at entry", ce.atr_at_entry == 3.0,
               ce.atr_at_entry)
         check("stop distance is the 5% floor on a 3-point ATR",
@@ -257,11 +263,14 @@ def main():
               open_rows[0]["trail_distance"])
     check("no closed trade yet",
           len(db_rows("SELECT * FROM sma9_1min_atr_trades")) == 0)
-    check("live state exposes SMA9 signal + ATR",
+    check("live state exposes SMA9 slope + ATR",
           st["options"]["CE"].get("sma9") is not None
+          and st["options"]["CE"].get("prev_sma9") is not None
+          and st["options"]["CE"].get("condition_c") is True
           and st["options"]["CE"].get("signal") is True
           and st["options"]["CE"].get("atr") == 3.0,
           f"sma9={st['options']['CE'].get('sma9')} "
+          f"prev={st['options']['CE'].get('prev_sma9')} "
           f"atr={st['options']['CE'].get('atr')}")
 
     # ---------------------------------------------------------------- 09:21
@@ -309,17 +318,27 @@ def main():
     check("one open-position row after re-entry",
           len(db_rows("SELECT * FROM sma9_1min_atr_open_positions")) == 1)
 
+    # ---------------------------------------------------------------- 09:25b
+    print("\n[09:25:06] modest new high: ATR trail activates above entry")
+    feed.ltp["CE"] = 124.0
+    at(9, 25, 6)
+    loop_step(scanner)
+    if ce2:
+        check("trail active without a fixed +5 threshold",
+              ce2.stop is not None and abs(ce2.stop - 117.9) < 1e-6,
+              f"stop={ce2.stop}")
+        check("no breakeven lock", ce2.be_locked is False)
+
     # ---------------------------------------------------------------- 09:26
     print("\n[09:26] higher LTP: ATR trail ratchets and is persisted")
     feed.ltp["CE"] = 135.0
     at(9, 26, 0)
     loop_step(scanner)
     if ce2:
-        # +6 locks entry+2 (124); hwm - 6.1 = 128.9 takes over.
         check("trail stop ratcheted to peak - ATR distance",
               abs(ce2.stop - 128.9) < 1e-6, ce2.stop)
         check("high-water mark advanced", ce2.hwm == 135.0, ce2.hwm)
-        check("breakeven lock engaged", ce2.be_locked is True)
+        check("breakeven lock never engages", ce2.be_locked is False)
     row = db_rows("SELECT trail_stop, hwm FROM sma9_1min_atr_open_positions")
     check("ratchet persisted to the DB",
           len(row) == 1 and abs((row[0]["trail_stop"] or 0) - 128.9) < 1e-6,
@@ -342,7 +361,7 @@ def main():
               f"{ce3.trail_distance} vs {saved['trail_distance']}")
         check("trail stop preserved", ce3.stop == saved["stop"],
               f"{ce3.stop} vs {saved['stop']}")
-        check("breakeven lock preserved", ce3.be_locked == saved["be_locked"])
+        check("no breakeven lock after restore", ce3.be_locked is False)
         check("HWM preserved", ce3.hwm == saved["hwm"])
     check("recovered row still in DB",
           len(db_rows("SELECT * FROM sma9_1min_atr_open_positions")) == 1)

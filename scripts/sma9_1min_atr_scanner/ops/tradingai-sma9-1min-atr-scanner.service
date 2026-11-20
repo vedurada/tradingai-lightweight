@@ -1,5 +1,5 @@
 [Unit]
-Description=TradingAI SMA9 ATM CE/PE BUY-ONLY Live Paper Scanner with ATR-Scaled Stop and ATR Trail (60s)
+Description=TradingAI SMA9 ATM CE/PE BUY-ONLY Live Paper Scanner with ATR-Scaled Stop and ATR Trail (5s)
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=0

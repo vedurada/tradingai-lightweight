@@ -70,14 +70,17 @@ def main():
 
         ev = evaluate_option(rows, opt, ltp)
         check(f"{opt} SMA9 evaluated", ev.sma9 is not None, ev.sma9)
+        check(f"{opt} prior SMA9 available for slope filter",
+              ev.prev_sma9 is not None, ev.prev_sma9)
 
         if ltp and atr:
             stop, dist, pct, src = compute_stop(float(ltp), atr)
             check(f"{opt} ATR stop preview valid",
                   stop < float(ltp) and 0.05 - 1e-9 <= pct <= 0.30 + 1e-9,
                   f"ltp={ltp} stop={stop} dist={round(pct*100,2)}% src={src}")
-        print(f"        {opt}: ltp={ltp} sma9={ev.sma9} A={ev.condition_a} "
-              f"B={ev.condition_b} signal={ev.signal} reason={ev.reason}")
+        print(f"        {opt}: ltp={ltp} sma9={ev.sma9} prev_sma9={ev.prev_sma9} "
+              f"A={ev.condition_a} B={ev.condition_b} C={ev.condition_c} "
+              f"signal={ev.signal} reason={ev.reason}")
 
     print("\n" + "=" * 68)
     if FAILS:

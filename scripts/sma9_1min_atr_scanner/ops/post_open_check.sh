@@ -3,7 +3,7 @@
 #
 # Waits until a given IST wall-clock time (default 09:22, i.e. after the first
 # two entry-window scans), then samples the unit, log, scan_state heartbeat
-# (twice, 70s apart, to show the 60s cadence), ATR stop / trail state, trades,
+# (twice, 6s apart, to show the 5s cadence), ATR stop / trail state, trades,
 # open positions and API, and appends everything to
 # /tmp/post_open_sma91matr_<date>.log.
 #
@@ -39,7 +39,9 @@ for opt in ("CE", "PE"):
     o = (d.get("options") or {}).get(opt) or {}
     pos = o.get("position") or {}
     print(f"  {opt}: ltp={o.get(\"ltp\")} sma9={o.get(\"sma9\")} "
+          f"prev_sma9={o.get(\"prev_sma9\")} "
           f"A={o.get(\"condition_a\")} B={o.get(\"condition_b\")} "
+          f"C={o.get(\"condition_c\")} "
           f"signal={o.get(\"signal\")} atr={o.get(\"atr\")} "
           f"stop_preview={o.get(\"stop_preview\")} "
           f"trail_dist={o.get(\"trail_distance\")}")
@@ -49,9 +51,9 @@ for opt in ("CE", "PE"):
               f"trail_dist={pos.get(\"trail_distance\")} hwm={pos.get(\"hwm\")} "
               f"trail={pos.get(\"stop\")} be_locked={pos.get(\"be_locked\")}")
 '
-  echo "--- cadence sample 1 -> 2 (70s apart) ---"
+  echo "--- cadence sample 1 -> 2 (6s apart) ---"
   $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_1min_atr.db "select updated_at from sma9_1min_atr_scan_state where key=\"live_status\";"' 2>/dev/null
-  sleep 70
+  sleep 6
   $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_1min_atr.db "select updated_at from sma9_1min_atr_scan_state where key=\"live_status\";"' 2>/dev/null
   echo "--- trades / open positions ---"
   $SSH 'sudo sqlite3 -header /opt/tradingai/database/sma9_1min_atr.db "select trade_id,option_type,entry_price,atr_at_entry,stop_price,stop_source,trail_distance,exit_price,pnl_points,exit_reason,trade_date from sma9_1min_atr_trades order by entry_timestamp desc limit 10; select option_type,trade_id,entry_price,atr_at_entry,stop_price,trail_distance,hwm,trail_stop,be_locked from sma9_1min_atr_open_positions;"' 2>/dev/null

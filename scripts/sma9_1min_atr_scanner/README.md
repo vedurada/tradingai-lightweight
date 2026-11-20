@@ -1,15 +1,16 @@
-# SMA9 1-Minute ATR Scanner (standalone)
+# SMA9 ATR Scanner (standalone, 5-second poll)
 
-A paper-trading scanner that combines the **SMA9 entry** of
-`sma9_1min_poll` with the **ATR-scaled stop** of `sma9_atr`, polled **once per
-minute**, and trails at an ATR-scaled distance instead of a fixed 5 points.
+A paper-trading scanner that uses the **SMA9 entry** with a rising-average
+filter and the **ATR-scaled stop / ATR-only trail** of `sma9_atr`. It keeps its
+original identity (`sma9_1min_atr`, database, service, user, log and API
+namespace) after the v1.1.0 switch from a 60-second poll to a **5-second poll**.
 It replaces the retired `no_sma_trail` scanner slot.
 
 * Directory: `/opt/tradingai/sma9_1min_atr_scanner`
 * Database: `/opt/tradingai/database/sma9_1min_atr.db`
 * Service: `tradingai-sma9-1min-atr-scanner.service`
 * Log: `/opt/tradingai/logs/live_sma9_1min_atr_scanner.log`
-* Strategy id: `sma9_1min_atr`
+* Strategy id: `sma9_1min_atr` (v1.1.0)
 * Tables: `sma9_1min_atr_trades`, `sma9_1min_atr_open_positions`,
   `sma9_1min_atr_scan_state`
 * Dashboard: `/live/sma9-1min-atr/`
@@ -18,18 +19,24 @@ It replaces the retired `no_sma_trail` scanner slot.
 It does not read, write, or restart any existing scanner. Paper only: no
 broker order is ever placed.
 
-## Entry (same as sma9_1min_poll)
+## Entry
 
-At each 1-minute poll, for each of ATM CE and ATM PE, from that option's own
+At each 5-second poll, for each of ATM CE and ATM PE, from that option's own
 5-minute candles:
 
 * A) previous **completed** candle CLOSE > SMA9
 * B) current **forming** candle OPEN > SMA9
+* C) current SMA9 > previous SMA9 (the 9-candle average is rising)
 
-Both must hold. Entry is a paper BUY at the live LTP on the first 1-minute
-poll that sees A and B. There is no previous-high breakout condition and no
-separate LTP > SMA9 gate. At most one entry per 5-minute candle; entries are
-allowed only between 09:20 and 15:15 IST.
+All three must hold. `SMA9 > LTP` is reported as information only and is not a
+gate. At most one entry per 5-minute candle; entries are allowed only between
+09:20 and 15:15 IST. Scanning starts at 09:00; 09:00–09:15 is warm-up only.
+The exchange must have published the current forming candle before it is used.
+
+C is a genuine extra filter: when the 9-candle window rolls, the average
+changes by `(new close − dropped close) / 9`, so a close above the average
+(condition A) does not guarantee that the average rose. Real-feed checks show
+cases with A and B true but C false.
 
 ## Exit
 
@@ -46,21 +53,17 @@ allowed only between 09:20 and 15:15 IST.
    than 15 completed candles), the stop falls back to 10% of entry and
    `stop_source = 'fallback_pct'`.
 
-2. **ATR-scaled trailing stop** — the shape is the same as the other
-   scanners (+5 activates, +6 locks entry + 2), but the ratchet distance is
-   the ATR distance fixed at entry:
+2. **ATR-only trailing stop** — no fixed +5 activation and no breakeven lock:
 
    ```
-   once peak - entry >= 5:
-       stop = max(stop, peak - distance)      # distance from the entry stop
-   once peak - entry >= 6:
-       stop = max(stop, entry + 2)            # one-time breakeven lock
-   exit when LTP <= stop and stop > entry     # TRAIL_STOP_EXIT at the LTP
+   once peak > entry:
+       stop = max(stop, peak - distance)   # same ATR distance, frozen at entry
+   exit when LTP <= stop                   # TRAIL_STOP_EXIT at the LTP
    ```
 
-   Activation and the ratchet are applied in the **same** poll, so a 60-second
-   sample that jumps from below +5 to +13 immediately gets `peak - distance`
-   rather than sitting at breakeven until the next minute.
+   The stop can never ratchet down. Until price moves above entry, the initial
+   ATR stop is the only exit, so a losing trade is never labelled as a trail
+   exit.
 
 3. No time-based or candle-close exit; a position is held until the ATR stop
    or the trail fires.
@@ -68,12 +71,12 @@ allowed only between 09:20 and 15:15 IST.
 ## State and restart
 
 Open positions persist the entry, ATR, initial stop, ATR trail distance,
-high-water mark, current trail stop and breakeven flag. A same-session
-restart resumes the same trade and the same trail; it does not reset the peak,
-close at the entry candle's close, or re-enter the candle. A position left
-over from an earlier session is closed at the current LTP with
-`STALE_RECOVERY_EXIT` on startup. The database is WAL-mode with a busy timeout
-so the read-only API can query it while the scanner writes.
+high-water mark and current trail stop. A same-session restart resumes the
+same trade and rebuilds the trail from the ATR distance under the v1.1.0 rule;
+the old breakeven-lock state is discarded. A position left over from an
+earlier session is closed at the current LTP with `STALE_RECOVERY_EXIT` on
+startup. The database is WAL-mode with a busy timeout so the read-only API can
+query it while the scanner writes.
 
 ## Run
 
@@ -103,7 +106,7 @@ stop/trail state, trades, open positions and API into
 ## Why
 
 `no_sma_trail` entered on a previous-5m-high breakout and trailed at a fixed 5
-points. This scanner keeps the SMA9 entry that already works, scales both the
-stop and the trail to the option's own volatility, and samples once a minute
-so the two ATR scanners (`sma9_atr`, 5s, and this one, 60s) can be compared
-without changing either one.
+points. This scanner keeps the SMA9 entry, scales both the stop and the trail
+to the option's own volatility, and now samples every 5 seconds like
+`sma9_atr`. Its identity was kept unchanged so the existing database history,
+dashboard and API continue to work.

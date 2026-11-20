@@ -1,49 +1,47 @@
-# `sma9_1min_atr` — 1-minute SMA9 entry with an ATR stop and ATR trail
+# `sma9_1min_atr` — SMA9 with a rising-average filter, ATR stop and ATR-only trail
 
-**One line:** the `sma9_1min_poll` entry plus the `sma9_atr` stop, with the ATR
-distance also used as the trail width. It replaces the retired `no_sma_trail`.
+**One line:** the SMA9 entry plus a rising-SMA9 filter, an ATR-scaled stop and
+an ATR-only trail, now sampled every **5 seconds**. It replaces the retired
+`no_sma_trail`.
 
-- **Status:** active, v1.0.0
-- **Cadence:** every 60 seconds, aligned to the minute
+- **Status:** active, v1.1.0
+- **Cadence:** every 5 seconds, aligned to the 5-second wall-clock boundary
+- **Identity:** strategy id, DB, service, user, API and page unchanged from v1.0.0
 - **Stop:** `clamp(0.70 × ATR14, 5%, 30% of entry)`, filled at the live LTP
-- **Trail:** same +5 / +6 shape, but the ratchet width is the ATR distance
-- **First live day:** 2026-11-19
+- **Trail:** `peak − same ATR distance`, active once price is above entry; no fixed activation and no breakeven lock
+- **First live day:** 2026-11-19 (v1.1.0 deployed 2026-11-20)
 
-## Why it exists
+## Why v1.1.0
 
-It is the combination the other two variants motivate:
-
-- `sma9_1min_poll` proves the SMA9 entry still works when sampled once a
-  minute, with 12× less Kite traffic and no sub-minute noise.
-- `sma9_atr` proves a volatility-scaled stop survives cheap-premium days better
-  than a fixed 5% stop.
-
-`sma9_1min_atr` takes the 1-minute entry and replaces **both** the stop floor
-and the trail width with the option's own ATR distance, so the exit envelope
-scales with the contract instead of being fixed in points or percent.
-
-It occupies the slot of the retired `no_sma_trail` scanner. It is fully
-isolated: own code tree, DB, service user, unit, log, API namespace and page.
-No other scanner is read, written or restarted by it.
+- The 60-second sample missed sub-minute stop and trail moves, so the poll is
+  now 5 seconds like `sma9_atr`.
+- The old +5 activation / +6 breakeven lock produced small, frequent winners
+  and ignored the contract's own volatility. The trail is now purely the ATR
+  distance frozen at entry, the same rule as `sma9_atr` v1.1.0.
+- Entry gains an explicit rising-average filter: **current SMA9 > prior SMA9**
+  (the 9-candle average ending one completed candle earlier). This is a genuine
+  extra filter: rolling the window changes the average by `(new close − dropped
+  close) / 9`, so a close above the average (condition A) does not guarantee a
+  rising average. A real-feed check found A/B true with C false.
 
 ## Entry
 
-Identical to `sma9_1min_poll`, evaluated once per minute:
+For each of ATM CE and ATM PE, from that option's own 5-minute candles:
 
 ```
 condition_a = previous completed candle CLOSE > SMA9
 condition_b = current forming candle OPEN  > SMA9
-signal      = condition_a AND condition_b
+condition_c = current SMA9 > prior SMA9      # 10 completed candles required
+signal      = condition_a AND condition_b AND condition_c
 entry       = paper BUY at round(live LTP, 2)
 ```
 
-- Both conditions only. There is **no previous-high breakout** and **no
-  separate LTP > SMA9 gate**; LTP > SMA9 is reported for information only.
+- No previous-high breakout and no separate **LTP > SMA9** gate; LTP > SMA9 is
+  reported for information only.
 - At most one entry per 5-minute candle per option.
 - Entry window: `09:20 <= now < 15:15` IST. CE and PE independent.
-- Scanning starts at 09:00 IST; the exchange publishes the first 5-minute
-  candle at 09:15, so the first possible entry is 09:20. 09:00–09:15 is
-  warm-up only: no entry is evaluated and no exit is managed.
+- Scanning starts at 09:00 IST; 09:00–09:15 is warm-up only: no entry is
+  evaluated and no exit is managed.
 - The scanner waits for the exchange to publish the current 5-minute candle
   before evaluating the forming candle, so a boundary cannot create a
   zero-duration trade.
@@ -62,34 +60,22 @@ stop     = entry - distance
   (`STOP_LOSS_ATR`), not the theoretical stop.
 - Fewer than 15 completed candles → 10% of entry
   (`stop_source='fallback_pct'`).
-- ATR is the rolling last 14 completed candles from a 45-day fetch, not reset
-  per day. At 09:15–09:20 it is yesterday's 14 true ranges; the first entry
-  around 09:21 includes the overnight-gap true range. The trail distance is
-  frozen at entry and does not re-scale later.
+- ATR is the rolling last 14 completed candles from a 45-day fetch. The trail
+  distance is frozen at entry and does not re-scale later.
 
 ## Trail
 
-The +5 activation and +6 breakeven lock are kept, but the ratchet width is the
-ATR distance:
-
 ```
 hwm = max(hwm, LTP)
-if hwm - entry >= 5.0:
-    stop = max(stop, hwm - distance)   # activation and ratchet in the same poll
-if hwm - entry >= 6.0 and not be_locked:
-    stop = max(stop, entry + 2.0)      # one-time breakeven lock
-    be_locked = True
-
-if stop > entry and LTP <= stop: exit at LTP   # TRAIL_STOP_EXIT
-else: hold
+if hwm > entry:
+    stop = max(stop, hwm - distance)   # same ATR distance, frozen at entry
+exit when LTP <= stop                  # TRAIL_STOP_EXIT at the LTP
 ```
 
-- Because the poll is 60 seconds, activation and the ratchet are applied in the
-  **same** tick. A single sample that jumps past +5 immediately gets
-  `peak − distance` instead of sitting at breakeven until the next minute.
-- A wide ATR trail can never undo the tighter +6 breakeven lock (`max`).
-- If `trail_distance` is somehow missing, the engine falls back to a 5-point
-  width.
+- No fixed +5 activation and no +6 breakeven lock.
+- The stop can never ratchet down.
+- Until price moves above entry the initial ATR stop is the only exit, so a
+  losing trade is never labelled as a trail exit.
 - No target, no candle-close exit, no session-end square-off.
 
 ## Runtime
@@ -97,6 +83,7 @@ else: hold
 | Item | Value |
 |---|---|
 | Strategy id / type | `sma9_1min_atr` / `SMA9_1MIN_ATR_STOP_BUY_ONLY` |
+| Strategy version | `1.1.0` |
 | Code | `/opt/tradingai/sma9_1min_atr_scanner/` |
 | Entrypoint | `app/live_sma9_1min_atr_scanner.py` |
 | Engine | `app/sma9_1min_atr_engine.py` |
@@ -112,9 +99,12 @@ else: hold
 
 Persisted in `sma9_1min_atr_open_positions`: `atr_at_entry`, `stop_price`,
 `stop_k`, `stop_distance_pct`, `stop_source`, `trail_distance`, `hwm`,
-`trail_stop`, `be_locked`. The ratchet is written on every poll.
+`trail_stop`, `prev_sma9`, `condition_c` and legacy `be_locked`.
 
-- Same-day restart resumes the exact stop and high-water mark.
+- Same-day restart resumes the trade and **rebuilds the trail from the frozen
+  ATR distance** under the ATR-only rule; the old BE-lock state is discarded.
+- v1.0.0 databases are migrated in place: `prev_sma9`, `condition_c` and
+  (for trades) `trail_distance` columns are added idempotently.
 - A position from an earlier session is closed at the current LTP with
   `STALE_RECOVERY_EXIT` rather than carried.
 
@@ -132,16 +122,17 @@ python3 /opt/tradingai/sma9_1min_atr_scanner/ops/dryrun_market_open.py
 python3 /opt/tradingai/sma9_1min_atr_scanner/ops/real_feed_check.py
 ```
 
-The unit is enabled, `Restart=always`, and in `ALL_UNITS` of
-`refresh_token.sh`. The launcher button is **SMA9 1MIN ATR**.
+The unit is enabled, `Restart=always`, and in `ALL_UNITS` of `refresh_token.sh`.
+The launcher button is **SMA9 1MIN ATR**.
 
 Health thresholds used by the page/API: `ACTIVE` if the last scan is within
-90 s, `STALE` beyond 90 s, `IDLE` when the market is closed and the last scan
-is within 180 s.
+15 s, `STALE` beyond 15 s while the market is open, and `IDLE_MARKET_CLOSED`
+within 180 s of the last scan when the market is closed.
 
 ## Relationships
 
-- `sma9_1min_poll` — same entry and cadence, fixed 5% stop and 5-point trail.
-- `sma9_atr` — same stop, 5-second cadence, 5-point trail.
+- `sma9_atr` — same ATR stop / ATR-only trail, 5-second cadence, plus a daily
+  NIFTY spot regime gate; no rising-SMA9 filter.
+- `sma9_1min_poll` — 60-second cadence, fixed 5% stop and 5-point trail.
 - `no_sma_trail` — retired predecessor; its DB and page remain as archives
   (see [`retired.md`](retired.md)).
