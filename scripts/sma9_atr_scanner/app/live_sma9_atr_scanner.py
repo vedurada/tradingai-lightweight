@@ -14,9 +14,16 @@ Entry (per option, from its own 5-minute candles):
 Exit:
     1) ATR-scaled initial stop, filled at the ACTUAL live LTP
        distance = clamp(0.70 * premium ATR(14), 5% of entry, 30% of entry)
-    2) trailing stop: +5 activate -> breakeven, then peak - 5;
-       breakeven lock at +6 -> +2
+    2) ATR trail only: stop = peak - that same ATR distance, ratcheted up
+       once price is above entry.  No fixed 5-point activation and no
+       breakeven lock.
     3) otherwise hold (no time-based exit)
+
+Daily regime gate (this scanner only):
+    Completed 5-minute NIFTY spot candles are evaluated from 09:20 IST and
+    refreshed every 15 minutes.  Price > VWAP and above a rising EMA9 allows
+    CE entries only; price < VWAP and below a falling EMA9 allows PE entries
+    only; anything else allows no new entries.  Exits are never gated.
 
 Polling is exactly every 5 seconds during market hours.  One batched quote
 call per poll provides NIFTY spot + both option LTPs; historical candles are
@@ -36,6 +43,7 @@ import sys
 import time
 import traceback
 from datetime import date, datetime, time as dtime, timedelta
+from typing import List, Sequence
 from zoneinfo import ZoneInfo
 
 BASE = "/opt/tradingai"
@@ -71,6 +79,8 @@ MARKET_CLOSE = dtime(15, 30)
 EXCHANGE_OPEN = dtime(9, 15)  # real trading starts; 09:00-09:15 is warm-up only
 ENTRY_START = dtime(9, 20)
 ENTRY_END = dtime(15, 15)
+REGIME_RECHECK_MINUTES = 15
+REGIME_EMA_PERIOD = 9
 # Special trading sessions (e.g. muhurat trading) that fall outside the
 # normal weekday 09:00-15:30 window.  Date (ISO) -> (open, close) time.
 MUHURAT_SESSIONS = {
@@ -143,6 +153,82 @@ def market_close_dt(dt: datetime) -> datetime:
     return datetime.combine(dt.date(), session_close_time(dt), tzinfo=IST)
 
 
+# ---------------------------------------------------------------------------
+# Daily regime gate (SMA9 ATR scanner only)
+# ---------------------------------------------------------------------------
+def ema_values(values: Sequence[float], period: int) -> List[float]:
+    """EMA seeded with the SMA of the first `period` values."""
+    if len(values) < period:
+        return []
+    out = [sum(values[:period]) / period]
+    k = 2.0 / (period + 1.0)
+    for value in values[period:]:
+        out.append(float(value) * k + out[-1] * (1.0 - k))
+    return out
+
+
+def compute_spot_regime(candles, now: datetime,
+                        period: int = REGIME_EMA_PERIOD) -> dict:
+    """Classify the session from COMPLETED 5-minute NIFTY spot candles.
+
+    BULLISH -> CE entries only, BEARISH -> PE entries only, NEUTRAL -> no new
+    entries.  Only completed candles are used, so no forming-candle lookahead
+    can influence the gate.  Exits are managed independently of this result.
+    """
+    regime = {
+        "bias": "NEUTRAL",
+        "allowed_option": None,
+        "spot_close": None,
+        "vwap": None,
+        "ema9": None,
+        "ema9_prev": None,
+        "reason": "insufficient spot candles",
+        "evaluated_at": now.isoformat(),
+        "session_candles": 0,
+    }
+    rows = [r for r in (candles or []) if r.get("start") is not None]
+    completed = [r for r in rows if r["start"] < floor_5m(now)]
+    session = [r for r in completed if r["start"].date() == now.date()]
+    regime["session_candles"] = len(session)
+    if not session or len(completed) < period + 1:
+        return regime
+
+    closes = [float(r["close"]) for r in completed]
+    emas = ema_values(closes, period)
+    if len(emas) < 2:
+        return regime
+
+    price = closes[-1]
+    ema_now = emas[-1]
+    ema_prev = emas[-2]
+
+    session_closes = [float(r["close"]) for r in session]
+    volumes = [float(r.get("volume") or 0) for r in session]
+    if sum(volumes) > 0:
+        vwap = sum(c * v for c, v in zip(session_closes, volumes)) / sum(volumes)
+    else:
+        # NIFTY index candles frequently carry zero volume; use the
+        # typical-price average as the intraday reference in that case.
+        vwap = sum((float(r["high"]) + float(r["low"]) + float(r["close"])) / 3.0
+                   for r in session) / len(session)
+
+    regime.update({
+        "spot_close": round(price, 2),
+        "vwap": round(vwap, 2),
+        "ema9": round(ema_now, 2),
+        "ema9_prev": round(ema_prev, 2),
+    })
+    if price > vwap and price > ema_now and ema_now > ema_prev:
+        regime.update(bias="BULLISH", allowed_option="CE",
+                      reason="spot_close > VWAP and above rising EMA9")
+    elif price < vwap and price < ema_now and ema_now < ema_prev:
+        regime.update(bias="BEARISH", allowed_option="PE",
+                      reason="spot_close < VWAP and below falling EMA9")
+    else:
+        regime["reason"] = "mixed signals - no entries"
+    return regime
+
+
 def sleep_to_next_tick() -> None:
     now = now_ist()
     next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
@@ -160,7 +246,7 @@ TRADE_COLUMNS = (
     "candle_high, candle_low, candle_close, created_at, updated_at, dataset, "
     "prev_close, condition_a, condition_b, ltp_at_entry, entry_candle_start, "
     "entry_candle_end, atr_at_entry, stop_price, stop_k, stop_distance_pct, "
-    "stop_source"
+    "stop_source, trail_distance"
 )
 
 
@@ -211,7 +297,8 @@ def init_db() -> None:
             stop_price REAL,
             stop_k REAL,
             stop_distance_pct REAL,
-            stop_source TEXT
+            stop_source TEXT,
+            trail_distance REAL
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_atr_trades_date
             ON sma9_atr_trades(trade_date);
@@ -244,6 +331,7 @@ def init_db() -> None:
             stop_k REAL,
             stop_distance_pct REAL,
             stop_source TEXT,
+            trail_distance REAL,
             hwm REAL,
             trail_stop REAL,
             be_locked INTEGER,
@@ -257,6 +345,11 @@ def init_db() -> None:
         );
         """
     )
+    # Idempotent migration for databases created by v1.0.0.
+    for table in ("sma9_atr_trades", "sma9_atr_open_positions"):
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if "trail_distance" not in columns:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN trail_distance REAL")
     conn.commit()
     conn.close()
 
@@ -285,9 +378,9 @@ def save_open_position(pos: Position) -> None:
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, prev_close, current_open, condition_a,
                 condition_b, ltp_at_entry, atr_at_entry, stop_price, stop_k,
-                stop_distance_pct, stop_source, hwm, trail_stop, be_locked,
-                updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                stop_distance_pct, stop_source, trail_distance, hwm, trail_stop,
+                be_locked, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
@@ -295,8 +388,9 @@ def save_open_position(pos: Position) -> None:
                 pos.entry_price, pos.sma9, pos.prev_close, pos.current_open,
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
                 pos.ltp_at_entry, pos.atr_at_entry, pos.stop_price, pos.stop_k,
-                pos.stop_distance_pct, pos.stop_source, pos.hwm, pos.stop,
-                1 if pos.be_locked else 0, now_ist().isoformat(),
+                pos.stop_distance_pct, pos.stop_source, pos.trail_distance,
+                pos.hwm, pos.stop, 1 if pos.be_locked else 0,
+                now_ist().isoformat(),
             ),
         )
         conn.commit()
@@ -323,6 +417,17 @@ def load_open_positions() -> dict:
     result = {}
     for r in rows:
         d = dict(r)
+        entry_price = d["entry_price"]
+        trail_distance = d.get("trail_distance")
+        hwm = d.get("hwm") if d.get("hwm") is not None else entry_price
+        stop = d.get("trail_stop")
+        be_locked = bool(d.get("be_locked"))
+        if trail_distance is None:
+            # v1.0.0 row: discard the old BE-locked trail state and rebuild the
+            # stop from the frozen ATR distance under the v1.1.0 trail rule.
+            _, trail_distance, _, _ = compute_stop(entry_price, d.get("atr_at_entry"))
+            stop = round(hwm - trail_distance, 2) if hwm > entry_price else None
+            be_locked = False
         result[d["option_type"]] = Position(
             option_type=d["option_type"],
             trade_id=d["trade_id"],
@@ -345,9 +450,10 @@ def load_open_positions() -> dict:
             stop_k=d.get("stop_k"),
             stop_distance_pct=d.get("stop_distance_pct"),
             stop_source=d.get("stop_source"),
-            hwm=d.get("hwm") if d.get("hwm") is not None else d["entry_price"],
-            stop=d.get("trail_stop"),
-            be_locked=bool(d.get("be_locked")),
+            trail_distance=trail_distance,
+            hwm=hwm,
+            stop=stop,
+            be_locked=be_locked,
         )
     return result
 
@@ -410,6 +516,7 @@ class KiteFeed:
         self.kite.set_access_token(creds["KITE_ACCESS_TOKEN"])
         self._instruments = []
         self._instruments_date = None
+        self._spot_token = None
         self._candles = {}  # token -> (rows, fetched_at, last_start)
 
     # -- instruments -----------------------------------------------------
@@ -449,6 +556,25 @@ class KiteFeed:
         # Prefer the nearest expiry / first deterministic match.
         matches.sort(key=lambda i: (i["expiry"], i["instrument_token"]))
         return matches[0]
+
+    def spot_instrument_token(self) -> int:
+        """Resolve the NIFTY 50 index token used for spot regime candles."""
+        if self._spot_token is not None:
+            return self._spot_token
+        instruments = self.kite.instruments("NSE")
+        for i in instruments:
+            if (i.get("tradingsymbol") == "NIFTY 50"
+                    and i.get("segment") == "NSE-INDICES"):
+                self._spot_token = int(i["instrument_token"])
+                return self._spot_token
+        for i in instruments:
+            if i.get("tradingsymbol") == "NIFTY 50":
+                self._spot_token = int(i["instrument_token"])
+                return self._spot_token
+        raise RuntimeError("NIFTY 50 spot token not found in NSE instruments")
+
+    def spot_candles(self, force: bool = False):
+        return self.candles(self.spot_instrument_token(), force=force)
 
     # -- quotes ----------------------------------------------------------
     def quote(self, symbols):
@@ -526,6 +652,8 @@ class Sma9AtrLiveScanner:
         self.spot = None
         self.last_error = None
         self.last_candle_start = None
+        self.regime_state = compute_spot_regime([], now_ist())
+        self.regime_evaluated_at = None
 
     # -- restart recovery ------------------------------------------------
     def recover_open_positions(self) -> None:
@@ -576,6 +704,36 @@ class Sma9AtrLiveScanner:
                     (self.contracts["CE"] or {}).get("tradingsymbol"),
                     (self.contracts["PE"] or {}).get("tradingsymbol"))
 
+    def regime(self, now: datetime) -> dict:
+        """Return the cached daily regime, refreshing it every 15 minutes."""
+        cached = self.regime_evaluated_at
+        if (cached is not None and cached.date() == now.date()
+                and (now - cached) < timedelta(minutes=REGIME_RECHECK_MINUTES)):
+            return self.regime_state
+
+        error = None
+        try:
+            spot_fn = getattr(self.feed, "spot_candles", None)
+            if spot_fn is None:
+                raise RuntimeError("feed does not provide spot candles")
+            regime = compute_spot_regime(spot_fn(), now)
+        except Exception as exc:
+            error = f"spot regime error: {exc}"
+            logger.error(error)
+            regime = compute_spot_regime([], now)
+            regime["reason"] = error
+        regime["error"] = error
+        self.regime_state = regime
+        self.regime_evaluated_at = now
+        if error is None:
+            logger.info(
+                "REGIME %s allowed=%s close=%s vwap=%s ema9=%s ema9_prev=%s "
+                "session_candles=%s reason=%s",
+                regime["bias"], regime["allowed_option"], regime["spot_close"],
+                regime["vwap"], regime["ema9"], regime["ema9_prev"],
+                regime["session_candles"], regime["reason"])
+        return regime
+
     # -- main scan -------------------------------------------------------
     def scan(self) -> dict:
         now = now_ist()
@@ -597,6 +755,11 @@ class Sma9AtrLiveScanner:
             self.last_error = f"spot/contract error: {exc}"
             logger.error(self.last_error)
             return self._status(now, {}, errors=[self.last_error])
+
+        regime = self.regime(now) if allow_entries else self.regime_state
+        if regime.get("error"):
+            errors.append(regime["error"])
+        allowed_option = regime.get("allowed_option")
 
         current_candle = floor_5m(now)
         self.last_candle_start = current_candle
@@ -670,6 +833,8 @@ class Sma9AtrLiveScanner:
                     option_type=opt, ltp=ltp,
                     reason="waiting for current 5-minute candle")
             entry_made = False
+            gate_reason = None
+            entry_allowed = bool(allow_entries and allowed_option == opt)
 
             if state.position is not None and now.time() >= EXCHANGE_OPEN:
                 stop_hit = state.update_trail(ltp)
@@ -695,21 +860,27 @@ class Sma9AtrLiveScanner:
                         pos.stop_price if pos.stop_price is not None else -1.0,
                         pos.atr_at_entry)
             elif allow_entries and forming_is_current:
-                new_pos = state.try_entry(
-                    ev, now, strike, expiry_str, token,
-                    contract["tradingsymbol"], market_close_dt(now), atr=atr)
-                if new_pos is not None:
-                    save_open_position(new_pos)
-                    entry_made = True
-                    logger.info(
-                        "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s "
-                        "atr=%s stop=%.2f dist_pct=%.2f%% src=%s",
-                        opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
-                        new_pos.sma9, new_pos.condition_a, new_pos.condition_b,
-                        new_pos.entry_candle_start.isoformat(),
-                        new_pos.atr_at_entry, new_pos.stop_price,
-                        (new_pos.stop_distance_pct or 0) * 100,
-                        new_pos.stop_source)
+                if not entry_allowed:
+                    gate_reason = f"regime {regime.get('bias')} allows {allowed_option or 'no option'}"
+                    logger.info("ENTRY BLOCKED %s %s regime=%s allowed=%s",
+                                opt, contract["tradingsymbol"], regime.get("bias"),
+                                allowed_option)
+                else:
+                    new_pos = state.try_entry(
+                        ev, now, strike, expiry_str, token,
+                        contract["tradingsymbol"], market_close_dt(now), atr=atr)
+                    if new_pos is not None:
+                        save_open_position(new_pos)
+                        entry_made = True
+                        logger.info(
+                            "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s "
+                            "atr=%s stop=%.2f dist_pct=%.2f%% src=%s regime=%s",
+                            opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
+                            new_pos.sma9, new_pos.condition_a, new_pos.condition_b,
+                            new_pos.entry_candle_start.isoformat(),
+                            new_pos.atr_at_entry, new_pos.stop_price,
+                            (new_pos.stop_distance_pct or 0) * 100,
+                            new_pos.stop_source, regime.get("bias"))
 
             option_status[opt] = {
                 "tradingsymbol": contract["tradingsymbol"],
@@ -729,6 +900,10 @@ class Sma9AtrLiveScanner:
                 "forming_is_current": forming_is_current,
                 "reason": ev.reason,
                 "entry_made": entry_made,
+                "entry_allowed": entry_allowed,
+                "gate_reason": gate_reason,
+                "regime_bias": regime.get("bias"),
+                "regime_allowed_option": allowed_option,
                 "atr": round(atr, 2) if atr is not None else None,
                 "stop_preview": compute_stop(ltp, atr)[0] if ltp else None,
                 "position": state.position.as_dict() if state.position else None,
@@ -754,6 +929,7 @@ class Sma9AtrLiveScanner:
             "spot": self.spot,
             "atm_strike": self.atm_strike,
             "expiry": self.expiry.isoformat() if hasattr(self.expiry, "isoformat") else self.expiry,
+            "regime": self.regime_state,
             "options": options,
             "today": today_stats(today),
             "errors": errors or [],

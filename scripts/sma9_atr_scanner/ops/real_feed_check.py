@@ -3,7 +3,7 @@
 
 Exercises the live Kite path the scanner will use from 09:00 tomorrow (09:15 exchange open):
 instrument dump -> nearest expiry -> ATM CE/PE contracts -> quotes ->
-5-minute candles -> SMA9 evaluation -> ATR stop preview.
+5-minute candles -> SMA9 evaluation -> ATR stop preview -> spot regime gate.
 
 Writes nothing (no DB, no orders).
 """
@@ -15,8 +15,10 @@ sys.path.insert(0, "/opt/tradingai/sma9_atr_scanner")
 from app.live_sma9_atr_scanner import (  # noqa: E402
     ATR_PERIOD,
     KiteFeed,
+    compute_spot_regime,
     compute_stop,
     evaluate_option,
+    now_ist,
     premium_atr,
 )
 
@@ -43,6 +45,19 @@ def main():
     atm = float(round(spot / 50) * 50)
     check("NIFTY spot quoted", spot > 0, spot)
     check("ATM strike derived", atm > 0, atm)
+
+    try:
+        spot_rows = feed.spot_candles(force=True)
+        check("NIFTY spot 5m candles available", len(spot_rows) >= 10, len(spot_rows))
+        regime = compute_spot_regime(spot_rows, now_ist())
+        check("daily regime computed",
+              regime["bias"] in ("BULLISH", "BEARISH", "NEUTRAL"), regime["bias"])
+        print(f"        regime: {regime['bias']} allowed={regime['allowed_option']} "
+              f"close={regime['spot_close']} vwap={regime['vwap']} "
+              f"ema9={regime['ema9']} prev={regime['ema9_prev']} "
+              f"reason={regime['reason']}")
+    except Exception as exc:
+        check("daily regime computed", False, exc)
 
     contracts = {}
     for opt in ("CE", "PE"):

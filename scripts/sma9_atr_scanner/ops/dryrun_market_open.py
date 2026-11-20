@@ -9,10 +9,10 @@ a fake Kite feed:
 
   08:55  pre-market branch  -> writes heartbeat, no scan
   09:00  scanner starts     -> resolves spot/ATM/expiry/contracts, no entry
-  09:20  entry window       -> BUY at live LTP, ATR stop persisted
+  09:20  entry window       -> daily regime BULLISH, CE allowed, PE blocked; CE BUY
   09:20  same candle again  -> no duplicate entry
   09:22  LTP below stop     -> STOP_LOSS_ATR filled at the actual LTP
-  09:25  next candle        -> re-entry
+  09:25  next candle        -> re-entry (still BULLISH)
   restart                   -> open position + ATR stop recovered
 
 No network, no broker, no writes to the live DB: SMA9_ATR_DB_PATH points at a
@@ -124,6 +124,22 @@ class FakeFeed:
                 out[sym] = {"last_price": self.ltp[opt]}
         return out
 
+    def spot_instrument_token(self):
+        return 256265
+
+    def spot_candles(self, force=False):
+        """Steady rising NIFTY spot candles -> BULLISH regime from 09:20."""
+        start = mod.floor_5m(clock["now"])
+        rows = []
+        for i in range(20, 0, -1):
+            ts = start - timedelta(minutes=5 * i)
+            close = 25000.0 + (21 - i) * 5.0
+            rows.append({
+                "start": ts, "open": close - 2.0, "high": close + 1.0,
+                "low": close - 3.0, "close": close, "volume": 0,
+            })
+        return rows
+
     def _rows(self, opt):
         start = mod.floor_5m(clock["now"])
         rows = []
@@ -195,6 +211,16 @@ def main():
     branch, st = loop_step(scanner)
     ce = scanner.states["CE"].position
     check("scan branch selected", branch == "scan", branch)
+    check("regime is BULLISH from completed spot candles",
+          st["regime"]["bias"] == "BULLISH", st.get("regime"))
+    check("regime allows CE only",
+          st["regime"]["allowed_option"] == "CE", st.get("regime"))
+    check("CE entry allowed by regime",
+          st["options"]["CE"].get("entry_allowed") is True,
+          st["options"]["CE"].get("gate_reason"))
+    check("PE entry blocked by regime",
+          st["options"]["PE"].get("entry_allowed") is False,
+          st["options"]["PE"].get("gate_reason"))
     check("CE entered", ce is not None)
     check("PE stays flat (its SMA9 conditions are false)",
           scanner.states["PE"].position is None)
@@ -215,6 +241,10 @@ def main():
               open_rows[0]["atr_at_entry"])
         check("DB has stop_price", open_rows[0]["stop_price"] is not None,
               open_rows[0]["stop_price"])
+        check("DB has ATR trail distance",
+              open_rows[0]["trail_distance"] is not None
+              and abs(open_rows[0]["trail_distance"] - ce.trail_distance) < 1e-9,
+              open_rows[0]["trail_distance"])
     check("no closed trade yet", len(db_rows("SELECT * FROM sma9_atr_trades")) == 0)
     check("live state exposes ATR + stop preview",
           st["options"]["CE"].get("atr") is not None
@@ -246,7 +276,8 @@ def main():
               abs(t["pnl_points"] - round(t["exit_price"] - t["entry_price"], 2)) < 0.01,
               t["pnl_points"])
         check("ATR/stop persisted on the trade",
-              t["atr_at_entry"] is not None and t["stop_price"] == stop)
+              t["atr_at_entry"] is not None and t["stop_price"] == stop
+              and t["trail_distance"] is not None)
     check("open position cleared",
           len(db_rows("SELECT * FROM sma9_atr_open_positions")) == 0)
     check("today stats count the stop",
@@ -277,6 +308,8 @@ def main():
               f"{ce3.stop_price} vs {saved['stop_price']}")
         check("ATR preserved", ce3.atr_at_entry == saved["atr_at_entry"])
         check("HWM preserved", ce3.hwm == saved["hwm"])
+        check("ATR trail distance preserved",
+              ce3.trail_distance == saved["trail_distance"])
     check("recovered row still in DB",
           len(db_rows("SELECT * FROM sma9_atr_open_positions")) == 1)
 

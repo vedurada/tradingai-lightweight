@@ -3,9 +3,11 @@
 Complete reference for the 8 paper scanners running on the TradingAI VM:
 7 BUY-only NIFTY option-premium scanners plus `pattern_scanner`. Five option
 scanners use a fixed 5% stop; `sma9_atr` and `sma9_1min_atr` use a
-volatility-scaled (ATR) stop, and `sma9_1min_atr` also trails at the ATR
-distance. `sma9_1min_poll` and `sma9_1min_atr` run at a 60-second poll instead
-of every 5 seconds.
+volatility-scaled (ATR) stop. Both trail at the ATR distance, but only
+`sma9_1min_atr` keeps the shared +5 activation / BE-lock conditions; `sma9_atr`
+v1.1.0 uses ATR trail only and gates entries on a daily NIFTY spot regime.
+`sma9_1min_poll` and `sma9_1min_atr` run at a 60-second poll instead of every
+5 seconds.
 
 `green15`, `no_sma` and `no_sma_trail` are retired: stopped, disabled on boot,
 removed from the launcher (and `no_sma` / `no_sma_trail` from the performance
@@ -29,15 +31,16 @@ The code trees and DBs remain on disk as archives.
 | 5 | `sma9_high_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9 & LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 6 | `sma9_1min_atr` | SMA9 1-min ATR | prev close > SMA9 **and** forming open > SMA9, polled once per minute | ATR trail, then ATR-scaled stop (both fill at the live LTP); otherwise hold |
 | 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles | trail stop, then fixed 12-point spot stop; otherwise hold |
-| 8 | `sma9_atr` | ATR stop | prev close > SMA9 **and** forming open > SMA9 | trail stop, then ATR-scaled stop (fills at live LTP); otherwise hold |
+| 8 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
 
 There is **no time-based or candle-close exit** on any of the 8 scanners:
 if neither the trail nor the fixed stop fires, the position stays open
 across candles (including overnight) until one of them does. `pattern_scanner`
 uses the same trail mechanics but a fixed 12-point spot stop (see §5.5).
-`sma9_atr` replaces only the initial stop distance (see §5.6);
+`sma9_atr` adds a daily spot-regime entry gate and replaces both the initial
+stop and the trail with the frozen ATR distance (see §5.6);
 `sma9_1min_atr` scales both the stop and the trail and polls once a minute
-(see §5.7).
+(see §5.7). No other scanner has a regime gate.
 `sma9_1min_poll` and `sma9_1min_atr` are the only scanners that do not poll
 every 5 seconds: they sample the forming candle once per minute, so a spike
 between two polls is not seen (see §5.3, §5.7).
@@ -258,7 +261,7 @@ the API at the same instant.
 | Key | Strategy id | Strategy type | Ver | SMA | Trail / activate | off | User | systemd unit |
 |---|---|---|---|---|---|---|---|---|
 | `sma9` | `sma9_only` | `SMA9_BUY_ONLY` | 2.7.0 | 9 | — | 0 | `sma9` | `tradingai-sma9-scanner` |
-| `sma9_atr` | `sma9_atr` | `SMA9_ATR_STOP_BUY_ONLY` | 1.0.0 | 9 | — | 0 | `sma9` | `tradingai-sma9-atr-scanner` |
+| `sma9_atr` | `sma9_atr` | `SMA9_ATR_STOP_BUY_ONLY` | 1.1.0 | 9 | ATR / none | 0 | `sma9` | `tradingai-sma9-atr-scanner` |
 | `sma9_high` | `sma9_high` | `SMA9_HIGH_BUY_ONLY` | 1.8.0 | 9 | — | 2.4 | `sma9high` | `tradingai-sma9-high-scanner` |
 | `sma9_1min_poll` | `sma9_1min_poll` | `SMA9_1MIN_POLL_BUY_ONLY` | 1.0.0 | 9 | — | — (60s) | `sma91m` | `tradingai-sma9-1min-poll-scanner` |
 | `sma9_trail` | `sma9_trail` | `SMA_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 1.2 | `sma9trail` | `tradingai-sma9_trail-scanner` |
@@ -280,8 +283,11 @@ because both are bought long and profit when premium rises), one-time breakeven
 lock at +6 (stop ≥ entry + 2). The trail exit is evaluated first;
 the 5% stop is the additional floor. `sma9_1min_poll` evaluates both on its
 60-second cadence. `sma9_atr` and `sma9_1min_atr` replace the 5% floor with an
-ATR-scaled stop (`STOP_LOSS_ATR`, filled at the live LTP); `sma9_1min_atr`
-also uses the ATR distance as its trail width (§5.6, §5.7).
+ATR-scaled stop (`STOP_LOSS_ATR`, filled at the live LTP). `sma9_atr` (v1.1.0)
+also drops the fixed +5 activation / BE lock and trails by the frozen ATR
+distance, and gates new entries on the 15-minute-refreshed NIFTY spot regime
+(§5.6). `sma9_1min_atr` uses the ATR distance as its trail width but keeps the
+other shared trail conditions and has no regime gate (§5.7).
 
 **`pattern_scanner` exception:** its stop/trail levels are derived from **NIFTY SPOT price** (not option premium). Initial SL = a **fixed 12 NIFTY points** from the entry spot (no percentage scaling — the same 12-point distance at 18,000, 25,000 or 30,000); trail mechanics identical but applied to spot. The option is exited at its current LTP when spot breaches the stop.
 
@@ -450,13 +456,27 @@ The live runner is `scripts/pattern_scanner_live.py` (systemd
 
 ### 5.6 ATR-stop scanner (`sma9_atr`)
 
-Added 2026-11-18, first live day 2026-11-19. It is an isolated clone of
-`sma9` with **one** behavioural change: the initial stop is scaled to the
-option premium's own volatility instead of a fixed 5%.
+Added 2026-11-18, first live day 2026-11-19; upgraded to **v1.1.0** on
+2026-11-20. It is an isolated clone of `sma9` with three changes: a daily
+spot-regime entry gate, an ATR-scaled initial stop, and an ATR-width trail with
+the fixed +5 activation and BE lock removed.
 
-**Entry** — identical to `sma9`: previous completed 5m candle close > SMA9
+**Entry** — SMA9 signal as `sma9`: previous completed 5m candle close > SMA9
 **and** forming candle open > SMA9; paper BUY at the live LTP, ATM CE/PE,
-long only, entry window 09:20–15:15.
+long only, entry window 09:20–15:15. In v1.1.0 the signal is additionally
+gated by the daily regime:
+
+```
+regime from COMPLETED 5m NIFTY spot candles, refreshed every 15 minutes:
+  BULLISH: price > vwap and price > ema9 and ema9 rising  -> CE entries only
+  BEARISH: price < vwap and price < ema9 and ema9 falling -> PE entries only
+  NEUTRAL: mixed / insufficient data / spot-candle error  -> no entries
+```
+
+`vwap` uses candle volume when present and the typical-price average when the
+index candles carry zero volume. `ema9` uses all completed spot history. The
+gate is never applied to exits, and `/api/sma9-atr/status` reports `regime`,
+`entry_allowed` and `gate_reason`.
 
 **Initial stop:**
 
@@ -471,45 +491,51 @@ theoretical stop price (`STOP_LOSS_ATR`). If the contract has fewer than 15
 completed candles, the stop falls back to 10% of entry
 (`stop_source='fallback_pct'`).
 
-**Trail** — unchanged from `sma9`: +5 activates breakeven, then peak − 5;
-breakeven lock at +6 moves the stop to entry + 2 (`TRAIL_STOP_EXIT`).
+**Trail (v1.1.0):** the `distance` fixed at entry is reused as the only trail
+width. It activates once `hwm > entry` (no fixed +5 threshold), ratchets only
+upward as `hwm - distance`, and has **no breakeven lock**. The exit still fills
+at the live LTP (`TRAIL_STOP_EXIT`). Before price is above entry the initial
+ATR stop is the only exit, so a loss is never mislabelled as a trail exit.
 No time-based exit.
 
-**Why:** the fixed 5% stop shrinks in absolute points as premium decays while
-ATM option noise stays roughly constant (~11–15 points). On 2026-11-17
-(0 DTE) the 5% stop was 2.34 points against ~14 points of 5m noise: 68% of
-trades stopped out and 39 of 65 sat inside losing streaks. ATR scaling keeps
-the stop outside the noise band on cheap contracts and close to the old 5%
-distance on expensive ones.
+**Why:** on 19–20 Nov 2026 CE PnL across the fleet was strongly positive while
+PE PnL was negative every day, and 89–95% of fixed 5-point trail exits were
+small winners averaging only 4–6 points. The gate removes the wrong side of the
+day; the ATR trail lets winners run at the option's own volatility width.
 
 **Isolation:** own code `/opt/tradingai/sma9_atr_scanner/`, DB
 `database/sma9_atr.db`, tables `sma9_atr_trades` / `sma9_atr_open_positions` /
 `sma9_atr_scan_state`, systemd `tradingai-sma9-atr-scanner.service`, log
 `logs/live_sma9_atr_scanner.log`, report key `sma9_atr`. The service runs as
 the existing `sma9` user but shares no code, DB, state or unit with `sma9`.
+No other scanner was changed by v1.1.0.
 
 **Persisted state:** `atr_at_entry`, `stop_price`, `stop_k`,
-`stop_distance_pct`, `stop_source`, `hwm`, `trail_stop`, `be_locked`. A
-same-day restart resumes the exact stop and high-water mark; a position from
-an earlier session is closed at the current LTP (`STALE_RECOVERY_EXIT`) rather
-than carried.
+`stop_distance_pct`, `stop_source`, `trail_distance`, `hwm`, `trail_stop`,
+`be_locked`. `be_locked` is retained only for v1.0.0 restore compatibility; it
+is no longer used. `init_db()` adds `trail_distance` to existing tables
+idempotently. A same-day restart resumes the exact stop, trail distance and
+high-water mark; a position from an earlier session is closed at the current
+LTP (`STALE_RECOVERY_EXIT`) rather than carried.
 
 **Pre-open operations:** the unit is `enabled` at boot and uses
 `Restart=always`, and it is in the `ALL_UNITS` list of
 `/opt/tradingai/refresh_token.sh`, so the daily token refresh restarts it with
 the new token exactly like the other scanners. The token is read once at
 process start, so a refresh without a restart would leave it on the expired
-token. Two read-only checks cover the open:
+token. Three checks cover the change:
 
 ```bash
-python3 /opt/tradingai/sma9_atr_scanner/ops/dryrun_market_open.py   # fake clock/feed, temp DB
-python3 /opt/tradingai/sma9_atr_scanner/ops/real_feed_check.py      # real Kite data, writes nothing
+python3 /opt/tradingai/sma9_atr_scanner/tests/test_sma9_atr_engine.py  # offline engine + regime
+python3 /opt/tradingai/sma9_atr_scanner/ops/dryrun_market_open.py      # fake clock/feed, temp DB
+python3 /opt/tradingai/sma9_atr_scanner/ops/real_feed_check.py         # real Kite data, writes nothing
 ```
 
-The first drives the deployed runner through pre-market → 09:00 scan start → 09:20
-entry → stop at LTP → re-entry → restart recovery. The second verifies the
-real instrument dump, nearest expiry, ATM CE/PE contracts, quotes, candles,
-SMA9 evaluation and ATR stop preview.
+The tests cover the ATR trail and regime classification; the dry run drives the
+deployed runner through pre-market → 09:00 scan start → BULLISH gate at 09:20 →
+CE entry → stop at LTP → re-entry → restart recovery; the real-feed check
+verifies the instrument dump, nearest expiry, ATM CE/PE contracts, quotes,
+candles, SMA9 evaluation, ATR stop preview and spot regime.
 
 ### 5.7 SMA9 1-minute ATR scanner (`sma9_1min_atr`)
 
@@ -604,7 +630,7 @@ Family-specific columns:
 | HIGH | `sma_value`, `prev_high`, `condition_a`, `condition_b`, `condition_c` |
 | NO-SMA / prev-high | `prev_high`, `breakout` (retired `no_sma` and `no_sma_trail`; archive DBs only) |
 | Trail | `prev_high`, `breakout`, and `hwm`, `stop`, `be_locked` in `open_positions`; base trade id in `consumed_base_trades` |
-| ATR stop (`sma9_atr`, `sma9_1min_atr`) | `atr_at_entry`, `stop_price`, `stop_k`, `stop_distance_pct`, `stop_source`; `sma9_1min_atr` adds `trail_distance` |
+| ATR stop (`sma9_atr`, `sma9_1min_atr`) | `atr_at_entry`, `stop_price`, `stop_k`, `stop_distance_pct`, `stop_source`, `trail_distance` (both ATR scanners; v1.1.0 added it to `sma9_atr`) |
 
 `exit_reason` is `STOP_LOSS_5PCT` or `TRAIL_STOP_EXIT` for the five fixed-stop
 premium scanners, and `STOP_LOSS_ATR` or `TRAIL_STOP_EXIT` for the two ATR
@@ -702,8 +728,10 @@ active pages share the same dark theme,
 badge/table styling, a `Back to Launcher` link, and auto-refresh without a page
 reload (5 s for the 5-second scanners, 15 s for the 1-minute scanners). The
 `sma9-atr` page additionally shows the entry ATR(14), the fixed ATR stop, the
-live trail stop and BE lock, plus an ATR stop preview for each ATM option;
-`sma9-1min-atr` shows the same plus the ATR trail distance. The retired
+live ATR trail distance and an ATR stop preview for each ATM option; its legacy
+BE-lock field is still present in the payload for compatibility but is always
+false and unused in v1.1.0. `sma9-1min-atr` shows the shared +5/BE-lock trail.
+The retired
 `green15`, `no-sma` and `no-sma-trail` pages remain on disk but are unlinked
 from the launcher.
 
@@ -888,7 +916,8 @@ token.
   `round(entry × 0.95, 2)` if LTP falls that far (`STOP_LOSS_5PCT`); the trail
   stop is the preferred, higher exit and is evaluated first. `sma9_atr` and
   `sma9_1min_atr` use an ATR-scaled stop instead (see §5.6, §5.7), filled at
-  the live LTP.
+  the live LTP. `sma9_atr` v1.1.0 also trails only at that ATR distance and
+  gates entries on the daily spot regime; exits are never gated.
 - **`pattern_scanner`** uses the same trail shape (5-point trail, +5 activate,
   +6 breakeven lock at +2) but on **NIFTY spot**, with a fixed **12-point spot
   stop** (`STOP_LOSS_SPOT`), not a percentage premium stop. It has no ATR stop
