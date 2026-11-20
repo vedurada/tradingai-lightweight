@@ -67,7 +67,7 @@ SCANNERS = [
     },
     {
         "key": "sma9_1min_poll",
-        "label": "SMA9 1MIN",
+        "label": "SMA9 1MIN POLL ATR",
         "db": "sma9_1min_poll.db",
         "table": "sma9_1min_poll_trades",
         "date_col": "trade_date",

@@ -3,7 +3,7 @@
 #
 # Waits until a given IST wall-clock time (default 09:22, i.e. after the first
 # two entry-window scans), then samples the unit, log, scan_state heartbeat
-# (twice, 70s apart, to show the 60s cadence), trades/open positions and API,
+# (twice, 11s apart, to show the 5s cadence), trades/open positions and API,
 # and appends everything to /tmp/post_open_sma91m_<date>.log.
 #
 # Usage: ops/post_open_check.sh [HH:MM]
@@ -40,12 +40,12 @@ for opt in ("CE", "PE"):
           f"A={o.get(\"condition_a\")} B={o.get(\"condition_b\")} "
           f"signal={o.get(\"signal\")} position={o.get(\"position\")}")
 '
-  echo "--- cadence sample 1 -> 2 (70s apart) ---"
+  echo "--- cadence sample 1 -> 2 (11s apart) ---"
   $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_1min_poll.db "select updated_at from sma9_1min_poll_scan_state where key=\"live_status\";"' 2>/dev/null
-  sleep 70
+  sleep 11
   $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_1min_poll.db "select updated_at from sma9_1min_poll_scan_state where key=\"live_status\";"' 2>/dev/null
   echo "--- trades / open positions ---"
-  $SSH 'sudo sqlite3 -header /opt/tradingai/database/sma9_1min_poll.db "select trade_id,option_type,entry_price,exit_price,pnl_points,exit_reason,trade_date from sma9_1min_poll_trades order by entry_timestamp desc limit 10; select option_type,trade_id,entry_price,stop_price,hwm,be_locked from sma9_1min_poll_open_positions;"' 2>/dev/null
+  $SSH 'sudo sqlite3 -header /opt/tradingai/database/sma9_1min_poll.db "select trade_id,option_type,entry_price,exit_price,pnl_points,exit_reason,trade_date,atr_at_entry,stop_price,stop_source from sma9_1min_poll_trades order by entry_timestamp desc limit 10; select option_type,trade_id,entry_price,stop_price,atr_at_entry,trail_distance,hwm,trail_stop,be_locked from sma9_1min_poll_open_positions;"' 2>/dev/null
   echo "--- API ---"
   $SSH 'curl -sk -H "Host: tradingai.in" "https://127.0.0.1/api/sma9-1min-poll/scanner-status" | head -c 900' 2>/dev/null
   echo

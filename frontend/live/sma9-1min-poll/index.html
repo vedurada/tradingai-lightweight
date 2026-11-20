@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradingAI - SMA9 1-MIN Poll Live Dashboard</title>
+<title>TradingAI - SMA9 1-MIN POLL ATR Live Dashboard</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -53,15 +53,17 @@
 </style>
 </head>
 <body>
-<h1>TradingAI - SMA9 1-MIN Poll Live Dashboard</h1>
+<h1>TradingAI - SMA9 1-MIN POLL ATR Live Dashboard</h1>
 <div class="meta">
     <a href="/live/scalp/" class="back-link">&larr; Back to Launcher</a>
     <a href="/live/performance/?scanner=sma9_1min_poll" class="back-link">Day-wise Performance &rarr;</a>
     <span>Updated: <span id="generated">--</span> IST</span>
     <span class="badge" id="scanner-status-badge">--</span>
     <span id="scanner-status-text">--</span>
-    <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">15</span>s auto-refresh (no page reload)</span>
+    <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">5</span>s auto-refresh (no page reload)</span>
 </div>
+<div class="sub">SMA9 A+B entry, sampled every 5 seconds: <b>prev completed close &gt; SMA9 and current forming open &gt; SMA9</b> (no LTP gate, no rising-SMA9 filter, no regime gate). Stop and trail are volatility-scaled:
+    <b>distance = clamp(0.70 &times; premium ATR(14), 5%&ndash;30% of entry)</b>, fixed at entry. Stop exits fill at the live LTP; the ATR-only trail ratchets at <b>peak &minus; distance</b> once price is above entry (no +5 activation, no breakeven lock).</div>
 
 <section class="section">
     <h2>Live Scanner &amp; Market</h2>
@@ -85,13 +87,14 @@
 
 <section class="section">
     <h2>Open Paper Positions (LIVE) <span class="sub" id="open-pos-count"></span></h2>
-    <div class="sub">Currently open paper BUY positions. Shown even when the ATM strike has rolled to a different contract; a row disappears here when the scanner closes it and writes it to "Today's LIVE Paper Trades".</div>
+    <div class="sub">Currently open paper BUY positions. ATR, initial stop and trail distance are fixed at entry; Trail is the live ratcheted exit. Shown even when the ATM strike has rolled to a different contract; a row disappears here when the scanner closes it and writes it to "Today's LIVE Paper Trades".</div>
     <table>
         <thead><tr>
             <th>Trade ID</th><th>Option</th><th>Strike</th><th>Expiry</th><th>Contract</th>
-            <th>Entry Time (IST)</th><th>Entry</th><th>Live LTP</th><th>Unrealized (pts)</th><th>Status</th>
+            <th>Entry Time (IST)</th><th>Entry</th><th>ATR</th><th>Stop</th><th>Trail dist</th><th>Trail</th>
+            <th>Live LTP</th><th>Unrealized (pts)</th><th>Status</th>
         </tr></thead>
-        <tbody id="open-pos-tbody"><tr><td colspan="10" class="empty">No open positions</td></tr></tbody>
+        <tbody id="open-pos-tbody"><tr><td colspan="14" class="empty">No open positions</td></tr></tbody>
     </table>
 </section>
 
@@ -110,10 +113,11 @@
     <table>
         <thead><tr>
             <th>Trade ID</th><th>Option</th><th>Strike</th><th>Entry Time (IST)</th>
-            <th>Entry</th><th>Exit Time (IST)</th><th>Exit</th><th>SMA9</th>
+            <th>Entry</th><th>ATR</th><th>Stop</th>
+            <th>Exit Time (IST)</th><th>Exit</th><th>SMA9</th>
             <th>P&amp;L (pts)</th><th>Status</th><th>Exit Reason</th>
         </tr></thead>
-        <tbody id="today-tbody"><tr><td colspan="11" class="empty">No live paper trades today</td></tr></tbody>
+        <tbody id="today-tbody"><tr><td colspan="13" class="empty">No live paper trades today</td></tr></tbody>
     </table>
 </section>
 
@@ -123,19 +127,20 @@
     <table>
         <thead><tr>
             <th>Trade ID</th><th>Option</th><th>Strike</th><th>Entry Time (IST)</th>
-            <th>Entry</th><th>Exit Time (IST)</th><th>Exit</th><th>SMA9</th>
+            <th>Entry</th><th>ATR</th><th>Stop</th>
+            <th>Exit Time (IST)</th><th>Exit</th><th>SMA9</th>
             <th>P&amp;L (pts)</th><th>Status</th><th>Exit Reason</th>
         </tr></thead>
-        <tbody id="recent-live-tbody"><tr><td colspan="11" class="empty">No live paper trades yet</td></tr></tbody>
+        <tbody id="recent-live-tbody"><tr><td colspan="13" class="empty">No live paper trades yet</td></tr></tbody>
     </table>
 </section>
 
 <script>
 // ============================================================================
-// SMA9 1-MIN Poll dashboard - independent 15 second refresh
+// SMA9 1-MIN POLL ATR dashboard - 5 second refresh (identity retained)
 // ============================================================================
 const API_BASE = '/api/sma9-1min-poll';
-const REFRESH_MS = 15000;
+const REFRESH_MS = 5000;
 let refreshTimer = null;
 let countdownTimer = null;
 let countdown = REFRESH_MS / 1000;
@@ -188,6 +193,13 @@ function renderOptionCard(opt, data) {
         ? `<div class="position-box">
              <b>OPEN PAPER BUY</b><br>
              Entry: <span class="mono">${n(pos.entry_price)}</span> at ${esc(istTime(pos.entry_timestamp))}<br>
+             ATR(14): <span class="mono">${n(pos.atr_at_entry)}</span>
+             &middot; Stop: <span class="mono">${n(pos.stop_price)}</span>
+             (${n((pos.stop_distance_pct || 0) * 100)}%${pos.stop_source ? ', ' + esc(pos.stop_source) : ''})<br>
+             Trail dist: <span class="mono">${n(pos.trail_distance)}</span>
+             &middot; HWM: <span class="mono">${n(pos.hwm)}</span>
+             &middot; Trail: <span class="mono">${n(pos.stop)}</span>
+             &middot; BE locked: ${pill(pos.be_locked)}<br>
              Candle: ${esc(istTime(pos.entry_candle_start))} &rarr; ${esc(istTime(pos.entry_candle_end))}<br>
              Trade: ${esc(pos.trade_id)}
            </div>`
@@ -196,13 +208,16 @@ function renderOptionCard(opt, data) {
         <h3>ATM ${opt} <span class="mono" style="font-size:0.8rem;color:#94a3b8">${esc(data.tradingsymbol || '')}</span></h3>
         <div class="kv">
             <span class="k">Live LTP</span><span class="v">${n(data.ltp)}</span>
+            <span class="k">Premium ATR(14)</span><span class="v">${n(data.atr)}</span>
+            <span class="k">Stop preview at current LTP</span><span class="v">${n(data.stop_preview)}</span>
+            <span class="k">Trail distance preview</span><span class="v">${n(data.trail_distance)}</span>
             <span class="k">SMA9 (completed candles)</span><span class="v">${n(data.sma9)}</span>
             <span class="k">Previous candle close</span><span class="v">${n(data.prev_close)}</span>
             <span class="k">Current candle open</span><span class="v">${n(data.current_open)}</span>
             <span class="k">Condition A: prev close &gt; SMA9</span><span class="v">${pill(data.condition_a)}</span>
             <span class="k">Condition B: current open &gt; SMA9</span><span class="v">${pill(data.condition_b)}</span>
             <span class="k">Qualified (A and B)</span><span class="v">${pill(data.qualified)}</span>
-            <span class="k">Confirmation: LTP &gt; SMA9</span><span class="v">${pill(data.confirmation)}</span>
+            <span class="k">Confirmation: LTP &gt; SMA9 (info only)</span><span class="v">${pill(data.confirmation)}</span>
             <span class="k">BUY signal</span><span class="v">${pill(data.signal, 'BUY', 'WAIT')}</span>
         </div>
         <div class="sub" style="margin-top:0.5rem">${esc(data.reason || '')}</div>
@@ -216,7 +231,7 @@ function renderOpenPositions(rows, options) {
     if (countEl) countEl.textContent = '(' + ((rows && rows.length) || 0) + ' open)';
     if (!tbody) return;
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="10" class="empty">No open positions</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="14" class="empty">No open positions</td></tr>`;
         return;
     }
     tbody.innerHTML = rows.map(p => {
@@ -235,6 +250,10 @@ function renderOpenPositions(rows, options) {
             <td class="mono">${esc(p.tradingsymbol)}</td>
             <td class="mono">${esc(istTime(p.entry_timestamp))}</td>
             <td class="mono">${n(p.entry_price)}</td>
+            <td class="mono">${n(p.atr_at_entry)}</td>
+            <td class="mono neg">${n(p.stop_price)}</td>
+            <td class="mono">${n(p.trail_distance)}</td>
+            <td class="mono">${n(p.trail_stop)}</td>
             <td class="mono">${n(ltp)}</td>
             <td class="mono ${upnlCls}">${upnl === null ? '--' : n(upnl)}</td>
             <td class="mono pos">OPEN</td>
@@ -245,7 +264,7 @@ function renderOpenPositions(rows, options) {
 function renderTrades(tbodyId, rows, mode) {
     const tbody = document.getElementById(tbodyId);
     if (!rows || rows.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="11" class="empty">No rows</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="13" class="empty">No rows</td></tr>`;
         return;
     }
     tbody.innerHTML = rows.map(t => {
@@ -257,6 +276,8 @@ function renderTrades(tbodyId, rows, mode) {
                 <td class="mono">${n(t.strike, 0)}</td>
                 <td class="mono">${esc(istTime(t.entry_timestamp))}</td>
                 <td class="mono">${n(t.entry_price)}</td>
+                <td class="mono">${n(t.atr_at_entry)}</td>
+                <td class="mono neg">${n(t.stop_price)}</td>
                 <td class="mono">${esc(istTime(t.exit_timestamp))}</td>
                 <td class="mono">${n(t.exit_price)}</td>
                 <td class="mono">${n(t.sma9_value)}</td>
@@ -271,6 +292,8 @@ function renderTrades(tbodyId, rows, mode) {
             <td class="mono">${n(t.strike, 0)}</td>
             <td class="mono">${esc(istTime(t.signal_timestamp))}</td>
             <td class="mono">${n(t.entry_price)}</td>
+            <td class="mono">${n(t.atr_at_entry)}</td>
+            <td class="mono neg">${n(t.stop_price)}</td>
             <td class="mono">${n(t.exit_price)}</td>
             <td class="mono">${n(t.sma9_value)}</td>
             <td class="mono">${n(t.prev_close)}</td>
@@ -287,12 +310,12 @@ function renderStatus(st, live) {
     badge.textContent = status;
     badge.className = 'badge ' + status;
     document.getElementById('scanner-status-text').textContent =
-        (live && live.scanner_name) || st.scanner_name || 'SMA9 1-MIN Poll Scanner';
+        (live && live.scanner_name) || st.scanner_name || 'SMA9 1-MIN POLL ATR Scanner';
     document.getElementById('spot').textContent = n(live && live.spot);
     document.getElementById('atm').textContent = n(live && live.atm_strike, 0);
     document.getElementById('expiry').textContent = (live && live.expiry) || '--';
     document.getElementById('last-scan').textContent = live && live.last_scan_at ? istTime(live.last_scan_at) : '--';
-    const poll = (live && live.poll_seconds) || st.poll_seconds || 60;
+    const poll = (live && live.poll_seconds) || st.poll_seconds || 5;
     const actual = live && live.actual_interval_seconds;
     document.getElementById('poll').textContent = poll + 's' + (actual ? ' (actual ' + actual + 's)' : '');
     document.getElementById('market').textContent = live && live.market_open ? 'OPEN' : 'CLOSED';

@@ -1,24 +1,35 @@
 #!/usr/bin/env python3
-"""Pure SMA9 strategy engine for ATM NIFTY CE and PE options.
+"""SMA9 1-minute-poll strategy engine with a volatility-scaled (ATR) stop.
 
-Same signal and exit rules as the 5-second SMA9 scanner.  The only difference
-is operational: the live runner polls once per MINUTE, so stop-loss and trail
-are evaluated on the forming candle every 60 seconds instead of every 5.
-
-BUY-ONLY rules (identical for CE and PE):
-  Entry on a 5-minute candle:
+BUY-ONLY rules (entry unchanged from the SMA9 scanner):
+  Entry on the first poll that sees a new 5-minute candle:
     A) previous completed candle CLOSE > SMA9
     AND
     B) current (forming) candle OPEN > SMA9
-  Entry: paper BUY at the live LTP on the first 1-minute poll that sees A and B
+  Entry: paper BUY at the live LTP as soon as A and B are true
 
 Exit (identical for CE and PE):
-  1) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level
-  2) TRAIL: +5 activates breakeven, then peak - 5; +6 locks +2; exits at LTP
-  3) no time-based or candle-close exit
+  1) INITIAL STOP: live LTP <= entry - stop_distance
+     stop_distance = clamp(k * ATR(14) of the option premium,
+                           floor% of entry, cap% of entry)
+     -> exit at the ACTUAL live LTP (never at the theoretical stop price)
+  2) ATR TRAIL ONLY: once price has moved in our favour, stop = peak -
+     stop_distance (the same ATR-derived distance fixed at entry), ratcheted
+     upward on every poll.  There is no fixed 5-point activation and no
+     breakeven lock.
+  3) otherwise hold (no time-based exit)
 
-Only completed 5-minute candles are used for the signal, so no future data
-can leak into a decision.  No broker / database / network dependencies.
+The scanner identity and DB stay as `sma9_1min_poll`; only behavior changed.
+
+Why ATR instead of a fixed 5%:
+  ATM option premium noise is roughly constant in absolute points (~11-15)
+  while the premium itself shrinks toward expiry.  A 5% stop therefore falls
+  inside the noise band on cheap / 0-DTE options and stops out on almost
+  every trade.  Scaling the stop to the option's own 5-minute ATR keeps the
+  stop outside normal noise regardless of premium level.
+
+Only completed 5-minute candles are used, so no future data can leak into a
+decision.  No broker / database / network dependencies.
 """
 
 from __future__ import annotations
@@ -31,13 +42,18 @@ from typing import Dict, List, Optional, Sequence
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
 STRATEGY_ID = "sma9_1min_poll"
-STRATEGY_VERSION = "1.0.0"
+STRATEGY_VERSION = "1.1.0"
 STRATEGY_TYPE = "SMA9_1MIN_POLL_BUY_ONLY"
-STOP_LOSS_PCT = 0.05
-TRAIL = 5.0
-ACTIVATE = 5.0
-BE_LOCK_PROFIT = 6.0
-BE_LOCK_STOP = 2.0
+
+# Initial-stop model.
+ATR_PERIOD = 14
+STOP_K = 0.70          # stop distance = 0.70 * premium ATR(14)
+STOP_FLOOR_PCT = 0.05  # never tighter than 5% of premium (old behaviour)
+STOP_CAP_PCT = 0.30    # never wider than 30% of premium (risk guard)
+STOP_FALLBACK_PCT = 0.10  # used only when ATR cannot be computed
+
+# Trailing stop: the ATR-derived initial-stop distance is reused as the
+# trail width.  No fixed-width activation and no breakeven lock.
 
 
 def _as_dt(value) -> datetime:
@@ -71,8 +87,49 @@ def candle_end(start: datetime) -> datetime:
 def make_trade_id(instrument: str, strike: float, option_type: str,
                   entry_candle_start, prefix: str = "S1M-") -> str:
     ts = _as_dt(entry_candle_start).isoformat()
-    raw = f"SMA9_1MIN_POLL|{STRATEGY_ID}|{instrument}|{strike}|{option_type}|{ts}"
+    raw = f"SMA9ATR|{STRATEGY_ID}|{instrument}|{strike}|{option_type}|{ts}"
     return prefix + hashlib.sha1(raw.encode()).hexdigest()[:12].upper()
+
+
+# ---------------------------------------------------------------------------
+# Volatility (premium ATR)
+# ---------------------------------------------------------------------------
+def premium_atr(candles: Sequence[dict], period: int = ATR_PERIOD) -> Optional[float]:
+    """Simple-mean True Range of the option premium over completed candles.
+
+    The last row (the forming candle) is excluded so the value is known at
+    entry time.  Returns None when there is not enough history.
+    """
+    rows = normalize_candles(candles)
+    completed = rows[:-1]
+    if len(completed) < period + 1:
+        return None
+    window = completed[-(period + 1):]
+    trs: List[float] = []
+    for prev, cur in zip(window[:-1], window[1:]):
+        tr = max(cur["high"] - cur["low"],
+                 abs(cur["high"] - prev["close"]),
+                 abs(cur["low"] - prev["close"]))
+        trs.append(tr)
+    if not trs:
+        return None
+    return sum(trs) / len(trs)
+
+
+def compute_stop(entry_price: float, atr: Optional[float]) -> tuple:
+    """Return (stop_price, distance, distance_pct, source)."""
+    entry = float(entry_price)
+    if atr is not None and atr > 0:
+        distance = STOP_K * float(atr)
+        distance = max(distance, entry * STOP_FLOOR_PCT)
+        distance = min(distance, entry * STOP_CAP_PCT)
+        source = "atr"
+    else:
+        distance = entry * STOP_FALLBACK_PCT
+        source = "fallback_pct"
+    stop_price = round(entry - distance, 2)
+    distance_pct = round(distance / entry, 4) if entry else 0.0
+    return stop_price, round(distance, 4), distance_pct, source
 
 
 # ---------------------------------------------------------------------------
@@ -191,8 +248,16 @@ class Position:
     condition_a: bool
     condition_b: bool
     ltp_at_entry: float
+    atr_at_entry: Optional[float] = None
+    stop_price: Optional[float] = None
+    stop_k: Optional[float] = None
+    stop_distance_pct: Optional[float] = None
+    stop_source: Optional[str] = None
+    trail_distance: Optional[float] = None
     hwm: float = 0.0
     stop: Optional[float] = None
+    # Kept only so positions persisted by v1.0.0 can be restored.  The
+    # breakeven lock is no longer used by this scanner.
     be_locked: bool = False
 
     def as_dict(self) -> dict:
@@ -207,32 +272,35 @@ class Position:
         for k in ("entry_timestamp", "entry_candle_start", "entry_candle_end"):
             data[k] = _as_dt(data[k])
         return cls(**data)
-    def update_trail(self, ltp: Optional[float]) -> Optional[float]:
-        """Update high-water mark and return a trail-stop exit price.
 
-        Trail activates once the peak is `ACTIVATE` above entry (stop -> breakeven),
-        then ratchets at peak - TRAIL.  One-time breakeven lock at +BE_LOCK_PROFIT
-        moves the stop to entry + BE_LOCK_STOP.  Only a strictly profitable stop
-        (stop > entry) may trigger an exit; otherwise hold to the next 1-minute
-        poll.
+    def update_trail(self, ltp: Optional[float]) -> Optional[float]:
+        """Ratchet the ATR-distance trail and return a fill price if hit.
+
+        The trail width is the ATR-derived stop distance fixed at entry.  It
+        becomes active as soon as the premium has made a new high above the
+        entry (there is no fixed +5 activation threshold).  The stop can never
+        ratchet down.  If the premium has not yet moved in our favour the
+        initial ATR stop remains the only exit, so a loss is never labelled as
+        a trail exit.
         """
         if ltp is None:
             return None
         if ltp > self.hwm:
             self.hwm = ltp
-        if self.hwm - self.entry_price >= ACTIVATE:
-            if self.stop is None:
-                self.stop = self.entry_price
-            else:
-                self.stop = max(self.stop, self.hwm - TRAIL)
-        if (not self.be_locked
-                and self.hwm - self.entry_price >= BE_LOCK_PROFIT):
-            base_stop = self.stop if self.stop is not None else self.entry_price
-            self.stop = max(base_stop, self.entry_price + BE_LOCK_STOP)
-            self.be_locked = True
-        if (self.stop is not None
-                and self.stop > self.entry_price
-                and ltp <= self.stop):
+        if self.hwm <= self.entry_price:
+            return None
+
+        if self.trail_distance is not None and self.trail_distance > 0:
+            distance = float(self.trail_distance)
+        elif self.atr_at_entry is not None:
+            distance = compute_stop(self.entry_price, self.atr_at_entry)[1]
+        else:
+            distance = compute_stop(self.entry_price, None)[1]
+
+        candidate = round(self.hwm - distance, 2)
+        if self.stop is None or candidate > self.stop:
+            self.stop = candidate
+        if self.stop is not None and ltp <= self.stop:
             return round(self.stop, 2)
         return None
 
@@ -244,8 +312,8 @@ class OptionStateMachine:
       * at most one open position for this option
       * at most one entry per 5-minute candle (duplicate-poll guard)
       * no entry whose candle would end after market close
-      * 5% stop loss and trailing stop evaluated on every 1-minute poll
-      * no time-based exit
+      * ATR-scaled initial stop checked on every poll, filled at live LTP
+      * ATR-width trailing stop (peak - initial ATR distance), no BE lock
     """
 
     def __init__(self, option_type: str):
@@ -258,7 +326,8 @@ class OptionStateMachine:
     # -- entry -----------------------------------------------------------
     def try_entry(self, ev: Evaluation, now: datetime, strike: float,
                   expiry: str, token: Optional[int], tradingsymbol: str,
-                  market_close: datetime) -> Optional[Position]:
+                  market_close: datetime,
+                  atr: Optional[float] = None) -> Optional[Position]:
         if self.position is not None:
             return None
         if not ev.signal or ev.ltp is None or ev.candle_start is None:
@@ -267,6 +336,9 @@ class OptionStateMachine:
             return None
         if candle_end(ev.candle_start) > market_close:
             return None
+
+        entry_price = round(float(ev.ltp), 2)
+        stop_price, dist, dist_pct, source = compute_stop(entry_price, atr)
 
         pos = Position(
             option_type=self.option_type,
@@ -279,14 +351,20 @@ class OptionStateMachine:
             entry_timestamp=now,
             entry_candle_start=ev.candle_start,
             entry_candle_end=candle_end(ev.candle_start),
-            entry_price=round(float(ev.ltp), 2),
+            entry_price=entry_price,
             sma9=round(float(ev.sma9), 2),
             prev_close=float(ev.prev_close),
             current_open=float(ev.current_open),
             condition_a=bool(ev.condition_a),
             condition_b=bool(ev.condition_b),
-            ltp_at_entry=round(float(ev.ltp), 2),
-            hwm=round(float(ev.ltp), 2),
+            ltp_at_entry=entry_price,
+            atr_at_entry=round(float(atr), 4) if atr is not None else None,
+            stop_price=stop_price,
+            stop_k=STOP_K if source == "atr" else 0.0,
+            stop_distance_pct=dist_pct,
+            stop_source=source,
+            trail_distance=round(float(dist), 4),
+            hwm=entry_price,
             stop=None,
             be_locked=False,
         )
@@ -301,13 +379,20 @@ class OptionStateMachine:
         return self.position.update_trail(ltp)
 
     def check_stop_loss(self, ltp: Optional[float]) -> Optional[float]:
-        """Return the stop-loss exit price when LTP has breached it."""
+        """Return the ACTUAL exit price when LTP has breached the ATR stop.
+
+        The fill is the live LTP, not the theoretical stop price: a fast move
+        can trade through the stop, and paper fills must reflect that.
+        """
         pos = self.position
         if pos is None or ltp is None:
             return None
-        sl_price = round(pos.entry_price * (1.0 - STOP_LOSS_PCT), 2)
-        if ltp <= sl_price:
-            return sl_price
+        stop_price = pos.stop_price
+        if stop_price is None:
+            stop_price = compute_stop(pos.entry_price, pos.atr_at_entry)[0]
+            pos.stop_price = stop_price
+        if ltp <= stop_price:
+            return round(float(ltp), 2)
         return None
 
     def needs_exit(self, now: datetime) -> bool:
@@ -353,6 +438,12 @@ class OptionStateMachine:
             "ltp_at_entry": pos.ltp_at_entry,
             "entry_candle_start": pos.entry_candle_start.isoformat(),
             "entry_candle_end": pos.entry_candle_end.isoformat(),
+            "atr_at_entry": pos.atr_at_entry,
+            "stop_price": pos.stop_price,
+            "stop_k": pos.stop_k,
+            "stop_distance_pct": pos.stop_distance_pct,
+            "stop_source": pos.stop_source,
+            "trail_distance": pos.trail_distance,
         }
         self.position = None
         return trade

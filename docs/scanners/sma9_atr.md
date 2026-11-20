@@ -164,5 +164,5 @@ The unit is enabled, `Restart=always`, and in `ALL_UNITS` of
   it has no regime gate.
 - `sma9_5s_atr` uses the ATR distance as its trail width at a 5-second cadence,
   but keeps the other shared trail conditions and has no regime gate.
-- `sma9_1min_poll` keeps the 5% stop at the 1-minute cadence.
+- `sma9_1min_poll` uses the same ATR stop and ATR-only trail at a 5-second cadence, but has no regime gate.
 - All other scanners are untouched by v1.1.0.

@@ -1,96 +1,82 @@
-# SMA9 1-Minute Poll Scanner
+# SMA9 1-Min Poll Scanner (identity retained, 5-second ATR upgrade)
 
-A paper-trading scanner with the **SMA9 entry rule** and the **same exits as
-SMA9**, but polled **once per minute** instead of every 5 seconds. It replaces
-the retired `no_sma` (previous-5m-high breakout) scanner slot.
+A paper-trading scanner that keeps the original `sma9_1min_poll` identity but,
+from v1.1.0, polls every **5 seconds** and uses the `sma9_atr` v1.1.0 exit model.
+The entry rule is unchanged: A and B only, with no LTP gate, no rising-SMA9
+filter and no regime gate. The old fixed 5% stop, 5-point trail, +5 activation
+and +6 breakeven lock are removed.
 
 * Directory: `/opt/tradingai/sma9_1min_poll_scanner`
 * Database: `/opt/tradingai/database/sma9_1min_poll.db`
 * Service: `tradingai-sma9-1min-poll-scanner.service`
+* User: `sma91m`
 * Log: `/opt/tradingai/logs/live_sma9_1min_poll_scanner.log`
-* Strategy id: `sma9_1min_poll`
+* Strategy id: `sma9_1min_poll` (v1.1.0)
+* Strategy type: `SMA9_1MIN_POLL_BUY_ONLY`
 * Tables: `sma9_1min_poll_trades`, `sma9_1min_poll_open_positions`,
   `sma9_1min_poll_scan_state`
 * Dashboard: `/live/sma9-1min-poll/`
 * API: `/api/sma9-1min-poll/*`
 
-It does not read, write, or restart any existing scanner. Paper only: no
-broker order is ever placed.
+The name, DB, service, user, API and page are unchanged. On 2026-11-20 the
+behavior was upgraded in place: 60-second cadence -> 5-second cadence and
+fixed SL/trail -> ATR stop/trail. Existing trade history stays in the same DB;
+nullable ATR columns are added by an idempotent migration. No other scanner is
+read, written or restarted. Paper only: no broker order is ever placed.
 
-## Entry (SMA9 only)
+## Entry
 
-At each 1-minute poll, for each of ATM CE and ATM PE, from that option's own
+At each 5-second poll, for each of ATM CE and ATM PE, from that option's own
 5-minute candles:
 
 * A) previous **completed** candle CLOSE > SMA9
-* B) current **forming** candle OPEN > SMA9
+* B) current forming candle OPEN > SMA9
+* signal = A **and** B; paper BUY at `round(live LTP, 2)`
 
-Both must hold. Entry is a paper BUY at the live LTP on the first 1-minute
-poll that sees A and B. There is no previous-high breakout condition and no
-separate LTP > SMA9 gate.
+Both must hold. There is **no separate LTP > SMA9 gate**, no rising-SMA9
+condition and no previous-high breakout. At most one entry per 5-minute candle
+per option. CE and PE are evaluated independently.
 
-At most one entry per 5-minute candle. Entries are allowed only between
-09:20 and 15:15 IST, and the scanner refuses to evaluate the previous candle
-as if it were forming when the exchange has not published the current candle
-yet.
+Scanning starts at 09:00 IST, but the exchange publishes the first 5-minute
+candle at 09:15. 09:00–09:15 is warm-up only: no entry is evaluated and no exit
+is managed. Entries are allowed from 09:20 up to 15:15. There is no
+candle-close exit and no time-based exit.
 
 ## Exit
 
-1. **Fixed stop loss:** LTP <= entry - 5% of entry premium. The trade is
-   closed at the theoretical stop price (`STOP_LOSS_5PCT`), matching SMA9.
-2. **Trailing stop:** +5 activates breakeven, then ratchets at peak - 5; a
-   one-time breakeven lock at +6 moves the stop to entry + 2. Fills at the
-   live LTP (`TRAIL_STOP_EXIT`).
-3. No time-based or candle-close exit; a position is held until the stop or
-   the trail fires.
+The initial ATR stop and the ATR trail both use the option premium's ATR(14)
+computed from completed 5-minute candles:
 
-Stop-loss and trail are evaluated on the forming candle **once per minute**,
-aligned to the wall-clock minute (`:00`). That is the only behavioural
-difference from the 5-second SMA9 scanner: a 60s sample can miss an
-intra-minute spike that a 5s scanner would have stopped on, and can hold a
-position across a 5-minute boundary.
-
-## State and restart
-
-Open positions persist the entry, high-water mark, trail stop and breakeven
-flag. A same-session restart resumes the same trade and the same trail; it does
-not reset the peak, close at the entry candle's close, or re-enter the candle.
-A position left over from an earlier session is not carried: it is closed at
-the current LTP with `STALE_RECOVERY_EXIT` on startup. The database is WAL-mode
-with a busy timeout so the read-only API can query it while the scanner
-writes.
-
-## Run
-
+```text
+distance = clamp(0.70 × ATR14, 5% × entry, 30% × entry)
+stop_price = entry - distance
 ```
+
+* If ATR is unavailable, a 10% fallback distance is used.
+* **ATR stop:** if LTP <= `stop_price`, exit at the **actual live LTP** with
+  reason `STOP_LOSS_ATR` (never at the theoretical stop price).
+* **ATR trail:** once LTP makes a new high above entry, the stop ratchets to
+  `peak - distance`. It never ratchets down.
+* There is no fixed +5 activation and no +6 breakeven lock.
+* Otherwise hold, including across candles and overnight.
+
+## Isolation and operations
+
+This scanner owns its DB, tables, log, service, user, code tree, API and page.
+It shares only the host and the Kite credentials with the other scanners.
+
+```bash
 sudo systemctl status tradingai-sma9-1min-poll-scanner
 sudo journalctl -u tradingai-sma9-1min-poll-scanner -n 50
 tail -f /opt/tradingai/logs/live_sma9_1min_poll_scanner.log
 ```
 
-## Verify
+Offline checks:
 
-```
+```bash
 python3 tests/test_sma9_1min_poll_engine.py
-sudo python3 ops/dryrun_market_open.py
+python3 ops/dryrun_market_open.py
 ```
 
-The dry run uses a throw-away database and a fake feed; it never touches the
-live DB or the broker.
-
-## Why a separate scanner
-
-`no_sma` was a different strategy (prev-high breakout, 5s poll) and its
-history is not comparable to SMA9. Keeping this scanner isolated preserves
-both histories and lets the 60s cadence be compared against the 5s SMA9
-scanner without changing either one.
-
-## Siblings
-
-- `sma9_atr` — same SMA9 entry at the 5-second cadence, with a
-  volatility-scaled (ATR) stop instead of the fixed 5% floor.
-- `sma9_5s_atr` — this entry and cadence plus the ATR stop, with the ATR
-  distance also used as the trail width.
-
-Full per-scanner documentation: `docs/scanners/README.md` in the repo
-(deployed at `/opt/tradingai/docs/scanners/`).
+The dry run points `SMA9_1MIN_POLL_DB_PATH` at a throw-away file and never
+touches the live DB.

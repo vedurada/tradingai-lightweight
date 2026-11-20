@@ -136,6 +136,6 @@ within 180 s of the last scan when the market is closed.
 
 - `sma9_atr` — same ATR stop / ATR-only trail, 5-second cadence, plus a daily
   NIFTY spot regime gate; no rising-SMA9 filter.
-- `sma9_1min_poll` — 60-second cadence, fixed 5% stop and 5-point trail.
+- `sma9_1min_poll` — 5-second cadence and the same ATR stop/trail, but A+B entry without the rising-SMA9 filter.
 - `no_sma_trail` — retired predecessor; its DB and page remain as archives
   (see [`retired.md`](retired.md)).

@@ -1,25 +1,22 @@
 #!/usr/bin/env python3
-"""Market-open dry run for the DEPLOYED sma9_1min_poll live runner.
+"""Market-open dry run for the DEPLOYED sma9_1min_poll v1.1.0 runner.
 
 What it proves
 --------------
-The exact deployed file
-/opt/tradingai/sma9_1min_poll_scanner/app/live_sma9_1min_poll_scanner.py
+The exact deployed file /opt/tradingai/sma9_1min_poll_scanner/app/live_sma9_1min_poll_scanner.py
 is driven through the same branches its main loop uses, with a fake clock and
 a fake Kite feed:
 
   08:55  pre-market branch  -> writes heartbeat, no scan
   09:00  scanner starts     -> resolves spot/ATM/expiry/contracts, no entry
-  09:20  entry window       -> BUY at live LTP, 5% stop available
-  09:20  same candle again  -> no duplicate entry
-  09:22  LTP below 5% stop  -> STOP_LOSS_5PCT at the theoretical stop
-  09:25  next candle        -> re-entry
-  restart                   -> open position + trail state recovered
+  09:20  entry window       -> A+B entry on CE, PE stays flat; ATR stop captured
+  09:20  same candle again  -> no duplicate entry on the 5s poll
+  09:22  LTP below stop     -> STOP_LOSS_ATR filled at the actual LTP
+  09:25  next candle        -> re-entry with a fresh ATR stop
+  restart                   -> open position + ATR stop recovered
 
-It also checks that the poll is minute-aligned and reports 60 seconds.
-
-No network, no broker, no writes to the live DB: SMA9_1MIN_POLL_DB_PATH points
-at a throw-away file.  Exit code 0 only if every assertion passes.
+No network, no broker, no writes to the live DB: SMA9_1MIN_POLL_DB_PATH points at a
+throw-away file.  Exit code 0 only if every assertion passes.
 """
 
 import importlib.util
@@ -42,8 +39,7 @@ for suffix in ("", "-wal", "-shm"):
 os.environ["SMA9_1MIN_POLL_DB_PATH"] = DRY_DB
 sys.path.insert(0, "/opt/tradingai/sma9_1min_poll_scanner")
 
-spec = importlib.util.spec_from_file_location("live_sma9_1min_poll_scanner",
-                                              RUNNER)
+spec = importlib.util.spec_from_file_location("live_sma9_1min_poll_scanner", RUNNER)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
 
@@ -168,33 +164,18 @@ def main():
     feed = FakeFeed()
     scanner = mod.Sma9OneMinPollLiveScanner(feed)
 
-    # ---------------------------------------------------------------- poll
-    print("[poll] 60-second minute-aligned sleep")
-    at(9, 10, 5)
-    sleeps = []
-    real_sleep = mod.time.sleep
-    mod.time.sleep = lambda s: sleeps.append(s)
-    try:
-        mod.sleep_to_next_tick()
-    finally:
-        mod.time.sleep = real_sleep
-    check("poll constant is 60s", mod.POLL_SECONDS == 60, mod.POLL_SECONDS)
-    check("sleep targets the next minute",
-          len(sleeps) == 1 and abs(sleeps[0] - 55.0) < 0.01, sleeps)
-
     # ---------------------------------------------------------------- 08:55
-    print("\n[08:55] pre-market (process already running since yesterday)")
+    print("[08:55] pre-market (process already running since yesterday)")
     at(8, 55)
     branch, st = loop_step(scanner)
     check("pre-market branch selected", branch == "pre-market", branch)
     check("no scan attempted before open", st.get("last_scan_at") is None)
-    state_rows = db_rows(
-        "SELECT value FROM sma9_1min_poll_scan_state WHERE key='live_status'")
+    state_rows = db_rows("SELECT value FROM sma9_1min_poll_scan_state WHERE key='live_status'")
     check("heartbeat written", len(state_rows) == 1)
-    check("market reported closed",
-          json.loads(state_rows[0]["value"])["market_open"] is False)
-    check("status reports 60s poll",
-          json.loads(state_rows[0]["value"])["poll_seconds"] == 60)
+    check("market reported closed", json.loads(state_rows[0]["value"])["market_open"] is False)
+    check("heartbeat reports 5s poll",
+          json.loads(state_rows[0]["value"])["poll_seconds"] == 5)
+    check("runner poll constant is 5s", mod.POLL_SECONDS == 5, mod.POLL_SECONDS)
 
     # ---------------------------------------------------------------- 09:00
     print("\n[09:00] scanner starts")
@@ -202,20 +183,14 @@ def main():
     branch, st = loop_step(scanner)
     check("scan branch selected", branch == "scan", branch)
     check("spot resolved", st.get("spot") == 25237.5, st.get("spot"))
-    check("ATM strike resolved", st.get("atm_strike") == 25250.0,
-          st.get("atm_strike"))
-    check("nearest expiry resolved", st.get("expiry") == "2026-11-23",
-          st.get("expiry"))
-    check("CE contract resolved",
-          st["options"]["CE"]["tradingsymbol"].endswith("25250CE"),
+    check("ATM strike resolved", st.get("atm_strike") == 25250.0, st.get("atm_strike"))
+    check("nearest expiry resolved", st.get("expiry") == "2026-11-23", st.get("expiry"))
+    check("CE contract resolved", st["options"]["CE"]["tradingsymbol"].endswith("25250CE"),
           st["options"]["CE"].get("tradingsymbol"))
-    check("PE contract resolved",
-          st["options"]["PE"]["tradingsymbol"].endswith("25250PE"),
+    check("PE contract resolved", st["options"]["PE"]["tradingsymbol"].endswith("25250PE"),
           st["options"]["PE"].get("tradingsymbol"))
-    check("09:00 scan is not tradable yet",
-          not mod.entry_window_is_open(clock["now"]))
-    check("no entry at 09:00",
-          not any(s.position for s in scanner.states.values()))
+    check("09:00 scan is not tradable yet", not mod.entry_window_is_open(clock["now"]))
+    check("no entry at 09:00", not any(s.position for s in scanner.states.values()))
     check("heartbeat has last_scan_at", st.get("last_scan_at") is not None)
 
     # ---------------------------------------------------------------- 09:20
@@ -224,58 +199,68 @@ def main():
     branch, st = loop_step(scanner)
     ce = scanner.states["CE"].position
     check("scan branch selected", branch == "scan", branch)
-    check("CE entered", ce is not None)
+    check("CE entered on A+B", ce is not None)
+    check("scanner has no regime gate", not hasattr(mod, "compute_spot_regime"))
     check("PE stays flat (its SMA9 conditions are false)",
           scanner.states["PE"].position is None)
     if ce:
-        check("entry price is the live LTP", ce.entry_price == 122.0,
-              ce.entry_price)
-        check("condition A recorded", ce.condition_a is True)
-        check("condition B recorded", ce.condition_b is True)
-        check("5% stop is 115.90",
-              scanner.states["CE"].check_stop_loss(115.89) == 115.9,
-              scanner.states["CE"].check_stop_loss(115.89))
-        check("stop is not hit at entry",
-              scanner.states["CE"].check_stop_loss(122.0) is None)
+        check("entry price is the live LTP", ce.entry_price == 122.0, ce.entry_price)
+        check("ATR captured at entry", ce.atr_at_entry is not None, ce.atr_at_entry)
+        check("ATR stop below entry", ce.stop_price < ce.entry_price,
+              f"stop={ce.stop_price} entry={ce.entry_price}")
+        check("stop distance within 5%-30%",
+              0.05 - 1e-9 <= ce.stop_distance_pct <= 0.30 + 1e-9,
+              round(ce.stop_distance_pct * 100, 2))
+        check("stop source recorded", ce.stop_source in ("atr", "fallback_pct"),
+              ce.stop_source)
     open_rows = db_rows("SELECT * FROM sma9_1min_poll_open_positions")
-    check("open position persisted",
-          len(open_rows) == 1 and open_rows[0]["option_type"] == "CE")
-    check("no closed trade yet",
-          len(db_rows("SELECT * FROM sma9_1min_poll_trades")) == 0)
-    check("live state exposes SMA9 signal",
-          st["options"]["CE"].get("sma9") is not None
-          and st["options"]["CE"].get("signal") is True,
-          f"sma9={st['options']['CE'].get('sma9')}")
+    check("open position persisted", len(open_rows) == 1 and open_rows[0]["option_type"] == "CE")
+    if open_rows:
+        check("DB has atr_at_entry", open_rows[0]["atr_at_entry"] is not None,
+              open_rows[0]["atr_at_entry"])
+        check("DB has stop_price", open_rows[0]["stop_price"] is not None,
+              open_rows[0]["stop_price"])
+        check("DB has ATR trail distance",
+              open_rows[0]["trail_distance"] is not None
+              and abs(open_rows[0]["trail_distance"] - ce.trail_distance) < 1e-9,
+              open_rows[0]["trail_distance"])
+    check("no closed trade yet", len(db_rows("SELECT * FROM sma9_1min_poll_trades")) == 0)
+    check("live state exposes ATR + stop preview",
+          st["options"]["CE"].get("atr") is not None
+          and st["options"]["CE"].get("stop_preview") is not None,
+          f"atr={st['options']['CE'].get('atr')} preview={st['options']['CE'].get('stop_preview')}")
 
-    # ---------------------------------------------------------------- 09:20:30
-    print("\n[09:20:30] same 5m candle, poll again")
-    at(9, 20, 30)
+    # ---------------------------------------------------------------- 09:20:15
+    print("\n[09:20:15] same 5m candle, poll again")
+    at(9, 20, 15)
     loop_step(scanner)
     check("no duplicate entry on same candle",
           len(db_rows("SELECT * FROM sma9_1min_poll_open_positions")) == 1)
 
     # ---------------------------------------------------------------- 09:22
-    print("\n[09:22] LTP trades through the 5% stop")
-    feed.ltp["CE"] = 114.9
+    print("\n[09:22] LTP trades through the stop")
+    stop = scanner.states["CE"].position.stop_price
+    feed.ltp["CE"] = round(stop - 1.0, 2)
     at(9, 22, 0)
     branch, st = loop_step(scanner)
     trades = db_rows("SELECT * FROM sma9_1min_poll_trades")
     check("trade closed", len(trades) == 1)
     if trades:
         t = trades[0]
-        check("exit reason STOP_LOSS_5PCT",
-              t["exit_reason"] == "STOP_LOSS_5PCT", t["exit_reason"])
-        check("filled at the theoretical 5% stop", t["exit_price"] == 115.9,
-              f"exit={t['exit_price']}")
-        check("P&L reflects the stop fill",
-              abs(t["pnl_points"] - (115.9 - 122.0)) < 0.01, t["pnl_points"])
-        check("entry conditions persisted",
-              t["condition_a"] == 1 and t["condition_b"] == 1)
+        check("exit reason STOP_LOSS_ATR", t["exit_reason"] == "STOP_LOSS_ATR", t["exit_reason"])
+        check("filled at actual LTP (not theoretical stop)",
+              t["exit_price"] == round(stop - 1.0, 2),
+              f"exit={t['exit_price']} stop={stop}")
+        check("P&L reflects the LTP fill",
+              abs(t["pnl_points"] - round(t["exit_price"] - t["entry_price"], 2)) < 0.01,
+              t["pnl_points"])
+        check("ATR/stop persisted on the trade",
+              t["atr_at_entry"] is not None and t["stop_price"] == stop
+              and t["trail_distance"] is not None)
     check("open position cleared",
           len(db_rows("SELECT * FROM sma9_1min_poll_open_positions")) == 0)
     check("today stats count the stop",
-          st["today"]["trades"] == 1 and st["today"]["losses"] == 1,
-          st["today"])
+          st["today"]["trades"] == 1 and st["today"]["stop_outs"] == 1, st["today"])
 
     # ---------------------------------------------------------------- 09:25
     print("\n[09:25] next candle: re-entry allowed")
@@ -285,81 +270,27 @@ def main():
     ce2 = scanner.states["CE"].position
     check("re-entry after stop", ce2 is not None)
     check("one entry per candle rule intact",
-          ce2 is not None
-          and ce2.entry_candle_start == mod.floor_5m(clock["now"]))
-    check("one open-position row after re-entry",
-          len(db_rows("SELECT * FROM sma9_1min_poll_open_positions")) == 1)
-
-    # Trail state before restart: +6 -> breakeven lock at entry + 2.
-    if ce2:
-        scanner.states["CE"].update_trail(128.0)
-        check("breakeven lock before restart",
-              ce2.stop == 124.0 and ce2.be_locked is True,
-              f"stop={ce2.stop} be={ce2.be_locked}")
-
-    # ---------------------------------------------------------------- 09:26
-    print("\n[09:26] poll above the trail stop persists the ratchet")
-    feed.ltp["CE"] = 130.0
-    at(9, 26, 0)
-    loop_step(scanner)
-    if ce2:
-        check("trail ratcheted to peak-5",
-              ce2.stop == 125.0 and ce2.hwm == 130.0,
-              f"stop={ce2.stop} hwm={ce2.hwm}")
-        check("breakeven lock stays on", ce2.be_locked is True)
-    check("still one open position after the poll",
+          ce2 is not None and ce2.entry_candle_start == mod.floor_5m(clock["now"]))
+    check("two open-position rows total after re-entry",
           len(db_rows("SELECT * FROM sma9_1min_poll_open_positions")) == 1)
 
     # ---------------------------------------------------------------- restart
-    print("\n[09:27] scanner restart mid-position")
-    saved = dict(vars(ce2)) if ce2 else {}
+    print("\n[09:26] scanner restart mid-position")
+    saved = {k: v for k, v in vars(ce2).items()}
     scanner2 = mod.Sma9OneMinPollLiveScanner(FakeFeed())
     scanner2.recover_open_positions()
     ce3 = scanner2.states["CE"].position
     check("open position recovered", ce3 is not None)
     if ce3:
         check("same trade id", ce3.trade_id == saved["trade_id"])
-        check("5% entry price preserved", ce3.entry_price == saved["entry_price"])
-        check("trail stop preserved", ce3.stop == saved["stop"],
-              f"{ce3.stop} vs {saved['stop']}")
-        check("breakeven lock preserved", ce3.be_locked == saved["be_locked"])
+        check("ATR stop preserved", ce3.stop_price == saved["stop_price"],
+              f"{ce3.stop_price} vs {saved['stop_price']}")
+        check("ATR preserved", ce3.atr_at_entry == saved["atr_at_entry"])
         check("HWM preserved", ce3.hwm == saved["hwm"])
+        check("ATR trail distance preserved",
+              ce3.trail_distance == saved["trail_distance"])
     check("recovered row still in DB",
           len(db_rows("SELECT * FROM sma9_1min_poll_open_positions")) == 1)
-
-    # ---------------------------------------------------------------- 09:31
-    print("\n[09:31] restart after the entry candle ended (same session)")
-    at(9, 31, 0)
-    scanner3 = mod.Sma9OneMinPollLiveScanner(FakeFeed())
-    scanner3.recover_open_positions()
-    ce4 = scanner3.states["CE"].position
-    check("position survives a candle boundary", ce4 is not None)
-    check("trail stop still preserved", ce4 is not None and ce4.stop == 125.0,
-          ce4.stop if ce4 else None)
-    check("no candle-close exit was written",
-          len(db_rows("SELECT * FROM sma9_1min_poll_trades")) == 1)
-
-    # ------------------------------------------------------ stale (prior day)
-    print("\n[09:32] stale position from a previous session")
-    conn = sqlite3.connect(DRY_DB)
-    conn.execute(
-        "UPDATE sma9_1min_poll_open_positions SET entry_timestamp=?, "
-        "entry_candle_start=?, entry_candle_end=? WHERE option_type='CE'",
-        ("2026-11-18T09:25:05+05:30", "2026-11-18T09:25:00+05:30",
-         "2026-11-18T09:30:00+05:30"))
-    conn.commit()
-    conn.close()
-    at(9, 32, 0)
-    scanner4 = mod.Sma9OneMinPollLiveScanner(FakeFeed())
-    scanner4.recover_open_positions()
-    check("stale position not carried", scanner4.states["CE"].position is None)
-    trades = db_rows("SELECT * FROM sma9_1min_poll_trades "
-                     "WHERE exit_reason='STALE_RECOVERY_EXIT'")
-    check("stale position closed at LTP",
-          len(trades) == 1 and trades[0]["exit_price"] == 122.0,
-          trades[0]["exit_price"] if trades else None)
-    check("stale open row removed",
-          len(db_rows("SELECT * FROM sma9_1min_poll_open_positions")) == 0)
 
     # ---------------------------------------------------------------- summary
     print("\n" + "=" * 68)

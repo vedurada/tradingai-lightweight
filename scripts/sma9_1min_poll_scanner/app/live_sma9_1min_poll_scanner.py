@@ -1,27 +1,32 @@
 #!/usr/bin/env python3
-"""SMA9 ATM CE+PE live paper scanner, polled once per MINUTE - BUY ONLY.
+"""SMA9 ATM CE+PE live paper scanner (1min-poll identity) with ATR stop - BUY ONLY.
 
-Entry and exit rules are the same as the 5-second SMA9 scanner:
-  Qualification (per option, from its own 5-minute candles):
+This is a standalone scanner.  It writes only to its own database
+(database/sma9_1min_poll.db), its own log, and runs under its own systemd unit.
+No existing scanner is read or modified.  The strategy id / DB / service / API /
+dashboard identities are retained from the original 60-second scanner; v1.1.0
+changes only the cadence and the stop/trail model.
+
+Entry (per option, from its own 5-minute candles):
     A) previous completed candle CLOSE > SMA9
     AND
     B) current forming candle OPEN > SMA9
-  Entry: paper BUY at the live LTP (no broker order)
-  Exit:
-    1) fixed stop loss: LTP <= entry - 5% of entry premium
-    2) trailing stop: +5 -> breakeven, peak - 5, +6 -> +2; fills at LTP
-    3) no time-based exit
+  Entry: paper BUY immediately at the live LTP (no broker order)
 
-The only behavioural difference is the poll cadence: this scanner wakes once
-per minute, aligned to the wall-clock minute, so stop-loss and trail are
-checked on the forming candle every 60 seconds rather than every 5 seconds.
+Exit:
+    1) ATR-scaled initial stop, filled at the ACTUAL live LTP
+       distance = clamp(0.70 * premium ATR(14), 5% of entry, 30% of entry)
+    2) ATR trail only: stop = peak - that same ATR distance, ratcheted up
+       once price is above entry.  No fixed 5-point activation and no
+       breakeven lock.
+    3) otherwise hold (no time-based exit)
 
-One batched quote call per poll provides NIFTY spot + both option LTPs;
-historical candles are fetched only when the 5-minute candle changes (or at
-an exit), never on every poll.
+Polling is exactly every 5 seconds during market hours.  One batched quote
+call per poll provides NIFTY spot + both option LTPs; historical candles are
+fetched only when a new 5-minute candle appears, never on every poll.
 
 State is persisted in database/sma9_1min_poll.db so a restart with an open
-position resumes the same trail and stop.
+position resumes correctly with its original ATR stop.
 """
 
 from __future__ import annotations
@@ -42,7 +47,9 @@ if CODE_ROOT not in sys.path:
     sys.path.insert(0, CODE_ROOT)
 
 from app.sma9_1min_poll_engine import (  # noqa: E402
+    ATR_PERIOD,
     CANDLE_MINUTES,
+    STOP_K,
     STRATEGY_ID,
     STRATEGY_TYPE,
     STRATEGY_VERSION,
@@ -50,8 +57,10 @@ from app.sma9_1min_poll_engine import (  # noqa: E402
     OptionStateMachine,
     Position,
     candle_end,
+    compute_stop,
     evaluate_option,
     normalize_candles,
+    premium_atr,
 )
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -76,10 +85,10 @@ def session_open_time(dt):
 
 def session_close_time(dt):
     return MUHURAT_SESSIONS.get(dt.date().isoformat(), (MARKET_OPEN, MARKET_CLOSE))[1]
-POLL_SECONDS = 60
+POLL_SECONDS = 5
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
-SCANNER_NAME = "SMA9 1-Min Poll - ATM Option Strike (BUY ONLY)"
+SCANNER_NAME = "SMA9 1MIN POLL ATR - ATM Option Strike (BUY ONLY)"
 
 # systemd appends stdout/stderr to LOG_PATH; a FileHandler here would double
 # every line.
@@ -135,9 +144,9 @@ def market_close_dt(dt: datetime) -> datetime:
 
 
 def sleep_to_next_tick() -> None:
-    """Sleep until the next wall-clock minute (:00) for the 60-second poll."""
     now = now_ist()
-    target = now.replace(second=0, microsecond=0) + timedelta(minutes=1)
+    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
+    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
     time.sleep(max(0.2, (target - now_ist()).total_seconds()))
 
 
@@ -150,7 +159,8 @@ TRADE_COLUMNS = (
     "exit_price, exit_reason, pnl_points, status, sma9_value, candle_open, "
     "candle_high, candle_low, candle_close, created_at, updated_at, dataset, "
     "prev_close, condition_a, condition_b, ltp_at_entry, entry_candle_start, "
-    "entry_candle_end"
+    "entry_candle_end, atr_at_entry, stop_price, stop_k, stop_distance_pct, "
+    "stop_source, trail_distance"
 )
 
 
@@ -180,7 +190,7 @@ def init_db() -> None:
             entry_price REAL NOT NULL,
             exit_timestamp TEXT NOT NULL,
             exit_price REAL NOT NULL,
-            exit_reason TEXT NOT NULL DEFAULT 'SAME_CANDLE_EXIT',
+            exit_reason TEXT NOT NULL DEFAULT 'STOP_LOSS_ATR',
             pnl_points REAL NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'CLOSED',
             sma9_value REAL,
@@ -196,12 +206,22 @@ def init_db() -> None:
             condition_b INTEGER,
             ltp_at_entry REAL,
             entry_candle_start TEXT,
-            entry_candle_end TEXT
+            entry_candle_end TEXT,
+            atr_at_entry REAL,
+            stop_price REAL,
+            stop_k REAL,
+            stop_distance_pct REAL,
+            stop_source TEXT,
+            trail_distance REAL
         );
-        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_date ON sma9_1min_poll_trades(trade_date);
-        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_option ON sma9_1min_poll_trades(option_type);
-        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_status ON sma9_1min_poll_trades(status);
-        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_dataset ON sma9_1min_poll_trades(dataset);
+        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_date
+            ON sma9_1min_poll_trades(trade_date);
+        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_option
+            ON sma9_1min_poll_trades(option_type);
+        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_status
+            ON sma9_1min_poll_trades(status);
+        CREATE INDEX IF NOT EXISTS idx_sma9_1min_poll_trades_dataset
+            ON sma9_1min_poll_trades(dataset);
 
         CREATE TABLE IF NOT EXISTS sma9_1min_poll_open_positions (
             option_type TEXT PRIMARY KEY,
@@ -220,8 +240,14 @@ def init_db() -> None:
             condition_a INTEGER,
             condition_b INTEGER,
             ltp_at_entry REAL,
-            hwm REAL,
+            atr_at_entry REAL,
             stop_price REAL,
+            stop_k REAL,
+            stop_distance_pct REAL,
+            stop_source TEXT,
+            trail_distance REAL,
+            hwm REAL,
+            trail_stop REAL,
             be_locked INTEGER,
             updated_at TEXT NOT NULL
         );
@@ -233,6 +259,31 @@ def init_db() -> None:
         );
         """
     )
+    # Idempotent migration for databases created by v1.0.0 (fixed SL/trail).
+    # Old rows had no ATR metadata; new columns are nullable so history stays.
+    migrations = {
+        "sma9_1min_poll_trades": {
+            "atr_at_entry": "REAL",
+            "stop_price": "REAL",
+            "stop_k": "REAL",
+            "stop_distance_pct": "REAL",
+            "stop_source": "TEXT",
+            "trail_distance": "REAL",
+        },
+        "sma9_1min_poll_open_positions": {
+            "atr_at_entry": "REAL",
+            "stop_k": "REAL",
+            "stop_distance_pct": "REAL",
+            "stop_source": "TEXT",
+            "trail_distance": "REAL",
+            "trail_stop": "REAL",
+        },
+    }
+    for table, wanted in migrations.items():
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        for column, coltype in wanted.items():
+            if column not in columns:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {coltype}")
     conn.commit()
     conn.close()
 
@@ -260,17 +311,20 @@ def save_open_position(pos: Position) -> None:
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, prev_close, current_open, condition_a,
-                condition_b, ltp_at_entry, hwm, stop_price, be_locked,
-                updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                condition_b, ltp_at_entry, atr_at_entry, stop_price, stop_k,
+                stop_distance_pct, stop_source, trail_distance, hwm, trail_stop,
+                be_locked, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
                 pos.entry_candle_start.isoformat(), pos.entry_candle_end.isoformat(),
                 pos.entry_price, pos.sma9, pos.prev_close, pos.current_open,
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
-                pos.ltp_at_entry, pos.hwm, pos.stop,
-                1 if pos.be_locked else 0, now_ist().isoformat(),
+                pos.ltp_at_entry, pos.atr_at_entry, pos.stop_price, pos.stop_k,
+                pos.stop_distance_pct, pos.stop_source, pos.trail_distance,
+                pos.hwm, pos.stop, 1 if pos.be_locked else 0,
+                now_ist().isoformat(),
             ),
         )
         conn.commit()
@@ -297,6 +351,20 @@ def load_open_positions() -> dict:
     result = {}
     for r in rows:
         d = dict(r)
+        entry_price = d["entry_price"]
+        trail_distance = d.get("trail_distance")
+        stop_price = d.get("stop_price")
+        hwm = d.get("hwm") if d.get("hwm") is not None else entry_price
+        stop = d.get("trail_stop")
+        be_locked = bool(d.get("be_locked"))
+        if trail_distance is None:
+            # v1.0.0 row: the stored stop_price is the old BE-locked trail, not
+            # an ATR stop.  Rebuild both the initial stop and the trail from the
+            # frozen ATR distance under the v1.1.0 rule.
+            stop_price, trail_distance, _, _ = compute_stop(
+                entry_price, d.get("atr_at_entry"))
+            stop = round(hwm - trail_distance, 2) if hwm > entry_price else None
+            be_locked = False
         result[d["option_type"]] = Position(
             option_type=d["option_type"],
             trade_id=d["trade_id"],
@@ -314,9 +382,15 @@ def load_open_positions() -> dict:
             condition_a=bool(d["condition_a"]),
             condition_b=bool(d["condition_b"]),
             ltp_at_entry=d["ltp_at_entry"],
-            hwm=float(d.get("hwm") or 0.0),
-            stop=d.get("stop_price"),
-            be_locked=bool(d.get("be_locked")),
+            atr_at_entry=d.get("atr_at_entry"),
+            stop_price=stop_price,
+            stop_k=d.get("stop_k"),
+            stop_distance_pct=d.get("stop_distance_pct"),
+            stop_source=d.get("stop_source"),
+            trail_distance=trail_distance,
+            hwm=hwm,
+            stop=stop,
+            be_locked=be_locked,
         )
     return result
 
@@ -339,7 +413,8 @@ def today_stats(today: str) -> dict:
         row = conn.execute(
             """SELECT COUNT(*) n, COALESCE(SUM(pnl_points),0) pnl,
                       COALESCE(SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END),0) wins,
-                      COALESCE(SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END),0) losses
+                      COALESCE(SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END),0) losses,
+                      COALESCE(SUM(CASE WHEN exit_reason = 'STOP_LOSS_ATR' THEN 1 ELSE 0 END),0) stops
                FROM sma9_1min_poll_trades WHERE dataset='LIVE' AND trade_date=?""",
             (today,),
         ).fetchone()
@@ -350,6 +425,7 @@ def today_stats(today: str) -> dict:
         "pnl_points": round(row["pnl"], 2),
         "wins": row["wins"],
         "losses": row["losses"],
+        "stop_outs": row["stops"],
     }
 
 
@@ -505,13 +581,13 @@ class Sma9OneMinPollLiveScanner:
             state.restore(pos)
             if now.date() <= pos.entry_candle_start.date():
                 # Same session: keep the position and let the live loop manage
-                # the 5% stop / trail exactly as if there had been no restart.
+                # the ATR stop / trail exactly as if there had been no restart.
                 logger.info(
-                    "Resumed open %s position %s entry=%.2f stop=%s hwm=%.2f "
-                    "(stop/trail continue live)",
+                    "Resumed open %s position %s entry=%.2f stop=%.2f hwm=%.2f "
+                    "atr=%s (stop/trail continue live)",
                     opt, pos.trade_id, pos.entry_price,
-                    pos.stop if pos.stop is not None else "-",
-                    pos.hwm)
+                    pos.stop_price if pos.stop_price is not None else -1.0,
+                    pos.hwm, pos.atr_at_entry)
                 continue
             # Stale position from an earlier session: never carry an option
             # position across days.  Close at the current LTP.
@@ -624,6 +700,7 @@ class Sma9OneMinPollLiveScanner:
                 option_status[opt] = {"error": str(exc)}
                 continue
 
+            atr = premium_atr(candles, ATR_PERIOD)
             forming_is_current = bool(candles) and candles[-1]["start"] == current_candle
             if forming_is_current:
                 ev = evaluate_option(candles, opt, ltp)
@@ -636,7 +713,6 @@ class Sma9OneMinPollLiveScanner:
                     option_type=opt, ltp=ltp,
                     reason="waiting for current 5-minute candle")
             entry_made = False
-
             if state.position is not None and now.time() >= EXCHANGE_OPEN:
                 stop_hit = state.update_trail(ltp)
                 sl_hit = state.check_stop_loss(ltp)
@@ -650,29 +726,32 @@ class Sma9OneMinPollLiveScanner:
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
                         exit_px, trade["pnl_points"], pos.stop)
                 elif sl_hit is not None:
-                    trade = state.close(now, sl_hit, "STOP_LOSS_5PCT")
+                    trade = state.close(now, sl_hit, "STOP_LOSS_ATR")
                     save_trade(trade)
                     delete_open_position(opt)
                     logger.info(
-                        "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_5PCT",
+                        "STOP EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f "
+                        "stop_price=%.2f atr=%s reason=STOP_LOSS_ATR",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        sl_hit, trade["pnl_points"])
-                else:
-                    # Persist the ratcheted high-water mark / trail stop so a
-                    # restart resumes the same trail instead of resetting it.
-                    save_open_position(state.position)
+                        sl_hit, trade["pnl_points"],
+                        pos.stop_price if pos.stop_price is not None else -1.0,
+                        pos.atr_at_entry)
             elif allow_entries and forming_is_current:
                 new_pos = state.try_entry(
                     ev, now, strike, expiry_str, token,
-                    contract["tradingsymbol"], market_close_dt(now))
+                    contract["tradingsymbol"], market_close_dt(now), atr=atr)
                 if new_pos is not None:
                     save_open_position(new_pos)
                     entry_made = True
                     logger.info(
-                        "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s",
+                        "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s "
+                        "atr=%s stop=%.2f dist_pct=%.2f%% src=%s",
                         opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
                         new_pos.sma9, new_pos.condition_a, new_pos.condition_b,
-                        new_pos.entry_candle_start.isoformat())
+                        new_pos.entry_candle_start.isoformat(),
+                        new_pos.atr_at_entry, new_pos.stop_price,
+                        (new_pos.stop_distance_pct or 0) * 100,
+                        new_pos.stop_source)
 
             option_status[opt] = {
                 "tradingsymbol": contract["tradingsymbol"],
@@ -692,6 +771,8 @@ class Sma9OneMinPollLiveScanner:
                 "forming_is_current": forming_is_current,
                 "reason": ev.reason,
                 "entry_made": entry_made,
+                "atr": round(atr, 2) if atr is not None else None,
+                "stop_preview": compute_stop(ltp, atr)[0] if ltp else None,
                 "position": state.position.as_dict() if state.position else None,
             }
 
@@ -726,7 +807,8 @@ class Sma9OneMinPollLiveScanner:
 # Entry point
 # ---------------------------------------------------------------------------
 def main() -> int:
-    logger.info("SMA9 1-MIN POLL scanner starting (poll=%ss, db=%s)", POLL_SECONDS, DB_PATH)
+    logger.info("SMA9 1MIN POLL ATR-STOP scanner starting (poll=%ss, db=%s, k=%.2f)",
+                POLL_SECONDS, DB_PATH, STOP_K)
     init_db()
     try:
         feed = KiteFeed()
@@ -743,7 +825,7 @@ def main() -> int:
         logger.error("Open-position recovery failed: %s", exc)
         traceback.print_exc()
 
-    logger.info("SMA9 1-min poll scanner ready")
+    logger.info("SMA9 1MIN POLL ATR scanner ready")
     try:
         while True:
             now = now_ist()
@@ -770,9 +852,9 @@ def main() -> int:
                     pass
             sleep_to_next_tick()
     except KeyboardInterrupt:
-        logger.info("SMA9 1-min poll scanner stopping (SIGINT)")
+        logger.info("SMA9 1MIN POLL ATR scanner stopping (SIGINT)")
     finally:
-        logger.info("SMA9 1-min poll scanner stopped")
+        logger.info("SMA9 1MIN POLL ATR scanner stopped")
     return 0
 
 
