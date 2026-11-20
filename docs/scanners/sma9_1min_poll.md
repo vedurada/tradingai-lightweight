@@ -97,6 +97,6 @@ scan starts at 09:00:00 and the first possible entry is at 09:20.
 ## Relationships
 
 - `sma9` is the same strategy at a 5-second cadence.
-- `sma9_1min_atr` keeps this entry but swaps in the ATR stop and ATR trail.
+- `sma9_5s_atr` keeps this entry but swaps in the ATR stop and ATR trail.
 - It replaced `no_sma`; the old DB and dashboard remain on disk as archives
   (see [`retired.md`](retired.md)).

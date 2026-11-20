@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Offline checks for the SMA9 1-minute ATR engine (no network, no broker).
+"""Offline checks for the SMA9 5-second ATR engine (no network, no broker).
 
 Pins the rules that define this scanner after v1.1.0:
   * poll cadence is 5 seconds (checked in the deployed-runner dry run)
@@ -16,7 +16,7 @@ from datetime import datetime, timedelta
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
-from app.sma9_1min_atr_engine import (  # noqa: E402
+from app.sma9_5s_atr_engine import (  # noqa: E402
     Evaluation,
     OptionStateMachine,
     Position,
@@ -28,7 +28,7 @@ from app.sma9_1min_atr_engine import (  # noqa: E402
     make_trade_id,
     premium_atr,
 )
-from app import live_sma9_1min_atr_scanner as live  # noqa: E402
+from app import live_sma9_5s_atr_scanner as live  # noqa: E402
 
 BASE = datetime(2026, 11, 19, 9, 15)
 
@@ -81,8 +81,8 @@ def check(name, cond, detail=""):
 
 
 # --- identity -------------------------------------------------------------
-check("strategy_id", STRATEGY_ID == "sma9_1min_atr", STRATEGY_ID)
-check("strategy_type", STRATEGY_TYPE == "SMA9_1MIN_ATR_STOP_BUY_ONLY",
+check("strategy_id", STRATEGY_ID == "sma9_5s_atr", STRATEGY_ID)
+check("strategy_type", STRATEGY_TYPE == "SMA9_5S_ATR_STOP_BUY_ONLY",
       STRATEGY_TYPE)
 check("strategy_version", STRATEGY_VERSION == "1.1.0", STRATEGY_VERSION)
 check("poll_seconds", live.POLL_SECONDS == 5, live.POLL_SECONDS)
@@ -263,7 +263,7 @@ try:
     live.init_db()
     conn = sqlite3.connect(legacy_db)
     conn.execute(
-        """INSERT INTO sma9_1min_atr_open_positions
+        """INSERT INTO sma9_5s_atr_open_positions
            (option_type, trade_id, strike, expiry, token, tradingsymbol,
             entry_timestamp, entry_candle_start, entry_candle_end, entry_price,
             sma9, prev_close, current_open, condition_a, condition_b,

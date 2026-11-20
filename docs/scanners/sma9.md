@@ -100,4 +100,4 @@ The unit is enabled at boot, `Restart=always`, and in `ALL_UNITS` of
 - `sma9_1min_poll` samples the same signal once a minute.
 - `sma9_atr` replaces the 5% floor with an ATR-scaled stop.
 - `sma9_trail` is a self-contained copy of this entry with the same trail.
-- `sma9_1min_atr` combines the 1-minute entry with an ATR stop and ATR trail.
+- `sma9_5s_atr` combines the SMA9 entry with an ATR stop and ATR-only trail.

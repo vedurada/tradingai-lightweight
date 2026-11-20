@@ -19,7 +19,7 @@ operations runbooks). These pages do not repeat it; they explain the strategy.
 | `sma9_high` | `sma9` plus a live break of the previous candle high | 5 s | 5% of premium | [`sma9_high.md`](sma9_high.md) |
 | `sma9_1min_poll` | Same entry as `sma9`, sampled once a minute | 60 s | 5% of premium | [`sma9_1min_poll.md`](sma9_1min_poll.md) |
 | `sma9_atr` | Same entry as `sma9`, stop scaled to the option's own ATR | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_atr.md`](sma9_atr.md) |
-| `sma9_1min_atr` | `sma9_1min_poll` entry + `sma9_atr` stop, and the ATR distance is also the trail width | 60 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_1min_atr.md`](sma9_1min_atr.md) |
+| `sma9_5s_atr` | Rising-SMA9 entry + `sma9_atr` stop and ATR-only trail | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_5s_atr.md`](sma9_5s_atr.md) |
 | `sma9_trail` | Self-contained `sma9` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_trail.md`](sma9_trail.md) |
 | `sma9_high_trail` | Self-contained `sma9_high` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_high_trail.md`](sma9_high_trail.md) |
 | `pattern_scanner` | Candlestick pattern on NIFTY **spot** → long ATM CE (bullish) or PE (bearish), managed on spot | 5 s | fixed 12 spot points | [`pattern_scanner.md`](pattern_scanner.md) |
@@ -33,14 +33,14 @@ Retired strategies (stopped, disabled, kept only as archives):
 signal is computed on each option's own 5-minute premium candles. Exit is a
 trail stop with a fixed 5% floor.
 
-**Sampling variants** — `sma9_1min_poll`, `sma9_1min_atr`. Identical entry
-logic to `sma9`, but the forming candle is sampled once per wall-clock minute.
-Fewer Kite calls and fewer intra-minute whipsaws; a spike between two polls is
-invisible.
+**Sampling variants** — `sma9_1min_poll` samples the plain SMA9 entry once per
+wall-clock minute, with fewer Kite calls and fewer intra-minute whipsaws; a
+spike between two polls is invisible. `sma9_5s_atr` was renamed from
+`sma9_1min_atr` and now samples every 5 seconds with a rising-SMA9 filter.
 
-**Volatility-scaled stops** — `sma9_atr`, `sma9_1min_atr`. Replace the fixed 5%
+**Volatility-scaled stops** — `sma9_atr`, `sma9_5s_atr`. Replace the fixed 5%
 floor with a stop derived from the option's average true range, so the stop
-stays outside normal premium noise on cheap contracts. `sma9_1min_atr` also
+stays outside normal premium noise on cheap contracts. `sma9_5s_atr` also
 uses that ATR distance as the trail width.
 
 **Self-contained trail family** — `sma9_trail`, `sma9_high_trail`. They own

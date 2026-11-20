@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Market-open dry run for the DEPLOYED sma9_1min_atr live runner.
+"""Market-open dry run for the DEPLOYED sma9_5s_atr live runner.
 
 What it proves
 --------------
 The exact deployed file
-/opt/tradingai/sma9_1min_atr_scanner/app/live_sma9_1min_atr_scanner.py
+/opt/tradingai/sma9_5s_atr_scanner/app/live_sma9_5s_atr_scanner.py
 is driven through the same branches its main loop uses, with a fake clock and
 a fake Kite feed:
 
@@ -21,7 +21,7 @@ a fake Kite feed:
 
 It also checks that the poll is 5-second aligned and reports 5 seconds.
 
-No network, no broker, no writes to the live DB: SMA9_1MIN_ATR_DB_PATH points
+No network, no broker, no writes to the live DB: SMA9_5S_ATR_DB_PATH points
 at a throw-away file.  Exit code 0 only if every assertion passes.
 """
 
@@ -33,20 +33,20 @@ import sys
 from datetime import date, datetime, timedelta
 from zoneinfo import ZoneInfo
 
-DRY_DB = "/tmp/dryrun_sma9_1min_atr.db"
+DRY_DB = "/tmp/dryrun_sma9_5s_atr.db"
 RUNNER = os.environ.get(
-    "SMA9_1MIN_ATR_RUNNER",
-    "/opt/tradingai/sma9_1min_atr_scanner/app/live_sma9_1min_atr_scanner.py")
+    "SMA9_5S_ATR_RUNNER",
+    "/opt/tradingai/sma9_5s_atr_scanner/app/live_sma9_5s_atr_scanner.py")
 
 for suffix in ("", "-wal", "-shm"):
     try:
         os.remove(DRY_DB + suffix)
     except FileNotFoundError:
         pass
-os.environ["SMA9_1MIN_ATR_DB_PATH"] = DRY_DB
+os.environ["SMA9_5S_ATR_DB_PATH"] = DRY_DB
 sys.path.insert(0, os.path.dirname(os.path.dirname(RUNNER)))
 
-spec = importlib.util.spec_from_file_location("live_sma9_1min_atr_scanner",
+spec = importlib.util.spec_from_file_location("live_sma9_5s_atr_scanner",
                                               RUNNER)
 mod = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(mod)
@@ -193,7 +193,7 @@ def main():
     check("pre-market branch selected", branch == "pre-market", branch)
     check("no scan attempted before open", st.get("last_scan_at") is None)
     state_rows = db_rows(
-        "SELECT value FROM sma9_1min_atr_scan_state WHERE key='live_status'")
+        "SELECT value FROM sma9_5s_atr_scan_state WHERE key='live_status'")
     check("heartbeat written", len(state_rows) == 1)
     check("market reported closed",
           json.loads(state_rows[0]["value"])["market_open"] is False)
@@ -251,7 +251,7 @@ def main():
         check("stop source is atr", ce.stop_source == "atr", ce.stop_source)
         check("stop is not hit at entry",
               scanner.states["CE"].check_stop_loss(122.0) is None)
-    open_rows = db_rows("SELECT * FROM sma9_1min_atr_open_positions")
+    open_rows = db_rows("SELECT * FROM sma9_5s_atr_open_positions")
     check("open position persisted",
           len(open_rows) == 1 and open_rows[0]["option_type"] == "CE")
     if open_rows:
@@ -262,7 +262,7 @@ def main():
         check("DB has trail_distance", open_rows[0]["trail_distance"] == 6.1,
               open_rows[0]["trail_distance"])
     check("no closed trade yet",
-          len(db_rows("SELECT * FROM sma9_1min_atr_trades")) == 0)
+          len(db_rows("SELECT * FROM sma9_5s_atr_trades")) == 0)
     check("live state exposes SMA9 slope + ATR",
           st["options"]["CE"].get("sma9") is not None
           and st["options"]["CE"].get("prev_sma9") is not None
@@ -278,14 +278,14 @@ def main():
     at(9, 21, 5)
     loop_step(scanner)
     check("no duplicate entry on same candle",
-          len(db_rows("SELECT * FROM sma9_1min_atr_open_positions")) == 1)
+          len(db_rows("SELECT * FROM sma9_5s_atr_open_positions")) == 1)
 
     # ---------------------------------------------------------------- 09:22
     print("\n[09:22] LTP trades through the ATR stop")
     feed.ltp["CE"] = 114.9
     at(9, 22, 0)
     branch, st = loop_step(scanner)
-    trades = db_rows("SELECT * FROM sma9_1min_atr_trades")
+    trades = db_rows("SELECT * FROM sma9_5s_atr_trades")
     check("trade closed", len(trades) == 1)
     if trades:
         t = trades[0]
@@ -300,7 +300,7 @@ def main():
               and t["stop_source"] == "atr",
               f"{t['atr_at_entry']} {t['stop_price']} {t['stop_source']}")
     check("open position cleared",
-          len(db_rows("SELECT * FROM sma9_1min_atr_open_positions")) == 0)
+          len(db_rows("SELECT * FROM sma9_5s_atr_open_positions")) == 0)
     check("today stats count the stop",
           st["today"]["trades"] == 1 and st["today"]["stop_outs"] == 1,
           st["today"])
@@ -316,7 +316,7 @@ def main():
           ce2 is not None
           and ce2.entry_candle_start == mod.floor_5m(clock["now"]))
     check("one open-position row after re-entry",
-          len(db_rows("SELECT * FROM sma9_1min_atr_open_positions")) == 1)
+          len(db_rows("SELECT * FROM sma9_5s_atr_open_positions")) == 1)
 
     # ---------------------------------------------------------------- 09:25b
     print("\n[09:25:06] modest new high: ATR trail activates above entry")
@@ -339,7 +339,7 @@ def main():
               abs(ce2.stop - 128.9) < 1e-6, ce2.stop)
         check("high-water mark advanced", ce2.hwm == 135.0, ce2.hwm)
         check("breakeven lock never engages", ce2.be_locked is False)
-    row = db_rows("SELECT trail_stop, hwm FROM sma9_1min_atr_open_positions")
+    row = db_rows("SELECT trail_stop, hwm FROM sma9_5s_atr_open_positions")
     check("ratchet persisted to the DB",
           len(row) == 1 and abs((row[0]["trail_stop"] or 0) - 128.9) < 1e-6,
           row[0]["trail_stop"] if row else None)
@@ -364,7 +364,7 @@ def main():
         check("no breakeven lock after restore", ce3.be_locked is False)
         check("HWM preserved", ce3.hwm == saved["hwm"])
     check("recovered row still in DB",
-          len(db_rows("SELECT * FROM sma9_1min_atr_open_positions")) == 1)
+          len(db_rows("SELECT * FROM sma9_5s_atr_open_positions")) == 1)
 
     # ---------------------------------------------------------------- 09:31
     print("\n[09:31] restart after the entry candle ended (same session)")
@@ -376,13 +376,13 @@ def main():
     check("trail stop still preserved", ce4 is not None and ce4.stop == 128.9,
           ce4.stop if ce4 else None)
     check("no candle-close exit was written",
-          len(db_rows("SELECT * FROM sma9_1min_atr_trades")) == 1)
+          len(db_rows("SELECT * FROM sma9_5s_atr_trades")) == 1)
 
     # ------------------------------------------------------ stale (prior day)
     print("\n[09:32] stale position from a previous session")
     conn = sqlite3.connect(DRY_DB)
     conn.execute(
-        "UPDATE sma9_1min_atr_open_positions SET entry_timestamp=?, "
+        "UPDATE sma9_5s_atr_open_positions SET entry_timestamp=?, "
         "entry_candle_start=?, entry_candle_end=? WHERE option_type='CE'",
         ("2026-11-18T09:25:05+05:30", "2026-11-18T09:25:00+05:30",
          "2026-11-18T09:30:00+05:30"))
@@ -392,13 +392,13 @@ def main():
     scanner4 = mod.Sma9OneMinAtrLiveScanner(FakeFeed())
     scanner4.recover_open_positions()
     check("stale position not carried", scanner4.states["CE"].position is None)
-    trades = db_rows("SELECT * FROM sma9_1min_atr_trades "
+    trades = db_rows("SELECT * FROM sma9_5s_atr_trades "
                      "WHERE exit_reason='STALE_RECOVERY_EXIT'")
     check("stale position closed at LTP",
           len(trades) == 1 and trades[0]["exit_price"] == 122.0,
           trades[0]["exit_price"] if trades else None)
     check("stale open row removed",
-          len(db_rows("SELECT * FROM sma9_1min_atr_open_positions")) == 0)
+          len(db_rows("SELECT * FROM sma9_5s_atr_open_positions")) == 0)
 
     # ---------------------------------------------------------------- summary
     print("\n" + "=" * 68)

@@ -1,16 +1,16 @@
 #!/bin/bash
-# One-shot post-open verification for sma9_1min_atr.
+# One-shot post-open verification for sma9_5s_atr.
 #
 # Waits until a given IST wall-clock time (default 09:22, i.e. after the first
 # two entry-window scans), then samples the unit, log, scan_state heartbeat
 # (twice, 6s apart, to show the 5s cadence), ATR stop / trail state, trades,
 # open positions and API, and appends everything to
-# /tmp/post_open_sma91matr_<date>.log.
+# /tmp/post_open_sma95satr_<date>.log.
 #
 # Usage: ops/post_open_check.sh [HH:MM]
 set -u
 TARGET_TIME="${1:-09:22}"
-OUT="/tmp/post_open_sma91matr_$(date +%Y%m%d).log"
+OUT="/tmp/post_open_sma95satr_$(date +%Y%m%d).log"
 SSH="ssh -t -o StrictHostKeyChecking=no -o ConnectTimeout=20 -i /Users/satya/.ssh/oci_key ubuntu@129.159.224.81"
 
 now=$(date +%s)
@@ -20,11 +20,11 @@ sleep $(( target - now > 0 ? target - now : 0 ))
 {
   echo "===== $($SSH 'TZ=Asia/Kolkata date' 2>/dev/null) ====="
   echo "--- unit ---"
-  $SSH 'systemctl is-active tradingai-sma9-1min-atr-scanner; systemctl show tradingai-sma9-1min-atr-scanner -p NRestarts -p ActiveEnterTimestamp' 2>/dev/null
+  $SSH 'systemctl is-active tradingai-sma9-5s-atr-scanner; systemctl show tradingai-sma9-5s-atr-scanner -p NRestarts -p ActiveEnterTimestamp' 2>/dev/null
   echo "--- log (last 30) ---"
-  $SSH 'tail -n 30 /opt/tradingai/logs/live_sma9_1min_atr_scanner.log' 2>/dev/null
+  $SSH 'tail -n 30 /opt/tradingai/logs/live_sma9_5s_atr_scanner.log' 2>/dev/null
   echo "--- scan_state ---"
-  $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_1min_atr.db "select value from sma9_1min_atr_scan_state where key=\"live_status\";"' 2>/dev/null | python3 -c '
+  $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_5s_atr.db "select value from sma9_5s_atr_scan_state where key=\"live_status\";"' 2>/dev/null | python3 -c '
 import sys, json
 raw = sys.stdin.read().strip()
 try:
@@ -52,15 +52,15 @@ for opt in ("CE", "PE"):
               f"trail={pos.get(\"stop\")} be_locked={pos.get(\"be_locked\")}")
 '
   echo "--- cadence sample 1 -> 2 (6s apart) ---"
-  $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_1min_atr.db "select updated_at from sma9_1min_atr_scan_state where key=\"live_status\";"' 2>/dev/null
+  $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_5s_atr.db "select updated_at from sma9_5s_atr_scan_state where key=\"live_status\";"' 2>/dev/null
   sleep 6
-  $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_1min_atr.db "select updated_at from sma9_1min_atr_scan_state where key=\"live_status\";"' 2>/dev/null
+  $SSH 'sudo sqlite3 /opt/tradingai/database/sma9_5s_atr.db "select updated_at from sma9_5s_atr_scan_state where key=\"live_status\";"' 2>/dev/null
   echo "--- trades / open positions ---"
-  $SSH 'sudo sqlite3 -header /opt/tradingai/database/sma9_1min_atr.db "select trade_id,option_type,entry_price,atr_at_entry,stop_price,stop_source,trail_distance,exit_price,pnl_points,exit_reason,trade_date from sma9_1min_atr_trades order by entry_timestamp desc limit 10; select option_type,trade_id,entry_price,atr_at_entry,stop_price,trail_distance,hwm,trail_stop,be_locked from sma9_1min_atr_open_positions;"' 2>/dev/null
+  $SSH 'sudo sqlite3 -header /opt/tradingai/database/sma9_5s_atr.db "select trade_id,option_type,entry_price,atr_at_entry,stop_price,stop_source,trail_distance,exit_price,pnl_points,exit_reason,trade_date from sma9_5s_atr_trades order by entry_timestamp desc limit 10; select option_type,trade_id,entry_price,atr_at_entry,stop_price,trail_distance,hwm,trail_stop,be_locked from sma9_5s_atr_open_positions;"' 2>/dev/null
   echo "--- API ---"
-  $SSH 'curl -sk -H "Host: tradingai.in" https://127.0.0.1/api/sma9-1min-atr/scanner-status | head -c 900' 2>/dev/null
+  $SSH 'curl -sk -H "Host: tradingai.in" https://127.0.0.1/api/sma9-5s-atr/scanner-status | head -c 900' 2>/dev/null
   echo
   echo "--- page ---"
-  $SSH 'curl -sk -o /dev/null -w "%{http_code}\n" -H "Host: tradingai.in" https://127.0.0.1/live/sma9-1min-atr/' 2>/dev/null
+  $SSH 'curl -sk -o /dev/null -w "%{http_code}\n" -H "Host: tradingai.in" https://127.0.0.1/live/sma9-5s-atr/' 2>/dev/null
 } >> "$OUT" 2>&1
 echo "done" >> "$OUT"

@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradingAI - SMA9 1-MIN ATR Live Dashboard</title>
+<title>TradingAI - SMA9 5S ATR Live Dashboard</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -53,17 +53,17 @@
 </style>
 </head>
 <body>
-<h1>TradingAI - SMA9 1-MIN ATR Live Dashboard</h1>
+<h1>TradingAI - SMA9 5S ATR Live Dashboard</h1>
 <div class="meta">
     <a href="/live/scalp/" class="back-link">&larr; Back to Launcher</a>
-    <a href="/live/performance/?scanner=sma9_1min_atr" class="back-link">Day-wise Performance &rarr;</a>
+    <a href="/live/performance/?scanner=sma9_5s_atr" class="back-link">Day-wise Performance &rarr;</a>
     <span>Updated: <span id="generated">--</span> IST</span>
     <span class="badge" id="scanner-status-badge">--</span>
     <span id="scanner-status-text">--</span>
     <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">15</span>s auto-refresh (no page reload)</span>
 </div>
-<div class="sub">SMA9 entry, sampled once a minute: <b>prev completed close &gt; SMA9 and current forming open &gt; SMA9</b> (no LTP gate). Stop and trail are volatility-scaled:
-    <b>distance = clamp(0.70 &times; premium ATR(14), 5%&ndash;30% of entry)</b>, fixed at entry. Stop exits fill at the live LTP; the trail ratchets at <b>peak &minus; distance</b> after +5, and +6 locks entry+2.</div>
+<div class="sub">SMA9 entry, sampled every 5 seconds: <b>prev completed close &gt; SMA9, current forming open &gt; SMA9 and SMA9 &gt; prior SMA9</b> (no LTP gate). Stop and trail are volatility-scaled:
+    <b>distance = clamp(0.70 &times; premium ATR(14), 5%&ndash;30% of entry)</b>, fixed at entry. Stop exits fill at the live LTP; the ATR-only trail ratchets at <b>peak &minus; distance</b> once price is above entry (no +5 activation, no breakeven lock).</div>
 
 <section class="section">
     <h2>Live Scanner &amp; Market</h2>
@@ -137,9 +137,9 @@
 
 <script>
 // ============================================================================
-// SMA9 1-MIN ATR dashboard - independent 15 second refresh (scanner polls 60s)
+// SMA9 5S ATR dashboard - independent 15 second refresh (scanner polls 5s)
 // ============================================================================
-const API_BASE = '/api/sma9-1min-atr';
+const API_BASE = '/api/sma9-5s-atr';
 const REFRESH_MS = 15000;
 let refreshTimer = null;
 let countdownTimer = null;
@@ -310,7 +310,7 @@ function renderStatus(st, live) {
     badge.textContent = status;
     badge.className = 'badge ' + status;
     document.getElementById('scanner-status-text').textContent =
-        (live && live.scanner_name) || st.scanner_name || 'SMA9 1-MIN ATR Scanner';
+        (live && live.scanner_name) || st.scanner_name || 'SMA9 5S ATR Scanner';
     document.getElementById('spot').textContent = n(live && live.spot);
     document.getElementById('atm').textContent = n(live && live.atm_strike, 0);
     document.getElementById('expiry').textContent = (live && live.expiry) || '--';

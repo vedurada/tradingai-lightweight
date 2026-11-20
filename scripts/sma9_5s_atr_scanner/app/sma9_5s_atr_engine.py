@@ -41,9 +41,9 @@ from typing import Dict, List, Optional, Sequence
 
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
-STRATEGY_ID = "sma9_1min_atr"
+STRATEGY_ID = "sma9_5s_atr"
 STRATEGY_VERSION = "1.1.0"
-STRATEGY_TYPE = "SMA9_1MIN_ATR_STOP_BUY_ONLY"
+STRATEGY_TYPE = "SMA9_5S_ATR_STOP_BUY_ONLY"
 
 # Initial-stop model.
 ATR_PERIOD = 14

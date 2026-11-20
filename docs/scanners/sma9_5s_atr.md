@@ -1,4 +1,4 @@
-# `sma9_1min_atr` — SMA9 with a rising-average filter, ATR stop and ATR-only trail
+# `sma9_5s_atr` — SMA9 with a rising-average filter, ATR stop and ATR-only trail
 
 **One line:** the SMA9 entry plus a rising-SMA9 filter, an ATR-scaled stop and
 an ATR-only trail, now sampled every **5 seconds**. It replaces the retired
@@ -6,13 +6,16 @@ an ATR-only trail, now sampled every **5 seconds**. It replaces the retired
 
 - **Status:** active, v1.1.0
 - **Cadence:** every 5 seconds, aligned to the 5-second wall-clock boundary
-- **Identity:** strategy id, DB, service, user, API and page unchanged from v1.0.0
+- **Identity:** renamed from `sma9_1min_atr` on 2026-11-20; old DB/code kept as archive
 - **Stop:** `clamp(0.70 × ATR14, 5%, 30% of entry)`, filled at the live LTP
 - **Trail:** `peak − same ATR distance`, active once price is above entry; no fixed activation and no breakeven lock
 - **First live day:** 2026-11-19 (v1.1.0 deployed 2026-11-20)
 
 ## Why v1.1.0
 
+- The scanner was renamed from `sma9_1min_atr` to `sma9_5s_atr` so the `1min`
+  label no longer contradicts the 5-second cadence. The old DB was copied into
+  the new one, and the old service/API/page were retired as archives.
 - The 60-second sample missed sub-minute stop and trail moves, so the poll is
   now 5 seconds like `sma9_atr`.
 - The old +5 activation / +6 breakeven lock produced small, frequent winners
@@ -82,22 +85,22 @@ exit when LTP <= stop                  # TRAIL_STOP_EXIT at the LTP
 
 | Item | Value |
 |---|---|
-| Strategy id / type | `sma9_1min_atr` / `SMA9_1MIN_ATR_STOP_BUY_ONLY` |
+| Strategy id / type | `sma9_5s_atr` / `SMA9_5S_ATR_STOP_BUY_ONLY` |
 | Strategy version | `1.1.0` |
-| Code | `/opt/tradingai/sma9_1min_atr_scanner/` |
-| Entrypoint | `app/live_sma9_1min_atr_scanner.py` |
-| Engine | `app/sma9_1min_atr_engine.py` |
-| User / unit | `sma91matr` / `tradingai-sma9-1min-atr-scanner.service` |
-| DB | `/opt/tradingai/database/sma9_1min_atr.db` |
-| Tables | `sma9_1min_atr_trades`, `sma9_1min_atr_open_positions`, `sma9_1min_atr_scan_state` |
-| Log | `/opt/tradingai/logs/live_sma9_1min_atr_scanner.log` |
-| API | `/api/sma9-1min-atr/*` (8 read-only endpoints) |
-| Dashboard | `/live/sma9-1min-atr/` |
-| Performance report | key `sma9_1min_atr`, label `SMA9 1MIN ATR`, from 2026-11-19 |
+| Code | `/opt/tradingai/sma9_5s_atr_scanner/` |
+| Entrypoint | `app/live_sma9_5s_atr_scanner.py` |
+| Engine | `app/sma9_5s_atr_engine.py` |
+| User / unit | `sma95satr` / `tradingai-sma9-5s-atr-scanner.service` |
+| DB | `/opt/tradingai/database/sma9_5s_atr.db` |
+| Tables | `sma9_5s_atr_trades`, `sma9_5s_atr_open_positions`, `sma9_5s_atr_scan_state` |
+| Log | `/opt/tradingai/logs/live_sma9_5s_atr_scanner.log` |
+| API | `/api/sma9-5s-atr/*` (8 read-only endpoints) |
+| Dashboard | `/live/sma9-5s-atr/` |
+| Performance report | key `sma9_5s_atr`, label `SMA9 5S ATR`, from 2026-11-19 |
 
 ## State and restart behaviour
 
-Persisted in `sma9_1min_atr_open_positions`: `atr_at_entry`, `stop_price`,
+Persisted in `sma9_5s_atr_open_positions`: `atr_at_entry`, `stop_price`,
 `stop_k`, `stop_distance_pct`, `stop_source`, `trail_distance`, `hwm`,
 `trail_stop`, `prev_sma9`, `condition_c` and legacy `be_locked`.
 
@@ -111,19 +114,19 @@ Persisted in `sma9_1min_atr_open_positions`: `atr_at_entry`, `stop_price`,
 ## Ops
 
 ```bash
-systemctl status tradingai-sma9-1min-atr-scanner
-tail -f /opt/tradingai/logs/live_sma9_1min_atr_scanner.log
+systemctl status tradingai-sma9-5s-atr-scanner
+tail -f /opt/tradingai/logs/live_sma9_5s_atr_scanner.log
 
 # fake clock/feed, temp DB: pre-market -> 09:00 -> 09:20 entry -> ATR stop ->
 # re-entry -> ATR trail ratchet -> restart recovery -> stale prior-day position
-python3 /opt/tradingai/sma9_1min_atr_scanner/ops/dryrun_market_open.py
+python3 /opt/tradingai/sma9_5s_atr_scanner/ops/dryrun_market_open.py
 
 # real Kite path, writes nothing
-python3 /opt/tradingai/sma9_1min_atr_scanner/ops/real_feed_check.py
+python3 /opt/tradingai/sma9_5s_atr_scanner/ops/real_feed_check.py
 ```
 
 The unit is enabled, `Restart=always`, and in `ALL_UNITS` of `refresh_token.sh`.
-The launcher button is **SMA9 1MIN ATR**.
+The launcher button is **SMA9 5S ATR**.
 
 Health thresholds used by the page/API: `ACTIVE` if the last scan is within
 15 s, `STALE` beyond 15 s while the market is open, and `IDLE_MARKET_CLOSED`

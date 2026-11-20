@@ -1,20 +1,22 @@
 # SMA9 ATR Scanner (standalone, 5-second poll)
 
 A paper-trading scanner that uses the **SMA9 entry** with a rising-average
-filter and the **ATR-scaled stop / ATR-only trail** of `sma9_atr`. It keeps its
-original identity (`sma9_1min_atr`, database, service, user, log and API
-namespace) after the v1.1.0 switch from a 60-second poll to a **5-second poll**.
-It replaces the retired `no_sma_trail` scanner slot.
+filter and the **ATR-scaled stop / ATR-only trail** of `sma9_atr`. It was
+renamed from `sma9_1min_atr` to `sma9_5s_atr` on 2026-11-20: the strategy id,
+DB, service, user, log, API and dashboard all moved to the new identity, and the
+old scanner was retired as an archive. The strategy behavior is v1.1.0: a
+**5-second poll**, ATR-only trail and rising-SMA9 entry filter. It replaces the
+retired `no_sma_trail` scanner slot.
 
-* Directory: `/opt/tradingai/sma9_1min_atr_scanner`
-* Database: `/opt/tradingai/database/sma9_1min_atr.db`
-* Service: `tradingai-sma9-1min-atr-scanner.service`
-* Log: `/opt/tradingai/logs/live_sma9_1min_atr_scanner.log`
-* Strategy id: `sma9_1min_atr` (v1.1.0)
-* Tables: `sma9_1min_atr_trades`, `sma9_1min_atr_open_positions`,
-  `sma9_1min_atr_scan_state`
-* Dashboard: `/live/sma9-1min-atr/`
-* API: `/api/sma9-1min-atr/*`
+* Directory: `/opt/tradingai/sma9_5s_atr_scanner`
+* Database: `/opt/tradingai/database/sma9_5s_atr.db`
+* Service: `tradingai-sma9-5s-atr-scanner.service`
+* Log: `/opt/tradingai/logs/live_sma9_5s_atr_scanner.log`
+* Strategy id: `sma9_5s_atr` (v1.1.0)
+* Tables: `sma9_5s_atr_trades`, `sma9_5s_atr_open_positions`,
+  `sma9_5s_atr_scan_state`
+* Dashboard: `/live/sma9-5s-atr/`
+* API: `/api/sma9-5s-atr/*`
 
 It does not read, write, or restart any existing scanner. Paper only: no
 broker order is ever placed.
@@ -81,27 +83,27 @@ query it while the scanner writes.
 ## Run
 
 ```
-sudo systemctl status tradingai-sma9-1min-atr-scanner
-sudo journalctl -u tradingai-sma9-1min-atr-scanner -n 50
-tail -f /opt/tradingai/logs/live_sma9_1min_atr_scanner.log
+sudo systemctl status tradingai-sma9-5s-atr-scanner
+sudo journalctl -u tradingai-sma9-5s-atr-scanner -n 50
+tail -f /opt/tradingai/logs/live_sma9_5s_atr_scanner.log
 ```
 
 ## Verify
 
 ```
-python3 tests/test_sma9_1min_atr_engine.py
+python3 tests/test_sma9_5s_atr_engine.py
 sudo python3 ops/dryrun_market_open.py
 sudo python3 ops/real_feed_check.py      # read-only, real Kite data
 ```
 
 The dry run uses a throw-away database and a fake feed; it never touches the
-live DB or the broker. Set `SMA9_1MIN_ATR_RUNNER` to test a local copy of the
+live DB or the broker. Set `SMA9_5S_ATR_RUNNER` to test a local copy of the
 runner instead of the deployed one.
 
 On the first live day, `ops/post_open_check.sh [HH:MM]` waits until the given
 IST time (default 09:22), then samples the unit, log, heartbeat cadence, ATR
 stop/trail state, trades, open positions and API into
-`/tmp/post_open_sma91matr_<date>.log`.
+`/tmp/post_open_sma95satr_<date>.log`.
 
 ## Why
 

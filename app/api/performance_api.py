@@ -95,13 +95,13 @@ SCANNERS = [
         "open_table": "sma9_high_trail_open_positions",
     },
     {
-        "key": "sma9_1min_atr",
-        "label": "SMA9 1MIN ATR",
-        "db": "sma9_1min_atr.db",
-        "table": "sma9_1min_atr_trades",
+        "key": "sma9_5s_atr",
+        "label": "SMA9 5S ATR",
+        "db": "sma9_5s_atr.db",
+        "table": "sma9_5s_atr_trades",
         "date_col": "trade_date",
         "where": "status = 'CLOSED'",
-        "open_table": "sma9_1min_atr_open_positions",
+        "open_table": "sma9_5s_atr_open_positions",
         # Replaces no_sma_trail; first live day 2026-11-19.
         "min_date": "2026-11-19",
     },

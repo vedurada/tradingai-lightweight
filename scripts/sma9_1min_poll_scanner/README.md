@@ -89,7 +89,7 @@ scanner without changing either one.
 
 - `sma9_atr` — same SMA9 entry at the 5-second cadence, with a
   volatility-scaled (ATR) stop instead of the fixed 5% floor.
-- `sma9_1min_atr` — this entry and cadence plus the ATR stop, with the ATR
+- `sma9_5s_atr` — this entry and cadence plus the ATR stop, with the ATR
   distance also used as the trail width.
 
 Full per-scanner documentation: `docs/scanners/README.md` in the repo
