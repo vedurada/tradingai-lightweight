@@ -13,6 +13,9 @@ DEST="$ROOT/broker_gateway"
 
 install -d -m 755 -o root -g root "$DEST"
 cp -a "$SRC"/. "$DEST"/
+# The daemon runs as root and imports modules from this tree. It must not be
+# owner-writable by an unprivileged account (local privilege escalation).
+chown -R root:root "$DEST"
 find "$DEST" -type d -exec chmod 755 {} +
 find "$DEST" -type f -exec chmod 644 {} +
 chmod 755 "$DEST/daemon.py" "$DEST/cli.py"
