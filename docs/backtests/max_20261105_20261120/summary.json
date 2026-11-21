@@ -1,0 +1,158 @@
+{
+  "meta": {
+    "fidelity": "5m_rule_simulation_not_exact_5s_replay",
+    "window": {
+      "start": "2026-11-05",
+      "end": "2026-11-20"
+    },
+    "broker_gateway_identity": "api",
+    "instrument": "NIFTY",
+    "underlying_anchor": "NIFTY26NOVFUT",
+    "strike_range": [
+      23700.0,
+      26450.0
+    ],
+    "aligned_5m_timestamps": 873,
+    "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
+    "fill_policy": "entry at signal candle open; exit at adverse 5m extreme on stop/trail",
+    "paper_only": true
+  },
+  "scanners": [
+    {
+      "scanner": "sma9",
+      "trades": 381,
+      "wins": 237,
+      "losses": 144,
+      "flat": 0,
+      "win_rate_pct": 62.2,
+      "total_points": 1252.08,
+      "avg_points": 3.29,
+      "best_trade_points": 69.05,
+      "worst_trade_points": -19.61,
+      "max_drawdown_points": -106.73,
+      "exit_reasons": {
+        "STOP_LOSS_5PCT": 144,
+        "TRAIL_STOP_EXIT": 237
+      }
+    },
+    {
+      "scanner": "sma9_high",
+      "trades": 32,
+      "wins": 20,
+      "losses": 12,
+      "flat": 0,
+      "win_rate_pct": 62.5,
+      "total_points": 96.5,
+      "avg_points": 3.02,
+      "best_trade_points": 25.2,
+      "worst_trade_points": -15.84,
+      "max_drawdown_points": -62.09,
+      "exit_reasons": {
+        "STOP_LOSS_5PCT": 12,
+        "TRAIL_STOP_EXIT": 20
+      }
+    },
+    {
+      "scanner": "sma9_trail",
+      "trades": 381,
+      "wins": 237,
+      "losses": 144,
+      "flat": 0,
+      "win_rate_pct": 62.2,
+      "total_points": 1252.08,
+      "avg_points": 3.29,
+      "best_trade_points": 69.05,
+      "worst_trade_points": -19.61,
+      "max_drawdown_points": -106.73,
+      "exit_reasons": {
+        "STOP_LOSS_5PCT": 144,
+        "TRAIL_STOP_EXIT": 237
+      }
+    },
+    {
+      "scanner": "sma9_high_trail",
+      "trades": 32,
+      "wins": 20,
+      "losses": 12,
+      "flat": 0,
+      "win_rate_pct": 62.5,
+      "total_points": 96.5,
+      "avg_points": 3.02,
+      "best_trade_points": 25.2,
+      "worst_trade_points": -15.84,
+      "max_drawdown_points": -62.09,
+      "exit_reasons": {
+        "STOP_LOSS_5PCT": 12,
+        "TRAIL_STOP_EXIT": 20
+      }
+    },
+    {
+      "scanner": "sma9_atr",
+      "trades": 250,
+      "wins": 111,
+      "losses": 139,
+      "flat": 0,
+      "win_rate_pct": 44.4,
+      "total_points": -1506.57,
+      "avg_points": -6.03,
+      "best_trade_points": 50.15,
+      "worst_trade_points": -60.8,
+      "max_drawdown_points": -1506.57,
+      "exit_reasons": {
+        "STOP_LOSS_ATR": 107,
+        "TRAIL_STOP_EXIT": 143
+      }
+    },
+    {
+      "scanner": "sma9_5s_atr",
+      "trades": 289,
+      "wins": 127,
+      "losses": 162,
+      "flat": 0,
+      "win_rate_pct": 43.94,
+      "total_points": -1817.03,
+      "avg_points": -6.29,
+      "best_trade_points": 66.28,
+      "worst_trade_points": -112.0,
+      "max_drawdown_points": -1817.03,
+      "exit_reasons": {
+        "STOP_LOSS_ATR": 123,
+        "TRAIL_STOP_EXIT": 166
+      }
+    },
+    {
+      "scanner": "sma9_1min_poll",
+      "trades": 336,
+      "wins": 149,
+      "losses": 187,
+      "flat": 0,
+      "win_rate_pct": 44.35,
+      "total_points": -2074.78,
+      "avg_points": -6.17,
+      "best_trade_points": 66.28,
+      "worst_trade_points": -115.15,
+      "max_drawdown_points": -2074.78,
+      "exit_reasons": {
+        "STOP_LOSS_ATR": 137,
+        "TRAIL_STOP_EXIT": 199
+      }
+    },
+    {
+      "scanner": "pattern_scanner",
+      "trades": 854,
+      "wins": 417,
+      "losses": 434,
+      "flat": 3,
+      "win_rate_pct": 48.83,
+      "total_points": -18.25,
+      "avg_points": -0.02,
+      "best_trade_points": 40.6,
+      "worst_trade_points": -32.0,
+      "max_drawdown_points": -460.65,
+      "exit_reasons": {
+        "STOP_LOSS_SPOT": 202,
+        "TRAIL_STOP_EXIT": 652
+      }
+    }
+  ]
+}
