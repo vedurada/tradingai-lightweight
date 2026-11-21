@@ -72,11 +72,12 @@ class MStockAdapter(BrokerAdapter):
     name = "mstock"
 
     def __init__(self) -> None:
-        cfg = _load_secret()
-        self.api_key = cfg.get("MSTOCK_API_KEY", "")
-        self.access_token = cfg.get("MSTOCK_ACCESS_TOKEN", "")
-        if not self.api_key or not self.access_token:
-            raise RuntimeError("mStock API key/access token is missing; run mstock_session.py")
+        self._secret_path = pathlib.Path(
+            os.environ.get("MSTOCK_SECRET_FILE", DEFAULT_SECRET)
+        )
+        self._secret_lock = threading.Lock()
+        self._secret_stamp: tuple[int, int] | None = None
+        self._apply_secret(required=True)
         self.cache_dir = pathlib.Path(os.environ.get("BROKER_GATEWAY_CACHE_DIR", DEFAULT_CACHE))
         self.cache_dir.mkdir(parents=True, exist_ok=True, mode=0o750)
         self._rows: list[dict] | None = None
@@ -85,8 +86,43 @@ class MStockAdapter(BrokerAdapter):
         self._history_cache: collections.OrderedDict = collections.OrderedDict()
         self._history_lock = threading.Lock()
 
+    # -- credentials -----------------------------------------------------
+    def _secret_signature(self) -> tuple[int, int] | None:
+        try:
+            stat = self._secret_path.stat()
+        except OSError:
+            return None
+        return (stat.st_mtime_ns, stat.st_size)
+
+    def _apply_secret(self, required: bool = False) -> bool:
+        cfg = _load_secret()
+        api_key = cfg.get("MSTOCK_API_KEY", "")
+        access_token = cfg.get("MSTOCK_ACCESS_TOKEN", "")
+        if not api_key or not access_token:
+            if required:
+                raise RuntimeError("mStock API key/access token is missing; run mstock_session.py")
+            return False
+        self.api_key = api_key
+        self.access_token = access_token
+        self._secret_stamp = self._secret_signature()
+        return True
+
+    def _refresh_secret_if_changed(self) -> None:
+        # mStock tokens are daily. mstock_session.py rewrites the secret file
+        # atomically; a long-running daemon must adopt the new token without a
+        # restart, otherwise a pre-market refresh would not reach live trading.
+        stamp = self._secret_signature()
+        if stamp is None or stamp == self._secret_stamp:
+            return
+        with self._secret_lock:
+            stamp = self._secret_signature()
+            if stamp is None or stamp == self._secret_stamp:
+                return
+            self._apply_secret()
+
     # -- transport -------------------------------------------------------
     def _headers(self) -> dict[str, str]:
+        self._refresh_secret_if_changed()
         return {
             "X-Mirae-Version": "1",
             "Authorization": f"token {self.api_key}:{self.access_token}",

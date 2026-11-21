@@ -220,7 +220,36 @@ sudo /usr/local/sbin/mstock_session.py --mode totp   # daily access token, OTP/T
 sudo /usr/local/sbin/mstock_session.py --check  # verify stored token
 ```
 
-## 8. Failure modes and mitigations
+## 8. Token lifecycle and live-market readiness
+
+mStock Type A issues **daily** access tokens. `mstock_session.py` writes them to
+`/opt/tradingai/secrets/mstock.env` with an atomic `os.replace`. The stored
+`MSTOCK_REFRESH_TOKEN` is not used by any current automation, so a fresh session
+must be created interactively before each trading day:
+
+```bash
+sudo /usr/local/sbin/mstock_session.py --mode totp   # or --mode otp
+sudo /usr/local/sbin/mstock_session.py --check       # confirm before market open
+```
+
+The gateway daemon is long-running, so `MStockAdapter` re-reads the secret file
+whenever its `(mtime, size)` signature changes. `_headers()` performs that check
+on every HTTP request, so a pre-market token refresh becomes active on the next
+broker call **without restarting the daemon**. An empty or partial refresh is
+ignored and the previous working credentials are retained.
+
+There is no mStock refresh timer. The existing `tradingai-token-check.timer`
+(08:45 Mon–Fri IST) is a read-only **Zerodha** check and does not refresh or
+restart anything; it is not part of the mStock path.
+
+Broker selection itself is separate from tokens:
+
+- `config/scanners.json` has `default: zerodha` but all eight scanners carry an
+  explicit `mstock` entry, so every running scanner uses mstock.
+- Any scanner key not present in that mapping would fall back to the Zerodha
+  default. Set `default` to `mstock` if that fallback is not wanted.
+
+## 9. Failure modes and mitigations
 
 | Failure | Mitigation |
 |---|---|
@@ -230,10 +259,11 @@ sudo /usr/local/sbin/mstock_session.py --check  # verify stored token
 | Duplicate history fetches from 8 scanners | 300 s cache + `_history_lock` serialization |
 | Memory pressure / OOM | 4-call concurrency cap; cached scriptmaster and candles |
 | Socket `Connection refused` / `BrokenPipe` during gateway restart | systemd `Restart=always`; transient scanner errors are skipped on next 5 s poll |
+| Daily mStock token expires overnight | Run `mstock_session.py --mode totp` before market open; daemon adopts the new token on the next call |
 | Stale Zerodha token | Refresh that scanner's token before switching back; avoid fleet-wide refresh |
 | Broker write attempted | Shim `PermissionError` + daemon method allowlist |
 
-## 9. Extending to another broker
+## 10. Extending to another broker
 
 1. Add `broker_gateway/adapters/<name>.py` implementing `instruments`, `quote`,
    `historical_data` (optionally `profile`) on `BrokerAdapter`.
@@ -245,7 +275,7 @@ sudo /usr/local/sbin/mstock_session.py --check  # verify stored token
 
 No scanner file changes are needed.
 
-## 10. Verified production state (2026-11-21)
+## 11. Verified production state (2026-11-21)
 
 - All 8 scanners configured to `mstock`; default remains `zerodha`.
 - All 9 services (gateway + 8 scanners) active with zero systemd restarts.
@@ -256,6 +286,12 @@ No scanner file changes are needed.
 - Pattern scanner: `MARKET_CLOSED`, polling every 5 s, spot and ATM strike
   updating through mStock, no broker orders.
 - Memory stable at roughly 430 MB used of 956 MB total.
+- `mstock_session.py --check` reports `session: valid`; the stored token was
+  written at 10:10 IST and the daemon started at 11:23 IST, so the current token
+  is the one in use.
+- Token auto-reload verified with dummy credentials: an atomic secret-file
+  replacement is adopted on the next call, and an invalid refresh is ignored.
 
 Live-market checks (09:00 IST start, entry window, warm-up, ATR exits, A+B gating,
-no broker orders) still require a trading session.
+no broker orders) still require a trading session. The current daily token must
+be regenerated before Monday's session; the daemon will pick it up automatically.
