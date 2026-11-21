@@ -9,6 +9,7 @@ import json
 import os
 import pathlib
 import re
+import threading
 import time
 import urllib.error
 import urllib.parse
@@ -26,7 +27,7 @@ TRANSIENT_HTTP = {429, 500, 502, 503, 504}
 TRANSIENT_TEXT = ("try again", "something went wrong", "too many requests", "rate limit")
 MAX_ATTEMPTS = 3
 INDEX_QUOTE_KEYS = {256265: "NSE:NIFTY 50"}
-HISTORY_CACHE_TTL = 60
+HISTORY_CACHE_TTL = 300
 HISTORY_CACHE_MAX = 64
 
 
@@ -82,6 +83,7 @@ class MStockAdapter(BrokerAdapter):
         self._token_exchange: dict[int, str] | None = None
         self._quote_keys: dict[int, str] | None = None
         self._history_cache: collections.OrderedDict = collections.OrderedDict()
+        self._history_lock = threading.Lock()
 
     # -- transport -------------------------------------------------------
     def _headers(self) -> dict[str, str]:
@@ -276,52 +278,53 @@ class MStockAdapter(BrokerAdapter):
         interval = str(interval)
 
         cache_key = (token, interval, start_dt.date(), end_dt.date())
-        cached = self._history_cache.get(cache_key)
-        if cached and (time.time() - cached[0]) < HISTORY_CACHE_TTL:
-            self._history_cache.move_to_end(cache_key)
-            return list(cached[1])
+        with self._history_lock:
+            cached = self._history_cache.get(cache_key)
+            if cached and (time.time() - cached[0]) < HISTORY_CACHE_TTL:
+                self._history_cache.move_to_end(cache_key)
+                return list(cached[1])
 
-        exchange = self._token_map().get(token)
-        if not exchange:
-            raise BrokerCallFailed(f"mStock historical: unknown instrument token {token}")
-        if interval not in {
-            "minute", "3minute", "5minute", "10minute", "15minute",
-            "30minute", "60minute", "day",
-        }:
-            raise BrokerCallFailed(f"mStock historical: unsupported interval {interval}")
+            exchange = self._token_map().get(token)
+            if not exchange:
+                raise BrokerCallFailed(f"mStock historical: unknown instrument token {token}")
+            if interval not in {
+                "minute", "3minute", "5minute", "10minute", "15minute",
+                "30minute", "60minute", "day",
+            }:
+                raise BrokerCallFailed(f"mStock historical: unsupported interval {interval}")
 
-        step = dt.timedelta(days=365 if interval == "day" else 10)
-        rows: dict[str, dict] = {}
-        cursor = start_dt
-        while cursor < end_dt:
-            chunk_end = min(cursor + step, end_dt)
-            payload = self._get_json(
-                f"/instruments/historical/{exchange}/{token}/{interval}",
-                params={
-                    "from": cursor.strftime("%Y-%m-%d %H:%M:%S"),
-                    "to": chunk_end.strftime("%Y-%m-%d %H:%M:%S"),
-                },
-            )
-            candles = ((payload.get("data") or {}).get("candles")) or []
-            for candle in candles:
-                if len(candle) < 5:
-                    continue
-                stamp = _parse_timestamp(str(candle[0]))
-                key = stamp.isoformat()
-                rows[key] = {
-                    "date": key,
-                    "open": float(candle[1]),
-                    "high": float(candle[2]),
-                    "low": float(candle[3]),
-                    "close": float(candle[4]),
-                    "volume": int(float(candle[5])) if len(candle) > 5 and candle[5] else 0,
-                }
-            cursor = chunk_end
-        result = [rows[key] for key in sorted(rows)]
-        self._history_cache[cache_key] = (time.time(), result)
-        while len(self._history_cache) > HISTORY_CACHE_MAX:
-            self._history_cache.popitem(last=False)
-        return list(result)
+            step = dt.timedelta(days=365 if interval == "day" else 10)
+            rows: dict[str, dict] = {}
+            cursor = start_dt
+            while cursor < end_dt:
+                chunk_end = min(cursor + step, end_dt)
+                payload = self._get_json(
+                    f"/instruments/historical/{exchange}/{token}/{interval}",
+                    params={
+                        "from": cursor.strftime("%Y-%m-%d %H:%M:%S"),
+                        "to": chunk_end.strftime("%Y-%m-%d %H:%M:%S"),
+                    },
+                )
+                candles = ((payload.get("data") or {}).get("candles")) or []
+                for candle in candles:
+                    if len(candle) < 5:
+                        continue
+                    stamp = _parse_timestamp(str(candle[0]))
+                    key = stamp.isoformat()
+                    rows[key] = {
+                        "date": key,
+                        "open": float(candle[1]),
+                        "high": float(candle[2]),
+                        "low": float(candle[3]),
+                        "close": float(candle[4]),
+                        "volume": int(float(candle[5])) if len(candle) > 5 and candle[5] else 0,
+                    }
+                cursor = chunk_end
+            result = [rows[key] for key in sorted(rows)]
+            self._history_cache[cache_key] = (time.time(), result)
+            while len(self._history_cache) > HISTORY_CACHE_MAX:
+                self._history_cache.popitem(last=False)
+            return list(result)
 
     def profile(self) -> dict:
         payload = self._get_json("/user/fundsummary")
