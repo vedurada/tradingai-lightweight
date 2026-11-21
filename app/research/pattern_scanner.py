@@ -1268,6 +1268,13 @@ class PatternScanner:
         # State
         self.status = "STOPPED"
         self.last_spot: Optional[float] = None
+        self.last_spot_candle_ts: Optional[str] = None
+        self.last_closed_candle_start: Optional[str] = None
+        self.last_closed_spot: Optional[float] = None
+        self.last_closed_atm_strike: Optional[float] = None
+        self.last_closed_ce_close: Optional[float] = None
+        self.last_closed_pe_close: Optional[float] = None
+        self.last_closed_spot_source: Optional[str] = None
         self.last_update: Optional[str] = None
         self._last_option_refresh = None
 
@@ -1406,6 +1413,10 @@ class PatternScanner:
         # SPOT: track spot price, refresh ATM instruments, run pattern detection
         if instrument_type == "SPOT":
             self.last_spot = float(completed["close"])
+            self.last_spot_candle_ts = str(completed["timestamp"])
+            self.last_closed_candle_start = str(completed["timestamp"])
+            self.last_closed_spot = float(completed["close"])
+            self.last_closed_spot_source = "completed_spot_5m_close"
             # last_update is set by on_tick() to the real poll/tick time; do not
             # overwrite it with the signal candle's start (minutes earlier on
             # the aligned 5m cadence).
@@ -1414,6 +1425,7 @@ class PatternScanner:
                 self._refresh_option_instruments(self.last_spot)
             elif self.current_atm_strike is not None and self._last_option_refresh is None:
                 self._refresh_option_instruments(self.last_spot)
+            self.last_closed_atm_strike = self.current_atm_strike
 
             # Pattern detection runs on SPOT candles only
             self._detect_and_enter(buffer.candles, ts, entry_ts=tick_ts)
@@ -1928,6 +1940,15 @@ class PatternScanner:
             "market_open": is_market_open(),
             "last_spot": self.last_spot,
             "last_update": self.last_update,
+            "last_closed_spot": self.last_closed_spot,
+            "last_closed_atm_strike": (self.last_closed_atm_strike
+                                       if self.last_closed_atm_strike is not None
+                                       else self.current_atm_strike),
+            "last_closed_candle_start": (self.last_closed_candle_start
+                                         or self.last_spot_candle_ts),
+            "last_closed_ce_close": self.last_closed_ce_close,
+            "last_closed_pe_close": self.last_closed_pe_close,
+            "last_closed_spot_source": self.last_closed_spot_source,
             "atm_strike": self.current_atm_strike,
             "expiry": self.current_expiry.isoformat() if self.current_expiry else None,
             "ce_symbol": self.ce_symbol,

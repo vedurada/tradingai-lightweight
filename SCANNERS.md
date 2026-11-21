@@ -1,9 +1,8 @@
 # TradingAI Paper Scanners — Master Documentation
 
-Complete reference for the 8 paper scanners running on the TradingAI VM, plus
-the repository-ready `sma9_5min` copy that has not yet been deployed:
-7 BUY-only NIFTY option-premium scanners plus `pattern_scanner` are active;
-`sma9_5min` is a ninth, staged identity. Five option scanners use a fixed 5%
+Complete reference for the 9 paper scanners running on the TradingAI VM:
+8 BUY-only NIFTY option-premium scanners plus `pattern_scanner` are active;
+`sma9_5min` is the ninth identity, deployed at `/live/sma9-5min/`. Five option scanners use a fixed 5%
 stop; `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll` and
 `pattern_scanner` use a volatility-scaled **premium** ATR stop and ATR-only trail
 (no +5 activation and no breakeven lock). `sma9_atr` also gates entries on a
@@ -41,9 +40,8 @@ The code trees and DBs remain on disk as archives.
 | 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles, polled at 5m boundary +10 s | premium ATR trail, then premium ATR stop, from completed 5m option OHLC bars; otherwise hold |
 | 8 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
 
-A ninth identity, `sma9_5min`, is staged in git: it is an isolated copy of
-`sma9` whose only behavioural change is an aligned 5-minute poll. It is not part
-of the active VM set until deployed.
+The ninth identity, `sma9_5min`, is deployed: it is an isolated copy of `sma9`
+whose only behavioural change is an aligned 5-minute poll.
 
 There is **no time-based exit** on any of the 8 scanners: if neither the trail
 nor the stop fires, the position stays open across candles (including overnight)
@@ -834,6 +832,16 @@ curl -sk -H 'Host: tradingai.in' \
 | sma9_trail | https://tradingai.in/live/sma9-trail/ |
 | sma9_high_trail | https://tradingai.in/live/sma9-high-trail/ |
 | pattern_scanner | https://tradingai.in/live/pattern_scanner/ |
+
+All nine dashboards show **Last Closed Spot** and **Closed-Bar ATM** cards in
+addition to the live LTP/ATM pair. These come from the most recent *completed*
+NIFTY 5-minute candle, not the current LTP. Because the read-only gateway does
+not serve NIFTY index history, the value is reconstructed from the latest
+completed ATM CE/PE 5m closes as `strike + CE close - PE close`, labelled in the
+API as `last_closed_spot_source: atm_ce_pe_parity_5m_close` (the pattern scanner
+uses `completed_spot_5m_close` in live spot-candle mode). The corresponding
+candle start is returned as `last_closed_candle_start`, and the CE/PE closes as
+`last_closed_ce_close` / `last_closed_pe_close`.
 
 Every active scanner has a button on `https://tradingai.in/live/scalp/` — the
 eight buttons are `sma9`, `sma9-atr`, `sma9-high`, `sma9-1min-poll`,

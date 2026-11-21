@@ -505,6 +505,12 @@ class TrailLiveScanner:
         self.spot = None
         self.last_error = None
         self.last_candle_start = None
+        self.last_closed_spot = None
+        self.last_closed_atm_strike = None
+        self.last_closed_candle_start = None
+        self.last_closed_ce_close = None
+        self.last_closed_pe_close = None
+        self.last_closed_spot_source = None
 
     def recover_open_positions(self):
         positions = load_open_positions()
@@ -739,7 +745,46 @@ class TrailLiveScanner:
                     "position": state.position.as_dict() if state.position else None,
                 }
 
+        self._refresh_last_closed_spot(now, option_status)
         return self._status(now, option_status, errors=errors)
+
+    def _refresh_last_closed_spot(self, now, option_status):
+        """Derive last completed 5m NIFTY spot from ATM CE/PE parity.
+
+        mStock does not expose index history through the read-only gateway, so
+        spot is reconstructed as `strike + CE close - PE close` from the most
+        recent completed option candle shared by both ATM legs. The value is
+        labelled with its source in the scanner state.
+        """
+        try:
+            completed = {}
+            for opt in ("CE", "PE"):
+                status = option_status.get(opt) or {}
+                token = status.get("token")
+                if not token:
+                    continue
+                rows = self.feed.candles(token)
+                done = [r for r in rows if r["start"] < floor_5m(now)]
+                if done:
+                    completed[opt] = (done[-1], status)
+            if set(completed) != {"CE", "PE"}:
+                return
+            ce_bar, ce_status = completed["CE"]
+            pe_bar, pe_status = completed["PE"]
+            if ce_bar["start"] != pe_bar["start"]:
+                return
+            strike = float(ce_status["strike"])
+            ce_close = float(ce_bar["close"])
+            pe_close = float(pe_bar["close"])
+            spot = strike + ce_close - pe_close
+            self.last_closed_spot = round(spot, 2)
+            self.last_closed_atm_strike = float(round(spot / 50.0) * 50)
+            self.last_closed_candle_start = ce_bar["start"].isoformat()
+            self.last_closed_ce_close = round(ce_close, 2)
+            self.last_closed_pe_close = round(pe_close, 2)
+            self.last_closed_spot_source = "atm_ce_pe_parity_5m_close"
+        except Exception:
+            pass
 
     def _status(self, now, options, errors=None):
         today = now.date().isoformat()
@@ -758,6 +803,12 @@ class TrailLiveScanner:
             "actual_interval_seconds": self.actual_interval_seconds,
             "spot": self.spot,
             "atm_strike": self.atm_strike,
+            "last_closed_spot": self.last_closed_spot,
+            "last_closed_atm_strike": self.last_closed_atm_strike,
+            "last_closed_candle_start": self.last_closed_candle_start,
+            "last_closed_ce_close": self.last_closed_ce_close,
+            "last_closed_pe_close": self.last_closed_pe_close,
+            "last_closed_spot_source": self.last_closed_spot_source,
             "expiry": self.expiry.isoformat() if hasattr(self.expiry, "isoformat") else self.expiry,
             "options": options,
             "today": today_stats(today),

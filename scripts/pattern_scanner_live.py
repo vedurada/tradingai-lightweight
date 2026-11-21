@@ -227,6 +227,39 @@ class KiteOptionFeed:
             }
         return None
 
+    def last_closed_5m_bar(self, symbol: str, now):
+        """Latest completed 5m OHLC bar for `symbol`, or None.
+
+        Used when index history is unavailable: the latest CE/PE bar pair gives
+        the last completed NIFTY spot close via strike + CE - PE parity.
+        """
+        if not self.available or not self.kite:
+            return None
+        token = self.option_token(symbol)
+        if not token:
+            return None
+        cutoff = floor_5min(now)
+        start = _as_ist_datetime(now) - timedelta(days=5)
+        try:
+            raw = self.kite.historical_data(token, start, now, "5minute")
+        except Exception as e:
+            print(f"[ps-live] historical error for {symbol}: {e}")
+            return None
+        latest = None
+        for row in raw or []:
+            try:
+                bar_start = _as_ist_datetime(row["date"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if bar_start >= cutoff:
+                continue
+            if latest is None or bar_start > latest["start"]:
+                latest = {
+                    "start": bar_start,
+                    "close": float(row["close"]),
+                }
+        return latest
+
     def quote_snapshot(self, option_symbols):
         """One Kite quote call for spot + options.
 
@@ -374,6 +407,36 @@ class PatternScannerLive:
                     continue
                 self.ps.on_option_bar(sym, bar, now)
 
+    def _refresh_last_closed_spot(self, now):
+        """Fill last completed 5m spot from ATM CE/PE parity.
+
+        mStock does not expose NIFTY index history through the read-only
+        gateway. CE/PE 5m closes from the same completed bar reconstruct spot
+        as strike + CE close - PE close. The value is labelled with its source
+        so dashboards never mistake it for a live LTP or a true index bar.
+        """
+        if not hasattr(self.feed, "last_closed_5m_bar"):
+            return
+        ce_sym = self.ps.ce_symbol
+        pe_sym = self.ps.pe_symbol
+        if not ce_sym or not pe_sym or self.ps.current_atm_strike is None:
+            return
+        try:
+            ce = self.feed.last_closed_5m_bar(ce_sym, now)
+            pe = self.feed.last_closed_5m_bar(pe_sym, now)
+            if not ce or not pe or ce["start"] != pe["start"]:
+                return
+            strike = float(self.ps.current_atm_strike)
+            spot = strike + float(ce["close"]) - float(pe["close"])
+            self.ps.last_closed_spot = round(spot, 2)
+            self.ps.last_closed_atm_strike = float(round(spot / 50.0) * 50)
+            self.ps.last_closed_candle_start = ce["start"].isoformat()
+            self.ps.last_closed_ce_close = round(float(ce["close"]), 2)
+            self.ps.last_closed_pe_close = round(float(pe["close"]), 2)
+            self.ps.last_closed_spot_source = "atm_ce_pe_parity_5m_close"
+        except Exception as e:
+            print(f"[ps-live] last-closed spot error: {e}")
+
     def _status_snapshot(self) -> dict:
         """Status with explicit feed-health fields for the API/dashboard."""
         status = self.ps.get_status()
@@ -451,6 +514,7 @@ class PatternScannerLive:
                     ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
                     if ce_sym and pe_sym:
                         self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
+                        self._refresh_last_closed_spot(now)
             try:
                 os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
                 status = self._status_snapshot()
@@ -502,6 +566,8 @@ class PatternScannerLive:
                 if ce_sym and pe_sym:
                     self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
             self.ps.on_tick("NIFTY_SPOT", spot, now)
+        if self.ps.last_closed_spot is None:
+            self._refresh_last_closed_spot(now)
 
         # Write status to file for API to read
         try:

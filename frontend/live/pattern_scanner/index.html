@@ -71,6 +71,8 @@
     <div class="stats-grid">
         <div class="stat-card"><div class="label">NIFTY Spot</div><div class="value mono" id="spot">--</div></div>
         <div class="stat-card"><div class="label">ATM Strike</div><div class="value mono" id="atm">--</div></div>
+        <div class="stat-card"><div class="label">Last Closed Spot</div><div class="value mono" id="last-closed-spot">--</div></div>
+        <div class="stat-card"><div class="label">Closed-Bar ATM</div><div class="value mono" id="last-closed-atm">--</div></div>
         <div class="stat-card"><div class="label">Expiry</div><div class="value mono" id="expiry">--</div></div>
         <div class="stat-card"><div class="label">CE Symbol</div><div class="value mono" id="ce" style="font-size:0.9rem;">--</div></div>
         <div class="stat-card"><div class="label">PE Symbol</div><div class="value mono" id="pe" style="font-size:0.9rem;">--</div></div>
@@ -170,6 +172,11 @@ async function load() {
         // Stats
         document.getElementById('spot').textContent = n(d.last_spot);
         document.getElementById('atm').textContent = idata.atm_strike !== null ? idata.atm_strike : '--';
+        document.getElementById('last-closed-spot').textContent = n(d.last_closed_spot);
+        document.getElementById('last-closed-atm').textContent = n(d.last_closed_atm_strike, 0);
+        document.getElementById('last-closed-spot').title = d.last_closed_candle_start
+            ? ('Completed candle: ' + d.last_closed_candle_start + ' IST')
+            : '';
         document.getElementById('expiry').textContent = idata.expiry || '--';
         document.getElementById('ce').textContent = idata.ce_symbol || '--';
         document.getElementById('pe').textContent = idata.pe_symbol || '--';

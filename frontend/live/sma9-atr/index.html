@@ -69,6 +69,8 @@
     <div class="stats-grid">
         <div class="stat-card"><div class="label">NIFTY Spot</div><div class="value mono" id="spot">--</div></div>
         <div class="stat-card"><div class="label">ATM Strike</div><div class="value mono" id="atm">--</div></div>
+        <div class="stat-card"><div class="label">Last Closed Spot</div><div class="value mono" id="last-closed-spot">--</div></div>
+        <div class="stat-card"><div class="label">Closed-Bar ATM</div><div class="value mono" id="last-closed-atm">--</div></div>
         <div class="stat-card"><div class="label">Expiry</div><div class="value mono" id="expiry">--</div></div>
         <div class="stat-card"><div class="label">Last Scan</div><div class="value mono" id="last-scan">--</div></div>
         <div class="stat-card"><div class="label">Poll Interval</div><div class="value mono" id="poll">--</div></div>
@@ -309,6 +311,11 @@ function renderStatus(st, live) {
         (live && live.scanner_name) || st.scanner_name || 'SMA9 ATR Scanner';
     document.getElementById('spot').textContent = n(live && live.spot);
     document.getElementById('atm').textContent = n(live && live.atm_strike, 0);
+    document.getElementById('last-closed-spot').textContent = n(live && live.last_closed_spot);
+    document.getElementById('last-closed-atm').textContent = n(live && live.last_closed_atm_strike, 0);
+    document.getElementById('last-closed-spot').title = live && live.last_closed_candle_start
+        ? ('Completed candle: ' + live.last_closed_candle_start + ' IST')
+        : '';
     document.getElementById('expiry').textContent = (live && live.expiry) || '--';
     document.getElementById('last-scan').textContent = live && live.last_scan_at ? istTime(live.last_scan_at) : '--';
     const poll = (live && live.poll_seconds) || st.poll_seconds || 5;
