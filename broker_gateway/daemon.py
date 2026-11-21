@@ -20,6 +20,8 @@ SOCKET_GROUP = os.environ.get("BROKER_GATEWAY_GROUP", "ubuntu")
 METHODS = {"instruments", "quote", "historical_data", "profile"}
 _ADAPTERS: dict[str, object] = {}
 _LOCK = threading.Lock()
+_MAX_CALLS = max(1, int(os.environ.get("BROKER_GATEWAY_MAX_CALLS", "4")))
+_CALL_LIMIT = threading.BoundedSemaphore(_MAX_CALLS)
 
 
 class GatewayEncoder(json.JSONEncoder):
@@ -50,7 +52,8 @@ def dispatch(request: dict):
         raise BrokerGatewayError("params must be an object")
     adapter = _adapter(broker)
     func = getattr(adapter, method)
-    return func(**params)
+    with _CALL_LIMIT:
+        return func(**params)
 
 
 class Handler(socketserver.StreamRequestHandler):

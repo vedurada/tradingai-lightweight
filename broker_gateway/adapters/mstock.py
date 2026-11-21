@@ -1,6 +1,7 @@
 """mStock Type A adapter, translated to the Kite read-only surface."""
 from __future__ import annotations
 
+import collections
 import csv
 import datetime as dt
 import io
@@ -21,6 +22,12 @@ DEFAULT_SECRET = "/opt/tradingai/secrets/mstock.env"
 DEFAULT_CACHE = "/opt/tradingai/broker_gateway/cache"
 IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
 _OFFSET_SUFFIX = re.compile(r"([+-]\d{2})$")
+TRANSIENT_HTTP = {429, 500, 502, 503, 504}
+TRANSIENT_TEXT = ("try again", "something went wrong", "too many requests", "rate limit")
+MAX_ATTEMPTS = 3
+INDEX_QUOTE_KEYS = {256265: "NSE:NIFTY 50"}
+HISTORY_CACHE_TTL = 60
+HISTORY_CACHE_MAX = 64
 
 
 def _load_secret() -> dict[str, str]:
@@ -73,6 +80,8 @@ class MStockAdapter(BrokerAdapter):
         self.cache_dir.mkdir(parents=True, exist_ok=True, mode=0o750)
         self._rows: list[dict] | None = None
         self._token_exchange: dict[int, str] | None = None
+        self._quote_keys: dict[int, str] | None = None
+        self._history_cache: collections.OrderedDict = collections.OrderedDict()
 
     # -- transport -------------------------------------------------------
     def _headers(self) -> dict[str, str]:
@@ -81,27 +90,59 @@ class MStockAdapter(BrokerAdapter):
             "Authorization": f"token {self.api_key}:{self.access_token}",
         }
 
-    def _get_json(self, path: str, params: dict | None = None) -> dict:
+    @staticmethod
+    def _backoff(attempt: int) -> None:
+        time.sleep(0.6 * (2 ** attempt))
+
+    def _http_get(self, path: str, params: dict | None = None, timeout: int = 60) -> bytes:
         url = BASE + path
         if params:
             url += "?" + urllib.parse.urlencode(params, doseq=True)
-        req = urllib.request.Request(url, headers=self._headers(), method="GET")
-        try:
-            with urllib.request.urlopen(req, timeout=60) as response:
-                payload = json.loads(response.read().decode("utf-8", "replace"))
-        except urllib.error.HTTPError as exc:
+        for attempt in range(MAX_ATTEMPTS):
+            req = urllib.request.Request(url, headers=self._headers(), method="GET")
             try:
-                body = json.loads(exc.read().decode("utf-8", "replace"))
-                message = body.get("message") or body.get("error_type")
-            except Exception:
-                message = f"HTTP {exc.code}"
-            raise BrokerCallFailed(f"mStock {path}: {message}") from exc
-        except Exception as exc:
-            raise BrokerCallFailed(f"mStock {path}: {type(exc).__name__}") from exc
-        if not isinstance(payload, dict) or payload.get("status") != "success":
+                with urllib.request.urlopen(req, timeout=timeout) as response:
+                    return response.read()
+            except urllib.error.HTTPError as exc:
+                try:
+                    body = json.loads(exc.read().decode("utf-8", "replace"))
+                    message = body.get("message") or body.get("error_type")
+                except Exception:
+                    message = f"HTTP {exc.code}"
+                if exc.code in TRANSIENT_HTTP and attempt + 1 < MAX_ATTEMPTS:
+                    self._backoff(attempt)
+                    continue
+                raise BrokerCallFailed(f"mStock {path}: {message}") from exc
+            except (urllib.error.URLError, TimeoutError, OSError) as exc:
+                if attempt + 1 < MAX_ATTEMPTS:
+                    self._backoff(attempt)
+                    continue
+                raise BrokerCallFailed(f"mStock {path}: {type(exc).__name__}") from exc
+        raise BrokerCallFailed(f"mStock {path}: retry exhausted")
+
+    @staticmethod
+    def _is_transient_message(message) -> bool:
+        text = str(message or "").lower()
+        return any(term in text for term in TRANSIENT_TEXT)
+
+    def _get_json(self, path: str, params: dict | None = None) -> dict:
+        for attempt in range(MAX_ATTEMPTS):
+            raw = self._http_get(path, params=params)
+            try:
+                payload = json.loads(raw.decode("utf-8", "replace"))
+            except ValueError as exc:
+                if attempt + 1 < MAX_ATTEMPTS:
+                    self._backoff(attempt)
+                    continue
+                raise BrokerCallFailed(f"mStock {path}: invalid JSON") from exc
+            if isinstance(payload, dict) and payload.get("status") == "success":
+                return payload
             message = payload.get("message") if isinstance(payload, dict) else payload
+            if attempt + 1 < MAX_ATTEMPTS and self._is_transient_message(message):
+                self._backoff(attempt)
+                continue
             raise BrokerCallFailed(f"mStock {path}: {message}")
-        return payload
+        raise BrokerCallFailed(f"mStock {path}: retry exhausted")
 
     # -- master ----------------------------------------------------------
     def _scriptmaster_rows(self) -> list[dict]:
@@ -113,16 +154,8 @@ class MStockAdapter(BrokerAdapter):
         if cache.exists() and (time.time() - cache.stat().st_mtime) < ttl:
             text = cache.read_text(encoding="utf-8", errors="replace")
         if text is None:
-            req = urllib.request.Request(
-                BASE + "/instruments/scriptmaster", headers=self._headers(), method="GET"
-            )
-            try:
-                with urllib.request.urlopen(req, timeout=120) as response:
-                    text = response.read().decode("utf-8", "replace")
-            except urllib.error.HTTPError as exc:
-                raise BrokerCallFailed(f"mStock scriptmaster: HTTP {exc.code}") from exc
-            except Exception as exc:
-                raise BrokerCallFailed(f"mStock scriptmaster: {type(exc).__name__}") from exc
+            raw = self._http_get("/instruments/scriptmaster", timeout=120)
+            text = raw.decode("utf-8", "replace")
             tmp = cache.with_name(cache.name + ".tmp")
             tmp.write_text(text, encoding="utf-8")
             tmp.chmod(0o644)
@@ -154,6 +187,20 @@ class MStockAdapter(BrokerAdapter):
                     continue
                 self._token_exchange[token] = (row.get("exchange") or "").upper()
         return self._token_exchange
+
+    def _quote_key_map(self) -> dict[int, str]:
+        if self._quote_keys is None:
+            self._quote_keys = dict(INDEX_QUOTE_KEYS)
+            for row in self._scriptmaster_rows():
+                try:
+                    token = int(row["instrument_token"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                exchange = (row.get("exchange") or "").upper()
+                symbol = row.get("tradingsymbol") or ""
+                if exchange and symbol:
+                    self._quote_keys[token] = f"{exchange}:{symbol}"
+        return self._quote_keys
 
     # -- Kite-shaped methods --------------------------------------------
     def instruments(self, exchange: str) -> list[dict]:
@@ -187,23 +234,36 @@ class MStockAdapter(BrokerAdapter):
     def quote(self, symbols: list[str]) -> dict[str, dict]:
         if isinstance(symbols, str):
             symbols = [symbols]
+        key_map = self._quote_key_map()
+        translated: list[tuple[str, str]] = []
+        for symbol in symbols:
+            original = str(symbol)
+            if original.isdigit():
+                token = int(original)
+                mapped = key_map.get(token)
+                if not mapped:
+                    raise BrokerCallFailed(f"mStock quote: unknown token {original}")
+                translated.append((original, mapped))
+            else:
+                translated.append((original, original))
+
         result: dict[str, dict] = {}
-        for start in range(0, len(symbols), 50):
-            batch = symbols[start : start + 50]
+        for start in range(0, len(translated), 50):
+            batch = translated[start : start + 50]
             payload = self._get_json(
-                "/instruments/quote/ohlc", params=[("i", symbol) for symbol in batch]
+                "/instruments/quote/ohlc", params=[("i", key) for _, key in batch]
             )
             data = payload.get("data") or {}
-            for symbol in batch:
-                item = data.get(symbol)
+            for original, key in batch:
+                item = data.get(key)
                 if not item:
-                    raise BrokerCallFailed(f"mStock quote: missing symbol {symbol}")
-                result[symbol] = {
+                    raise BrokerCallFailed(f"mStock quote: missing symbol {key}")
+                result[original] = {
                     "instrument_token": int(item.get("instrument_token", 0) or 0),
                     "last_price": float(item.get("last_price", 0) or 0),
                     "ohlc": {
-                        key: float(value)
-                        for key, value in (item.get("ohlc") or {}).items()
+                        field: float(value)
+                        for field, value in (item.get("ohlc") or {}).items()
                         if value is not None
                     },
                 }
@@ -211,12 +271,19 @@ class MStockAdapter(BrokerAdapter):
 
     def historical_data(self, token: int, start, end, interval: str) -> list[dict]:
         token = int(token)
-        exchange = self._token_map().get(token)
-        if not exchange:
-            raise BrokerCallFailed(f"mStock historical: unknown instrument token {token}")
         start_dt = _as_datetime(start)
         end_dt = _as_datetime(end)
         interval = str(interval)
+
+        cache_key = (token, interval, start_dt.date(), end_dt.date())
+        cached = self._history_cache.get(cache_key)
+        if cached and (time.time() - cached[0]) < HISTORY_CACHE_TTL:
+            self._history_cache.move_to_end(cache_key)
+            return list(cached[1])
+
+        exchange = self._token_map().get(token)
+        if not exchange:
+            raise BrokerCallFailed(f"mStock historical: unknown instrument token {token}")
         if interval not in {
             "minute", "3minute", "5minute", "10minute", "15minute",
             "30minute", "60minute", "day",
@@ -250,7 +317,11 @@ class MStockAdapter(BrokerAdapter):
                     "volume": int(float(candle[5])) if len(candle) > 5 and candle[5] else 0,
                 }
             cursor = chunk_end
-        return [rows[key] for key in sorted(rows)]
+        result = [rows[key] for key in sorted(rows)]
+        self._history_cache[cache_key] = (time.time(), result)
+        while len(self._history_cache) > HISTORY_CACHE_MAX:
+            self._history_cache.popitem(last=False)
+        return list(result)
 
     def profile(self) -> dict:
         payload = self._get_json("/user/fundsummary")
