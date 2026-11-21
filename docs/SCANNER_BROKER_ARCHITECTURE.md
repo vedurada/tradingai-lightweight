@@ -125,6 +125,12 @@ flowchart LR
   historical_data, profile}` and a broker allowlist, so a direct socket client
   cannot widen the surface either.
 - `BrokerAdapter` is an ABC with only the three data methods plus `profile()`.
+- The daemon strips any quote entry whose `last_price` is missing, non-numeric,
+  non-finite or `<= 0` before returning it (`_sanitize_quote`). Scanners do
+  `float(quote[symbol]["last_price"])` inside a try/except, so a stripped key
+  becomes "LTP unavailable" and no paper entry or ATR stop exit is created from
+  a bogus zero/negative tick. This is enforced at the broker boundary for every
+  adapter, so switching brokers never changes scanner code.
 - Every trade remains simulated in the scanner's own SQLite database.
 
 ## 5. Lifecycle of one quote call
@@ -303,6 +309,9 @@ Broker selection itself is separate from tokens:
 | Stale token for the selected broker | Gateway validates before every data call and refuses stale tokens with a clear error; refresh that broker's token |
 | Stale Zerodha token | Refresh that scanner's token before switching back; avoid fleet-wide refresh |
 | Broker write attempted | Shim `PermissionError` + daemon method allowlist |
+| Zero/negative/NULL broker quote | Gateway removes `last_price`; scanner treats it as "LTP unavailable" and skips entry/exit for that poll |
+| Live feed fails to initialise at startup | Pattern scanner reports `NO_LIVE_FEED`, `data_available=false`, `feed=mock` and a clear error instead of a healthy-looking `RUNNING` on the data-less MockFeed |
+| World-writable SQLite DBs | `/opt/tradingai/database` is `2775 root:ubuntu`; DB files `0660 <owner>:ubuntu`; root `ExecStartPre` narrowed from `chmod 0666` to `0660` |
 
 ## 10. Extending to another broker
 
@@ -324,9 +333,18 @@ No scanner file changes are needed.
   instruments, NIFTY quote ok.
 - Seven SMA APIs: `IDLE_MARKET_CLOSED`, `poll=5`, fresh scan ages, errors only
   `['weekend']`.
-- Pattern scanner: `MARKET_CLOSED`, polling every 5 s, spot and ATM strike
-  updating through mStock, no broker orders.
-- Memory stable at roughly 430 MB used of 956 MB total.
+- Pattern scanner: `MARKET_CLOSED`, `data_available=true`, `feed=live`, polling
+  every 5 s, spot and ATM strike updating through mStock, no broker orders.
+  Its status file now always carries feed-health fields; on feed failure it
+  reports `NO_LIVE_FEED` rather than `RUNNING` on mock data. The full 94k NFO
+  dump is indexed once and released, keeping only the compact NIFTY CE/PE map.
+- Database directory `2775 root:ubuntu`, all DB files `0660` with no
+  world-writable SQLite files.
+- Gateway price guard verified: zero/negative/non-finite `last_price` values are
+  removed from quote responses before scanners see them.
+- Memory: after a full service restart with warm instrument caches, ~700 MB
+  used of 956 MB with swap available and PSI avg10 ~1%; the acute pressure
+  caused by simultaneous restarts subsides within seconds.
 - `mstock_session.py --check` reports `session: valid`; the stored token was
   written at 10:10 IST and the daemon started at 11:23 IST, so the current token
   is the one in use.

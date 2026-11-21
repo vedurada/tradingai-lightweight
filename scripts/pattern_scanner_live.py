@@ -72,7 +72,11 @@ class KiteOptionFeed:
         self.kite = None
         self.spot_token = self.NIFTY_SPOT_TOKEN
         self.available = False
-        self.nfo_instruments = []
+        # The full NFO dump (~94k dicts) is only needed while building the
+        # filtered NIFTY CE/PE index. Retaining it just to flag "loaded" costs
+        # >100 MB per process, so keep only a flag and the compact index.
+        self.nfo_loaded = False
+        self.nfo_rows = 0
         self.nfo_index = {}
         self.nfo_expiries = []
         self.nfo_loaded_at = 0.0
@@ -112,13 +116,11 @@ class KiteOptionFeed:
         """
         now = time_module.time()
         if not self.available or not self.kite:
-            return self.nfo_instruments
-        if (self.nfo_instruments
-                and self.nfo_loaded_at
-                and now - self.nfo_loaded_at < max_age):
-            return self.nfo_instruments
+            return self.nfo_index
+        if self.nfo_loaded and self.nfo_loaded_at and now - self.nfo_loaded_at < max_age:
+            return self.nfo_index
         if now < self.nfo_retry_at:
-            return self.nfo_instruments
+            return self.nfo_index
         try:
             data = self.kite.instruments("NFO")
             index = {}
@@ -134,17 +136,20 @@ class KiteOptionFeed:
                 key = (float(strike), expiry, inst["instrument_type"])
                 index.setdefault(key, []).append(inst)
                 expiries.add(expiry)
-            self.nfo_instruments = data
+            self.nfo_rows = len(data)
             self.nfo_index = index
             self.nfo_expiries = sorted(expiries)
+            self.nfo_loaded = True
             self.nfo_loaded_at = now
             self.nfo_retry_at = 0.0
-            print(f"[ps-live] NFO instruments cached: {len(data)} rows, "
+            # `data` goes out of scope here: only the filtered NIFTY CE/PE
+            # entries referenced by index stay in memory.
+            print(f"[ps-live] NFO instruments indexed: {len(data)} rows, "
                   f"{len(expiries)} NIFTY expiries")
         except Exception as e:
             self.nfo_retry_at = now + 60
             print(f"[ps-live] NFO instruments load error (retry in 60s): {e}")
-        return self.nfo_instruments
+        return self.nfo_index
 
     def nifty_expiries(self):
         self.get_nfo_instruments()
@@ -237,11 +242,38 @@ class PatternScannerLive:
     def __init__(self):
         self.ps = PatternScanner(get_conn)
         self.feed = KiteOptionFeed() if KITE_AVAILABLE else MockFeed()
-        if not self.feed.available:
+        # A MockFeed has no option prices and may replay stale spot from the DB.
+        # Never advertise it as a healthy RUNNING live scanner: downstream
+        # operators/read the status to decide whether prices can be trusted.
+        self.live_feed_ok = bool(
+            self.feed is not None
+            and not isinstance(self.feed, MockFeed)
+            and getattr(self.feed, "available", False)
+        )
+        if not self.live_feed_ok:
+            print("[ps-live] WARNING: no live Kite feed; status will report "
+                  "NO_LIVE_FEED (mock fallback has no option prices)")
             self.feed = MockFeed()
         self.running = False
         self.thread = None
         self.poll = 5.0  # seconds
+
+    def _status_snapshot(self) -> dict:
+        """Status with explicit feed-health fields for the API/dashboard."""
+        status = self.ps.get_status()
+        live = bool(self.live_feed_ok and getattr(self.feed, "available", False))
+        status["data_available"] = live
+        status["feed"] = "live" if live else "mock"
+        errors = list(status.get("errors") or [])
+        if not live:
+            msg = ("no live broker feed; mock fallback has no option prices "
+                   "(market data unavailable)")
+            if msg not in errors:
+                errors.append(msg)
+            if status.get("status") == "RUNNING":
+                status["status"] = "NO_LIVE_FEED"
+        status["errors"] = errors
+        return status
 
     def start(self):
         self.running = True
@@ -292,7 +324,7 @@ class PatternScannerLive:
                         self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
             try:
                 os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
-                status = self.ps.get_status()
+                status = self._status_snapshot()
                 with open(STATUS_FILE, "w") as f:
                     json.dump(status, f)
             except Exception:
@@ -339,7 +371,7 @@ class PatternScannerLive:
         # Write status to file for API to read
         try:
             os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
-            status = self.ps.get_status()
+            status = self._status_snapshot()
             with open(STATUS_FILE, "w") as f:
                 json.dump(status, f)
         except Exception as e:
@@ -353,7 +385,7 @@ class PatternScannerLive:
         print("[ps-live] Pattern Scanner live runner stopped")
 
     def get_status(self):
-        return self.ps.get_status()
+        return self._status_snapshot()
 
 
 # Global instance

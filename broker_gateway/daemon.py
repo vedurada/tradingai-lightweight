@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import grp
 import json
+import math
 import os
 import pathlib
 import socketserver
@@ -75,6 +76,38 @@ def _require_fresh(broker: str, adapter) -> None:
             _FRESH_CACHE[broker] = (signature, now, True)
 
 
+def _sanitize_quote(result):
+    """Strip invalid/nonpositive ``last_price`` values from quote responses.
+
+    Paper scanners do ``float(quote[symbol]["last_price"])``. A zero, negative
+    or non-finite price would otherwise be accepted and could produce bogus
+    paper entries or stop-loss exits. Removing the key makes that lookup raise
+    ``KeyError``, which every scanner already handles as "LTP unavailable" and
+    skips the option for that poll. Applies to every broker at the daemon
+    boundary, so scanner code stays unchanged when switching brokers.
+    """
+    if not isinstance(result, dict):
+        return result
+    clean = {}
+    for symbol, entry in result.items():
+        if not isinstance(entry, dict):
+            clean[symbol] = entry
+            continue
+        raw = entry.get("last_price")
+        try:
+            price = float(raw)
+            valid = math.isfinite(price) and price > 0
+        except (TypeError, ValueError):
+            valid = False
+        if valid:
+            clean[symbol] = entry
+        else:
+            stripped = dict(entry)
+            stripped.pop("last_price", None)
+            clean[symbol] = stripped
+    return clean
+
+
 def dispatch(request: dict):
     if not isinstance(request, dict):
         raise BrokerGatewayError("request must be an object")
@@ -92,7 +125,8 @@ def dispatch(request: dict):
     _require_fresh(broker, adapter)
     func = getattr(adapter, method)
     with _CALL_LIMIT:
-        return func(**params)
+        result = func(**params)
+    return _sanitize_quote(result) if method == "quote" else result
 
 
 class Handler(socketserver.StreamRequestHandler):
