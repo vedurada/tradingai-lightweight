@@ -849,9 +849,11 @@ mStock option history can contain frozen, zero-volume bars. On 2026-11-20 those
 bars implied a spot near 25739 while the real index closed at 25800.6, so the
 parity cards were wrong. Note also that mStock's live index **quote** can be
 stale: on 2026-11-21 its `last_price` was 25461.35 even though its own `ohlc.close`
-and the index history both showed 25800.6. The **NIFTY LTP (live)** card
-reflects that broker quote verbatim and should be treated with caution until
-the feed recovers.
+and the index history both showed 25800.6. While the market is closed, scanners substitute the real index close for the
+live pair when the broker quote is more than 50 points away from it, so both
+card pairs agree on the actual last traded level. The API exposes this as
+`spot_source: index_close_fallback` (normally `broker_quote`); once the market
+opens, the live pair reverts to the broker quote.
 
 Every active scanner has a button on `https://tradingai.in/live/scalp/` — the
 eight buttons are `sma9`, `sma9-atr`, `sma9-high`, `sma9-1min-poll`,

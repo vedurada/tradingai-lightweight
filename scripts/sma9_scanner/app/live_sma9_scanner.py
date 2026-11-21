@@ -574,6 +574,7 @@ class Sma9LiveScanner:
         try:
             nifty = self.feed.quote(["NSE:NIFTY 50"])
             self.spot = float(nifty["NSE:NIFTY 50"]["last_price"])
+            self.spot_source = "broker_quote"
             self.refresh_contracts(self.spot, force=self.atm_strike is None)
         except Exception as exc:
             self.last_error = f"spot/contract error: {exc}"
@@ -712,6 +713,11 @@ class Sma9LiveScanner:
             }
 
         self._refresh_last_closed_spot(now, option_status)
+        if not market_is_open(now) and self.last_closed_spot is not None:
+            if self.spot is None or abs(float(self.spot) - self.last_closed_spot) > 50:
+                self.spot = self.last_closed_spot
+                self.atm_strike = self.last_closed_atm_strike
+                self.spot_source = "index_close_fallback"
         return self._status(now, option_status, errors=errors)
 
     def _refresh_last_closed_spot(self, now, option_status):
@@ -780,6 +786,7 @@ class Sma9LiveScanner:
             "poll_seconds": POLL_SECONDS,
             "actual_interval_seconds": self.actual_interval_seconds,
             "spot": self.spot,
+            "spot_source": getattr(self, "spot_source", "broker_quote"),
             "atm_strike": self.atm_strike,
             "last_closed_spot": self.last_closed_spot,
             "last_closed_atm_strike": self.last_closed_atm_strike,

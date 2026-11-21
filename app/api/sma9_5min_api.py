@@ -208,6 +208,7 @@ def scanner_status():
             "actual_interval_seconds": state.get("actual_interval_seconds"),
             "market_open": state.get("market_open"),
             "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
             "atm_strike": state.get("atm_strike"),
             "last_closed_spot": state.get("last_closed_spot"),
             "last_closed_atm_strike": state.get("last_closed_atm_strike"),

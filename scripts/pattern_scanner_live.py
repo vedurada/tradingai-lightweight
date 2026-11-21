@@ -456,6 +456,7 @@ class PatternScannerLive:
     def _status_snapshot(self) -> dict:
         """Status with explicit feed-health fields for the API/dashboard."""
         status = self.ps.get_status()
+        status["spot_source"] = getattr(self.ps, "spot_source", "broker_quote")
         live = bool(self.live_feed_ok and getattr(self.feed, "available", False))
         failed_bars = sorted(getattr(self, "_failed_bar_symbols", set()))
         status["data_available"] = live
@@ -525,6 +526,7 @@ class PatternScannerLive:
             spot = self.feed.quote_spot()
             if spot is not None:
                 self.ps.last_spot = spot
+                self.ps.spot_source = "broker_quote"
                 self.ps.last_update = now.isoformat()
                 if hasattr(self.feed, "kite") and self.feed.kite:
                     ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
@@ -581,9 +583,15 @@ class PatternScannerLive:
                 ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
                 if ce_sym and pe_sym:
                     self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
+            self.ps.spot_source = "broker_quote"
             self.ps.on_tick("NIFTY_SPOT", spot, now)
         if self.ps.last_closed_spot is None:
             self._refresh_last_closed_spot(now)
+        if not is_market_open(now) and self.ps.last_closed_spot is not None:
+            if (self.ps.last_spot is None
+                    or abs(float(self.ps.last_spot) - self.ps.last_closed_spot) > 50):
+                self.ps.last_spot = self.ps.last_closed_spot
+                self.ps.spot_source = "index_close_fallback"
 
         # Write status to file for API to read
         try:
