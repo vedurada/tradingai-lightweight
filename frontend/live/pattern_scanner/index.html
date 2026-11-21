@@ -69,8 +69,8 @@
     <h2>Scanner Info</h2>
     <div class="sub">Detects ~37 bullish and ~37 bearish candlestick patterns on NIFTY SPOT 5-minute candles. Bullish signal → LONG ATM CE (weekly); bearish signal → LONG ATM PE (weekly). Long-only CE/PE — no short CE, no short PE. Entry at the spot candle close using the live option LTP. Exit: spot-based trailing stop (+5 activate, 5pt trail, +6 breakeven lock at +2) and a fixed 12-point spot stop-loss (12 NIFTY points at any index level — no percentage scaling). SL/trail calculated on NIFTY spot; option exited at its LTP when spot breaches. No target, no time-based exit. Paper trading.</div>
     <div class="stats-grid">
-        <div class="stat-card"><div class="label">NIFTY Spot</div><div class="value mono" id="spot">--</div></div>
-        <div class="stat-card"><div class="label">ATM Strike</div><div class="value mono" id="atm">--</div></div>
+        <div class="stat-card"><div class="label">NIFTY LTP (live)</div><div class="value mono" id="spot">--</div></div>
+        <div class="stat-card"><div class="label">ATM Strike (live)</div><div class="value mono" id="atm">--</div></div>
         <div class="stat-card"><div class="label">Last Closed Spot</div><div class="value mono" id="last-closed-spot">--</div></div>
         <div class="stat-card"><div class="label">Closed-Bar ATM</div><div class="value mono" id="last-closed-atm">--</div></div>
         <div class="stat-card"><div class="label">Expiry</div><div class="value mono" id="expiry">--</div></div>

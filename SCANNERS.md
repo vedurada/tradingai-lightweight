@@ -834,7 +834,9 @@ curl -sk -H 'Host: tradingai.in' \
 | pattern_scanner | https://tradingai.in/live/pattern_scanner/ |
 
 All nine dashboards show **Last Closed Spot** and **Closed-Bar ATM** cards in
-addition to the live LTP/ATM pair. These come from the most recent *completed*
+addition to the live pair, which is labelled **NIFTY LTP (live)** /
+**ATM Strike (live)** to distinguish the broker's last-traded index price from
+the completed 5m close. These come from the most recent *completed*
 NIFTY 5-minute candle, not the current LTP. Because the read-only gateway does
 not serve NIFTY index history, the value is reconstructed from the latest
 completed ATM CE/PE 5m closes as `strike + CE close - PE close`, labelled in the
