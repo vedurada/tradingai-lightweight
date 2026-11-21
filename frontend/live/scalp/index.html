@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - Scalp Scanner Launcher</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0b0c15;
+        color: #e8eaf0;
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        overflow: hidden;
+    }
+    .topbar {
+        flex: 0 0 auto;
+        background: #0b1e3a;
+        color: #fff;
+        padding: 0.3rem 0.8rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 0.35rem;
+    }
+    .brand { font-size: 1.05rem; font-weight: 800; }
+    .brand .dot { color: #22d3ee; }
+    header {
+        flex: 0 0 auto;
+        padding: 0.5rem 0.8rem 0.45rem;
+        border-bottom: 1px solid #1e2438;
+        background: #0e1120;
+    }
+    .title-row {
+        display: flex;
+        align-items: baseline;
+        gap: 0.8rem;
+        flex-wrap: wrap;
+        margin-bottom: 0.4rem;
+    }
+    h1 { color: #00e5ff; font-size: 1rem; letter-spacing: 0.02em; }
+    .hint { color: #9aa4bf; font-size: 0.72rem; }
+    .buttons {
+        display: flex;
+        gap: 0.35rem;
+        flex-wrap: wrap;
+        align-items: center;
+    }
+    .scanner-btn {
+        appearance: none;
+        border: 1px solid #334155;
+        background: #141a2c;
+        color: #cbd5e1;
+        padding: 0.3rem 0.7rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        font-weight: 600;
+        cursor: pointer;
+        transition: background 0.15s, border-color 0.15s, color 0.15s;
+        white-space: nowrap;
+    }
+    .scanner-btn:hover { background: #1b2438; border-color: #4b6382; color: #e8eaf0; }
+    .scanner-btn:focus-visible { outline: 2px solid #00e5ff; outline-offset: 2px; }
+    .scanner-btn.active {
+        background: #062a3a;
+        border-color: #00e5ff;
+        color: #00e5ff;
+        box-shadow: 0 0 0 1px rgba(0, 229, 255, 0.25) inset;
+    }
+    .scanner-btn.pattern { border-color: #0a7a2f; }
+    .scanner-btn.trail { border-color: #1e3a5f; }
+    .scanner-btn.atr { border-color: #8a5a12; }
+    .scanner-btn.poll5s { border-color: #0f766e; }
+    .sep { width: 1px; height: 18px; background: #2a3350; margin: 0 0.15rem; }
+    .group-label {
+        color: #7c8aa5;
+        font-size: 0.62rem;
+        font-weight: 700;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        margin-left: 0.15rem;
+    }
+    main { flex: 1 1 auto; min-height: 0; position: relative; background: #0b0c15; }
+    #scanner-frame { width: 100%; height: 100%; border: 0; display: block; background: #0b0c15; }
+    .loading {
+        position: absolute;
+        inset: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #9aa4bf;
+        font-size: 0.9rem;
+        background: #0b0c15;
+        pointer-events: none;
+        transition: opacity 0.2s;
+    }
+    .loading.hidden { opacity: 0; }
+    .note {
+        flex: 0 0 auto;
+        padding: 0.25rem 0.8rem;
+        border-top: 1px solid #1e2438;
+        color: #6b7280;
+        font-size: 0.6rem;
+        line-height: 1.3;
+    }
+    @media (max-width: 640px) {
+        header { padding: 0.45rem 0.6rem 0.4rem; }
+        h1 { font-size: 0.95rem; }
+        .hint { font-size: 0.68rem; }
+        .scanner-btn { padding: 0.28rem 0.6rem; font-size: 0.72rem; }
+    }
+</style>
+</head>
+<body>
+<div class="topbar">
+    <div><img src="/favicon.svg" alt="logo" style="width:24px;height:24px;vertical-align:-6px;margin-right:.4rem"><span class="brand">TradingAI<span class="dot">.in</span></span></div>
+    <div><a href="/" style="color:#cbd5e1;text-decoration:none;font-size:.85rem">Home</a></div>
+</div>
+<header>
+    <div class="title-row">
+        <h1>Scalp Scanner Launcher</h1>
+        <span class="hint">Click a scanner to view its live dashboard here, or open TRAIL for live trailing-stop P&amp;L per scanner.</span>
+    </div>
+    <nav class="buttons" id="scanner-buttons" aria-label="Scanner selection">
+        <button class="scanner-btn" type="button" data-key="sma9" data-src="/live/sma9/" aria-pressed="false">SMA9</button>
+        <button class="scanner-btn" type="button" data-key="sma9-5min" data-src="/live/sma9-5min/" aria-pressed="false">SMA9 5MIN</button>
+        <button class="scanner-btn atr" type="button" data-key="sma9-atr" data-src="/live/sma9-atr/" aria-pressed="false">SMA9 ATR</button>
+        <span class="sep" aria-hidden="true"></span>
+        <button class="scanner-btn" type="button" data-key="sma9-high" data-src="/live/sma9-high/" aria-pressed="false">SMA9 HIGH</button>
+        <span class="sep" aria-hidden="true"></span>
+        <button class="scanner-btn poll5s" type="button" data-key="sma9-1min-poll" data-src="/live/sma9-1min-poll/" aria-pressed="false">SMA9 5S POLL</button>
+        <button class="scanner-btn atr" type="button" data-key="sma9-5s-atr" data-src="/live/sma9-5s-atr/" aria-pressed="false">SMA9 5S ATR</button>
+        <button class="scanner-btn pattern" type="button" data-key="pattern_scanner" data-src="/live/pattern_scanner/" aria-pressed="false">PATTERN SCANNER</button>
+        <span class="sep" aria-hidden="true"></span>
+        <span class="group-label">TRAIL 5</span>
+        <button class="scanner-btn trail" type="button" data-key="sma9-trail" data-src="/live/sma9-trail/" aria-pressed="false">SMA9 Trail</button>
+        <button class="scanner-btn trail" type="button" data-key="sma9-high-trail" data-src="/live/sma9-high-trail/" aria-pressed="false">SMA9 HIGH Trail</button>
+        <span class="sep" aria-hidden="true"></span>
+        <button class="scanner-btn perf" type="button" data-key="performance" data-src="/live/performance/" aria-pressed="false">PERFORMANCE</button>
+    </nav>
+</header>
+<main>
+    <iframe id="scanner-frame" title="Scanner dashboard" loading="eager"></iframe>
+    <div class="loading" id="loading">Loading scanner dashboard...</div>
+</main>
+<p class="note">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security.</p>
+<script>
+(function () {
+    'use strict';
+
+    var DEFAULT_KEY = 'sma9';
+    var frame = document.getElementById('scanner-frame');
+    var loading = document.getElementById('loading');
+    var buttons = Array.prototype.slice.call(
+        document.querySelectorAll('.scanner-btn')
+    );
+    var byKey = {};
+    buttons.forEach(function (b) { byKey[b.dataset.key] = b; });
+    var currentKey = null;
+
+    function show(key, pushUrl) {
+        var btn = byKey[key];
+        if (!btn) { key = DEFAULT_KEY; btn = byKey[key]; }
+        if (!btn || key === currentKey) { return; }
+
+        currentKey = key;
+        buttons.forEach(function (b) {
+            var active = b === btn;
+            b.classList.toggle('active', active);
+            b.setAttribute('aria-pressed', active ? 'true' : 'false');
+        });
+
+        loading.classList.remove('hidden');
+        frame.src = btn.dataset.src;
+
+        if (pushUrl !== false) {
+            try {
+                var url = new URL(window.location.href);
+                url.searchParams.set('s', key);
+                window.history.replaceState(null, '', url.toString());
+            } catch (e) { /* ignore */ }
+        }
+    }
+
+    frame.addEventListener('load', function () {
+        loading.classList.add('hidden');
+    });
+
+    buttons.forEach(function (b) {
+        b.addEventListener('click', function () { show(b.dataset.key); });
+    });
+
+    // Optional deep link: /live/scalp/?s=sma9-high or ?s=pattern_scanner
+    var initial = DEFAULT_KEY;
+    try {
+        var q = new URL(window.location.href).searchParams.get('s');
+        if (q && byKey[q]) { initial = q; }
+    } catch (e) { /* ignore */ }
+    show(initial, false);
+})();
+</script>
+</body>
+</html>
