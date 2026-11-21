@@ -33,6 +33,9 @@ def test_mock_feed_reports_no_live_feed():
     assert status["status"] == "NO_LIVE_FEED"
     assert status["data_available"] is False
     assert status["feed"] == "mock"
+    assert status["poll_interval_sec"] == 300
+    assert status["poll_alignment"] == "5m_boundary_plus_10s"
+    assert status["exit_data"] == "completed_5m_option_ohlc"
     assert any("no live broker feed" in e for e in status["errors"])
 
 

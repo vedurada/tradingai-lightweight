@@ -7,7 +7,9 @@ scanners use a fixed 5% stop; `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll` and
 (no +5 activation and no breakeven lock). `sma9_atr` also gates entries on a
 daily NIFTY spot regime; `sma9_5s_atr` additionally requires a rising SMA9.
 `pattern_scanner` detects patterns on NIFTY spot candles but exits on the
-bought option's premium ATR. All scanners now poll every 5 seconds.
+bought option's premium ATR. Seven scanners poll every 5 seconds;
+`pattern_scanner` alone polls on an aligned 5-minute cadence and evaluates exits
+from completed 5m option OHLC bars so live matches the 5m backtest.
 
 `green15`, `no_sma` and `no_sma_trail` are retired: stopped, disabled on boot,
 removed from the launcher (and `no_sma` / `no_sma_trail` from the performance
@@ -16,7 +18,9 @@ The code trees and DBs remain on disk as archives.
 
 > **Paper trading only.** No scanner can place a broker order. There is no
 > `place_order` call, no order id, and no broker write path anywhere in this
-> stack. Every fill is simulated in SQLite at the sampled option LTP.
+> stack. Every fill is simulated in SQLite at the sampled option LTP; the
+> `pattern_scanner` exit fill is the documented conservative completed-5m OHLC
+> proxy shared with its backtest.
 
 ---
 
@@ -30,13 +34,15 @@ The code trees and DBs remain on disk as archives.
 | 4 | `sma9_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 5 | `sma9_high_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9 & LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 6 | `sma9_5s_atr` | SMA9 ATR (5s) | prev close > SMA9 **and** forming open > SMA9 **and** SMA9 > prior SMA9, polled every 5s | ATR trail, then ATR-scaled stop (both fill at the live LTP); otherwise hold |
-| 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles | premium ATR trail, then premium ATR stop; otherwise hold |
+| 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles, polled at 5m boundary +10 s | premium ATR trail, then premium ATR stop, from completed 5m option OHLC bars; otherwise hold |
 | 8 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
 
-There is **no time-based or candle-close exit** on any of the 8 scanners:
-if neither the trail nor the stop fires, the position stays open
-across candles (including overnight) until one of them does. `pattern_scanner`
-uses premium ATR for both the initial stop and the trail (see §5.5).
+There is **no time-based exit** on any of the 8 scanners: if neither the trail
+nor the stop fires, the position stays open across candles (including overnight)
+until one of them does. `pattern_scanner` checks its premium stops once per
+completed 5m option OHLC bar; the other 7 check on 5-second sampled LTPs.
+`pattern_scanner` uses premium ATR for both the initial stop and the trail (see
+§5.5).
 `sma9_atr` adds a daily spot-regime entry gate and replaces both the initial
 stop and the trail with the frozen ATR distance (see §5.6);
 `sma9_5s_atr` scales both the stop and the trail and adds a rising-SMA9
@@ -173,8 +179,9 @@ permission still comes only from the 09:20–15:15 window above; the 09:00–09:
 warm-up cannot open a position because the current 5-minute candle is not yet
 published. Exit management is additionally gated on `EXCHANGE_OPEN = 09:15`, so
 a pre-open quote can never fire a trail or stop. `pattern_scanner` ignores all
-ticks before 09:15 in its candle buffer and in its premium exit manager, so no
-synthetic pre-open candles are created and no pre-open exit can fire.
+ticks before 09:15 in its candle buffer and ignores option bars starting before
+09:15 in its premium exit manager, so no synthetic pre-open candles are created
+and no pre-open exit can fire.
 
 ### 3.2 Contract selection
 
@@ -254,7 +261,9 @@ StandardOutput=append:/opt/tradingai/logs/live_<key>_scanner.log
 
 `off` = `POLL_OFFSET_SECONDS`, the per-scanner phase offset inside the 5-second
 tick. It staggers Kite quote/historical calls so the scanners do not all hit
-the API at the same instant.
+the API at the same instant. `pattern_scanner` does not use this offset; its
+runner polls once per 5m boundary +10 s (`POLL_INTERVAL_SEC = 300`,
+`POLL_OFFSET_SEC = 10`).
 
 | Key | Strategy id | Strategy type | Ver | SMA | Trail / activate | off | User | systemd unit |
 |---|---|---|---|---|---|---|---|---|
@@ -265,9 +274,11 @@ the API at the same instant.
 | `sma9_trail` | `sma9_trail` | `SMA_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 1.2 | `sma9trail` | `tradingai-sma9_trail-scanner` |
 | `sma9_high_trail` | `sma9_high_trail` | `SMA_HIGH_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 3.0 | `sma9trailhigh` | `tradingai-sma9_high_trail-scanner` |
 | `sma9_5s_atr` | `sma9_5s_atr` | `SMA9_5S_ATR_STOP_BUY_ONLY` | 1.1.0 | 9 | ATR / ATR | — (5s) | `sma95satr` | `tradingai-sma9-5s-atr-scanner` |
-| `pattern_scanner` | — | — | — | — | ATR / none | — | `ubuntu` | `pattern-scanner-live` |
+| `pattern_scanner` | — | — | — | — | ATR / none | 5m +10 s | `ubuntu` | `pattern-scanner-live` |
 
-All scanners poll every 5 seconds; no scanner uses a 60-second cadence anymore.
+Seven scanners poll every 5 seconds; `pattern_scanner` polls once per 5-minute
+boundary +10 s and uses completed 5m option OHLC bars for exits. No scanner
+uses a 60-second cadence anymore.
 
 **Stop loss:** the four fixed-stop premium scanners (`sma9`, `sma9_high`,
 `sma9_trail`, `sma9_high_trail`) use a fixed stop at **entry premium × 0.95**
@@ -289,8 +300,9 @@ detection, but its stop/trail levels are derived from the **bought option's
 premium ATR(14)**, exactly like the ATR premium scanners. Initial stop =
 `0.70 × ATR`, clamped to 5–30% of the entry premium (10% fallback when ATR is
 unavailable). The trail uses the same frozen distance and ratchets only upward.
-Exits are managed on the position's own option tick and filled at its sampled
-LTP; NIFTY spot no longer drives exits.
+Exits are managed from the position's own completed 5m option OHLC bars via the
+shared `evaluate_bar()` helper, so live matches the backtest proxy; NIFTY spot
+no longer drives exits.
 
 DB path is always `/opt/tradingai/database/<key>.db`.
 API namespace is always `/api/<slug>/` (slug = key with `_` → `-`).
@@ -424,39 +436,51 @@ else:
 ### 5.5 Pattern scanner (`pattern_scanner`)
 
 Pattern-based entries on NIFTY SPOT 5m candles with **premium ATR(14) exits**
-(no fixed spot stop, no spot trail, no 15:15 square-off).
+(no fixed spot stop, no spot trail, no 15:15 square-off). This is the only
+scanner on an aligned 5-minute live cadence, and its exits use the same completed
+5m option OHLC bars as the backtest.
 
 - **Signal source:** NIFTY SPOT 5-minute candles (completed candles only).
+- **Live cadence:** one poll at each 5m boundary +10 s (`:00:10`, `:05:10`, …);
+  `POLL_INTERVAL_SEC = 300`, `POLL_OFFSET_SEC = 10`. The other seven scanners
+  keep their 5s cadence.
 - **Entry:** any of ~37 bullish or ~37 bearish candlestick patterns on the completed SPOT candle.
   - **Bullish** pattern → **LONG ATM CE** (buy CE, weekly expiry)
   - **Bearish** pattern → **LONG ATM PE** (buy PE, weekly expiry)
 - **Position type:** long-only on both sides — there is **no short CE and no short PE**.
   A bullish SPOT signal goes long CE; a bearish SPOT signal goes long PE.
-- **Entry price:** the exact option's live LTP (CE for bullish, PE for bearish) sampled on the tick that closes the spot candle — not the spot close, and never a stale or opposite-leg quote. Quotes older than `MAX_QUOTE_AGE_SEC` (20s) are rejected, so a missed quote skips the entry instead of inventing a price.
-- **Entry timestamp:** the actual tick time at which the trade was placed, not the signal candle's start.
+- **Entry price:** the exact option's LTP sampled at the poll that closes the spot
+  candle — not the spot close, and never a stale or opposite-leg quote. Quotes
+  older than `MAX_QUOTE_AGE_SEC` (20s) are rejected, so a missed quote skips the
+  entry instead of inventing a price.
+- **Entry timestamp:** the actual poll time at which the trade was placed, not
+  the signal candle's start.
 - **Entry timing:** no new entries at or after 15:15 IST.
 - **One per key:** at most one active position per `pattern_name:instrument`.
-- **Entry tick skip:** a position entered at a candle's close is first managed on a strictly later tick of its own option, never on its own entry tick.
+- **Entry bar skip:** a position entered at a bar-close poll is first managed on
+  the next poll's completed bar, never on its own entry bar.
 
-**Exit:** premium ATR only, evaluated on every tick of the position's own option.
-NIFTY spot ticks never manage an exit. Both long CE and long PE profit when the
-premium rises, so direction does not change the arithmetic.
+**Exit:** premium ATR only, evaluated once per aligned poll from the **previous
+completed 5-minute OHLC bar** of the position's own option. `evaluate_bar()` is
+shared by the live runner and backtest replay. Sampled option LTPs are used for
+entries only; NIFTY spot ticks never manage an exit. Both long CE and long PE
+profit when the premium rises, so direction does not change the arithmetic.
 
-- **ATR at entry:** ATR(14) of completed 5m candles of the exact bought option;
-  the forming candle is excluded. With fewer than 15 completed candles the
-  fallback 10% distance is used.
+- **ATR at entry:** ATR(14) of completed 5m bars of the exact bought option;
+  the forming bar is excluded. With fewer than 15 completed bars the fallback
+  10% distance is used.
 - **Initial ATR stop (`STOP_LOSS_ATR`):** `distance = 0.70 × ATR`, clamped to
   `[0.05 × entry, 0.30 × entry]`; `stop_price = round(entry − distance, 2)`.
-  Exit when the option LTP is at or below `stop_price`.
+  Breach is detected from the completed bar's low.
 - **ATR trail (`TRAIL_STOP_EXIT`):** once premium makes a new high above entry,
-  `trail_stop = max(current_stop, hwm − distance)`. There is no +5 activation
-  and no breakeven lock; the stop can never ratchet down. Exit when the option
-  LTP is at or below the ratcheted stop.
-- **Exit price:** the sampled LTP of the position's own option, never the spot
-  level, never the opposite leg, and never a theoretical stop price. A fast
-  move can fill through the stop.
+  `trail_stop = max(current_stop, hwm − distance)`, ratcheted on the bar high and
+  checked against the bar high/low. There is no +5 activation and no breakeven
+  lock; the stop can never ratchet down.
+- **Exit price:** the shared helper chooses the lower of the completed bar's low
+  (initial-stop fill) and the ratcheted trail level. This conservative OHLC
+  proxy replaces sampled-LTP exits so live matches the 5-minute backtest.
 - If neither fires the position stays open across candles and overnight. No
-  candle-close or time-based exit.
+  time-based exit and no close-only exit rule.
 
 **Persisted state:** `atr_at_entry`, `stop_price`, `stop_loss`, `hwm`, `lwm`,
 `trail_distance`, `stop_distance_pct`, `stop_source`, `trailing_update_cnt`,
@@ -468,11 +492,14 @@ idempotently. Legacy spot-stop rows are migrated on load: their spot-valued
 `hwm`/`lwm`/`stop_loss` are discarded and replaced with a premium fallback stop
 derived from `entry_price`.
 
-**Runner quoting:** every 5-second poll quotes the current ATM CE/PE **and**
-every instrument with an active position, so a position keeps being managed
-after the ATM band moves. Option quotes are fed to the engine **before** the
-spot tick, so each premium exit uses this poll's price rather than the previous
-poll's.
+**Runner quoting:** every 5m poll quotes the current ATM CE/PE **and** every
+instrument with an active position, so an older strike still gets its own
+completed bar after the ATM band moves. Quotes are recorded before the spot tick
+for entry pricing; each symbol's previous completed 5m OHLC bar is appended and
+evaluated via `evaluate_bar()` before spot candle completion triggers a new
+entry. Status reports `poll_interval_sec = 300`,
+`poll_alignment = 5m_boundary_plus_10s` and
+`exit_data = completed_5m_option_ohlc`.
 
 - No target. Paper trading only.
 
@@ -727,8 +754,8 @@ POST /api/pattern_scanner/stop
 The `start`/`stop` POSTs are **ops-only** (they wrap `systemctl start|stop`
 on `pattern-scanner-live`). The dashboard has no manual start/stop/refresh
 buttons: the service is enabled at boot, runs itself from the 09:00 scan start, holds
-positions until the trail or 5% stop fires, and the page auto-refreshes every
-5 s. `stop` halts the service immediately and leaves open rows in the DB; they
+positions until its premium ATR trail or stop fires, and the page auto-refreshes
+every 5 s. `stop` halts the service immediately and leaves open rows in the DB; they
 are reloaded and managed again on the next start.
 
 `atm`, `sma9_avg`, and `green15` are retired and return **404**.
@@ -905,6 +932,11 @@ edit and restart `pattern-scanner-live.service` normally.
   longer make a base-status HTTP call.
 - Historical candles are fetched only when a new 5-minute candle appears (or
   at exit), never on every poll.
+- `pattern_scanner`: **1 batched spot+CE/PE quote call plus 1 read-only
+  `historical_data(..., "5minute")` call per quoted option symbol per 5m poll**.
+  Symbols include current ATM CE/PE and every open position's option after an
+  ATM reband. A completed previous-boundary bar is requested at `:10 s` past
+  each 5m boundary, with timestamp validation and a forming-bar guard.
 - Kite limits: quotes ≈1 req/s, historical ≈3 req/s per API key.
 - If `Too many requests` appears in logs, check for overlapping restarts or a
   runaway historical fetch before changing offsets.
@@ -954,7 +986,8 @@ token.
 - **`pattern_scanner`** uses the same premium ATR(14) exit model as the ATR
   scanners: `0.70 × ATR` initial stop clamped to 5–30% of entry, plus an
   ATR-width trail with no +5 activation and no breakeven lock. It has no spot
-  stop, no time exit, and manages exits only on the position's own option tick.
+  stop and no time exit, and manages exits only from the position's own completed
+  5m option OHLC bars on the aligned 5-minute poll.
 - **No time-based exit** on any scanner; positions hold across candles and
   overnight until the trail or 5% stop fires.
 - **Secrets** live only in `/opt/tradingai/.env.zerodha` and the local git

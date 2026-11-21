@@ -4,12 +4,15 @@
 IMPORTANT LIMITATION
 --------------------
 mStock supplies per-instrument 5-minute OHLCV history, not historical 5-second
-quote snapshots.  The live scanners enter and exit on sampled quote LTP; the
+quote snapshots. Seven live scanners enter and exit on sampled quote LTP; the
 HIGH scanners use LTP > previous high as an entry predicate; trail/stop state
-ratchets on every poll.  An exact replay of the live 5-second paper behaviour
-is therefore impossible from this data alone.
+ratchets on every poll. An exact replay of that live 5-second paper behaviour is
+therefore impossible from this data alone. `pattern_scanner` is the exception:
+live now polls once per completed 5m option bar and shares `evaluate_bar()` with
+this replay, so its bar-exit rules are identical even though entry fills remain
+conservative candle-open proxies.
 
-This harness is an explicitly labelled 5-minute rule simulation.  It imports
+This harness is an explicitly labelled 5-minute rule simulation. It imports
 the real strategy engines and reuses their evaluate/trail/stop/close code.
 Fill and ATM proxies are conservative and documented in the output report:
 
@@ -488,25 +491,12 @@ def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
                 continue
             opt = bars[-1]
             bar_end = (opt["start"] + timedelta(minutes=5)).isoformat()
-            pos.update_mfe_mae(opt["high"], opt["low"])
-
-            # Conservative 5m premium-exit proxy: ratchet the ATR trail on the
-            # bar high, then check both the ratcheted trail and the initial
-            # ATR stop against the bar low. Fill at the adverse extreme.
-            trail_hit = pos.update_trail(opt["high"], ts.isoformat())
-            if trail_hit is None and pos.hwm > pos.entry_price \
-                    and opt["low"] <= pos.stop_loss:
-                trail_hit = round(pos.stop_loss, 2)
-            sl_hit = pos.check_stop_loss(opt["low"])
-
-            candidates: list[tuple[float, str]] = []
-            if trail_hit is not None:
-                candidates.append((float(trail_hit), "TRAIL_STOP_EXIT"))
-            if sl_hit is not None:
-                candidates.append((float(sl_hit), "STOP_LOSS_ATR"))
-            if not candidates:
+            # Same evaluate_bar() helper the live 5m runner uses, so live and
+            # replay share trail ratchet, stop check and fill rules exactly.
+            result = pos.evaluate_bar(opt["high"], opt["low"], ts.isoformat())
+            if result is None:
                 continue
-            exit_px, reason = min(candidates, key=lambda item: item[0])
+            exit_px, reason = result
             pos.close(reason, bar_end, exit_price=exit_px)
             trades.append(_pattern_trade(pos, "pattern_scanner", key))
             del positions[pos_key]
@@ -601,9 +591,11 @@ def write_outputs(out_dir: Path, summaries: list[dict], all_trades: list[dict],
     lines = [
         "# Historical scanner backtest (5m rule simulation)",
         "",
-        "> **Not an exact 5-second paper replay.** mStock supplies 5-minute OHLCV,",
-        "> not historical 5-second quotes. Live entry/exit fills use sampled LTP;",
-        "> this report uses the conservative proxies below.",
+        "> **Not an exact 5-second paper replay for the seven 5s scanners.**",
+        "> mStock supplies 5-minute OHLCV, not historical 5-second quotes. Their",
+        "> live fills use sampled LTP; this report uses conservative proxies below.",
+        "> `pattern_scanner` now polls on completed 5m option bars live and shares",
+        "> `evaluate_bar()` with this replay, so its exit rules are identical.",
         "",
         "## Assumptions",
         "",
@@ -613,6 +605,7 @@ def write_outputs(out_dir: Path, summaries: list[dict], all_trades: list[dict],
         "- ATM: CE/PE parity anchored by NIFTY futures, rounded to 50",
         "- Spot OHLC for regime/pattern: reconstructed from CE/PE parity",
         "- Pattern exits: premium ATR(14) only (0.70xATR, 5-30% clamp, 10% fallback)",
+        "- Pattern live cadence: aligned 5m polls using completed 5m option OHLC bars",
         "- PnL: premium points only; no lot size, capital, target, or brokerage",
         "- Broker: gateway identity `api` (mapped to mStock in this deployment)",
         "",
@@ -711,6 +704,7 @@ def main() -> int:
         "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
         "fill_policy": "entry at signal candle open; exit at adverse 5m extreme on stop/trail",
         "pattern_exit_model": "premium_atr_14_only",
+        "pattern_live_poll": "aligned_5m_completed_ohlc",
         "paper_only": True,
     }
     write_outputs(out_dir, summaries, all_trades, meta)

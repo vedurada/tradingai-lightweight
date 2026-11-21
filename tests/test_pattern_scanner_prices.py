@@ -5,8 +5,8 @@ Covers:
     trade was actually placed
   * exits use the position's own option LTP after an ATM reband, never the
     opposite leg
-  * exits are premium ATR(14) only: initial ATR stop plus ATR-width trail,
-    managed on the position's own option tick
+  * exits are premium ATR(14) only, evaluated from completed 5m option OHLC
+    bars with the same helper the backtest replay uses
 """
 from __future__ import annotations
 
@@ -16,7 +16,6 @@ from datetime import date, datetime, timedelta, timezone
 import pytest
 
 from app.research.pattern_scanner import (
-    MAX_QUOTE_AGE_SEC,
     OptionPosition,
     PatternScanner,
     compute_atr_stop,
@@ -67,6 +66,18 @@ def ts(h, m, s=0):
     return datetime(2026, 11, 18, h, m, s, tzinfo=IST)
 
 
+def bar(start, price, high=None, low=None):
+    """Completed 5m option bar with an optional adverse range."""
+    return {
+        "start": start,
+        "open": price,
+        "high": float(price if high is None else high),
+        "low": float(price if low is None else low),
+        "close": price,
+        "volume": 0,
+    }
+
+
 def make_scanner(tmp_path):
     db = tmp_path / "pattern.db"
     conn = sqlite3.connect(db)
@@ -94,13 +105,12 @@ def make_scanner(tmp_path):
 
 def drive_to_entry(ps, entry_price=150.0):
     """Four spot ticks -> 3 completed candles -> one entry at 09:35."""
-    ps.on_tick("TEST_CE_OLD", entry_price, ts(9, 20))
+    ps.record_quote("TEST_CE_OLD", entry_price, ts(9, 20))
     ps.on_tick("NIFTY_SPOT", 25300.0, ts(9, 20))
     ps.on_tick("NIFTY_SPOT", 25300.0, ts(9, 25))
     ps.on_tick("NIFTY_SPOT", 25300.0, ts(9, 30))
-    # Fresh option quote for the exact symbol, then the tick that closes the
-    # 09:30 candle and places the trade.
-    ps.on_tick("TEST_CE_OLD", entry_price, ts(9, 35))
+    # Fresh option quote at 09:35, then the tick that closes the spot candle.
+    ps.record_quote("TEST_CE_OLD", entry_price, ts(9, 35))
     ps.on_tick("NIFTY_SPOT", 25300.0, ts(9, 35))
 
 
@@ -119,7 +129,7 @@ def test_entry_timestamp_is_actual_entry_not_candle_start(tmp_path):
     assert not pos.entry_ts.startswith("2026-11-18T09:30")
     assert pos.entry_price == 150.0
     assert pos.entry_spot == 25300.0
-    # No completed option candles in this fixture, so the 10% fallback applies.
+    # No completed option bars in this fixture, so the 10% fallback applies.
     assert pos.atr_at_entry is None
     assert pos.stop_price == 135.0
     assert pos.stop_source == "fallback_pct"
@@ -141,10 +151,14 @@ def test_exit_uses_positions_own_option_after_atm_reband(tmp_path):
     # ATM moves up a strike: the old CE is no longer the current ATM.
     ps.set_option_instruments("TEST_CE_NEW", "TEST_PE_NEW", 25350,
                               date(2026, 11, 23))
-    # Opposite leg and old leg both have live quotes; only the old leg's own
-    # tick may manage this position.
-    ps.on_tick("TEST_PE_NEW", 200.0, ts(9, 35, 10))
-    ps.on_tick("TEST_CE_OLD", 134.0, ts(9, 35, 10))
+    later = ts(9, 40, 5)
+    # Opposite leg's completed bar must not manage this CE position.
+    ps.on_option_bar("TEST_PE_NEW", bar(ts(9, 35), 200.0), later)
+    assert ps.positions
+
+    # The old CE's own next completed bar breaches its ATR stop.
+    ps.on_option_bar("TEST_CE_OLD", bar(ts(9, 35), 134.0,
+                                       high=150.0, low=134.0), later)
 
     assert ps.positions == {}
     assert pos.exit_price == 134.0, "must use TEST_CE_OLD, not TEST_PE_NEW"
@@ -154,7 +168,7 @@ def test_exit_uses_positions_own_option_after_atm_reband(tmp_path):
 
 def test_stale_quote_does_not_create_a_trade(tmp_path):
     ps = make_scanner(tmp_path)
-    ps.on_tick("TEST_CE_OLD", 150.0, ts(9, 20))
+    ps.record_quote("TEST_CE_OLD", 150.0, ts(9, 20))
     ps.on_tick("NIFTY_SPOT", 25300.0, ts(9, 20))
     ps.on_tick("NIFTY_SPOT", 25300.0, ts(9, 25))
     ps.on_tick("NIFTY_SPOT", 25300.0, ts(9, 30))
@@ -164,20 +178,21 @@ def test_stale_quote_does_not_create_a_trade(tmp_path):
     assert ps.positions == {}
 
 
-def test_no_option_tick_means_no_premium_exit(tmp_path):
+def test_spot_tick_and_quote_do_not_exit_a_position(tmp_path):
     ps = make_scanner(tmp_path)
     drive_to_entry(ps)
     pos = one_position(ps)
 
-    # Spot cannot breach a premium stop, no matter how far it falls.
-    later = ts(9, 35) + timedelta(seconds=MAX_QUOTE_AGE_SEC + 5)
-    ps.on_tick("NIFTY_SPOT", 25287.0, later)
+    # Neither spot moves nor option quotes manage premium exits any more.
+    later = ts(9, 40, 5)
+    ps.on_tick("NIFTY_SPOT", 25200.0, later)
+    ps.record_quote("TEST_CE_OLD", 134.0, later)
     assert ps.positions != {}
     assert pos.exit_price is None
 
-    # A fresh tick on the position's own option at/below its ATR stop exits at
-    # that sampled LTP.
-    ps.on_tick("TEST_CE_OLD", 134.0, later + timedelta(seconds=5))
+    # Only the position's own completed 5m option bar can exit it.
+    ps.on_option_bar("TEST_CE_OLD", bar(ts(9, 35), 134.0,
+                                       high=150.0, low=134.0), later)
     assert ps.positions == {}
     assert pos.exit_price == 134.0
     assert pos.exit_reason == "STOP_LOSS_ATR"
@@ -185,28 +200,30 @@ def test_no_option_tick_means_no_premium_exit(tmp_path):
 
 def test_entry_uses_premium_atr_from_exact_option_buffer(tmp_path):
     ps = make_scanner(tmp_path)
-    # Delay the entry until 10:30 so the option buffer has 15 completed 5m
-    # candles; otherwise premium_atr correctly returns None.
+    # Delay the entry until the 10:25 spot candle so the option buffer already
+    # has 15 completed 5m bars; otherwise premium_atr correctly returns None.
     ps.detect_fn = lambda candles, i, atr: (
         [{"pattern_name": "TestBull", "direction": "BULLISH"}]
         if candles[i]["timestamp"].startswith("2026-11-18T10:25") else []
     )
     start = ts(9, 15)
     price = 100.0
-    for i in range(16):
-        tick_ts = start + timedelta(minutes=5 * i)
+    for i in range(15):
+        bar_start = start + timedelta(minutes=5 * i)
+        poll_ts = bar_start + timedelta(minutes=5, seconds=5)
         premium = price if i % 2 == 0 else price + 2.0
-        ps.on_tick("TEST_CE_OLD", premium, tick_ts)
-        ps.on_tick("NIFTY_SPOT", 25300.0, tick_ts)
+        ps.record_quote("TEST_CE_OLD", premium, poll_ts)
+        ps.on_option_bar("TEST_CE_OLD", bar(bar_start, premium), poll_ts)
+        ps.on_tick("NIFTY_SPOT", 25300.0, poll_ts)
 
     pos = one_position(ps)
-    # 15 completed option candles with a 2-point alternating TR give ATR=2.
+    # 15 completed option bars with a 2-point alternating TR give ATR=2.
     assert pos.atr_at_entry == 2.0
-    # Entry LTP is 102 at 10:30. 0.70*2=1.4 is below the 5% floor (5.1),
+    # Entry LTP is 100 at 10:30. 0.70*2=1.4 is below the 5% floor (5.0),
     # so the floor sets the distance.
-    assert pos.entry_price == 102.0
-    assert pos.trail_distance == 5.1
-    assert pos.stop_price == 96.9
+    assert pos.entry_price == 100.0
+    assert pos.trail_distance == 5.0
+    assert pos.stop_price == 95.0
     assert pos.stop_source == "atr"
 
 
@@ -236,6 +253,27 @@ def test_atr_stop_and_trail_are_premium_only():
         entry_ts=ts(9, 35).isoformat(), session_date="2026-11-18", atr=10.0,
     )
     assert pos2.check_stop_loss(92.5) == 92.5
+
+
+def test_evaluate_bar_uses_backtest_trail_and_stop_proxy():
+    trail = OptionPosition(
+        trade_id="T3", pattern_name="TestBull", instrument="TEST_CE",
+        direction="BULLISH", entry_price=100.0, entry_spot=25300.0,
+        entry_ts=ts(9, 35).isoformat(), session_date="2026-11-18", atr=10.0,
+    )
+    # High ratchets stop to 103; low stays above the initial 93 stop.
+    assert trail.evaluate_bar(110.0, 101.0, ts(9, 40).isoformat()) == \
+        (103.0, "TRAIL_STOP_EXIT")
+    assert trail.stop_loss == 103.0
+
+    stop = OptionPosition(
+        trade_id="T4", pattern_name="TestBull", instrument="TEST_CE",
+        direction="BULLISH", entry_price=100.0, entry_spot=25300.0,
+        entry_ts=ts(9, 35).isoformat(), session_date="2026-11-18", atr=10.0,
+    )
+    # Both stops breach; the lower fill is chosen, as in the 5m replay.
+    assert stop.evaluate_bar(110.0, 92.0, ts(9, 40).isoformat()) == \
+        (92.0, "STOP_LOSS_ATR")
 
 
 def test_atr_stop_clamps_floor_cap_and_fallback():

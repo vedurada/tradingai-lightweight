@@ -8,8 +8,10 @@ Exit model: premium ATR(14) only — no fixed spot stop and no spot trail.
   ATR_STOP_K = 0.70, floor 5%, cap 30%, fallback 10% when ATR is unavailable
   Initial stop = entry - ATR distance
   Trailing stop = premium HWM - ATR distance, ratcheting upward only
-  ATR stop fills at the sampled option LTP, matching the ATR scanners.
+  ATR stop/trail fills use the conservative completed 5m option OHLC proxy.
 NIFTY spot is used only for pattern detection and ATM strike selection.
+Live cadence: aligned 5-minute polls. Entries fire on completed 5m spot
+candles; exits are evaluated once per completed 5m option OHLC bar.
 
 Paper trading only. No broker orders. All calculations use completed 5-minute
 candles — no lookahead, no future data.
@@ -17,9 +19,10 @@ candles — no lookahead, no future data.
 Pattern detection runs on NIFTY SPOT 5m candles:
   - Bullish pattern  → buy ATM CE (weekly expiry)
   - Bearish pattern  → buy ATM PE (weekly expiry)
-Entry uses the exact option's live LTP at the tick that closes the spot candle;
-the recorded entry timestamp is that tick time, not the candle start. Quotes
-older than MAX_QUOTE_AGE_SEC are never used for an entry or exit.
+Entry uses the exact option's LTP sampled at the poll that closes the spot
+candle; the recorded entry timestamp is that poll time, not the candle start.
+Quotes older than MAX_QUOTE_AGE_SEC are never used for an entry; exits use
+completed 5m option OHLC bars, not sampled quotes.
 SL and trail are calculated on the bought option's premium ATR only; NIFTY
 spot is used for pattern detection and ATM selection, never for exits.
 """
@@ -995,6 +998,36 @@ class CandleBuffer:
             c["close"] = price
         return completed
 
+    def on_completed_bar(self, bar: dict) -> dict:
+        """Append an externally supplied completed 5m OHLC candle.
+
+        Used by the 5-minute live runner, which fetches the previous completed
+        option bar once per aligned poll instead of forming candles from 5s
+        ticks. A forming tick candle with the same start is discarded.
+        """
+        start = bar["start"]
+        if not isinstance(start, datetime):
+            start = datetime.fromisoformat(str(start))
+        if start.tzinfo is None:
+            start = start.replace(tzinfo=IST)
+        start = start.astimezone(IST)
+        row = {
+            "timestamp": start.isoformat(),
+            "open": float(bar["open"]),
+            "high": float(bar["high"]),
+            "low": float(bar["low"]),
+            "close": float(bar["close"]),
+            "session_date": session_date(start),
+            "is_complete": True,
+        }
+        if self.current_start == start:
+            self.current = None
+            self.current_start = None
+        self.candles.append(row)
+        if len(self.candles) > 200:
+            self.candles = self.candles[-200:]
+        return row
+
     def get_recent(self, limit: int = 60) -> List[dict]:
         return self.candles[-limit:]
 
@@ -1128,6 +1161,35 @@ class OptionPosition:
             return round(float(premium_ltp), 2)
         return None
 
+    def evaluate_bar(self, bar_high: float, bar_low: float,
+                     timestamp: str) -> Optional[tuple]:
+        """Evaluate ATR trail/stop from a completed 5m option OHLC bar.
+
+        Shared by the 5-minute live runner and the 5m backtest replay so both
+        use identical timing and fill rules. Returns (exit_price, reason), or
+        None when the bar does not breach either stop.
+        """
+        if bar_high is None or bar_low is None:
+            return None
+        high, low = float(bar_high), float(bar_low)
+        self.update_mfe_mae(high, low)
+
+        trail_hit = self.update_trail(high, timestamp)
+        if trail_hit is None and self.hwm > self.entry_price \
+                and low <= self.stop_loss:
+            trail_hit = round(self.stop_loss, 2)
+        sl_hit = self.check_stop_loss(low)
+
+        candidates: List[tuple] = []
+        if trail_hit is not None:
+            candidates.append((float(trail_hit), "TRAIL_STOP_EXIT"))
+        if sl_hit is not None:
+            candidates.append((float(sl_hit), "STOP_LOSS_ATR"))
+        if not candidates:
+            return None
+        exit_px, reason = min(candidates, key=lambda item: item[0])
+        return round(exit_px, 2), reason
+
     def close(self, exit_reason: str, exit_ts: str,
               exit_price: Optional[float] = None,
               brokerage: float = 0.0, slippage: float = 0.0):
@@ -1238,18 +1300,44 @@ class PatternScanner:
         self._last_option_refresh = now_ist()
         return changed
 
-    # ---- tick processing ----
-    def on_tick(self, symbol: str, price: float, ts: Optional[datetime] = None):
+    # ---- tick / bar processing ----
+    def record_quote(self, symbol: str, price: float, ts: Optional[datetime] = None):
+        """Record a fresh option LTP without triggering an exit.
+
+        Entries and status use the sampled LTP at the aligned 5m poll, while
+        exits are evaluated once from the completed 5m option OHLC bar.
+        """
+        if symbol == "NIFTY_SPOT" or price is None:
+            return
         ts = ts or now_ist()
-        # Record every option quote by its own symbol before managing
-        # positions, so a position on an older strike still has a live price.
+        self.last_ltp[symbol] = (float(price), ts)
+        if symbol == self.ce_symbol:
+            self.last_ce_ltp = float(price)
+        elif symbol == self.pe_symbol:
+            self.last_pe_ltp = float(price)
+
+    def on_option_bar(self, symbol: str, bar: dict,
+                      ts: Optional[datetime] = None):
+        """Append a completed 5m option bar and evaluate ATR exits from it."""
+        if symbol == "NIFTY_SPOT" or not bar:
+            return
+        ts = ts or now_ist()
+        buffer = self.buffers.get(symbol)
+        if buffer is None:
+            buffer = self._ensure_buffer(symbol, "OPT")
+        buffer.on_completed_bar(bar)
+        self._manage_positions_bar(symbol, bar, ts)
+
+    def on_tick(self, symbol: str, price: float, ts: Optional[datetime] = None):
+        """Process a sampled tick.
+
+        Option ticks only refresh the forming candle and entry quote; premium
+        ATR exits are managed from completed 5m bars via ``on_option_bar``.
+        Spot ticks still drive candle completion and pattern detection.
+        """
+        ts = ts or now_ist()
         if symbol != "NIFTY_SPOT":
-            self.last_ltp[symbol] = (float(price), ts)
-        # Manage active positions on every tick, before this tick is folded
-        # into the candle buffer. A position entered at a candle's close is
-        # therefore first managed on the following tick, never on its own
-        # entry tick.
-        self._manage_positions_tick(symbol, price, ts)
+            self.record_quote(symbol, price, ts)
 
         buffer = self.buffers.get(symbol)
         if buffer is None:
@@ -1260,10 +1348,6 @@ class PatternScanner:
         if symbol == "NIFTY_SPOT":
             self.last_spot = price
             self.last_update = ts.isoformat()
-        elif symbol == self.ce_symbol:
-            self.last_ce_ltp = price
-        elif symbol == self.pe_symbol:
-            self.last_pe_ltp = price
 
     def _fresh_ltp(self, symbol: Optional[str], now: datetime,
                    max_age: float = MAX_QUOTE_AGE_SEC) -> Optional[float]:
@@ -1466,38 +1550,47 @@ class PatternScanner:
                   f"atr={pos.atr_at_entry} stop={pos.stop_price:.2f} "
                   f"source={pos.stop_source} ts={entry_ts_s}")
 
-    def _manage_positions_tick(self, symbol: str, ltp: float,
-                               ts: datetime):
-        """Premium ATR stop/trail, evaluated on the position's own option tick.
+    def _manage_positions_bar(self, symbol: str, bar: dict, ts: datetime):
+        """Premium ATR exits from a completed 5m option OHLC bar.
 
-        Stop and trail levels are option-premium values derived from ATR(14)
-        at entry. Spot ticks no longer manage exits; the runner forwards every
-        active option's quote so an older strike still receives its own ticks.
+        This is the live counterpart of the 5m backtest replay. Only the
+        position's own option bar can manage it, only completed bars are used,
+        and a position entered on this bar's close is first evaluated on the
+        next poll's bar.
         """
-        if ltp is None or symbol == "NIFTY_SPOT":
+        if not bar or symbol == "NIFTY_SPOT":
             return
-        # The runner starts at 09:00 to warm the feed; do not manage exits
-        # on pre-open quotes.  Trading (including exits) begins at 09:15.
-        if ts.time() < FIRST_CANDLE_START:
+        ts = ts or now_ist()
+        if ts.tzinfo is None:
+            ts = ts.replace(tzinfo=IST)
+        start = bar.get("start")
+        if isinstance(start, datetime):
+            bar_start = start
+        elif start:
+            bar_start = datetime.fromisoformat(str(start))
+        else:
             return
+        if bar_start.tzinfo is None:
+            bar_start = bar_start.replace(tzinfo=IST)
+        bar_start = bar_start.astimezone(IST)
+        bar_end = bar_start + timedelta(minutes=5)
+        # At an aligned 5m poll the previous bar is complete. Never evaluate a
+        # forming bar or a bar that started before the 09:15 exchange open.
+        if bar_end > ts or bar_start.time() < FIRST_CANDLE_START:
+            return
+        bar_end_iso = bar_end.isoformat()
 
-        ts_iso = ts.isoformat()
         for key in list(self.positions.keys()):
             pos = self.positions[key]
             if pos.instrument != symbol:
                 continue
-            # A trade placed on this spot-candle close is first managed on a
-            # strictly later option tick, never on its own entry tick.
+            # Entry happened at this bar's close poll (or later): skip it.
             if pos.entry_ts:
                 try:
                     entry_dt = datetime.fromisoformat(pos.entry_ts)
-                    if entry_dt.tzinfo is None and ts.tzinfo is not None:
-                        entry_dt = entry_dt.replace(tzinfo=ts.tzinfo)
-                    if entry_dt.tzinfo is not None and ts.tzinfo is None:
-                        compare_ts = ts.replace(tzinfo=entry_dt.tzinfo)
-                    else:
-                        compare_ts = ts
-                    if entry_dt >= compare_ts:
+                    if entry_dt.tzinfo is None and bar_end.tzinfo is not None:
+                        entry_dt = entry_dt.replace(tzinfo=bar_end.tzinfo)
+                    if entry_dt >= bar_end:
                         continue
                 except (TypeError, ValueError):
                     pass
@@ -1505,20 +1598,15 @@ class PatternScanner:
             old_stop = pos.stop_loss
             old_mfe = pos.mfe_points
             old_mae = pos.mae_points
-            pos.update_mfe_mae(ltp, ltp)
-            trail_hit = pos.update_trail(ltp, ts_iso)
+            result = pos.evaluate_bar(bar["high"], bar["low"], bar_end_iso)
             if (pos.stop_loss != old_stop or pos.mfe_points != old_mfe
                     or pos.mae_points != old_mae):
                 self._persist_trailing(pos)
-
-            trail_px = trail_hit
-            sl_px = pos.check_stop_loss(ltp)
-            if trail_px is None and sl_px is None:
+            if result is None:
                 continue
 
-            reason = "TRAIL_STOP_EXIT" if trail_px is not None else "STOP_LOSS_ATR"
-            exit_px = round(float(ltp), 2)
-            pos.close(reason, ts_iso, exit_price=exit_px)
+            exit_px, reason = result
+            pos.close(reason, bar_end_iso, exit_price=exit_px)
             self.closed_positions.append(pos)
             del self.positions[key]
             self._persist_exit(pos)

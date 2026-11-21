@@ -16,6 +16,7 @@
     "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
     "fill_policy": "entry at signal candle open; exit at adverse 5m extreme on stop/trail",
     "pattern_exit_model": "premium_atr_14_only",
+    "pattern_live_poll": "aligned_5m_completed_ohlc",
     "paper_only": true
   },
   "scanners": [

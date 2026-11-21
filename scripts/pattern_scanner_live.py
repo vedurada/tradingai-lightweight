@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 """Pattern Scanner live runner — VM deployment.
 
-Connects to Zerodha Kite Connect for NIFTY spot 5-minute ticks,
-resolves ATM CE/PE option symbols, and feeds option prices to the
-PatternScanner engine. Detects bullish patterns on ATM option candles.
+Connects through the read-only broker gateway (Kite-compatible facade) for
+NIFTY spot prices, resolves ATM CE/PE option symbols, and feeds completed
+5-minute option OHLC bars to the
+PatternScanner engine. Polls once per aligned 5-minute bar, matching the 5m
+backtest replay; this scanner does not use a 5-second loop.
 
 Runs as a systemd service on the TradingAI VM.
 No broker orders. Paper trading only.
@@ -23,13 +25,19 @@ IST = timezone(timedelta(hours=5, minutes=30))
 MARKET_OPEN = time(9, 0)
 MARKET_CLOSE = time(15, 30)
 
+# Pattern scanner is intentionally aligned with the 5m backtest replay:
+# one poll per completed 5-minute bar, a few seconds after the boundary so
+# the exchange has published that bar. Other scanners keep their 5s cadence.
+POLL_INTERVAL_SEC = 300
+POLL_OFFSET_SEC = 10
+
 VM_ROOT = os.environ.get("TRADINGAI_BASE", "/opt/tradingai")
 STATUS_FILE = os.path.join(VM_ROOT, "data", "pattern_scanner_status.json")
 sys.path.insert(0, VM_ROOT)
 sys.path.insert(0, os.path.join(VM_ROOT, "app"))
 
 from app.research.pattern_scanner import (  # noqa: E402
-    PatternScanner, is_market_open, now_ist, round_to_strike,
+    PatternScanner, floor_5min, is_market_open, now_ist, round_to_strike,
 )
 from app.core.db import get_conn  # noqa: E402
 
@@ -57,6 +65,17 @@ def load_zerodha_credentials() -> dict:
     return creds
 
 
+def _as_ist_datetime(value):
+    """Normalise a Kite/gateway bar timestamp to IST."""
+    if isinstance(value, datetime):
+        dt = value
+    else:
+        dt = datetime.fromisoformat(str(value))
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=IST)
+    return dt.astimezone(IST)
+
+
 class KiteOptionFeed:
     """Zerodha Kite Connect feed for NIFTY spot + ATM option prices.
 
@@ -78,6 +97,7 @@ class KiteOptionFeed:
         self.nfo_loaded = False
         self.nfo_rows = 0
         self.nfo_index = {}
+        self.option_tokens: dict[str, int] = {}
         self.nfo_expiries = []
         self.nfo_loaded_at = 0.0
         self.nfo_retry_at = 0.0
@@ -135,6 +155,9 @@ class KiteOptionFeed:
                     continue
                 key = (float(strike), expiry, inst["instrument_type"])
                 index.setdefault(key, []).append(inst)
+                if inst.get("instrument_token") and inst.get("tradingsymbol"):
+                    self.option_tokens[inst["tradingsymbol"]] = int(
+                        inst["instrument_token"])
                 expiries.add(expiry)
             self.nfo_rows = len(data)
             self.nfo_index = index
@@ -162,6 +185,47 @@ class KiteOptionFeed:
             return None
         matches.sort(key=lambda i: i.get("instrument_token") or 0)
         return matches[0].get("tradingsymbol")
+
+    def option_token(self, symbol: str):
+        """Instrument token for a cached NIFTY option tradingsymbol."""
+        self.get_nfo_instruments()
+        return self.option_tokens.get(symbol)
+
+    def completed_5m_bar(self, symbol: str, expected_start):
+        """Return the completed 5m OHLC bar for `symbol`, or None.
+
+        One read-only historical_data call per option per 5-minute poll. The
+        expected start is the previous 5m boundary; a forming/mismatched bar
+        is never returned.
+        """
+        if not self.available or not self.kite:
+            return None
+        token = self.option_token(symbol)
+        if not token:
+            return None
+        expected_start = _as_ist_datetime(expected_start)
+        end = expected_start + timedelta(minutes=5)
+        try:
+            raw = self.kite.historical_data(token, expected_start, end, "5minute")
+        except Exception as e:
+            print(f"[ps-live] historical error for {symbol}: {e}")
+            return None
+        for row in raw or []:
+            try:
+                start = _as_ist_datetime(row["date"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if start != expected_start:
+                continue
+            return {
+                "start": start,
+                "open": float(row["open"]),
+                "high": float(row["high"]),
+                "low": float(row["low"]),
+                "close": float(row["close"]),
+                "volume": float(row.get("volume", 0) or 0),
+            }
+        return None
 
     def quote_snapshot(self, option_symbols):
         """One Kite quote call for spot + options.
@@ -237,6 +301,9 @@ class MockFeed:
     def quote_snapshot(self, option_symbols):
         return self.quote_spot(), {}
 
+    def completed_5m_bar(self, symbol, expected_start):
+        return None
+
 
 class PatternScannerLive:
     def __init__(self):
@@ -256,7 +323,26 @@ class PatternScannerLive:
             self.feed = MockFeed()
         self.running = False
         self.thread = None
-        self.poll = 5.0  # seconds
+        self.poll = POLL_INTERVAL_SEC  # aligned 5m cadence, not 5s
+
+    @staticmethod
+    def next_poll_time(now: datetime) -> datetime:
+        """Next aligned 5m poll: boundary + small publication offset."""
+        if now.tzinfo is None:
+            now = now.replace(tzinfo=IST)
+        candidate = now.replace(
+            minute=(now.minute // 5) * 5,
+            second=POLL_OFFSET_SEC,
+            microsecond=0,
+        )
+        if candidate <= now:
+            candidate += timedelta(minutes=5)
+        return candidate.astimezone(IST)
+
+    def _sleep_until_next_poll(self):
+        delay = (self.next_poll_time(now_ist()) - now_ist()).total_seconds()
+        if delay > 0:
+            time_module.sleep(delay)
 
     def _status_snapshot(self) -> dict:
         """Status with explicit feed-health fields for the API/dashboard."""
@@ -264,6 +350,9 @@ class PatternScannerLive:
         live = bool(self.live_feed_ok and getattr(self.feed, "available", False))
         status["data_available"] = live
         status["feed"] = "live" if live else "mock"
+        status["poll_interval_sec"] = int(getattr(self, "poll", POLL_INTERVAL_SEC))
+        status["poll_alignment"] = "5m_boundary_plus_10s"
+        status["exit_data"] = "completed_5m_option_ohlc"
         errors = list(status.get("errors") or [])
         if not live:
             msg = ("no live broker feed; mock fallback has no option prices "
@@ -288,7 +377,7 @@ class PatternScannerLive:
                 self._tick()
             except Exception as e:
                 print(f"[ps-live] loop error: {e}")
-            time_module.sleep(self.poll)
+            self._sleep_until_next_poll()
 
     def _resolve_option_symbols(self, spot):
         """Resolve ATM CE/PE from the cached NFO instrument index.
@@ -342,7 +431,9 @@ class PatternScannerLive:
             if pos.instrument and pos.instrument not in symbols:
                 symbols.append(pos.instrument)
 
-        # 2. One batched Kite quote call for spot + all option symbols.
+        # 2. One batched Kite quote call for spot + all option symbols. The
+        #    LTP is the entry price at the spot candle-close poll; exits use
+        #    the completed 5m OHLC bar fetched below.
         if hasattr(self.feed, "quote_snapshot"):
             spot, prices = self.feed.quote_snapshot(symbols)
         else:
@@ -353,12 +444,20 @@ class PatternScannerLive:
                 if px is not None:
                     prices[sym] = px
 
-        # Feed the quoted option prices FIRST: each option tick manages that
-        # position's premium ATR stop/trail with this poll's price. The spot
-        # tick below then detects new entries using this poll's option quotes.
         for sym, price in prices.items():
-            self.ps.on_tick(sym, price, now)
+            self.ps.record_quote(sym, price, now)
 
+        # 3. Completed 5m option bars: feed each symbol's bar into its buffer
+        #    and evaluate premium ATR exits with the backtest's OHLC rules.
+        bar_start = floor_5min(now) - timedelta(minutes=5)
+        if hasattr(self.feed, "completed_5m_bar"):
+            for sym in symbols:
+                bar = self.feed.completed_5m_bar(sym, bar_start)
+                if bar:
+                    self.ps.on_option_bar(sym, bar, now)
+
+        # 4. Spot tick completes the 5m spot candle and detects entries using
+        #    this poll's option quotes and freshly appended option bars.
         if spot is not None:
             self.ps.on_tick("NIFTY_SPOT", spot, now)
             # Resolve ATM from the cached instrument index (no download).

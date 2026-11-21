@@ -1,8 +1,10 @@
 # Historical scanner backtest (5m rule simulation)
 
-> **Not an exact 5-second paper replay.** mStock supplies 5-minute OHLCV,
-> not historical 5-second quotes. Live entry/exit fills use sampled LTP;
-> this report uses the conservative proxies below.
+> **Not an exact 5-second paper replay for the seven 5s scanners.**
+> mStock supplies 5-minute OHLCV, not historical 5-second quotes. Their
+> live fills use sampled LTP; this report uses conservative proxies below.
+> `pattern_scanner` now polls on completed 5m option bars live and shares
+> `evaluate_bar()` with this replay, so its exit rules are identical.
 
 ## Assumptions
 
@@ -12,6 +14,7 @@
 - ATM: CE/PE parity anchored by NIFTY futures, rounded to 50
 - Spot OHLC for regime/pattern: reconstructed from CE/PE parity
 - Pattern exits: premium ATR(14) only (0.70xATR, 5-30% clamp, 10% fallback)
+- Pattern live cadence: aligned 5m polls using completed 5m option OHLC bars
 - PnL: premium points only; no lot size, capital, target, or brokerage
 - Broker: gateway identity `api` (mapped to mStock in this deployment)
 
