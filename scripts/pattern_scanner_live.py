@@ -533,6 +533,14 @@ class PatternScannerLive:
                     if ce_sym and pe_sym:
                         self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
                         self._refresh_last_closed_spot(now)
+                if self.ps.last_closed_spot is not None:
+                    if (self.ps.last_spot is None
+                            or abs(float(self.ps.last_spot) - self.ps.last_closed_spot) > 50):
+                        self.ps.last_spot = self.ps.last_closed_spot
+                        self.ps.spot_source = "index_close_fallback"
+                        self.ps.current_atm_strike = int(
+                            round(float(self.ps.last_closed_spot) / 50.0) * 50
+                        )
             try:
                 os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
                 status = self._status_snapshot()
