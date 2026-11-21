@@ -23,13 +23,12 @@ chmod 755 "$DEST/daemon.py" "$DEST/cli.py"
 install -d -m 755 -o root -g root "$DEST/config"
 install -d -m 750 -o root -g ubuntu "$DEST/cache"
 
+# The canonical mapping ships in the repo (broker_gateway/config/scanners.json)
+# and is copied above. Never silently fall back to an empty mapping: that would
+# send every scanner to the default (stale Zerodha) broker.
 if [[ ! -f "$DEST/config/scanners.json" ]]; then
-    cat > "$DEST/config/scanners.json" <<'JSON'
-{
-  "default": "zerodha",
-  "scanners": {}
-}
-JSON
+    echo "ERROR: missing canonical broker mapping $SRC/config/scanners.json" >&2
+    exit 1
 fi
 chmod 644 "$DEST/config/scanners.json"
 

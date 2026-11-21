@@ -4,9 +4,10 @@ The VM runs **8 independent paper scanners**. Each page below describes one
 strategy in logical terms: why it exists, exactly when it enters, exactly when
 it exits, what it persists, and where its runtime pieces live.
 
-Start with [`../SCANNERS.md`](../../SCANNERS.md) for the cross-cutting material
-(host, Kite setup, timing, isolation model, data model, API/dashboard map,
-operations runbooks). These pages do not repeat it; they explain the strategy.
+Start with [`SCANNERS.md`](../../SCANNERS.md) for the cross-cutting material
+(host, broker-gateway setup, timing, isolation model, data model,
+API/dashboard map, operations runbooks). These pages do not repeat it; they
+explain the strategy.
 
 > **Paper trading only.** No scanner has a broker write path. Entries are
 > simulated BUYs at the sampled option LTP in SQLite; `pattern_scanner` exits use
@@ -57,8 +58,8 @@ previous completed 5m option OHLC bar so live matches the 5m backtest.
 
 ## Isolation contract
 
-The 7 premium scanners share nothing except the host, `.env.zerodha`, the Flask
-API process and nginx. Each has:
+The 7 premium scanners share nothing except the host, the read-only broker
+gateway, the Flask API process and nginx. Each has:
 
 ```
 /opt/tradingai/<key>_scanner/          code (root-owned, read-only for locked trees)

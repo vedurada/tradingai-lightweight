@@ -68,7 +68,7 @@ but has its own service, status file, DB tables and dashboard.
 | OS | Ubuntu 22.04.5 LTS (systemd, `chattr`, `logrotate`) |
 | Kernel | 6.8.x |
 | CPU | 2 vCPU (AMD EPYC) |
-| RAM | 956 MB — tight but sufficient for 7 scanner processes + API workers |
+| RAM | 956 MB — tight but sufficient for 8 scanner processes + API workers |
 | Swap | 2 GB swapfile (used as headroom, not steady state) |
 | Disk | 45 GB, ~21 GB free |
 | Python | 3.10.12 (`/usr/bin/python3`) |
@@ -76,18 +76,20 @@ but has its own service, status file, DB tables and dashboard.
 | Network | outbound HTTPS to `api.kite.trade`; inbound HTTPS via nginx + Cloudflare |
 | Database server | **none required** — MySQL/PostgreSQL are not used or installed for this stack |
 
-### 2.2 Zerodha / Kite Connect
+### 2.2 Market data (read-only broker gateway)
 
 | Item | Detail |
 |---|---|
-| Product | Kite Connect (market data) |
-| API key / secret | stored in `/opt/tradingai/.env.zerodha` (mode `640 ubuntu:ubuntu`) |
-| Access token | **expires every day**; must be refreshed before 09:00 IST |
-| Rate limits | quotes ≈ 1 request/second per API key; historical ≈ 3 requests/second per API key |
+| Product | Kite-compatible **read-only** broker gateway (`instruments`, `quote`, `historical_data`, `profile` only); scanners never see keys or tokens |
+| Active broker | selected by `BROKER_GATEWAY_SCANNER` / `broker-gateway use` (VM deployment maps all 8 scanners, the API and `pattern_scanner` to `mstock`; `zerodha` remains the code default) |
+| Credentials | root-only on the VM, loaded by the gateway daemon; never read by a scanner process |
+| Access token | broker-specific and short-lived; refreshed with the broker's own session tool before 09:00 IST, guarded by a per-call freshness check |
+| Rate limits | quotes ≈ 1 request/second per broker key; historical ≈ 3 requests/second per broker key |
 | Instruments | NIFTY options (nearest expiry), NIFTY spot quote |
 
-Token refresh runbook: `/opt/tradingai/TOKEN_REFRESH.md`.
-Automatic check: `tradingai-token-check.timer` at **08:45 IST, Mon–Fri**.
+Broker session checklist: `docs/zerodha/CREDENTIAL_SETUP_CHECKLIST.md`. Gateway
+operations are root-only: `sudo broker-gateway status|adapters|probe|use`.
+Automatic validity check: `tradingai-token-check.timer` at **08:45 IST, Mon–Fri**.
 
 ### 2.3 Python packages
 
@@ -124,7 +126,7 @@ runtime only `kiteconnect` (and its system-wide deps) is actually used. The
 extra packages (pytest, pandas, numpy, flask, gunicorn, groq, playwright, …)
 are leftovers from the build environment and are not imported by scanners.
 
-Canonical requirements file: [`docs/requirements.txt`](requirements.txt).
+Canonical requirements file: [`requirements.txt`](requirements.txt).
 
 ### 2.4 Services and routing
 
@@ -148,7 +150,8 @@ Canonical requirements file: [`docs/requirements.txt`](requirements.txt).
 | `MARKET_CLOSE` | `15:30` | session close (status reporting) |
 | `ENTRY_START` | `09:20` | first allowed entry |
 | `ENTRY_END` | `15:15` | entry cutoff (exclusive) |
-| `POLL_SECONDS` | `5` | decision cadence |
+| `POLL_SECONDS` | `5` | decision cadence for the seven premium scanners |
+| `PATTERN_POLL_SECONDS` | `300` | `pattern_scanner` only: aligned 5m poll at boundary + 10 s |
 | `CANDLE_MINUTES` | `5` | candle size |
 | `MUHURAT_SESSIONS` | date → (open, close) | special-session override |
 
@@ -194,19 +197,27 @@ and no pre-open exit can fire.
 | Option types | CE and PE evaluated independently, both BUY-only |
 | Lot size (reference) | 65 |
 
-All logic is based on the **option premium candles/LTP**, never on the NIFTY
-index price. The index is used only to select the ATM strike.
+The seven premium scanners use **option-premium candles/LTP** for both entries
+and exits (`sma9_atr` additionally gates entries on a daily NIFTY spot regime).
+`pattern_scanner` is the exception: its **entry signals** come from completed
+NIFTY spot 5-minute candles, while **all exits** are managed on the bought
+option's premium. NIFTY spot is also used to select the ATM strike.
 
 ### 3.3 Credentials
 
-| File | Purpose |
-|---|---|
-| `/opt/tradingai/.env.zerodha` | `ZERODHA_MODE`, `KITE_API_KEY`, `KITE_API_SECRET`, `KITE_ACCESS_TOKEN`, `REDIRECT_URL` |
-| `/opt/tradingai/zerodha_credentials.py` | loader used by token exchange and scanners |
-| `/opt/tradingai/refresh_token.sh` | exchange + persist + restart + verify |
-| `/opt/tradingai/premarket_token_check.sh` | read-only 08:45 validity check |
+Broker credentials live **only** in root-owned files on the VM and are read by
+the broker gateway daemon, never by a scanner process. Scanners select a broker
+by name (`BROKER_GATEWAY_SCANNER` or `broker-gateway use`), not by embedding keys.
 
-Never commit `.env.zerodha`, `zerodha_credentials.py`, or any token to git.
+| Component | Purpose |
+|---|---|
+| gateway adapter credential file | per-broker API key/secret/token, root-only (`0600`) |
+| `broker-gateway use` | root-only broker selection (`mstock` on the VM; `zerodha` is the code default) |
+| broker session tool | mStock TOTP/OTP session; Zerodha request-token exchange via `refresh_token.sh` |
+| `premarket_token_check.sh` | read-only 08:45 validity probe |
+
+Never commit a broker credential file or any token to git. No scanner has a
+write path to broker credentials.
 
 ### 3.4 Per-scanner environment (systemd)
 
@@ -304,9 +315,12 @@ Exits are managed from the position's own completed 5m option OHLC bars via the
 shared `evaluate_bar()` helper, so live matches the backtest proxy; NIFTY spot
 no longer drives exits.
 
-DB path is always `/opt/tradingai/database/<key>.db`.
-API namespace is always `/api/<slug>/` (slug = key with `_` → `-`).
-Dashboard is always `https://tradingai.in/live/<slug>/`.
+The seven premium scanners use `/opt/tradingai/database/<key>.db`,
+`/api/<slug>/` (slug = key with `_` → `-`) and
+`https://tradingai.in/live/<slug>/`. `pattern_scanner` is the exception: it
+persists to `/opt/tradingai/database/tradingai.db` in its own
+`pattern_scanner_*` tables and publishes status through its service/status file
+rather than a per-scanner namespace.
 
 ---
 
@@ -689,12 +703,12 @@ Family-specific columns:
 | Base SMA | `sma{n}_value` (`sma9_value`), `prev_close`, `condition_a`, `condition_b` |
 | HIGH | `sma_value`, `prev_high`, `condition_a`, `condition_b`, `condition_c` |
 | NO-SMA / prev-high | `prev_high`, `breakout` (retired `no_sma` and `no_sma_trail`; archive DBs only) |
-| Trail | `prev_high`, `breakout`, and `hwm`, `stop`, `be_locked` in `open_positions`; base trade id in `consumed_base_trades` |
-| ATR stop (`sma9_atr`, `sma9_5s_atr`) | `atr_at_entry`, `stop_price`, `stop_k`, `stop_distance_pct`, `stop_source`, `trail_distance` (both ATR scanners). `sma9_5s_atr` v1.1.0 also stores `prev_sma9` / `condition_c` and added `trail_distance` to its trades table. |
+| Trail | `prev_high`, `breakout`, and `hwm`, `stop`, `be_locked` in `open_positions`; `consumed_base_trades` is a legacy artefact and is not used by current logic |
+| ATR stop (`sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll`) | `atr_at_entry`, `stop_price`, `stop_k`, `stop_distance_pct`, `stop_source`, `trail_distance` (all three ATR scanners). `sma9_5s_atr` v1.1.0 also stores `prev_sma9` / `condition_c` and added `trail_distance` to its trades table. |
 
-`exit_reason` is `STOP_LOSS_5PCT` or `TRAIL_STOP_EXIT` for the five fixed-stop
-premium scanners, and `STOP_LOSS_ATR` or `TRAIL_STOP_EXIT` for the two ATR
-scanners.
+`exit_reason` is `STOP_LOSS_5PCT` or `TRAIL_STOP_EXIT` for the four fixed-stop
+premium scanners, and `STOP_LOSS_ATR` or `TRAIL_STOP_EXIT` for the three ATR
+premium scanners.
 There is no candle-close, minute-10, or session-end reason on any of them.
 `pattern_scanner` uses its own tables (`pattern_scanner_positions`,
 `pattern_scanner_stop_changes` in `database/tradingai.db`) and reasons
@@ -713,7 +727,9 @@ service user must be able to `BEGIN IMMEDIATE`.
 
 ### 7.1 API
 
-All 7 premium-scanner namespaces expose the same 9 read-only endpoints:
+The premium-scanner namespaces expose the following read-only endpoints
+(the four older scanners serve all nine; the three newer ones omit
+`legacy-audit`, as detailed below):
 
 ```
 GET /api/<slug>/signals
@@ -811,11 +827,13 @@ systemctl list-timers tradingai-token-check.timer
 sudo /opt/tradingai/refresh_token.sh <REQUEST_TOKEN>
 ```
 
-`refresh_token.sh` exchanges the token, then restarts **all 9 units**: the API,
-the 7 paper scanners, and `pattern-scanner-live`. Every scanner reads the
-access token once at process start, so a token swap without a restart leaves
-that process on the old token and it starts logging
-`Incorrect api_key or access_token`.
+`refresh_token.sh` (Zerodha path) exchanges the token, then restarts **all 9
+units**: the API, the 7 paper scanners, and `pattern-scanner-live`. On the VM the
+active broker is mStock, whose session is refreshed with `mstock_session.py`
+(TOTP/OTP) instead. Every scanner obtains market data through the long-lived
+gateway daemon; a broker-session change must be applied to the gateway, which
+validates token freshness on every call and reports an error rather than using
+a stale token.
 
 ```bash
 # 3. All 8 scanners + API active
@@ -977,21 +995,22 @@ token.
   ```
 
 - **BUY only.** CE and PE are long-only; there is no short/sell-to-open path.
-- **Fixed 5% stop on the five fixed-stop scanners.** Every position exits at
+- **Fixed 5% stop on the four fixed-stop scanners.** Every position exits at
   `round(entry × 0.95, 2)` if LTP falls that far (`STOP_LOSS_5PCT`); the trail
-  stop is the preferred, higher exit and is evaluated first. `sma9_atr` and
-  `sma9_5s_atr` use an ATR-scaled stop instead (see §5.6, §5.7), filled at
-  the live LTP. `sma9_atr` v1.1.0 also trails only at that ATR distance and
-  gates entries on the daily spot regime; exits are never gated.
+  stop is the preferred, higher exit and is evaluated first. `sma9_atr`,
+  `sma9_5s_atr` and `sma9_1min_poll` use an ATR-scaled stop instead (see
+  §5.6, §5.7), filled at the live LTP. `sma9_atr` v1.1.0 also trails only at
+  that ATR distance and gates entries on the daily spot regime; exits are never
+  gated.
 - **`pattern_scanner`** uses the same premium ATR(14) exit model as the ATR
   scanners: `0.70 × ATR` initial stop clamped to 5–30% of entry, plus an
   ATR-width trail with no +5 activation and no breakeven lock. It has no spot
   stop and no time exit, and manages exits only from the position's own completed
   5m option OHLC bars on the aligned 5-minute poll.
 - **No time-based exit** on any scanner; positions hold across candles and
-  overnight until the trail or 5% stop fires.
-- **Secrets** live only in `/opt/tradingai/.env.zerodha` and the local git
-  config; they are never committed.
+  overnight until the trail or ATR/5% stop fires.
+- **Secrets** live only in root-owned gateway credential files on the VM; they
+  are never read by a scanner and are never committed.
 - **State survives restarts** via `open_positions` and `scan_state`, including
   trail `hwm`/`stop`.
 
@@ -1001,7 +1020,7 @@ token.
 
 | Symptom | Likely cause | Fix |
 |---|---|---|
-| `Incorrect api_key or access_token`, zero trades | daily token expired, or a scanner was started before the token swap | `sudo /opt/tradingai/refresh_token.sh <REQUEST_TOKEN>` (restarts every scanner, incl. `pattern-scanner-live`); if only one scanner errors, `systemctl restart <unit>` |
+| `Incorrect api_key or access_token`, zero trades | broker session expired or gateway still on a stale token | check `sudo broker-gateway status`; refresh the active broker session (`sudo /usr/local/sbin/mstock_session.py --mode totp`, or `refresh_token.sh <REQUEST_TOKEN>` for Zerodha) and verify with `sudo broker-gateway probe` |
 | `Too many requests` | quote/historical burst, overlapping restarts | stagger restarts; check offsets; wait for the 1 s / 3 s window |
 | `attempt to write a readonly database` | DB ownership/mode after redeploy | `chown <user>:ubuntu <db> && chmod 664 <db>` |
 | `SSLEOFError` / `UNEXPECTED_EOF_WHILE_READING` during startup | transient Kite TLS reset | self-heals via `Restart=always` (~5 s); no action unless repeated |
@@ -1041,7 +1060,7 @@ premium scanner files and in the trail build template.
 | Document | Covers |
 |---|---|
 | `SCANNERS.md` (this file) | everything: requirements, dependencies, common config, matrix, operations |
-| `docs/requirements.txt` | canonical Python requirements |
+| `requirements.txt` | canonical Python requirements |
 | `docs/scanners/README.md` | index + logical one-line description of each active scanner |
 | `docs/scanners/<key>.md` | per-scanner entry/exit rules, constants, runtime, commands |
 | `docs/scanners/retired.md` | retired scanners, archives and replacement mapping |

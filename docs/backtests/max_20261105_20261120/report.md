@@ -10,7 +10,7 @@
 
 - Window: `2026-11-05` to `2026-11-20`
 - Entry fill: signal candle open
-- Exit fill: adverse 5m extreme when a stop/trail is hit
+- Exit fill: adverse 5m low for the ATR stop, ratcheted stop level for a trail hit
 - ATM: CE/PE parity anchored by NIFTY futures, rounded to 50
 - Spot OHLC for regime/pattern: reconstructed from CE/PE parity
 - Pattern exits: premium ATR(14) only (0.70xATR, 5-30% clamp, 10% fallback)
@@ -29,7 +29,7 @@
 | sma9_atr | 250 | 44.40 | -1506.57 | -6.03 | -1506.57 |
 | sma9_5s_atr | 289 | 43.94 | -1817.03 | -6.29 | -1817.03 |
 | sma9_1min_poll | 336 | 44.35 | -2074.78 | -6.17 | -2074.78 |
-| pattern_scanner | 845 | 59.53 | 3247.56 | 3.84 | -467.85 |
+| pattern_scanner | 844 | 59.48 | 3204.71 | 3.80 | -467.85 |
 
 ## Exit reasons
 
@@ -40,4 +40,4 @@
 - sma9_atr: `{"STOP_LOSS_ATR": 107, "TRAIL_STOP_EXIT": 143}`
 - sma9_5s_atr: `{"STOP_LOSS_ATR": 123, "TRAIL_STOP_EXIT": 166}`
 - sma9_1min_poll: `{"STOP_LOSS_ATR": 137, "TRAIL_STOP_EXIT": 199}`
-- pattern_scanner: `{"STOP_LOSS_ATR": 115, "TRAIL_STOP_EXIT": 730}`
+- pattern_scanner: `{"STOP_LOSS_ATR": 115, "TRAIL_STOP_EXIT": 729}`

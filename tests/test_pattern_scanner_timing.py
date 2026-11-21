@@ -103,6 +103,26 @@ def test_buffer_ignores_pre_open_ticks():
     assert done["timestamp"].startswith("2026-11-19T09:15"), done
 
 
+def test_completed_bar_ignores_pre_open_and_duplicates():
+    buf = CandleBuffer("TEST_CE", "OPT")
+
+    # A completed bar starting before 09:15 must never enter the buffer.
+    assert buf.on_completed_bar(option_bar(at(9, 10))) is None
+    assert buf.candles == []
+
+    first = option_bar(at(9, 15))
+    assert buf.on_completed_bar(first)["timestamp"].startswith("2026-11-19T09:15")
+    assert len(buf.candles) == 1
+
+    # A forming tick candle for the same bucket is discarded when the completed
+    # bar arrives, and a repeated completed bar is never appended twice.
+    buf.on_tick(120.0, at(9, 15, 10))
+    assert buf.current_start == at(9, 15)
+    assert buf.on_completed_bar(first) is None
+    assert len(buf.candles) == 1
+    assert buf.current is None and buf.current_start is None
+
+
 def test_exit_management_ignores_pre_open_bar_closes():
     scanner = make_scanner()
     pos = next(iter(scanner.positions.values()))

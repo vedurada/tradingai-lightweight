@@ -324,6 +324,11 @@ class PatternScannerLive:
         self.running = False
         self.thread = None
         self.poll = POLL_INTERVAL_SEC  # aligned 5m cadence, not 5s
+        # A completed 5m bar whose historical fetch failed on its own poll is
+        # retried on the next aligned poll so a transient gateway error cannot
+        # silently lose that bar's premium exit.
+        self._pending_bars: dict[str, datetime] = {}
+        self._failed_bar_symbols: set[str] = set()
 
     @staticmethod
     def next_poll_time(now: datetime) -> datetime:
@@ -344,11 +349,38 @@ class PatternScannerLive:
         if delay > 0:
             time_module.sleep(delay)
 
+    def _fetch_completed_bars(self, symbols, now):
+        """Fetch each symbol's previous completed 5m bar, retrying a failure.
+
+        A bar that failed on its own poll is retried exactly once, on the next
+        poll and before the newly completed bar, so a transient gateway error
+        cannot silently lose an exit without breaking chronological evaluation.
+        """
+        if not hasattr(self.feed, "completed_5m_bar"):
+            return
+        target = floor_5min(now) - timedelta(minutes=5)
+        for sym in symbols:
+            pending = self._pending_bars.pop(sym, None)
+            starts = []
+            if pending is not None and pending < target:
+                starts.append(pending)
+            starts.append(target)
+            for start in starts:
+                bar = self.feed.completed_5m_bar(sym, start)
+                if not bar:
+                    self._failed_bar_symbols.add(sym)
+                    if start == target:
+                        self._pending_bars[sym] = start
+                    continue
+                self.ps.on_option_bar(sym, bar, now)
+
     def _status_snapshot(self) -> dict:
         """Status with explicit feed-health fields for the API/dashboard."""
         status = self.ps.get_status()
         live = bool(self.live_feed_ok and getattr(self.feed, "available", False))
+        failed_bars = sorted(getattr(self, "_failed_bar_symbols", set()))
         status["data_available"] = live
+        status["exit_data_available"] = live and not failed_bars
         status["feed"] = "live" if live else "mock"
         status["poll_interval_sec"] = int(getattr(self, "poll", POLL_INTERVAL_SEC))
         status["poll_alignment"] = "5m_boundary_plus_10s"
@@ -361,6 +393,13 @@ class PatternScannerLive:
                 errors.append(msg)
             if status.get("status") == "RUNNING":
                 status["status"] = "NO_LIVE_FEED"
+        if failed_bars and live:
+            msg = ("completed 5m option bar unavailable for: "
+                   + ", ".join(failed_bars))
+            if msg not in errors:
+                errors.append(msg)
+            if status.get("status") == "RUNNING":
+                status["status"] = "NO_OPTION_DATA"
         status["errors"] = errors
         return status
 
@@ -399,6 +438,7 @@ class PatternScannerLive:
 
     def _tick(self):
         now = now_ist()
+        self._failed_bar_symbols.clear()
         if not is_market_open(now):
             self.ps.status = "MARKET_CLOSED"
             # Positions are held across candles/overnight: no time-based exit.
@@ -449,22 +489,19 @@ class PatternScannerLive:
 
         # 3. Completed 5m option bars: feed each symbol's bar into its buffer
         #    and evaluate premium ATR exits with the backtest's OHLC rules.
-        bar_start = floor_5min(now) - timedelta(minutes=5)
-        if hasattr(self.feed, "completed_5m_bar"):
-            for sym in symbols:
-                bar = self.feed.completed_5m_bar(sym, bar_start)
-                if bar:
-                    self.ps.on_option_bar(sym, bar, now)
+        #    A bar that failed on its own poll is retried before the new one.
+        self._fetch_completed_bars(symbols, now)
 
         # 4. Spot tick completes the 5m spot candle and detects entries using
         #    this poll's option quotes and freshly appended option bars.
         if spot is not None:
-            self.ps.on_tick("NIFTY_SPOT", spot, now)
-            # Resolve ATM from the cached instrument index (no download).
+            # Resolve/set ATM BEFORE detection so a reband poll cannot enter at
+            # the previous strike with a fresh quote for the old option.
             if hasattr(self.feed, "kite") and self.feed.kite:
                 ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
                 if ce_sym and pe_sym:
                     self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
+            self.ps.on_tick("NIFTY_SPOT", spot, now)
 
         # Write status to file for API to read
         try:

@@ -975,6 +975,10 @@ class CandleBuffer:
             return None
         completed = None
         if self.current_start is None:
+            # On the aligned 5m cadence each completed bar is intentionally
+            # built from one sampled tick at the boundary poll (and likewise
+            # after a restart). Pre-open ticks are rejected above, so this is
+            # never a synthetic pre-open candle.
             self.current_start = key
             self.current = {
                 "timestamp": key.isoformat(), "open": price, "high": price,
@@ -1011,6 +1015,16 @@ class CandleBuffer:
         if start.tzinfo is None:
             start = start.replace(tzinfo=IST)
         start = start.astimezone(IST)
+        # Completed bars before the 09:15 exchange open are never valid signals.
+        if start.time() < FIRST_CANDLE_START:
+            return None
+        # Discard a forming tick candle with the same start, and never append
+        # the same completed bar twice (e.g. on a retry after a failed fetch).
+        if self.current_start == start:
+            self.current = None
+            self.current_start = None
+        if any(c["timestamp"] == start.isoformat() for c in self.candles):
+            return None
         row = {
             "timestamp": start.isoformat(),
             "open": float(bar["open"]),
@@ -1020,9 +1034,6 @@ class CandleBuffer:
             "session_date": session_date(start),
             "is_complete": True,
         }
-        if self.current_start == start:
-            self.current = None
-            self.current_start = None
         self.candles.append(row)
         if len(self.candles) > 200:
             self.candles = self.candles[-200:]
@@ -1202,6 +1213,7 @@ class OptionPosition:
         # Direction only affects which spot move makes the option premium
         # profitable — not the PnL arithmetic itself.
         gross_pnl = px - entry
+        self.gross_pnl_points = round(gross_pnl, 2)
         self.pnl_points = round(gross_pnl - brokerage - slippage, 2)
         self.exit_ts = exit_ts
         self.exit_price = round(px, 2)
@@ -1394,7 +1406,9 @@ class PatternScanner:
         # SPOT: track spot price, refresh ATM instruments, run pattern detection
         if instrument_type == "SPOT":
             self.last_spot = float(completed["close"])
-            self.last_update = ts.isoformat() if hasattr(ts, "isoformat") else str(ts)
+            # last_update is set by on_tick() to the real poll/tick time; do not
+            # overwrite it with the signal candle's start (minutes earlier on
+            # the aligned 5m cadence).
             if self.current_atm_strike is None or \
                abs(self.last_spot - round_to_strike(self.last_spot)) > ATM_REBAND_THRESHOLD_POINTS:
                 self._refresh_option_instruments(self.last_spot)

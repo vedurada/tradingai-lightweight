@@ -11,6 +11,8 @@
 *.pyc
 *.remove-*
 .env
+.env.zerodha
+.env.*.local
 .fb_env
 .tg_env
 __pycache__/

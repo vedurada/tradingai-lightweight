@@ -41,8 +41,8 @@ sides; there is no short CE and no short PE.
   status, but 09:00–09:15 is warm-up only: its candle buffer ignores every tick
   before 09:15, and its premium exit manager ignores option bars starting before
   09:15 too. No synthetic pre-open candles are created and no pre-open exit can
-  fire; the first completed signal candle is 09:15 and the first possible entry
-  is at the 09:20 poll.
+  fire; the first completed signal candle is 09:15, and detection needs three
+  completed spot candles, so the first possible entry is at the 09:30 poll.
 - **One per key:** at most one active position per `pattern_name:instrument`.
 - **Entry bar skip:** a position entered at a bar-close poll is first managed
   from the next poll's completed bar, never from its own entry bar.
@@ -153,19 +153,24 @@ On every 5m poll the runner quotes the current ATM CE/PE **and** every
 instrument with an active position, so an older strike still gets its own
 completed bar. Quotes are recorded before the spot tick for entry pricing;
 the completed option bars are appended and evaluated via `evaluate_bar()`
-before spot candle completion triggers a new entry. The status file reports
-`poll_interval_sec = 300`, `poll_alignment = 5m_boundary_plus_10s` and
-`exit_data = completed_5m_option_ohlc`, so a stale 5s deployment is obvious.
+before spot candle completion triggers a new entry. A completed bar whose
+historical fetch failed on its own poll is retried on the next poll (up to
+three attempts), so a transient gateway error cannot silently lose an exit.
+The status file reports `poll_interval_sec = 300`,
+`poll_alignment = 5m_boundary_plus_10s`, `exit_data = completed_5m_option_ohlc`,
+`data_available`, `exit_data_available`, `feed` and `errors`, so a stale 5s or
+data-less deployment is obvious. A missing option bar is reported as
+`NO_OPTION_DATA`; a missing broker feed as `NO_LIVE_FEED`.
 
 ## Ops
 
 ```bash
 systemctl status pattern-scanner-live
 tail -f /opt/tradingai/logs/pattern_scanner_live.log
-curl -s https://tradingai.in/api/pattern_scanner/status
+cat /opt/tradingai/data/pattern_scanner_status.json
 ```
 
-The token is read once at process start. `pattern-scanner-live` is in
-`ALL_UNITS` of `refresh_token.sh`; a token refresh without a restart would
-leave it logging `Incorrect api_key or access_token` (this happened on
-2026-11-19 before the unit was added to the restart list).
+The scanner reads market data through the read-only broker gateway, which
+validates token freshness on every call; there is no token embedded in the
+scanner process. `pattern-scanner-live` is in `ALL_UNITS` of `refresh_token.sh`
+so a broker-session change also restarts it.

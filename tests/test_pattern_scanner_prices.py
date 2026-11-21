@@ -324,3 +324,23 @@ def test_legacy_open_position_is_migrated_to_atr(tmp_path):
     assert pos.stop_loss == 135.0
     assert pos.hwm == 150.0, "legacy spot HWM must not survive migration"
     assert pos.be_locked is False
+
+
+def test_gross_pnl_is_persisted_separately_from_net(tmp_path):
+    ps = make_scanner(tmp_path)
+    drive_to_entry(ps)
+    pos = one_position(ps)
+    pos.close("BACKTEST_END", ts(9, 40).isoformat(), exit_price=170.0)
+
+    assert pos.gross_pnl_points == 20.0
+    assert pos.pnl_points == 20.0
+
+
+def test_last_update_stays_at_poll_time_not_candle_start(tmp_path):
+    ps = make_scanner(tmp_path)
+    # Four spot ticks drive an entry at 09:35. The last tick completes the
+    # 09:30 signal candle but last_update must remain the 09:35 poll time.
+    drive_to_entry(ps)
+
+    assert ps.last_update == ts(9, 35).isoformat(), ps.last_update
+    assert "09:30" not in ps.last_update

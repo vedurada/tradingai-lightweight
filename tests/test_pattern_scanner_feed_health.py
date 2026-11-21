@@ -6,7 +6,15 @@ RUNNING. Operators read that status to decide whether quotes are trustworthy.
 """
 from __future__ import annotations
 
+from datetime import datetime, timedelta, timezone
+
 from scripts.pattern_scanner_live import MockFeed, PatternScannerLive
+
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def at(h, m, s=0):
+    return datetime(2026, 11, 18, h, m, s, tzinfo=IST)
 
 
 class _FakePS:
@@ -24,6 +32,7 @@ def _scanner(live_ok, available):
     feed = MockFeed()
     feed.available = available
     scanner.feed = feed
+    scanner._failed_bar_symbols = set()
     return scanner
 
 
@@ -53,3 +62,56 @@ def test_live_feed_that_lost_availability_is_not_running():
     status = scanner._status_snapshot()
     assert status["status"] == "NO_LIVE_FEED"
     assert status["data_available"] is False
+
+
+def test_live_feed_with_failed_option_bar_is_not_running():
+    scanner = _scanner(live_ok=True, available=True)
+    scanner._failed_bar_symbols = {"NIFTY26NOV24000CE"}
+    status = scanner._status_snapshot()
+    assert status["status"] == "NO_OPTION_DATA"
+    assert status["data_available"] is True
+    assert status["exit_data_available"] is False
+    assert any("option bar unavailable" in e for e in status["errors"])
+
+
+def test_mock_feed_keeps_no_live_feed_even_with_failed_bars():
+    scanner = _scanner(live_ok=False, available=True)
+    scanner._failed_bar_symbols = {"NIFTY26NOV24000CE"}
+    status = scanner._status_snapshot()
+    assert status["status"] == "NO_LIVE_FEED"
+    assert status["exit_data_available"] is False
+
+
+def test_failed_completed_bar_is_retried_before_the_next_bar():
+    scanner = _scanner(live_ok=True, available=True)
+    scanner._pending_bars = {}
+    applied = []
+
+    class FlakyFeed:
+        available = True
+
+        def __init__(self):
+            self.fail_once = at(9, 20)
+
+        def completed_5m_bar(self, sym, start):
+            if start == self.fail_once:
+                self.fail_once = None
+                return None
+            return {"start": start, "open": 100.0, "high": 100.0,
+                    "low": 100.0, "close": 100.0}
+
+    scanner.feed = FlakyFeed()
+    scanner.ps.on_option_bar = lambda sym, bar, now: applied.append(bar["start"])
+
+    # 09:25 poll -> previous completed bar is 09:20; its fetch fails.
+    scanner._fetch_completed_bars(["TEST_CE"], at(9, 25, 10))
+    assert applied == []
+    assert scanner._pending_bars == {"TEST_CE": at(9, 20)}
+    assert scanner._failed_bar_symbols == {"TEST_CE"}
+
+    # 09:30 poll -> retry 09:20 first, then the new 09:25 bar.
+    scanner._failed_bar_symbols.clear()
+    scanner._fetch_completed_bars(["TEST_CE"], at(9, 30, 10))
+    assert applied == [at(9, 20), at(9, 25)]
+    assert scanner._pending_bars == {}
+    assert scanner._failed_bar_symbols == set()

@@ -19,7 +19,7 @@ broker credentials; scanners see a read-only, Kite-shaped API.
 flowchart TB
     subgraph SCANNERS["8 paper scanners - source unchanged"]
         SMA["7 x SMA scanners<br/>live_sma9*.py<br/>poll = 5 s"]
-        PAT["pattern_scanner_live.py<br/>poll = 5 s"]
+        PAT["pattern_scanner_live.py<br/>poll = aligned 5 min + 10 s"]
     end
 
     subgraph SHIMLAYER["Per-process Kite-compatible shim"]
@@ -74,7 +74,7 @@ flowchart TB
 
 All eight currently resolve to broker `mstock`. The seven SMA routes are served
 by `app.api.app:app` under gunicorn; the pattern scanner publishes a JSON status
-file that is refreshed every 5 s.
+file that is refreshed on each aligned 5-minute poll (and on market-close ticks).
 
 ## 3. How a scanner picks its broker
 
@@ -340,7 +340,8 @@ No scanner file changes are needed.
 - Seven SMA APIs: `IDLE_MARKET_CLOSED`, `poll=5`, fresh scan ages, errors only
   `['weekend']`.
 - Pattern scanner: `MARKET_CLOSED`, `data_available=true`, `feed=live`, polling
-  every 5 s, spot and ATM strike updating through mStock, no broker orders.
+  on the aligned 5-minute boundary + 10 s with completed-5m option OHLC exits,
+  spot and ATM strike updating through mStock, no broker orders.
   Its status file now always carries feed-health fields; on feed failure it
   reports `NO_LIVE_FEED` rather than `RUNNING` on mock data. The full 94k NFO
   dump is indexed once and released, keeping only the compact NIFTY CE/PE map.

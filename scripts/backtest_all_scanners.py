@@ -17,7 +17,8 @@ the real strategy engines and reuses their evaluate/trail/stop/close code.
 Fill and ATM proxies are conservative and documented in the output report:
 
   * entry fill = signal candle open
-  * exit fill  = adverse 5m bar extreme when a stop/trail is hit
+  * exit fill  = adverse 5m bar low for the ATR stop, or the ratcheted stop
+                 level when a trail is hit
   * ATM strike inferred from CE/PE parity, anchored by NIFTY futures
   * spot OHLC for regime/pattern logic reconstructed from CE/PE parity
 
@@ -438,7 +439,11 @@ def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
         atrs = pattern_atr_list(spot_sequence)
         atr = atrs[-1]
 
-        if ts.time() < module.NO_NEW_ENTRY_AFTER:
+        # Match the live engine: it needs >=3 completed spot candles before it
+        # will detect, and entries are confined to the 09:20-15:15 window.
+        # Without both guards the replay could open trades at the 09:15/09:20
+        # bars that live can never take.
+        if len(spot_sequence) >= 3 and in_entry_window(ts):
             try:
                 results = (module.detect_bullish_patterns(spot_sequence, len(spot_sequence) - 1, atr)
                            + module.detect_bearish_patterns(spot_sequence, len(spot_sequence) - 1, atr))
@@ -506,7 +511,8 @@ def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
         bars = series.get(key, []) if key else []
         if not bars:
             continue
-        pos.close("BACKTEST_END", bars[-1]["start"].isoformat(), exit_price=bars[-1]["close"])
+        bar_end = (bars[-1]["start"] + timedelta(minutes=5)).isoformat()
+        pos.close("BACKTEST_END", bar_end, exit_price=bars[-1]["close"])
         trades.append(_pattern_trade(pos, "pattern_scanner", key))
     return trades
 
@@ -601,7 +607,7 @@ def write_outputs(out_dir: Path, summaries: list[dict], all_trades: list[dict],
         "",
         f"- Window: `{meta['window']['start']}` to `{meta['window']['end']}`",
         "- Entry fill: signal candle open",
-        "- Exit fill: adverse 5m extreme when a stop/trail is hit",
+        "- Exit fill: adverse 5m low for the ATR stop, ratcheted stop level for a trail hit",
         "- ATM: CE/PE parity anchored by NIFTY futures, rounded to 50",
         "- Spot OHLC for regime/pattern: reconstructed from CE/PE parity",
         "- Pattern exits: premium ATR(14) only (0.70xATR, 5-30% clamp, 10% fallback)",
@@ -702,7 +708,7 @@ def main() -> int:
         "strike_range": [lo, hi],
         "aligned_5m_timestamps": len(timestamps),
         "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
-        "fill_policy": "entry at signal candle open; exit at adverse 5m extreme on stop/trail",
+        "fill_policy": "entry at signal candle open; ATR stop fills at adverse 5m low, trail fills at ratcheted stop level",
         "pattern_exit_model": "premium_atr_14_only",
         "pattern_live_poll": "aligned_5m_completed_ohlc",
         "paper_only": True,

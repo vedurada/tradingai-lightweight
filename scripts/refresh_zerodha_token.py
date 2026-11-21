@@ -32,7 +32,8 @@ def main():
     data = kc.generate_session(rt, api_secret=cfg['KITE_API_SECRET'])
     at = data.get('access_token')
     if not at:
-        print(data)
+        # Never print the raw session response: it can contain token material.
+        print('ERR: session response contained no access_token')
         return
     with open(ENV_PATH, 'w') as f:
         f.write('ZERODHA_MODE=SHADOW\n')
@@ -41,11 +42,11 @@ def main():
         f.write('KITE_ACCESS_TOKEN=' + at + '\n')
         f.write('REDIRECT_URL=' + cfg.get('REDIRECT_URL', 'https://tradingai.in') + '\n')
     print('SUCCESS')
-    print(at)
     kc2 = KiteConnect(api_key=cfg['KITE_API_KEY'])
     kc2.set_access_token(at)
     p = kc2.profile()
-    print(p.get('user_id'), p.get('user_name'))
+    # Confirm the session without echoing the token itself.
+    print('PROFILE_OK', p.get('user_id'))
 
 
 if __name__ == '__main__':

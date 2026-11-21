@@ -1,0 +1,14 @@
+{
+  "default": "zerodha",
+  "scanners": {
+    "api": "mstock",
+    "live_sma9_1min_poll_scanner.py": "mstock",
+    "live_sma9_5s_atr_scanner.py": "mstock",
+    "live_sma9_atr_scanner.py": "mstock",
+    "live_sma9_high_scanner.py": "mstock",
+    "live_sma9_high_trail_scanner.py": "mstock",
+    "live_sma9_scanner.py": "mstock",
+    "live_sma9_trail_scanner.py": "mstock",
+    "pattern_scanner_live.py": "mstock"
+  }
+}
