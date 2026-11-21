@@ -2,6 +2,7 @@
 """Root-owned Unix-socket gateway. Scanners call this; secrets never leave it."""
 from __future__ import annotations
 
+import datetime as dt
 import grp
 import json
 import math
@@ -33,6 +34,15 @@ _FRESH_CACHE: dict[str, tuple[object, float, bool]] = {}
 _FRESH_ERROR: dict[str, str] = {}
 _FRESH_LOCK = threading.Lock()
 _FRESH_LOCKS: dict[str, threading.Lock] = {}
+
+# Quote freshness. A broker that publishes a trade timestamp lets us reject a
+# stale last_price during live hours. Brokers whose quote endpoint omits a
+# timestamp (mStock) are fetched live on every call, so they are treated as
+# fresh and still expose ``age_seconds = 0`` for observability.
+IST = dt.timezone(dt.timedelta(hours=5, minutes=30))
+_QUOTE_MAX_AGE = float(os.environ.get("BROKER_GATEWAY_QUOTE_MAX_AGE", "300"))
+_MARKET_OPEN = dt.time(9, 0)
+_MARKET_CLOSE = dt.time(15, 30)
 
 
 class GatewayEncoder(json.JSONEncoder):
@@ -107,35 +117,66 @@ def _require_fresh(broker: str, adapter) -> None:
             _FRESH_ERROR.pop(broker, None)
 
 
-def _sanitize_quote(result):
-    """Strip invalid/nonpositive ``last_price`` values from quote responses.
+def _quote_age_seconds(entry: dict, now: dt.datetime) -> float:
+    """Age of a quote from its broker-supplied trade timestamp (0 if absent)."""
+    ts = entry.get("last_trade_time")
+    if ts is None:
+        return 0.0
+    try:
+        if isinstance(ts, dt.datetime):
+            when = ts
+        elif isinstance(ts, (int, float)):
+            return max(0.0, now.timestamp() - float(ts))
+        elif isinstance(ts, str):
+            when = dt.datetime.fromisoformat(ts.replace("Z", "+00:00"))
+        else:
+            return 0.0
+        if when.tzinfo is None:
+            when = when.replace(tzinfo=IST)
+        return max(0.0, (now - when).total_seconds())
+    except (ValueError, TypeError, OverflowError):
+        return 0.0
 
-    Paper scanners do ``float(quote[symbol]["last_price"])``. A zero, negative
-    or non-finite price would otherwise be accepted and could produce bogus
-    paper entries or stop-loss exits. Removing the key makes that lookup raise
-    ``KeyError``, which every scanner already handles as "LTP unavailable" and
-    skips the option for that poll. Applies to every broker at the daemon
-    boundary, so scanner code stays unchanged when switching brokers.
+
+def _live_market(now: dt.datetime) -> bool:
+    local = now.astimezone(IST)
+    return local.weekday() < 5 and _MARKET_OPEN <= local.time() <= _MARKET_CLOSE
+
+
+def _sanitize_quote(result, now=None):
+    """Strip invalid, nonpositive or stale ``last_price`` values.
+
+    Paper scanners do ``float(quote[symbol]["last_price"])``. A zero, negative,
+    non-finite or (during live hours) stale price would otherwise be accepted
+    and could produce bogus paper entries or stop-loss exits. Removing the key
+    makes that lookup raise ``KeyError``, which every scanner already handles
+    as "LTP unavailable" and skips the option for that poll. Applies to every
+    broker at the daemon boundary, so scanner code stays unchanged when
+    switching brokers. Every quote also gets ``age_seconds`` and a normalized
+    ``last_trade_time`` (None when the broker does not publish one).
     """
     if not isinstance(result, dict):
         return result
+    now = now or dt.datetime.now(dt.timezone.utc)
+    live = _live_market(now)
     clean = {}
     for symbol, entry in result.items():
         if not isinstance(entry, dict):
             clean[symbol] = entry
             continue
+        clean_entry = dict(entry)
+        age = _quote_age_seconds(entry, now)
+        clean_entry["age_seconds"] = round(age, 1)
+        clean_entry.setdefault("last_trade_time", None)
         raw = entry.get("last_price")
         try:
             price = float(raw)
             valid = math.isfinite(price) and price > 0
         except (TypeError, ValueError):
             valid = False
-        if valid:
-            clean[symbol] = entry
-        else:
-            stripped = dict(entry)
-            stripped.pop("last_price", None)
-            clean[symbol] = stripped
+        if not valid or (live and age > _QUOTE_MAX_AGE):
+            clean_entry.pop("last_price", None)
+        clean[symbol] = clean_entry
     return clean
 
 

@@ -313,6 +313,9 @@ Broker selection itself is separate from tokens:
 | Stale Zerodha token | Refresh that scanner's token before switching back; avoid fleet-wide refresh |
 | Broker write attempted | Shim `PermissionError` + daemon method allowlist |
 | Zero/negative/NULL broker quote | Gateway removes `last_price`; scanner treats it as "LTP unavailable" and skips entry/exit for that poll |
+| Stale quote during live hours | When the broker publishes `last_trade_time`, gateway computes `age_seconds` and strips `last_price` above `BROKER_GATEWAY_QUOTE_MAX_AGE` (300 s). mStock's OHLC endpoint has no timestamp, so live-fetched quotes are marked `age_seconds=0` and pass through |
+| Trailing stop resets on restart | Every scanner persists `hwm`/`stop` immediately after a ratchet; `sma9`/`sma9_high` gained idempotent `hwm`, `stop`, `be_locked` columns and load them back on restore |
+| Crash between trade insert and open-position delete | `save_trade()` now inserts the closed trade and deletes `<prefix>_open_positions` in one SQLite transaction; paired `delete_open_position()` calls removed |
 | Live feed fails to initialise at startup | Pattern scanner reports `NO_LIVE_FEED`, `data_available=false`, `feed=mock` and a clear error instead of a healthy-looking `RUNNING` on the data-less MockFeed |
 | World-writable SQLite DBs | `/opt/tradingai/database` is `2775 root:ubuntu`; DB files `0660 <owner>:ubuntu`; root `ExecStartPre` narrowed from `chmod 0666` to `0660` |
 
@@ -359,6 +362,13 @@ No scanner file changes are needed.
 - Negative freshness cache, credential-stamp ordering and both-broker premarket
   check covered by `tests/test_broker_gateway_freshness.py`; manual premarket
   run reports `MSTOCK_VALID | ZERODHA_INVALID` as expected.
+- Scanner state durability covered by `tests/test_scanner_state_durability.py`
+  (22 tests: atomic trade insert + open-position delete with rollback on
+  failure, and HWM/stop surviving save/reload across all 7 scanners). Quote
+  freshness covered by `tests/test_broker_gateway_quote_freshness.py`.
+  Deployed and verified: all 10 services active, `sma9`/`sma9_high` columns
+  migrated, no open positions duplicated, `/api/quote/NIFTY` `LIVE` with
+  `age_seconds=0`.
 
 Live-market checks (09:00 IST start, entry window, warm-up, ATR exits, A+B gating,
 no broker orders) still require a trading session. The current daily token must

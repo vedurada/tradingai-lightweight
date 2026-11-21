@@ -364,6 +364,12 @@ def save_trade(trade: dict) -> None:
             f"INSERT OR REPLACE INTO sma9_atr_trades ({','.join(cols)}) VALUES ({placeholders})",
             tuple(trade.get(c) for c in cols),
         )
+        # Atomic close: insert the trade and remove the open position in
+        # the same transaction so a crash cannot leave both (or neither).
+        conn.execute(
+            "DELETE FROM sma9_atr_open_positions WHERE option_type = ?",
+            (trade.get("option_type"),),
+        )
         conn.commit()
     finally:
         conn.close()
@@ -684,7 +690,6 @@ class Sma9AtrLiveScanner:
                 pass
             trade = state.close(now, exit_px, "STALE_RECOVERY_EXIT")
             save_trade(trade)
-            delete_open_position(opt)
             logger.info("Closed stale %s position %s at %.2f pnl=%.2f",
                         opt, pos.trade_id, exit_px, trade["pnl_points"])
 
@@ -837,13 +842,19 @@ class Sma9AtrLiveScanner:
             entry_allowed = bool(allow_entries and allowed_option == opt)
 
             if state.position is not None and now.time() >= EXCHANGE_OPEN:
+                prev_hwm, prev_stop = state.position.hwm, state.position.stop
                 stop_hit = state.update_trail(ltp)
+                # Persist a ratcheted high-water-mark/stop so a restart
+                # cannot roll the trailing stop back to a lower level.
+                trail_pos = state.position
+                if (trail_pos is not None
+                        and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
+                    save_open_position(trail_pos)
                 sl_hit = state.check_stop_loss(ltp)
                 if stop_hit is not None:
                     exit_px = round(float(ltp), 2)
                     trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
                     save_trade(trade)
-                    delete_open_position(opt)
                     logger.info(
                         "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
@@ -851,7 +862,6 @@ class Sma9AtrLiveScanner:
                 elif sl_hit is not None:
                     trade = state.close(now, sl_hit, "STOP_LOSS_ATR")
                     save_trade(trade)
-                    delete_open_position(opt)
                     logger.info(
                         "STOP EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f "
                         "stop_price=%.2f atr=%s reason=STOP_LOSS_ATR",
