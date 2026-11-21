@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - Scalp Scanner Launcher</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html, body { height: 100%; overflow: hidden; }
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:#f1f5f9;color:#0f172a;line-height:1.5;display:flex;flex-direction:column;}
+.topbar{background:#0b1e3a;color:#fff;padding:.4rem 1rem;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:.5rem;flex-shrink:0;}
+.brand{font-size:1.1rem;font-weight:800}.brand .dot{color:#22d3ee}
+.wrap{max-width:1200px;margin:0 auto;padding:1rem;flex:1;display:flex;flex-direction:column;overflow:hidden;}
+h1{font-size:1.25rem;margin-bottom:.25rem}
+.subtitle{color:#475569;margin-bottom:.75rem;font-size:.8rem}
+.scanner-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(100px,1fr));gap:.5rem;margin-bottom:1rem;flex-shrink:0;}
+.scanner-btn{display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fff;border:1px solid #e2e8f0;border-radius:6px;padding:.5rem;cursor:pointer;text-decoration:none;color:#0f172a;transition:all .2s}
+.scanner-btn:hover{border-color:#0a7a2f;background:#f0fdf4;transform:translateY(-2px)}
+.scanner-btn.pattern{border-color:#0a7a2f;background:#f0fdf4}
+.scanner-btn.pattern:hover{background:#ecfdf5;border-color:#059669}
+.scanner-btn.active{border-color:#0a7a2f;background:#ecfdf5}
+.scanner-icon{font-size:1.25rem;margin-bottom:.25rem}
+.scanner-name{font-size:.7rem;font-weight:600;text-align:center}
+.trail-section{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:.75rem;margin-top:.75rem;flex-shrink:0;}
+.trail-section h2{font-size:.9rem;margin-bottom:.5rem;color:#0f172a}
+.trail-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:.5rem}
+.trail-btn{display:flex;align-items:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:.4rem .6rem;cursor:pointer;text-decoration:none;color:#0f172a;transition:all .2s}
+.trail-btn:hover{border-color:#1d4ed8;background:#eff6ff}
+.trail-icon{font-size:1rem;margin-right:.4rem}
+.trail-name{font-size:.75rem;font-weight:600}
+.note{font-size:.7rem;color:#475569;margin-top:.25rem}
+.status-badge{display:inline-block;padding:.1rem .5rem;border-radius:4px;font-size:.75rem;font-weight:700;color:#0a7a2f;background:#dcfce7}
+#scanner-frame{width:100%;height:100%;border:0;display:block;background:#f1f5f9;}
+.hidden{display:none!important;}.loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#475569;font-size:1rem;background:#f1f5f9;}
+</style>
+</head>
+<body>
+<div class="topbar"><div><img src="/favicon.svg" alt="logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span></div><div><a href="/" style="color:#cbd5e1;text-decoration:none">Home</a></div></div>
+<div class="wrap">
+<h1>Scalp Scanner Launcher</h1>
+<p class="subtitle">Click a scanner to view its live dashboard here, or open TRAIL for live trailing-stop P&amp;L per scanner.</p>
+
+<div class="scanner-grid">
+  <button class="scanner-btn" type="button" data-key="sma3" data-src="/live/sma3/" aria-pressed="false"><span class="scanner-icon">📊</span><span class="scanner-name">SMA3</span></button>
+  <button class="scanner-btn" type="button" data-key="sma9" data-src="/live/sma9/" aria-pressed="false"><span class="scanner-icon">📊</span><span class="scanner-name">SMA9</span></button>
+  <button class="scanner-btn" type="button" data-key="sma9_5min" data-src="/live/sma9-5min/" aria-pressed="false"><span class="scanner-icon">🕒</span><span class="scanner-name">SMA9 5MIN</span></button>
+  <button class="scanner-btn" type="button" data-key="sma20" data-src="/live/sma20/" aria-pressed="false"><span class="scanner-icon">📊</span><span class="scanner-name">SMA20</span></button>
+  <button class="scanner-btn" type="button" data-key="green15" data-src="/live/green15/" aria-pressed="false"><span class="scanner-icon">🟢</span><span class="scanner-name">GREEN15</span></button>
+  <button class="scanner-btn" type="button" data-key="sma3-high" data-src="/live/sma3-high/" aria-pressed="false"><span class="scanner-icon">📈</span><span class="scanner-name">SMA3 HIGH</span></button>
+  <button class="scanner-btn" type="button" data-key="sma9-high" data-src="/live/sma9-high/" aria-pressed="false"><span class="scanner-icon">📈</span><span class="scanner-name">SMA9 HIGH</span></button>
+  <button class="scanner-btn" type="button" data-key="sma20-high" data-src="/live/sma20-high/" aria-pressed="false"><span class="scanner-icon">📈</span><span class="scanner-name">SMA20 HIGH</span></button>
+  <button class="scanner-btn" type="button" data-key="no-sma" data-src="/live/no-sma/" aria-pressed="false"><span class="scanner-icon">⚡</span><span class="scanner-name">NO-SMA</span></button>
+  <button class="scanner-btn pattern" type="button" data-key="pattern_scanner" data-src="/live/pattern_scanner/" aria-pressed="false"><span class="scanner-icon">🎯</span><span class="scanner-name">PATTERN SCANNER</span></button>
+</div>
+
+<div class="trail-section">
+  <h2>📈 TRAIL 5 — Open trail dashboard</h2>
+  <div class="trail-grid">
+    <button class="trail-btn" type="button" data-key="sma3-trail" data-src="/live/sma3-trail/" aria-pressed="false"><span class="trail-icon">📊</span><span class="trail-name">SMA3 Trail</span></button>
+    <button class="trail-btn" type="button" data-key="sma9-trail" data-src="/live/sma9-trail/" aria-pressed="false"><span class="trail-icon">📊</span><span class="trail-name">SMA9 Trail</span></button>
+    <button class="trail-btn" type="button" data-key="sma20-trail" data-src="/live/sma20-trail/" aria-pressed="false"><span class="trail-icon">📊</span><span class="trail-name">SMA20 Trail</span></button>
+    <button class="trail-btn" type="button" data-key="sma3-high-trail" data-src="/live/sma3-high-trail/" aria-pressed="false"><span class="trail-icon">📈</span><span class="trail-name">SMA3 HIGH Trail</span></button>
+    <button class="trail-btn" type="button" data-key="sma9-high-trail" data-src="/live/sma9-high-trail/" aria-pressed="false"><span class="trail-icon">📈</span><span class="trail-name">SMA9 HIGH Trail</span></button>
+    <button class="trail-btn" type="button" data-key="sma20-high-trail" data-src="/live/sma20-high-trail/" aria-pressed="false"><span class="trail-icon">📈</span><span class="trail-name">SMA20 HIGH Trail</span></button>
+    <button class="trail-btn" type="button" data-key="no-sma-trail" data-src="/live/no-sma-trail/" aria-pressed="false"><span class="trail-icon">⚡</span><span class="trail-name">NO-SMA Trail</span></button>
+  </div>
+</div>
+
+<iframe id="scanner-frame" title="Scanner dashboard" src="/live/sma3/"></iframe>
+<div class="loading" id="loading">Loading scanner dashboard…</div>
+
+<p class="note">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security.</p>
+</div>
+
+<script>
+(function() {
+  'use strict';
+  var DEFAULT_KEY = 'sma3';
+  var frame = document.getElementById('scanner-frame');
+  var loading = document.getElementById('loading');
+  var buttons = Array.prototype.slice.call(document.querySelectorAll('.scanner-btn'));
+  var trailBtns = Array.prototype.slice.call(document.querySelectorAll('.trail-btn'));
+  var allBtns = buttons.concat(trailBtns);
+  var byKey = {};
+  allBtns.forEach(function(b) { byKey[b.dataset.key] = b; });
+  var currentKey = null;
+
+  function setActive(key) {
+    allBtns.forEach(function(b) {
+      var active = (b.dataset.key === key);
+      b.classList.toggle('active', active);
+      b.setAttribute('aria-pressed', active ? 'true' : 'false');
+    });
+  }
+
+  function show(key, pushUrl) {
+    var btn = byKey[key];
+    if (!btn) { key = DEFAULT_KEY; btn = byKey[key]; }
+    if (!btn) return;
+
+    currentKey = key;
+
+    setActive(key);
+
+    loading.classList.remove('hidden');
+    frame.src = btn.dataset.src;
+
+    if (pushUrl !== false) {
+      try {
+        var url = new URL(window.location.href);
+        url.searchParams.set('s', key);
+        window.history.replaceState(null, '', url.toString());
+      } catch (e) { /* ignore */ }
+    }
+  }
+
+  frame.addEventListener('load', function() {
+    loading.classList.add('hidden');
+  });
+
+  allBtns.forEach(function(b) {
+    b.addEventListener('click', function() {
+      show(b.dataset.key);
+    });
+  });
+
+  // Optional deep link: /live/scalp/?s=sma3-high or ?s=pattern_scanner
+  var initialKey = DEFAULT_KEY;
+  try {
+    var q = new URL(window.location.href).searchParams.get('s');
+    if (q && byKey[q]) { initialKey = q; }
+  } catch (e) { /* ignore */ }
+  show(initialKey, false);
+})();
+</script>
+</body>
+</html>
