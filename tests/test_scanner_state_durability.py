@@ -20,6 +20,8 @@ ROOT = Path(__file__).resolve().parents[1] / "scripts"
 SCANNERS = [
     ("sma9_scanner/app/live_sma9_scanner.py", "SMA9_DB_PATH",
      "sma9_open_positions", "sma9_trades"),
+    ("sma9_5min_scanner/app/live_sma9_5min_scanner.py", "SMA9_5MIN_DB_PATH",
+     "sma9_5min_open_positions", "sma9_5min_trades"),
     ("sma9_high_scanner/app/live_sma9_high_scanner.py", "SMA9_HIGH_DB_PATH",
      "sma9_high_open_positions", "sma9_high_trades"),
     ("sma9_atr_scanner/app/live_sma9_atr_scanner.py", "SMA9_ATR_DB_PATH",
@@ -154,7 +156,7 @@ def test_trail_state_survives_save_and_reload(
 
 
 def test_all_scanners_persist_trail_after_update_and_close_atomically():
-    """Static guard: all 7 sources carry the C5/C6 call-site patterns."""
+    """Static guard: all 8 sources carry the C5/C6 call-site patterns."""
     for rel, *_ in SCANNERS:
         src = (ROOT / rel).read_text()
         assert "prev_hwm, prev_stop = state.position.hwm, state.position.stop" in src, rel

@@ -1,8 +1,9 @@
 # Scanner & Broker Connectivity Architecture
 
 This document describes how the eight live paper scanners reach a broker without
-any scanner source changes. The broker gateway is the only component that holds
-broker credentials; scanners see a read-only, Kite-shaped API.
+any scanner source changes, and the repository-ready `sma9_5min` copy that will
+use the same path when deployed. The broker gateway is the only component that
+holds broker credentials; scanners see a read-only, Kite-shaped API.
 
 ## Design goals
 
@@ -17,8 +18,9 @@ broker credentials; scanners see a read-only, Kite-shaped API.
 
 ```mermaid
 flowchart TB
-    subgraph SCANNERS["8 paper scanners - source unchanged"]
+    subgraph SCANNERS["8 live paper scanners + 1 staged copy"]
         SMA["7 x SMA scanners<br/>live_sma9*.py<br/>poll = 5 s"]
+        SMA5["sma9_5min<br/>live_sma9_5min_scanner.py<br/>poll = aligned 5 min + 10 s (staged)"]
         PAT["pattern_scanner_live.py<br/>poll = aligned 5 min + 10 s"]
     end
 
@@ -48,6 +50,7 @@ flowchart TB
     UI["Dashboard / pages"]
 
     SMA --> KC
+    SMA5 --> KC
     PAT --> KC
     CL --> SOCK --> DISP
     SEC -. read by root only .-> ZA
@@ -55,6 +58,7 @@ flowchart TB
     ZA --> ZAPI
     MA --> MAPI
     SMA --> STATE
+    SMA5 --> STATE
     PAT --> STATE
     STATE --> API --> UI
 ```
@@ -64,6 +68,7 @@ flowchart TB
 | Alias (CLI) | Script | systemd service | Run user | State file | API status route |
 |---|---|---|---|---|---|
 | `sma9` | `live_sma9_scanner.py` | `tradingai-sma9-scanner` | `sma9` | `/opt/tradingai/database/sma9.db` | `/api/sma9/scanner-status` |
+| `sma9_5min` (staged) | `live_sma9_5min_scanner.py` | `tradingai-sma9-5min-scanner` (planned) | `sma95min` (planned) | `/opt/tradingai/database/sma9_5min.db` | `/api/sma9-5min/scanner-status` (planned) |
 | `sma9_atr` | `live_sma9_atr_scanner.py` | `tradingai-sma9-atr-scanner` | `sma9` | `/opt/tradingai/database/sma9_atr.db` | `/api/sma9-atr/scanner-status` |
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
 | `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
@@ -72,7 +77,8 @@ flowchart TB
 | `sma9_1min_poll` | `live_sma9_1min_poll_scanner.py` | `tradingai-sma9-1min-poll-scanner` | `sma91m` | `/opt/tradingai/database/sma9_1min_poll.db` | `/api/sma9-1min-poll/scanner-status` |
 | `pattern` | `pattern_scanner_live.py` | `pattern-scanner-live` | `ubuntu` | `/opt/tradingai/data/pattern_scanner_status.json` | no dedicated route; dashboard reads JSON |
 
-All eight currently resolve to broker `mstock`. The seven SMA routes are served
+All eight deployed scanners and the staged `sma9_5min` mapping resolve to
+broker `mstock`. The seven SMA routes are served
 by `app.api.app:app` under gunicorn; the pattern scanner publishes a JSON status
 file that is refreshed on each aligned 5-minute poll (and on market-close ticks).
 

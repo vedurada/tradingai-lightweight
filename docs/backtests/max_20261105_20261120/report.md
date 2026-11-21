@@ -1,5 +1,8 @@
 # Historical scanner backtest (5m rule simulation)
 
+> This report was generated before the `sma9_5min` identity was staged. Its
+> `sma9` row is the rule-equivalent baseline for the new 5-minute-poll copy.
+
 > **Not an exact 5-second paper replay for the seven 5s scanners.**
 > mStock supplies 5-minute OHLCV, not historical 5-second quotes. Their
 > live fills use sampled LTP; this report uses conservative proxies below.

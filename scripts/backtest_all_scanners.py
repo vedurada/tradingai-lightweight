@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
-"""Historical 5-minute replay of all eight paper-only scanners.
+"""Historical 5-minute replay of all nine paper-only scanners.
 
 IMPORTANT LIMITATION
 --------------------
 mStock supplies per-instrument 5-minute OHLCV history, not historical 5-second
-quote snapshots. Seven live scanners enter and exit on sampled quote LTP; the
-HIGH scanners use LTP > previous high as an entry predicate; trail/stop state
-ratchets on every poll. An exact replay of that live 5-second paper behaviour is
-therefore impossible from this data alone. `pattern_scanner` is the exception:
+quote snapshots. Eight premium scanners (seven active, one staged) enter and
+exit on sampled quote LTP; the HIGH scanners use LTP > previous high as an
+entry predicate; trail/stop state ratchets on every poll. An exact replay of
+that live quote-sampled paper behaviour is therefore impossible from this data
+alone. `pattern_scanner` is the exception:
 live now polls once per completed 5m option bar and shares `evaluate_bar()` with
 this replay, so its bar-exit rules are identical even though entry fills remain
 conservative candle-open proxies.
@@ -297,6 +298,7 @@ def spot_regime(spot_bars: list[dict], now: datetime, period: int = 9) -> str | 
 # ---------------------------------------------------------------------------
 SCANNER_SPECS = [
     {"key": "sma9", "path": "sma9_scanner/app/sma9_engine.py", "family": "sma", "atr": False, "regime": False},
+    {"key": "sma9_5min", "path": "sma9_5min_scanner/app/sma9_5min_engine.py", "family": "sma", "atr": False, "regime": False},
     {"key": "sma9_high", "path": "sma9_high_scanner/app/sma9_high_engine.py", "family": "high", "atr": False, "regime": False},
     {"key": "sma9_trail", "path": "sma9_trail_scanner/app/sma9_trail_engine.py", "family": "fixed_trail", "atr": False, "regime": False},
     {"key": "sma9_high_trail", "path": "sma9_high_trail_scanner/app/sma9_high_trail_engine.py", "family": "high_fixed_trail", "atr": False, "regime": False},

@@ -46,6 +46,15 @@ SCANNERS = [
         "open_table": "sma9_open_positions",
     },
     {
+        "key": "sma9_5min",
+        "label": "SMA9 5min",
+        "db": "sma9_5min.db",
+        "table": "sma9_5min_trades",
+        "date_col": "trade_date",
+        "where": "status = 'CLOSED'",
+        "open_table": "sma9_5min_open_positions",
+    },
+    {
         "key": "sma9_atr",
         "label": "SMA9 ATR",
         "db": "sma9_atr.db",

@@ -1,6 +1,7 @@
 # Scanner docs — one page per strategy
 
-The VM runs **8 independent paper scanners**. Each page below describes one
+The VM runs **8 independent paper scanners**, and a ninth identity
+(`sma9_5min`) is staged in git for deployment. Each page below describes one
 strategy in logical terms: why it exists, exactly when it enters, exactly when
 it exits, what it persists, and where its runtime pieces live.
 
@@ -18,6 +19,7 @@ explain the strategy.
 | Scanner | Logic in one line | Cadence | Initial stop | Doc |
 |---|---|---|---|---|
 | `sma9` | Baseline: previous 5m close above SMA9 and forming candle open above SMA9 | 5 s | 5% of premium | [`sma9.md`](sma9.md) |
+| `sma9_5min` | Isolated copy of `sma9` with aligned 5-minute polling | aligned 5 m | 5% of premium | [`sma9_5min.md`](sma9_5min.md) |
 | `sma9_high` | `sma9` plus a live break of the previous candle high | 5 s | 5% of premium | [`sma9_high.md`](sma9_high.md) |
 | `sma9_1min_poll` | Same A+B entry as `sma9`, with `sma9_atr` ATR stop/trail | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_1min_poll.md`](sma9_1min_poll.md) |
 | `sma9_atr` | Same entry as `sma9`, stop scaled to the option's own ATR | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_atr.md`](sma9_atr.md) |
@@ -31,9 +33,11 @@ Retired strategies (stopped, disabled, kept only as archives):
 
 ## The families
 
-**Base SMA family** — `sma9`, `sma9_high`. The original premium scanners. The
-signal is computed on each option's own 5-minute premium candles. Exit is a
-trail stop with a fixed 5% floor.
+**Base SMA family** — `sma9`, `sma9_5min`, `sma9_high`. The original premium
+scanner rules. The signal is computed on each option's own 5-minute premium
+candles. Exit is a trail stop with a fixed 5% floor. `sma9_5min` changes only
+the polling cadence: it samples once per aligned 5m boundary (+10 s) instead of
+every 5 seconds, so its stop/trail is observed once per bar.
 
 **Sampling variants** — `sma9_1min_poll` keeps its original identity but now
 polls every 5 seconds. `sma9_5s_atr` was renamed from `sma9_1min_atr` and also
@@ -53,13 +57,15 @@ design is gone. The `consumed_base_trades` table is a legacy artefact.
 *entry signal* comes from the NIFTY index; its stop and trail are computed from
 the bought option's premium ATR. It is also the only one that can buy PE for a
 bearish signal instead of evaluating CE and PE independently. It is the only
-scanner on an aligned 5-minute poll cadence, with exits evaluated from the
-previous completed 5m option OHLC bar so live matches the 5m backtest.
+scanner whose exits are evaluated from the previous completed 5m option OHLC
+bar so live matches the 5m backtest. `sma9_5min` also polls on an aligned 5m
+cadence, but keeps `sma9`'s sampled-LTP stop/trail rules.
 
 ## Isolation contract
 
-The 7 premium scanners share nothing except the host, the read-only broker
-gateway, the Flask API process and nginx. Each has:
+The 8 deployed premium scanners, plus the staged `sma9_5min`, share nothing
+except the host, the read-only broker gateway, the Flask API process and nginx.
+Each has:
 
 ```
 /opt/tradingai/<key>_scanner/          code (root-owned, read-only for locked trees)
@@ -73,7 +79,7 @@ gateway, the Flask API process and nginx. Each has:
 `pattern_scanner` shares the `app/` tree and the `ubuntu` user, but has its own
 service, status file, tables and dashboard.
 
-## Common timing (all 8)
+## Common timing (all 9)
 
 | Constant | Value |
 |---|---|
@@ -91,7 +97,8 @@ but that window is **warm-up only**: no entries are evaluated and no exits are
 managed (`EXCHANGE_OPEN = 09:15`). `pattern_scanner` ignores pre-09:15 ticks in
 its candle buffer and pre-09:15 bar closes in its premium exit manager.
 
-Seven scanners poll every 5 seconds. `pattern_scanner` is the exception: it
-polls at each 5m boundary +10 s, uses that poll's option LTP only for entries,
-and evaluates exits once from the previous completed 5m option OHLC bar via the
-same `evaluate_bar()` helper used by the backtest.
+Seven scanners poll every 5 seconds. `sma9_5min` polls at each 5m boundary
++10 s but keeps `sma9`'s LTP-sampled stop/trail exits. `pattern_scanner` also
+polls at each 5m boundary +10 s; it uses that poll's option LTP only for
+entries and evaluates exits once from the previous completed 5m option OHLC
+bar via the same `evaluate_bar()` helper used by the backtest.
