@@ -777,14 +777,15 @@ GET /api/<slug>/open-positions
 ```
 
 The full 9-endpoint set is served for `sma9`, `sma9-high`, `sma9-trail` and
-`sma9-high-trail`. The three newer scanners (`sma9-atr`, `sma9-1min-poll`,
-`sma9-5s-atr`) expose the same set **except `legacy-audit`** (8 endpoints):
+`sma9-high-trail`. The four newer scanners (`sma9-atr`, `sma9-1min-poll`,
+`sma9-5s-atr`, `sma9-5min`) expose the same set **except `legacy-audit`** (8 endpoints):
 `signals`, `trades`, `daily-summary`, `scanner-status`, `live-status`,
 `recent-trades`, `today`, `open-positions`. They read
 `database/sma9_atr.db`, `database/sma9_1min_poll.db` and
 `database/sma9_5s_atr.db` respectively; the scanner is the only writer.
-Deployment of the staged `sma9_5min` copy should add the same 8-endpoint set at
-`/api/sma9-5min/*` reading `database/sma9_5min.db`.
+The staged `sma9_5min` copy already has the same 8-endpoint set deployed at
+`/api/sma9-5min/*`, reading `database/sma9_5min.db` read-only; its scanner
+service is still staged and not running.
 
 The retired `no-sma` and `no-sma-trail` endpoints remain so the archived pages
 still load.
@@ -825,7 +826,7 @@ curl -sk -H 'Host: tradingai.in' \
 | Scanner | Dashboard |
 |---|---|
 | sma9 | https://tradingai.in/live/sma9/ |
-| sma9_5min (staged) | https://tradingai.in/live/sma9-5min/ (not deployed yet) |
+| sma9_5min (scanner staged) | https://tradingai.in/live/sma9-5min/ (page deployed) |
 | sma9_atr | https://tradingai.in/live/sma9-atr/ |
 | sma9_high | https://tradingai.in/live/sma9-high/ |
 | sma9_1min_poll | https://tradingai.in/live/sma9-1min-poll/ |
