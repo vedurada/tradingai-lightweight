@@ -245,9 +245,18 @@ token (cached for 300 s per broker, invalidated when the signature changes). A
 stale or rejected token is refused with a clear error before any data call is
 made, so a scanner never silently trades on an expired token. This applies to
 `mstock` (`/opt/tradingai/secrets/mstock.env`) and `zerodha`
-(`/opt/tradingai/.env.zerodha`) and to any future adapter that implements the
-hooks. An empty or partial refresh is ignored and the last working credentials
-are retained.
+(`/opt/tradingai/secrets/zerodha.env`) and to any future adapter that implements
+the hooks. An empty or partial refresh is ignored and the last working
+credentials are retained.
+
+Zerodha's real secret file is `0600 root:root` and is readable only by the root
+gateway daemon and root-run refresh tools; the gateway unit sets
+`ZERODHA_CREDENTIALS_FILE` to that path. `/opt/tradingai/.env.zerodha` is now a
+`0640 root:ubuntu` placeholder containing the same key names with dummy values.
+The scanners may still read that placeholder (their source is unchanged); the
+Kite shim ignores the values and routes all calls through the gateway. The shared
+`zerodha_credentials.load_credentials()` prefers the root-only file and falls
+back to the placeholder only for non-root callers such as the Flask API.
 
 `MStockAdapter` re-reads its secret whenever the signature changes and `_headers()`
 checks on every HTTP request, so a pre-market refresh becomes active on the next
