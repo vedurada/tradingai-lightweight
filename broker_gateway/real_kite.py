@@ -41,12 +41,19 @@ def load_real_kite_connect():
         # exceptions/connect/ticker). The broker-gateway shim is earlier on
         # sys.path, so register the real package under its canonical name while
         # loading it, otherwise those imports resolve to the shim and fail.
+        # Restore whatever was there afterwards: other code in this process
+        # may legitimately expect the read-only shim under that name.
+        previous = sys.modules.get("kiteconnect")
         sys.modules["kiteconnect"] = module
         try:
             spec.loader.exec_module(module)
         except Exception:
             sys.modules.pop(name, None)
-            sys.modules.pop("kiteconnect", None)
             raise
+        finally:
+            if previous is None:
+                sys.modules.pop("kiteconnect", None)
+            else:
+                sys.modules["kiteconnect"] = previous
         _CACHE = module.KiteConnect
         return _CACHE

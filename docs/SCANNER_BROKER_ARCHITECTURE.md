@@ -208,7 +208,21 @@ Notable mappings and guards:
 | Python bootstrap | `broker_gateway.pth` in site-packages | puts shim on every Python path |
 | Scanner services | `/etc/systemd/system/tradingai-*-scanner.service`, `pattern-scanner-live.service` | dedicated users, group `ubuntu` |
 | Logs | `/opt/tradingai/logs/*.log` | written by each service |
-| API | gunicorn `app.api.app:app` on `127.0.0.1:8092` | Flask, 2 workers |
+| API | gunicorn `app.api.app:app` on `127.0.0.1:8092` | Flask, 2 workers; `BROKER_GATEWAY_SCANNER=api` so its Kite-shaped market data uses the `api` broker mapping in `scanners.json` (currently `mstock`) |
+
+The Flask API's live quote/candle provider imports the same read-only Kite shim
+as the scanners. Its unit sets `BROKER_GATEWAY_SCANNER=api`, and `scanners.json`
+has an explicit `api` entry. Changing that mapping with
+`broker-gateway use --scanner api --broker <name>` changes API market data too;
+no API code change or restart is needed for a broker switch. Scanner-status
+routes remain DB-backed and broker-independent.
+
+Zerodha token exchange (`app/zerodha/token_exchange.py`, run as root by
+`refresh_token.sh`) deliberately uses `broker_gateway.real_kite.load_real_kite_connect()`
+instead of the shim: `generate_session()` is an authentication operation, not a
+read-only market-data call, and is never exposed over the gateway socket.
+`zerodha_credentials.persist_access_token()` keeps the canonical file `0600
+root:root` after every refresh.
 
 Installer: `scripts/ops/install_broker_gateway.sh` installs code, config, CLI,
 systemd unit and the `.pth` bootstrap. It does **not** restart scanners.
