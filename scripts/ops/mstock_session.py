@@ -215,7 +215,7 @@ def main() -> int:
 
     if os.geteuid() != 0:
         die("run with sudo")
-    if not sys.stdin.isatty():
+    if not args.check and not sys.stdin.isatty():
         die("run interactively; hidden input needs a TTY")
 
     config = load_config()
