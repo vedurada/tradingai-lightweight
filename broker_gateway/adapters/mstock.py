@@ -133,11 +133,14 @@ class MStockAdapter(BrokerAdapter):
     @staticmethod
     def _segment(row: dict) -> str:
         exchange = (row.get("exchange") or "").upper()
+        segment = (row.get("segment") or "").upper()
         instrument_type = (row.get("instrument_type") or "").upper()
         if exchange in ("NFO", "BFO"):
-            if instrument_type.startswith("OPT"):
+            is_option = segment.startswith("OPT") or instrument_type in ("CE", "PE")
+            is_future = segment.startswith("FUT") or instrument_type.startswith("FUT")
+            if is_option:
                 return f"{exchange}-OPT"
-            if instrument_type.startswith("FUT"):
+            if is_future:
                 return f"{exchange}-FUT"
         return row.get("segment") or exchange
 

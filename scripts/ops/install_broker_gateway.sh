@@ -31,7 +31,7 @@ fi
 chmod 644 "$DEST/config/scanners.json"
 
 PURELIB="$(python3 -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')"
-printf 'import sys; sys.path[:0] = ["%s/compat", "%s"]\n' "$DEST" "$ROOT" > "$PURELIB/broker_gateway.pth"
+printf 'import sys; sys.path.insert(0, "%s/compat"); sys.path.append("%s")\n' "$DEST" "$ROOT" > "$PURELIB/broker_gateway.pth"
 chmod 644 "$PURELIB/broker_gateway.pth"
 
 install -o root -g root -m 700 "$DEST/cli.py" /usr/local/sbin/broker-gateway
