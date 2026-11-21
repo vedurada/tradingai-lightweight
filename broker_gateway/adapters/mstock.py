@@ -27,8 +27,8 @@ TRANSIENT_HTTP = {429, 500, 502, 503, 504}
 TRANSIENT_TEXT = ("try again", "something went wrong", "too many requests", "rate limit")
 MAX_ATTEMPTS = 3
 INDEX_QUOTE_KEYS = {256265: "NSE:NIFTY 50"}
-HISTORY_CACHE_TTL = 300
-HISTORY_CACHE_MAX = 64
+HISTORY_CACHE_TTL = 60
+HISTORY_CACHE_MAX = 16
 
 
 def _load_secret() -> dict[str, str]:
@@ -80,7 +80,11 @@ class MStockAdapter(BrokerAdapter):
         self._apply_secret(required=True)
         self.cache_dir = pathlib.Path(os.environ.get("BROKER_GATEWAY_CACHE_DIR", DEFAULT_CACHE))
         self.cache_dir.mkdir(parents=True, exist_ok=True, mode=0o750)
-        self._rows: list[dict] | None = None
+        # Keep only the raw CSV text, not 94k materialised dicts. All maps are
+        # built by streaming that text once, under a single re-entrant lock, so
+        # concurrent scanners cannot each build a private full-size copy.
+        self._master_text_cache: str | None = None
+        self._master_lock = threading.RLock()
         self._token_exchange: dict[int, str] | None = None
         self._quote_keys: dict[int, str] | None = None
         self._history_cache: collections.OrderedDict = collections.OrderedDict()
@@ -193,23 +197,37 @@ class MStockAdapter(BrokerAdapter):
         raise BrokerCallFailed(f"mStock {path}: retry exhausted")
 
     # -- master ----------------------------------------------------------
-    def _scriptmaster_rows(self) -> list[dict]:
-        if self._rows is not None:
-            return self._rows
-        cache = self.cache_dir / "mstock_scriptmaster.csv"
-        ttl = int(os.environ.get("BROKER_GATEWAY_MASTER_TTL", "86400"))
-        text = None
-        if cache.exists() and (time.time() - cache.stat().st_mtime) < ttl:
-            text = cache.read_text(encoding="utf-8", errors="replace")
-        if text is None:
-            raw = self._http_get("/instruments/scriptmaster", timeout=120)
-            text = raw.decode("utf-8", "replace")
-            tmp = cache.with_name(cache.name + ".tmp")
-            tmp.write_text(text, encoding="utf-8")
-            tmp.chmod(0o644)
-            os.replace(str(tmp), str(cache))
-        self._rows = list(csv.DictReader(io.StringIO(text)))
-        return self._rows
+    def _master_text(self) -> str:
+        if self._master_text_cache is not None:
+            return self._master_text_cache
+        with self._master_lock:
+            if self._master_text_cache is not None:
+                return self._master_text_cache
+            cache = self.cache_dir / "mstock_scriptmaster.csv"
+            ttl = int(os.environ.get("BROKER_GATEWAY_MASTER_TTL", "86400"))
+            text = None
+            if cache.exists() and (time.time() - cache.stat().st_mtime) < ttl:
+                text = cache.read_text(encoding="utf-8", errors="replace")
+            if text is None:
+                raw = self._http_get("/instruments/scriptmaster", timeout=120)
+                text = raw.decode("utf-8", "replace")
+                tmp = cache.with_name(cache.name + ".tmp")
+                tmp.write_text(text, encoding="utf-8")
+                tmp.chmod(0o644)
+                os.replace(str(tmp), str(cache))
+            self._master_text_cache = text
+            return text
+
+    def _iter_master_rows(self):
+        """Stream master rows one at a time; never retain all 94k as dicts."""
+        return csv.DictReader(io.StringIO(self._master_text()))
+
+    def _refresh_master(self) -> None:
+        """Drop every derived index together so they cannot be mixed."""
+        with self._master_lock:
+            self._master_text_cache = None
+            self._token_exchange = None
+            self._quote_keys = None
 
     @staticmethod
     def _segment(row: dict) -> str:
@@ -227,57 +245,66 @@ class MStockAdapter(BrokerAdapter):
 
     def _token_map(self) -> dict[int, str]:
         if self._token_exchange is None:
-            self._token_exchange = {}
-            for row in self._scriptmaster_rows():
-                try:
-                    token = int(row["instrument_token"])
-                except (KeyError, TypeError, ValueError):
-                    continue
-                self._token_exchange[token] = (row.get("exchange") or "").upper()
+            with self._master_lock:
+                if self._token_exchange is None:
+                    mapping: dict[int, str] = {}
+                    for row in self._iter_master_rows():
+                        try:
+                            token = int(row["instrument_token"])
+                        except (KeyError, TypeError, ValueError):
+                            continue
+                        mapping[token] = (row.get("exchange") or "").upper()
+                    self._token_exchange = mapping
         return self._token_exchange
 
     def _quote_key_map(self) -> dict[int, str]:
         if self._quote_keys is None:
-            self._quote_keys = dict(INDEX_QUOTE_KEYS)
-            for row in self._scriptmaster_rows():
-                try:
-                    token = int(row["instrument_token"])
-                except (KeyError, TypeError, ValueError):
-                    continue
-                exchange = (row.get("exchange") or "").upper()
-                symbol = row.get("tradingsymbol") or ""
-                if exchange and symbol:
-                    self._quote_keys[token] = f"{exchange}:{symbol}"
+            with self._master_lock:
+                if self._quote_keys is None:
+                    mapping: dict[int, str] = dict(INDEX_QUOTE_KEYS)
+                    for row in self._iter_master_rows():
+                        try:
+                            token = int(row["instrument_token"])
+                        except (KeyError, TypeError, ValueError):
+                            continue
+                        exchange = (row.get("exchange") or "").upper()
+                        symbol = row.get("tradingsymbol") or ""
+                        if exchange and symbol:
+                            mapping[token] = f"{exchange}:{symbol}"
+                    self._quote_keys = mapping
         return self._quote_keys
 
     # -- Kite-shaped methods --------------------------------------------
     def instruments(self, exchange: str) -> list[dict]:
-        out: list[dict] = []
-        for row in self._scriptmaster_rows():
-            if (row.get("exchange") or "").upper() != exchange.upper():
-                continue
-            try:
-                token = int(row["instrument_token"])
-            except (KeyError, TypeError, ValueError):
-                continue
-            strike_raw = (row.get("strike") or "").strip()
-            out.append(
-                {
-                    "instrument_token": token,
-                    "exchange_token": row.get("exchange_token", ""),
-                    "tradingsymbol": row.get("tradingsymbol", ""),
-                    "name": row.get("name", ""),
-                    "last_price": float(row["last_price"]) if row.get("last_price") else 0.0,
-                    "expiry": _parse_date(row.get("expiry")),
-                    "strike": float(strike_raw) if strike_raw else 0.0,
-                    "tick_size": float(row.get("tick_size") or 0),
-                    "lot_size": int(float(row.get("lot_size") or 0)),
-                    "instrument_type": row.get("instrument_type", ""),
-                    "segment": self._segment(row),
-                    "exchange": row.get("exchange", ""),
-                }
-            )
-        return out
+        # Serialise the build so concurrent scanners cannot each materialise a
+        # full exchange list. The result is not retained by the adapter.
+        with self._master_lock:
+            out: list[dict] = []
+            for row in self._iter_master_rows():
+                if (row.get("exchange") or "").upper() != exchange.upper():
+                    continue
+                try:
+                    token = int(row["instrument_token"])
+                except (KeyError, TypeError, ValueError):
+                    continue
+                strike_raw = (row.get("strike") or "").strip()
+                out.append(
+                    {
+                        "instrument_token": token,
+                        "exchange_token": row.get("exchange_token", ""),
+                        "tradingsymbol": row.get("tradingsymbol", ""),
+                        "name": row.get("name", ""),
+                        "last_price": float(row["last_price"]) if row.get("last_price") else 0.0,
+                        "expiry": _parse_date(row.get("expiry")),
+                        "strike": float(strike_raw) if strike_raw else 0.0,
+                        "tick_size": float(row.get("tick_size") or 0),
+                        "lot_size": int(float(row.get("lot_size") or 0)),
+                        "instrument_type": row.get("instrument_type", ""),
+                        "segment": self._segment(row),
+                        "exchange": row.get("exchange", ""),
+                    }
+                )
+            return out
 
     def quote(self, symbols: list[str]) -> dict[str, dict]:
         if isinstance(symbols, str):
@@ -323,7 +350,8 @@ class MStockAdapter(BrokerAdapter):
         end_dt = _as_datetime(end)
         interval = str(interval)
 
-        cache_key = (token, interval, start_dt.date(), end_dt.date())
+        cache_key = (token, interval, self._secret_signature(),
+                     start_dt.isoformat(), end_dt.isoformat())
         with self._history_lock:
             cached = self._history_cache.get(cache_key)
             if cached and (time.time() - cached[0]) < HISTORY_CACHE_TTL:

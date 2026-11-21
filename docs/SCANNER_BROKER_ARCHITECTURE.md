@@ -173,7 +173,8 @@ flowchart TB
     subgraph C["In-process caches - root daemon only"]
         TM["token -> exchange map"]
         QK["token -> EXCHANGE:SYMBOL map<br/>256265 -> NSE:NIFTY 50"]
-        HC["history: TTL 300 s, max 64 entries<br/>serialized by _history_lock"]
+        HC["history: TTL 60 s, max 16 entries<br/>serialized by _history_lock"]
+        MM["master: CSV text streamed under _master_lock<br/>no 94k-row dict list retained"]
     end
 
     SEC --> HDR
@@ -190,7 +191,7 @@ Notable mappings and guards:
   original requested key, so scanner lookups keep working.
 - Raw history requests over 10 days return HTTP 400 from mStock, so the adapter
   chunks ranges and merges candles.
-- The 5-minute history cache plus the shared lock prevents eight scanners from
+- The 60-second history cache plus the shared lock prevents eight scanners from
   refetching the same option candles concurrently.
 
 ## 7. Deployment map
@@ -272,8 +273,8 @@ Broker selection itself is separate from tokens:
 | mStock HTTP 500/429 on quote | 3 attempts with 0.6 s / 1.2 s backoff |
 | mStock `Something went wrong. Please try again.` | transient-message retry in `_get_json` |
 | >10 day history request | 10-day chunking and merge |
-| Duplicate history fetches from 8 scanners | 300 s cache + `_history_lock` serialization |
-| Memory pressure / OOM | 4-call concurrency cap; cached scriptmaster and candles |
+| Duplicate history fetches from 8 scanners | 60 s cache + `_history_lock` serialization |
+| Memory pressure / OOM | 4-call concurrency cap; scriptmaster CSV streamed under `_master_lock`, only compact token maps retained; 16-entry history cache |
 | Socket `Connection refused` / `BrokenPipe` during gateway restart | systemd `Restart=always`; transient scanner errors are skipped on next 5 s poll |
 | Daily mStock token expires overnight | Run `mstock_session.py --mode totp` before market open; daemon adopts the new token on the next call |
 | Stale token for the selected broker | Gateway validates before every data call and refuses stale tokens with a clear error; refresh that broker's token |
