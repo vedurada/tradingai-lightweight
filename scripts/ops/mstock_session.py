@@ -93,6 +93,7 @@ def request_json(
     api_key: str | None = None,
     access_token: str | None = None,
     method: str = "POST",
+    step: str = "request",
 ) -> dict:
     headers = {"X-Mirae-Version": "1"}
     data = None
@@ -113,14 +114,14 @@ def request_json(
         with urllib.request.urlopen(req, timeout=TIMEOUT) as response:
             payload = json.loads(response.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as exc:
-        die(api_error(exc))
+        die(f"{step}: {api_error(exc)}")
     except Exception as exc:
-        die(f"network error: {type(exc).__name__}")
+        die(f"{step}: network error: {type(exc).__name__}")
 
     if not isinstance(payload, dict):
-        die("unexpected response shape")
+        die(f"{step}: unexpected response shape")
     if payload.get("status") != "success":
-        die(str(payload.get("message") or payload.get("error_type") or "login failed"))
+        die(f"{step}: " + str(payload.get("message") or payload.get("error_type") or "login failed"))
     return payload
 
 
@@ -164,6 +165,7 @@ def new_session(config: dict[str, str], mode: str) -> None:
         request_json(
             "/connect/login",
             fields={"username": username, "password": password},
+            step="connect/login",
         )
         otp = getpass.getpass("OTP sent to registered mobile (hidden): ").strip()
         if not otp:
@@ -175,6 +177,7 @@ def new_session(config: dict[str, str], mode: str) -> None:
                 "request_token": otp,
                 "checksum": checksum,
             },
+            step="session/token",
         )
     else:
         totp = getpass.getpass("Authenticator TOTP (hidden): ").strip()
@@ -183,6 +186,7 @@ def new_session(config: dict[str, str], mode: str) -> None:
         payload = request_json(
             "/session/verifytotp",
             fields={"api_key": api_key, "totp": totp},
+            step="session/verifytotp",
         )
 
     store_session(config, payload["data"])
@@ -196,6 +200,7 @@ def check_session(config: dict[str, str]) -> None:
         api_key=api_key,
         access_token=access_token,
         method="GET",
+        step="user/fundsummary",
     )
     print("session: valid")
     print(f"fundsummary_rows: {len(payload.get('data') or [])}")
