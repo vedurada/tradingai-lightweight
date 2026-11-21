@@ -465,6 +465,7 @@ def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
                 pos_key = f"{pattern}:{symbol}"
                 if pos_key in positions:
                     continue
+                option_atr = module.premium_atr(option_bars)
                 positions[pos_key] = module.OptionPosition(
                     trade_id=f"BT-PAT-{ts.strftime('%Y%m%d%H%M')}-{symbol}",
                     pattern_name=pattern,
@@ -474,6 +475,7 @@ def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
                     entry_spot=float(spot["close"]),
                     entry_ts=ts.isoformat(),
                     session_date=spot["start"].date().isoformat(),
+                    atr=option_atr,
                 )
                 position_keys[pos_key] = key
 
@@ -485,19 +487,27 @@ def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
             if not bars or bars[-1]["start"] != ts:
                 continue
             opt = bars[-1]
-            bullish = pos.direction == "BULLISH"
-            favourable = spot["high"] if bullish else spot["low"]
-            adverse = spot["low"] if bullish else spot["high"]
+            bar_end = (opt["start"] + timedelta(minutes=5)).isoformat()
+            pos.update_mfe_mae(opt["high"], opt["low"])
 
-            trail_hit = pos.update_trail(favourable, ts.isoformat())
-            if trail_hit is None:
-                trail_hit = pos.update_trail(adverse, ts.isoformat())
-            sl_hit = pos.check_stop_loss(adverse)
-            if trail_hit is None and sl_hit is None:
+            # Conservative 5m premium-exit proxy: ratchet the ATR trail on the
+            # bar high, then check both the ratcheted trail and the initial
+            # ATR stop against the bar low. Fill at the adverse extreme.
+            trail_hit = pos.update_trail(opt["high"], ts.isoformat())
+            if trail_hit is None and pos.hwm > pos.entry_price \
+                    and opt["low"] <= pos.stop_loss:
+                trail_hit = round(pos.stop_loss, 2)
+            sl_hit = pos.check_stop_loss(opt["low"])
+
+            candidates: list[tuple[float, str]] = []
+            if trail_hit is not None:
+                candidates.append((float(trail_hit), "TRAIL_STOP_EXIT"))
+            if sl_hit is not None:
+                candidates.append((float(sl_hit), "STOP_LOSS_ATR"))
+            if not candidates:
                 continue
-            reason = "TRAIL_STOP_EXIT" if trail_hit is not None else "STOP_LOSS_SPOT"
-            exit_px = opt["low"]  # conservative long-fill proxy
-            pos.close(reason, ts.isoformat(), exit_price=exit_px)
+            exit_px, reason = min(candidates, key=lambda item: item[0])
+            pos.close(reason, bar_end, exit_price=exit_px)
             trades.append(_pattern_trade(pos, "pattern_scanner", key))
             del positions[pos_key]
 
@@ -526,6 +536,11 @@ def _pattern_trade(pos, scanner: str, key) -> dict:
         "exit_timestamp": getattr(pos, "exit_ts", ""),
         "exit_price": round(float(getattr(pos, "exit_price", 0)), 2),
         "exit_reason": getattr(pos, "exit_reason", ""),
+        "atr_at_entry": getattr(pos, "atr_at_entry", None),
+        "stop_price": getattr(pos, "stop_price", None),
+        "trail_distance": getattr(pos, "trail_distance", None),
+        "stop_distance_pct": getattr(pos, "stop_distance_pct", None),
+        "stop_source": getattr(pos, "stop_source", None),
         "pnl_points": round(float(getattr(pos, "pnl_points", 0)), 2),
         "status": getattr(pos, "status", "CLOSED"),
         "direction": getattr(pos, "direction", ""),
@@ -597,6 +612,7 @@ def write_outputs(out_dir: Path, summaries: list[dict], all_trades: list[dict],
         "- Exit fill: adverse 5m extreme when a stop/trail is hit",
         "- ATM: CE/PE parity anchored by NIFTY futures, rounded to 50",
         "- Spot OHLC for regime/pattern: reconstructed from CE/PE parity",
+        "- Pattern exits: premium ATR(14) only (0.70xATR, 5-30% clamp, 10% fallback)",
         "- PnL: premium points only; no lot size, capital, target, or brokerage",
         "- Broker: gateway identity `api` (mapped to mStock in this deployment)",
         "",
@@ -694,6 +710,7 @@ def main() -> int:
         "aligned_5m_timestamps": len(timestamps),
         "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
         "fill_policy": "entry at signal candle open; exit at adverse 5m extreme on stop/trail",
+        "pattern_exit_model": "premium_atr_14_only",
         "paper_only": True,
     }
     write_outputs(out_dir, summaries, all_trades, meta)

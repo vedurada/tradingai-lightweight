@@ -22,7 +22,7 @@ operations runbooks). These pages do not repeat it; they explain the strategy.
 | `sma9_5s_atr` | Rising-SMA9 entry + `sma9_atr` stop and ATR-only trail | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_5s_atr.md`](sma9_5s_atr.md) |
 | `sma9_trail` | Self-contained `sma9` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_trail.md`](sma9_trail.md) |
 | `sma9_high_trail` | Self-contained `sma9_high` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_high_trail.md`](sma9_high_trail.md) |
-| `pattern_scanner` | Candlestick pattern on NIFTY **spot** → long ATM CE (bullish) or PE (bearish), managed on spot | 5 s | fixed 12 spot points | [`pattern_scanner.md`](pattern_scanner.md) |
+| `pattern_scanner` | Candlestick pattern on NIFTY **spot** → long ATM CE (bullish) or PE (bearish), exits on premium ATR | 5 s | `0.70 × ATR14`, clamped 5–30% | [`pattern_scanner.md`](pattern_scanner.md) |
 
 Retired strategies (stopped, disabled, kept only as archives):
 [`retired.md`](retired.md).
@@ -37,19 +37,20 @@ trail stop with a fixed 5% floor.
 polls every 5 seconds. `sma9_5s_atr` was renamed from `sma9_1min_atr` and also
 samples every 5 seconds with a rising-SMA9 filter.
 
-**Volatility-scaled stops** — `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll`.
-Replace the fixed 5% floor with a stop derived from the option's average true
-range, so the stop stays outside normal premium noise on cheap contracts. These
-scanners also use that ATR distance as the trail width.
+**Volatility-scaled stops** — `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll`,
+`pattern_scanner`. Replace the fixed 5% floor with a stop derived from the
+bought option's average true range, so the stop stays outside normal premium
+noise on cheap contracts. These scanners also use that ATR distance as the
+trail width, with no +5 activation and no breakeven lock.
 
 **Self-contained trail family** — `sma9_trail`, `sma9_high_trail`. They own
 both entry and exit; the historical "consume the base scanner's position"
 design is gone. The `consumed_base_trades` table is a legacy artefact.
 
-**Spot-managed** — `pattern_scanner`. The only scanner whose stop and trail are
-computed on the NIFTY index rather than on option premium. It is also the only
-one that can buy PE for a bearish signal instead of evaluating CE and PE
-independently.
+**Spot-signal, premium-exit** — `pattern_scanner`. The only scanner whose
+*entry signal* comes from the NIFTY index; its stop and trail are computed from
+the bought option's premium ATR. It is also the only one that can buy PE for a
+bearish signal instead of evaluating CE and PE independently.
 
 ## Isolation contract
 
@@ -84,4 +85,4 @@ stop fires, the position stays open across candles and overnight. The 09:15
 candle is never entered. Between 09:00 and 09:15 the scanners poll and refresh
 quotes/status, but that window is **warm-up only**: no entries are evaluated and
 no exits are managed (`EXCHANGE_OPEN = 09:15`). `pattern_scanner` ignores
-pre-09:15 ticks in both its candle buffer and its spot exit manager.
+pre-09:15 ticks in both its candle buffer and its premium exit manager.

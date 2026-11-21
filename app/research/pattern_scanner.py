@@ -4,11 +4,12 @@
 Implements the DYNAMIC_CANDLE_SL_TRAIL_V1 research on the TradingAI VM.
 
 Live-traded instrument: NIFTY ATM CE/PE (current week expiry), LONG only.
-Exit model: trail + fixed 12-point spot stop, calculated on NIFTY SPOT price.
-  SPOT_SL_POINTS = 12.0 (fixed spot points from entry, independent of NIFTY level)
-  TRAIL = 5.0, ACTIVATE = 5.0, BE_LOCK_PROFIT = 6.0, BE_LOCK_STOP = 2.0
-  All stop/trail levels are derived from NIFTY spot; options are exited at
-  their current LTP when spot breaches the stop.
+Exit model: premium ATR(14) only — no fixed spot stop and no spot trail.
+  ATR_STOP_K = 0.70, floor 5%, cap 30%, fallback 10% when ATR is unavailable
+  Initial stop = entry - ATR distance
+  Trailing stop = premium HWM - ATR distance, ratcheting upward only
+  ATR stop fills at the sampled option LTP, matching the ATR scanners.
+NIFTY spot is used only for pattern detection and ATM strike selection.
 
 Paper trading only. No broker orders. All calculations use completed 5-minute
 candles — no lookahead, no future data.
@@ -19,7 +20,8 @@ Pattern detection runs on NIFTY SPOT 5m candles:
 Entry uses the exact option's live LTP at the tick that closes the spot candle;
 the recorded entry timestamp is that tick time, not the candle start. Quotes
 older than MAX_QUOTE_AGE_SEC are never used for an entry or exit.
-SL and trail are calculated on spot price only — never on option premium.
+SL and trail are calculated on the bought option's premium ATR only; NIFTY
+spot is used for pattern detection and ATM selection, never for exits.
 """
 
 from __future__ import annotations
@@ -39,14 +41,22 @@ MARKET_CLOSE = time(15, 30)
 FIRST_CANDLE_START = time(9, 15)
 NO_NEW_ENTRY_AFTER = time(15, 15)
 
-# Shared trail / SL model — identical to the six trail/SL scanners.
-TRAIL = 5.0              # stop = peak - 5.0 points
-ACTIVATE = 5.0           # trail activates at +5.0 points (stop -> breakeven)
-BE_LOCK_PROFIT = 6.0     # one-time breakeven lock at +6.0 points
-BE_LOCK_STOP = 2.0       # lock in +2.0 points
-STOP_LOSS_PCT = 0.05     # fixed 5% stop (premium-based scanners only)
-SPOT_SL_POINTS = 12.0    # fixed spot SL distance in NIFTY points (pattern scanner)
-MAX_QUOTE_AGE_SEC = 20.0  # never enter/exit on an option quote older than this
+# Premium ATR-only exit model (mirrors the ATR premium scanners).
+ATR_PERIOD = 14
+ATR_STOP_K = 0.70
+ATR_STOP_FLOOR_PCT = 0.05
+ATR_STOP_CAP_PCT = 0.30
+ATR_STOP_FALLBACK_PCT = 0.10
+
+# Legacy constants retained only so old persisted state/status reports can
+# still be read.  They are no longer used for exit decisions.
+TRAIL = 5.0
+ACTIVATE = 5.0
+BE_LOCK_PROFIT = 6.0
+BE_LOCK_STOP = 2.0
+STOP_LOSS_PCT = 0.05
+SPOT_SL_POINTS = 12.0
+MAX_QUOTE_AGE_SEC = 20.0  # never enter on an option quote older than this
 
 # NIFTY option strike step
 STRIKE_STEP = 50
@@ -101,6 +111,44 @@ def expiry_string(expiry) -> str:
 
 def option_symbol(underlying: str, expiry, strike: int, option_type: str) -> str:
     return f"{underlying}{expiry_string(expiry)}{strike}{option_type.upper()}"
+
+
+# --------------------------------------------------------------------------- #
+# Premium ATR exit helpers
+# --------------------------------------------------------------------------- #
+def premium_atr(candles: List[dict], period: int = ATR_PERIOD) -> Optional[float]:
+    """Mean true range of the option premium over completed 5m candles.
+
+    The final row is the forming candle and is excluded, so an entry never
+    uses a stop derived from its own unfinished bar.
+    """
+    rows = list(candles or [])
+    completed = rows[:-1]
+    if len(completed) < period + 1:
+        return None
+    window = completed[-(period + 1):]
+    trs = []
+    for prev, cur in zip(window[:-1], window[1:]):
+        trs.append(max(float(cur["high"]) - float(cur["low"]),
+                       abs(float(cur["high"]) - float(prev["close"])),
+                       abs(float(cur["low"]) - float(prev["close"]))))
+    return sum(trs) / len(trs) if trs else None
+
+
+def compute_atr_stop(entry_price: float, atr: Optional[float]) -> tuple:
+    """Return (stop_price, distance, distance_pct, source)."""
+    entry = float(entry_price)
+    if atr is not None and atr > 0:
+        distance = ATR_STOP_K * float(atr)
+        distance = max(distance, entry * ATR_STOP_FLOOR_PCT)
+        distance = min(distance, entry * ATR_STOP_CAP_PCT)
+        source = "atr"
+    else:
+        distance = entry * ATR_STOP_FALLBACK_PCT
+        source = "fallback_pct"
+    stop_price = round(entry - distance, 2)
+    distance_pct = round(distance / entry, 4) if entry else 0.0
+    return stop_price, round(distance, 4), distance_pct, source
 
 
 # --------------------------------------------------------------------------- #
@@ -955,33 +1003,38 @@ class CandleBuffer:
 # Option position with dynamic SL management
 # --------------------------------------------------------------------------- #
 class OptionPosition:
-    """Long CE/PE position using the shared trail + fixed 12-point spot stop."""
+    """Long CE/PE position using a premium ATR(14) stop and ATR-width trail."""
 
     def __init__(self, trade_id: str, pattern_name: str, instrument: str,
                  direction: str, entry_price: float, entry_spot: float,
-                 entry_ts: str, session_date: str):
+                 entry_ts: str, session_date: str,
+                 atr: Optional[float] = None):
         self.trade_id = trade_id
         self.pattern_name = pattern_name
         self.instrument = instrument
         self.direction = direction  # "BULLISH" (long CE) or "BEARISH" (long PE)
-        self.entry_price = entry_price   # option LTP at entry
-        self.entry_spot = entry_spot     # NIFTY spot at entry
+        self.entry_price = float(entry_price)  # option LTP at entry
+        self.entry_spot = float(entry_spot)    # NIFTY spot at entry (context only)
         self.entry_ts = entry_ts
         self.session_date = session_date
 
-        # Trail/SL calculated on NIFTY spot price (fixed 12-point initial SL).
-        # The SL distance is a constant number of spot points regardless of the
-        # NIFTY level. Stop/trail levels are spot levels; options are exited at
-        # their current LTP when spot breaches the stop.
-        if direction == "BEARISH":
-            self.sl_spot = round(entry_spot + SPOT_SL_POINTS, 2)
-        else:
-            self.sl_spot = round(entry_spot - SPOT_SL_POINTS, 2)
-        self.initial_sl = self.sl_spot  # initial spot stop (never moves)
-        self.stop_loss = self.sl_spot   # effective stop on spot, persisted
-        self.hwm = entry_spot           # peak spot (bullish trail)
-        self.lwm = entry_spot           # trough spot (bearish trail)
-        self.trail_stop: Optional[float] = None
+        # Premium ATR-only exit.  Long CE and long PE both profit when the
+        # premium rises, so direction does not affect stop/trail arithmetic.
+        self.atr_at_entry = round(float(atr), 4) if atr is not None else None
+        stop_price, distance, distance_pct, source = compute_atr_stop(entry_price, atr)
+        self.stop_price = stop_price
+        self.trail_distance = distance
+        self.stop_distance_pct = distance_pct
+        self.stop_source = source
+
+        # Legacy spot-named fields are retained for DB/status compatibility.
+        # They now hold premium stop values, not NIFTY spot levels.
+        self.sl_spot = stop_price
+        self.initial_sl = stop_price
+        self.stop_loss = stop_price
+        self.hwm = float(entry_price)
+        self.lwm = float(entry_price)
+        self.trail_stop = stop_price
         self.be_locked = False
 
         self.status = "active"
@@ -1000,78 +1053,52 @@ class OptionPosition:
             "change_id": uuid.uuid4().hex,
             "trade_id": trade_id,
             "timestamp": entry_ts,
-            "old_sl": entry_spot,
-            "new_sl": self.sl_spot,
-            "method": "SPOT_FIXED_12PT",
-            "reason": "initial_sl",
+            "old_sl": round(float(entry_price), 2),
+            "new_sl": stop_price,
+            "method": "ATR_STOP",
+            "reason": f"initial_sl_{source}",
         })
 
-    def update_mfe_mae(self, high: float, low: float):
+    def update_mfe_mae(self, premium_high: float, premium_low: float):
+        """Track option-premium extremes. Both long CE and long PE profit when
+        the premium rises, so direction never changes this arithmetic."""
+        if premium_high is None or premium_low is None:
+            return
+        high, low = float(premium_high), float(premium_low)
         entry = self.entry_price
-        if self.direction == "BEARISH":
-            # Long PE: profit when price falls
-            self.mfe_points = max(self.mfe_points, entry - low)
-            self.mae_points = min(self.mae_points, entry - high)
-        else:
-            # Long CE: profit when price rises
-            self.mfe_points = max(self.mfe_points, high - entry)
-            self.mae_points = min(self.mae_points, low - entry)
+        self.hwm = max(self.hwm, high)
+        self.lwm = min(self.lwm, low)
+        self.mfe_points = max(self.mfe_points, high - entry)
+        self.mae_points = min(self.mae_points, low - entry)
 
-    def update_trail(self, spot_ltp: float, timestamp: str) -> Optional[float]:
-        """Spot-based trail stop.
+    def update_trail(self, premium_ltp: float, timestamp: str) -> Optional[float]:
+        """Ratchet the premium ATR-width trail; return a fill price if hit.
 
-        Direction-aware:
-          * BULLISH (long CE): hwm rises on spot profit; trail activates at
-            +ACTIVATE spot points, stop -> entry_spot, then
-            stop = max(stop, hwm - TRAIL) ratcheting up; BE lock at
-            +BE_LOCK_PROFIT -> stop = max(stop, entry_spot + BE_LOCK_STOP);
-            exit when stop > entry_spot and spot <= stop.
-          * BEARISH (long PE): lwm falls on spot profit; trail activates at
-            -ACTIVATE spot points, stop -> entry_spot, then
-            stop = min(stop, lwm + TRAIL) ratcheting down; BE lock at
-            -BE_LOCK_PROFIT -> stop = min(stop, entry_spot - BE_LOCK_STOP);
-            exit when stop < entry_spot and spot >= stop.
-        Only return an exit when the stop is strictly beyond entry_spot.
+        The trail activates as soon as the premium makes a new high above the
+        entry (no fixed +5 activation threshold), uses the ATR distance fixed
+        at entry, and can never ratchet down. Before a new premium high the
+        initial ATR stop is the only exit, so a loss is never labelled as a
+        trail exit. There is no breakeven lock.
         """
-        if spot_ltp is None:
+        if premium_ltp is None:
             return None
+        ltp = float(premium_ltp)
         old_stop = self.stop_loss
-        old_locked = self.be_locked
+        self.hwm = max(self.hwm, ltp)
+        if self.hwm <= self.entry_price:
+            return None
 
-        entry = self.entry_spot
-        if self.direction == "BEARISH":
-            if spot_ltp < self.lwm:
-                self.lwm = spot_ltp
-            if entry - self.lwm >= ACTIVATE:
-                if self.trail_stop is None:
-                    self.trail_stop = entry  # breakeven at activation
-                else:
-                    self.trail_stop = min(self.trail_stop, self.lwm + TRAIL)
-            if (not self.be_locked
-                    and entry - self.lwm >= BE_LOCK_PROFIT):
-                base_stop = (self.trail_stop if self.trail_stop is not None
-                             else entry)
-                self.trail_stop = min(base_stop, entry - BE_LOCK_STOP)
-                self.be_locked = True
+        if self.trail_distance is not None and self.trail_distance > 0:
+            distance = float(self.trail_distance)
         else:
-            if spot_ltp > self.hwm:
-                self.hwm = spot_ltp
-            if self.hwm - entry >= ACTIVATE:
-                if self.trail_stop is None:
-                    self.trail_stop = entry  # breakeven at activation
-                else:
-                    self.trail_stop = max(self.trail_stop, self.hwm - TRAIL)
-            if (not self.be_locked
-                    and self.hwm - entry >= BE_LOCK_PROFIT):
-                base_stop = (self.trail_stop if self.trail_stop is not None
-                             else entry)
-                self.trail_stop = max(base_stop, entry + BE_LOCK_STOP)
-                self.be_locked = True
+            distance = compute_atr_stop(self.entry_price, self.atr_at_entry)[1]
 
-        if self.trail_stop is not None:
-            self.stop_loss = round(self.trail_stop, 2)
+        candidate = round(self.hwm - distance, 2)
+        if candidate > self.stop_loss:
+            self.stop_loss = candidate
+            self.trail_stop = candidate
 
-        if self.stop_loss != old_stop or self.be_locked != old_locked:
+        if self.stop_loss != old_stop:
             self.trailing_update_count += 1
             self.stop_changes.append({
                 "change_id": uuid.uuid4().hex,
@@ -1079,30 +1106,26 @@ class OptionPosition:
                 "timestamp": timestamp,
                 "old_sl": round(old_stop, 2),
                 "new_sl": round(self.stop_loss, 2),
-                "method": "TRAIL",
-                "reason": ("be_lock" if self.be_locked and not old_locked
-                           else "trailing_update"),
+                "method": "ATR_TRAIL",
+                "reason": "atr_trail_ratchet",
             })
 
-        if self.trail_stop is not None:
-            if self.direction == "BEARISH":
-                if self.trail_stop < entry and spot_ltp >= self.trail_stop:
-                    return round(self.trail_stop, 2)
-            else:
-                if self.trail_stop > entry and spot_ltp <= self.trail_stop:
-                    return round(self.trail_stop, 2)
+        if ltp <= self.stop_loss:
+            return round(self.stop_loss, 2)
         return None
 
-    def check_stop_loss(self, spot_ltp: float) -> Optional[float]:
-        """Fixed 12-point spot stop: exit when spot crosses sl_spot."""
-        if spot_ltp is None:
+    def check_stop_loss(self, premium_ltp: float) -> Optional[float]:
+        """Return the ACTUAL exit LTP when it breaches the initial ATR stop."""
+        if premium_ltp is None:
             return None
-        if self.direction == "BEARISH":
-            if spot_ltp >= self.sl_spot:
-                return self.sl_spot
-        else:
-            if spot_ltp <= self.sl_spot:
-                return self.sl_spot
+        stop = self.stop_price
+        if stop is None:
+            stop = compute_atr_stop(self.entry_price, self.atr_at_entry)[0]
+            self.stop_price = stop
+            self.initial_sl = stop
+            self.sl_spot = stop
+        if float(premium_ltp) <= stop:
+            return round(float(premium_ltp), 2)
         return None
 
     def close(self, exit_reason: str, exit_ts: str,
@@ -1409,6 +1432,22 @@ class PatternScanner:
             if key in self.positions:
                 continue
 
+            # ATR is derived from the exact option being bought, not from
+            # NIFTY spot. The buffer's completed candles plus its current
+            # forming candle are passed in; premium_atr() excludes the final
+            # forming row, so the stop is knowable at entry time.
+            buffer = self.buffers.get(symbol)
+            option_rows = list(buffer.candles) if buffer else []
+            forming = (buffer.current if buffer and buffer.current is not None else {
+                "timestamp": entry_ts_s,
+                "open": float(entry_price),
+                "high": float(entry_price),
+                "low": float(entry_price),
+                "close": float(entry_price),
+            })
+            option_rows.append(forming)
+            option_atr = premium_atr(option_rows)
+
             pos = OptionPosition(
                 trade_id=uuid.uuid4().hex,
                 pattern_name=pattern,
@@ -1418,25 +1457,24 @@ class PatternScanner:
                 entry_spot=float(self.last_spot),
                 entry_ts=entry_ts_s,
                 session_date=session_date(entry_ts_s),
+                atr=option_atr,
             )
             self.positions[key] = pos
             self._persist_position(pos, db_pattern=f"{pattern}:{opt_type}")
             print(f"[pattern_scanner] ENTRY {direction} {symbol} "
                   f"pattern={pattern} entry={pos.entry_price:.2f} "
-                  f"ts={entry_ts_s}")
+                  f"atr={pos.atr_at_entry} stop={pos.stop_price:.2f} "
+                  f"source={pos.stop_source} ts={entry_ts_s}")
 
     def _manage_positions_tick(self, symbol: str, ltp: float,
                                ts: datetime):
-        """Spot-based trail + fixed 12-point spot SL.
+        """Premium ATR stop/trail, evaluated on the position's own option tick.
 
-        Evaluated only on NIFTY_SPOT ticks. Trail/SL levels are spot levels;
-        when spot breaches a stop, the respective option is exited at its
-        current sampled LTP. Option ticks do not trigger exits.
+        Stop and trail levels are option-premium values derived from ATR(14)
+        at entry. Spot ticks no longer manage exits; the runner forwards every
+        active option's quote so an older strike still receives its own ticks.
         """
-        if ltp is None:
-            return
-        # Spot-based exits are evaluated only on spot ticks.
-        if symbol != "NIFTY_SPOT":
+        if ltp is None or symbol == "NIFTY_SPOT":
             return
         # The runner starts at 09:00 to warm the feed; do not manage exits
         # on pre-open quotes.  Trading (including exits) begins at 09:15.
@@ -1446,45 +1484,48 @@ class PatternScanner:
         ts_iso = ts.isoformat()
         for key in list(self.positions.keys()):
             pos = self.positions[key]
+            if pos.instrument != symbol:
+                continue
+            # A trade placed on this spot-candle close is first managed on a
+            # strictly later option tick, never on its own entry tick.
+            if pos.entry_ts:
+                try:
+                    entry_dt = datetime.fromisoformat(pos.entry_ts)
+                    if entry_dt.tzinfo is None and ts.tzinfo is not None:
+                        entry_dt = entry_dt.replace(tzinfo=ts.tzinfo)
+                    if entry_dt.tzinfo is not None and ts.tzinfo is None:
+                        compare_ts = ts.replace(tzinfo=entry_dt.tzinfo)
+                    else:
+                        compare_ts = ts
+                    if entry_dt >= compare_ts:
+                        continue
+                except (TypeError, ValueError):
+                    pass
 
             old_stop = pos.stop_loss
-            old_locked = pos.be_locked
+            old_mfe = pos.mfe_points
+            old_mae = pos.mae_points
+            pos.update_mfe_mae(ltp, ltp)
             trail_hit = pos.update_trail(ltp, ts_iso)
-            if pos.stop_loss != old_stop or pos.be_locked != old_locked:
+            if (pos.stop_loss != old_stop or pos.mfe_points != old_mfe
+                    or pos.mae_points != old_mae):
                 self._persist_trailing(pos)
 
-            if trail_hit is not None:
-                # Exit the option at its own latest quote (not at spot, and
-                # never at the other leg / a stale price).
-                opt_ltp = self._fresh_ltp(pos.instrument, ts)
-                if opt_ltp is None:
-                    self._warn_stale("trail-exit", pos.instrument, ts)
-                    continue  # wait for a fresh quote
-                exit_px = round(float(opt_ltp), 2)
-                pos.close("TRAIL_STOP_EXIT", ts_iso, exit_price=exit_px)
-                self.closed_positions.append(pos)
-                del self.positions[key]
-                self._persist_exit(pos)
-                print(f"[pattern_scanner] TRAIL_STOP_EXIT {pos.instrument} "
-                      f"entry_spot={pos.entry_spot:.2f} entry_opt={pos.entry_price:.2f} "
-                      f"exit_opt={pos.exit_price:.2f} stop={trail_hit:.2f} "
-                      f"pnl={pos.pnl_points:.2f}")
+            trail_px = trail_hit
+            sl_px = pos.check_stop_loss(ltp)
+            if trail_px is None and sl_px is None:
                 continue
 
-            sl_hit = pos.check_stop_loss(ltp)
-            if sl_hit is not None:
-                opt_ltp = self._fresh_ltp(pos.instrument, ts)
-                if opt_ltp is None:
-                    self._warn_stale("sl-exit", pos.instrument, ts)
-                    continue  # wait for a fresh quote
-                exit_px = round(float(opt_ltp), 2)
-                pos.close("STOP_LOSS_SPOT", ts_iso, exit_price=exit_px)
-                self.closed_positions.append(pos)
-                del self.positions[key]
-                self._persist_exit(pos)
-                print(f"[pattern_scanner] STOP_LOSS_SPOT {pos.instrument} "
-                      f"entry_spot={pos.entry_spot:.2f} entry_opt={pos.entry_price:.2f} "
-                      f"exit_opt={pos.exit_price:.2f} pnl={pos.pnl_points:.2f}")
+            reason = "TRAIL_STOP_EXIT" if trail_px is not None else "STOP_LOSS_ATR"
+            exit_px = round(float(ltp), 2)
+            pos.close(reason, ts_iso, exit_price=exit_px)
+            self.closed_positions.append(pos)
+            del self.positions[key]
+            self._persist_exit(pos)
+            print(f"[pattern_scanner] {reason} {pos.instrument} "
+                  f"entry_opt={pos.entry_price:.2f} exit_opt={pos.exit_price:.2f} "
+                  f"atr={pos.atr_at_entry} stop={pos.stop_price:.2f} "
+                  f"pnl={pos.pnl_points:.2f}")
 
     def _compute_atr_list(self, candles: List[dict]) -> List[Optional[float]]:
         """Simple ATR(14) over completed candles — no lookahead."""
@@ -1520,23 +1561,27 @@ class PatternScanner:
 
     # ---- persistence ----
     def _ensure_schema(self):
-        """Idempotent migration for the shared trail state columns."""
+        """Idempotent migration for legacy and premium-ATR exit columns."""
         try:
             conn = self.get_conn()
             cols = {r[1] for r in conn.execute(
                 "PRAGMA table_info(pattern_scanner_positions)").fetchall()}
-            if "hwm" not in cols:
-                conn.execute("ALTER TABLE pattern_scanner_positions "
-                             "ADD COLUMN hwm REAL")
-            if "lwm" not in cols:
-                conn.execute("ALTER TABLE pattern_scanner_positions "
-                             "ADD COLUMN lwm REAL")
-            if "entry_spot" not in cols:
-                conn.execute("ALTER TABLE pattern_scanner_positions "
-                             "ADD COLUMN entry_spot REAL")
-            if "be_locked" not in cols:
-                conn.execute("ALTER TABLE pattern_scanner_positions "
-                             "ADD COLUMN be_locked INTEGER DEFAULT 0")
+            additions = {
+                "hwm": "REAL",
+                "lwm": "REAL",
+                "entry_spot": "REAL",
+                "be_locked": "INTEGER DEFAULT 0",
+                "atr_at_entry": "REAL",
+                "stop_price": "REAL",
+                "trail_distance": "REAL",
+                "stop_distance_pct": "REAL",
+                "stop_source": "TEXT",
+            }
+            for column, declaration in additions.items():
+                if column not in cols:
+                    conn.execute(
+                        f"ALTER TABLE pattern_scanner_positions "
+                        f"ADD COLUMN {column} {declaration}")
             conn.commit()
             conn.close()
         except Exception as e:
@@ -1564,39 +1609,63 @@ class PatternScanner:
 
         for r in rows:
             d = dict(r)
-            entry_spot = float(d["entry_spot"]) if d.get("entry_spot") is not None else float(d["entry_price"])
+            entry_price = float(d["entry_price"])
+            entry_spot = (float(d["entry_spot"])
+                          if d.get("entry_spot") is not None else entry_price)
+            atr = (float(d["atr_at_entry"])
+                   if d.get("atr_at_entry") is not None else None)
             pos = OptionPosition(
                 trade_id=d["trade_id"],
                 pattern_name=d["pattern_name"],
                 instrument=d["instrument"],
                 direction=d["direction"],
-                entry_price=float(d["entry_price"]),
+                entry_price=entry_price,
                 entry_spot=entry_spot,
                 entry_ts=d["entry_ts"],
                 session_date=(d.get("session_date")
                               or session_date(d["entry_ts"])),
+                atr=atr,
             )
-            # Re-derive the fixed spot SL from entry_spot under the current
-            # rule, so a recovered position uses the same model after restart.
-            if pos.direction == "BEARISH":
-                pos.sl_spot = round(entry_spot + SPOT_SL_POINTS, 2)
+
+            if not d.get("stop_source"):
+                # Legacy row from the spot-stop era. Its stored hwm/lwm and
+                # stop are NIFTY spot values and cannot be reused. Migrate it
+                # to the ATR-only model using the fallback premium distance.
+                pos.stop_price, distance, pct, source = compute_atr_stop(
+                    entry_price, None)
+                pos.stop_loss = pos.stop_price
+                pos.trail_distance = distance
+                pos.stop_distance_pct = pct
+                pos.stop_source = source
+                pos.hwm = entry_price
+                pos.lwm = entry_price
+                pos.trail_stop = pos.stop_price
+                pos.be_locked = False
+                pos.sl_spot = pos.stop_price
+                pos.initial_sl = pos.stop_price
             else:
-                pos.sl_spot = round(entry_spot - SPOT_SL_POINTS, 2)
-            pos.stop_loss = float(d["stop_loss"])
-            pos.hwm = (float(d["hwm"]) if d.get("hwm") is not None
-                       else entry_spot)
-            pos.lwm = (float(d["lwm"]) if d.get("lwm") is not None
-                       else entry_spot)
-            pos.be_locked = bool(d.get("be_locked"))
-            pos.trail_stop = (pos.stop_loss
-                              if (pos.direction == "BULLISH"
-                                  and pos.stop_loss > pos.entry_spot)
-                              or (pos.direction == "BEARISH"
-                                  and pos.stop_loss < pos.entry_spot)
-                              else None)
-            if pos.trail_stop is None:
-                # Trail not active yet: the fixed spot SL is the live stop.
-                pos.stop_loss = pos.sl_spot
+                pos.stop_price = (float(d["stop_price"])
+                                  if d.get("stop_price") is not None
+                                  else pos.stop_price)
+                pos.stop_loss = (float(d["stop_loss"])
+                                 if d.get("stop_loss") is not None
+                                 else pos.stop_loss)
+                pos.trail_distance = (float(d["trail_distance"])
+                                      if d.get("trail_distance") is not None
+                                      else pos.trail_distance)
+                pos.stop_distance_pct = (float(d["stop_distance_pct"])
+                                         if d.get("stop_distance_pct") is not None
+                                         else pos.stop_distance_pct)
+                pos.stop_source = str(d["stop_source"])
+                pos.hwm = (float(d["hwm"]) if d.get("hwm") is not None
+                           else entry_price)
+                pos.lwm = (float(d["lwm"]) if d.get("lwm") is not None
+                           else entry_price)
+                pos.trail_stop = pos.stop_loss
+                pos.be_locked = False
+                pos.sl_spot = pos.stop_price
+                pos.initial_sl = pos.stop_price
+
             pos.trailing_update_count = int(d.get("trailing_update_cnt") or 0)
             pos.mfe_points = float(d.get("mfe_points") or 0.0)
             pos.mae_points = float(d.get("mae_points") or 0.0)
@@ -1606,9 +1675,9 @@ class PatternScanner:
             key = f"{pos.pattern_name}:{pos.instrument}"
             self.positions[key] = pos
             print(f"[pattern_scanner] recovered {key} "
-                  f"entry_spot={pos.entry_spot:.2f} entry_opt={pos.entry_price:.2f} "
-                  f"stop={pos.stop_loss:.2f} hwm={pos.hwm:.2f} lwm={pos.lwm:.2f} "
-                  f"be_locked={pos.be_locked}")
+                  f"entry_opt={pos.entry_price:.2f} atr={pos.atr_at_entry} "
+                  f"stop={pos.stop_price:.2f} effective_stop={pos.stop_loss:.2f} "
+                  f"hwm={pos.hwm:.2f} source={pos.stop_source}")
 
     def _persist_position(self, pos: OptionPosition, db_pattern: str):
         try:
@@ -1617,13 +1686,17 @@ class PatternScanner:
                 """INSERT OR IGNORE INTO pattern_scanner_positions
                    (trade_id, pattern_name, instrument, direction, entry_price,
                     entry_spot, initial_sl, stop_loss, entry_ts, status,
-                    session_date, hwm, lwm, be_locked)
-                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    session_date, hwm, lwm, be_locked,
+                    atr_at_entry, stop_price, trail_distance,
+                    stop_distance_pct, stop_source)
+                   VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
                 (pos.trade_id, pos.pattern_name, pos.instrument, pos.direction,
                  pos.entry_price, pos.entry_spot, pos.sl_spot, pos.stop_loss,
                  pos.entry_ts, "active", pos.session_date,
                  round(pos.hwm, 2), round(pos.lwm, 2),
-                 1 if pos.be_locked else 0))
+                 1 if pos.be_locked else 0,
+                 pos.atr_at_entry, pos.stop_price, pos.trail_distance,
+                 pos.stop_distance_pct, pos.stop_source))
             # Log initial SL as first stop change
             sc = pos.stop_changes[0]
             conn.execute(
@@ -1643,13 +1716,16 @@ class PatternScanner:
             conn = self.get_conn()
             conn.execute(
                 """UPDATE pattern_scanner_positions
-                   SET stop_loss=?, hwm=?, be_locked=?, trailing_update_cnt=?,
-                       mfe_points=?, mae_points=?, updated_at=datetime('now')
+                   SET stop_loss=?, hwm=?, lwm=?, be_locked=?,
+                       trailing_update_cnt=?, mfe_points=?, mae_points=?,
+                       stop_price=?, trail_distance=?, stop_distance_pct=?,
+                       stop_source=?, updated_at=datetime('now')
                    WHERE trade_id=?""",
-                (round(pos.stop_loss, 2), round(pos.hwm, 2),
+                (round(pos.stop_loss, 2), round(pos.hwm, 2), round(pos.lwm, 2),
                  1 if pos.be_locked else 0, pos.trailing_update_count,
                  round(pos.mfe_points, 2), round(pos.mae_points, 2),
-                 pos.trade_id))
+                 pos.stop_price, pos.trail_distance, pos.stop_distance_pct,
+                 pos.stop_source, pos.trade_id))
             for sc in pos.stop_changes[1:]:
                 conn.execute(
                     """INSERT OR IGNORE INTO pattern_scanner_stop_changes
@@ -1669,15 +1745,20 @@ class PatternScanner:
                 """UPDATE pattern_scanner_positions
                    SET exit_ts=?, exit_price=?, exit_reason=?, pnl_points=?,
                        gross_pnl_points=?, holding_minutes=?, status='closed',
-                       stop_loss=?, hwm=?, be_locked=?, trailing_update_cnt=?,
-                       mfe_points=?, mae_points=?, updated_at=datetime('now')
+                       stop_loss=?, hwm=?, lwm=?, be_locked=?,
+                       trailing_update_cnt=?, mfe_points=?, mae_points=?,
+                       stop_price=?, trail_distance=?, stop_distance_pct=?,
+                       stop_source=?, updated_at=datetime('now')
                    WHERE trade_id=?""",
                 (pos.exit_ts, pos.exit_price, pos.exit_reason,
                  pos.pnl_points, pos.gross_pnl_points,
                  pos.holding_minutes, round(pos.stop_loss, 2),
-                 round(pos.hwm, 2), 1 if pos.be_locked else 0,
+                 round(pos.hwm, 2), round(pos.lwm, 2),
+                 1 if pos.be_locked else 0,
                  pos.trailing_update_count, round(pos.mfe_points, 2),
-                 round(pos.mae_points, 2), pos.trade_id))
+                 round(pos.mae_points, 2), pos.stop_price,
+                 pos.trail_distance, pos.stop_distance_pct,
+                 pos.stop_source, pos.trade_id))
             # Persist trailing stop changes
             for sc in pos.stop_changes[1:]:  # skip initial (already saved)
                 conn.execute(
@@ -1701,8 +1782,13 @@ class PatternScanner:
                 "instrument": pos.instrument,
                 "direction": pos.direction,
                 "entry_price": pos.entry_price,
-                "initial_sl": pos.sl_spot,
+                "initial_sl": pos.stop_price,
+                "stop_price": pos.stop_price,
                 "stop_loss": pos.stop_loss,
+                "atr_at_entry": pos.atr_at_entry,
+                "trail_distance": pos.trail_distance,
+                "stop_distance_pct": pos.stop_distance_pct,
+                "stop_source": pos.stop_source,
                 "hwm": round(pos.hwm, 2),
                 "be_locked": pos.be_locked,
                 "entry_ts": pos.entry_ts,
@@ -1720,6 +1806,9 @@ class PatternScanner:
                 "entry_price": p.entry_price,
                 "exit_price": p.exit_price,
                 "exit_reason": p.exit_reason,
+                "atr_at_entry": p.atr_at_entry,
+                "stop_price": p.stop_price,
+                "stop_source": p.stop_source,
                 "pnl_points": p.pnl_points,
                 "gross_pnl_points": p.gross_pnl_points,
                 "entry_ts": p.entry_ts,
@@ -1732,6 +1821,7 @@ class PatternScanner:
             "instrument": "NIFTY ATM CE/PE (current week expiry)",
             "timeframe": "5 minutes",
             "mode": "paper",
+            "exit_model": "PREMIUM_ATR_ONLY",
             "status": self.status,
             "market_open": is_market_open(),
             "last_spot": self.last_spot,

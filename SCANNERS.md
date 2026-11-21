@@ -2,11 +2,12 @@
 
 Complete reference for the 8 paper scanners running on the TradingAI VM:
 7 BUY-only NIFTY option-premium scanners plus `pattern_scanner`. Four option
-scanners use a fixed 5% stop; `sma9_atr`, `sma9_5s_atr` and `sma9_1min_poll` use a
-volatility-scaled (ATR) stop and ATR-only trail (no +5 activation and no
-breakeven lock). `sma9_atr` also gates entries on a daily NIFTY spot regime;
-`sma9_5s_atr` additionally requires a rising SMA9. All option scanners now poll
-every 5 seconds.
+scanners use a fixed 5% stop; `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll` and
+`pattern_scanner` use a volatility-scaled **premium** ATR stop and ATR-only trail
+(no +5 activation and no breakeven lock). `sma9_atr` also gates entries on a
+daily NIFTY spot regime; `sma9_5s_atr` additionally requires a rising SMA9.
+`pattern_scanner` detects patterns on NIFTY spot candles but exits on the
+bought option's premium ATR. All scanners now poll every 5 seconds.
 
 `green15`, `no_sma` and `no_sma_trail` are retired: stopped, disabled on boot,
 removed from the launcher (and `no_sma` / `no_sma_trail` from the performance
@@ -29,13 +30,13 @@ The code trees and DBs remain on disk as archives.
 | 4 | `sma9_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 5 | `sma9_high_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9 & LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 6 | `sma9_5s_atr` | SMA9 ATR (5s) | prev close > SMA9 **and** forming open > SMA9 **and** SMA9 > prior SMA9, polled every 5s | ATR trail, then ATR-scaled stop (both fill at the live LTP); otherwise hold |
-| 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles | trail stop, then fixed 12-point spot stop; otherwise hold |
+| 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles | premium ATR trail, then premium ATR stop; otherwise hold |
 | 8 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
 
 There is **no time-based or candle-close exit** on any of the 8 scanners:
-if neither the trail nor the fixed stop fires, the position stays open
+if neither the trail nor the stop fires, the position stays open
 across candles (including overnight) until one of them does. `pattern_scanner`
-uses the same trail mechanics but a fixed 12-point spot stop (see §5.5).
+uses premium ATR for both the initial stop and the trail (see §5.5).
 `sma9_atr` adds a daily spot-regime entry gate and replaces both the initial
 stop and the trail with the frozen ATR distance (see §5.6);
 `sma9_5s_atr` scales both the stop and the trail and adds a rising-SMA9
@@ -172,7 +173,7 @@ permission still comes only from the 09:20–15:15 window above; the 09:00–09:
 warm-up cannot open a position because the current 5-minute candle is not yet
 published. Exit management is additionally gated on `EXCHANGE_OPEN = 09:15`, so
 a pre-open quote can never fire a trail or stop. `pattern_scanner` ignores all
-ticks before 09:15 in its candle buffer and in its spot exit manager, so no
+ticks before 09:15 in its candle buffer and in its premium exit manager, so no
 synthetic pre-open candles are created and no pre-open exit can fire.
 
 ### 3.2 Contract selection
@@ -264,7 +265,7 @@ the API at the same instant.
 | `sma9_trail` | `sma9_trail` | `SMA_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 1.2 | `sma9trail` | `tradingai-sma9_trail-scanner` |
 | `sma9_high_trail` | `sma9_high_trail` | `SMA_HIGH_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 3.0 | `sma9trailhigh` | `tradingai-sma9_high_trail-scanner` |
 | `sma9_5s_atr` | `sma9_5s_atr` | `SMA9_5S_ATR_STOP_BUY_ONLY` | 1.1.0 | 9 | ATR / ATR | — (5s) | `sma95satr` | `tradingai-sma9-5s-atr-scanner` |
-| `pattern_scanner` | — | — | — | — | 5.0 / 5.0 | — | `ubuntu` | `pattern-scanner-live` |
+| `pattern_scanner` | — | — | — | — | ATR / none | — | `ubuntu` | `pattern-scanner-live` |
 
 All scanners poll every 5 seconds; no scanner uses a 60-second cadence anymore.
 
@@ -283,7 +284,13 @@ the fixed +5 activation / BE lock and trail by the frozen ATR distance.
 (§5.6); `sma9_5s_atr` has no regime gate but requires a rising SMA9 (§5.7);
 `sma9_1min_poll` keeps A+B only (§5.3).
 
-**`pattern_scanner` exception:** its stop/trail levels are derived from **NIFTY SPOT price** (not option premium). Initial SL = a **fixed 12 NIFTY points** from the entry spot (no percentage scaling — the same 12-point distance at 18,000, 25,000 or 30,000); trail mechanics identical but applied to spot. The option is exited at its current LTP when spot breaches the stop.
+**`pattern_scanner` exception:** its *entry signal* comes from NIFTY SPOT pattern
+detection, but its stop/trail levels are derived from the **bought option's
+premium ATR(14)**, exactly like the ATR premium scanners. Initial stop =
+`0.70 × ATR`, clamped to 5–30% of the entry premium (10% fallback when ATR is
+unavailable). The trail uses the same frozen distance and ratchets only upward.
+Exits are managed on the position's own option tick and filled at its sampled
+LTP; NIFTY spot no longer drives exits.
 
 DB path is always `/opt/tradingai/database/<key>.db`.
 API namespace is always `/api/<slug>/` (slug = key with `_` → `-`).
@@ -416,8 +423,8 @@ else:
 
 ### 5.5 Pattern scanner (`pattern_scanner`)
 
-Pattern-based entries on NIFTY SPOT 5m candles with the **same trail model as §5.4**, but a **fixed 12-point spot stop** instead of the premium 5% stop.
-There is no ATR stop and no 15:15 square-off.
+Pattern-based entries on NIFTY SPOT 5m candles with **premium ATR(14) exits**
+(no fixed spot stop, no spot trail, no 15:15 square-off).
 
 - **Signal source:** NIFTY SPOT 5-minute candles (completed candles only).
 - **Entry:** any of ~37 bullish or ~37 bearish candlestick patterns on the completed SPOT candle.
@@ -429,21 +436,43 @@ There is no ATR stop and no 15:15 square-off.
 - **Entry timestamp:** the actual tick time at which the trade was placed, not the signal candle's start.
 - **Entry timing:** no new entries at or after 15:15 IST.
 - **One per key:** at most one active position per `pattern_name:instrument`.
-- **Entry tick skip:** a position entered at a candle's close is first managed on the following tick, never on its own entry tick.
+- **Entry tick skip:** a position entered at a candle's close is first managed on a strictly later tick of its own option, never on its own entry tick.
 
-**Exit:** tick-level on NIFTY SPOT price, trail first, then the fixed 12-point spot stop. Direction-aware:
+**Exit:** premium ATR only, evaluated on every tick of the position's own option.
+NIFTY spot ticks never manage an exit. Both long CE and long PE profit when the
+premium rises, so direction does not change the arithmetic.
 
-- **BULLISH (long CE):** `hwm = max(hwm, spot)`; at `hwm − entry_spot ≥ 5` trail activates (`stop = entry_spot`), then `stop = max(stop, hwm − 5)` ratchets up; one-time BE lock at `hwm − entry_spot ≥ 6` → `stop = max(stop, entry_spot + 2)`. Exit `TRAIL_STOP_EXIT` when `stop > entry_spot` and `spot ≤ stop`.
-- **BEARISH (long PE):** `lwm = min(lwm, spot)`; at `entry_spot − lwm ≥ 5` trail activates (`stop = entry_spot`), then `stop = min(stop, lwm + 5)` ratchets down; one-time BE lock at `entry_spot − lwm ≥ 6` → `stop = min(stop, entry_spot − 2)`. Exit `TRAIL_STOP_EXIT` when `stop < entry_spot` and `spot ≥ stop`.
-- **Fixed 12-point spot stop (`STOP_LOSS_SPOT`):** `sl_spot = round(entry_spot − 12, 2)` for CE; `sl_spot = round(entry_spot + 12, 2)` for PE. The distance is always **12 NIFTY points**, independent of the index level (no percentage scaling). Exit when `spot ≤ sl_spot` (CE) or `spot ≥ sl_spot` (PE). Checked after the trail exit.
-- **Exit price:** the position's own option LTP at the moment spot breaches the stop — not the spot level, and never the current ATM's opposite leg. A stale quote (>20s) defers the exit until a fresh one arrives.
-- If neither fires the position stays open across candles and overnight. No candle-close or time-based exit.
+- **ATR at entry:** ATR(14) of completed 5m candles of the exact bought option;
+  the forming candle is excluded. With fewer than 15 completed candles the
+  fallback 10% distance is used.
+- **Initial ATR stop (`STOP_LOSS_ATR`):** `distance = 0.70 × ATR`, clamped to
+  `[0.05 × entry, 0.30 × entry]`; `stop_price = round(entry − distance, 2)`.
+  Exit when the option LTP is at or below `stop_price`.
+- **ATR trail (`TRAIL_STOP_EXIT`):** once premium makes a new high above entry,
+  `trail_stop = max(current_stop, hwm − distance)`. There is no +5 activation
+  and no breakeven lock; the stop can never ratchet down. Exit when the option
+  LTP is at or below the ratcheted stop.
+- **Exit price:** the sampled LTP of the position's own option, never the spot
+  level, never the opposite leg, and never a theoretical stop price. A fast
+  move can fill through the stop.
+- If neither fires the position stays open across candles and overnight. No
+  candle-close or time-based exit.
 
-SL and trail are calculated on NIFTY spot price only — never on option premium.
+**Persisted state:** `atr_at_entry`, `stop_price`, `stop_loss`, `hwm`, `lwm`,
+`trail_distance`, `stop_distance_pct`, `stop_source`, `trailing_update_cnt`,
+`mfe_points` and `mae_points` are written on every trail/MFE change
+(`_persist_trailing`) and again on exit (`_persist_exit`). Initial stops are
+logged as `ATR_STOP` and ratchets as `ATR_TRAIL` in
+`pattern_scanner_stop_changes`. `_ensure_schema` adds the new columns
+idempotently. Legacy spot-stop rows are migrated on load: their spot-valued
+`hwm`/`lwm`/`stop_loss` are discarded and replaced with a premium fallback stop
+derived from `entry_price`.
 
-**Persisted state:** `stop_loss`, `hwm`, `lwm`, `entry_spot`, `be_locked`, `trailing_update_cnt`, `mfe_points` and `mae_points` are written on every trail change (`_persist_trailing`) and again on exit (`_persist_exit`). Each trail change is appended to `pattern_scanner_stop_changes`. Open positions are reloaded on startup (`_load_open_positions`), so a restart resumes the trail correctly. `_ensure_schema` adds the `hwm`/`lwm`/`entry_spot`/`be_locked` columns idempotently.
-
-**Runner quoting:** every 5-second poll quotes the current ATM CE/PE **and** every instrument with an active position, so a position keeps being managed after the ATM band moves. Quotes are fed to the engine **before** the spot tick, so each entry/exit uses this poll's price rather than the previous poll's.
+**Runner quoting:** every 5-second poll quotes the current ATM CE/PE **and**
+every instrument with an active position, so a position keeps being managed
+after the ATM band moves. Option quotes are fed to the engine **before** the
+spot tick, so each premium exit uses this poll's price rather than the previous
+poll's.
 
 - No target. Paper trading only.
 
@@ -642,8 +671,9 @@ scanners.
 There is no candle-close, minute-10, or session-end reason on any of them.
 `pattern_scanner` uses its own tables (`pattern_scanner_positions`,
 `pattern_scanner_stop_changes` in `database/tradingai.db`) and reasons
-`TRAIL_STOP_EXIT` or `STOP_LOSS_SPOT` (fixed 12-point spot stop; older rows
-may still show `STOP_LOSS_5PCT` from the previous percentage model). No `SQUARE_OFF`.
+`TRAIL_STOP_EXIT` or `STOP_LOSS_ATR` (premium ATR stop; older rows may still
+show `STOP_LOSS_SPOT` or `STOP_LOSS_5PCT` from previous exit models). No
+`SQUARE_OFF`.
 `pnl_points = exit_price - entry_price` (BUY-only, one lot notional is not
 applied).
 
@@ -921,10 +951,10 @@ token.
   `sma9_5s_atr` use an ATR-scaled stop instead (see §5.6, §5.7), filled at
   the live LTP. `sma9_atr` v1.1.0 also trails only at that ATR distance and
   gates entries on the daily spot regime; exits are never gated.
-- **`pattern_scanner`** uses the same trail shape (5-point trail, +5 activate,
-  +6 breakeven lock at +2) but on **NIFTY spot**, with a fixed **12-point spot
-  stop** (`STOP_LOSS_SPOT`), not a percentage premium stop. It has no ATR stop
-  and no time exit.
+- **`pattern_scanner`** uses the same premium ATR(14) exit model as the ATR
+  scanners: `0.70 × ATR` initial stop clamped to 5–30% of entry, plus an
+  ATR-width trail with no +5 activation and no breakeven lock. It has no spot
+  stop, no time exit, and manages exits only on the position's own option tick.
 - **No time-based exit** on any scanner; positions hold across candles and
   overnight until the trail or 5% stop fires.
 - **Secrets** live only in `/opt/tradingai/.env.zerodha` and the local git

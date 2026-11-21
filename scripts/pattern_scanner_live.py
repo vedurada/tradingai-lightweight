@@ -353,10 +353,9 @@ class PatternScannerLive:
                 if px is not None:
                     prices[sym] = px
 
-        # Feed the quoted option prices FIRST, so the spot tick below manages
-        # exits and detects new entries with this poll's quotes. Previously the
-        # spot tick ran first and used the previous poll's (possibly minutes
-        # old) option price.
+        # Feed the quoted option prices FIRST: each option tick manages that
+        # position's premium ATR stop/trail with this poll's price. The spot
+        # tick below then detects new entries using this poll's option quotes.
         for sym, price in prices.items():
             self.ps.on_tick(sym, price, now)
 

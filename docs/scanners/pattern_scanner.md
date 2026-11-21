@@ -2,21 +2,21 @@
 
 **One line:** when a completed NIFTY **spot** 5-minute candle matches a known
 bullish or bearish pattern, buy the ATM CE (bullish) or ATM PE (bearish) and
-manage the exit on **spot** with a trail and a fixed 12-point stop.
+manage the exit with a **premium ATR(14) stop and ATR-width trail only**.
 
 - **Status:** active
 - **Cadence:** every 5 seconds
-- **Stop:** fixed **12 NIFTY spot points**, after a 5-point spot trail
+- **Stop:** premium ATR(14): `0.70 × ATR`, clamped to 5–30% of entry; 10% fallback
 - **First reported day:** 2026-11-18 (older rows are excluded from reports)
 
 ## Why it exists
 
-Every other scanner derives its signal and its stop from **option premium**.
-`pattern_scanner` is the only strategy that reads the underlying directly:
-patterns are detected on NIFTY spot candles, and the stop/trail are expressed
-in index points. It answers a different question — "does the index pattern
-predict the option move?" — and is therefore not directly comparable with the
-premium scanners.
+Every scanner derives its exit levels from **option premium**. `pattern_scanner`
+is the only strategy whose *signal* reads the underlying directly: patterns are
+detected on NIFTY spot candles, while the stop and trail are computed from the
+bought option's own premium ATR. It answers a different question — "does the
+index pattern predict the option move?" — but its exit mechanics now match the
+ATR premium scanners.
 
 It is also the only scanner that is directional rather than independent-leg:
 a bullish pattern buys CE, a bearish pattern buys PE. It is long-only on both
@@ -36,45 +36,49 @@ sides; there is no short CE and no short PE.
 - **Entry timestamp:** the actual tick time, not the signal candle's start.
 - **Scan start:** the live runner starts at 09:00 IST to warm the feed and
   status, but 09:00–09:15 is warm-up only: its candle buffer ignores every tick
-  before 09:15, and its spot exit manager ignores them too. No synthetic
-  pre-open candles are created and no pre-open exit can fire; the first
-  completed signal candle is 09:15 and the first possible entry is 09:20.
+  before 09:15, and its premium exit manager ignores pre-open option ticks too.
+  No synthetic pre-open candles are created and no pre-open exit can fire; the
+  first completed signal candle is 09:15 and the first possible entry is 09:20.
 - **One per key:** at most one active position per `pattern_name:instrument`.
 - **Entry tick skip:** a position entered at a candle close is first managed on
-  the following tick, never on its own entry tick.
+  a strictly later tick of its own option, never on its own entry tick.
 - No new entries at or after 15:15 IST.
 
 ## Exit
 
-Tick-level on NIFTY **spot**, trail first, then the fixed stop. Direction-aware:
+**Premium ATR only.** No fixed spot stop, no spot trail, no breakeven lock, and
+no direction-dependent arithmetic: both long CE and long PE profit when the
+option premium rises. Exits are evaluated on every tick of the position's
+**own option**; NIFTY spot ticks never manage an exit.
 
-**BULLISH (long CE)**
-
-```
-hwm = max(hwm, spot)
-if hwm - entry_spot >= 5: stop = max(entry_spot, hwm - 5)
-if hwm - entry_spot >= 6 and not be_locked:
-    stop = max(stop, entry_spot + 2); be_locked = True
-if stop > entry_spot and spot <= stop: exit   # TRAIL_STOP_EXIT
-elif spot <= round(entry_spot - 12, 2): exit  # STOP_LOSS_SPOT
-```
-
-**BEARISH (long PE)**
+At entry, ATR(14) is computed from completed 5-minute candles of the exact
+bought option. The final forming candle is excluded, so the stop is knowable at
+entry time. If fewer than 15 completed candles exist, the fallback 10% distance
+is used.
 
 ```
-lwm = min(lwm, spot)
-if entry_spot - lwm >= 5: stop = min(entry_spot, lwm + 5)
-if entry_spot - lwm >= 6 and not be_locked:
-    stop = min(stop, entry_spot - 2); be_locked = True
-if stop < entry_spot and spot >= stop: exit   # TRAIL_STOP_EXIT
-elif spot >= round(entry_spot + 12, 2): exit  # STOP_LOSS_SPOT
+distance = 0.70 * premium_atr
+distance = max(distance, 0.05 * entry_premium)
+distance = min(distance, 0.30 * entry_premium)
+fallback_distance = 0.10 * entry_premium
+
+initial_stop = round(entry_premium - distance, 2)   # STOP_LOSS_ATR
+
+hwm = max(hwm, premium_ltp)
+if hwm > entry_premium:
+    trail_stop = max(current_stop, hwm - distance)  # ATR_TRAIL ratchet
+    if premium_ltp <= trail_stop: exit              # TRAIL_STOP_EXIT
+elif premium_ltp <= initial_stop:
+    exit                                            # STOP_LOSS_ATR
 ```
 
-- The stop is **always 12 index points**, independent of the NIFTY level — no
-  percentage scaling at 18,000, 25,000 or 30,000.
-- **Exit price:** the position's own option LTP at the moment spot breaches the
-  stop, not the spot level and never the current ATM's opposite leg. A stale
-  quote (>20 s) defers the exit until a fresh one arrives.
+- The trail activates as soon as the premium makes a new high above entry —
+  there is no fixed +5 activation threshold. It can never ratchet down.
+- **Exit price:** the sampled LTP of the position's own option, never the spot
+  level, never the opposite leg, and never a theoretical stop price. A fast
+  move can therefore fill through the stop.
+- After an ATM reband, the runner keeps quoting every instrument with an open
+  position, so an older strike still receives its own premium ticks and exits.
 - No target, no candle-close exit, no session-end square-off.
 
 ## Runtime
@@ -115,15 +119,24 @@ not use them.
 
 ## State and restart behaviour
 
-`stop_loss`, `hwm`, `lwm`, `entry_spot`, `be_locked`, `trailing_update_cnt`,
-`mfe_points` and `mae_points` are written on every trail change and again on
-exit. Each trail change is appended to `pattern_scanner_stop_changes`. Open
-positions are reloaded on startup, so a restart resumes the trail correctly.
+`stop_price`, `stop_loss`, `hwm`, `lwm`, `trail_distance`, `stop_distance_pct`,
+`stop_source`, `atr_at_entry`, `trailing_update_cnt`, `mfe_points` and
+`mae_points` are written on every trail/MFE change and again on exit. The old
+`initial_sl`, `entry_spot` and `be_locked` columns remain for compatibility but
+no longer drive exits. Each ratchet is appended to
+`pattern_scanner_stop_changes` with method `ATR_TRAIL`; the initial stop uses
+`ATR_STOP`. Open positions are reloaded on startup, so a restart resumes the
+premium trail correctly.
+
+Legacy open rows written by the old spot-stop engine are migrated on load:
+their spot-valued `hwm`/`lwm`/`stop_loss` are discarded and replaced with a
+premium fallback stop derived from `entry_price`, so a restart never applies
+spot levels to a premium ATR exit.
 
 The runner quotes the current ATM CE/PE **and** every instrument with an active
 position on every poll, so a position is still managed after the ATM band
-moves. Quotes are fed to the engine **before** the spot tick, so each decision
-uses this poll's price rather than the previous poll's.
+moves. Option quotes are fed to the engine **before** the spot tick, so each
+premium exit decision uses this poll's price rather than the previous poll's.
 
 ## Ops
 

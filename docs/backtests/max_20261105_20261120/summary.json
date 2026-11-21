@@ -15,6 +15,7 @@
     "aligned_5m_timestamps": 873,
     "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
     "fill_policy": "entry at signal candle open; exit at adverse 5m extreme on stop/trail",
+    "pattern_exit_model": "premium_atr_14_only",
     "paper_only": true
   },
   "scanners": [
@@ -139,19 +140,19 @@
     },
     {
       "scanner": "pattern_scanner",
-      "trades": 854,
-      "wins": 417,
-      "losses": 434,
-      "flat": 3,
-      "win_rate_pct": 48.83,
-      "total_points": -18.25,
-      "avg_points": -0.02,
-      "best_trade_points": 40.6,
-      "worst_trade_points": -32.0,
-      "max_drawdown_points": -460.65,
+      "trades": 845,
+      "wins": 503,
+      "losses": 342,
+      "flat": 0,
+      "win_rate_pct": 59.53,
+      "total_points": 3247.56,
+      "avg_points": 3.84,
+      "best_trade_points": 219.48,
+      "worst_trade_points": -78.8,
+      "max_drawdown_points": -467.85,
       "exit_reasons": {
-        "STOP_LOSS_SPOT": 202,
-        "TRAIL_STOP_EXIT": 652
+        "STOP_LOSS_ATR": 115,
+        "TRAIL_STOP_EXIT": 730
       }
     }
   ]
