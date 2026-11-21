@@ -227,6 +227,29 @@ class KiteOptionFeed:
             }
         return None
 
+    def last_closed_nifty_bar(self, now):
+        """Latest completed NIFTY 50 index 5m bar from mStock token 26000."""
+        if not self.available or not self.kite:
+            return None
+        cutoff = floor_5min(now)
+        start = _as_ist_datetime(now) - timedelta(days=7)
+        try:
+            raw = self.kite.historical_data(26000, start, now, "5minute")
+        except Exception as e:
+            print(f"[ps-live] NIFTY index history error: {e}")
+            return None
+        latest = None
+        for row in raw or []:
+            try:
+                bar_start = _as_ist_datetime(row["date"])
+            except (KeyError, TypeError, ValueError):
+                continue
+            if bar_start >= cutoff:
+                continue
+            if latest is None or bar_start > latest["start"]:
+                latest = {"start": bar_start, "close": float(row["close"])}
+        return latest
+
     def last_closed_5m_bar(self, symbol: str, now):
         """Latest completed 5m OHLC bar for `symbol`, or None.
 
@@ -408,32 +431,25 @@ class PatternScannerLive:
                 self.ps.on_option_bar(sym, bar, now)
 
     def _refresh_last_closed_spot(self, now):
-        """Fill last completed 5m spot from ATM CE/PE parity.
+        """Fill last completed 5m spot from the real NIFTY index bar.
 
-        mStock does not expose NIFTY index history through the read-only
-        gateway. CE/PE 5m closes from the same completed bar reconstruct spot
-        as strike + CE close - PE close. The value is labelled with its source
-        so dashboards never mistake it for a live LTP or a true index bar.
+        Option CE/PE parity was unreliable: frozen zero-volume option bars can
+        imply a spot hundreds of points away from the index close. The NIFTY
+        index history on token 26000 is authoritative.
         """
-        if not hasattr(self.feed, "last_closed_5m_bar"):
-            return
-        ce_sym = self.ps.ce_symbol
-        pe_sym = self.ps.pe_symbol
-        if not ce_sym or not pe_sym or self.ps.current_atm_strike is None:
+        if not hasattr(self.feed, "last_closed_nifty_bar"):
             return
         try:
-            ce = self.feed.last_closed_5m_bar(ce_sym, now)
-            pe = self.feed.last_closed_5m_bar(pe_sym, now)
-            if not ce or not pe or ce["start"] != pe["start"]:
+            bar = self.feed.last_closed_nifty_bar(now)
+            if not bar:
                 return
-            strike = float(self.ps.current_atm_strike)
-            spot = strike + float(ce["close"]) - float(pe["close"])
+            spot = float(bar["close"])
             self.ps.last_closed_spot = round(spot, 2)
             self.ps.last_closed_atm_strike = float(round(spot / 50.0) * 50)
-            self.ps.last_closed_candle_start = ce["start"].isoformat()
-            self.ps.last_closed_ce_close = round(float(ce["close"]), 2)
-            self.ps.last_closed_pe_close = round(float(pe["close"]), 2)
-            self.ps.last_closed_spot_source = "atm_ce_pe_parity_5m_close"
+            self.ps.last_closed_candle_start = bar["start"].isoformat()
+            self.ps.last_closed_ce_close = None
+            self.ps.last_closed_pe_close = None
+            self.ps.last_closed_spot_source = "nifty_index_5m_close"
         except Exception as e:
             print(f"[ps-live] last-closed spot error: {e}")
 

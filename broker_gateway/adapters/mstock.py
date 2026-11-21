@@ -26,7 +26,8 @@ _OFFSET_SUFFIX = re.compile(r"([+-]\d{2})$")
 TRANSIENT_HTTP = {429, 500, 502, 503, 504}
 TRANSIENT_TEXT = ("try again", "something went wrong", "too many requests", "rate limit")
 MAX_ATTEMPTS = 3
-INDEX_QUOTE_KEYS = {256265: "NSE:NIFTY 50"}
+INDEX_QUOTE_KEYS = {256265: "NSE:NIFTY 50", 26000: "NSE:NIFTY 50"}
+INDEX_HISTORY_TOKENS = {26000: "NSE"}
 HISTORY_CACHE_TTL = 60
 HISTORY_CACHE_MAX = 16
 
@@ -250,7 +251,7 @@ class MStockAdapter(BrokerAdapter):
         if self._token_exchange is None:
             with self._master_lock:
                 if self._token_exchange is None:
-                    mapping: dict[int, str] = {}
+                    mapping: dict[int, str] = dict(INDEX_HISTORY_TOKENS)
                     for row in self._iter_master_rows():
                         try:
                             token = int(row["instrument_token"])

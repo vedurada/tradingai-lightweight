@@ -837,13 +837,21 @@ All nine dashboards show **Last Closed Spot** and **Closed-Bar ATM** cards in
 addition to the live pair, which is labelled **NIFTY LTP (live)** /
 **ATM Strike (live)** to distinguish the broker's last-traded index price from
 the completed 5m close. These come from the most recent *completed*
-NIFTY 5-minute candle, not the current LTP. Because the read-only gateway does
-not serve NIFTY index history, the value is reconstructed from the latest
-completed ATM CE/PE 5m closes as `strike + CE close - PE close`, labelled in the
-API as `last_closed_spot_source: atm_ce_pe_parity_5m_close` (the pattern scanner
-uses `completed_spot_5m_close` in live spot-candle mode). The corresponding
-candle start is returned as `last_closed_candle_start`, and the CE/PE closes as
-`last_closed_ce_close` / `last_closed_pe_close`.
+NIFTY 5-minute candle, not the current LTP. The read-only gateway serves NIFTY
+50 index history on NSE token **26000** (mStock's index token, distinct from
+Zerodha's 256265), so every scanner reads the real index bar directly. The API
+reports `last_closed_spot_source: nifty_index_5m_close`, with the bar timestamp
+in `last_closed_candle_start`. The CE/PE closes are no longer used for this
+calculation and are reported as `null`.
+
+The earlier `atm_ce_pe_parity_5m_close` reconstruction was removed because
+mStock option history can contain frozen, zero-volume bars. On 2026-11-20 those
+bars implied a spot near 25739 while the real index closed at 25800.6, so the
+parity cards were wrong. Note also that mStock's live index **quote** can be
+stale: on 2026-11-21 its `last_price` was 25461.35 even though its own `ohlc.close`
+and the index history both showed 25800.6. The **NIFTY LTP (live)** card
+reflects that broker quote verbatim and should be treated with caution until
+the feed recovers.
 
 Every active scanner has a button on `https://tradingai.in/live/scalp/` — the
 eight buttons are `sma9`, `sma9-atr`, `sma9-high`, `sma9-1min-poll`,

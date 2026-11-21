@@ -749,40 +749,52 @@ class TrailLiveScanner:
         return self._status(now, option_status, errors=errors)
 
     def _refresh_last_closed_spot(self, now, option_status):
-        """Derive last completed 5m NIFTY spot from ATM CE/PE parity.
+        """Set last completed 5m NIFTY spot from real index candles.
 
-        mStock does not expose index history through the read-only gateway, so
-        spot is reconstructed as `strike + CE close - PE close` from the most
-        recent completed option candle shared by both ATM legs. The value is
-        labelled with its source in the scanner state.
+        mStock serves NIFTY 50 index history on NSE token 26000. The previous
+        CE/PE parity reconstruction was unreliable because option history can
+        contain frozen, zero-volume bars that imply a completely wrong spot.
+        The index bar is authoritative; CE/PE closes are cleared because they
+        are no longer part of this calculation.
         """
+        nifty_index_token = 26000
         try:
-            completed = {}
-            for opt in ("CE", "PE"):
-                status = option_status.get(opt) or {}
-                token = status.get("token")
-                if not token:
-                    continue
-                rows = self.feed.candles(token)
-                done = [r for r in rows if r["start"] < floor_5m(now)]
-                if done:
-                    completed[opt] = (done[-1], status)
-            if set(completed) != {"CE", "PE"}:
-                return
-            ce_bar, ce_status = completed["CE"]
-            pe_bar, pe_status = completed["PE"]
-            if ce_bar["start"] != pe_bar["start"]:
-                return
-            strike = float(ce_status["strike"])
-            ce_close = float(ce_bar["close"])
-            pe_close = float(pe_bar["close"])
-            spot = strike + ce_close - pe_close
+            cached = getattr(self, "_last_closed_index_bar", None)
+            cached_at = getattr(self, "_last_closed_index_bar_at", None)
+            cached_boundary = getattr(self, "_last_closed_index_bar_boundary", None)
+            bar_start = floor_5m(now)
+            if (cached and cached_at and cached_boundary == bar_start
+                    and (now - cached_at).total_seconds() < 300):
+                bar = cached
+            else:
+                start = now - timedelta(days=7)
+                start = start.replace(hour=9, minute=15, second=0, microsecond=0)
+                raw = self.feed.kite.historical_data(
+                    nifty_index_token, start, now, "5minute"
+                )
+                rows = normalize_candles([
+                    {
+                        "start": r["date"], "open": r["open"], "high": r["high"],
+                        "low": r["low"], "close": r["close"],
+                        "volume": r.get("volume", 0),
+                    }
+                    for r in (raw or [])
+                ])
+                completed = [r for r in rows if r["start"] < bar_start]
+                if not completed:
+                    return
+                last = completed[-1]
+                bar = {"start": last["start"], "close": float(last["close"])}
+                self._last_closed_index_bar = bar
+                self._last_closed_index_bar_at = now
+                self._last_closed_index_bar_boundary = bar_start
+            spot = float(bar["close"])
             self.last_closed_spot = round(spot, 2)
             self.last_closed_atm_strike = float(round(spot / 50.0) * 50)
-            self.last_closed_candle_start = ce_bar["start"].isoformat()
-            self.last_closed_ce_close = round(ce_close, 2)
-            self.last_closed_pe_close = round(pe_close, 2)
-            self.last_closed_spot_source = "atm_ce_pe_parity_5m_close"
+            self.last_closed_candle_start = bar["start"].isoformat()
+            self.last_closed_ce_close = None
+            self.last_closed_pe_close = None
+            self.last_closed_spot_source = "nifty_index_5m_close"
         except Exception:
             pass
 
