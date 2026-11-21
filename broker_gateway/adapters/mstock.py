@@ -77,7 +77,7 @@ class MStockAdapter(BrokerAdapter):
         )
         self._secret_lock = threading.Lock()
         self._secret_stamp: tuple[int, int] | None = None
-        self._apply_secret(required=True)
+        self._apply_secret(required=True, stamp=self._secret_signature())
         self.cache_dir = pathlib.Path(os.environ.get("BROKER_GATEWAY_CACHE_DIR", DEFAULT_CACHE))
         self.cache_dir.mkdir(parents=True, exist_ok=True, mode=0o750)
         # Keep only the raw CSV text, not 94k materialised dicts. All maps are
@@ -98,7 +98,7 @@ class MStockAdapter(BrokerAdapter):
             return None
         return (stat.st_mtime_ns, stat.st_size)
 
-    def _apply_secret(self, required: bool = False) -> bool:
+    def _apply_secret(self, required: bool = False, stamp=None) -> bool:
         cfg = _load_secret()
         api_key = cfg.get("MSTOCK_API_KEY", "")
         access_token = cfg.get("MSTOCK_ACCESS_TOKEN", "")
@@ -108,7 +108,10 @@ class MStockAdapter(BrokerAdapter):
             return False
         self.api_key = api_key
         self.access_token = access_token
-        self._secret_stamp = self._secret_signature()
+        # Stamp with the signature observed BEFORE the read. Stamping after the
+        # read (TOCTOU) could pair old credentials with a newer file signature,
+        # causing the next check to skip adopting the newly written token.
+        self._secret_stamp = stamp if stamp is not None else self._secret_signature()
         return True
 
     def _refresh_secret_if_changed(self) -> None:
@@ -122,7 +125,7 @@ class MStockAdapter(BrokerAdapter):
             stamp = self._secret_signature()
             if stamp is None or stamp == self._secret_stamp:
                 return
-            self._apply_secret()
+            self._apply_secret(stamp=stamp)
 
     # -- gateway freshness contract --------------------------------------
     def credential_signature(self):

@@ -307,6 +307,9 @@ Broker selection itself is separate from tokens:
 | Socket `Connection refused` / `BrokenPipe` during gateway restart | systemd `Restart=always`; transient scanner errors are skipped on next 5 s poll |
 | Daily mStock token expires overnight | Run `mstock_session.py --mode totp` before market open; daemon adopts the new token on the next call |
 | Stale token for the selected broker | Gateway validates before every data call and refuses stale tokens with a clear error; refresh that broker's token |
+| Failed token validation hammering the broker | Short 30 s negative freshness cache (`BROKER_GATEWAY_FRESH_NEG_TTL`) fails closed without repeated profile calls; a credential-signature change bypasses it immediately |
+| Credential refresh race (TOCTOU) | Adapters stamp the file signature observed *before* the read, so a concurrent atomic rewrite cannot pair old credentials with a newer stamp and be skipped forever |
+| 08:45 pre-market check only covered Zerodha | `premarket_token_check.sh` now checks the effective mStock broker first and reports both brokers in `token_status.txt` |
 | Stale Zerodha token | Refresh that scanner's token before switching back; avoid fleet-wide refresh |
 | Broker write attempted | Shim `PermissionError` + daemon method allowlist |
 | Zero/negative/NULL broker quote | Gateway removes `last_price`; scanner treats it as "LTP unavailable" and skips entry/exit for that poll |
@@ -353,6 +356,9 @@ No scanner file changes are needed.
 - Gateway freshness guard verified end-to-end: a `profile` call through the
   socket succeeds for mstock and is refused for zerodha with
   `zerodha token is stale or invalid; refresh it before trading: ...`.
+- Negative freshness cache, credential-stamp ordering and both-broker premarket
+  check covered by `tests/test_broker_gateway_freshness.py`; manual premarket
+  run reports `MSTOCK_VALID | ZERODHA_INVALID` as expected.
 
 Live-market checks (09:00 IST start, entry window, warm-up, ATR exits, A+B gating,
 no broker orders) still require a trading session. The current daily token must

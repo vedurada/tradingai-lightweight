@@ -31,12 +31,15 @@ class ZerodhaAdapter(BrokerAdapter):
         )
         self._cred_lock = threading.Lock()
         self._signature: tuple[int, int] | None = None
+        # Capture the signature before reading so a concurrent refresh cannot
+        # pair this snapshot with a newer signature (TOCTOU).
+        stamp = self._current_signature()
         creds = _load_credentials()
         api_key = creds.get("KITE_API_KEY")
         token = creds.get("KITE_ACCESS_TOKEN")
         if not api_key or not token:
             raise RuntimeError("Zerodha credentials are incomplete")
-        self._signature = self._current_signature()
+        self._signature = stamp
         self.kite = self._build(api_key, token)
 
     @staticmethod

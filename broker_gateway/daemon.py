@@ -25,7 +25,12 @@ _LOCK = threading.Lock()
 _MAX_CALLS = max(1, int(os.environ.get("BROKER_GATEWAY_MAX_CALLS", "4")))
 _CALL_LIMIT = threading.BoundedSemaphore(_MAX_CALLS)
 _FRESH_TTL = float(os.environ.get("BROKER_GATEWAY_FRESH_TTL", "300"))
+# A failed validation is cached briefly so a stale token cannot make eight
+# scanners hammer the broker's profile endpoint every 5 s. Credential changes
+# bypass this cache immediately (signature check happens first).
+_FRESH_NEG_TTL = float(os.environ.get("BROKER_GATEWAY_FRESH_NEG_TTL", "30"))
 _FRESH_CACHE: dict[str, tuple[object, float, bool]] = {}
+_FRESH_ERROR: dict[str, str] = {}
 _FRESH_LOCK = threading.Lock()
 _FRESH_LOCKS: dict[str, threading.Lock] = {}
 
@@ -49,31 +54,57 @@ def _broker_lock(broker: str) -> threading.Lock:
         return _FRESH_LOCKS.setdefault(broker, threading.Lock())
 
 
+def _cached_freshness(broker: str, signature, now: float) -> str | None:
+    """Return 'ok'/'failed' when a cached decision still applies, else None.
+
+    A changed credential signature never matches, so a token refresh is adopted
+    immediately even if the previous signature had failed validation.
+    """
+    with _FRESH_LOCK:
+        cached = _FRESH_CACHE.get(broker)
+    if not cached or cached[0] != signature:
+        return None
+    age = now - cached[1]
+    if cached[2] and age < _FRESH_TTL:
+        return "ok"
+    if not cached[2] and age < _FRESH_NEG_TTL:
+        return "failed"
+    return None
+
+
 def _require_fresh(broker: str, adapter) -> None:
     """Use only the latest, validated token for the selected broker."""
     signature = adapter.credential_signature()
-    now = time.monotonic()
-    with _FRESH_LOCK:
-        cached = _FRESH_CACHE.get(broker)
-    if cached and cached[0] == signature and cached[2] and now - cached[1] < _FRESH_TTL:
+    decision = _cached_freshness(broker, signature, time.monotonic())
+    if decision == "ok":
         return
+    if decision == "failed":
+        with _FRESH_LOCK:
+            message = _FRESH_ERROR.get(broker, f"{broker} token is stale or invalid")
+        raise BrokerCallFailed(message)
 
     with _broker_lock(broker):
         now = time.monotonic()
-        with _FRESH_LOCK:
-            cached = _FRESH_CACHE.get(broker)
-        if cached and cached[0] == signature and cached[2] and now - cached[1] < _FRESH_TTL:
+        decision = _cached_freshness(broker, signature, now)
+        if decision == "ok":
             return
+        if decision == "failed":
+            with _FRESH_LOCK:
+                message = _FRESH_ERROR.get(broker, f"{broker} token is stale or invalid")
+            raise BrokerCallFailed(message)
         try:
             adapter.validate_credentials()
         except Exception as exc:
+            message = (
+                f"{broker} token is stale or invalid; refresh it before trading: {exc}"
+            )
             with _FRESH_LOCK:
                 _FRESH_CACHE[broker] = (signature, now, False)
-            raise BrokerCallFailed(
-                f"{broker} token is stale or invalid; refresh it before trading: {exc}"
-            ) from exc
+                _FRESH_ERROR[broker] = message
+            raise BrokerCallFailed(message) from exc
         with _FRESH_LOCK:
             _FRESH_CACHE[broker] = (signature, now, True)
+            _FRESH_ERROR.pop(broker, None)
 
 
 def _sanitize_quote(result):
