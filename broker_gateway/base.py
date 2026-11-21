@@ -28,3 +28,15 @@ class BrokerAdapter(ABC):
     def profile(self) -> dict:
         """Optional connectivity check."""
         return {"broker": self.name}
+
+    def credential_signature(self):
+        """Identify the current on-disk credential state, or None."""
+        return None
+
+    def refresh_credentials_if_changed(self) -> None:
+        """Adopt credentials written by a refresh tool. No-op by default."""
+        return None
+
+    def validate_credentials(self) -> None:
+        """Raise if the current token is unusable. No-op by default."""
+        return None

@@ -120,6 +120,16 @@ class MStockAdapter(BrokerAdapter):
                 return
             self._apply_secret()
 
+    # -- gateway freshness contract --------------------------------------
+    def credential_signature(self):
+        return self._secret_signature()
+
+    def refresh_credentials_if_changed(self) -> None:
+        self._refresh_secret_if_changed()
+
+    def validate_credentials(self) -> None:
+        self.profile()
+
     # -- transport -------------------------------------------------------
     def _headers(self) -> dict[str, str]:
         self._refresh_secret_if_changed()

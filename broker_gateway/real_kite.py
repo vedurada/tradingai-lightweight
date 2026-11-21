@@ -37,6 +37,16 @@ def load_real_kite_connect():
 
         module = importlib.util.module_from_spec(spec)
         sys.modules[name] = module
-        spec.loader.exec_module(module)
+        # The installed package uses absolute imports (from kiteconnect import
+        # exceptions/connect/ticker). The broker-gateway shim is earlier on
+        # sys.path, so register the real package under its canonical name while
+        # loading it, otherwise those imports resolve to the shim and fail.
+        sys.modules["kiteconnect"] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules.pop(name, None)
+            sys.modules.pop("kiteconnect", None)
+            raise
         _CACHE = module.KiteConnect
         return _CACHE

@@ -232,11 +232,27 @@ sudo /usr/local/sbin/mstock_session.py --mode totp   # or --mode otp
 sudo /usr/local/sbin/mstock_session.py --check       # confirm before market open
 ```
 
-The gateway daemon is long-running, so `MStockAdapter` re-reads the secret file
-whenever its `(mtime, size)` signature changes. `_headers()` performs that check
-on every HTTP request, so a pre-market token refresh becomes active on the next
-broker call **without restarting the daemon**. An empty or partial refresh is
-ignored and the previous working credentials are retained.
+Freshness is enforced by the gateway for **every** broker, not just mStock. Each
+adapter exposes three hooks:
+
+- `credential_signature()` — the current `(mtime, size)` of its credential file;
+- `refresh_credentials_if_changed()` — adopt a refreshed token on disk;
+- `validate_credentials()` — a lightweight broker call that proves the token works.
+
+On every dispatch the daemon adopts any credential change, then validates the
+token (cached for 300 s per broker, invalidated when the signature changes). A
+stale or rejected token is refused with a clear error before any data call is
+made, so a scanner never silently trades on an expired token. This applies to
+`mstock` (`/opt/tradingai/secrets/mstock.env`) and `zerodha`
+(`/opt/tradingai/.env.zerodha`) and to any future adapter that implements the
+hooks. An empty or partial refresh is ignored and the last working credentials
+are retained.
+
+`MStockAdapter` re-reads its secret whenever the signature changes and `_headers()`
+checks on every HTTP request, so a pre-market refresh becomes active on the next
+broker call **without restarting the daemon**. `ZerodhaAdapter` rebuilds its
+`KiteConnect` client the same way, so the Zerodha `refresh_token.sh` also takes
+effect without a daemon restart.
 
 There is no mStock refresh timer. The existing `tradingai-token-check.timer`
 (08:45 Mon–Fri IST) is a read-only **Zerodha** check and does not refresh or
@@ -260,6 +276,7 @@ Broker selection itself is separate from tokens:
 | Memory pressure / OOM | 4-call concurrency cap; cached scriptmaster and candles |
 | Socket `Connection refused` / `BrokenPipe` during gateway restart | systemd `Restart=always`; transient scanner errors are skipped on next 5 s poll |
 | Daily mStock token expires overnight | Run `mstock_session.py --mode totp` before market open; daemon adopts the new token on the next call |
+| Stale token for the selected broker | Gateway validates before every data call and refuses stale tokens with a clear error; refresh that broker's token |
 | Stale Zerodha token | Refresh that scanner's token before switching back; avoid fleet-wide refresh |
 | Broker write attempted | Shim `PermissionError` + daemon method allowlist |
 
@@ -291,6 +308,9 @@ No scanner file changes are needed.
   is the one in use.
 - Token auto-reload verified with dummy credentials: an atomic secret-file
   replacement is adopted on the next call, and an invalid refresh is ignored.
+- Gateway freshness guard verified end-to-end: a `profile` call through the
+  socket succeeds for mstock and is refused for zerodha with
+  `zerodha token is stale or invalid; refresh it before trading: ...`.
 
 Live-market checks (09:00 IST start, entry window, warm-up, ATR exits, A+B gating,
 no broker orders) still require a trading session. The current daily token must

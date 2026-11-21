@@ -9,11 +9,12 @@ import pathlib
 import socketserver
 import sys
 import threading
+import time
 import traceback
 
 from broker_gateway import __version__
 from broker_gateway.adapters import available_brokers, get_adapter
-from broker_gateway.errors import BrokerGatewayError
+from broker_gateway.errors import BrokerCallFailed, BrokerGatewayError
 
 SOCKET_PATH = os.environ.get("BROKER_GATEWAY_SOCKET", "/run/tradingai/broker_gateway.sock")
 SOCKET_GROUP = os.environ.get("BROKER_GATEWAY_GROUP", "ubuntu")
@@ -22,6 +23,10 @@ _ADAPTERS: dict[str, object] = {}
 _LOCK = threading.Lock()
 _MAX_CALLS = max(1, int(os.environ.get("BROKER_GATEWAY_MAX_CALLS", "4")))
 _CALL_LIMIT = threading.BoundedSemaphore(_MAX_CALLS)
+_FRESH_TTL = float(os.environ.get("BROKER_GATEWAY_FRESH_TTL", "300"))
+_FRESH_CACHE: dict[str, tuple[object, float, bool]] = {}
+_FRESH_LOCK = threading.Lock()
+_FRESH_LOCKS: dict[str, threading.Lock] = {}
 
 
 class GatewayEncoder(json.JSONEncoder):
@@ -38,6 +43,38 @@ def _adapter(name: str):
         return _ADAPTERS[name]
 
 
+def _broker_lock(broker: str) -> threading.Lock:
+    with _FRESH_LOCK:
+        return _FRESH_LOCKS.setdefault(broker, threading.Lock())
+
+
+def _require_fresh(broker: str, adapter) -> None:
+    """Use only the latest, validated token for the selected broker."""
+    signature = adapter.credential_signature()
+    now = time.monotonic()
+    with _FRESH_LOCK:
+        cached = _FRESH_CACHE.get(broker)
+    if cached and cached[0] == signature and cached[2] and now - cached[1] < _FRESH_TTL:
+        return
+
+    with _broker_lock(broker):
+        now = time.monotonic()
+        with _FRESH_LOCK:
+            cached = _FRESH_CACHE.get(broker)
+        if cached and cached[0] == signature and cached[2] and now - cached[1] < _FRESH_TTL:
+            return
+        try:
+            adapter.validate_credentials()
+        except Exception as exc:
+            with _FRESH_LOCK:
+                _FRESH_CACHE[broker] = (signature, now, False)
+            raise BrokerCallFailed(
+                f"{broker} token is stale or invalid; refresh it before trading: {exc}"
+            ) from exc
+        with _FRESH_LOCK:
+            _FRESH_CACHE[broker] = (signature, now, True)
+
+
 def dispatch(request: dict):
     if not isinstance(request, dict):
         raise BrokerGatewayError("request must be an object")
@@ -51,6 +88,8 @@ def dispatch(request: dict):
     if not isinstance(params, dict):
         raise BrokerGatewayError("params must be an object")
     adapter = _adapter(broker)
+    adapter.refresh_credentials_if_changed()
+    _require_fresh(broker, adapter)
     func = getattr(adapter, method)
     with _CALL_LIMIT:
         return func(**params)
