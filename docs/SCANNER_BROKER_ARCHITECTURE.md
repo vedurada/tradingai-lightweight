@@ -68,7 +68,7 @@ flowchart TB
 | Alias (CLI) | Script | systemd service | Run user | State file | API status route |
 |---|---|---|---|---|---|
 | `sma9` | `live_sma9_scanner.py` | `tradingai-sma9-scanner` | `sma9` | `/opt/tradingai/database/sma9.db` | `/api/sma9/scanner-status` |
-| `sma9_5min` (scanner staged) | `live_sma9_5min_scanner.py` | `tradingai-sma9-5min-scanner` (planned) | `sma95min` (planned) | `/opt/tradingai/database/sma9_5min.db` | `/api/sma9-5min/scanner-status` (deployed) |
+| `sma9_5min` | `live_sma9_5min_scanner.py` | `tradingai-sma9-5min-scanner` (deployed) | `sma95min` (deployed) | `/opt/tradingai/database/sma9_5min.db` | `/api/sma9-5min/scanner-status` (deployed) |
 | `sma9_atr` | `live_sma9_atr_scanner.py` | `tradingai-sma9-atr-scanner` | `sma9` | `/opt/tradingai/database/sma9_atr.db` | `/api/sma9-atr/scanner-status` |
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
 | `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |

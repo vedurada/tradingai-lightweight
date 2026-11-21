@@ -3,7 +3,7 @@
 **One line:** an isolated copy of `sma9` with the same A+B entry and fixed-stop
 rules, sampled once per aligned NIFTY 5-minute candle instead of every 5 seconds.
 
-- **Status:** API, dashboard and performance-report entry deployed on the VM; scanner service still staged (not running)
+- **Status:** fully deployed on the VM — scanner service running, own DB, API, dashboard and performance-report entry live
 - **Cadence:** aligned 5-minute polls at `:00, :05, ... :55` +10 s
 - **Stop:** fixed 5% of entry premium, after the same 5-point trail
 - **First live day:** not yet live

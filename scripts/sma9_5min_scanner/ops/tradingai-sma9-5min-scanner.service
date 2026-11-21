@@ -16,9 +16,10 @@ Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONPATH=/opt/tradingai/sma9_5min_scanner
 ExecStart=/usr/bin/python3 /opt/tradingai/sma9_5min_scanner/app/live_sma9_5min_scanner.py
-# SQLite creates -shm/-wal with the main file's mode; keep the DB writable so
-# both the scanner and the read-only API process can always open it.
-ExecStartPre=+/bin/sh -c 'chmod 0666 /opt/tradingai/database/sma9_5min.db* 2>/dev/null || true'
+# The ubuntu API opens this DB read-only, but SQLite still creates -shm/-wal
+# with the main file's mode. Keep the main DB group-writable (matching the other
+# scanner DBs) so the scanner and API can share it without world-writable files.
+ExecStartPre=+/bin/sh -c 'chmod 0660 /opt/tradingai/database/sma9_5min.db* 2>/dev/null || true'
 Restart=always
 RestartSec=5
 StandardOutput=append:/opt/tradingai/logs/live_sma9_5min_scanner.log
