@@ -93,6 +93,7 @@ def session_open_time(dt):
 def session_close_time(dt):
     return MUHURAT_SESSIONS.get(dt.date().isoformat(), (MARKET_OPEN, MARKET_CLOSE))[1]
 POLL_SECONDS = 5
+POLL_OFFSET_SECONDS = 0.6  # stagger Data API history fetches across scanners
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9 ATR Stop - ATM Option Strike (BUY ONLY)"
@@ -230,10 +231,12 @@ def compute_spot_regime(candles, now: datetime,
 
 
 def sleep_to_next_tick() -> None:
-    now = now_ist()
-    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
-    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
-    time.sleep(max(0.2, (target - now_ist()).total_seconds()))
+    """Sleep until this scanner's next staggered 5-second tick."""
+    epoch = now_ist().timestamp()
+    target = (
+        (int(epoch - POLL_OFFSET_SECONDS) // POLL_SECONDS) + 1
+    ) * POLL_SECONDS + POLL_OFFSET_SECONDS
+    time.sleep(max(0.2, target - epoch))
 
 
 # ---------------------------------------------------------------------------

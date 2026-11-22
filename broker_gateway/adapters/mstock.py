@@ -28,8 +28,26 @@ TRANSIENT_TEXT = ("try again", "something went wrong", "too many requests", "rat
 MAX_ATTEMPTS = 3
 INDEX_QUOTE_KEYS = {256265: "NSE:NIFTY 50", 26000: "NSE:NIFTY 50"}
 INDEX_HISTORY_TOKENS = {26000: "NSE"}
-HISTORY_CACHE_TTL = 60
+# mStock publishes Data APIs at 1 request/second.  Historical candles are Data
+# APIs, so throttle them at the adapter boundary and give every scanner the same
+# cache key for a given 5-minute bar.  The short TTL still lets a forming bar
+# appear without a long stale window.
+DATA_API_MIN_INTERVAL = float(os.environ.get("MSTOCK_DATA_API_MIN_INTERVAL", "1.05"))
+HISTORY_CACHE_TTL = float(os.environ.get("MSTOCK_HISTORY_CACHE_TTL", "20"))
 HISTORY_CACHE_MAX = 16
+_DATA_API_LOCK = threading.Lock()
+_DATA_API_LAST = 0.0
+
+
+def _pace_data_api() -> None:
+    """Keep mStock Data API calls within its published 1 request/second."""
+    global _DATA_API_LAST
+    with _DATA_API_LOCK:
+        now = time.monotonic()
+        delay = DATA_API_MIN_INTERVAL - (now - _DATA_API_LAST)
+        if delay > 0:
+            time.sleep(delay)
+        _DATA_API_LAST = time.monotonic()
 
 
 def _load_secret() -> dict[str, str]:
@@ -67,6 +85,16 @@ def _as_datetime(value) -> dt.datetime:
     if isinstance(value, dt.date):
         return dt.datetime.combine(value, dt.time(9, 15), tzinfo=IST)
     return _parse_timestamp(str(value))
+
+
+def _history_cache_key(token: int, interval: str, signature, start_dt, end_dt):
+    """One cache entry per token per 5-minute bar, not per call timestamp."""
+    bar_end = end_dt.astimezone(IST).replace(
+        minute=(end_dt.minute // 5) * 5, second=0, microsecond=0)
+    return (
+        token, interval, signature,
+        start_dt.replace(microsecond=0).isoformat(), bar_end.isoformat(),
+    )
 
 
 class MStockAdapter(BrokerAdapter):
@@ -154,7 +182,10 @@ class MStockAdapter(BrokerAdapter):
         url = BASE + path
         if params:
             url += "?" + urllib.parse.urlencode(params, doseq=True)
+        is_data_api = path.startswith(("/instruments/historical", "/instruments/scriptmaster"))
         for attempt in range(MAX_ATTEMPTS):
+            if is_data_api:
+                _pace_data_api()
             req = urllib.request.Request(url, headers=self._headers(), method="GET")
             try:
                 with urllib.request.urlopen(req, timeout=timeout) as response:
@@ -354,8 +385,8 @@ class MStockAdapter(BrokerAdapter):
         end_dt = _as_datetime(end)
         interval = str(interval)
 
-        cache_key = (token, interval, self._secret_signature(),
-                     start_dt.isoformat(), end_dt.isoformat())
+        cache_key = _history_cache_key(
+            token, interval, self._secret_signature(), start_dt, end_dt)
         with self._history_lock:
             cached = self._history_cache.get(cache_key)
             if cached and (time.time() - cached[0]) < HISTORY_CACHE_TTL:
