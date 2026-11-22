@@ -2,7 +2,8 @@
 """Offline checks for the SMA9 + ADX(14) engine.
 
 Covers Wilder ADX, the two-condition entry gate, forming-candle exclusion,
-the 5% initial stop and the HWM-5% trailing stop. No network, broker or DB.
+the 5% initial stop and the sma9-style point-based trailing stop.
+No network, broker or DB.
 """
 import os
 import sys
@@ -12,12 +13,15 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
 
 from app.sma9_adx_engine import (  # noqa: E402
+    ACTIVATE,
     ADX_THRESHOLD,
+    BE_LOCK_PROFIT,
+    BE_LOCK_STOP,
     OptionStateMachine,
     Position,
     SMA_PERIOD,
     STOP_LOSS_PCT,
-    TRAIL_PCT,
+    TRAIL,
     compute_adx,
     evaluate_option,
 )
@@ -76,8 +80,7 @@ def make_position(entry=100.0, sma=95.0, adx=25.0):
         entry_candle_start=BASE, entry_candle_end=BASE + timedelta(minutes=5),
         entry_price=entry, sma9=sma, adx=adx, prev_close=99.0,
         current_open=100.0, condition_a=True, condition_b=True,
-        ltp_at_entry=entry, hwm=entry,
-        stop=round(entry * (1.0 - STOP_LOSS_PCT), 2),
+        ltp_at_entry=entry, hwm=entry, stop=None,
     )
 
 
@@ -132,37 +135,55 @@ ev_low_ltp = evaluate_option(trend_candles(), "CE", ltp=1.0)
 check("confirmation_informational",
       ev_low_ltp.signal and (not ev_low_ltp.confirmation))
 
-# 7. Entry stores the 5% initial stop and ADX metadata.
+# 7. Entry leaves the trail stop unset and stores ADX metadata (as sma9 does).
 sm = OptionStateMachine("CE")
 pos = sm.try_entry(ev, NOW, 25000, "2026-11-23", 1, "NIFTY26NOV25000CE",
                    BASE + timedelta(hours=6))
 check("entry_position", pos is not None)
-check("entry_initial_stop", pos is not None
-      and pos.stop == round(pos.entry_price * (1.0 - STOP_LOSS_PCT), 2),
+check("entry_stop_unset", pos is not None and pos.stop is None,
       f"stop={pos.stop if pos else None}")
 check("entry_adx_metadata", pos is not None and pos.adx == round(ev.adx, 2))
 
 # 8. 5% initial stop loss.
 sm_sl = OptionStateMachine("CE")
 sm_sl.restore(make_position(entry=100.0))
-check("sl_not_hit_above", sm_sl.check_stop_loss(95.01) is None)
-check("sl_hit_at_floor", sm_sl.check_stop_loss(95.0) == 95.0)
-check("sl_hit_below", sm_sl.check_stop_loss(92.0) == 95.0)
+sl_floor = round(100.0 * (1.0 - STOP_LOSS_PCT), 2)
+check("sl_not_hit_above", sm_sl.check_stop_loss(sl_floor + 0.01) is None)
+check("sl_hit_at_floor", sm_sl.check_stop_loss(sl_floor) == sl_floor)
+check("sl_hit_below", sm_sl.check_stop_loss(sl_floor - 3.0) == sl_floor)
 
-# 9. HWM-5% trailing stop ratchets up, never down, and only exits above the floor.
+# 9. sma9-style trail: activate at +5, BE lock at +6, ratchet HWM-5 points,
+#    and only exit on a strictly profitable stop.
 p = make_position(entry=100.0)
-check("trail_initial_floor", p.update_trail(100.0) is None and p.stop == 95.0,
+check("trail_inactive_before_activation",
+      p.update_trail(100.0 + ACTIVATE - 0.01) is None and p.stop is None,
       f"stop={p.stop}")
-check("trail_new_high", p.update_trail(110.0) is None
-      and p.stop == round(110.0 * (1.0 - TRAIL_PCT), 2), f"stop={p.stop}")
-check("trail_no_exit_above_stop", p.update_trail(105.0) is None,
+check("trail_activates_at_5_points",
+      p.update_trail(100.0 + ACTIVATE) is None and p.stop == 100.0,
       f"stop={p.stop}")
-check("trail_exit_at_ratcheted_stop", p.update_trail(104.0) == 104.5,
+check("be_lock_at_6_points",
+      p.update_trail(100.0 + BE_LOCK_PROFIT) is None
+      and p.stop == 100.0 + BE_LOCK_STOP and p.be_locked,
+      f"stop={p.stop} be_locked={p.be_locked}")
+check("trail_ratchets_at_hwm_minus_5",
+      p.update_trail(110.0) is None and p.stop == 105.0,
+      f"stop={p.stop}")
+check("trail_no_exit_above_stop", p.update_trail(105.01) is None,
+      f"stop={p.stop}")
+check("trail_exit_at_ratcheted_stop", p.update_trail(105.0) == 105.0,
       f"stop={p.stop}")
 check("trail_never_ratchets_down",
-      p.update_trail(130.0) is None and p.stop == 123.5
-      and p.update_trail(120.0) == 123.5 and p.stop == 123.5,
+      p.update_trail(120.0) is None and p.stop == 115.0
+      and p.update_trail(116.0) is None and p.stop == 115.0,
       f"stop={p.stop}")
+
+# 9b. A stop at breakeven (activation without BE lock) never causes an exit.
+p_be = make_position(entry=100.0)
+p_be.update_trail(100.0 + ACTIVATE)
+p_be.update_trail(100.0 + ACTIVATE - 1.0)
+check("no_exit_at_breakeven_stop",
+      p_be.stop == 100.0 and p_be.update_trail(100.0) is None,
+      f"stop={p_be.stop} be_locked={p_be.be_locked}")
 
 # 10. Round-trip keeps ADX; closed trade carries it too.
 p2 = Position.from_dict(p.as_dict())

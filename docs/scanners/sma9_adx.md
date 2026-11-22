@@ -2,11 +2,12 @@
 
 **One line:** a 5-second paper scanner that buys ATM CE/PE when the previous
 completed option candle closes above SMA9 **and** ADX(14) on completed option
-candles is above 20, then exits on a 5% initial stop or a 5% HWM trailing stop.
+candles is above 20, then uses the same `sma9` exits: a 5% initial stop plus a
+5-point trailing stop that activates at +5 points with a one-time breakeven lock.
 
 - **Status:** fully deployed on the VM — scanner service running, own DB, API, dashboard and performance-report entry live
 - **Cadence:** every 5 seconds during market hours
-- **Stop:** fixed 5% of entry premium, ratcheted to HWM - 5%
+- **Stop:** 5% of entry premium; `sma9`-style trail (activate +5, ratchet HWM - 5 points, BE lock +2 at +6)
 - **First live day:** 2026-11-22
 
 ## Why it exists
@@ -57,22 +58,30 @@ only trend *strength* matters, so CE and PE use the same threshold.
 ## Exit
 
 ```
-initial_stop = round(entry * 0.95, 2)
-hwm          = max(hwm, LTP)
-trail_stop   = round(hwm * 0.95, 2)
-stop         = max(initial_stop, trail_stop)
+sl_price = round(entry * 0.95, 2)          # checked every poll
+hwm      = max(hwm, LTP)
 
-if stop > initial_stop and LTP <= stop:  exit at stop   # TRAIL_STOP_EXIT
-elif LTP <= initial_stop:                exit at stop   # STOP_LOSS_5PCT
+if hwm - entry >= 5 and stop is None:  stop = entry       # trail activates
+if hwm - entry >= 5 and stop is not None:
+    stop = max(stop, hwm - 5)                             # ratchet up only
+if not be_locked and hwm - entry >= 6:
+    stop = max(stop or entry, entry + 2); be_locked = True
+if stop is not None and stop > entry and LTP <= stop:
+    exit at stop                                          # TRAIL_STOP_EXIT
+elif LTP <= sl_price:
+    exit at sl_price                                      # STOP_LOSS_5PCT
 else: hold
 ```
 
-- Initial stop is 5% below the entry premium.
-- Once the premium rises, the stop ratchets to HWM - 5% and never ratchets down.
-- A losing trade always exits on the 5% initial stop, never on the trail.
-- No target, no candle-close exit, no time-based exit, no expiry forced exit.
-- `hwm` and `stop` are persisted on every poll, so a restart resumes the same
-  ratchet rather than rolling it back.
+- Initial stop is 5% below the entry premium; the trail stop starts unset.
+- The trail activates once the premium is 5 points above entry, then ratchets
+  to HWM - 5 points and never ratchets down.
+- A one-time breakeven lock at entry + 2 points engages once HWM - entry >= 6.
+- Only a strictly profitable stop (`stop > entry`) can trigger a trail exit.
+  A breakeven stop does not exit; there is no candle-close exit in the live runner.
+- No target, no time-based exit, no expiry forced exit.
+- `hwm`, `stop` and `be_locked` are persisted on every poll, so a restart resumes
+  the same state rather than rolling it back.
 
 ## Runtime
 
@@ -105,8 +114,8 @@ persist `adx` / `adx_value`.
 
 ## Relationships
 
-- Shares the 5-second cadence and isolation model with `sma9`, but replaces the
-  forming-open gate with ADX(14) > 20 and uses a 5% HWM trail.
+- Shares the 5-second cadence, isolation model and exit rules with `sma9`, but
+  replaces the forming-open gate with ADX(14) > 20.
 - `pattern_scanner` also trades premium, but detects entries on NIFTY spot
   candles and exits on premium ATR from completed 5m bars.
 - Other SMA variants keep their existing entry rules and identities.
