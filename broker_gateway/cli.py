@@ -15,6 +15,7 @@ from broker_gateway.config import config_path, load_config, save_config
 
 SCANNER_SCRIPTS = {
     "sma9": "live_sma9_scanner.py",
+    "sma9_adx": "live_sma9_adx_scanner.py",
     "sma9_atr": "live_sma9_atr_scanner.py",
     "sma9_high": "live_sma9_high_scanner.py",
     "sma9_1min_poll": "live_sma9_1min_poll_scanner.py",

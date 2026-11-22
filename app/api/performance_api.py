@@ -55,6 +55,17 @@ SCANNERS = [
         "open_table": "sma9_5min_open_positions",
     },
     {
+        "key": "sma9_adx",
+        "label": "SMA9 ADX",
+        "db": "sma9_adx.db",
+        "table": "sma9_adx_trades",
+        "date_col": "trade_date",
+        "where": "status = 'CLOSED'",
+        "open_table": "sma9_adx_open_positions",
+        # New standalone scanner; first live day 2026-11-22.
+        "min_date": "2026-11-22",
+    },
+    {
         "key": "sma9_atr",
         "label": "SMA9 ATR",
         "db": "sma9_atr.db",

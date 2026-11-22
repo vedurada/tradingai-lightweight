@@ -10,7 +10,7 @@ Run on the VM:
     sudo runuser -u ubuntu -g ubuntu -- python3 /opt/tradingai/scripts/ops/kite_connectivity_probe.py
 
     # per-scanner user: credentials readable + token accepted
-    for u in sma9 sma95min sma9high sma91m sma95satr sma9trail sma9trailhigh; do
+    for u in sma9 sma95min sma9adx sma9high sma91m sma95satr sma9trail sma9trailhigh; do
       sudo runuser -u "$u" -g ubuntu -- \
         python3 /opt/tradingai/scripts/ops/kite_connectivity_probe.py --light
     done
@@ -20,7 +20,7 @@ inside the Kite rate limits.
 
 The access token is read once at process start by every scanner, so a token
 refresh must be followed by a restart. `/opt/tradingai/refresh_token.sh` does
-that for the 8 paper scanners, the API and `pattern-scanner-live`.
+that for the 9 paper scanners, the API and `pattern-scanner-live`.
 """
 import os
 import sys

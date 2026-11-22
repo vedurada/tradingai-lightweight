@@ -1,7 +1,6 @@
 # Scanner docs — one page per strategy
 
-The VM runs **8 independent paper scanners**, and a ninth identity
-(`sma9_5min`) is staged in git for deployment. Each page below describes one
+The VM runs **10 independent paper scanners**. Each page below describes one
 strategy in logical terms: why it exists, exactly when it enters, exactly when
 it exits, what it persists, and where its runtime pieces live.
 
@@ -20,6 +19,7 @@ explain the strategy.
 |---|---|---|---|---|
 | `sma9` | Baseline: previous 5m close above SMA9 and forming candle open above SMA9 | 5 s | 5% of premium | [`sma9.md`](sma9.md) |
 | `sma9_5min` | Isolated copy of `sma9` with aligned 5-minute polling | aligned 5 m | 5% of premium | [`sma9_5min.md`](sma9_5min.md) |
+| `sma9_adx` | Previous close above SMA9 **and** ADX(14) > 20 on completed option candles | 5 s | 5% of premium, HWM-5% trail | [`sma9_adx.md`](sma9_adx.md) |
 | `sma9_high` | `sma9` plus a live break of the previous candle high | 5 s | 5% of premium | [`sma9_high.md`](sma9_high.md) |
 | `sma9_1min_poll` | Same A+B entry as `sma9`, with `sma9_atr` ATR stop/trail | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_1min_poll.md`](sma9_1min_poll.md) |
 | `sma9_atr` | Same entry as `sma9`, stop scaled to the option's own ATR | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_atr.md`](sma9_atr.md) |
@@ -32,6 +32,10 @@ Retired strategies (stopped, disabled, kept only as archives):
 [`retired.md`](retired.md).
 
 ## The families
+
+**SMA9 + ADX family** — `sma9_adx`. Replaces the forming-open gate with
+Wilder ADX(14) > 20 on completed option premium 5m bars, and exits on a 5%
+initial stop ratcheted to HWM - 5%. See [`sma9_adx.md`](sma9_adx.md).
 
 **Base SMA family** — `sma9`, `sma9_5min`, `sma9_high`. The original premium
 scanner rules. The signal is computed on each option's own 5-minute premium

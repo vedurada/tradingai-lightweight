@@ -1,8 +1,8 @@
 # Scanner & Broker Connectivity Architecture
 
-This document describes how the eight live paper scanners reach a broker without
-any scanner source changes, and the repository-ready `sma9_5min` copy that will
-use the same path when deployed. The broker gateway is the only component that
+This document describes how the ten live paper scanners reach a broker without
+any scanner source changes. Every scanner uses the same read-only gateway path:
+broker choice is a config/CLI setting, never a code change. The broker gateway is the only component that
 holds broker credentials; scanners see a read-only, Kite-shaped API.
 
 ## Design goals
@@ -18,9 +18,9 @@ holds broker credentials; scanners see a read-only, Kite-shaped API.
 
 ```mermaid
 flowchart TB
-    subgraph SCANNERS["8 live paper scanners + 1 staged copy"]
-        SMA["7 x SMA scanners<br/>live_sma9*.py<br/>poll = 5 s"]
-        SMA5["sma9_5min<br/>live_sma9_5min_scanner.py<br/>poll = aligned 5 min + 10 s (staged)"]
+    subgraph SCANNERS["10 live paper scanners"]
+        SMA["9 x SMA scanners<br/>live_sma9*.py<br/>poll = 5 s"]
+        SMA5["sma9_5min / sma9_adx<br/>live_sma9_5min_scanner.py / live_sma9_adx_scanner.py<br/>aligned 5 min + 10 s / 5 s"]
         PAT["pattern_scanner_live.py<br/>poll = aligned 5 min + 10 s"]
     end
 
@@ -69,6 +69,7 @@ flowchart TB
 |---|---|---|---|---|---|
 | `sma9` | `live_sma9_scanner.py` | `tradingai-sma9-scanner` | `sma9` | `/opt/tradingai/database/sma9.db` | `/api/sma9/scanner-status` |
 | `sma9_5min` | `live_sma9_5min_scanner.py` | `tradingai-sma9-5min-scanner` (deployed) | `sma95min` (deployed) | `/opt/tradingai/database/sma9_5min.db` | `/api/sma9-5min/scanner-status` (deployed) |
+| `sma9_adx` | `live_sma9_adx_scanner.py` | `tradingai-sma9-adx-scanner` (deployed) | `sma9adx` (deployed) | `/opt/tradingai/database/sma9_adx.db` | `/api/sma9-adx/scanner-status` (deployed) |
 | `sma9_atr` | `live_sma9_atr_scanner.py` | `tradingai-sma9-atr-scanner` | `sma9` | `/opt/tradingai/database/sma9_atr.db` | `/api/sma9-atr/scanner-status` |
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
 | `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
@@ -77,8 +78,7 @@ flowchart TB
 | `sma9_1min_poll` | `live_sma9_1min_poll_scanner.py` | `tradingai-sma9-1min-poll-scanner` | `sma91m` | `/opt/tradingai/database/sma9_1min_poll.db` | `/api/sma9-1min-poll/scanner-status` |
 | `pattern` | `pattern_scanner_live.py` | `pattern-scanner-live` | `ubuntu` | `/opt/tradingai/data/pattern_scanner_status.json` | no dedicated route; dashboard reads JSON |
 
-All eight deployed scanners and the staged `sma9_5min` mapping resolve to
-broker `mstock`. The seven SMA routes are served
+All ten deployed scanners resolve to broker `mstock`. The nine SMA routes are served
 by `app.api.app:app` under gunicorn; the pattern scanner publishes a JSON status
 file that is refreshed on each aligned 5-minute poll (and on market-close ticks).
 
@@ -203,7 +203,7 @@ Notable mappings and guards:
   original requested key, so scanner lookups keep working.
 - Raw history requests over 10 days return HTTP 400 from mStock, so the adapter
   chunks ranges and merges candles.
-- The 60-second history cache plus the shared lock prevents eight scanners from
+- The 60-second history cache plus the shared lock prevents ten scanners from
   refetching the same option candles concurrently.
 
 ## 7. Deployment map
@@ -296,7 +296,7 @@ restart anything; it is not part of the mStock path.
 
 Broker selection itself is separate from tokens:
 
-- `config/scanners.json` has `default: zerodha` but all eight scanners carry an
+- `config/scanners.json` has `default: zerodha` but all ten scanners carry an
   explicit `mstock` entry, so every running scanner uses mstock.
 - Any scanner key not present in that mapping would fall back to the Zerodha
   default. Set `default` to `mstock` if that fallback is not wanted.

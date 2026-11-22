@@ -24,6 +24,7 @@ from app.api.e2_economics import bp as _e2_economics_bp
 from app.api.zerodha_paper_report import bp as zerodha_paper_bp
 from app.api.performance_api import bp as performance_bp
 from app.api.sma9_5min_api import bp as sma9_5min_bp
+from app.api.sma9_adx_api import bp as sma9_adx_bp
 
 app = Flask(__name__)
 # Trust exactly one hop (nginx on this host). Cloudflare/frontend IPs arrive
@@ -62,6 +63,7 @@ app.register_blueprint(_e2_economics_bp)
 app.register_blueprint(zerodha_paper_bp, url_prefix="/api/zerodha-paper")
 app.register_blueprint(performance_bp)
 app.register_blueprint(sma9_5min_bp)
+app.register_blueprint(sma9_adx_bp)
 
 market = MarketDataProvider()
 qual = QualificationEngine(settings)

@@ -2,8 +2,9 @@
 
 Complete reference for the 9 paper scanners running on the TradingAI VM:
 8 BUY-only NIFTY option-premium scanners plus `pattern_scanner` are active;
-`sma9_5min` is the ninth identity, deployed at `/live/sma9-5min/`. Five option scanners use a fixed 5%
-stop; `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll` and
+`sma9_5min` is the ninth identity, deployed at `/live/sma9-5min/`, and
+`sma9_adx` is the tenth, deployed at `/live/sma9-adx/`. Five option scanners use a fixed 5%
+stop; `sma9_adx` also uses a fixed 5% HWM trail; `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll` and
 `pattern_scanner` use a volatility-scaled **premium** ATR stop and ATR-only trail
 (no +5 activation and no breakeven lock). `sma9_atr` also gates entries on a
 daily NIFTY spot regime; `sma9_5s_atr` additionally requires a rising SMA9.
@@ -39,9 +40,11 @@ The code trees and DBs remain on disk as archives.
 | 6 | `sma9_5s_atr` | SMA9 ATR (5s) | prev close > SMA9 **and** forming open > SMA9 **and** SMA9 > prior SMA9, polled every 5s | ATR trail, then ATR-scaled stop (both fill at the live LTP); otherwise hold |
 | 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles, polled at 5m boundary +10 s | premium ATR trail, then premium ATR stop, from completed 5m option OHLC bars; otherwise hold |
 | 8 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
+| 9 | `sma9_adx` | SMA9 + ADX | prev completed close > SMA9 **and** ADX(14) > 20 on completed option 5m candles | HWM-5% trail, then 5% initial stop (fixed, no time exit) |
 
 The ninth identity, `sma9_5min`, is deployed: it is an isolated copy of `sma9`
-whose only behavioural change is an aligned 5-minute poll.
+whose only behavioural change is an aligned 5-minute poll. The tenth, `sma9_adx`,
+adds a Wilder ADX(14) > 20 trend filter and a 5% HWM trailing stop (see §5.8).
 
 There is **no time-based exit** on any of the 8 scanners: if neither the trail
 nor the stop fires, the position stays open across candles (including overnight)
@@ -707,6 +710,36 @@ stale prior-day position, with a throw-away DB and a fake feed. The unit is
 `enabled`, `Restart=always`, and listed in `ALL_UNITS` in
 `/opt/tradingai/refresh_token.sh`.
 
+### 5.8 SMA9 + ADX scanner (`sma9_adx`)
+
+`sma9_adx` is an isolated copy of the 5-second SMA9 premium scanner with two
+behavioural changes, both evaluated on the bought option's own **completed**
+5-minute candles (the forming bar is always excluded):
+
+- **Entry (both required, CE and PE alike):** previous completed candle close
+  > SMA9 **and** Wilder ADX(14) > 20. There is no forming-open gate and no
+  LTP > SMA9 confirmation gate; `confirmation` is reported as informational
+  only.
+- **Exit:** initial stop = entry premium - 5%; once the premium rises, the
+  stop ratchets to HWM - 5% and never ratchets down. A losing trade always
+  exits on the 5% initial stop, never on the trail. There is **no**
+  candle-close or time-based exit.
+
+ADX is computed from completed option-premium 5m bars with Wilder smoothing
+(+DI/-DI, smoothed TR, smoothed DX, then smoothed ADX). It returns `None` until
+at least `2 * ADX_PERIOD` completed bars are available, so no entry is possible
+before there is enough history.
+
+**Isolation:** own code `/opt/tradingai/sma9_adx_scanner/`, DB
+`database/sma9_adx.db`, tables `sma9_adx_trades` /
+`sma9_adx_open_positions` / `sma9_adx_scan_state`, systemd
+`tradingai-sma9-adx-scanner.service`, log
+`logs/live_sma9_adx_scanner.log`, user `sma9adx`, API
+`/api/sma9-adx/*`, page `/live/sma9-adx/`, report key `sma9_adx`
+(label `SMA9 ADX`, from 2026-11-22). The status payload carries `adx_period`
+and `adx_threshold`; open positions and closed trades persist `adx` /
+`adx_value` so a restart resumes the same signal and stop.
+
 ---
 
 ## 6. Data model (SQLite)
@@ -825,6 +858,7 @@ curl -sk -H 'Host: tradingai.in' \
 |---|---|
 | sma9 | https://tradingai.in/live/sma9/ |
 | sma9_5min | https://tradingai.in/live/sma9-5min/ (deployed, scanner running) |
+| sma9_adx | https://tradingai.in/live/sma9-adx/ (deployed, scanner running) |
 | sma9_atr | https://tradingai.in/live/sma9-atr/ |
 | sma9_high | https://tradingai.in/live/sma9-high/ |
 | sma9_1min_poll | https://tradingai.in/live/sma9-1min-poll/ |
@@ -856,8 +890,9 @@ card pairs agree on the actual last traded level. The API exposes this as
 opens, the live pair reverts to the broker quote.
 
 Every active scanner has a button on `https://tradingai.in/live/scalp/` — the
-eight buttons are `sma9`, `sma9-atr`, `sma9-high`, `sma9-1min-poll`,
-`sma9-5s-atr`, `sma9-trail`, `sma9-high-trail` and `pattern_scanner`. All 8
+buttons are `sma9`, `sma9-5min`, `sma9-adx`, `sma9-atr`, `sma9-high`,
+`sma9-1min-poll`, `sma9-5s-atr`, `sma9-trail`, `sma9-high-trail` and
+`pattern_scanner`. All 10
 active pages share the same dark theme,
 badge/table styling, a `Back to Launcher` link, and auto-refresh without a page
 reload every 5 s. The `sma9-atr`, `sma9-5s-atr` and `sma9-1min-poll` pages show

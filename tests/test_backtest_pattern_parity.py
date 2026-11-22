@@ -153,3 +153,67 @@ def test_index_spot_series_uses_index_close_for_atm():
         assert ce_pe_index[ts] == (EXPIRY, float(ATM))
         assert spot_by_ts[ts]["close"] == 25012.0
         assert spot_by_ts[ts]["high"] == 25020.0
+
+
+def test_live_mode_uses_one_point_spot_candles():
+    timestamps = [at(9, 15)]
+    index_bars = [
+        {
+            "start": ts,
+            "open": 25000.0,
+            "high": 25020.0,
+            "low": 24990.0,
+            "close": 25012.0,
+            "volume": 0,
+        }
+        for ts in timestamps
+    ]
+    option_series = {
+        (EXPIRY, ATM, otype, ts): _option_bar(ts)
+        for ts in timestamps
+        for otype in ("CE", "PE")
+    }
+    universe = {
+        (EXPIRY, ATM, "CE"): {"tradingsymbol": "TEST_CE"},
+        (EXPIRY, ATM, "PE"): {"tradingsymbol": "TEST_PE"},
+    }
+
+    _, spot_by_ts, _ = bt.build_index_spot_series(
+        index_bars, option_series, universe, one_point_spot=True
+    )
+
+    bar = spot_by_ts[timestamps[0]]
+    assert bar["open"] == bar["high"] == bar["low"] == bar["close"] == 25012.0
+
+
+def test_live_mode_enters_at_option_close(monkeypatch):
+    _patch_detectors(monkeypatch)
+    timestamps = [at(9, 15), at(9, 20), at(9, 25), at(9, 30)]
+    key_ce = (EXPIRY, ATM, "CE")
+    key_pe = (EXPIRY, ATM, "PE")
+    universe = {
+        key_ce: {"tradingsymbol": "TEST_CE"},
+        key_pe: {"tradingsymbol": "TEST_PE"},
+    }
+    ce_bars = []
+    for ts in timestamps:
+        bar = _option_bar(ts)
+        bar["open"] = 100.0
+        bar["close"] = 105.0
+        ce_bars.append(bar)
+    series = {
+        key_ce: ce_bars,
+        key_pe: [_option_bar(ts) for ts in timestamps],
+    }
+    spot_by_ts = {ts: _spot(ts) for ts in timestamps}
+    ce_pe_index = {ts: (EXPIRY, float(ATM)) for ts in timestamps}
+
+    root = Path(__file__).resolve().parent.parent
+    trades = bt.replay_pattern_scanner(
+        root, universe, series, spot_by_ts, ce_pe_index,
+        timestamps, timestamps[-1], entry_field="close",
+    )
+
+    assert len(trades) == 1
+    assert trades[0]["entry_price"] == 105.0
+    assert trades[0]["dataset"] == "BACKTEST_5M_LIVE_PARITY"
