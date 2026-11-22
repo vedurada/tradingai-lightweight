@@ -187,7 +187,7 @@ async function applyLiveAtm(target, scannerKey) {
         const a = payload.data;
         target.atm_strike = a.atm_strike;
         if (a.spot != null) target.spot = a.spot;
-        target.spot_source = a.spot_source || a.source;
+        target.spot_source = a.spot_source || 'unavailable';
         target.quote_diverged = !!a.quote_diverged;
         target.live_atm_freshness = a.freshness || 'unknown_age';
 
@@ -212,13 +212,13 @@ async function applyLiveAtm(target, scannerKey) {
                 if (bare) o.tradingsymbol = bare;
                 if (p.ltp != null) {
                     o.ltp = p.ltp;
-                    o.ltp_source = p.source || 'broker_quote';
+                    o.ltp_source = p.source || 'unavailable';
                     o.ltp_age_seconds = p.age_seconds;
                     o.ltp_age_known = p.age_known !== false;
                 }
             }
             target[key + '_ltp'] = p.ltp != null ? p.ltp : null;
-            target[key + '_ltp_source'] = p.source || null;
+            target[key + '_ltp_source'] = p.source || 'unavailable';
             target[key + '_ltp_age_seconds'] = p.age_seconds != null ? p.age_seconds : null;
             if (bare) target[key + '_symbol'] = bare;
         }
@@ -236,7 +236,7 @@ async function applyLiveAtm(target, scannerKey) {
             }
             badge.textContent = 'ATM ' + a.atm_strike + ' | CE ' + fmt(ce.ltp) + ' / PE ' + fmt(pe.ltp)
                 + (notes.length ? ' (' + notes.join(', ') + ')' : '');
-            badge.title = 'Spot ' + a.spot + ' via ' + (a.spot_source || 'broker_quote')
+            badge.title = 'Spot ' + a.spot + ' via ' + (a.spot_source || 'unavailable')
                 + (a.as_of ? (' @ ' + a.as_of) : '');
         }
     } catch (e) {

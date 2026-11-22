@@ -1268,6 +1268,8 @@ class PatternScanner:
         # State
         self.status = "STOPPED"
         self.last_spot: Optional[float] = None
+        self.spot_source: Optional[str] = None
+        self.quote_unavailable: bool = False
         self.last_spot_candle_ts: Optional[str] = None
         self.last_closed_candle_start: Optional[str] = None
         self.last_closed_spot: Optional[float] = None

@@ -515,6 +515,8 @@ class Sma9LiveScanner:
         self.atm_strike = None
         self.expiry = None
         self.spot = None
+        self.spot_source = None
+        self.quote_unavailable = False
         self.last_error = None
         self.last_candle_start = None
         self.last_closed_spot = None
@@ -558,7 +560,13 @@ class Sma9LiveScanner:
     # -- contract selection ---------------------------------------------
     def refresh_contracts(self, spot: float, force: bool = False) -> None:
         atm = float(round(spot / 50) * 50)
-        if (not force and self.atm_strike == atm and self.expiry is not None
+        strikes_match = all(
+            self.contracts.get(opt)
+            and float(self.contracts[opt].get("strike", -1)) == atm
+            for opt in ("CE", "PE")
+        )
+        if (not force and self.atm_strike == atm and strikes_match
+                and self.expiry is not None
                 and self.expiry >= now_ist().date()):
             return
         expiry = self.feed.nearest_expiry()
@@ -572,6 +580,37 @@ class Sma9LiveScanner:
                     (self.contracts["PE"] or {}).get("tradingsymbol"))
 
     # -- main scan -------------------------------------------------------
+    def _apply_closed_market_fallback(self, now) -> bool:
+        """Resolve the authoritative last completed spot before contracts.
+
+        Returns True when the effective ATM changed, so callers must force a
+        contract re-resolution before building any symbol list.
+        """
+        if market_is_open(now):
+            return False
+        self._refresh_last_closed_spot(now, {})
+        if self.last_closed_spot is None:
+            return False
+        current = self.spot
+        if current is not None and abs(float(current) - self.last_closed_spot) <= 50:
+            return False
+        self.spot = self.last_closed_spot
+        self.atm_strike = self.last_closed_atm_strike
+        self.spot_source = "index_close_fallback"
+        return True
+
+    def _apply_quote_unavailable(self, now) -> None:
+        """Never publish a stale broker-labelled spot after a quote failure."""
+        self.quote_unavailable = True
+        if not market_is_open(now) and self.last_closed_spot is not None:
+            self.spot = self.last_closed_spot
+            self.atm_strike = self.last_closed_atm_strike
+            self.spot_source = "index_close_fallback"
+        else:
+            self.spot = None
+            self.atm_strike = None
+            self.spot_source = "unavailable"
+
     def scan(self) -> dict:
         now = now_ist()
         if self.last_scan_at:
@@ -588,11 +627,16 @@ class Sma9LiveScanner:
             nifty = self.feed.quote(["NSE:NIFTY 50"])
             self.spot = float(nifty["NSE:NIFTY 50"]["last_price"])
             self.spot_source = "broker_quote"
-            self.refresh_contracts(self.spot, force=self.atm_strike is None)
+            self.quote_unavailable = False
+            self.last_error = None
         except Exception as exc:
             self.last_error = f"spot/contract error: {exc}"
             logger.error(self.last_error)
+            self._apply_quote_unavailable(now)
             return self._status(now, {}, errors=[self.last_error])
+
+        forced_spot = self._apply_closed_market_fallback(now)
+        self.refresh_contracts(self.spot, force=self.atm_strike is None or forced_spot)
 
         current_candle = floor_5m(now)
         self.last_candle_start = current_candle
@@ -710,6 +754,8 @@ class Sma9LiveScanner:
                 "strike": strike,
                 "expiry": expiry_str,
                 "ltp": ltp,
+                "ltp_source": "broker_quote" if ltp is not None else "unavailable",
+                "quote_unavailable": ltp is None,
                 "sma9": round(ev.sma9, 2) if ev.sma9 is not None else None,
                 "prev_close": ev.prev_close,
                 "current_open": ev.current_open,
@@ -726,11 +772,6 @@ class Sma9LiveScanner:
             }
 
         self._refresh_last_closed_spot(now, option_status)
-        if not market_is_open(now) and self.last_closed_spot is not None:
-            if self.spot is None or abs(float(self.spot) - self.last_closed_spot) > 50:
-                self.spot = self.last_closed_spot
-                self.atm_strike = self.last_closed_atm_strike
-                self.spot_source = "index_close_fallback"
         return self._status(now, option_status, errors=errors)
 
     def _refresh_last_closed_spot(self, now, option_status):
@@ -800,7 +841,11 @@ class Sma9LiveScanner:
             "poll_alignment": "5m_boundary_plus_10s",
             "actual_interval_seconds": self.actual_interval_seconds,
             "spot": self.spot,
-            "spot_source": getattr(self, "spot_source", "broker_quote"),
+            "spot_source": (
+                getattr(self, "spot_source", None)
+                if self.spot is not None else "unavailable"
+            ),
+            "quote_unavailable": bool(getattr(self, "quote_unavailable", False)),
             "atm_strike": self.atm_strike,
             "last_closed_spot": self.last_closed_spot,
             "last_closed_atm_strike": self.last_closed_atm_strike,

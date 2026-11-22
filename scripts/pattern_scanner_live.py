@@ -456,7 +456,14 @@ class PatternScannerLive:
     def _status_snapshot(self) -> dict:
         """Status with explicit feed-health fields for the API/dashboard."""
         status = self.ps.get_status()
-        status["spot_source"] = getattr(self.ps, "spot_source", "broker_quote")
+        status["spot_source"] = (
+            getattr(self.ps, "spot_source", None)
+            if getattr(self.ps, "last_spot", None) is not None
+            else "unavailable"
+        )
+        status["quote_unavailable"] = bool(
+            getattr(self.ps, "quote_unavailable", False)
+        )
         live = bool(self.live_feed_ok and getattr(self.feed, "available", False))
         failed_bars = sorted(getattr(self, "_failed_bar_symbols", set()))
         status["data_available"] = live
@@ -522,25 +529,34 @@ class PatternScannerLive:
         if not is_market_open(now):
             self.ps.status = "MARKET_CLOSED"
             # Positions are held across candles/overnight: no time-based exit.
-            # Still fetch spot price for dashboard display
+            # Resolve the last completed index bar first so any closed-market
+            # fallback uses one consistent spot/strike pair everywhere.
+            self._refresh_last_closed_spot(now)
             spot = self.feed.quote_spot()
             if spot is not None:
-                self.ps.last_spot = spot
-                self.ps.spot_source = "broker_quote"
-                self.ps.last_update = now.isoformat()
-                if hasattr(self.feed, "kite") and self.feed.kite:
-                    ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
-                    if ce_sym and pe_sym:
-                        self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
-                        self._refresh_last_closed_spot(now)
+                spot_source = ("db_5m_close" if isinstance(self.feed, MockFeed)
+                               else "broker_quote")
+            else:
+                spot_source = None
+            if (spot is None or (self.ps.last_closed_spot is not None
+                    and abs(float(spot) - self.ps.last_closed_spot) > 50)):
                 if self.ps.last_closed_spot is not None:
-                    if (self.ps.last_spot is None
-                            or abs(float(self.ps.last_spot) - self.ps.last_closed_spot) > 50):
-                        self.ps.last_spot = self.ps.last_closed_spot
-                        self.ps.spot_source = "index_close_fallback"
-                        self.ps.current_atm_strike = int(
-                            round(float(self.ps.last_closed_spot) / 50.0) * 50
-                        )
+                    spot = self.ps.last_closed_spot
+                    spot_source = "index_close_fallback"
+                else:
+                    spot = None
+                    spot_source = None
+            if spot is not None:
+                ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
+                if ce_sym and pe_sym:
+                    self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
+                self.ps.last_spot = spot
+                self.ps.spot_source = spot_source
+                self.ps.quote_unavailable = spot_source != "broker_quote"
+            else:
+                self.ps.spot_source = "unavailable"
+                self.ps.quote_unavailable = True
+            self.ps.last_update = now.isoformat()
             try:
                 os.makedirs(os.path.dirname(STATUS_FILE), exist_ok=True)
                 status = self._status_snapshot()
@@ -584,22 +600,30 @@ class PatternScannerLive:
 
         # 4. Spot tick completes the 5m spot candle and detects entries using
         #    this poll's option quotes and freshly appended option bars.
-        if spot is not None:
-            # Resolve/set ATM BEFORE detection so a reband poll cannot enter at
-            # the previous strike with a fresh quote for the old option.
-            if hasattr(self.feed, "kite") and self.feed.kite:
-                ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
-                if ce_sym and pe_sym:
-                    self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
-            self.ps.spot_source = "broker_quote"
-            self.ps.on_tick("NIFTY_SPOT", spot, now)
         if self.ps.last_closed_spot is None:
             self._refresh_last_closed_spot(now)
-        if not is_market_open(now) and self.ps.last_closed_spot is not None:
-            if (self.ps.last_spot is None
-                    or abs(float(self.ps.last_spot) - self.ps.last_closed_spot) > 50):
-                self.ps.last_spot = self.ps.last_closed_spot
-                self.ps.spot_source = "index_close_fallback"
+        spot_source = "broker_quote" if spot is not None else None
+        if spot is None and self.ps.last_closed_spot is not None:
+            spot = self.ps.last_closed_spot
+            spot_source = "index_close_fallback"
+        if spot_source == "broker_quote":
+            # Resolve/set ATM BEFORE detection so a reband poll cannot enter at
+            # the previous strike with a fresh quote for the old option.
+            ce_sym, pe_sym, atm, expiry = self._resolve_option_symbols(spot)
+            if ce_sym and pe_sym:
+                self.ps.set_option_instruments(ce_sym, pe_sym, atm, expiry)
+            self.ps.spot_source = "broker_quote"
+            self.ps.quote_unavailable = False
+            self.ps.on_tick("NIFTY_SPOT", spot, now)
+        elif spot is not None:
+            # Last-completed fallback is display-only: never drive entries.
+            self.ps.last_spot = spot
+            self.ps.last_update = now.isoformat()
+            self.ps.spot_source = spot_source
+            self.ps.quote_unavailable = True
+        else:
+            self.ps.spot_source = "unavailable"
+            self.ps.quote_unavailable = True
 
         # Write status to file for API to read
         try:
