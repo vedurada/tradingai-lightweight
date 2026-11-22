@@ -312,7 +312,9 @@ function renderStatus(st, live) {
 async function applyLiveAtm(target, scannerKey) {
     if (!target) return;
     try {
-        const resp = await fetch('/api/live-atm?scanner=' + encodeURIComponent(scannerKey), {
+        const expiry = target.expiry ? String(target.expiry) : '';
+        const resp = await fetch('/api/live-atm?scanner=' + encodeURIComponent(scannerKey)
+            + '&expiry=' + encodeURIComponent(expiry), {
             headers: { 'Accept': 'application/json' }, cache: 'no-store'
         });
         if (!resp.ok) return;
@@ -321,27 +323,46 @@ async function applyLiveAtm(target, scannerKey) {
         const a = payload.data;
         target.atm_strike = a.atm_strike;
         if (a.spot != null) target.spot = a.spot;
-        if (target.options) {
-            for (const opt of ['CE', 'PE']) {
+
+        const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+        let symPart = '';
+        if (expiry.length >= 7) {
+            const yy = expiry.slice(2, 4);
+            const mm = parseInt(expiry.slice(5, 7), 10);
+            if (mm >= 1 && mm <= 12) symPart = yy + months[mm - 1];
+        }
+        for (const opt of ['CE', 'PE']) {
+            const p = (a.premiums || {})[opt] || {};
+            const sym = p.symbol || (symPart ? ('NFO:NIFTY' + symPart + String(a.atm_strike) + opt) : '');
+            const bare = sym ? sym.replace(/^NFO:/, '') : '';
+            if (target.options && target.options[opt]) {
                 const o = target.options[opt];
-                if (!o) continue;
                 o.strike = a.atm_strike;
-                const iso = target.expiry ? String(target.expiry) : '';
-                if (iso.length >= 10) {
-                    const yy = iso.slice(2, 4);
-                    const mon = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][parseInt(iso.slice(5, 7), 10) - 1];
-                    const dd = iso.slice(8, 10);
-                    o.tradingsymbol = 'NIFTY' + yy + mon + String(a.atm_strike) + opt;
+                if (bare) o.tradingsymbol = bare;
+                if (p.ltp != null) {
+                    o.ltp = p.ltp;
+                    o.ltp_source = p.source || 'broker_quote';
+                    o.ltp_age_seconds = p.age_seconds;
                 }
             }
+            target[opt.toLowerCase() + '_ltp'] = p.ltp != null ? p.ltp : null;
+            if (bare) target[opt.toLowerCase() + '_symbol'] = bare;
         }
+
         const badge = document.getElementById('live-atm-badge');
         if (badge) {
-            badge.textContent = 'ATM ' + a.atm_strike + (a.stale ? ' (last quote)' : '');
-            badge.title = (a.source || 'gateway') + (a.as_of ? (' @ ' + a.as_of) : '');
+            const ce = (a.premiums || {}).CE || {};
+            const pe = (a.premiums || {}).PE || {};
+            const anyStale = a.stale || ce.stale || pe.stale;
+            const fmt = v => (v != null ? Number(v).toFixed(2) : '--');
+            badge.textContent = 'ATM ' + a.atm_strike + ' | CE ' + fmt(ce.ltp) + ' / PE ' + fmt(pe.ltp)
+                + (anyStale ? ' (last quote)' : '');
+            badge.title = 'Spot ' + a.spot + ' | premiums from ' + (ce.source || 'broker gateway')
+                + (a.as_of ? (' @ ' + a.as_of) : '');
         }
     } catch (e) { console.error('live ATM refresh failed', e); }
 }
+
 
 async function refresh() {
     try {
