@@ -80,7 +80,7 @@
 </section>
 
 <section class="section">
-    <h2>ATM Option Evaluation (independent CE / PE)</h2>
+    <h2>ATM Option Evaluation (independent CE / PE) <span class="badge idle" id="live-atm-badge" style="margin-left:0.5rem">ATM --</span></h2>
     <div class="option-grid">
         <div class="option-card" id="card-CE"><h3>ATM CE</h3><div class="empty">Waiting for scanner...</div></div>
         <div class="option-card" id="card-PE"><h3>ATM PE</h3><div class="empty">Waiting for scanner...</div></div>
@@ -328,6 +328,41 @@ function renderStatus(st, live) {
     document.getElementById('market').textContent = live && live.market_open ? 'OPEN' : 'CLOSED';
 }
 
+
+async function applyLiveAtm(target, scannerKey) {
+    if (!target) return;
+    try {
+        const resp = await fetch('/api/live-atm?scanner=' + encodeURIComponent(scannerKey), {
+            headers: { 'Accept': 'application/json' }, cache: 'no-store'
+        });
+        if (!resp.ok) return;
+        const payload = await resp.json();
+        if (!payload.success || !payload.data || !payload.data.atm_strike) return;
+        const a = payload.data;
+        target.atm_strike = a.atm_strike;
+        if (a.spot != null) target.spot = a.spot;
+        if (target.options) {
+            for (const opt of ['CE', 'PE']) {
+                const o = target.options[opt];
+                if (!o) continue;
+                o.strike = a.atm_strike;
+                const iso = target.expiry ? String(target.expiry) : '';
+                if (iso.length >= 10) {
+                    const yy = iso.slice(2, 4);
+                    const mon = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'][parseInt(iso.slice(5, 7), 10) - 1];
+                    const dd = iso.slice(8, 10);
+                    o.tradingsymbol = 'NIFTY' + yy + mon + String(a.atm_strike) + opt;
+                }
+            }
+        }
+        const badge = document.getElementById('live-atm-badge');
+        if (badge) {
+            badge.textContent = 'ATM ' + a.atm_strike + (a.stale ? ' (last quote)' : '');
+            badge.title = (a.source || 'gateway') + (a.as_of ? (' @ ' + a.as_of) : '');
+        }
+    } catch (e) { console.error('live ATM refresh failed', e); }
+}
+
 async function refresh() {
     try {
         const datePicker = document.getElementById('trade-date-picker');
@@ -342,6 +377,7 @@ async function refresh() {
         ]);
 
         const live = (liveResp && liveResp.success && liveResp.data) ? liveResp.data : {};
+        await applyLiveAtm(live, 'sma9-5s-atr');
         renderStatus(statusResp || {}, live);
 
         const options = live.options || {};
