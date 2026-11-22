@@ -15,13 +15,15 @@ conservative candle-open proxies.
 
 This harness is an explicitly labelled 5-minute rule simulation. It imports
 the real strategy engines and reuses their evaluate/trail/stop/close code.
-Fill and ATM proxies are conservative and documented in the output report:
+Fill and ATM rules are documented in the output report:
 
   * entry fill = signal candle open
   * exit fill  = adverse 5m bar low for the ATR stop, or the ratcheted stop
                  level when a trail is hit
-  * ATM strike inferred from CE/PE parity, anchored by NIFTY futures
-  * spot OHLC for regime/pattern logic reconstructed from CE/PE parity
+  * ATM strike = nearest 50 to the completed NIFTY 50 index close (token 26000)
+  * spot OHLC for regime/pattern logic = real NIFTY 50 index 5m bars (token 26000)
+
+No futures anchor or CE/PE parity is used for underlying spot or ATM selection.
 
 No broker order API is used.  Results are points only; no lot size, capital,
 target, or brokerage is invented.
@@ -49,6 +51,7 @@ ENTRY_END = time(15, 15)
 MARKET_CLOSE = time(15, 30)
 FIRST_CANDLE_START = time(9, 15)
 STRIKE_STEP = 50.0
+NIFTY_INDEX_TOKEN = 26000  # NSE index token used by the live scanners
 
 
 # ---------------------------------------------------------------------------
@@ -148,21 +151,6 @@ def fetch_instruments(kite) -> list[dict]:
     return kite.instruments("NFO") or []
 
 
-def pick_futures(instruments: list[dict], session_start: date) -> dict:
-    futures = [
-        r for r in instruments
-        if str(r.get("name", "")).upper() == "NIFTY"
-        and str(r.get("instrument_type", "")).upper() == "XX"
-        and float(r.get("strike") or 0) == 0
-        and r.get("expiry")
-        and compare_expiry(r["expiry"]) >= session_start
-    ]
-    if not futures:
-        raise RuntimeError("no NIFTY futures instrument found for backtest window")
-    futures.sort(key=lambda r: (compare_expiry(r["expiry"]), int(r["instrument_token"])))
-    return futures[0]
-
-
 def option_universe(instruments: list[dict], start: date, lo: float, hi: float) -> dict:
     """Map (expiry, strike, option_type) -> instrument row."""
     rows: dict[tuple[str, float, str], dict] = {}
@@ -182,26 +170,23 @@ def option_universe(instruments: list[dict], start: date, lo: float, hi: float) 
 
 
 # ---------------------------------------------------------------------------
-# Parity-derived spot and ATM
+# Real NIFTY index spot and ATM
 # ---------------------------------------------------------------------------
-def build_parity_series(option_series, futures_bars, universe):
-    """Return (atm_by_ts, spot_bars, ce_pe_index).
+def build_index_spot_series(index_bars, option_series, universe):
+    """Return (atm_by_ts, spot_bars, ce_pe_index) from real index 5m bars.
 
-    For each 5m timestamp, use the NIFTY futures close to anchor the strike
-    search.  CE - PE + K approximates the underlying forward at that strike.
-    The chosen strike is the one whose implied forward is closest to futures.
-    Spot OHLC is reconstructed with parity-friendly extremes:
-      high ~= K + CE.high - PE.low, low ~= K + CE.low - PE.high.
+    The NIFTY 50 index close is authoritative for both spot OHLC and ATM
+    selection. No futures anchor or CE/PE parity is used: the ATM is simply the
+    nearest listed 50-point strike to each completed index bar's close.
     """
-    fut_index = {b["start"]: b for b in futures_bars}
+    index_index = {b["start"]: b for b in index_bars}
     expiries = sorted({k[0] for k in option_series})
-    strikes = sorted({k[1] for k in option_series})
 
     atm_by_ts: dict[datetime, float] = {}
     spot_by_ts: dict[datetime, dict] = {}
     ce_pe_index: dict[datetime, tuple[str, float]] = {}
 
-    for ts, fut_bar in sorted(fut_index.items()):
+    for ts, index_bar in sorted(index_index.items()):
         # Live scanners pick the nearest NIFTY expiry that has not expired.
         eligible_expiries = [e for e in expiries
                              if datetime.fromisoformat(e).date() >= ts.date()]
@@ -209,50 +194,26 @@ def build_parity_series(option_series, futures_bars, universe):
             continue
         nearest_expiry = min(eligible_expiries)
 
-        best: tuple[float, str, float, dict, dict] | None = None
-        for exp in (nearest_expiry,):
-            for strike in strikes:
-                ce = option_series.get((exp, strike, "CE", ts))
-                pe = option_series.get((exp, strike, "PE", ts))
-                if not ce or not pe:
-                    continue
-                if ce["close"] <= 0 and pe["close"] <= 0:
-                    continue
-                forward = strike + ce["close"] - pe["close"]
-                score = abs(forward - fut_bar["close"])
-                if best is None or score < best[0]:
-                    best = (score, exp, forward, ce, pe)
-        if best is None:
+        atm = round_to_strike(index_bar["close"])
+        listed_atm = [s for s in {k[1] for k in universe}
+                      if (nearest_expiry, s, "CE") in universe
+                      and (nearest_expiry, s, "PE") in universe]
+        if not listed_atm:
             continue
-
-        _, exp, forward, ce, pe = best
-        atm = round_to_strike(forward)
-        if (exp, atm, "CE") not in universe or (exp, atm, "PE") not in universe:
-            available = [s for s in strikes if (exp, s, "CE") in universe and (exp, s, "PE") in universe]
-            if not available:
-                continue
-            atm = min(available, key=lambda s: abs(s - atm))
-
-        ce_bar = option_series.get((exp, atm, "CE", ts)) or ce
-        pe_bar = option_series.get((exp, atm, "PE", ts)) or pe
-        spot_open = atm + ce_bar["open"] - pe_bar["open"]
-        spot_close = atm + ce_bar["close"] - pe_bar["close"]
-        spot_high = atm + ce_bar["high"] - pe_bar["low"]
-        spot_low = atm + ce_bar["low"] - pe_bar["high"]
-        spot_high = max(spot_high, spot_open, spot_close)
-        spot_low = min(spot_low, spot_open, spot_close)
+        if atm not in listed_atm:
+            atm = min(listed_atm, key=lambda s: abs(s - atm))
 
         atm_by_ts[ts] = float(atm)
-        ce_pe_index[ts] = (exp, float(atm))
+        ce_pe_index[ts] = (nearest_expiry, float(atm))
         spot_by_ts[ts] = {
             "start": ts,
             "timestamp": ts.isoformat(),
             "session_date": ts.date().isoformat(),
-            "open": round(spot_open, 2),
-            "high": round(spot_high, 2),
-            "low": round(spot_low, 2),
-            "close": round(spot_close, 2),
-            "volume": int(fut_bar.get("volume") or 0),
+            "open": round(float(index_bar["open"]), 2),
+            "high": round(float(index_bar["high"]), 2),
+            "low": round(float(index_bar["low"]), 2),
+            "close": round(float(index_bar["close"]), 2),
+            "volume": int(index_bar.get("volume") or 0),
         }
     return atm_by_ts, spot_by_ts, ce_pe_index
 
@@ -457,7 +418,7 @@ def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
                 if direction not in ("BULLISH", "BEARISH"):
                     continue
                 otype = "CE" if direction == "BULLISH" else "PE"
-                # Use the same parity-derived expiry/ATM pair as premium replay.
+                # Use the same index-derived expiry/ATM pair as premium replay.
                 exp, atm = ce_pe_index.get(ts, ("", 0.0))
                 key = (exp, atm, otype)
                 if key not in universe:
@@ -543,7 +504,7 @@ def _pattern_trade(pos, scanner: str, key) -> dict:
         "status": getattr(pos, "status", "CLOSED"),
         "direction": getattr(pos, "direction", ""),
         "pattern_name": getattr(pos, "pattern_name", ""),
-        "dataset": "BACKTEST_5M_PARITY",
+        "dataset": "BACKTEST_5M_INDEX_SPOT",
     }
 
 
@@ -597,7 +558,7 @@ def write_outputs(out_dir: Path, summaries: list[dict], all_trades: list[dict],
             writer.writerow({k: trade.get(k, "") for k in fields})
 
     lines = [
-        "# Historical scanner backtest (5m rule simulation)",
+        "# Historical scanner backtest (5m index-spot rule simulation)",
         "",
         "> **Not an exact 5-second paper replay for the seven 5s scanners.**",
         "> mStock supplies 5-minute OHLCV, not historical 5-second quotes. Their",
@@ -610,8 +571,9 @@ def write_outputs(out_dir: Path, summaries: list[dict], all_trades: list[dict],
         f"- Window: `{meta['window']['start']}` to `{meta['window']['end']}`",
         "- Entry fill: signal candle open",
         "- Exit fill: adverse 5m low for the ATR stop, ratcheted stop level for a trail hit",
-        "- ATM: CE/PE parity anchored by NIFTY futures, rounded to 50",
-        "- Spot OHLC for regime/pattern: reconstructed from CE/PE parity",
+        f"- ATM: nearest 50 to completed NIFTY 50 index close (token {NIFTY_INDEX_TOKEN})",
+        f"- Spot OHLC for regime/pattern: real NIFTY 50 index 5m bars (token {NIFTY_INDEX_TOKEN})",
+        "- No futures anchor or CE/PE parity is used for underlying spot/ATM",
         "- Pattern exits: premium ATR(14) only (0.70xATR, 5-30% clamp, 10% fallback)",
         "- Pattern live cadence: aligned 5m polls using completed 5m option OHLC bars",
         "- PnL: premium points only; no lot size, capital, target, or brokerage",
@@ -656,13 +618,12 @@ def main() -> int:
     fetcher.kite = KiteConnect(api_key="gateway")
 
     instruments = fetch_instruments(fetcher.kite)
-    fut = pick_futures(instruments, start.date())
-    fut_bars = fetcher.fetch(int(fut["instrument_token"]), start, end)
-    if not fut_bars:
-        raise RuntimeError("no futures history in window")
+    index_bars = fetcher.fetch(NIFTY_INDEX_TOKEN, start, end)
+    if not index_bars:
+        raise RuntimeError(f"no NIFTY index history for token {NIFTY_INDEX_TOKEN} in window")
 
-    lo = math.floor((min(b["low"] for b in fut_bars) - 600) / STRIKE_STEP) * STRIKE_STEP
-    hi = math.ceil((max(b["high"] for b in fut_bars) + 600) / STRIKE_STEP) * STRIKE_STEP
+    lo = math.floor((min(b["low"] for b in index_bars) - 600) / STRIKE_STEP) * STRIKE_STEP
+    hi = math.ceil((max(b["high"] for b in index_bars) + 600) / STRIKE_STEP) * STRIKE_STEP
     quote = fetcher.kite.quote(["NSE:NIFTY 50"]) or {}
     spot_now = float(next(iter(quote.values())).get("last_price") or 0)
     if spot_now:
@@ -670,7 +631,8 @@ def main() -> int:
         hi = max(hi, round_to_strike(spot_now + 1000))
 
     universe = option_universe(instruments, start.date(), lo, hi)
-    print(f"[fetch] futures={fut['tradingsymbol']} strikes={len({k[1] for k in universe})} "
+    print(f"[fetch] index=NIFTY 50 ({NIFTY_INDEX_TOKEN}) "
+          f"strikes={len({k[1] for k in universe})} "
           f"tokens={len(universe)} range={lo:.0f}-{hi:.0f}", file=sys.stderr)
 
     series: dict[tuple[str, float, str], list[dict]] = {}
@@ -686,7 +648,7 @@ def main() -> int:
         for bar in bars:
             option_index[(*key, bar["start"])] = bar
 
-    atm_by_ts, spot_by_ts, ce_pe_index = build_parity_series(option_index, fut_bars, universe)
+    atm_by_ts, spot_by_ts, ce_pe_index = build_index_spot_series(index_bars, option_index, universe)
     timestamps = sorted(set(ce_pe_index))
     print(f"[fetch] option tokens with history={len(series)} aligned_timestamps={len(timestamps)}",
           file=sys.stderr)
@@ -706,10 +668,13 @@ def main() -> int:
         "window": {"start": args.start, "end": args.end},
         "broker_gateway_identity": os.environ.get("BROKER_GATEWAY_SCANNER"),
         "instrument": "NIFTY",
-        "underlying_anchor": fut.get("tradingsymbol"),
+        "underlying_anchor": f"NIFTY 50 index ({NIFTY_INDEX_TOKEN})",
+        "spot_source": f"NIFTY 50 index 5m history (token {NIFTY_INDEX_TOKEN})",
         "strike_range": [lo, hi],
         "aligned_5m_timestamps": len(timestamps),
-        "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
+        "atm_source": f"nearest 50 to NIFTY 50 index close (token {NIFTY_INDEX_TOKEN})",
+        "futures_anchor_used": False,
+        "ce_pe_parity_used": False,
         "fill_policy": "entry at signal candle open; ATR stop fills at adverse 5m low, trail fills at ratcheted stop level",
         "pattern_exit_model": "premium_atr_14_only",
         "pattern_live_poll": "aligned_5m_completed_ohlc",

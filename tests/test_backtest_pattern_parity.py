@@ -119,3 +119,37 @@ def test_backtest_end_exit_uses_bar_end_not_bar_start(monkeypatch):
     # The final 09:30 bar closes at 09:35; a BACKTEST_END exit must not claim
     # it happened at the bar's 09:30 start.
     assert trades[0]["exit_timestamp"] == at(9, 35).isoformat()
+
+
+def test_index_spot_series_uses_index_close_for_atm():
+    timestamps = [at(9, 15), at(9, 20)]
+    index_bars = [
+        {
+            "start": ts,
+            "open": 25000.0,
+            "high": 25020.0,
+            "low": 24990.0,
+            "close": 25012.0,
+            "volume": 0,
+        }
+        for ts in timestamps
+    ]
+    option_series = {
+        (EXPIRY, ATM, otype, ts): _option_bar(ts)
+        for ts in timestamps
+        for otype in ("CE", "PE")
+    }
+    universe = {
+        (EXPIRY, ATM, "CE"): {"tradingsymbol": "TEST_CE"},
+        (EXPIRY, ATM, "PE"): {"tradingsymbol": "TEST_PE"},
+    }
+
+    atm_by_ts, spot_by_ts, ce_pe_index = bt.build_index_spot_series(
+        index_bars, option_series, universe
+    )
+
+    for ts in timestamps:
+        assert atm_by_ts[ts] == float(ATM)
+        assert ce_pe_index[ts] == (EXPIRY, float(ATM))
+        assert spot_by_ts[ts]["close"] == 25012.0
+        assert spot_by_ts[ts]["high"] == 25020.0
