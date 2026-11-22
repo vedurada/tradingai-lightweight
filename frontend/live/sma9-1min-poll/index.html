@@ -524,13 +524,11 @@ async function loadStrategyRules(key) {
         const manifest = await resp.json();
         const rules = manifest.scanners && manifest.scanners[key];
         if (!rules) throw new Error('no rules for ' + key);
-        const sources = (rules.source || []).join('<br>');
         el.innerHTML =
             '<div class="rules-card"><h3>Entry conditions</h3><ul>' + rulesList(rules.entry) + '</ul></div>' +
             '<div class="rules-card"><h3>Exit conditions</h3><ul>' + rulesList(rules.exit) + '</ul></div>' +
             '<div class="rules-card"><h3>Scope and cadence</h3><ul>' + rulesList(rules.scope) + '</ul>' +
-            '<div class="rules-meta">Deployed source: ' + sources +
-            '<br>Last reviewed: ' + rulesEsc(manifest.updated_at || '--') +
+            '<div class="rules-meta">Last reviewed: ' + rulesEsc(manifest.updated_at || '--') +
             '<br>Display-only summary; the scanner engine is authoritative. See SCANNERS.md section 5.</div></div>';
     } catch (e) {
         el.innerHTML = '<div class="rules-card rules-warn">Strategy rules unavailable (' +

@@ -4,10 +4,6 @@
   "scanners": {
     "sma9": {
       "title": "SMA9 base",
-      "source": [
-        "/opt/tradingai/sma9_scanner/app/live_sma9_scanner.py",
-        "/opt/tradingai/sma9_scanner/app/sma9_engine.py"
-      ],
       "entry": [
         "Previous completed 5-minute option-premium close > SMA9 (mean of last 9 completed premium closes).",
         "Current forming candle open > SMA9. Both conditions are required; LTP > SMA9 is informational only and does not gate entry.",
@@ -27,10 +23,6 @@
     },
     "sma9-high": {
       "title": "SMA9 HIGH",
-      "source": [
-        "/opt/tradingai/sma9_high_scanner/app/live_sma9_high_scanner.py",
-        "/opt/tradingai/sma9_high_scanner/app/sma9_high_engine.py"
-      ],
       "entry": [
         "Previous completed 5-minute option-premium close > SMA9 (mean of last 9 completed premium closes).",
         "Current forming candle open > SMA9, and sampled live premium LTP > previous completed candle's high. All three conditions are required; there is no LTP > SMA9 gate.",
@@ -49,10 +41,6 @@
     },
     "sma9-trail": {
       "title": "SMA9 Trail",
-      "source": [
-        "/opt/tradingai/sma9_trail_scanner/app/live_sma9_trail_scanner.py",
-        "/opt/tradingai/sma9_trail_scanner/app/sma9_trail_engine.py"
-      ],
       "entry": [
         "Self-contained entry (no dependency on the base sma9 scanner): previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9.",
         "The HIGH/previous-candle-high branch in the engine is diagnostic only and is not used by this scanner.",
@@ -72,10 +60,6 @@
     },
     "sma9-high-trail": {
       "title": "SMA9 HIGH Trail",
-      "source": [
-        "/opt/tradingai/sma9_high_trail_scanner/app/live_sma9_high_trail_scanner.py",
-        "/opt/tradingai/sma9_high_trail_scanner/app/sma9_high_trail_engine.py"
-      ],
       "entry": [
         "Self-contained entry (no dependency on the base sma9-high scanner): previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9 AND sampled live premium LTP > previous completed candle's high.",
         "Paper BUY at the sampled live premium LTP; ATM CE and PE evaluated independently, long only."
@@ -94,10 +78,6 @@
     },
     "sma9-atr": {
       "title": "SMA9 ATR + daily regime",
-      "source": [
-        "/opt/tradingai/sma9_atr_scanner/app/live_sma9_atr_scanner.py",
-        "/opt/tradingai/sma9_atr_scanner/app/sma9_atr_engine.py"
-      ],
       "entry": [
         "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9; LTP > SMA9 is informational only.",
         "Daily NIFTY spot regime gate from completed 5-minute spot candles, refreshed every 15 minutes: BULLISH (price > VWAP, price > EMA9, EMA9 rising) allows CE only; BEARISH (price < VWAP, price < EMA9, EMA9 falling) allows PE only; NEUTRAL or insufficient data allows no entries.",
@@ -117,10 +97,6 @@
     },
     "sma9-5s-atr": {
       "title": "SMA9 ATR 5-second poll",
-      "source": [
-        "/opt/tradingai/sma9_5s_atr_scanner/app/live_sma9_5s_atr_scanner.py",
-        "/opt/tradingai/sma9_5s_atr_scanner/app/sma9_5s_atr_engine.py"
-      ],
       "entry": [
         "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9 AND SMA9 > previous SMA9 (the 9-candle average ending one completed candle earlier). All three conditions are required.",
         "No daily regime gate and no LTP > SMA9 gate; LTP > SMA9 is informational only.",
@@ -140,10 +116,6 @@
     },
     "sma9-1min-poll": {
       "title": "SMA9 1-min identity, 5-second ATR poll",
-      "source": [
-        "/opt/tradingai/sma9_1min_poll_scanner/app/live_sma9_1min_poll_scanner.py",
-        "/opt/tradingai/sma9_1min_poll_scanner/app/sma9_1min_poll_engine.py"
-      ],
       "entry": [
         "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9. No rising-SMA9 filter, no regime gate and no LTP > SMA9 gate.",
         "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
@@ -162,10 +134,6 @@
     },
     "sma9-5min": {
       "title": "SMA9 5-minute poll",
-      "source": [
-        "/opt/tradingai/sma9_5min_scanner/app/live_sma9_5min_scanner.py",
-        "/opt/tradingai/sma9_5min_scanner/app/sma9_5min_engine.py"
-      ],
       "entry": [
         "Rule copy of sma9: previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9; LTP > SMA9 is informational only.",
         "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
@@ -183,10 +151,6 @@
     },
     "sma9-adx": {
       "title": "SMA9 + ADX(14)",
-      "source": [
-        "/opt/tradingai/sma9_adx_scanner/app/live_sma9_adx_scanner.py",
-        "/opt/tradingai/sma9_adx_scanner/app/sma9_adx_engine.py"
-      ],
       "entry": [
         "Previous completed option-premium 5-minute close > SMA9 AND Wilder ADX(14) > 20, both computed on the bought option's completed 5-minute candles; the forming bar is always excluded.",
         "No forming-open gate and no LTP > SMA9 gate; the confirmation field is informational only.",
@@ -205,10 +169,6 @@
     },
     "pattern_scanner": {
       "title": "Pattern Scanner",
-      "source": [
-        "/opt/tradingai/scripts/pattern_scanner_live.py",
-        "/opt/tradingai/app/research/pattern_scanner.py"
-      ],
       "entry": [
         "Bullish or bearish candlestick pattern detected on a completed NIFTY SPOT 5-minute candle (about 37 named patterns on each side, e.g. Hammer, Bullish Engulfing, Morning Star; full list in the engine).",
         "Bullish signal buys the ATM CE; bearish signal buys the ATM PE. Long only on both sides, never short CE or PE. Pattern body thresholds use Wilder ATR(14) on completed spot candles.",
