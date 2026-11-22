@@ -208,6 +208,8 @@ function renderOptionCard(opt, data) {
         <h3>ATM ${opt} <span class="mono" style="font-size:0.8rem;color:#94a3b8">${esc(data.tradingsymbol || '')}</span></h3>
         <div class="kv">
             <span class="k">Live LTP</span><span class="v">${n(data.ltp)}</span>
+            <span class="k">Quote source</span><span class="v">${String(data.ltp_source || '--')}${data.ltp_age_known === false ? ' (age not supplied)' : ''}</span>
+            ${data.metrics_strike != null && Number(data.metrics_strike) !== Number(data.strike) ? '<span class="k" style="color:#f59e0b">Signal metrics</span><span class="v" style="color:#f59e0b">from strike ' + n(data.metrics_strike, 0) + ' (heartbeat) - not recalculated for live ATM</span>' : ''}
             <span class="k">Premium ATR(14)</span><span class="v">${n(data.atr)}</span>
             <span class="k">Stop preview at current LTP</span><span class="v">${n(data.stop_preview)}</span>
             <span class="k">SMA9 (completed candles)</span><span class="v">${n(data.sma9)}</span>
@@ -327,18 +329,33 @@ function renderStatus(st, live) {
 
 async function applyLiveAtm(target, scannerKey) {
     if (!target) return;
+    const badge = document.getElementById('live-atm-badge');
+    const unavailable = (msg, title) => {
+        if (badge) { badge.textContent = msg; badge.title = title; }
+    };
     try {
         const expiry = target.expiry ? String(target.expiry) : '';
         const resp = await fetch('/api/live-atm?scanner=' + encodeURIComponent(scannerKey)
             + '&expiry=' + encodeURIComponent(expiry), {
             headers: { 'Accept': 'application/json' }, cache: 'no-store'
         });
-        if (!resp.ok) return;
+        if (!resp.ok) {
+            unavailable('LIVE QUOTE UNAVAILABLE (HTTP ' + resp.status + ')',
+                'Showing last scanner heartbeat; live quote endpoint returned ' + resp.status);
+            return;
+        }
         const payload = await resp.json();
-        if (!payload.success || !payload.data || !payload.data.atm_strike) return;
+        if (!payload.success || !payload.data || !payload.data.atm_strike) {
+            unavailable('LIVE QUOTE UNAVAILABLE',
+                'Showing last scanner heartbeat; live quote endpoint returned no data');
+            return;
+        }
         const a = payload.data;
         target.atm_strike = a.atm_strike;
         if (a.spot != null) target.spot = a.spot;
+        target.spot_source = a.spot_source || a.source;
+        target.quote_diverged = !!a.quote_diverged;
+        target.live_atm_freshness = a.freshness || 'unknown_age';
 
         const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
         let symPart = '';
@@ -347,37 +364,53 @@ async function applyLiveAtm(target, scannerKey) {
             const mm = parseInt(expiry.slice(5, 7), 10);
             if (mm >= 1 && mm <= 12) symPart = yy + months[mm - 1];
         }
+        let metricsStrike = null;
         for (const opt of ['CE', 'PE']) {
             const p = (a.premiums || {})[opt] || {};
             const sym = p.symbol || (symPart ? ('NFO:NIFTY' + symPart + String(a.atm_strike) + opt) : '');
             const bare = sym ? sym.replace(/^NFO:/, '') : '';
+            const key = opt.toLowerCase();
             if (target.options && target.options[opt]) {
                 const o = target.options[opt];
+                if (o.metrics_strike === undefined || o.metrics_strike === null) o.metrics_strike = o.strike;
+                if (o.metrics_strike != null) metricsStrike = o.metrics_strike;
                 o.strike = a.atm_strike;
                 if (bare) o.tradingsymbol = bare;
                 if (p.ltp != null) {
                     o.ltp = p.ltp;
                     o.ltp_source = p.source || 'broker_quote';
                     o.ltp_age_seconds = p.age_seconds;
+                    o.ltp_age_known = p.age_known !== false;
                 }
             }
-            target[opt.toLowerCase() + '_ltp'] = p.ltp != null ? p.ltp : null;
-            if (bare) target[opt.toLowerCase() + '_symbol'] = bare;
+            target[key + '_ltp'] = p.ltp != null ? p.ltp : null;
+            target[key + '_ltp_source'] = p.source || null;
+            target[key + '_ltp_age_seconds'] = p.age_seconds != null ? p.age_seconds : null;
+            if (bare) target[key + '_symbol'] = bare;
         }
 
-        const badge = document.getElementById('live-atm-badge');
         if (badge) {
             const ce = (a.premiums || {}).CE || {};
             const pe = (a.premiums || {}).PE || {};
-            const anyStale = a.stale || ce.stale || pe.stale;
             const fmt = v => (v != null ? Number(v).toFixed(2) : '--');
+            const notes = [];
+            if (a.stale || ce.stale || pe.stale) notes.push('last quote');
+            if (a.quote_diverged) notes.push('index close fallback');
+            if (a.freshness === 'unknown_age') notes.push('age not supplied');
+            if (metricsStrike != null && Number(metricsStrike) !== Number(a.atm_strike)) {
+                notes.push('metrics @ ' + metricsStrike);
+            }
             badge.textContent = 'ATM ' + a.atm_strike + ' | CE ' + fmt(ce.ltp) + ' / PE ' + fmt(pe.ltp)
-                + (anyStale ? ' (last quote)' : '');
-            badge.title = 'Spot ' + a.spot + ' | premiums from ' + (ce.source || 'broker gateway')
+                + (notes.length ? ' (' + notes.join(', ') + ')' : '');
+            badge.title = 'Spot ' + a.spot + ' via ' + (a.spot_source || 'broker_quote')
                 + (a.as_of ? (' @ ' + a.as_of) : '');
         }
-    } catch (e) { console.error('live ATM refresh failed', e); }
+    } catch (e) {
+        unavailable('LIVE QUOTE UNAVAILABLE', 'Showing last scanner heartbeat: ' + e.message);
+        console.error('live ATM refresh failed', e);
+    }
 }
+
 
 
 async function refresh() {

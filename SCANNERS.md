@@ -889,6 +889,16 @@ card pairs agree on the actual last traded level. The API exposes this as
 `spot_source: index_close_fallback` (normally `broker_quote`); once the market
 opens, the live pair reverts to the broker quote.
 
+All 10 active dashboards fetch their live ATM strike and both option premiums
+from the read-only `GET /api/live-atm?scanner=<key>&expiry=<YYYY-MM-DD>`
+endpoint instead of the scanner heartbeat. That endpoint re-quotes NIFTY 50 and
+the two ATM option symbols through the broker-agnostic gateway, applies the
+same closed-market divergence guard described above, and returns `source`,
+`spot_source`, `quote_age_seconds`, per-leg `symbol`/`ltp`/`age_seconds` and a
+`stale` flag. The heartbeat row is still used for completed-candle indicators
+(SMA9, ADX, ATR, previous close) and for trade history; those are deliberately
+bar-based, not live quotes.
+
 Every active scanner has a button on `https://tradingai.in/live/scalp/` — the
 buttons are `sma9`, `sma9-5min`, `sma9-adx`, `sma9-atr`, `sma9-high`,
 `sma9-1min-poll`, `sma9-5s-atr`, `sma9-trail`, `sma9-high-trail` and

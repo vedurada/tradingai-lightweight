@@ -11,7 +11,7 @@ calls are involved.
 from __future__ import annotations
 
 import time
-from datetime import datetime
+from datetime import datetime, time as dtime
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -29,6 +29,9 @@ OPTION_PREFIX = "NFO:NIFTY"
 STRIKE_STEP = 50
 CACHE_SECONDS = 10
 STALE_QUOTE_SECONDS = 60
+MARKET_OPEN = dtime(9, 0)
+MARKET_CLOSE = dtime(15, 30)
+FALLBACK_MAX_DIFF = 50  # same divergence guard the live scanners use
 MONTHS = (
     "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
     "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
@@ -71,6 +74,36 @@ def _is_stale(item: dict) -> bool:
     return age is not None and float(age) > STALE_QUOTE_SECONDS
 
 
+def _market_is_open(now: datetime) -> bool:
+    local = now.astimezone(IST)
+    return local.weekday() < 5 and MARKET_OPEN <= local.time() < MARKET_CLOSE
+
+
+def _effective_spot(index_quote: dict, now: datetime) -> tuple[float, str, str, bool]:
+    """Guard against a frozen index quote outside market hours.
+
+    mStock has served an old ``last_price`` with a correct ``ohlc.close`` on
+    closed-market days. The live scanners already fall back to the real index
+    close when the two diverge by more than 50 points; use the same rule here
+    so the dashboard never shows a stale ATM strike.
+    """
+    raw = float(index_quote["last_price"])
+    ohlc = index_quote.get("ohlc") or {}
+    close = ohlc.get("close")
+    diverged = False
+    spot = raw
+    if close is not None and not _market_is_open(now):
+        try:
+            if abs(raw - float(close)) > FALLBACK_MAX_DIFF:
+                spot = float(close)
+                diverged = True
+        except (TypeError, ValueError):
+            pass
+    source = "index_ohlc_close_fallback" if diverged else "broker_quote"
+    spot_source = "index_close_fallback" if diverged else "broker_quote"
+    return round(spot, 2), source, spot_source, diverged
+
+
 def _fresh_value(expiry: str) -> dict | None:
     """Fetch a live index quote plus CE/PE premiums for the derived ATM."""
     broker = broker_for("api")  # API process identity in scanners.json
@@ -80,7 +113,8 @@ def _fresh_value(expiry: str) -> dict | None:
     if price is None:
         return None
 
-    spot = round(float(price), 2)
+    now = datetime.now(IST)
+    spot, source, spot_source, diverged = _effective_spot(index_quote, now)
     atm = _nearest_strike(spot)
 
     premiums: dict[str, Any] = {}
@@ -101,6 +135,7 @@ def _fresh_value(expiry: str) -> dict | None:
             "symbol": sym,
             "ltp": round(float(ltp), 2) if ltp is not None else None,
             "age_seconds": _age(item),
+            "age_known": item.get("last_trade_time") is not None,
             "source": "broker_quote" if ltp is not None else None,
             "stale": _is_stale(item) if ltp is not None else True,
         }
@@ -109,10 +144,14 @@ def _fresh_value(expiry: str) -> dict | None:
         "spot": spot,
         "atm_strike": atm,
         "strike_step": STRIKE_STEP,
-        "source": "broker_quote",
-        "as_of": datetime.now(IST).isoformat(),
+        "source": source,
+        "spot_source": spot_source,
+        "quote_diverged": diverged,
+        "as_of": now.isoformat(),
         "quote_age_seconds": _age(index_quote),
-        "stale": _is_stale(index_quote),
+        "age_known": index_quote.get("last_trade_time") is not None,
+        "freshness": "known" if index_quote.get("last_trade_time") is not None else "unknown_age",
+        "stale": _is_stale(index_quote) and not diverged,
         "expiry": expiry or None,
         "premiums": premiums,
     }
