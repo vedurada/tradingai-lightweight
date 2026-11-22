@@ -1,0 +1,230 @@
+{
+  "updated_at": "2026-11-22",
+  "note": "Display-only summary of the rules executed by each deployed live paper scanner. The scanner engine is authoritative. Never contains quotes, prices, signals or live state.",
+  "scanners": {
+    "sma9": {
+      "title": "SMA9 base",
+      "source": [
+        "/opt/tradingai/sma9_scanner/app/live_sma9_scanner.py",
+        "/opt/tradingai/sma9_scanner/app/sma9_engine.py"
+      ],
+      "entry": [
+        "Previous completed 5-minute option-premium close > SMA9 (mean of last 9 completed premium closes).",
+        "Current forming candle open > SMA9. Both conditions are required; LTP > SMA9 is informational only and does not gate entry.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE evaluated independently, long only."
+      ],
+      "exit": [
+        "Trail first: once the premium high-water mark (HWM) is at least 5 points above entry, stop becomes breakeven and then ratchets to max(stop, HWM - 5 points). One-time lock at +6 points sets stop to at least entry + 2 points.",
+        "Trail exit only from a strictly profitable stop (stop > entry); fills at the sampled LTP, reason TRAIL_STOP_EXIT.",
+        "Then fixed stop at round(entry x 0.95, 2), reason STOP_LOSS_5PCT.",
+        "No candle-close, target, reverse-signal or time-based exit in the live loop; a position can be held across candles and overnight."
+      ],
+      "scope": [
+        "5-second polls aligned to the wall clock; signal candles are 5-minute option-premium bars and the forming candle must be current.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option, maximum 2 open positions (one CE, one PE).",
+        "Nearest NIFTY weekly expiry at/after today; no separate expiry-day square-off."
+      ]
+    },
+    "sma9-high": {
+      "title": "SMA9 HIGH",
+      "source": [
+        "/opt/tradingai/sma9_high_scanner/app/live_sma9_high_scanner.py",
+        "/opt/tradingai/sma9_high_scanner/app/sma9_high_engine.py"
+      ],
+      "entry": [
+        "Previous completed 5-minute option-premium close > SMA9 (mean of last 9 completed premium closes).",
+        "Current forming candle open > SMA9, and sampled live premium LTP > previous completed candle's high. All three conditions are required; there is no LTP > SMA9 gate.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE evaluated independently, long only."
+      ],
+      "exit": [
+        "Identical to sma9: trail first (activation +5 points, ratchet HWM - 5 points, one-time +6 lock to entry + 2), profitable-only, reason TRAIL_STOP_EXIT at sampled LTP.",
+        "Then fixed stop at round(entry x 0.95, 2), reason STOP_LOSS_5PCT.",
+        "No candle-close, target or time-based exit in the live loop."
+      ],
+      "scope": [
+        "5-second polls aligned to the wall clock with a 2.4-second offset; 5-minute option-premium signal candles, forming candle must be current.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option, maximum 2 open positions.",
+        "Nearest NIFTY weekly expiry at/after today; no separate expiry-day square-off."
+      ]
+    },
+    "sma9-trail": {
+      "title": "SMA9 Trail",
+      "source": [
+        "/opt/tradingai/sma9_trail_scanner/app/live_sma9_trail_scanner.py",
+        "/opt/tradingai/sma9_trail_scanner/app/sma9_trail_engine.py"
+      ],
+      "entry": [
+        "Self-contained entry (no dependency on the base sma9 scanner): previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9.",
+        "The HIGH/previous-candle-high branch in the engine is diagnostic only and is not used by this scanner.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE evaluated independently, long only."
+      ],
+      "exit": [
+        "Trail first: activation at +5 points, first stop at breakeven, then ratchet to max(stop, HWM - 5 points); one-time +6-point lock sets stop to at least entry + 2 points.",
+        "Trail exit only from a strictly profitable stop, filled at the sampled LTP, reason TRAIL_STOP_EXIT.",
+        "Then fixed stop at round(entry x 0.95, 2), reason STOP_LOSS_5PCT.",
+        "No candle-close, target or time-based exit in the live loop."
+      ],
+      "scope": [
+        "5-second polls with a 1.2-second offset; signals from 5-minute option-premium candles.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option, maximum 2 open positions.",
+        "Nearest NIFTY weekly expiry at/after today; no separate expiry-day square-off."
+      ]
+    },
+    "sma9-high-trail": {
+      "title": "SMA9 HIGH Trail",
+      "source": [
+        "/opt/tradingai/sma9_high_trail_scanner/app/live_sma9_high_trail_scanner.py",
+        "/opt/tradingai/sma9_high_trail_scanner/app/sma9_high_trail_engine.py"
+      ],
+      "entry": [
+        "Self-contained entry (no dependency on the base sma9-high scanner): previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9 AND sampled live premium LTP > previous completed candle's high.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE evaluated independently, long only."
+      ],
+      "exit": [
+        "Trail first: activation at +5 points, first stop at breakeven, then ratchet to max(stop, HWM - 5 points); one-time +6-point lock sets stop to at least entry + 2 points.",
+        "Trail exit only from a strictly profitable stop, filled at the sampled LTP, reason TRAIL_STOP_EXIT.",
+        "Then fixed stop at round(entry x 0.95, 2), reason STOP_LOSS_5PCT.",
+        "No candle-close, target or time-based exit in the live loop."
+      ],
+      "scope": [
+        "5-second polls with a 3-second offset; signals from 5-minute option-premium candles.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option, maximum 2 open positions.",
+        "Nearest NIFTY weekly expiry at/after today; no separate expiry-day square-off."
+      ]
+    },
+    "sma9-atr": {
+      "title": "SMA9 ATR + daily regime",
+      "source": [
+        "/opt/tradingai/sma9_atr_scanner/app/live_sma9_atr_scanner.py",
+        "/opt/tradingai/sma9_atr_scanner/app/sma9_atr_engine.py"
+      ],
+      "entry": [
+        "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9; LTP > SMA9 is informational only.",
+        "Daily NIFTY spot regime gate from completed 5-minute spot candles, refreshed every 15 minutes: BULLISH (price > VWAP, price > EMA9, EMA9 rising) allows CE only; BEARISH (price < VWAP, price < EMA9, EMA9 falling) allows PE only; NEUTRAL or insufficient data allows no entries.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
+      ],
+      "exit": [
+        "ATR(14) of the bought option's completed 5-minute premium candles; distance = 0.70 x ATR, floored at 5% and capped at 30% of entry (10% fallback when fewer than 15 completed bars).",
+        "Initial stop = entry - distance; breach closes at the actual sampled LTP, reason STOP_LOSS_ATR.",
+        "Trail activates on any new premium high above entry and ratchets to max(stop, HWM - distance) using the distance frozen at entry; no +5 activation and no breakeven lock. Exit at sampled LTP, reason TRAIL_STOP_EXIT.",
+        "No target, candle-close or time-based exit; the regime gate never blocks exits."
+      ],
+      "scope": [
+        "5-second polls; signal candles are 5-minute option-premium bars, the forming candle must be current.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option.",
+        "Earlier-session positions are closed on startup at the current LTP with reason STALE_RECOVERY_EXIT."
+      ]
+    },
+    "sma9-5s-atr": {
+      "title": "SMA9 ATR 5-second poll",
+      "source": [
+        "/opt/tradingai/sma9_5s_atr_scanner/app/live_sma9_5s_atr_scanner.py",
+        "/opt/tradingai/sma9_5s_atr_scanner/app/sma9_5s_atr_engine.py"
+      ],
+      "entry": [
+        "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9 AND SMA9 > previous SMA9 (the 9-candle average ending one completed candle earlier). All three conditions are required.",
+        "No daily regime gate and no LTP > SMA9 gate; LTP > SMA9 is informational only.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
+      ],
+      "exit": [
+        "ATR(14) of the bought option's completed 5-minute premium candles; distance = 0.70 x ATR, floored at 5% and capped at 30% of entry (10% fallback with fewer than 15 completed bars).",
+        "Initial stop = entry - distance; breach closes at the actual sampled LTP, reason STOP_LOSS_ATR.",
+        "Trail activates on any new high above entry, ratchets to max(stop, HWM - distance) with the distance frozen at entry; no +5 activation and no breakeven lock. Exit at sampled LTP, reason TRAIL_STOP_EXIT.",
+        "No target, candle-close or time-based exit."
+      ],
+      "scope": [
+        "5-second polls; signal candles are 5-minute option-premium bars, forming candle must be current.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option.",
+        "Identity was formerly sma9-1min-atr; the DB, service, API and page were renamed, rules are the ATR model above."
+      ]
+    },
+    "sma9-1min-poll": {
+      "title": "SMA9 1-min identity, 5-second ATR poll",
+      "source": [
+        "/opt/tradingai/sma9_1min_poll_scanner/app/live_sma9_1min_poll_scanner.py",
+        "/opt/tradingai/sma9_1min_poll_scanner/app/sma9_1min_poll_engine.py"
+      ],
+      "entry": [
+        "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9. No rising-SMA9 filter, no regime gate and no LTP > SMA9 gate.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
+      ],
+      "exit": [
+        "ATR(14) of the bought option's completed 5-minute premium candles; distance = 0.70 x ATR, floored at 5% and capped at 30% of entry (10% fallback with fewer than 15 completed bars).",
+        "Initial stop = entry - distance; breach closes at the actual sampled LTP, reason STOP_LOSS_ATR.",
+        "Trail activates on any new high above entry and ratchets to max(stop, HWM - distance) with the distance frozen at entry; no +5 activation and no breakeven lock. Exit at sampled LTP, reason TRAIL_STOP_EXIT.",
+        "No target, candle-close or time-based exit."
+      ],
+      "scope": [
+        "Despite the name, the scanner polls every 5 seconds; the original 1-minute identity, DB, service, API and page are retained.",
+        "Signal candles are 5-minute option-premium bars, forming candle must be current.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option."
+      ]
+    },
+    "sma9-5min": {
+      "title": "SMA9 5-minute poll",
+      "source": [
+        "/opt/tradingai/sma9_5min_scanner/app/live_sma9_5min_scanner.py",
+        "/opt/tradingai/sma9_5min_scanner/app/sma9_5min_engine.py"
+      ],
+      "entry": [
+        "Rule copy of sma9: previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9; LTP > SMA9 is informational only.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
+      ],
+      "exit": [
+        "Trail first: activation at +5 points, first stop at breakeven, ratchet to max(stop, HWM - 5 points); one-time +6-point lock sets stop to at least entry + 2 points. Profitable-only trail exit at sampled LTP, reason TRAIL_STOP_EXIT.",
+        "Then fixed stop at round(entry x 0.95, 2), reason STOP_LOSS_5PCT; this level is the fill price, not the sampled LTP.",
+        "No candle-close, target or time-based exit in the live loop."
+      ],
+      "scope": [
+        "One poll per 5-minute boundary plus a 10-second publication offset; stops are therefore observed once per completed bar.",
+        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option.",
+        "Signal candles are 5-minute option-premium bars; forming candle must be current."
+      ]
+    },
+    "sma9-adx": {
+      "title": "SMA9 + ADX(14)",
+      "source": [
+        "/opt/tradingai/sma9_adx_scanner/app/live_sma9_adx_scanner.py",
+        "/opt/tradingai/sma9_adx_scanner/app/sma9_adx_engine.py"
+      ],
+      "entry": [
+        "Previous completed option-premium 5-minute close > SMA9 AND Wilder ADX(14) > 20, both computed on the bought option's completed 5-minute candles; the forming bar is always excluded.",
+        "No forming-open gate and no LTP > SMA9 gate; the confirmation field is informational only.",
+        "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
+      ],
+      "exit": [
+        "Initial stop = entry x 0.95 (5% below entry), reason STOP_LOSS_5PCT.",
+        "Once the premium is above entry, stop = max(entry x 0.95, HWM x 0.95), ratcheting upward only; no +5 activation, no fixed 5-point trail and no breakeven lock.",
+        "No target, candle-close or time-based exit; the 5% trail and 5% stop are the only exits."
+      ],
+      "scope": [
+        "5-second polls; entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option.",
+        "ADX needs at least 2 x 14 completed premium bars before an entry is possible; the forming candle must be the current 5-minute bucket.",
+        "ADX(14) > 20 is the only filter added to the base SMA9 entry; the 5-second identity, DB and service are otherwise unchanged. A restart can close a position from an already-ended entry candle at that candle's close (SAME_CANDLE_EXIT); normal polling has no time exit."
+      ]
+    },
+    "pattern_scanner": {
+      "title": "Pattern Scanner",
+      "source": [
+        "/opt/tradingai/scripts/pattern_scanner_live.py",
+        "/opt/tradingai/app/research/pattern_scanner.py"
+      ],
+      "entry": [
+        "Bullish or bearish candlestick pattern detected on a completed NIFTY SPOT 5-minute candle (about 37 named patterns on each side, e.g. Hammer, Bullish Engulfing, Morning Star; full list in the engine).",
+        "Bullish signal buys the ATM CE; bearish signal buys the ATM PE. Long only on both sides, never short CE or PE. Pattern body thresholds use Wilder ATR(14) on completed spot candles.",
+        "Entry price is the option's LTP sampled at the poll that closes the spot candle; a quote older than 20 seconds is rejected and the entry is skipped. The signal candle must start before 15:15 IST (last eligible start 15:10); at most one position per pattern:instrument."
+      ],
+      "exit": [
+        "Premium ATR(14) from completed 5-minute bars of the exact bought option. Distance = 0.70 x ATR, clamped to 5%-30% of entry; 10% fallback with fewer than 15 completed bars.",
+        "Initial stop = entry - distance; breach detected from the completed bar's low, reason STOP_LOSS_ATR.",
+        "Trail ratchets to max(stop, HWM - distance) on the completed bar high and is checked against that bar's high/low, reason TRAIL_STOP_EXIT. No +5 activation and no breakeven lock.",
+        "Exit fill is the lower of the two candidate levels from that completed 5m option bar (conservative OHLC proxy shared with the backtest); sampled spot ticks never manage an exit. No target, candle-close or time-based exit."
+      ],
+      "scope": [
+        "One poll per 5-minute boundary plus 10 seconds; this is the only scanner on an aligned 5-minute cadence.",
+        "Entry signals come from NIFTY spot candles; all exits come from the position's own option premium candles.",
+        "A position entered at a bar-close poll is first managed on the next poll's completed bar."
+      ]
+    }
+  }
+}

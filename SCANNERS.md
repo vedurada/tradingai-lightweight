@@ -740,6 +740,31 @@ before there is enough history.
 and `adx_threshold`; open positions and closed trades persist `adx` /
 `adx_value` so a restart resumes the same signal and stop.
 
+### 5.9 Live dashboard strategy-rules panel
+
+All ten live scanner pages (`sma9`, `sma9-high`, `sma9-trail`,
+`sma9-high-trail`, `sma9-atr`, `sma9-5s-atr`, `sma9-1min-poll`, `sma9-5min`,
+`sma9-adx`, `pattern_scanner`) render a **Strategy rules (live)** panel.
+The panel is display-only: it never contains prices, quotes, signals or any
+live trading state.
+
+- **Single display source:** `frontend/live/strategy_rules.json`. Each key in
+  `scanners` matches the page key above and provides `entry`, `exit`, `scope`
+  and `source` lists. Pages fetch `/live/strategy_rules.json` with
+  `cache: 'no-store'` and render the matching key.
+- **If the file is missing or the key is absent**, the panel shows an explicit
+  "Strategy rules unavailable" warning pointing back to this document. It
+  never invents or silently reuses another scanner's rules.
+- **Change control:** whenever an entry or exit condition (or its constants,
+  cadence or instrument selection) changes in a scanner engine, update the
+  matching manifest entry **in the same commit and deployment**: correct the
+  `entry` / `exit` / `scope` bullets, keep `source` pointing at the deployed
+  files, bump `updated_at`, then verify the page shows the new text. The
+  scanner engine remains the authoritative source of truth; this manifest is
+  its human-readable mirror.
+- Deployment path: `/opt/tradingai/frontend/live/strategy_rules.json` (served
+  as a static file by nginx with `Cache-Control: no-store`).
+
 ---
 
 ## 6. Data model (SQLite)
