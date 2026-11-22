@@ -4,7 +4,7 @@ Complete reference for the 9 paper scanners running on the TradingAI VM:
 8 BUY-only NIFTY option-premium scanners plus `pattern_scanner` are active;
 `sma9_5min` is the ninth identity, deployed at `/live/sma9-5min/`, and
 `sma9_adx` is the tenth, deployed at `/live/sma9-adx/`. Five option scanners use a fixed 5%
-stop; `sma9_adx` uses the same 5% stop and 5-point trail as `sma9`; `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll` and
+stop; `sma9_adx` also uses a fixed 5% HWM trail; `sma9_atr`, `sma9_5s_atr`, `sma9_1min_poll` and
 `pattern_scanner` use a volatility-scaled **premium** ATR stop and ATR-only trail
 (no +5 activation and no breakeven lock). `sma9_atr` also gates entries on a
 daily NIFTY spot regime; `sma9_5s_atr` additionally requires a rising SMA9.
@@ -40,12 +40,11 @@ The code trees and DBs remain on disk as archives.
 | 6 | `sma9_5s_atr` | SMA9 ATR (5s) | prev close > SMA9 **and** forming open > SMA9 **and** SMA9 > prior SMA9, polled every 5s | ATR trail, then ATR-scaled stop (both fill at the live LTP); otherwise hold |
 | 7 | `pattern_scanner` | Pattern | bullish/bearish patterns on NIFTY SPOT 5m candles, polled at 5m boundary +10 s | premium ATR trail, then premium ATR stop, from completed 5m option OHLC bars; otherwise hold |
 | 8 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
-| 9 | `sma9_adx` | SMA9 + ADX | prev completed close > SMA9 **and** ADX(14) > 20 on completed option 5m candles | `sma9` exits: 5-point trail (+5 activate, BE lock, HWM - 5), then 5% stop; no time exit |
+| 9 | `sma9_adx` | SMA9 + ADX | prev completed close > SMA9 **and** ADX(14) > 20 on completed option 5m candles | HWM-5% trail, then 5% initial stop (fixed, no time exit) |
 
 The ninth identity, `sma9_5min`, is deployed: it is an isolated copy of `sma9`
 whose only behavioural change is an aligned 5-minute poll. The tenth, `sma9_adx`,
-adds a Wilder ADX(14) > 20 trend filter and keeps `sma9`'s 5-point trail and
-5% stop (see §5.8).
+adds a Wilder ADX(14) > 20 trend filter and a 5% HWM trailing stop (see §5.8).
 
 There is **no time-based exit** on any of the 8 scanners: if neither the trail
 nor the stop fires, the position stays open across candles (including overnight)
@@ -721,12 +720,10 @@ behavioural changes, both evaluated on the bought option's own **completed**
   > SMA9 **and** Wilder ADX(14) > 20. There is no forming-open gate and no
   LTP > SMA9 confirmation gate; `confirmation` is reported as informational
   only.
-- **Exit (same as `sma9`):** initial stop = entry premium - 5%, checked on every
-  poll. The trail activates when HWM - entry >= 5 points (stop starts at entry),
-  then ratchets to HWM - 5 points; a one-time lock moves the stop to entry + 2
-  once HWM - entry >= 6. Only a strictly profitable stop (`stop > entry`) can
-  trigger `TRAIL_STOP_EXIT`, so a breakeven stop does not exit. There is **no**
-  candle-close or time-based exit in the live runner.
+- **Exit:** initial stop = entry premium - 5%; once the premium rises, the
+  stop ratchets to HWM - 5% and never ratchets down. A losing trade always
+  exits on the 5% initial stop, never on the trail. There is **no**
+  candle-close or time-based exit.
 
 ADX is computed from completed option-premium 5m bars with Wilder smoothing
 (+DI/-DI, smoothed TR, smoothed DX, then smoothed ADX). It returns `None` until

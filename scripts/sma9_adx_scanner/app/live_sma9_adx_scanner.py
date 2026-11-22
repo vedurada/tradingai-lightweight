@@ -8,9 +8,8 @@ Both CE and PE use the same long-only rule set:
     B) Wilder ADX(14) > 20
   Entry:
     paper BUY at the live LTP on the next 5s poll (no broker order)
-  Exit (same rules as sma9):
-    5% initial stop; trail activates at +5 points, ratchets at HWM - 5 points,
-    with a one-time breakeven lock at entry + 2 when HWM - entry >= 6
+  Exit:
+    5% initial stop, ratcheted to HWM - 5% as the premium rises
 
 Polling is exactly every 5 seconds during market hours.  One batched quote
 call per poll provides NIFTY spot + both option LTPs; historical candles are

@@ -8,12 +8,9 @@ BUY-ONLY rules (identical for CE and PE):
     B) ADX(14) on completed option candles > 20
   Entry: paper BUY at the live LTP as soon as A and B are true
 
-Exit (identical for CE and PE, same rules as `sma9`):
-  1) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level
-  2) TRAIL: activates once HWM - entry >= 5 points (stop -> breakeven), then
-     ratchets at HWM - 5 points, with a one-time lock at entry + 2 points
-     when HWM - entry >= 6 points. Only a strictly profitable stop exits.
-  3) Otherwise hold (no candle-close or time-based exit in the live runner).
+Exit (identical for CE and PE):
+  1) TRAIL: once HWM exceeds entry, stop ratchets to HWM - 5%
+  2) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level
 
 Only completed 5-minute candles are used for the signal, so no future data
 can leak into a decision.  No broker / database / network dependencies.
@@ -34,10 +31,7 @@ STRATEGY_TYPE = "SMA9_ADX_BUY_ONLY"
 ADX_PERIOD = 14
 ADX_THRESHOLD = 20.0
 STOP_LOSS_PCT = 0.05
-TRAIL = 5.0
-ACTIVATE = 5.0
-BE_LOCK_PROFIT = 6.0
-BE_LOCK_STOP = 2.0
+TRAIL_PCT = 0.05
 
 
 def _as_dt(value) -> datetime:
@@ -276,30 +270,19 @@ class Position:
             data[k] = _as_dt(data[k])
         return cls(**data)
     def update_trail(self, ltp: Optional[float]) -> Optional[float]:
-        """Update high-water mark and return a trail-stop exit price.
+        """Ratchet the stop to HWM - 5% and return a trail exit price.
 
-        Trail activates once the peak is `ACTIVATE` above entry (stop -> breakeven),
-        then ratchets at peak - TRAIL.  One-time breakeven lock at +BE_LOCK_PROFIT
-        moves the stop to entry + BE_LOCK_STOP.  Only a strictly profitable stop
-        (stop > entry) may trigger an exit; otherwise hold to candle close.
+        The initial stop stays at entry - 5%. A trail exit is only possible once
+        the ratcheted stop is above that initial floor.
         """
         if ltp is None:
             return None
         if ltp > self.hwm:
             self.hwm = ltp
-        if self.hwm - self.entry_price >= ACTIVATE:
-            if self.stop is None:
-                self.stop = self.entry_price
-            else:
-                self.stop = max(self.stop, self.hwm - TRAIL)
-        if (not self.be_locked
-                and self.hwm - self.entry_price >= BE_LOCK_PROFIT):
-            base_stop = self.stop if self.stop is not None else self.entry_price
-            self.stop = max(base_stop, self.entry_price + BE_LOCK_STOP)
-            self.be_locked = True
-        if (self.stop is not None
-                and self.stop > self.entry_price
-                and ltp <= self.stop):
+        initial_stop = round(self.entry_price * (1.0 - STOP_LOSS_PCT), 2)
+        trail_stop = round(self.hwm * (1.0 - TRAIL_PCT), 2)
+        self.stop = max(initial_stop, trail_stop)
+        if self.stop > initial_stop and ltp <= self.stop:
             return round(self.stop, 2)
         return None
 
@@ -311,7 +294,7 @@ class OptionStateMachine:
       * at most one open position for this option
       * at most one entry per 5-minute candle (duplicate-poll guard)
       * no entry whose candle would end after market close
-      * exits only on the 5% initial stop or the `sma9`-style trail stop
+      * exits only on the 5% initial stop or the HWM-5% trailing stop
     """
 
     def __init__(self, option_type: str):
@@ -354,7 +337,7 @@ class OptionStateMachine:
             condition_b=bool(ev.condition_b),
             ltp_at_entry=round(float(ev.ltp), 2),
             hwm=round(float(ev.ltp), 2),
-            stop=None,
+            stop=round(float(ev.ltp) * (1.0 - STOP_LOSS_PCT), 2),
             be_locked=False,
         )
         self.position = pos

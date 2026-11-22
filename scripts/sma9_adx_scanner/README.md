@@ -8,10 +8,8 @@ simulated BUY recorded in SQLite.
 - **Entry (both required):** previous completed option 5m candle close > SMA9
   **and** Wilder ADX(14) > 20 on completed option 5m candles. The forming bar is
   never used. CE and PE are evaluated independently.
-- **Exit (same as `sma9`):** initial stop = entry - 5%; the trail activates at
-  +5 points and ratchets to HWM - 5 points, with a one-time breakeven lock at
-  entry + 2 when HWM - entry >= 6. Only a profitable stop triggers a trail exit.
-  No candle-close or time-based exit.
+- **Exit:** initial stop = entry - 5%; once the premium rises, the stop ratchets
+  to HWM - 5% and never ratchets down. No candle-close or time-based exit.
 
 ## Files
 
