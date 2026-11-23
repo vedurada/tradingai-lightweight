@@ -476,6 +476,8 @@ class PatternScannerLive:
         status["poll_interval_sec"] = int(getattr(self, "poll", POLL_INTERVAL_SEC))
         status["poll_alignment"] = "5m_boundary_plus_10s"
         status["exit_data"] = "completed_5m_option_ohlc"
+        status["bar_source"] = getattr(
+            getattr(self.feed, "kite", None), "bar_source", "broker_history")
         errors = list(status.get("errors") or [])
         if not live:
             msg = ("no live broker feed; mock fallback has no option prices "

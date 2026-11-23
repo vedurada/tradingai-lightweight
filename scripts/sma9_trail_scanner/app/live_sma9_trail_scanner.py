@@ -893,6 +893,7 @@ class TrailLiveScanner:
             "last_closed_ce_close": self.last_closed_ce_close,
             "last_closed_pe_close": self.last_closed_pe_close,
             "last_closed_spot_source": self.last_closed_spot_source,
+            "bar_source": getattr(getattr(self.feed, "kite", None), "bar_source", "broker_history"),
             "expiry": self.expiry.isoformat() if hasattr(self.expiry, "isoformat") else self.expiry,
             "options": options,
             "today": today_stats(today),
