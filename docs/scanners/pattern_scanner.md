@@ -160,7 +160,9 @@ The status file reports `poll_interval_sec = 300`,
 `poll_alignment = 5m_boundary_plus_10s`, `exit_data = completed_5m_option_ohlc`,
 `data_available`, `exit_data_available`, `feed` and `errors`, so a stale 5s or
 data-less deployment is obvious. A missing option bar is reported as
-`NO_OPTION_DATA`; a missing broker feed as `NO_LIVE_FEED`.
+`NO_OPTION_DATA` only when a held position's bar is missing; a missing broker
+feed as `NO_LIVE_FEED`. A missing prior bar for the current ATM with no open
+position does not block entries on fresh quotes.
 
 ## Ops
 

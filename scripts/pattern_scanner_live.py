@@ -424,7 +424,11 @@ class PatternScannerLive:
             for start in starts:
                 bar = self.feed.completed_5m_bar(sym, start)
                 if not bar:
-                    self._failed_bar_symbols.add(sym)
+                    # A missing bar only blocks exits when the symbol is
+                    # actually held. The current ATM may change every poll;
+                    # its prior bar is not needed to enter on a fresh quote.
+                    if sym in getattr(self.ps, "positions", {}):
+                        self._failed_bar_symbols.add(sym)
                     if start == target:
                         self._pending_bars[sym] = start
                     continue

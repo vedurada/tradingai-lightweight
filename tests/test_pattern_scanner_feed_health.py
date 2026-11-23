@@ -20,6 +20,7 @@ def at(h, m, s=0):
 class _FakePS:
     def __init__(self, status="RUNNING"):
         self.status = status
+        self.positions = {}
 
     def get_status(self):
         return {"status": self.status, "scanner": "pattern_scanner"}
@@ -101,6 +102,7 @@ def test_failed_completed_bar_is_retried_before_the_next_bar():
                     "low": 100.0, "close": 100.0}
 
     scanner.feed = FlakyFeed()
+    scanner.ps.positions = {"TEST_CE": object()}
     scanner.ps.on_option_bar = lambda sym, bar, now: applied.append(bar["start"])
 
     # 09:25 poll -> previous completed bar is 09:20; its fetch fails.
@@ -115,3 +117,25 @@ def test_failed_completed_bar_is_retried_before_the_next_bar():
     assert applied == [at(9, 20), at(9, 25)]
     assert scanner._pending_bars == {}
     assert scanner._failed_bar_symbols == set()
+
+
+def test_missing_bar_for_unheld_atm_does_not_block_entries():
+    scanner = _scanner(live_ok=True, available=True)
+    scanner._pending_bars = {}
+
+    class NoBarFeed:
+        available = True
+
+        def completed_5m_bar(self, sym, start):
+            return None
+
+    scanner.feed = NoBarFeed()
+    scanner.ps.on_option_bar = lambda sym, bar, now: None
+
+    # Current ATM changes every poll; a missing prior bar for an unheld
+    # strike must not be reported as NO_OPTION_DATA or block fresh entries.
+    scanner._fetch_completed_bars(["TEST_CE"], at(9, 25, 10))
+    assert scanner._failed_bar_symbols == set()
+    status = scanner._status_snapshot()
+    assert status["status"] == "RUNNING"
+    assert status["exit_data_available"] is True
