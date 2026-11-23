@@ -221,6 +221,10 @@ class Handler(socketserver.StreamRequestHandler):
 class Server(socketserver.ThreadingMixIn, socketserver.UnixStreamServer):
     daemon_threads = True
     allow_reuse_address = True
+    # Ten scanners reconnect at once after a deploy. socketserver's default
+    # backlog of 5 overflows and clients get EAGAIN on connect, so keep a
+    # generous queue while threads are being spawned.
+    request_queue_size = 128
 
 
 def main() -> int:
