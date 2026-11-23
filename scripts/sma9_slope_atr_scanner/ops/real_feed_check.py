@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Read-only real-feed check for the deployed sma9_5s_atr scanner.
+"""Read-only real-feed check for the deployed sma9_slope_atr scanner.
 
 Exercises the live Kite path the scanner will use from 09:00 tomorrow (09:15 exchange open):
 instrument dump -> nearest expiry -> ATM CE/PE contracts -> quotes ->
@@ -10,9 +10,9 @@ Writes nothing (no DB, no orders).
 
 import sys
 
-sys.path.insert(0, "/opt/tradingai/sma9_5s_atr_scanner")
+sys.path.insert(0, "/opt/tradingai/sma9_slope_atr_scanner")
 
-from app.live_sma9_5s_atr_scanner import (  # noqa: E402
+from app.live_sma9_slope_atr_scanner import (  # noqa: E402
     ATR_PERIOD,
     KiteFeed,
     compute_stop,

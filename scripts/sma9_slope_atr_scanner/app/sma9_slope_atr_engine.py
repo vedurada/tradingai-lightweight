@@ -41,9 +41,9 @@ from typing import Dict, List, Optional, Sequence
 
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
-STRATEGY_ID = "sma9_5s_atr"
+STRATEGY_ID = "sma9_slope_atr"
 STRATEGY_VERSION = "1.1.0"
-STRATEGY_TYPE = "SMA9_5S_ATR_STOP_BUY_ONLY"
+STRATEGY_TYPE = "SMA9_SLOPE_ATR_STOP_BUY_ONLY"
 
 # Initial-stop model.
 ATR_PERIOD = 14
@@ -87,7 +87,7 @@ def candle_end(start: datetime) -> datetime:
 def make_trade_id(instrument: str, strike: float, option_type: str,
                   entry_candle_start, prefix: str = "S1A-") -> str:
     ts = _as_dt(entry_candle_start).isoformat()
-    raw = f"SMA9ATR|{STRATEGY_ID}|{instrument}|{strike}|{option_type}|{ts}"
+    raw = f"SMA9SLOPEATR|{STRATEGY_ID}|{instrument}|{strike}|{option_type}|{ts}"
     return prefix + hashlib.sha1(raw.encode()).hexdigest()[:12].upper()
 
 

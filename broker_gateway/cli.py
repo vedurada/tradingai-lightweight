@@ -21,7 +21,7 @@ SCANNER_SCRIPTS = {
     "sma9_1min_poll": "live_sma9_1min_poll_scanner.py",
     "sma9_trail": "live_sma9_trail_scanner.py",
     "sma9_high_trail": "live_sma9_high_trail_scanner.py",
-    "sma9_5s_atr": "live_sma9_5s_atr_scanner.py",
+    "sma9_slope_atr": "live_sma9_slope_atr_scanner.py",
     "sma9_5min": "live_sma9_5min_scanner.py",
     "pattern": "pattern_scanner_live.py",
 }

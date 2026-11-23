@@ -1,5 +1,5 @@
 {
-  "updated_at": "2026-11-22",
+  "updated_at": "2026-11-23",
   "note": "Display-only summary of the rules executed by each deployed live paper scanner. The scanner engine is authoritative. Never contains quotes, prices, signals or live state.",
   "scanners": {
     "sma9": {
@@ -95,8 +95,8 @@
         "Earlier-session positions are closed on startup at the current LTP with reason STALE_RECOVERY_EXIT."
       ]
     },
-    "sma9-5s-atr": {
-      "title": "SMA9 ATR 5-second poll",
+    "sma9-slope-atr": {
+      "title": "SMA9 Slope ATR 5-second poll",
       "entry": [
         "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9 AND SMA9 > previous SMA9 (the 9-candle average ending one completed candle earlier). All three conditions are required.",
         "No daily regime gate and no LTP > SMA9 gate; LTP > SMA9 is informational only.",

@@ -1,29 +1,29 @@
 [Unit]
-Description=TradingAI SMA9 ATM CE/PE BUY-ONLY Live Paper Scanner with ATR-Scaled Stop and ATR Trail (5s)
+Description=TradingAI SMA9 Slope ATR ATM CE/PE BUY-ONLY Live Paper Scanner with ATR-Scaled Stop and ATR Trail (5s)
 After=network-online.target
 Wants=network-online.target
 StartLimitIntervalSec=0
 
 [Service]
 Type=simple
-User=sma95satr
+User=sma9slopeatr
 # Share the API's group so SQLite WAL/journal files created by the scanner are
 # readable/writable by the ubuntu API process (see UMask below).
 Group=ubuntu
 WorkingDirectory=/opt/tradingai
-Environment=SMA9_5S_ATR_DB_PATH=/opt/tradingai/database/sma9_5s_atr.db
+Environment=SMA9_SLOPE_ATR_DB_PATH=/opt/tradingai/database/sma9_slope_atr.db
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
-Environment=PYTHONPATH=/opt/tradingai/sma9_5s_atr_scanner
-ExecStart=/usr/bin/python3 /opt/tradingai/sma9_5s_atr_scanner/app/live_sma9_5s_atr_scanner.py
+Environment=PYTHONPATH=/opt/tradingai/sma9_slope_atr_scanner
+ExecStart=/usr/bin/python3 /opt/tradingai/sma9_slope_atr_scanner/app/live_sma9_slope_atr_scanner.py
 # The ubuntu API opens this DB read-only, but SQLite still creates -shm/-wal
 # with the main file's mode. Keep the main DB group/world writable (matching
-# the other scanner DBs) so the sma95satr user can always write its own WAL.
-ExecStartPre=+/bin/sh -c 'chmod 0666 /opt/tradingai/database/sma9_5s_atr.db* 2>/dev/null || true'
+# the other scanner DBs) so the sma9slopeatr user can always write its own WAL.
+ExecStartPre=+/bin/sh -c 'chmod 0660 /opt/tradingai/database/sma9_slope_atr.db* 2>/dev/null || true'
 Restart=always
 RestartSec=5
-StandardOutput=append:/opt/tradingai/logs/live_sma9_5s_atr_scanner.log
-StandardError=append:/opt/tradingai/logs/live_sma9_5s_atr_scanner.log
+StandardOutput=append:/opt/tradingai/logs/live_sma9_slope_atr_scanner.log
+StandardError=append:/opt/tradingai/logs/live_sma9_slope_atr_scanner.log
 
 # Sandbox / privilege hardening
 NoNewPrivileges=true
@@ -43,7 +43,7 @@ RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
 CapabilityBoundingSet=
 AmbientCapabilities=
 ReadWritePaths=/opt/tradingai/database /opt/tradingai/logs
-ReadOnlyPaths=/opt/tradingai/sma9_5s_atr_scanner
+ReadOnlyPaths=/opt/tradingai/sma9_slope_atr_scanner
 # Group read/write (not world) so the ubuntu API can share SQLite -wal/-shm.
 UMask=0007
 

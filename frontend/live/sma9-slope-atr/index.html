@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>TradingAI - SMA9 5S ATR Live Dashboard</title>
+<title>TradingAI - SMA9 Slope ATR Live Dashboard</title>
 <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -61,9 +61,9 @@
 </style>
 </head>
 <body>
-<h1>TradingAI - SMA9 5S ATR Live Dashboard</h1>
+<h1>TradingAI - SMA9 Slope ATR Live Dashboard</h1>
 <div class="meta">
-    <a href="/live/performance/?scanner=sma9_5s_atr" class="back-link">Day-wise Performance &rarr;</a>
+    <a href="/live/performance/?scanner=sma9_slope_atr" class="back-link">Day-wise Performance &rarr;</a>
     <span>Updated: <span id="generated">--</span> IST</span>
     <span class="badge" id="scanner-status-badge">--</span>
     <span id="scanner-status-text">--</span>
@@ -151,9 +151,9 @@
 
 <script>
 // ============================================================================
-// SMA9 5S ATR dashboard - independent 15 second refresh (scanner polls 5s)
+// SMA9 Slope ATR dashboard - independent 15 second refresh (scanner polls 5s)
 // ============================================================================
-const API_BASE = '/api/sma9-5s-atr';
+const API_BASE = '/api/sma9-slope-atr';
 const REFRESH_MS = 15000;
 let refreshTimer = null;
 let countdownTimer = null;
@@ -326,7 +326,7 @@ function renderStatus(st, live) {
     badge.textContent = status;
     badge.className = 'badge ' + status;
     document.getElementById('scanner-status-text').textContent =
-        (live && live.scanner_name) || st.scanner_name || 'SMA9 5S ATR Scanner';
+        (live && live.scanner_name) || st.scanner_name || 'SMA9 Slope ATR Scanner';
     document.getElementById('spot').textContent = n(live && live.spot);
     document.getElementById('atm').textContent = n(live && live.atm_strike, 0);
     document.getElementById('last-closed-spot').textContent = n(live && live.last_closed_spot);
@@ -443,7 +443,7 @@ async function refresh() {
         ]);
 
         const live = (liveResp && liveResp.success && liveResp.data) ? liveResp.data : {};
-        await applyLiveAtm(live, 'sma9-5s-atr');
+        await applyLiveAtm(live, 'sma9-slope-atr');
         renderStatus(statusResp || {}, live);
 
         const options = live.options || {};
@@ -534,7 +534,7 @@ async function loadStrategyRules(key) {
             rulesEsc(e.message) + '). See SCANNERS.md section 5 for the authoritative rules.</div>';
     }
 }
-loadStrategyRules('sma9-5s-atr');
+loadStrategyRules('sma9-slope-atr');
 
 </script>
 </body>

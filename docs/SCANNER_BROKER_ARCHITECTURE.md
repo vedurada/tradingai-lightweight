@@ -74,7 +74,7 @@ flowchart TB
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
 | `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
 | `sma9_high_trail` | `live_sma9_high_trail_scanner.py` | `tradingai-sma9_high_trail-scanner` | `sma9trailhigh` | `/opt/tradingai/database/sma9_high_trail.db` | `/api/sma9-high-trail/scanner-status` |
-| `sma9_5s_atr` | `live_sma9_5s_atr_scanner.py` | `tradingai-sma9-5s-atr-scanner` | `sma95satr` | `/opt/tradingai/database/sma9_5s_atr.db` | `/api/sma9-5s-atr/scanner-status` |
+| `sma9_slope_atr` | `live_sma9_slope_atr_scanner.py` | `tradingai-sma9-slope-atr-scanner` | `sma9slopeatr` | `/opt/tradingai/database/sma9_slope_atr.db` | `/api/sma9-slope-atr/scanner-status` |
 | `sma9_1min_poll` | `live_sma9_1min_poll_scanner.py` | `tradingai-sma9-1min-poll-scanner` | `sma91m` | `/opt/tradingai/database/sma9_1min_poll.db` | `/api/sma9-1min-poll/scanner-status` |
 | `pattern` | `pattern_scanner_live.py` | `pattern-scanner-live` | `ubuntu` | `/opt/tradingai/data/pattern_scanner_status.json` | no dedicated route; dashboard reads JSON |
 

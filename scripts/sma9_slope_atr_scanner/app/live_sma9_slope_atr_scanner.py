@@ -2,7 +2,7 @@
 """SMA9 ATM CE+PE live paper scanner with an ATR-scaled stop - BUY ONLY.
 
 This is a standalone scanner.  It writes only to its own database
-(database/sma9_5s_atr.db), its own log, and runs under its own systemd unit.
+(database/sma9_slope_atr.db), its own log, and runs under its own systemd unit.
 No existing scanner is read or modified.
 
 Entry (per option, from its own 5-minute candles):
@@ -24,7 +24,7 @@ Polling is exactly every 5 seconds during market hours.  One batched quote
 call per poll provides NIFTY spot + both option LTPs; historical candles are
 fetched only when a new 5-minute candle appears, never on every poll.
 
-State is persisted in database/sma9_5s_atr.db so a restart with an open position
+State is persisted in database/sma9_slope_atr.db so a restart with an open position
 resumes correctly with its original ATR stop.
 """
 
@@ -45,7 +45,7 @@ CODE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if CODE_ROOT not in sys.path:
     sys.path.insert(0, CODE_ROOT)
 
-from app.sma9_5s_atr_engine import (  # noqa: E402
+from app.sma9_slope_atr_engine import (  # noqa: E402
     ATR_PERIOD,
     CANDLE_MINUTES,
     SMA_PERIOD,
@@ -64,9 +64,9 @@ from app.sma9_5s_atr_engine import (  # noqa: E402
 )
 
 IST = ZoneInfo("Asia/Kolkata")
-DB_PATH = os.environ.get("SMA9_5S_ATR_DB_PATH",
-                         os.path.join(BASE, "database", "sma9_5s_atr.db"))
-LOG_PATH = os.path.join(BASE, "logs", "live_sma9_5s_atr_scanner.log")
+DB_PATH = os.environ.get("SMA9_SLOPE_ATR_DB_PATH",
+                         os.path.join(BASE, "database", "sma9_slope_atr.db"))
+LOG_PATH = os.path.join(BASE, "logs", "live_sma9_slope_atr_scanner.log")
 
 MARKET_OPEN = dtime(9, 0)
 MARKET_CLOSE = dtime(15, 30)
@@ -88,7 +88,7 @@ POLL_SECONDS = 5
 POLL_OFFSET_SECONDS = 1.8  # stagger Data API history fetches across scanners
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
-SCANNER_NAME = "SMA9 5S ATR Stop - ATM Option Strike (BUY ONLY)"
+SCANNER_NAME = "SMA9 Slope ATR Stop - ATM Option Strike (BUY ONLY)"
 STRATEGY_ID = STRATEGY_ID
 STRATEGY_VERSION = STRATEGY_VERSION
 STRATEGY_TYPE = STRATEGY_TYPE
@@ -182,9 +182,9 @@ def init_db() -> None:
     conn = db_conn()
     conn.executescript(
         """
-        CREATE TABLE IF NOT EXISTS sma9_5s_atr_trades (
+        CREATE TABLE IF NOT EXISTS sma9_slope_atr_trades (
             trade_id TEXT PRIMARY KEY,
-            strategy_id TEXT NOT NULL DEFAULT 'sma9_5s_atr',
+            strategy_id TEXT NOT NULL DEFAULT 'sma9_slope_atr',
             instrument TEXT NOT NULL DEFAULT 'NIFTY',
             trade_date TEXT NOT NULL,
             option_type TEXT NOT NULL CHECK(option_type IN ('CE','PE')),
@@ -221,16 +221,16 @@ def init_db() -> None:
             stop_source TEXT,
             trail_distance REAL
         );
-        CREATE INDEX IF NOT EXISTS idx_sma9_5s_atr_trades_date
-            ON sma9_5s_atr_trades(trade_date);
-        CREATE INDEX IF NOT EXISTS idx_sma9_5s_atr_trades_option
-            ON sma9_5s_atr_trades(option_type);
-        CREATE INDEX IF NOT EXISTS idx_sma9_5s_atr_trades_status
-            ON sma9_5s_atr_trades(status);
-        CREATE INDEX IF NOT EXISTS idx_sma9_5s_atr_trades_dataset
-            ON sma9_5s_atr_trades(dataset);
+        CREATE INDEX IF NOT EXISTS idx_sma9_slope_atr_trades_date
+            ON sma9_slope_atr_trades(trade_date);
+        CREATE INDEX IF NOT EXISTS idx_sma9_slope_atr_trades_option
+            ON sma9_slope_atr_trades(option_type);
+        CREATE INDEX IF NOT EXISTS idx_sma9_slope_atr_trades_status
+            ON sma9_slope_atr_trades(status);
+        CREATE INDEX IF NOT EXISTS idx_sma9_slope_atr_trades_dataset
+            ON sma9_slope_atr_trades(dataset);
 
-        CREATE TABLE IF NOT EXISTS sma9_5s_atr_open_positions (
+        CREATE TABLE IF NOT EXISTS sma9_slope_atr_open_positions (
             option_type TEXT PRIMARY KEY,
             trade_id TEXT NOT NULL,
             strike REAL NOT NULL,
@@ -261,7 +261,7 @@ def init_db() -> None:
             updated_at TEXT NOT NULL
         );
 
-        CREATE TABLE IF NOT EXISTS sma9_5s_atr_scan_state (
+        CREATE TABLE IF NOT EXISTS sma9_slope_atr_scan_state (
             key TEXT PRIMARY KEY,
             value TEXT NOT NULL,
             updated_at TEXT NOT NULL
@@ -270,8 +270,8 @@ def init_db() -> None:
     )
     # Idempotent migration for databases created by v1.0.0.
     new_columns = {
-        "sma9_5s_atr_trades": ("prev_sma9", "condition_c", "trail_distance"),
-        "sma9_5s_atr_open_positions": ("prev_sma9", "condition_c"),
+        "sma9_slope_atr_trades": ("prev_sma9", "condition_c", "trail_distance"),
+        "sma9_slope_atr_open_positions": ("prev_sma9", "condition_c"),
     }
     for table, columns in new_columns.items():
         existing = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
@@ -291,13 +291,13 @@ def save_trade(trade: dict) -> None:
     conn = db_conn()
     try:
         conn.execute(
-            f"INSERT OR REPLACE INTO sma9_5s_atr_trades ({','.join(cols)}) VALUES ({placeholders})",
+            f"INSERT OR REPLACE INTO sma9_slope_atr_trades ({','.join(cols)}) VALUES ({placeholders})",
             tuple(trade.get(c) for c in cols),
         )
         # Atomic close: insert the trade and remove the open position in
         # the same transaction so a crash cannot leave both (or neither).
         conn.execute(
-            "DELETE FROM sma9_5s_atr_open_positions WHERE option_type = ?",
+            "DELETE FROM sma9_slope_atr_open_positions WHERE option_type = ?",
             (trade.get("option_type"),),
         )
         conn.commit()
@@ -309,7 +309,7 @@ def save_open_position(pos: Position) -> None:
     conn = db_conn()
     try:
         conn.execute(
-            """INSERT OR REPLACE INTO sma9_5s_atr_open_positions
+            """INSERT OR REPLACE INTO sma9_slope_atr_open_positions
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, prev_sma9, prev_close, current_open,
@@ -340,7 +340,7 @@ def save_open_position(pos: Position) -> None:
 def delete_open_position(option_type: str) -> None:
     conn = db_conn()
     try:
-        conn.execute("DELETE FROM sma9_5s_atr_open_positions WHERE option_type = ?",
+        conn.execute("DELETE FROM sma9_slope_atr_open_positions WHERE option_type = ?",
                      (option_type,))
         conn.commit()
     finally:
@@ -350,7 +350,7 @@ def delete_open_position(option_type: str) -> None:
 def load_open_positions() -> dict:
     conn = db_conn()
     try:
-        rows = conn.execute("SELECT * FROM sma9_5s_atr_open_positions").fetchall()
+        rows = conn.execute("SELECT * FROM sma9_slope_atr_open_positions").fetchall()
     finally:
         conn.close()
     result = {}
@@ -401,7 +401,7 @@ def save_scan_state(state: dict) -> None:
     conn = db_conn()
     try:
         conn.execute(
-            "INSERT OR REPLACE INTO sma9_5s_atr_scan_state (key, value, updated_at) VALUES (?,?,?)",
+            "INSERT OR REPLACE INTO sma9_slope_atr_scan_state (key, value, updated_at) VALUES (?,?,?)",
             ("live_status", json.dumps(state, default=str), now_ist().isoformat()),
         )
         conn.commit()
@@ -417,7 +417,7 @@ def today_stats(today: str) -> dict:
                       COALESCE(SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END),0) wins,
                       COALESCE(SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END),0) losses,
                       COALESCE(SUM(CASE WHEN exit_reason = 'STOP_LOSS_ATR' THEN 1 ELSE 0 END),0) stops
-               FROM sma9_5s_atr_trades WHERE dataset='LIVE' AND trade_date=?""",
+               FROM sma9_slope_atr_trades WHERE dataset='LIVE' AND trade_date=?""",
             (today,),
         ).fetchone()
     finally:
@@ -558,7 +558,7 @@ class KiteFeed:
 # ---------------------------------------------------------------------------
 # Scanner
 # ---------------------------------------------------------------------------
-class Sma9OneMinAtrLiveScanner:
+class Sma9SlopeAtrLiveScanner:
     def __init__(self, feed: KiteFeed):
         self.feed = feed
         self.states = {"CE": OptionStateMachine("CE"), "PE": OptionStateMachine("PE")}
@@ -968,7 +968,7 @@ class Sma9OneMinAtrLiveScanner:
 # Entry point
 # ---------------------------------------------------------------------------
 def main() -> int:
-    logger.info("SMA9 5S ATR-STOP scanner starting (poll=%ss, db=%s, k=%.2f)",
+    logger.info("SMA9 Slope ATR-STOP scanner starting (poll=%ss, db=%s, k=%.2f)",
                 POLL_SECONDS, DB_PATH, STOP_K)
     init_db()
     try:
@@ -979,14 +979,14 @@ def main() -> int:
         traceback.print_exc()
         return 1
 
-    scanner = Sma9OneMinAtrLiveScanner(feed)
+    scanner = Sma9SlopeAtrLiveScanner(feed)
     try:
         scanner.recover_open_positions()
     except Exception as exc:
         logger.error("Open-position recovery failed: %s", exc)
         traceback.print_exc()
 
-    logger.info("SMA9 5S ATR scanner ready")
+    logger.info("SMA9 Slope ATR scanner ready")
     try:
         while True:
             now = now_ist()
@@ -1013,9 +1013,9 @@ def main() -> int:
                     pass
             sleep_to_next_tick()
     except KeyboardInterrupt:
-        logger.info("SMA9 5S ATR scanner stopping (SIGINT)")
+        logger.info("SMA9 Slope ATR scanner stopping (SIGINT)")
     finally:
-        logger.info("SMA9 5S ATR scanner stopped")
+        logger.info("SMA9 Slope ATR scanner stopped")
     return 0
 
 
