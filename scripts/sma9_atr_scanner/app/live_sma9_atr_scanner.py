@@ -517,6 +517,11 @@ def load_zerodha_credentials() -> dict:
 
 
 class KiteFeed:
+    # Canonical index quote key. Both supported brokers accept it, and the
+    # returned instrument_token is the broker's own token for NIFTY 50 spot
+    # history (mStock: 26000, Zerodha: 256265).
+    NIFTY_INDEX_QUOTE = "NSE:NIFTY 50"
+
     def __init__(self):
         from kiteconnect import KiteConnect
 
@@ -567,20 +572,39 @@ class KiteFeed:
         return matches[0]
 
     def spot_instrument_token(self) -> int:
-        """Resolve the NIFTY 50 index token used for spot regime candles."""
+        """Resolve the broker's NIFTY 50 index token for spot regime candles.
+
+        mStock's NSE master does not list indices, so ask the broker for the
+        canonical index quote first: the returned instrument_token is the
+        correct history token for the active broker. The NSE dump remains a
+        secondary lookup for brokers that expose index rows there.
+        """
         if self._spot_token is not None:
             return self._spot_token
-        instruments = self.kite.instruments("NSE")
+        try:
+            item = (self.kite.quote([self.NIFTY_INDEX_QUOTE]) or {}).get(
+                self.NIFTY_INDEX_QUOTE) or {}
+            token = item.get("instrument_token")
+            if token:
+                self._spot_token = int(token)
+                return self._spot_token
+        except Exception as exc:
+            logger.warning("NIFTY 50 index quote lookup failed (%s)", exc)
+        try:
+            instruments = self.kite.instruments("NSE") or []
+        except Exception as exc:
+            logger.warning("NSE instrument lookup failed (%s)", exc)
+            instruments = []
         for i in instruments:
-            if (i.get("tradingsymbol") == "NIFTY 50"
-                    and i.get("segment") == "NSE-INDICES"):
+            if (i.get("tradingsymbol") in ("NIFTY 50", "NIFTY")
+                    and i.get("segment") in ("NSE-INDICES", "INDICES")):
                 self._spot_token = int(i["instrument_token"])
                 return self._spot_token
         for i in instruments:
             if i.get("tradingsymbol") == "NIFTY 50":
                 self._spot_token = int(i["instrument_token"])
                 return self._spot_token
-        raise RuntimeError("NIFTY 50 spot token not found in NSE instruments")
+        raise RuntimeError("NIFTY 50 spot token not available from broker")
 
     def spot_candles(self, force: bool = False):
         return self.candles(self.spot_instrument_token(), force=force)
