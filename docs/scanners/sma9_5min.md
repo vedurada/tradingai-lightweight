@@ -105,6 +105,4 @@ The status snapshot reports:
 ## Relationships
 
 - `sma9` is the unchanged 5-second baseline with identical rules.
-- `pattern_scanner` also polls on an aligned 5m cadence, but its exits come
-  from completed 5m option OHLC bars shared with the backtest.
 - Other SMA variants keep their existing 5-second cadence and identities.

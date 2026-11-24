@@ -125,20 +125,6 @@ SCANNERS = [
         # Replaces no_sma_trail; first live day 2026-11-19.
         "min_date": "2026-11-19",
     },
-    {
-        "key": "pattern_scanner",
-        "label": "Pattern",
-        "db": "tradingai.db",
-        "table": "pattern_scanner_positions",
-        "date_col": "COALESCE(session_date, substr(entry_ts, 1, 10))",
-        "where": "lower(status) = 'closed'",
-        # Pattern positions live in the same table as the closed rows.
-        "open_where": "lower(status) = 'active'",
-        # Rows before 2026-11-18 came from the old engine (bullish signals that
-        # bought PE options, no spot reference, expired contracts whose prices
-        # cannot be verified). Keep them in the DB, but do not report them.
-        "min_date": "2026-11-18",
-    },
 ]
 
 

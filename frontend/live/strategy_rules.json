@@ -166,25 +166,6 @@
         "ADX needs at least 2 x 14 completed premium bars before an entry is possible; the forming candle must be the current 5-minute bucket.",
         "ADX(14) > 20 is the only filter added to the base SMA9 entry; the 5-second identity, DB and service are otherwise unchanged. A restart can close a position from an already-ended entry candle at that candle's close (SAME_CANDLE_EXIT); normal polling has no time exit."
       ]
-    },
-    "pattern_scanner": {
-      "title": "Pattern Scanner",
-      "entry": [
-        "Bullish or bearish candlestick pattern detected on a completed NIFTY SPOT 5-minute candle (about 37 named patterns on each side, e.g. Hammer, Bullish Engulfing, Morning Star; full list in the engine).",
-        "Bullish signal buys the ATM CE; bearish signal buys the ATM PE. Long only on both sides, never short CE or PE. Pattern body thresholds use Wilder ATR(14) on completed spot candles.",
-        "Entry price is the option's LTP sampled at the poll that closes the spot candle; a quote older than 20 seconds is rejected and the entry is skipped. The signal candle must start before 15:15 IST (last eligible start 15:10); at most one position per pattern:instrument."
-      ],
-      "exit": [
-        "Premium ATR(14) from completed 5-minute bars of the exact bought option. Distance = 0.70 x ATR, clamped to 5%-30% of entry; 10% fallback with fewer than 15 completed bars.",
-        "Initial stop = entry - distance; breach detected from the completed bar's low, reason STOP_LOSS_ATR.",
-        "Trail ratchets to max(stop, HWM - distance) on the completed bar high and is checked against that bar's high/low, reason TRAIL_STOP_EXIT. No +5 activation and no breakeven lock.",
-        "Exit fill is the lower of the two candidate levels from that completed 5m option bar (conservative OHLC proxy shared with the backtest); sampled spot ticks never manage an exit. No target, candle-close or time-based exit."
-      ],
-      "scope": [
-        "One poll per 5-minute boundary plus 10 seconds; this is the only scanner on an aligned 5-minute cadence.",
-        "Entry signals come from NIFTY spot candles; all exits come from the position's own option premium candles.",
-        "A position entered at a bar-close poll is first managed on the next poll's completed bar."
-      ]
     }
   }
 }

@@ -20,7 +20,7 @@ inside the Kite rate limits.
 
 The access token is read once at process start by every scanner, so a token
 refresh must be followed by a restart. `/opt/tradingai/refresh_token.sh` does
-that for the 9 paper scanners, the API and `pattern-scanner-live`.
+that for the 9 paper scanners and the API.
 """
 import os
 import sys

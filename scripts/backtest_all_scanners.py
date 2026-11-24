@@ -1,36 +1,24 @@
 #!/usr/bin/env python3
-"""Historical 5-minute replay of all nine paper-only scanners.
+"""Historical 5-minute replay of the nine paper-only scanners.
 
 IMPORTANT LIMITATION
 --------------------
 mStock supplies per-instrument 5-minute OHLCV history, not historical 5-second
-quote snapshots. Eight premium scanners (seven active, one staged) enter and
-exit on sampled quote LTP; the HIGH scanners use LTP > previous high as an
-entry predicate; trail/stop state ratchets on every poll. An exact replay of
-that live quote-sampled paper behaviour is therefore impossible from this data
-alone. `pattern_scanner` is the exception:
-live now polls once per completed 5m option bar and shares `evaluate_bar()` with
-this replay, so its bar-exit rules are identical. Entry fill and spot-candle
-fidelity are mode-dependent (see below).
+quote snapshots. The scanners enter and exit on sampled quote LTP (the HIGH
+scanners use LTP > previous high as an entry predicate; trail/stop state
+ratchets on every poll). An exact replay of that live quote-sampled paper
+behaviour is therefore impossible from this data alone.
 
 This harness is an explicitly labelled 5-minute rule simulation. It imports
 the real strategy engines and reuses their evaluate/trail/stop/close code.
 Fill and ATM rules are documented in the output report:
 
-  * pattern entry fill = option bar close proxy in `--mode live`, signal candle
-                         open in `--mode rule`
   * exit fill  = adverse 5m bar low for the ATR stop, or the ratcheted stop
                  level when a trail is hit
   * ATM strike = nearest 50 to the completed NIFTY 50 index close (token 26000)
   * spot OHLC for regime logic = real NIFTY 50 index 5m bars (token 26000)
-  * spot OHLC for pattern logic = mode-dependent
 
 No futures anchor or CE/PE parity is used for underlying spot or ATM selection.
-
-`--mode live` (default) mirrors the current live pattern runner: one sampled LTP
-per 5m spot candle (O=H=L=C) and entry at the option bar close proxy. `--mode
-rule` keeps real index OHLC and candle-open entry for comparison. Both modes
-use the live scanner's completed-5m option OHLC exit rules.
 
 No broker order API is used.  Results are points only; no lot size, capital,
 target, or brokerage is invented.
@@ -179,16 +167,12 @@ def option_universe(instruments: list[dict], start: date, lo: float, hi: float) 
 # ---------------------------------------------------------------------------
 # Real NIFTY index spot and ATM
 # ---------------------------------------------------------------------------
-def build_index_spot_series(index_bars, option_series, universe,
-                            one_point_spot=False):
+def build_index_spot_series(index_bars, option_series, universe):
     """Return (atm_by_ts, spot_bars, ce_pe_index) from real index 5m bars.
 
     The NIFTY 50 index close is authoritative for both spot OHLC and ATM
     selection. No futures anchor or CE/PE parity is used: the ATM is simply the
     nearest listed 50-point strike to each completed index bar's close.
-
-    ``one_point_spot=True`` emulates the current live pattern runner, which
-    builds each 5m spot candle from one LTP sample: O=H=L=C=sampled close.
     """
     index_index = {b["start"]: b for b in index_bars}
     expiries = sorted({k[0] for k in option_series})
@@ -221,9 +205,9 @@ def build_index_spot_series(index_bars, option_series, universe,
             "start": ts,
             "timestamp": ts.isoformat(),
             "session_date": ts.date().isoformat(),
-            "open": spot_px if one_point_spot else round(float(index_bar["open"]), 2),
-            "high": spot_px if one_point_spot else round(float(index_bar["high"]), 2),
-            "low": spot_px if one_point_spot else round(float(index_bar["low"]), 2),
+            "open": round(float(index_bar["open"]), 2),
+            "high": round(float(index_bar["high"]), 2),
+            "low": round(float(index_bar["low"]), 2),
             "close": spot_px,
             "volume": int(index_bar.get("volume") or 0),
         }
@@ -375,155 +359,6 @@ def replay_premium_scanner(spec, root: Path, universe, series, timestamps,
 
 
 # ---------------------------------------------------------------------------
-# Pattern scanner replay
-# ---------------------------------------------------------------------------
-def pattern_atr_list(candles: list[dict]) -> list[float | None]:
-    if len(candles) < 2:
-        return [None] * len(candles)
-    trs = []
-    for i in range(1, len(candles)):
-        cur, prev = candles[i], candles[i - 1]
-        trs.append(max(cur["high"] - cur["low"],
-                       abs(cur["high"] - prev["close"]),
-                       abs(cur["low"] - prev["close"])))
-    period = 14
-    atrs: list[float | None] = [None]
-    for i in range(len(trs)):
-        if i < period - 1:
-            atrs.append(None)
-        elif i == period - 1:
-            atrs.append(sum(trs[:period]) / period)
-        else:
-            prev_atr = atrs[-1] or (sum(trs[-period:]) / period)
-            atrs.append((prev_atr * (period - 1) + trs[i]) / period)
-    return atrs
-
-
-def replay_pattern_scanner(root: Path, universe, series, spot_by_ts,
-                           ce_pe_index, timestamps, end_ts,
-                           entry_field: str = "open") -> list[dict]:
-    module = load_module(root / "app/research/pattern_scanner.py", "bt_pattern_engine")
-    positions: dict[str, Any] = {}
-    position_keys: dict[str, tuple[str, float, str]] = {}
-    trades: list[dict] = []
-    spot_sequence: list[dict] = []
-    dataset = "BACKTEST_5M_LIVE_PARITY" if entry_field == "close" else "BACKTEST_5M_INDEX_SPOT"
-
-    for ts in timestamps:
-        spot = spot_by_ts.get(ts)
-        if not spot:
-            continue
-        spot_sequence.append(spot)
-        atrs = pattern_atr_list(spot_sequence)
-        atr = atrs[-1]
-
-        # Match the live engine: it needs >=3 completed spot candles before it
-        # will detect, and entries are confined to the 09:20-15:15 window.
-        # Without both guards the replay could open trades at the 09:15/09:20
-        # bars that live can never take.
-        if len(spot_sequence) >= 3 and in_entry_window(ts):
-            try:
-                results = (module.detect_bullish_patterns(spot_sequence, len(spot_sequence) - 1, atr)
-                           + module.detect_bearish_patterns(spot_sequence, len(spot_sequence) - 1, atr))
-            except Exception as exc:  # detector failures are reported, never fatal
-                print(f"[pattern] detector error at {ts.isoformat()}: {exc}", file=sys.stderr)
-                results = []
-            for res in results or []:
-                direction = res.get("direction")
-                if direction not in ("BULLISH", "BEARISH"):
-                    continue
-                otype = "CE" if direction == "BULLISH" else "PE"
-                # Use the same index-derived expiry/ATM pair as premium replay.
-                exp, atm = ce_pe_index.get(ts, ("", 0.0))
-                key = (exp, atm, otype)
-                if key not in universe:
-                    candidates = [k for k in universe if k[0] == exp and k[2] == otype]
-                    if not candidates:
-                        continue
-                    key = min(candidates, key=lambda k: abs(k[1] - atm))
-                instrument = universe[key]
-                option_bars = [b for b in series.get(key, []) if b["start"] <= ts]
-                if not option_bars or option_bars[-1]["start"] != ts:
-                    continue
-                entry_px = option_bars[-1][entry_field]
-                symbol = str(instrument["tradingsymbol"])
-                pattern = res.get("pattern_name", "unknown")
-                pos_key = f"{pattern}:{symbol}"
-                if pos_key in positions:
-                    continue
-                option_atr = module.premium_atr(option_bars)
-                positions[pos_key] = module.OptionPosition(
-                    trade_id=f"BT-PAT-{ts.strftime('%Y%m%d%H%M')}-{symbol}",
-                    pattern_name=pattern,
-                    instrument=symbol,
-                    direction=direction,
-                    entry_price=float(entry_px),
-                    entry_spot=float(spot["close"]),
-                    entry_ts=ts.isoformat(),
-                    session_date=spot["start"].date().isoformat(),
-                    atr=option_atr,
-                )
-                position_keys[pos_key] = key
-
-        for pos_key, pos in list(positions.items()):
-            if pos.entry_ts and parse_dt(pos.entry_ts) >= ts:
-                continue  # never apply an entry bar's own extreme as a lookahead exit
-            key = position_keys.get(pos_key)
-            bars = [b for b in series.get(key, []) if b["start"] <= ts] if key else []
-            if not bars or bars[-1]["start"] != ts:
-                continue
-            opt = bars[-1]
-            bar_end = (opt["start"] + timedelta(minutes=5)).isoformat()
-            # Same evaluate_bar() helper the live 5m runner uses, so live and
-            # replay share trail ratchet, stop check and fill rules exactly.
-            result = pos.evaluate_bar(opt["high"], opt["low"], ts.isoformat())
-            if result is None:
-                continue
-            exit_px, reason = result
-            pos.close(reason, bar_end, exit_price=exit_px)
-            trades.append(_pattern_trade(pos, "pattern_scanner", key, dataset))
-            del positions[pos_key]
-
-    for pos_key, pos in list(positions.items()):
-        key = position_keys.get(pos_key)
-        bars = series.get(key, []) if key else []
-        if not bars:
-            continue
-        bar_end = (bars[-1]["start"] + timedelta(minutes=5)).isoformat()
-        pos.close("BACKTEST_END", bar_end, exit_price=bars[-1]["close"])
-        trades.append(_pattern_trade(pos, "pattern_scanner", key, dataset))
-    return trades
-
-
-def _pattern_trade(pos, scanner: str, key, dataset: str = "BACKTEST_5M_INDEX_SPOT") -> dict:
-    return {
-        "scanner": scanner,
-        "trade_id": getattr(pos, "trade_id", ""),
-        "strategy_id": "pattern_scanner",
-        "instrument": getattr(pos, "instrument", ""),
-        "option_type": "CE" if getattr(pos, "direction", "BULLISH") == "BULLISH" else "PE",
-        "strike": key[1] if key else 0,
-        "expiry": key[0] if key else "",
-        "signal_timestamp": getattr(pos, "entry_ts", ""),
-        "entry_timestamp": getattr(pos, "entry_ts", ""),
-        "entry_price": round(float(getattr(pos, "entry_price", 0)), 2),
-        "exit_timestamp": getattr(pos, "exit_ts", ""),
-        "exit_price": round(float(getattr(pos, "exit_price", 0)), 2),
-        "exit_reason": getattr(pos, "exit_reason", ""),
-        "atr_at_entry": getattr(pos, "atr_at_entry", None),
-        "stop_price": getattr(pos, "stop_price", None),
-        "trail_distance": getattr(pos, "trail_distance", None),
-        "stop_distance_pct": getattr(pos, "stop_distance_pct", None),
-        "stop_source": getattr(pos, "stop_source", None),
-        "pnl_points": round(float(getattr(pos, "pnl_points", 0)), 2),
-        "status": getattr(pos, "status", "CLOSED"),
-        "direction": getattr(pos, "direction", ""),
-        "pattern_name": getattr(pos, "pattern_name", ""),
-        "dataset": dataset,
-    }
-
-
-# ---------------------------------------------------------------------------
 # Reporting
 # ---------------------------------------------------------------------------
 def summarize(scanner: str, trades: list[dict]) -> dict:
@@ -575,23 +410,17 @@ def write_outputs(out_dir: Path, summaries: list[dict], all_trades: list[dict],
     lines = [
         f"# Historical scanner backtest ({meta['fidelity']})",
         "",
-        "> **Not an exact 5-second paper replay for the seven 5s scanners.**",
+        "> **Not an exact 5-second paper replay for the eight 5s scanners.**",
         "> mStock supplies 5-minute OHLCV, not historical 5-second quotes. Their",
         "> live fills use sampled LTP; this report uses conservative proxies below.",
-        f"> Pattern scanner mode: `{meta['mode']}` — spot `{meta['pattern_spot_model']}`, "
-        f"entry `{meta['pattern_entry_fill']}`. Exits use the same completed 5m",
-        "> option OHLC `evaluate_bar()` rules as the live scanner.",
         "",
         "## Assumptions",
         "",
         f"- Window: `{meta['window']['start']}` to `{meta['window']['end']}`",
-        f"- Pattern entry fill: `{meta['pattern_entry_fill']}`",
         "- Exit fill: adverse 5m low for the ATR stop, ratcheted stop level for a trail hit",
         f"- ATM: nearest 50 to completed NIFTY 50 index close (token {NIFTY_INDEX_TOKEN})",
-        f"- Spot OHLC for regime: real NIFTY 50 index 5m bars; pattern: `{meta['pattern_spot_model']}`",
+        f"- Spot OHLC for regime: real NIFTY 50 index 5m bars (token {NIFTY_INDEX_TOKEN})",
         "- No futures anchor or CE/PE parity is used for underlying spot/ATM",
-        "- Pattern exits: premium ATR(14) only (0.70xATR, 5-30% clamp, 10% fallback)",
-        "- Pattern live cadence: aligned 5m polls using completed 5m option OHLC bars",
         "- PnL: premium points only; no lot size, capital, target, or brokerage",
         "- Broker: gateway identity `api` (mapped to mStock in this deployment)",
         "",
@@ -622,13 +451,7 @@ def main() -> int:
     parser.add_argument("--end", default="2026-11-20", help="backtest end date (YYYY-MM-DD)")
     parser.add_argument("--out", default="", help="output directory")
     parser.add_argument("--cache", default="/tmp/tradingai_backtest_cache", help="history cache directory")
-    parser.add_argument(
-        "--mode", choices=("live", "rule"), default="live",
-        help="live: mirror the current pattern scanner (one-point spot candles, "
-             "entry at option close); rule: real index OHLC with candle-open entry",
-    )
     args = parser.parse_args()
-    live_parity = args.mode == "live"
 
     root = Path(args.root)
     start = datetime.fromisoformat(f"{args.start}T09:15:00+05:30")
@@ -670,17 +493,8 @@ def main() -> int:
         for bar in bars:
             option_index[(*key, bar["start"])] = bar
 
-    # Premium scanners keep the real index OHLC used by their existing rule
-    # replay. Only the pattern replay mirrors the live runner's one-point spot
-    # candles in live-parity mode.
     atm_by_ts, spot_by_ts, ce_pe_index = build_index_spot_series(
         index_bars, option_index, universe
-    )
-    pattern_spot_by_ts = (
-        build_index_spot_series(
-            index_bars, option_index, universe, one_point_spot=True
-        )[1]
-        if live_parity else spot_by_ts
     )
     timestamps = sorted(set(ce_pe_index))
     print(f"[fetch] option tokens with history={len(series)} aligned_timestamps={len(timestamps)}",
@@ -691,16 +505,11 @@ def main() -> int:
         trades = replay_premium_scanner(spec, root, universe, series, timestamps,
                                         atm_by_ts, spot_by_ts, ce_pe_index, timestamps[-1])
         all_trades.extend(trades)
-    all_trades.extend(replay_pattern_scanner(
-        root, universe, series, pattern_spot_by_ts, ce_pe_index, timestamps, timestamps[-1],
-        entry_field="close" if live_parity else "open",
-    ))
 
-    keys = [s["key"] for s in SCANNER_SPECS] + ["pattern_scanner"]
+    keys = [s["key"] for s in SCANNER_SPECS]
     summaries = [summarize(key, [t for t in all_trades if t.get("scanner") == key]) for key in keys]
     meta = {
-        "fidelity": "5m_live_parity_pattern_scanner" if live_parity else "5m_rule_simulation_not_exact_5s_replay",
-        "mode": args.mode,
+        "fidelity": "5m_rule_simulation_not_exact_5s_replay",
         "window": {"start": args.start, "end": args.end},
         "broker_gateway_identity": os.environ.get("BROKER_GATEWAY_SCANNER"),
         "instrument": "NIFTY",
@@ -712,16 +521,10 @@ def main() -> int:
         "futures_anchor_used": False,
         "ce_pe_parity_used": False,
         "fill_policy": (
-            "pattern entry at option bar close proxy (live sampled LTP at 5m+10s); "
-            "ATR stop fills at adverse 5m low, trail fills at ratcheted stop level"
-            if live_parity else
-            "entry at signal candle open; ATR stop fills at adverse 5m low, trail fills at ratcheted stop level"
+            "entry at signal candle open; ATR stop fills at adverse 5m low, "
+            "trail fills at ratcheted stop level"
         ),
         "premium_spot_model": "real_index_5m_ohlc",
-        "pattern_spot_model": "single_sampled_ltp_per_5m" if live_parity else "real_index_5m_ohlc",
-        "pattern_entry_fill": "option_bar_close_proxy" if live_parity else "signal_candle_open_proxy",
-        "pattern_exit_model": "premium_atr_14_only",
-        "pattern_live_poll": "aligned_5m_completed_ohlc",
         "paper_only": True,
     }
     write_outputs(out_dir, summaries, all_trades, meta)

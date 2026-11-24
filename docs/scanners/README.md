@@ -1,6 +1,6 @@
 # Scanner docs — one page per strategy
 
-The VM runs **10 independent paper scanners**. Each page below describes one
+The VM runs **9 independent paper scanners**. Each page below describes one
 strategy in logical terms: why it exists, exactly when it enters, exactly when
 it exits, what it persists, and where its runtime pieces live.
 
@@ -10,8 +10,7 @@ API/dashboard map, operations runbooks). These pages do not repeat it; they
 explain the strategy.
 
 > **Paper trading only.** No scanner has a broker write path. Entries are
-> simulated BUYs at the sampled option LTP in SQLite; `pattern_scanner` exits use
-> the documented conservative completed-5m OHLC proxy shared with its backtest.
+> simulated BUYs at the sampled option LTP in SQLite.
 
 ## Active scanners
 
@@ -26,7 +25,6 @@ explain the strategy.
 | `sma9_slope_atr` | Rising-SMA9 entry + `sma9_atr` stop and ATR-only trail | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_slope_atr.md`](sma9_slope_atr.md) |
 | `sma9_trail` | Self-contained `sma9` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_trail.md`](sma9_trail.md) |
 | `sma9_high_trail` | Self-contained `sma9_high` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_high_trail.md`](sma9_high_trail.md) |
-| `pattern_scanner` | Candlestick pattern on NIFTY **spot** → long ATM CE (bullish) or PE (bearish), exits on premium ATR from completed 5m option bars | aligned 5 m | `0.70 × ATR14`, clamped 5–30% | [`pattern_scanner.md`](pattern_scanner.md) |
 
 Retired strategies (stopped, disabled, kept only as archives):
 [`retired.md`](retired.md).
@@ -47,8 +45,8 @@ every 5 seconds, so its stop/trail is observed once per bar.
 polls every 5 seconds. `sma9_slope_atr` was renamed from `sma9_1min_atr` and also
 samples every 5 seconds with a rising-SMA9 filter.
 
-**Volatility-scaled stops** — `sma9_atr`, `sma9_slope_atr`, `sma9_1min_poll`,
-`pattern_scanner`. Replace the fixed 5% floor with a stop derived from the
+**Volatility-scaled stops** — `sma9_atr`, `sma9_slope_atr`, `sma9_1min_poll`.
+Replace the fixed 5% floor with a stop derived from the
 bought option's average true range, so the stop stays outside normal premium
 noise on cheap contracts. These scanners also use that ATR distance as the
 trail width, with no +5 activation and no breakeven lock.
@@ -57,13 +55,8 @@ trail width, with no +5 activation and no breakeven lock.
 both entry and exit; the historical "consume the base scanner's position"
 design is gone. The `consumed_base_trades` table is a legacy artefact.
 
-**Spot-signal, premium-exit** — `pattern_scanner`. The only scanner whose
-*entry signal* comes from the NIFTY index; its stop and trail are computed from
-the bought option's premium ATR. It is also the only one that can buy PE for a
-bearish signal instead of evaluating CE and PE independently. It is the only
-scanner whose exits are evaluated from the previous completed 5m option OHLC
-bar so live matches the 5m backtest. `sma9_5min` also polls on an aligned 5m
-cadence, but keeps `sma9`'s sampled-LTP stop/trail rules.
+`sma9_5min` polls on an aligned 5m cadence, but keeps `sma9`'s sampled-LTP
+stop/trail rules.
 
 ## Isolation contract
 
@@ -80,9 +73,6 @@ Each has:
 /live/<slug>/                          own dashboard
 ```
 
-`pattern_scanner` shares the `app/` tree and the `ubuntu` user, but has its own
-service, status file, tables and dashboard.
-
 ## Common timing (all 9)
 
 | Constant | Value |
@@ -98,11 +88,7 @@ No scanner has a time-based exit. If neither the trail nor the stop fires, the
 position stays open across candles and overnight. The 09:15 candle is never
 entered. Between 09:00 and 09:15 the scanners poll and refresh quotes/status,
 but that window is **warm-up only**: no entries are evaluated and no exits are
-managed (`EXCHANGE_OPEN = 09:15`). `pattern_scanner` ignores pre-09:15 ticks in
-its candle buffer and pre-09:15 bar closes in its premium exit manager.
+managed (`EXCHANGE_OPEN = 09:15`).
 
 Seven scanners poll every 5 seconds. `sma9_5min` polls at each 5m boundary
-+10 s but keeps `sma9`'s LTP-sampled stop/trail exits. `pattern_scanner` also
-polls at each 5m boundary +10 s; it uses that poll's option LTP only for
-entries and evaluates exits once from the previous completed 5m option OHLC
-bar via the same `evaluate_bar()` helper used by the backtest.
++10 s but keeps `sma9`'s LTP-sampled stop/trail exits.

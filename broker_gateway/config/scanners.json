@@ -10,7 +10,6 @@
     "live_sma9_high_scanner.py": "mstock",
     "live_sma9_high_trail_scanner.py": "mstock",
     "live_sma9_scanner.py": "mstock",
-    "live_sma9_trail_scanner.py": "mstock",
-    "pattern_scanner_live.py": "mstock"
+    "live_sma9_trail_scanner.py": "mstock"
   }
 }

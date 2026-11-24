@@ -1,6 +1,6 @@
 # Scanner & Broker Connectivity Architecture
 
-This document describes how the ten live paper scanners reach a broker without
+This document describes how the nine live paper scanners reach a broker without
 any scanner source changes. Every scanner uses the same read-only gateway path:
 broker choice is a config/CLI setting, never a code change. The broker gateway is the only component that
 holds broker credentials; scanners see a read-only, Kite-shaped API.
@@ -18,10 +18,9 @@ holds broker credentials; scanners see a read-only, Kite-shaped API.
 
 ```mermaid
 flowchart TB
-    subgraph SCANNERS["10 live paper scanners"]
+    subgraph SCANNERS["9 live paper scanners"]
         SMA["9 x SMA scanners<br/>live_sma9*.py<br/>poll = 5 s"]
         SMA5["sma9_5min / sma9_adx<br/>live_sma9_5min_scanner.py / live_sma9_adx_scanner.py<br/>aligned 5 min + 10 s / 5 s"]
-        PAT["pattern_scanner_live.py<br/>poll = aligned 5 min + 10 s"]
     end
 
     subgraph SHIMLAYER["Per-process Kite-compatible shim"]
@@ -45,13 +44,12 @@ flowchart TB
     ZAPI["Zerodha KiteConnect REST<br/>read-only methods"]
     MAPI["mStock Type A REST<br/>read-only endpoints"]
 
-    STATE["State: 8 SQLite DBs<br/>/opt/tradingai/database/*.db<br/>+ pattern_scanner_status.json"]
+    STATE["State: 8 SQLite DBs<br/>/opt/tradingai/database/*.db"]
     API["Flask app via gunicorn<br/>127.0.0.1:8092<br/>/api/{scanner}/scanner-status"]
     UI["Dashboard / pages"]
 
     SMA --> KC
     SMA5 --> KC
-    PAT --> KC
     CL --> SOCK --> DISP
     SEC -. read by root only .-> ZA
     SEC -. read by root only .-> MA
@@ -59,7 +57,6 @@ flowchart TB
     MA --> MAPI
     SMA --> STATE
     SMA5 --> STATE
-    PAT --> STATE
     STATE --> API --> UI
 ```
 
@@ -76,11 +73,9 @@ flowchart TB
 | `sma9_high_trail` | `live_sma9_high_trail_scanner.py` | `tradingai-sma9_high_trail-scanner` | `sma9trailhigh` | `/opt/tradingai/database/sma9_high_trail.db` | `/api/sma9-high-trail/scanner-status` |
 | `sma9_slope_atr` | `live_sma9_slope_atr_scanner.py` | `tradingai-sma9-slope-atr-scanner` | `sma9slopeatr` | `/opt/tradingai/database/sma9_slope_atr.db` | `/api/sma9-slope-atr/scanner-status` |
 | `sma9_1min_poll` | `live_sma9_1min_poll_scanner.py` | `tradingai-sma9-1min-poll-scanner` | `sma91m` | `/opt/tradingai/database/sma9_1min_poll.db` | `/api/sma9-1min-poll/scanner-status` |
-| `pattern` | `pattern_scanner_live.py` | `pattern-scanner-live` | `ubuntu` | `/opt/tradingai/data/pattern_scanner_status.json` | no dedicated route; dashboard reads JSON |
 
-All ten deployed scanners resolve to broker `mstock`. The nine SMA routes are served
-by `app.api.app:app` under gunicorn; the pattern scanner publishes a JSON status
-file that is refreshed on each aligned 5-minute poll (and on market-close ticks).
+All nine deployed scanners resolve to broker `mstock`. The nine SMA routes are served
+by `app.api.app:app` under gunicorn.
 
 ## 3. How a scanner picks its broker
 
@@ -203,7 +198,7 @@ Notable mappings and guards:
   original requested key, so scanner lookups keep working.
 - Raw history requests over 10 days return HTTP 400 from mStock, so the adapter
   chunks ranges and merges candles.
-- The 60-second history cache plus the shared lock prevents ten scanners from
+- The 60-second history cache plus the shared lock prevents nine scanners from
   refetching the same option candles concurrently.
 
 ## 7. Deployment map
@@ -218,7 +213,7 @@ Notable mappings and guards:
 | Daemon unit | `/etc/systemd/system/tradingai-broker-gateway.service` | root, runs as root |
 | CLI | `/usr/local/sbin/broker-gateway` | root, 700 |
 | Python bootstrap | `broker_gateway.pth` in site-packages | puts shim on every Python path |
-| Scanner services | `/etc/systemd/system/tradingai-*-scanner.service`, `pattern-scanner-live.service` | dedicated users, group `ubuntu` |
+| Scanner services | `/etc/systemd/system/tradingai-*-scanner.service` | dedicated users, group `ubuntu` |
 | Logs | `/opt/tradingai/logs/*.log` | written by each service |
 | API | gunicorn `app.api.app:app` on `127.0.0.1:8092` | Flask, 2 workers; `BROKER_GATEWAY_SCANNER=api` so its Kite-shaped market data uses the `api` broker mapping in `scanners.json` (currently `mstock`) |
 
@@ -296,7 +291,7 @@ restart anything; it is not part of the mStock path.
 
 Broker selection itself is separate from tokens:
 
-- `config/scanners.json` has `default: zerodha` but all ten scanners carry an
+- `config/scanners.json` has `default: zerodha` but all nine scanners carry an
   explicit `mstock` entry, so every running scanner uses mstock.
 - Any scanner key not present in that mapping would fall back to the Zerodha
   default. Set `default` to `mstock` if that fallback is not wanted.
@@ -322,7 +317,6 @@ Broker selection itself is separate from tokens:
 | Stale quote during live hours | When the broker publishes `last_trade_time`, gateway computes `age_seconds` and strips `last_price` above `BROKER_GATEWAY_QUOTE_MAX_AGE` (300 s). mStock's OHLC endpoint has no timestamp, so live-fetched quotes are marked `age_seconds=0` and pass through |
 | Trailing stop resets on restart | Every scanner persists `hwm`/`stop` immediately after a ratchet; `sma9`/`sma9_high` gained idempotent `hwm`, `stop`, `be_locked` columns and load them back on restore |
 | Crash between trade insert and open-position delete | `save_trade()` now inserts the closed trade and deletes `<prefix>_open_positions` in one SQLite transaction; paired `delete_open_position()` calls removed |
-| Live feed fails to initialise at startup | Pattern scanner reports `NO_LIVE_FEED`, `data_available=false`, `feed=mock` and a clear error instead of a healthy-looking `RUNNING` on the data-less MockFeed |
 | World-writable SQLite DBs | `/opt/tradingai/database` is `2775 root:ubuntu`; DB files `0660 <owner>:ubuntu`; root `ExecStartPre` narrowed from `chmod 0666` to `0660` |
 
 ## 10. Extending to another broker
@@ -345,12 +339,6 @@ No scanner file changes are needed.
   instruments, NIFTY quote ok.
 - Seven SMA APIs: `IDLE_MARKET_CLOSED`, `poll=5`, fresh scan ages, errors only
   `['weekend']`.
-- Pattern scanner: `MARKET_CLOSED`, `data_available=true`, `feed=live`, polling
-  on the aligned 5-minute boundary + 10 s with completed-5m option OHLC exits,
-  spot and ATM strike updating through mStock, no broker orders.
-  Its status file now always carries feed-health fields; on feed failure it
-  reports `NO_LIVE_FEED` rather than `RUNNING` on mock data. The full 94k NFO
-  dump is indexed once and released, keeping only the compact NIFTY CE/PE map.
 - Database directory `2775 root:ubuntu`, all DB files `0660` with no
   world-writable SQLite files.
 - Gateway price guard verified: zero/negative/non-finite `last_price` values are

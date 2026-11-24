@@ -107,6 +107,4 @@ persist `adx` / `adx_value`.
 
 - Shares the 5-second cadence and isolation model with `sma9`, but replaces the
   forming-open gate with ADX(14) > 20 and uses a 5% HWM trail.
-- `pattern_scanner` also trades premium, but detects entries on NIFTY spot
-  candles and exits on premium ATR from completed 5m bars.
 - Other SMA variants keep their existing entry rules and identities.

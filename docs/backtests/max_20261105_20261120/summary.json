@@ -15,8 +15,6 @@
     "aligned_5m_timestamps": 873,
     "atm_source": "CE/PE parity anchored by NIFTY futures; rounded to 50",
     "fill_policy": "entry at signal candle open; ATR stop fills at adverse 5m low, trail fills at ratcheted stop level",
-    "pattern_exit_model": "premium_atr_14_only",
-    "pattern_live_poll": "aligned_5m_completed_ohlc",
     "paper_only": true
   },
   "scanners": [
@@ -137,23 +135,6 @@
       "exit_reasons": {
         "STOP_LOSS_ATR": 137,
         "TRAIL_STOP_EXIT": 199
-      }
-    },
-    {
-      "scanner": "pattern_scanner",
-      "trades": 844,
-      "wins": 502,
-      "losses": 342,
-      "flat": 0,
-      "win_rate_pct": 59.48,
-      "total_points": 3204.71,
-      "avg_points": 3.8,
-      "best_trade_points": 219.48,
-      "worst_trade_points": -78.8,
-      "max_drawdown_points": -467.85,
-      "exit_reasons": {
-        "STOP_LOSS_ATR": 115,
-        "TRAIL_STOP_EXIT": 729
       }
     }
   ]
