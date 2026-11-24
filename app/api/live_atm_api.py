@@ -4,13 +4,22 @@ The dashboards used to read ``atm_strike`` and the CE/PE ``ltp`` from each
 scanner's heartbeat row.  Both can lag: the strike can roll before the next
 scan, and the premium is only refreshed when that scanner writes a heartbeat.
 This endpoint asks the broker-agnostic read-only gateway for the current NIFTY
-50 quote and for the CE/PE quotes of the resulting ATM strike, then exposes
-them with explicit freshness metadata.  No broker credentials, orders or write
-calls are involved.
+50 quote and for the CE/PE contracts held by the requesting scanner.
+
+When a dashboard supplies ``?scanner=<key>``, the CE/PE instrument token and
+tradingsymbol are taken from that scanner's own heartbeat row.  This matters
+because mStock's weekly NIFTY symbols are not derivable from the ISO expiry
+alone (2026-12-01 is ``NIFTY26D01...``, while the derived ``NIFTY26DEC...``
+contract expires on 2026-12-29).  The legacy symbol derivation remains as a
+labelled fallback only.  No broker credentials, orders or write calls are
+involved.
 """
 from __future__ import annotations
 
+import os
+import sqlite3
 import time
+from contextlib import closing
 from datetime import datetime, time as dtime
 from decimal import Decimal, ROUND_HALF_UP
 from typing import Any
@@ -37,9 +46,48 @@ MONTHS = (
     "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
 )
 
-# Keyed by the expiry requested by the dashboard ("" when none was supplied).
-_cache: dict[str, dict[str, Any]] = {}
-_last_good: dict[str, dict[str, Any]] = {}
+# Allowlisted scanner keys.  The API only reads the heartbeat belonging to the
+# scanner named by the request; it never guesses or reads another scanner's DB.
+SCANNER_STATES: dict[str, tuple[str, str]] = {
+    "sma9": (
+        os.environ.get("SMA9_DB_PATH", "/opt/tradingai/database/sma9.db"),
+        "sma9_scan_state",
+    ),
+    "sma9-5min": (
+        os.environ.get("SMA9_5MIN_DB_PATH", "/opt/tradingai/database/sma9_5min.db"),
+        "sma9_5min_scan_state",
+    ),
+    "sma9-high": (
+        os.environ.get("SMA9_HIGH_DB_PATH", "/opt/tradingai/database/sma9_high.db"),
+        "sma9_high_scan_state",
+    ),
+    "sma9-atr": (
+        os.environ.get("SMA9_ATR_DB_PATH", "/opt/tradingai/database/sma9_atr.db"),
+        "sma9_atr_scan_state",
+    ),
+    "sma9-adx": (
+        os.environ.get("SMA9_ADX_DB_PATH", "/opt/tradingai/database/sma9_adx.db"),
+        "sma9_adx_scan_state",
+    ),
+    "sma9-trail": (
+        os.environ.get("SMA9_TRAIL_DB_PATH", "/opt/tradingai/database/sma9_trail.db"),
+        "sma9_trail_scan_state",
+    ),
+    "sma9-high-trail": (
+        os.environ.get(
+            "SMA9_HIGH_TRAIL_DB_PATH", "/opt/tradingai/database/sma9_high_trail.db"
+        ),
+        "sma9_high_trail_scan_state",
+    ),
+    "sma9live": (
+        os.environ.get("SMA9_LIVE_DB_PATH", "/opt/tradingai/database/sma9_live.db"),
+        "sma9_live_scan_state",
+    ),
+}
+
+# Keyed by (scanner, expiry); scanner is "" when no scanner was supplied.
+_cache: dict[tuple[str, str], dict[str, Any]] = {}
+_last_good: dict[tuple[str, str], dict[str, Any]] = {}
 
 
 def _nearest_strike(spot: float) -> float:
@@ -51,7 +99,7 @@ def _nearest_strike(spot: float) -> float:
 
 
 def _option_symbol(atm: float, expiry: str, option_type: str) -> str | None:
-    """Build NFO:NIFTY<YYMON><STRIKE><CE|PE> from an ISO expiry date."""
+    """Legacy NFO:NIFTY<YYMON><STRIKE><CE|PE> fallback symbol builder."""
     iso = str(expiry or "")
     if len(iso) < 10:
         return None
@@ -60,7 +108,8 @@ def _option_symbol(atm: float, expiry: str, option_type: str) -> str | None:
         month = MONTHS[int(iso[5:7]) - 1]
     except (ValueError, IndexError):
         return None
-    # Keep the legacy NFO naming used by every scanner in this repo.
+    # This cannot represent mStock weekly symbols such as NIFTY26D01...; it
+    # stays only for callers that do not identify a scanner heartbeat.
     return f"{OPTION_PREFIX}{yy}{month}{int(round(float(atm)))}{option_type}"
 
 
@@ -104,8 +153,119 @@ def _effective_spot(index_quote: dict, now: datetime) -> tuple[float, str, str, 
     return round(spot, 2), source, spot_source, diverged
 
 
-def _fresh_value(expiry: str) -> dict | None:
-    """Fetch a live index quote plus CE/PE premiums for the derived ATM."""
+def _scanner_state(scanner: str) -> dict:
+    """Read one allowlisted scanner's heartbeat row, read-only."""
+    entry = SCANNER_STATES.get(scanner)
+    if not entry:
+        return {}
+    db_path, table = entry
+    try:
+        if not os.path.exists(db_path):
+            return {}
+        with closing(
+            sqlite3.connect(f"file:{db_path}?mode=ro", uri=True, timeout=5)
+        ) as conn:
+            conn.row_factory = sqlite3.Row
+            row = conn.execute(
+                f"SELECT value FROM {table} WHERE key='live_status'"
+            ).fetchone()
+        if not row:
+            return {}
+        import json
+
+        state = json.loads(row["value"])
+        return state if isinstance(state, dict) else {}
+    except Exception:
+        return {}
+
+
+def _as_float(value: Any) -> float | None:
+    try:
+        if value is None or value == "":
+            return None
+        return float(value)
+    except (TypeError, ValueError):
+        return None
+
+
+def _as_int(value: Any) -> int | None:
+    number = _as_float(value)
+    return int(number) if number is not None else None
+
+
+def _heartbeat_contracts(
+    scanner: str, expiry: str, atm: float
+) -> tuple[dict[str, dict], str] | None:
+    """Return CE/PE contracts from the requesting scanner's heartbeat."""
+    state = _scanner_state(scanner)
+    if not state:
+        return None
+
+    heartbeat_expiry = str(state.get("expiry") or "").strip()
+    if heartbeat_expiry and expiry and heartbeat_expiry != str(expiry):
+        return None
+
+    options = state.get("options") or {}
+    if not isinstance(options, dict):
+        return None
+
+    contracts: dict[str, dict] = {}
+    for opt in ("CE", "PE"):
+        item = options.get(opt) or {}
+        if not isinstance(item, dict):
+            return None
+        item_expiry = str(item.get("expiry") or "").strip()
+        if item_expiry and expiry and item_expiry != str(expiry):
+            return None
+
+        token = _as_int(item.get("token"))
+        symbol = str(item.get("tradingsymbol") or "").strip()
+        if symbol.startswith("NFO:"):
+            symbol = symbol[4:]
+        if token is None and not symbol:
+            return None
+
+        if token is not None:
+            quote_key = str(token)
+        else:
+            quote_key = f"{OPTION_PREFIX}{symbol}"
+
+        strike = _as_float(item.get("strike"))
+        contracts[opt] = {
+            "quote_key": quote_key,
+            "symbol": symbol,
+            "token": token,
+            "strike": strike if strike is not None else atm,
+            "expiry": item_expiry or heartbeat_expiry or expiry,
+        }
+
+    source = (
+        "scanner_heartbeat_token"
+        if all(c["token"] is not None for c in contracts.values())
+        else "scanner_heartbeat_symbol"
+    )
+    return contracts, source
+
+
+def _derived_contracts(expiry: str, atm: float) -> tuple[dict[str, dict], str]:
+    """Legacy fallback used only when no scanner heartbeat is available."""
+    contracts: dict[str, dict] = {}
+    for opt in ("CE", "PE"):
+        symbol = _option_symbol(atm, expiry, opt)
+        if not symbol:
+            continue
+        contracts[opt] = {
+            "quote_key": symbol,
+            "symbol": symbol[4:] if symbol.startswith("NFO:") else symbol,
+            "token": None,
+            "strike": atm,
+            "expiry": expiry or None,
+        }
+    return contracts, "derived_symbol"
+
+
+def _fresh_value(scanner: str, expiry: str) -> dict | None:
+    """Fetch a live index quote plus the CE/PE premiums for the real contracts."""
     broker = broker_for("api")  # API process identity in scanners.json
     quotes = call(broker, "quote", symbols=[INDEX_SYMBOL]) or {}
     index_quote = quotes.get(INDEX_SYMBOL) or {}
@@ -117,22 +277,53 @@ def _fresh_value(expiry: str) -> dict | None:
     spot, source, spot_source, diverged = _effective_spot(index_quote, now)
     atm = _nearest_strike(spot)
 
-    premiums: dict[str, Any] = {}
-    symbols = {
-        opt: _option_symbol(atm, expiry, opt) for opt in ("CE", "PE")
-    }
-    wanted = [sym for sym in symbols.values() if sym]
+    heartbeat = _heartbeat_contracts(scanner, expiry, atm)
+    if heartbeat:
+        contracts, contract_source = heartbeat
+    else:
+        contracts, contract_source = _derived_contracts(expiry, atm)
+
+    wanted = sorted({c["quote_key"] for c in contracts.values()})
     option_quotes: dict[str, dict] = {}
     if wanted:
         option_quotes = call(broker, "quote", symbols=wanted) or {}
-    for opt, sym in symbols.items():
-        if not sym:
+
+    premiums: dict[str, Any] = {}
+    for opt in ("CE", "PE"):
+        contract = contracts.get(opt)
+        if not contract:
             premiums[opt] = {"error": "expiry unavailable"}
             continue
-        item = option_quotes.get(sym) or {}
+
+        key = contract["quote_key"]
+        item = option_quotes.get(key) or {}
+        expected_token = contract["token"]
+        actual_token = _as_int(item.get("instrument_token"))
+        if (
+            expected_token is not None
+            and actual_token not in (None, 0)
+            and actual_token != expected_token
+        ):
+            premiums[opt] = {
+                "error": "instrument token mismatch",
+                "symbol": contract["symbol"],
+                "expected_token": expected_token,
+                "actual_token": actual_token,
+                "contract_source": contract_source,
+                "stale": True,
+            }
+            continue
+
         ltp = item.get("last_price")
+        bare = contract["symbol"] or key
         premiums[opt] = {
-            "symbol": sym,
+            "symbol": f"NFO:{bare}",
+            "tradingsymbol": bare,
+            "strike": contract["strike"],
+            "expiry": contract["expiry"],
+            "instrument_token": expected_token if expected_token is not None else actual_token,
+            "contract_source": contract_source,
+            "token_verified": expected_token is not None and actual_token == expected_token,
             "ltp": round(float(ltp), 2) if ltp is not None else None,
             "age_seconds": _age(item),
             "age_known": item.get("last_trade_time") is not None,
@@ -153,16 +344,19 @@ def _fresh_value(expiry: str) -> dict | None:
         "freshness": "known" if index_quote.get("last_trade_time") is not None else "unknown_age",
         "stale": _is_stale(index_quote) and not diverged,
         "expiry": expiry or None,
+        "scanner": scanner or None,
+        "contract_source": contract_source,
         "premiums": premiums,
     }
-    _cache[expiry] = {"at": time.monotonic(), "value": value}
-    _last_good[expiry] = value
+    key = (scanner, expiry)
+    _cache[key] = {"at": time.monotonic(), "value": value}
+    _last_good[key] = value
     return value
 
 
-def _stale_value(expiry: str) -> dict | None:
+def _stale_value(key: tuple[str, str]) -> dict | None:
     """Return the last good value, explicitly flagged as stale."""
-    entry = _cache.get(expiry) or ({"value": _last_good[expiry]} if expiry in _last_good else None)
+    entry = _cache.get(key) or ({"value": _last_good[key]} if key in _last_good else None)
     value = (entry or {}).get("value")
     if not value:
         return None
@@ -178,22 +372,24 @@ def _stale_value(expiry: str) -> dict | None:
 
 @bp.route("/api/live-atm", methods=["GET"])
 def live_atm():
-    """Current NIFTY spot, ATM strike and real ATM CE/PE premiums."""
+    """Current NIFTY spot, ATM strike and real CE/PE premiums."""
     expiry = (request.args.get("expiry") or "").strip()
+    scanner = (request.args.get("scanner") or "").strip()
+    key = (scanner, expiry)
     try:
         now = time.monotonic()
-        entry = _cache.get(expiry)
+        entry = _cache.get(key)
         if entry and now - entry["at"] < CACHE_SECONDS:
             return jsonify({"success": True, "data": dict(entry["value"])})
-        fresh = _fresh_value(expiry)
+        fresh = _fresh_value(scanner, expiry)
         if fresh:
             return jsonify({"success": True, "data": fresh})
-        cached = _stale_value(expiry)
+        cached = _stale_value(key)
         if cached:
             return jsonify({"success": True, "data": cached})
         return jsonify({"success": False, "error": "no NIFTY quote available"})
     except Exception as exc:
-        cached = _stale_value(expiry)
+        cached = _stale_value(key)
         if cached:
             return jsonify({"success": True, "data": cached})
         return jsonify({"success": False, "error": str(exc)})

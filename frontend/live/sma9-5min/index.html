@@ -361,6 +361,7 @@ async function applyLiveAtm(target, scannerKey) {
             if (mm >= 1 && mm <= 12) symPart = yy + months[mm - 1];
         }
         let metricsStrike = null;
+        let strikeMismatch = null;
         for (const opt of ['CE', 'PE']) {
             const p = (a.premiums || {})[opt] || {};
             const sym = p.symbol || (symPart ? ('NFO:NIFTY' + symPart + String(a.atm_strike) + opt) : '');
@@ -370,8 +371,14 @@ async function applyLiveAtm(target, scannerKey) {
                 const o = target.options[opt];
                 if (o.metrics_strike === undefined || o.metrics_strike === null) o.metrics_strike = o.strike;
                 if (o.metrics_strike != null) metricsStrike = o.metrics_strike;
-                o.strike = a.atm_strike;
+                const quoteStrike = p.strike != null ? p.strike : a.atm_strike;
+                o.strike = quoteStrike;
                 if (bare) o.tradingsymbol = bare;
+                if (p.expiry) o.expiry = p.expiry;
+                if (p.instrument_token != null) o.token = p.instrument_token;
+                if (metricsStrike != null && Number(metricsStrike) !== Number(quoteStrike)) {
+                    strikeMismatch = metricsStrike;
+                }
                 if (p.ltp != null) {
                     o.ltp = p.ltp;
                     o.ltp_source = p.source || 'unavailable';
@@ -393,8 +400,8 @@ async function applyLiveAtm(target, scannerKey) {
             if (a.stale || ce.stale || pe.stale) notes.push('last quote');
             if (a.quote_diverged) notes.push('index close fallback');
             if (a.freshness === 'unknown_age') notes.push('age not supplied');
-            if (metricsStrike != null && Number(metricsStrike) !== Number(a.atm_strike)) {
-                notes.push('metrics @ ' + metricsStrike);
+            if (strikeMismatch != null) {
+                notes.push('metrics @ ' + strikeMismatch);
             }
             badge.textContent = 'ATM ' + a.atm_strike + ' | CE ' + fmt(ce.ltp) + ' / PE ' + fmt(pe.ltp)
                 + (notes.length ? ' (' + notes.join(', ') + ')' : '');
