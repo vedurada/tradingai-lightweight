@@ -1072,3 +1072,64 @@ def test_retry_rechecks_lot_size_from_instrument_master(
     retry_id = execution.make_client_order_id(trade_id, execution.BUY, "r1")
     assert placer.placed[0].quantity == 75
     assert _order_row(mod, retry_id)["quantity"] == 75
+
+
+def test_init_db_migrates_pre_retry_schema(live_runner):
+    """An already-deployed DB without retry columns must migrate on startup."""
+    mod = live_runner
+    with mod.db_conn() as conn:
+        conn.execute("DROP INDEX IF EXISTS idx_sma9_live_orders_place")
+        conn.execute("DROP TABLE sma9_live_orders")
+        conn.execute(
+            """CREATE TABLE sma9_live_orders (
+                   client_order_id TEXT PRIMARY KEY,
+                   scanner TEXT NOT NULL,
+                   trade_id TEXT NOT NULL,
+                   option_type TEXT NOT NULL CHECK(option_type IN ('CE','PE')),
+                   side TEXT NOT NULL CHECK(side IN ('BUY','SELL')),
+                   symbol TEXT NOT NULL,
+                   token INTEGER,
+                   quantity INTEGER NOT NULL,
+                   intended_price REAL NOT NULL,
+                   limit_price REAL NOT NULL,
+                   collar_pct REAL NOT NULL,
+                   reason TEXT NOT NULL,
+                   dry_run INTEGER NOT NULL,
+                   status TEXT NOT NULL,
+                   broker_order_id TEXT,
+                   created_at TEXT NOT NULL,
+                   order_date TEXT NOT NULL,
+                   broker_status TEXT,
+                   status_checked_at TEXT,
+                   reconcile_attempts INTEGER NOT NULL DEFAULT 0,
+                   last_error TEXT)""")
+        conn.execute(
+            """INSERT INTO sma9_live_orders
+                   (client_order_id, scanner, trade_id, option_type, side,
+                    symbol, token, quantity, intended_price, limit_price,
+                    collar_pct, reason, dry_run, status, created_at, order_date)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            ("S9L-OLD", "sma9_live", "S9L-OLDTRADE", "CE", "BUY",
+             "NFO:NIFTY", 12345, 65, 100.0, 101.0, 1.0, "SMA9_ENTRY",
+             0, "FILLED", "2026-11-24T10:00:00+05:30", "2026-11-24"))
+
+    # Must not raise: the retry index is created only after columns exist.
+    mod.init_db()
+
+    with mod.db_conn() as conn:
+        cols = [r[1] for r in conn.execute(
+            "PRAGMA table_info(sma9_live_orders)")]
+        indexes = [r[1] for r in conn.execute(
+            "PRAGMA index_list(sma9_live_orders)")]
+        row = dict(conn.execute(
+            "SELECT * FROM sma9_live_orders WHERE client_order_id = ?",
+            ("S9L-OLD",)).fetchone())
+    for col in ("place_status", "retry_of", "retry_count", "attempt_no",
+                "counts_toward_cap", "tag_lookup_attempts", "filled_quantity",
+                "last_error_code", "next_retry_at", "updated_at"):
+        assert col in cols
+    assert "idx_sma9_live_orders_place" in indexes
+    assert row["place_status"] == "SUBMITTED"
+    assert row["retry_of"] == "S9L-OLD"
+    assert row["retry_count"] == 0
+    assert row["counts_toward_cap"] == 1

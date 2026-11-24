@@ -376,8 +376,6 @@ def init_db() -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_date ON sma9_live_orders(order_date);
         CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_trade ON sma9_live_orders(trade_id);
-        CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_place
-            ON sma9_live_orders(place_status, next_retry_at);
 
         -- Append-only audit trail for the real-trade lifecycle. The API never
         -- writes here; it is the operator-facing record of fill confirmations
@@ -453,6 +451,12 @@ def init_db() -> None:
     conn.execute(
         "UPDATE sma9_live_orders SET retry_of = client_order_id "
         "WHERE retry_of IS NULL")
+    # Created after the column migration above: an existing DB from before the
+    # retry work does not yet have place_status/next_retry_at at executescript
+    # time, so creating this index there would abort startup.
+    conn.execute(
+        "CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_place "
+        "ON sma9_live_orders(place_status, next_retry_at)")
     conn.commit()
     conn.close()
 
