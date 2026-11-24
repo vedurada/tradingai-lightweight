@@ -155,7 +155,7 @@ Canonical requirements file: [`requirements.txt`](requirements.txt).
 | `ENTRY_START` | `09:20` | first allowed entry |
 | `ENTRY_END` | `15:15` | entry cutoff (exclusive) |
 | `POLL_SECONDS` | `5` | decision cadence for the four active 5s premium scanners |
-| `POLL_SECONDS` (`sma9_5min`) | `300` | staged `sma9_5min`: aligned 5m poll at boundary + 10 s |
+| `POLL_SECONDS` (`sma9_5min`) | `300` | deployed `sma9_5min`: aligned 5m poll at boundary + 10 s |
 | `CANDLE_MINUTES` | `5` | candle size |
 | `MUHURAT_SESSIONS` | date → (open, close) | special-session override |
 
@@ -290,19 +290,19 @@ StandardOutput=append:/opt/tradingai/logs/live_<key>_scanner.log
 
 `off` = `POLL_OFFSET_SECONDS`, the per-scanner phase offset inside the 5-second
 tick. It staggers Kite quote/historical calls so the scanners do not all hit
-the API at the same instant. The staged `sma9_5min` copy polls once per 5m
+the API at the same instant. The deployed `sma9_5min` copy polls once per 5m
 boundary +10 s with `POLL_SECONDS = 300` and `POLL_OFFSET_SEC = 10`.
 
 | Key | Strategy id | Strategy type | Ver | SMA | Trail / activate | off | User | Status | systemd unit |
 |---|---|---|---|---|---|---|---|---|---|
 | `sma9` | `sma9_only` | `SMA9_BUY_ONLY` | 2.7.0 | 9 | — | 0 | `sma9` | active | `tradingai-sma9-scanner` |
-| `sma9_5min` (staged) | `sma9_5min` | `SMA9_5MIN_BUY_ONLY` | 1.0.0 | 9 | — | 5m +10 s | `sma95min` | active | `tradingai-sma9-5min-scanner` |
+| `sma9_5min` (deployed) | `sma9_5min` | `SMA9_5MIN_BUY_ONLY` | 1.0.0 | 9 | — | 5m +10 s | `sma95min` | active | `tradingai-sma9-5min-scanner` |
 | `sma9_atr` | `sma9_atr` | `SMA9_ATR_STOP_BUY_ONLY` | 1.1.0 | 9 | ATR / none | 0 | `sma9` | active | `tradingai-sma9-atr-scanner` |
 | `sma9_high` | `sma9_high` | `SMA9_HIGH_BUY_ONLY` | 1.8.0 | 9 | — | 2.4 | `sma9high` | active | `tradingai-sma9-high-scanner` |
 | `sma9_trail` | `sma9_trail` | `SMA_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 1.2 | `sma9trail` | **disabled** | `tradingai-sma9_trail-scanner` |
 | `sma9_high_trail` | `sma9_high_trail` | `SMA_HIGH_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 3.0 | `sma9trailhigh` | **disabled** | `tradingai-sma9_high_trail-scanner` |
 
-Four active scanners poll every 5 seconds. The staged `sma9_5min` polls once
+Four active scanners poll every 5 seconds. The deployed `sma9_5min` polls once
 per 5-minute boundary +10 s, but keeps `sma9`'s LTP-sampled stop/trail. The two
 disabled trail duplicates use the same 5s logic if re-enabled. No scanner uses
 a 60-second cadence anymore.
@@ -325,7 +325,7 @@ the fixed +5 activation / BE lock and trails by the frozen ATR distance.
 The five active premium scanners use `/opt/tradingai/database/<key>.db`,
 `/api/<slug>/` (slug = key with `_` → `-`) and
 `https://tradingai.in/live/<slug>/`. The two disabled trail duplicates keep
-their DB/page namespaces on disk but are not running. The staged `sma9_5min`
+their DB/page namespaces on disk but are not running. The deployed `sma9_5min`
 follows the same isolation contract with slug `sma9-5min`, DB `sma9_5min.db`
 and service user `sma95min`.
 
@@ -358,7 +358,7 @@ position is closed when the live LTP reaches **`round(entry × 0.95, 2)`**
 (`STOP_LOSS_5PCT`). If neither fires the position stays open across candles
 and overnight until one of them does.
 
-### 5.1a 5-minute poll copy (`sma9_5min`, staged)
+### 5.1a 5-minute poll copy (`sma9_5min`, deployed)
 
 ```
 signal = prev.close > SMA9 AND forming.open > SMA9
@@ -911,7 +911,7 @@ token.
   ```
 
 - **BUY only.** CE and PE are long-only; there is no short/sell-to-open path.
-- **Fixed 5% stop on the four active fixed-stop scanners and staged
+- **Fixed 5% stop on the four active fixed-stop scanners and deployed
   `sma9_5min`.** Every position exits at `round(entry × 0.95, 2)` if LTP falls
   that far (`STOP_LOSS_5PCT`); the trail stop is the preferred, higher exit and
   is evaluated first. `sma9_atr` uses an ATR-scaled stop
