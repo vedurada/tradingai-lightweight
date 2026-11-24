@@ -261,7 +261,6 @@ SCANNER_SPECS = [
     {"key": "sma9_trail", "path": "sma9_trail_scanner/app/sma9_trail_engine.py", "family": "fixed_trail", "atr": False, "regime": False},
     {"key": "sma9_high_trail", "path": "sma9_high_trail_scanner/app/sma9_high_trail_engine.py", "family": "high_fixed_trail", "atr": False, "regime": False},
     {"key": "sma9_atr", "path": "sma9_atr_scanner/app/sma9_atr_engine.py", "family": "atr", "atr": True, "regime": True},
-    {"key": "sma9_slope_atr", "path": "sma9_slope_atr_scanner/app/sma9_slope_atr_engine.py", "family": "atr", "atr": True, "regime": False},
     {"key": "sma9_1min_poll", "path": "sma9_1min_poll_scanner/app/sma9_1min_poll_engine.py", "family": "atr", "atr": True, "regime": False},
 ]
 

@@ -100,4 +100,3 @@ The unit is enabled at boot, `Restart=always`, and in `ALL_UNITS` of
 - `sma9_1min_poll` keeps this A+B entry but polls every 5 seconds and exits via ATR stop/trail.
 - `sma9_atr` replaces the 5% floor with an ATR-scaled stop.
 - `sma9_trail` is a self-contained copy of this entry with the same trail.
-- `sma9_slope_atr` combines the SMA9 entry with an ATR stop and ATR-only trail.

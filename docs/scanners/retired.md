@@ -11,6 +11,7 @@ code is not maintained.
 | `no_sma` | Previous-5m-high breakout on option premium; no SMA filter | Replaced by `sma9_1min_poll` on 2026-11-19; the SMA9 filter was more selective | `database/no_sma.db`, `/live/no-sma/`, API `/api/no-sma/*` |
 | `no_sma_trail` | Previous-high breakout with a trailing exit | Replaced by `sma9_slope_atr` on 2026-11-19; the ATR stop/trail handled cheap premiums better | `database/no_sma_trail.db`, `/live/no-sma-trail/`, API `/api/no-sma-trail/*` |
 | `sma9_1min_atr` | SMA9 A/B entry with ATR stop/trail, later upgraded to 5s + ATR-only trail + rising SMA9 | Renamed to `sma9_slope_atr` on 2026-11-20; DB history copied to the new DB, old service/API/page stopped and disabled | `database/sma9_1min_atr.db`, code `sma9_1min_atr_scanner/`, `/live/sma9-1min-atr/` |
+| `sma9_slope_atr` | Rising-SMA9 SMA9 entry with an ATR-scaled stop and ATR-only trail, 5s poll | Its open paper position was closed at the sampled LTP on 2026-11-24 (`RETIREMENT_PAPER_CLOSE`, P&L 0.00), then the service, code, DB, API namespace and page were removed | `archives/sma9_slope_atr_20261124/`, API `/api/sma9-slope-atr/*` and `/live/sma9-slope-atr/` (404) |
 | `green15` | Buy when the forming 15-minute candle was green (LTP > open), exit at that candle's close | Same-candle exit with no stop/target; superseded by the 5-minute SMA9 family | `database/green15.db`, code `green15_scanner/` |
 | `atm` | Buy both ATM CE and PE at every 5-minute candle open, exit at that candle's close | Mechanical same-candle strategy with no filter; kept only as a research baseline | `database/atm.db`, code `atm_scanner/` |
 | `sma9_avg` | SMA9 entry plus `LTP > average of last 3 completed closes`, trail exit | Extra confirmation added no durable edge over `sma9` | `database/sma9_avg.db`, code `sma9_avg_scanner/` |
@@ -23,18 +24,21 @@ code is not maintained.
   directory and not in `ALL_UNITS`.
 - The database is **not deleted** and is not written any more.
 - The dashboard page and API namespace may remain so old links still resolve
-  (`no_sma`, `no_sma_trail`); `green15` and `sma9_1min_atr` namespaces return 404.
-- The performance report no longer lists `no_sma` / `no_sma_trail`; their
-  history stays in the DB for audit. `sma9_1min_atr` was replaced by the
-  `sma9_slope_atr` key, with its trade history copied to the new DB.
+  (`no_sma`, `no_sma_trail`); `green15`, `sma9_1min_atr` and `sma9_slope_atr`
+  namespaces return 404.
+- The performance report no longer lists `no_sma` / `no_sma_trail` /
+  `sma9_slope_atr`; their history stays in the archived DBs for audit.
+  `sma9_1min_atr` was replaced by the `sma9_slope_atr` key on 2026-11-20, and
+  that key was retired on 2026-11-24.
 
 ## Replacing them
 
 | Retired | Active replacement |
 |---|---|
 | `no_sma` | `sma9_1min_poll` |
-| `no_sma_trail` | `sma9_slope_atr` |
-| `sma9_1min_atr` | `sma9_slope_atr` (renamed, history copied) |
+| `no_sma_trail` | none (research archive) |
+| `sma9_1min_atr` | none (renamed to `sma9_slope_atr`, later retired) |
+| `sma9_slope_atr` | none (retired 2026-11-24) |
 | `sma3*` / `sma20*` | `sma9*` family |
 | `green15`, `atm`, `sma9_avg` | none (research archives) |
 

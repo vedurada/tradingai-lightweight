@@ -1,6 +1,6 @@
 # Scanner & Broker Connectivity Architecture
 
-This document describes how the nine live paper scanners reach a broker without
+This document describes how the eight live paper scanners reach a broker without
 any scanner source changes. Every scanner uses the same read-only gateway path:
 broker choice is a config/CLI setting, never a code change. The broker gateway is the only component that
 holds broker credentials; scanners see a read-only, Kite-shaped API.
@@ -71,10 +71,9 @@ flowchart TB
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
 | `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
 | `sma9_high_trail` | `live_sma9_high_trail_scanner.py` | `tradingai-sma9_high_trail-scanner` | `sma9trailhigh` | `/opt/tradingai/database/sma9_high_trail.db` | `/api/sma9-high-trail/scanner-status` |
-| `sma9_slope_atr` | `live_sma9_slope_atr_scanner.py` | `tradingai-sma9-slope-atr-scanner` | `sma9slopeatr` | `/opt/tradingai/database/sma9_slope_atr.db` | `/api/sma9-slope-atr/scanner-status` |
 | `sma9_1min_poll` | `live_sma9_1min_poll_scanner.py` | `tradingai-sma9-1min-poll-scanner` | `sma91m` | `/opt/tradingai/database/sma9_1min_poll.db` | `/api/sma9-1min-poll/scanner-status` |
 
-All nine deployed scanners resolve to broker `mstock`. The nine SMA routes are served
+All eight deployed scanners resolve to broker `mstock`. The eight SMA routes are served
 by `app.api.app:app` under gunicorn.
 
 ## 3. How a scanner picks its broker
@@ -198,7 +197,7 @@ Notable mappings and guards:
   original requested key, so scanner lookups keep working.
 - Raw history requests over 10 days return HTTP 400 from mStock, so the adapter
   chunks ranges and merges candles.
-- The 60-second history cache plus the shared lock prevents nine scanners from
+- The 60-second history cache plus the shared lock prevents eight scanners from
   refetching the same option candles concurrently.
 
 ## 7. Deployment map
@@ -291,7 +290,7 @@ restart anything; it is not part of the mStock path.
 
 Broker selection itself is separate from tokens:
 
-- `config/scanners.json` has `default: zerodha` but all nine scanners carry an
+- `config/scanners.json` has `default: zerodha` but all eight scanners carry an
   explicit `mstock` entry, so every running scanner uses mstock.
 - Any scanner key not present in that mapping would fall back to the Zerodha
   default. Set `default` to `mstock` if that fallback is not wanted.

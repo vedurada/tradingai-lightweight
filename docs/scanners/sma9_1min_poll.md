@@ -123,6 +123,7 @@ scan starts at 09:00:00 and the first possible entry is at 09:20.
 - `sma9` is the same A+B entry at 5 seconds, but with fixed 5% stop and 5-point
   trail.
 - `sma9_atr` adds a daily NIFTY spot regime gate; this scanner does not.
-- `sma9_slope_atr` adds a rising-SMA9 entry filter; this scanner keeps A+B only.
+- This scanner keeps the A+B entry only; the former `sma9_slope_atr` added a
+  rising-SMA9 filter but was retired on 2026-11-24 (see [`retired.md`](retired.md)).
 - It replaced `no_sma`; the old DB and dashboard remain on disk as archives
   (see [`retired.md`](retired.md)).

@@ -22,7 +22,6 @@ explain the strategy.
 | `sma9_high` | `sma9` plus a live break of the previous candle high | 5 s | 5% of premium | [`sma9_high.md`](sma9_high.md) |
 | `sma9_1min_poll` | Same A+B entry as `sma9`, with `sma9_atr` ATR stop/trail | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_1min_poll.md`](sma9_1min_poll.md) |
 | `sma9_atr` | Same entry as `sma9`, stop scaled to the option's own ATR | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_atr.md`](sma9_atr.md) |
-| `sma9_slope_atr` | Rising-SMA9 entry + `sma9_atr` stop and ATR-only trail | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_slope_atr.md`](sma9_slope_atr.md) |
 | `sma9_trail` | Self-contained `sma9` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_trail.md`](sma9_trail.md) |
 | `sma9_high_trail` | Self-contained `sma9_high` entry with a 5-point trailing exit | 5 s | 5% of premium | [`sma9_high_trail.md`](sma9_high_trail.md) |
 
@@ -42,10 +41,10 @@ the polling cadence: it samples once per aligned 5m boundary (+10 s) instead of
 every 5 seconds, so its stop/trail is observed once per bar.
 
 **Sampling variants** — `sma9_1min_poll` keeps its original identity but now
-polls every 5 seconds. `sma9_slope_atr` was renamed from `sma9_1min_atr` and also
-samples every 5 seconds with a rising-SMA9 filter.
+polls every 5 seconds. The former `sma9_slope_atr` (renamed from
+`sma9_1min_atr`) was retired on 2026-11-24; see [`retired.md`](retired.md).
 
-**Volatility-scaled stops** — `sma9_atr`, `sma9_slope_atr`, `sma9_1min_poll`.
+**Volatility-scaled stops** — `sma9_atr`, `sma9_1min_poll`.
 Replace the fixed 5% floor with a stop derived from the
 bought option's average true range, so the stop stays outside normal premium
 noise on cheap contracts. These scanners also use that ATR distance as the
@@ -73,7 +72,7 @@ Each has:
 /live/<slug>/                          own dashboard
 ```
 
-## Common timing (all 9)
+## Common timing (all 8)
 
 | Constant | Value |
 |---|---|

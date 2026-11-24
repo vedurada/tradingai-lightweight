@@ -91,5 +91,4 @@ that re-verifies the locked tree.
 
 - `sma9` is the same strategy without the breakout condition B.
 - `sma9_high_trail` is a self-contained copy of this entry with the same trail.
-- `sma9_1min_poll` / `sma9_slope_atr` deliberately use the plain `sma9` entry,
-  not this stricter one.
+- `sma9_1min_poll` deliberately uses the plain `sma9` entry, not this stricter one.
