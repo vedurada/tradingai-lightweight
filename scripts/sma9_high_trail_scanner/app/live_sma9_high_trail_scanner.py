@@ -387,6 +387,32 @@ def today_stats(today):
 # ---------------------------------------------------------------------------
 # Zerodha data feed
 # ---------------------------------------------------------------------------
+# --- minimum premium gate (ATM first, then ITM in fixed steps) -----------
+# New entries require option premium strictly above SMA9_MIN_PREMIUM (default
+# 120).  If ATM premium is unavailable or <= that floor, walk ITM in
+# SMA9_STRIKE_STEP increments (default 50), CE downward and PE upward, up to
+# SMA9_ITM_MAX_STEPS strikes (default 8).  Exits are never gated.
+MIN_PREMIUM = float(os.environ.get("SMA9_MIN_PREMIUM", "120"))
+STRIKE_STEP = float(os.environ.get("SMA9_STRIKE_STEP", "50"))
+ITM_MAX_STEPS = max(1, int(os.environ.get("SMA9_ITM_MAX_STEPS", "8")))
+
+
+def _itm_strikes(atm_strike: float, option_type: str) -> list:
+    """ATM-adjacent ITM strikes, nearest first (CE lower, PE higher)."""
+    direction = -1.0 if option_type == "CE" else 1.0
+    return [round(float(atm_strike) + direction * STRIKE_STEP * i, 2)
+            for i in range(1, ITM_MAX_STEPS + 1)]
+
+
+def _quote_ltp(quotes: dict, symbol: str):
+    """Positive LTP from a quote batch, or None when unavailable."""
+    try:
+        price = float(quotes[symbol]["last_price"])
+    except (KeyError, TypeError, ValueError):
+        return None
+    return price if price > 0 else None
+
+
 class KiteFeed:
     def __init__(self):
         from kiteconnect import KiteConnect
@@ -565,6 +591,106 @@ class TrailLiveScanner:
                     "strike": pos.strike, "expiry": pos.expiry}
         return self.contracts.get(opt)
 
+    # -- minimum premium gate --------------------------------------------
+    def _premium_ok(self, option_type: str) -> bool:
+        """Only a qualifying premium may open a new position."""
+        gate = (getattr(self, "_premium_gate", {}).get(option_type) or {})
+        return bool(gate.get("ok"))
+
+    def _apply_min_premium(self, quotes: dict, symbol_for: dict,
+                           errors: list) -> None:
+        """Choose ATM or the first ITM strike with premium > MIN_PREMIUM.
+
+        If ATM premium is missing or <= the floor, one extra batched quote
+        pass covers candidate ITM strikes for both legs.  Open positions keep
+        their own contract and exits are never gated.  Without a qualifying
+        quote the leg is blocked for new entries.
+        """
+        gate = {}
+        candidates = {}
+        symbols = []
+        for opt in ("CE", "PE"):
+            if self.states[opt].position is not None:
+                gate[opt] = {"ok": True, "reason": "OPEN_POSITION"}
+                continue
+            entry = symbol_for.get(opt)
+            if not entry:
+                gate[opt] = {"ok": False, "reason": "NO_CONTRACT"}
+                continue
+            symbol, contract = entry
+            atm_ltp = _quote_ltp(quotes, symbol)
+            if atm_ltp is None:
+                gate[opt] = {"ok": False, "reason": "NO_ATM_QUOTE"}
+                logger.warning("PREMIUM GATE %s blocked: ATM quote unavailable", opt)
+                continue
+            if atm_ltp > MIN_PREMIUM:
+                gate[opt] = {
+                    "ok": True, "reason": "ATM_PREMIUM_OK", "ltp": atm_ltp,
+                }
+                continue
+            rows = []
+            seen = set()
+            contract_error = False
+            for strike in _itm_strikes(contract["strike"], opt):
+                try:
+                    candidate = self.feed.find_contract(
+                        strike, contract["expiry"], opt)
+                except Exception as exc:
+                    errors.append(f"min-premium contract error ({opt}): {exc}")
+                    logger.error(errors[-1])
+                    contract_error = True
+                    break
+                if not candidate:
+                    continue
+                sym = f"NFO:{candidate['tradingsymbol']}"
+                if sym in seen:
+                    continue
+                seen.add(sym)
+                rows.append((sym, candidate))
+            if contract_error:
+                gate[opt] = {"ok": False, "reason": "ITM_CONTRACT_ERROR"}
+                continue
+            if not rows:
+                gate[opt] = {"ok": False, "reason": "NO_ITM_CONTRACT"}
+                logger.warning(
+                    "PREMIUM GATE %s blocked: no ITM contracts found", opt)
+                continue
+            candidates[opt] = rows
+            for sym, _ in rows:
+                if sym not in symbols:
+                    symbols.append(sym)
+        if symbols:
+            try:
+                quotes.update(self.feed.quote(symbols))
+            except Exception as exc:
+                errors.append(f"min-premium quote error: {exc}")
+                logger.error(errors[-1])
+        for opt, rows in candidates.items():
+            chosen = None
+            for sym, candidate in rows:
+                price = _quote_ltp(quotes, sym)
+                if price is not None and price > MIN_PREMIUM:
+                    chosen = (sym, candidate, price)
+                    break
+            if chosen is None:
+                gate[opt] = {"ok": False, "reason": "NO_ITM_PREMIUM"}
+                logger.warning(
+                    "PREMIUM GATE %s blocked: no ITM strike with LTP > %.2f",
+                    opt, MIN_PREMIUM)
+                continue
+            old = (symbol_for.get(opt) or (None, {}))[1]
+            symbol_for[opt] = (chosen[0], chosen[1])
+            gate[opt] = {
+                "ok": True, "reason": "ITM_PREMIUM_OK",
+                "strike": float(chosen[1]["strike"]), "ltp": chosen[2],
+            }
+            logger.info(
+                "PREMIUM GATE %s moved %s -> %s (LTP %.2f > %.2f)",
+                opt, (old or {}).get("tradingsymbol"),
+                chosen[1].get("tradingsymbol"), chosen[2], MIN_PREMIUM,
+            )
+        self._premium_gate = gate
+
     def refresh_contracts(self, spot, force=False):
         atm = float(round(spot / 50) * 50)
         strikes_match = all(
@@ -627,6 +753,7 @@ class TrailLiveScanner:
                 pass
         self.last_scan_at = now.isoformat()
         errors = []
+        self._premium_gate = {}
         allow_entries = entry_window_is_open(now)
 
         current_candle = floor_5m(now)
@@ -695,6 +822,7 @@ class TrailLiveScanner:
                 errors.append(f"option quote error: {exc}")
                 logger.error(errors[-1])
 
+        self._apply_min_premium(quotes, symbol_for, errors)
         option_status = {}
         for opt in ("CE", "PE"):
             state = self.states[opt]
@@ -725,7 +853,8 @@ class TrailLiveScanner:
                 rows = self.feed.candles(token)
                 ev_local = evaluate_option(rows, opt, ltp=ltp)
 
-                if allow_entries and pos is None and ev_local.signal:
+                if (allow_entries and pos is None and ev_local.signal
+                        and self._premium_ok(opt)):
                     new_pos = state.try_entry(
                         ev_local, now, strike, expiry_str, token,
                         contract["tradingsymbol"], market_close_dt(now))
@@ -884,6 +1013,7 @@ class TrailLiveScanner:
             ),
             "quote_unavailable": bool(getattr(self, "quote_unavailable", False)),
             "atm_strike": self.atm_strike,
+            "premium_gate": getattr(self, "_premium_gate", {}),
             "last_closed_spot": self.last_closed_spot,
             "last_closed_atm_strike": self.last_closed_atm_strike,
             "last_closed_candle_start": self.last_closed_candle_start,

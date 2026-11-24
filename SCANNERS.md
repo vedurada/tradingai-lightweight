@@ -196,6 +196,33 @@ The seven premium scanners use **option-premium candles/LTP** for both entries
 and exits (`sma9_atr` additionally gates entries on a daily NIFTY spot regime).
 NIFTY spot is used to select the ATM strike.
 
+#### 3.2.1 Minimum premium gate (all 8 scanners)
+
+New entries are allowed only when the selected option's LTP is **strictly above
+₹120** (`SMA9_MIN_PREMIUM`, default `120`). The rule is evaluated independently
+for CE and PE on every scan:
+
+1. Quote the ATM contract first. If ATM LTP > ₹120, keep ATM.
+2. If ATM LTP ≤ ₹120, search ITM strikes in `SMA9_STRIKE_STEP` points
+   (default `50`): CE moves to lower strikes, PE to higher strikes. Choose the
+   **first quoted strike with LTP > ₹120**, up to `SMA9_ITM_MAX_STEPS` strikes
+   (default `8`, i.e. 400 points from ATM).
+3. If the ATM quote is unavailable, no ITM contract exists, no ITM quote is
+   available, or no ITM premium is > ₹120, **do not open a new position** in
+   that leg. The last ATM quote remains on the status page; no premium or fill
+   is guessed.
+
+An open position keeps its own contract and is never moved by this rule. Exits
+are never gated — trail stops and 5%/ATR stops operate on the position's real
+contract even when premium selection for new entries is blocked. Each scanner's
+saved heartbeat/status JSON (`<key>_scan_state`, key `live_status`) exposes
+`premium_gate` with the decision reason (`ATM_PREMIUM_OK`, `ITM_PREMIUM_OK`,
+`NO_ATM_QUOTE`, `NO_ITM_CONTRACT`, `NO_ITM_PREMIUM`, `OPEN_POSITION`, or
+`NO_CONTRACT`); the curated public scanner-status API does not publish it.
+
+The armed real-order `sma9_live` runner obeys the same rule before placing a
+BUY; the price collar and broker contract checks still apply afterwards.
+
 ### 3.3 Credentials
 
 Broker credentials live **only** in root-owned files on the VM and are read by
