@@ -31,7 +31,8 @@ def test_defaults_are_dry_run_and_disarmed(execution):
     assert limits.collar_pct == 1.0
     assert execution.build_executor({}).name == "dry_run"
     assert execution.real_orders_armed({}) is False
-    with pytest.raises(NotImplementedError):
+    # The real executor is wired, but it fails closed until both flags are set.
+    with pytest.raises(PermissionError):
         execution.MStockOrderExecutor().place(object())
 
 
@@ -189,3 +190,80 @@ def test_order_ledger_is_idempotent_and_counts_for_daily_cap(
     row = mod.order_status_for("S9L-TESTTRADE", "BUY")
     assert row["dry_run"] == 1
     assert row["status"] == execution.STATUS_DRY_RUN
+
+
+def _order(execution, **overrides):
+    base = dict(
+        client_order_id="S9L-BUY-ABC", trade_id="S9L-TRADE", option_type="CE",
+        side="BUY", symbol="NFO:NIFTY26NOV20000CE", token=12345, quantity=75,
+        intended_price=100.0, limit_price=101.0, collar_pct=1.0,
+        reason="SMA9_ENTRY", dry_run=True,
+    )
+    base.update(overrides)
+    return execution.OrderRecord(**base)
+
+
+def test_mstock_executor_requires_both_flags_and_kill_switch(execution, tmp_path):
+    env = {
+        "SMA9_LIVE_ORDERS_ENABLED": "true",
+        "SMA9_LIVE_ARM_REAL_ORDERS": "ARMED",
+        "SMA9_LIVE_KILL_FILE": str(tmp_path / "missing.KILL"),
+    }
+    calls = []
+    def fake_call(*args, **kwargs):
+        calls.append(kwargs)
+        return {"order_id": "MOCK-ORDER-1"}
+    ex = execution.MStockOrderExecutor(caller=fake_call, environ=env)
+    record = _order(execution)
+    assert ex.place(record).status == execution.STATUS_ACCEPTED
+    assert len(calls) == 1
+    assert calls[0]["transaction_type"] == "BUY"
+    assert calls[0]["order_type"] == "LIMIT"
+    assert calls[0]["product"] == "MIS"
+    assert calls[0]["tag"] == "S9L-BUY-ABC"
+    assert record.dry_run is False
+    assert record.broker_order_id == "MOCK-ORDER-1"
+
+    (tmp_path / "missing.KILL").write_text("stop")
+    with pytest.raises(PermissionError):
+        ex.place(_order(execution, client_order_id="S9L-BUY-NEW"))
+
+
+def test_mstock_executor_fails_closed_on_gateway_error(execution, tmp_path):
+    env = {
+        "SMA9_LIVE_ORDERS_ENABLED": "true",
+        "SMA9_LIVE_ARM_REAL_ORDERS": "ARMED",
+        "SMA9_LIVE_KILL_FILE": str(tmp_path / "missing.KILL"),
+    }
+    def boom(*args, **kwargs):
+        raise RuntimeError("gateway unavailable")
+
+    ex = execution.MStockOrderExecutor(caller=boom, environ=env)
+    record = _order(execution)
+    with pytest.raises(RuntimeError):
+        ex.place(record)
+    assert record.status == execution.STATUS_REJECTED
+    assert record.broker_order_id is None
+    assert record.dry_run is False
+
+
+def test_mstock_executor_rejects_non_nfo_symbol(execution, tmp_path):
+    env = {
+        "SMA9_LIVE_ORDERS_ENABLED": "true",
+        "SMA9_LIVE_ARM_REAL_ORDERS": "ARMED",
+        "SMA9_LIVE_KILL_FILE": str(tmp_path / "missing.KILL"),
+    }
+    ex = execution.MStockOrderExecutor(caller=lambda *a, **k: {}, environ=env)
+    with pytest.raises(ValueError):
+        ex.place(_order(execution, symbol="BSE:INFY"))
+
+
+def test_mstock_executor_maps_order_status(execution):
+    responses = [
+        {"status": "FILLED"}, {"status": "REJECTED"}, {"status": "OPEN"},
+    ]
+    ex = execution.MStockOrderExecutor(caller=lambda *a, **k: responses.pop(0))
+    record = _order(execution, broker_order_id="MOCK-ORDER-1")
+    assert ex.order_status(record) == execution.STATUS_FILLED
+    assert ex.order_status(record) == execution.STATUS_REJECTED
+    assert ex.order_status(record) == execution.STATUS_ACCEPTED

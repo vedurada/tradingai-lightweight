@@ -1,11 +1,12 @@
 """Risk-controlled order execution for the isolated ``sma9_live`` service.
 
 This module is deliberately separate from the paper scanners and from the
-read-only broker gateway shim.  Nothing here places a broker order by default:
+read-only Kite-compatible gateway shim. Nothing here places a broker order by
+default:
 
 * ``SMA9_LIVE_EXECUTOR`` defaults to ``dry_run``.
-* ``MStockOrderExecutor`` is a stub that refuses to act until the verified
-  mStock order API contract is supplied.
+* ``MStockOrderExecutor`` uses the verified mStock Type A order contract via
+  the root-owned gateway, and only when both arm flags are set.
 * A kill switch, daily order cap, one-position-per-leg rule and price collar
   are enforced before any executor is called.
 * Client order IDs are deterministic so retries cannot duplicate an order.
@@ -190,25 +191,100 @@ class DryRunOrderExecutor(OrderExecutor):
         return STATUS_DRY_RUN
 
 
-class MStockOrderExecutor(OrderExecutor):
-    """Real mStock executor. Refuses to act until the API contract is wired.
+def _gateway_call(broker: str, method: str, **params):
+    """Late import so tests can inject a fake without touching the gateway."""
+    from broker_gateway.client import call
 
-    The gateway is read-only today and mStock order endpoints/signing are not
-    available in this repository. Instantiating this executor is allowed for
-    wiring/tests, but ``place`` always fails closed.
+    return call(broker, method, **params)
+
+
+class MStockOrderExecutor(OrderExecutor):
+    """Real mStock Type A executor, reached only through the root-owned gateway.
+
+    No credentials, keys or OTP/TOTP values are read here. Both arm flags, the
+    kill switch and the daemon's order opt-in must be set before an order can
+    leave the process; any failure fails closed and is recorded in the ledger.
     """
 
     name = "mstock"
 
+    def __init__(self, caller=None, broker: str = "mstock", environ=None):
+        self._call = caller or _gateway_call
+        self.broker = broker
+        self._env = environ if environ is not None else os.environ
+        self.product = str(self._env.get("SMA9_LIVE_PRODUCT", "MIS")).strip().upper()
+        self.variety = "reg"
+        self.validity = "DAY"
+        self.order_type = "LIMIT"
+
+    def _require_armed(self) -> None:
+        if not real_orders_armed(self._env):
+            raise PermissionError(
+                "real orders require SMA9_LIVE_ORDERS_ENABLED=true and "
+                "SMA9_LIVE_ARM_REAL_ORDERS=ARMED"
+            )
+        if kill_switch_active(RiskLimits.from_env(self._env), self._env):
+            raise PermissionError("sma9_live kill switch is active")
+
+    def _order_params(self, record: OrderRecord) -> dict:
+        symbol = str(record.symbol or "").strip()
+        if ":" not in symbol:
+            raise ValueError(f"order symbol must be EXCHANGE:SYMBOL, got {symbol!r}")
+        exchange, tradingsymbol = symbol.split(":", 1)
+        exchange = exchange.strip().upper()
+        if exchange != "NFO" or not tradingsymbol.strip():
+            raise ValueError(f"unsupported live order exchange/symbol: {symbol!r}")
+        return {
+            "variety": self.variety,
+            "exchange": exchange,
+            "tradingsymbol": tradingsymbol.strip(),
+            "transaction_type": record.side,
+            "order_type": self.order_type,
+            "quantity": int(record.quantity),
+            "product": self.product,
+            "validity": self.validity,
+            "price": float(record.limit_price),
+            "tag": record.client_order_id,
+        }
+
     def place(self, record: OrderRecord) -> OrderRecord:
-        raise NotImplementedError(
-            "mStock order API contract is not wired; real orders are disabled. "
-            "Supply the verified order endpoint, method, request fields, "
-            "response schema and order-status API before enabling."
+        self._require_armed()
+        params = self._order_params(record)
+        try:
+            result = self._call(self.broker, "place_order", **params) or {}
+            broker_order_id = str(result.get("order_id") or "").strip()
+        except Exception as exc:
+            record.dry_run = False
+            record.status = STATUS_REJECTED
+            logger.error("mStock rejected %s: %s", record.client_order_id, exc)
+            raise
+        if not broker_order_id:
+            record.dry_run = False
+            record.status = STATUS_REJECTED
+            raise RuntimeError("mStock order response did not contain an order_id")
+        record.dry_run = False
+        record.status = STATUS_ACCEPTED
+        record.broker_order_id = broker_order_id
+        logger.info(
+            "LIVE REAL ORDER %s %s %s qty=%d limit=%.2f broker_id=%s id=%s",
+            record.side, record.option_type, record.symbol, record.quantity,
+            record.limit_price, broker_order_id, record.client_order_id,
         )
+        return record
 
     def order_status(self, record: OrderRecord) -> str:
-        raise NotImplementedError("mStock order status API is not wired")
+        if not record.broker_order_id:
+            return record.status
+        result = self._call(
+            self.broker, "order_status", broker_order_id=record.broker_order_id
+        ) or {}
+        status = str(result.get("status") or STATUS_NEW).upper()
+        if status == "OPEN":
+            status = STATUS_ACCEPTED
+        if status in {STATUS_NEW, STATUS_ACCEPTED, STATUS_FILLED,
+                      STATUS_CANCELLED, STATUS_REJECTED, STATUS_FAILED}:
+            return status
+        return STATUS_NEW
 
 
 def build_executor(environ=None) -> OrderExecutor:
@@ -217,11 +293,12 @@ def build_executor(environ=None) -> OrderExecutor:
     if name == DryRunOrderExecutor.name:
         return DryRunOrderExecutor()
     if name == MStockOrderExecutor.name:
-        logger.warning(
-            "SMA9_LIVE_EXECUTOR=mstock selected but real order API is not wired; "
-            "all order attempts will fail closed."
-        )
-        return MStockOrderExecutor()
+        if not real_orders_armed(env):
+            logger.warning(
+                "SMA9_LIVE_EXECUTOR=mstock selected but orders are not armed; "
+                "every attempt will fail closed"
+            )
+        return MStockOrderExecutor(environ=env)
     raise ValueError(f"unknown SMA9_LIVE_EXECUTOR: {name!r}")
 
 

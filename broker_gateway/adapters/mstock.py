@@ -26,6 +26,13 @@ _OFFSET_SUFFIX = re.compile(r"([+-]\d{2})$")
 TRANSIENT_HTTP = {429, 500, 502, 503, 504}
 TRANSIENT_TEXT = ("try again", "something went wrong", "too many requests", "rate limit")
 MAX_ATTEMPTS = 3
+# Type A order vocabulary (official docs: /docs/v1/typeA/Orders/).
+ORDER_VARIETIES = frozenset({"reg", "amo"})
+ORDER_EXCHANGES = frozenset({"NSE", "BSE", "NFO", "BFO"})
+ORDER_SIDES = frozenset({"BUY", "SELL"})
+ORDER_TYPES = frozenset({"LIMIT", "MARKET", "SL", "SL-M"})
+ORDER_PRODUCTS = frozenset({"CNC", "NRML", "MIS", "MTF"})
+ORDER_VALIDITY = frozenset({"DAY", "IOC"})
 INDEX_QUOTE_KEYS = {256265: "NSE:NIFTY 50", 26000: "NSE:NIFTY 50"}
 INDEX_HISTORY_TOKENS = {26000: "NSE"}
 # mStock publishes Data APIs at 1 request/second.  Historical candles are Data
@@ -443,3 +450,147 @@ class MStockAdapter(BrokerAdapter):
             "broker": self.name,
             "user_id": first.get("SEG") if isinstance(first, dict) else None,
         }
+
+    # -- live orders (opt-in, Type A only) --------------------------------
+    def _http_post_form(self, path: str, fields: dict) -> dict:
+        """POST form-encoded order data exactly once.
+
+        Order placement is never retried here: a timeout may still have reached
+        the exchange, and retrying could duplicate a real order. Idempotency is
+        owned by the live service's deterministic client_order_id ledger.
+        """
+        url = BASE + path
+        headers = self._headers()
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        body = urllib.parse.urlencode(fields).encode("utf-8")
+        req = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        try:
+            with urllib.request.urlopen(req, timeout=30) as response:
+                raw = response.read()
+        except urllib.error.HTTPError as exc:
+            try:
+                payload = json.loads(exc.read().decode("utf-8", "replace"))
+                message = (
+                    payload.get("message") or payload.get("error_type")
+                    or f"HTTP {exc.code}"
+                )
+            except Exception:
+                message = f"HTTP {exc.code}"
+            raise BrokerCallFailed(f"mStock {path}: {message}") from exc
+        except (urllib.error.URLError, TimeoutError, OSError) as exc:
+            # Fail closed; the caller's ledger decides whether a retry is safe.
+            raise BrokerCallFailed(
+                f"mStock {path}: {type(exc).__name__} (order may be pending)"
+            ) from exc
+        try:
+            payload = json.loads(raw.decode("utf-8", "replace"))
+        except ValueError as exc:
+            raise BrokerCallFailed(f"mStock {path}: invalid JSON") from exc
+        if not isinstance(payload, dict) or payload.get("status") != "success":
+            message = payload.get("message") if isinstance(payload, dict) else payload
+            raise BrokerCallFailed(f"mStock {path}: {message}")
+        return payload
+
+    @staticmethod
+    def _validate_order_fields(fields: dict) -> None:
+        checks = (
+            ("variety", ORDER_VARIETIES),
+            ("exchange", ORDER_EXCHANGES),
+            ("transaction_type", ORDER_SIDES),
+            ("order_type", ORDER_TYPES),
+            ("product", ORDER_PRODUCTS),
+            ("validity", ORDER_VALIDITY),
+        )
+        for key, allowed in checks:
+            value = str(fields.get(key, ""))
+            if value not in allowed:
+                raise BrokerCallFailed(
+                    f"mStock order: invalid {key} {value!r}; allowed: "
+                    + ", ".join(sorted(allowed))
+                )
+        symbol = str(fields.get("tradingsymbol", "")).strip()
+        if not symbol or any(ch in symbol for ch in ("&", "=", "\n", "\r")):
+            raise BrokerCallFailed("mStock order: invalid tradingsymbol")
+        try:
+            quantity = int(fields["quantity"])
+        except (KeyError, TypeError, ValueError) as exc:
+            raise BrokerCallFailed("mStock order: invalid quantity") from exc
+        if quantity < 1:
+            raise BrokerCallFailed("mStock order: quantity must be >= 1")
+        try:
+            price = float(fields.get("price", 0))
+        except (TypeError, ValueError) as exc:
+            raise BrokerCallFailed("mStock order: invalid price") from exc
+        if fields["order_type"] == "LIMIT" and price <= 0:
+            raise BrokerCallFailed("mStock order: LIMIT price must be positive")
+        fields["quantity"] = str(quantity)
+        fields["price"] = str(round(price, 2))
+
+    def place_order(
+        self, *, variety: str, exchange: str, tradingsymbol: str,
+        transaction_type: str, order_type: str, quantity: int,
+        product: str, validity: str, price: float, tag: str,
+    ) -> dict:
+        """Place one Type A regular order. No implicit retry, no secrets returned."""
+        fields = {
+            "variety": str(variety),
+            "exchange": str(exchange),
+            "tradingsymbol": str(tradingsymbol),
+            "transaction_type": str(transaction_type),
+            "order_type": str(order_type),
+            "quantity": quantity,
+            "product": str(product),
+            "validity": str(validity),
+            "price": price,
+        }
+        clean_tag = str(tag or "").strip()
+        if clean_tag:
+            if any(ch in clean_tag for ch in ("&", "=", "\n", "\r")):
+                raise BrokerCallFailed("mStock order: invalid tag")
+            fields["tag"] = clean_tag
+        self._validate_order_fields(fields)
+        payload = self._http_post_form(f"/orders/{fields['variety']}", fields)
+        data = payload.get("data") or {}
+        order_id = str((data.get("order_id") if isinstance(data, dict) else None) or "")
+        if not order_id:
+            raise BrokerCallFailed("mStock order: success response without order_id")
+        return {"order_id": order_id, "status": "ACCEPTED"}
+
+    @staticmethod
+    def _map_order_status(row: dict) -> str:
+        raw = str(row.get("status") or "").strip().lower()
+        if raw in {"rejected", "reject"}:
+            return "REJECTED"
+        if raw in {"cancelled", "canceled"}:
+            return "CANCELLED"
+        if raw in {"complete", "filled", "executed"}:
+            return "FILLED"
+        try:
+            filled = float(row.get("filled_quantity") or 0)
+            total = float(row.get("quantity") or 0)
+        except (TypeError, ValueError):
+            filled, total = 0.0, 0.0
+        if total > 0 and filled >= total:
+            return "FILLED"
+        if raw in {"open", "pending", "triggered", "partial", "amended"}:
+            return "ACCEPTED"
+        return "UNKNOWN"
+
+    def order_status(self, *, broker_order_id: str) -> dict:
+        """Resolve one broker order from the Type A order book."""
+        order_id = str(broker_order_id or "").strip()
+        if not order_id:
+            raise BrokerCallFailed("mStock order status: order id is required")
+        payload = self._get_json("/orders")
+        rows = payload.get("data") or []
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            if str(row.get("order_id") or "") == order_id:
+                return {
+                    "order_id": order_id,
+                    "status": self._map_order_status(row),
+                    "raw_status": row.get("status"),
+                    "status_message": row.get("status_message"),
+                }
+        return {"order_id": order_id, "status": "UNKNOWN"}

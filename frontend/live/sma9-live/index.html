@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - SMA9 LIVE Execution Dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+         background: #0b0c15; color: #e8eaf0; padding: 1.5rem; }
+  h1 { color: #fbbf24; font-size: 1.5rem; margin-bottom: 0.6rem; }
+  h2 { color: #9ad7ff; font-size: 1.05rem; margin: 0 0 0.6rem; }
+  .meta { color: #9aa4bf; font-size: 0.85rem; margin-bottom: 1rem;
+          display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+  .section { border-top: 1px solid #1e2438; padding-top: 1rem; margin-bottom: 1.5rem; }
+  .badge { display: inline-block; padding: .15rem .55rem; border-radius: 999px;
+           font-size: .7rem; font-weight: 700; }
+  .badge.good { background: #06301f; color: #34d399; }
+  .badge.warn { background: #3a2a06; color: #fbbf24; }
+  .badge.bad { background: #3a0f14; color: #fb7185; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+           gap: .8rem; margin-bottom: 1rem; }
+  .card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: .9rem; }
+  .card .label { color: #9aa4bf; font-size: .7rem; text-transform: uppercase;
+                 letter-spacing: .05em; }
+  .card .value { font-size: 1.25rem; font-weight: 600; margin-top: .2rem;
+                 font-family: ui-monospace, Menlo, Consolas, monospace; }
+  table { width: 100%; border-collapse: collapse; font-size: .82rem; margin-top: .5rem; }
+  th { background: #141a2c; color: #9ad7ff; text-align: left; padding: .45rem .4rem;
+       white-space: nowrap; }
+  td { padding: .4rem; border-bottom: 1px solid #1c2236; white-space: nowrap; }
+  .empty { color: #9aa4bf; font-style: italic; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+</style>
+</head>
+<body>
+<h1>TradingAI &middot; SMA9 LIVE (mStock)</h1>
+<div class="meta">
+  <span>Updated: <span id="updated">--</span> IST</span>
+  <span class="badge" id="health">--</span>
+  <span id="last-scan" class="mono">--</span>
+  <span id="refresh-countdown" class="mono">5s refresh</span>
+</div>
+
+<section class="section">
+  <h2>Execution guards</h2>
+  <div class="stats" id="guards"></div>
+</section>
+
+<section class="section">
+  <h2>Order ledger</h2>
+  <div id="orders"></div>
+</section>
+
+<section class="section">
+  <h2>Open positions</h2>
+  <div id="positions"></div>
+</section>
+
+<section class="section">
+  <h2>Today's trades</h2>
+  <div id="trades"></div>
+</section>
+
+<script>
+const esc = (v) => String(v ?? '--').replace(/[&<>"']/g, c => (
+  ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]));
+
+const card = (label, value, cls) =>
+  `<div class="card"><div class="label">${esc(label)}</div>` +
+  `<div class="value ${cls || ''}">${esc(value)}</div></div>`;
+
+function table(rows, cols) {
+  if (!rows || !rows.length) return '<p class="empty">No records yet.</p>';
+  const head = cols.map(c => `<th>${esc(c[1])}</th>`).join('');
+  const body = rows.map(r => '<tr>' + cols.map(c =>
+    `<td class="${c[2] || ''}">${esc(r[c[0]])}</td>`).join('') + '</tr>').join('');
+  return `<table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>`;
+}
+
+async function getJson(path) {
+  const r = await fetch(path, {cache: 'no-store'});
+  if (!r.ok) throw new Error(`${path} -> ${r.status}`);
+  return r.json();
+}
+
+async function refresh() {
+  try {
+    const [status, orders, positions, trades] = await Promise.all([
+      getJson('/api/sma9-live/scanner-status'),
+      getJson('/api/sma9-live/orders?limit=100'),
+      getJson('/api/sma9-live/open-positions'),
+      getJson('/api/sma9-live/today'),
+    ]);
+    const h = status.health || {};
+    const exec = status.execution || {};
+    document.getElementById('health').textContent = status.status || 'UNKNOWN';
+    document.getElementById('health').className =
+      'badge ' + (status.status === 'ACTIVE' ? 'good' :
+                   status.status === 'STALE' ? 'warn' : 'bad');
+    document.getElementById('updated').textContent = new Date().toLocaleTimeString('en-GB');
+    document.getElementById('last-scan').textContent = status.last_scan_at || '--';
+
+    const flag = (v, good) =>
+      `<span class="badge ${v ? (good ? 'good' : 'bad') : 'warn'}">${v ? 'YES' : 'NO'}</span>`;
+    document.getElementById('guards').innerHTML = [
+      card('Executor', exec.executor || '--'),
+      card('Dry run', flag(exec.dry_run, false)),
+      card('Real orders armed', flag(exec.real_orders_armed, true)),
+      card('Kill switch', flag(exec.kill_switch_active, false)),
+      card('Orders today', `${exec.orders_today ?? '--'} / ${exec.max_orders_per_day ?? '--'}`),
+      card('Lot size', exec.lot_size || '--'),
+      card('Price collar', `${exec.price_collar_pct ?? '--'}%`),
+      card('Last block', exec.last_block || 'none'),
+    ].join('');
+
+    document.getElementById('orders').innerHTML = table(orders.orders, [
+      ['created_at', 'Time'], ['client_order_id', 'Client ID', 'mono'],
+      ['side', 'Side'], ['symbol', 'Symbol'], ['quantity', 'Qty'],
+      ['limit_price', 'Limit'], ['status', 'Status'], ['broker_order_id', 'Broker ID', 'mono'],
+    ]);
+    document.getElementById('positions').innerHTML = table(positions.positions, [
+      ['option_type', 'Leg'], ['tradingsymbol', 'Symbol', 'mono'],
+      ['strike', 'Strike'], ['entry_price', 'Entry'], ['stop', 'Stop'], ['hwm', 'HWM'],
+    ]);
+    document.getElementById('trades').innerHTML = table(trades.trades, [
+      ['signal_timestamp', 'Signal'], ['option_type', 'Leg'], ['entry_price', 'Entry'],
+      ['exit_price', 'Exit'], ['exit_reason', 'Reason'], ['pnl_points', 'PnL'],
+    ]);
+  } catch (e) {
+    document.getElementById('health').textContent = 'UNAVAILABLE';
+    document.getElementById('health').className = 'badge bad';
+  }
+}
+
+let left = 5;
+setInterval(() => {
+  left -= 1;
+  if (left <= 0) { left = 5; refresh(); }
+  document.getElementById('refresh-countdown').textContent = left + 's refresh';
+}, 1000);
+refresh();
+</script>
+</body>
+</html>

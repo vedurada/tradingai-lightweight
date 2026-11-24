@@ -20,7 +20,14 @@ from broker_gateway.errors import BrokerCallFailed, BrokerGatewayError
 
 SOCKET_PATH = os.environ.get("BROKER_GATEWAY_SOCKET", "/run/tradingai/broker_gateway.sock")
 SOCKET_GROUP = os.environ.get("BROKER_GATEWAY_GROUP", "ubuntu")
-METHODS = {"instruments", "quote", "historical_data", "profile"}
+READ_METHODS = {"instruments", "quote", "historical_data", "profile"}
+ORDER_METHODS = {"place_order", "order_status"}
+METHODS = READ_METHODS | ORDER_METHODS
+# Orders are opt-in at the daemon boundary. The paper fleet never calls them,
+# and a missing/invalid flag keeps the gateway read-only for every scanner.
+_ORDERS_ENABLED = str(
+    os.environ.get("BROKER_GATEWAY_ORDERS_ENABLED", "")
+).strip().lower() in {"1", "true", "yes"}
 _ADAPTERS: dict[str, object] = {}
 _LOCK = threading.Lock()
 _MAX_CALLS = max(1, int(os.environ.get("BROKER_GATEWAY_MAX_CALLS", "4")))
@@ -192,10 +199,21 @@ def dispatch(request: dict):
         raise BrokerGatewayError(f"method not allowed: {method!r}")
     if not isinstance(params, dict):
         raise BrokerGatewayError("params must be an object")
+    if method in ORDER_METHODS and not _ORDERS_ENABLED:
+        raise BrokerGatewayError(
+            "broker gateway order methods are disabled; "
+            "set BROKER_GATEWAY_ORDERS_ENABLED=true to opt in"
+        )
     adapter = _adapter(broker)
     adapter.refresh_credentials_if_changed()
     _require_fresh(broker, adapter)
-    func = getattr(adapter, method)
+    func = getattr(adapter, method, None)
+    if func is None or not callable(func):
+        raise BrokerGatewayError(f"{broker}: method not supported: {method!r}")
+    if method in ORDER_METHODS:
+        # Audit trail for real orders. Params never contain credentials or OTP.
+        audit = json.dumps(params, sort_keys=True, default=str)
+        print(f"broker gateway ORDER {broker} {method} {audit}", file=sys.stderr, flush=True)
     with _CALL_LIMIT:
         result = func(**params)
     return _sanitize_quote(result) if method == "quote" else result

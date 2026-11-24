@@ -882,11 +882,12 @@ token.
 - **State survives restarts** via `open_positions` and `scan_state`, including
   trail `hwm`/`stop`.
 
-### 9.1 Isolated `sma9_live` execution service (dry-run scaffold)
+### 9.1 Isolated `sma9_live` execution service (mStock Type A)
 
 `sma9_live` is a **separate service**, not a modified paper scanner. The paper
 `sma9` tree, DB (`sma9.db`), service user, API namespace, page and gateway
-mapping are unchanged. Nothing from this section is deployed by default.
+mapping are unchanged. The local scaffold defaults to `dry_run`; the deployed
+armed unit uses the verified mStock Type A order contract.
 
 | Property | Value |
 |---|---|
@@ -896,7 +897,8 @@ mapping are unchanged. Nothing from this section is deployed by default.
 | Service user / unit | `sma9live` / `tradingai-sma9-live-scanner` |
 | Gateway alias | `broker-gateway use --scanner sma9live --broker mstock` |
 | Default executor | `dry_run` — no broker call is made |
-| Real orders | Hard-disabled until the verified mStock order API contract is wired |
+| Deployed executor | `mstock` via root-owned gateway (`BROKER_GATEWAY_ORDERS_ENABLED=true`) |
+| Order API | Type A `POST /orders/reg`, form-encoded; status via `GET /orders` |
 
 Risk guards enforced before any BUY: kill switch (`SMA9_LIVE_KILLED` or the
 kill file), daily order cap (`SMA9_LIVE_MAX_ORDERS_PER_DAY`, default 4),
@@ -908,8 +910,14 @@ Every entry and exit writes an append-only `sma9_live_orders` ledger row keyed
 by a deterministic `client_order_id`, so a retry cannot duplicate an order.
 The executor result (`status`, `broker_order_id`) is written back to that row.
 Real execution additionally requires **both**
-`SMA9_LIVE_ORDERS_ENABLED=true` and `SMA9_LIVE_ARM_REAL_ORDERS=ARMED`; the
-`MStockOrderExecutor` stub raises instead of guessing an API contract.
+`SMA9_LIVE_ORDERS_ENABLED=true` and `SMA9_LIVE_ARM_REAL_ORDERS=ARMED`, plus the
+daemon opt-in above. The `MStockOrderExecutor` fails closed on any missing
+flag, invalid symbol, gateway error or missing broker order id, and posts a
+limit order exactly once (no implicit retry that could duplicate a fill).
+
+Read-only API namespace: `/api/sma9-live/*` (including `/orders`); page:
+`/live/sma9-live/`. Both are read-only and publish no source paths, keys or
+credentials.
 
 No credentials, keys or OTP/TOTP values are handled by the service; token
 refresh remains a manual operator step.

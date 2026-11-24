@@ -1,14 +1,22 @@
-"""Broker adapter contract. Read-only by design."""
+"""Broker adapter contract.
+
+The scanner surface is read-only by design. Order methods are *optional* and
+only implemented by adapters explicitly enabled for the isolated live service;
+the Kite-compatible shim still blocks every write-prefix method.
+"""
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+
+from broker_gateway.errors import BrokerGatewayError
 
 
 class BrokerAdapter(ABC):
     """Minimal read-only surface required by the scanners.
 
-    Deliberately excludes place_order/modify_order/cancel_order. Paper trading
-    remains simulated inside each scanner's own database.
+    Paper trading remains simulated inside each scanner's own database. The
+    optional order methods below are reachable only through the daemon's
+    gated order allowlist, never through the Kite compatibility shim.
     """
 
     name = "base"
@@ -40,3 +48,11 @@ class BrokerAdapter(ABC):
     def validate_credentials(self) -> None:
         """Raise if the current token is unusable. No-op by default."""
         return None
+
+    def place_order(self, **params) -> dict:
+        """Optional live order entry. Refused unless explicitly implemented."""
+        raise BrokerGatewayError(f"{self.name}: order placement is not available")
+
+    def order_status(self, **params) -> dict:
+        """Optional live order status lookup."""
+        raise BrokerGatewayError(f"{self.name}: order status is not available")

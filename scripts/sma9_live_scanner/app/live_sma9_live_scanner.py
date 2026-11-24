@@ -6,9 +6,10 @@ systemd unit and order ledger.  The signal logic is the same, but every entry
 and exit is submitted through ``app.live_execution`` which applies a kill
 switch, daily order cap, one-position-per-leg rule and price collar.
 
-IMPORTANT: the default executor is ``dry_run``.  Real orders remain disabled
-until the mStock order API contract is verified and wired; ``MStockOrderExecutor``
-fails closed.  No credentials, keys or OTP/TOTP values are read here.
+IMPORTANT: the default executor is ``dry_run``. Real mStock Type A orders are
+available only through the root-owned gateway and require both arm flags;
+``MStockOrderExecutor`` fails closed otherwise. No credentials, keys or
+OTP/TOTP values are read here.
 
 Polling is exactly every 5 seconds during market hours.  One batched quote
 call per poll provides NIFTY spot + both option LTPs; historical candles are
@@ -58,6 +59,7 @@ from app.live_execution import (  # noqa: E402
     kill_switch_active,
     make_client_order_id,
     real_orders_armed,
+    STATUS_FAILED,
     STATUS_REJECTED,
 )
 
@@ -726,7 +728,12 @@ class Sma9LiveScanner:
                                     candle_high=candle["high"] if candle else None,
                                     candle_low=candle["low"] if candle else None)
                 save_trade(trade)
-                self._place_order(pos, SELL, close_px, reason)
+                exit_order = self._place_order(pos, SELL, close_px, reason)
+                if (exit_order is None or exit_order.status in (
+                        STATUS_REJECTED, STATUS_FAILED)):
+                    logger.error(
+                        "CRITICAL: recovery SELL failed for %s %s; real position "
+                        "may still be open", opt, pos.tradingsymbol)
                 logger.info("Recovered %s position closed at %.2f pnl=%.2f",
                             opt, close_px, trade["pnl_points"])
 
@@ -897,7 +904,12 @@ class Sma9LiveScanner:
                     exit_px = round(float(ltp), 2)
                     trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
                     save_trade(trade)
-                    self._place_order(pos, SELL, exit_px, "TRAIL_STOP_EXIT")
+                    exit_order = self._place_order(pos, SELL, exit_px, "TRAIL_STOP_EXIT")
+                    if (exit_order is None or exit_order.status in (
+                            STATUS_REJECTED, STATUS_FAILED)):
+                        logger.error(
+                            "CRITICAL: exit SELL failed for %s %s; real position "
+                            "may still be open", opt, pos.tradingsymbol)
                     logger.info(
                         "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
@@ -905,7 +917,12 @@ class Sma9LiveScanner:
                 elif sl_hit is not None:
                     trade = state.close(now, sl_hit, "STOP_LOSS_5PCT")
                     save_trade(trade)
-                    self._place_order(pos, SELL, sl_hit, "STOP_LOSS_5PCT")
+                    exit_order = self._place_order(pos, SELL, sl_hit, "STOP_LOSS_5PCT")
+                    if (exit_order is None or exit_order.status in (
+                            STATUS_REJECTED, STATUS_FAILED)):
+                        logger.error(
+                            "CRITICAL: exit SELL failed for %s %s; real position "
+                            "may still be open", opt, pos.tradingsymbol)
                     logger.info(
                         "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_5PCT",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
@@ -927,15 +944,26 @@ class Sma9LiveScanner:
                         contract["tradingsymbol"], market_close_dt(now))
                     if new_pos is not None:
                         save_open_position(new_pos)
-                        self._place_order(new_pos, BUY, new_pos.entry_price,
-                                          "SMA9_ENTRY")
-                        entry_made = True
-                        self.last_order_block = None
-                        logger.info(
-                            "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s",
-                            opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
-                            new_pos.sma9, new_pos.condition_a, new_pos.condition_b,
-                            new_pos.entry_candle_start.isoformat())
+                        order = self._place_order(
+                            new_pos, BUY, new_pos.entry_price, "SMA9_ENTRY")
+                        if (order is None or order.status in (
+                                STATUS_REJECTED, STATUS_FAILED)):
+                            # Never keep a phantom open position: recovery on
+                            # restart would otherwise try to sell shares we do
+                            # not own. The ledger row retains the rejection.
+                            delete_open_position(new_pos.option_type)
+                            self.last_order_block = "ENTRY_ORDER_REJECTED"
+                            logger.error(
+                                "ENTRY ORDER FAILED for %s %s; position removed",
+                                opt, new_pos.tradingsymbol)
+                        else:
+                            entry_made = True
+                            self.last_order_block = None
+                            logger.info(
+                                "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s",
+                                opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
+                                new_pos.sma9, new_pos.condition_a, new_pos.condition_b,
+                                new_pos.entry_candle_start.isoformat())
 
             option_status[opt] = {
                 "tradingsymbol": contract["tradingsymbol"],
