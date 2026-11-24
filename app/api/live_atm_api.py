@@ -10,9 +10,10 @@ When a dashboard supplies ``?scanner=<key>``, the CE/PE instrument token and
 tradingsymbol are taken from that scanner's own heartbeat row.  This matters
 because mStock's weekly NIFTY symbols are not derivable from the ISO expiry
 alone (2026-12-01 is ``NIFTY26D01...``, while the derived ``NIFTY26DEC...``
-contract expires on 2026-12-29).  The legacy symbol derivation remains as a
-labelled fallback only.  No broker credentials, orders or write calls are
-involved.
+contract expires on 2026-12-29).  Without a scanner key, the contract is
+resolved from the mStock instrument master; the legacy symbol derivation is
+only a last-resort labelled fallback.  No broker credentials, orders or write
+calls are involved.
 """
 from __future__ import annotations
 
@@ -88,6 +89,11 @@ SCANNER_STATES: dict[str, tuple[str, str]] = {
 # Keyed by (scanner, expiry); scanner is "" when no scanner was supplied.
 _cache: dict[tuple[str, str], dict[str, Any]] = {}
 _last_good: dict[tuple[str, str], dict[str, Any]] = {}
+
+# Resolved master contracts are stable for a session; avoid re-serialising the
+# full NFO instrument master on every 10-second quote refresh.
+MASTER_CONTRACT_CACHE_SECONDS = 300
+_master_contract_cache: dict[tuple[str, float], dict[str, dict]] = {}
 
 
 def _nearest_strike(spot: float) -> float:
@@ -193,6 +199,54 @@ def _as_int(value: Any) -> int | None:
     return int(number) if number is not None else None
 
 
+def _instrument_master_contracts(
+    broker: str, expiry: str, atm: float
+) -> tuple[dict[str, dict], str] | None:
+    """Resolve CE/PE tokens from mStock's master for callers without a scanner."""
+    key = (expiry, atm)
+    cached = _master_contract_cache.get(key)
+    if cached and time.monotonic() - cached["at"] < MASTER_CONTRACT_CACHE_SECONDS:
+        return {opt: dict(contract) for opt, contract in cached["contracts"].items()}, (
+            "instrument_master"
+        )
+
+    try:
+        rows = call(broker, "instruments", exchange="NFO") or []
+    except Exception:
+        return None
+
+    contracts: dict[str, dict] = {}
+    for row in rows:
+        if not isinstance(row, dict):
+            continue
+        symbol = str(row.get("tradingsymbol") or "").strip()
+        if not symbol.startswith("NIFTY"):
+            continue
+        opt = str(row.get("instrument_type") or "").strip().upper()
+        if opt not in ("CE", "PE"):
+            continue
+        if _as_float(row.get("strike")) != atm:
+            continue
+        if expiry and str(row.get("expiry") or "").strip() != str(expiry):
+            continue
+        token = _as_int(row.get("instrument_token"))
+        if token is None:
+            continue
+        contracts[opt] = {
+            "quote_key": str(token),
+            "symbol": symbol,
+            "token": token,
+            "strike": atm,
+            "expiry": expiry,
+        }
+
+    if set(contracts) != {"CE", "PE"}:
+        return None
+
+    _master_contract_cache[key] = {"at": time.monotonic(), "contracts": contracts}
+    return contracts, "instrument_master"
+
+
 def _heartbeat_contracts(
     scanner: str, expiry: str, atm: float
 ) -> tuple[dict[str, dict], str] | None:
@@ -281,7 +335,11 @@ def _fresh_value(scanner: str, expiry: str) -> dict | None:
     if heartbeat:
         contracts, contract_source = heartbeat
     else:
-        contracts, contract_source = _derived_contracts(expiry, atm)
+        master = _instrument_master_contracts(broker, expiry, atm)
+        if master:
+            contracts, contract_source = master
+        else:
+            contracts, contract_source = _derived_contracts(expiry, atm)
 
     wanted = sorted({c["quote_key"] for c in contracts.values()})
     option_quotes: dict[str, dict] = {}
