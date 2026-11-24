@@ -46,5 +46,5 @@ systemctl restart tradingai-broker-gateway.service
 
 echo "Installed broker gateway $DEST"
 echo "Scanner code was not changed. Restart a scanner only after selecting its broker:"
-echo "  sudo broker-gateway use --scanner sma9_1min_poll --broker mstock"
-echo "  sudo systemctl restart tradingai-sma9-1min-poll-scanner"
+echo "  sudo broker-gateway use --scanner sma9_atr --broker mstock"
+echo "  sudo systemctl restart tradingai-sma9-atr-scanner"

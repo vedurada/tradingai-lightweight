@@ -42,8 +42,8 @@ puts the shim on every Python process's path. It does **not** restart scanners.
 ```bash
 sudo broker-gateway adapters
 sudo broker-gateway status
-sudo broker-gateway use --scanner sma9_1min_poll --broker mstock
-sudo systemctl restart tradingai-sma9-1min-poll-scanner
+sudo broker-gateway use --scanner sma9_atr --broker mstock
+sudo systemctl restart tradingai-sma9-atr-scanner
 ```
 
 Config lives at `/opt/tradingai/broker_gateway/config/scanners.json` and

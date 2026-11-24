@@ -164,5 +164,4 @@ The unit is enabled, `Restart=always`, and in `ALL_UNITS` of
   it has no regime gate.
 - The retired `sma9_slope_atr` also used the ATR distance as its trail width at
   a 5-second cadence, but had no regime gate (see [`retired.md`](retired.md)).
-- `sma9_1min_poll` uses the same ATR stop and ATR-only trail at a 5-second cadence, but has no regime gate.
 - All other scanners are untouched by v1.1.0.

@@ -19,7 +19,6 @@ IST = ZoneInfo("Asia/Kolkata")
 SCANNERS = (
     ("sma9", "SMA9_DB_PATH"),
     ("sma9_5min", "SMA9_5MIN_DB_PATH"),
-    ("sma9_1min_poll", "SMA9_1MIN_POLL_DB_PATH"),
     ("sma9_atr", "SMA9_ATR_DB_PATH"),
     ("sma9_trail", "SMA9_TRAIL_DB_PATH"),
     ("sma9_adx", "SMA9_ADX_DB_PATH"),

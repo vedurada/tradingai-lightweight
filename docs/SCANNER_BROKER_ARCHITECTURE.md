@@ -71,9 +71,8 @@ flowchart TB
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
 | `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
 | `sma9_high_trail` | `live_sma9_high_trail_scanner.py` | `tradingai-sma9_high_trail-scanner` | `sma9trailhigh` | `/opt/tradingai/database/sma9_high_trail.db` | `/api/sma9-high-trail/scanner-status` |
-| `sma9_1min_poll` | `live_sma9_1min_poll_scanner.py` | `tradingai-sma9-1min-poll-scanner` | `sma91m` | `/opt/tradingai/database/sma9_1min_poll.db` | `/api/sma9-1min-poll/scanner-status` |
 
-All eight deployed scanners resolve to broker `mstock`. The eight SMA routes are served
+All seven deployed scanners resolve to broker `mstock`. The seven SMA routes are served
 by `app.api.app:app` under gunicorn.
 
 ## 3. How a scanner picks its broker
@@ -101,11 +100,11 @@ Selection commands:
 ```bash
 sudo broker-gateway adapters
 sudo broker-gateway status
-sudo broker-gateway use --scanner sma9_1min_poll --broker mstock
-sudo systemctl restart tradingai-sma9-1min-poll-scanner
+sudo broker-gateway use --scanner sma9_atr --broker mstock
+sudo systemctl restart tradingai-sma9-atr-scanner
 ```
 
-Only the restarted scanner picks up the change; the other seven keep running.
+Only the restarted scanner picks up the change; the other six keep running.
 
 ## 4. The read-only boundary
 

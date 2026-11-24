@@ -95,24 +95,6 @@
         "Earlier-session positions are closed on startup at the current LTP with reason STALE_RECOVERY_EXIT."
       ]
     },
-    "sma9-1min-poll": {
-      "title": "SMA9 1-min identity, 5-second ATR poll",
-      "entry": [
-        "Previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9. No rising-SMA9 filter, no regime gate and no LTP > SMA9 gate.",
-        "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
-      ],
-      "exit": [
-        "ATR(14) of the bought option's completed 5-minute premium candles; distance = 0.70 x ATR, floored at 5% and capped at 30% of entry (10% fallback with fewer than 15 completed bars).",
-        "Initial stop = entry - distance; breach closes at the actual sampled LTP, reason STOP_LOSS_ATR.",
-        "Trail activates on any new high above entry and ratchets to max(stop, HWM - distance) with the distance frozen at entry; no +5 activation and no breakeven lock. Exit at sampled LTP, reason TRAIL_STOP_EXIT.",
-        "No target, candle-close or time-based exit."
-      ],
-      "scope": [
-        "Despite the name, the scanner polls every 5 seconds; the original 1-minute identity, DB, service, API and page are retained.",
-        "Signal candles are 5-minute option-premium bars, forming candle must be current.",
-        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option."
-      ]
-    },
     "sma9-5min": {
       "title": "SMA9 5-minute poll",
       "entry": [

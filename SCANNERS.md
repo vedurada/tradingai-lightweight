@@ -1,22 +1,23 @@
 # TradingAI Paper Scanners — Master Documentation
 
-Complete reference for the 8 paper scanners running on the TradingAI VM:
-8 BUY-only NIFTY option-premium scanners are active. `sma9_5min` is deployed at
+Complete reference for the 7 paper scanners running on the TradingAI VM:
+7 BUY-only NIFTY option-premium scanners are active. `sma9_5min` is deployed at
 `/live/sma9-5min/`, and `sma9_adx` is deployed at `/live/sma9-adx/`. Five option scanners use a fixed 5%
-stop; `sma9_adx` also uses a fixed 5% HWM trail; `sma9_atr` and `sma9_1min_poll`
-use a volatility-scaled **premium** ATR stop and ATR-only trail
+stop; `sma9_adx` also uses a fixed 5% HWM trail; `sma9_atr`
+uses a volatility-scaled **premium** ATR stop and ATR-only trail
 (no +5 activation and no breakeven lock). `sma9_atr` also gates entries on a
 daily NIFTY spot regime.
-Seven active scanners poll every 5 seconds; the staged
+Six active scanners poll every 5 seconds; the staged
 `sma9_5min` uses an aligned 5m cadence but keeps `sma9`'s sampled-LTP
 stop/trail rules.
 
-`green15`, `no_sma`, `no_sma_trail` and `sma9_slope_atr` are retired: stopped,
-disabled on boot, removed from the launcher (and `no_sma` / `no_sma_trail` /
-`sma9_slope_atr` from the performance report); their slots are not restarted.
-Their API namespaces return 404. Code trees and DBs remain on disk as archives;
-the `sma9_slope_atr` paper position was closed at the sampled LTP before
-retirement and its archive is `archives/sma9_slope_atr_20261124/`.
+`green15`, `no_sma`, `no_sma_trail`, `sma9_slope_atr` and `sma9_1min_poll` are
+retired: stopped, disabled on boot, removed from the launcher (and from the
+performance report); their slots are not restarted. Their API namespaces
+return 404. Code trees and DBs remain on disk as archives; the
+`sma9_slope_atr` paper position was closed at the sampled LTP before
+retirement and its archive is `archives/sma9_slope_atr_20261124/`. The
+`sma9_1min_poll` archive is `archives/sma9_1min_poll_20261124/`.
 
 > **Paper trading only.** No scanner can place a broker order. There is no
 > `place_order` call, no order id, and no broker write path anywhere in this
@@ -30,7 +31,6 @@ retirement and its archive is `archives/sma9_slope_atr_20261124/`.
 |---|---|---|---|---|
 | 1 | `sma9` | Base SMA | prev close > SMA9 **and** forming open > SMA9 | trail stop, then 5% stop; otherwise hold |
 | 2 | `sma9_high` | HIGH | prev close > SMA9 **and** forming open > SMA9 **and** LTP > prev candle high | trail stop, then 5% stop; otherwise hold |
-| 3 | `sma9_1min_poll` | SMA9 1-min poll identity | prev close > SMA9 **and** forming open > SMA9, polled every 5s | ATR trail, then ATR-scaled stop (both fill at the live LTP); otherwise hold |
 | 4 | `sma9_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 5 | `sma9_high_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9 & LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 7 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
@@ -40,13 +40,11 @@ The `sma9_5min` identity is deployed: it is an isolated copy of `sma9`
 whose only behavioural change is an aligned 5-minute poll. `sma9_adx`
 adds a Wilder ADX(14) > 30 and +DI > -DI trend filter and a 5% HWM trailing stop (see §5.8).
 
-There is **no time-based exit** on any of the 8 scanners: if neither the trail
+There is **no time-based exit** on any of the 7 scanners: if neither the trail
 nor the stop fires, the position stays open across candles (including overnight)
 until one of them does.
 `sma9_atr` adds a daily spot-regime entry gate and replaces both the initial
-stop and the trail with the frozen ATR distance (see §5.6);
-`sma9_1min_poll` keeps its original identity and A+B entry
-but now uses the same ATR stop/trail at 5-second cadence (see §5.3). No scanner
+stop and the trail with the frozen ATR distance (see §5.6). No scanner
 has a 60-second poll anymore.
 
 Each of the 7 premium scanners is a **fully independent stack**: own code
@@ -224,8 +222,8 @@ Environment=PYTHONPATH=/opt/tradingai/<key>_lib
 ```
 
 `PYTHONPATH` is `<key>_scanner` (not `_lib`) for the self-contained scanners
-that carry their engine in the tree: `sma9_atr` and `sma9_1min_poll` use only
-that path (they rely on the system Python for `kiteconnect`).
+that carry their engine in the tree: `sma9_atr` uses only
+that path (it relies on the system Python for `kiteconnect`).
 
 and runs:
 
@@ -265,7 +263,6 @@ boundary +10 s with `POLL_SECONDS = 300` and `POLL_OFFSET_SEC = 10`.
 | `sma9_5min` (staged) | `sma9_5min` | `SMA9_5MIN_BUY_ONLY` | 1.0.0 | 9 | — | 5m +10 s | `sma95min` | `tradingai-sma9-5min-scanner` |
 | `sma9_atr` | `sma9_atr` | `SMA9_ATR_STOP_BUY_ONLY` | 1.1.0 | 9 | ATR / none | 0 | `sma9` | `tradingai-sma9-atr-scanner` |
 | `sma9_high` | `sma9_high` | `SMA9_HIGH_BUY_ONLY` | 1.8.0 | 9 | — | 2.4 | `sma9high` | `tradingai-sma9-high-scanner` |
-| `sma9_1min_poll` | `sma9_1min_poll` | `SMA9_1MIN_POLL_BUY_ONLY` | 1.1.0 | 9 | ATR / none | 0 | `sma91m` | `tradingai-sma9-1min-poll-scanner` |
 | `sma9_trail` | `sma9_trail` | `SMA_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 1.2 | `sma9trail` | `tradingai-sma9_trail-scanner` |
 | `sma9_high_trail` | `sma9_high_trail` | `SMA_HIGH_BUY_ONLY` | 2.1.0 | 9 | 5.0 / 5.0 | 3.0 | `sma9trailhigh` | `tradingai-sma9_high_trail-scanner` |
 
@@ -282,11 +279,11 @@ activate at +5 pts (stop → entry), ratchet `peak − 5` on the premium high-wa
 mark (the same rule for CE and PE, because both are bought long and profit when
 premium rises), one-time breakeven lock at +6 (stop ≥ entry + 2). The trail exit
 is evaluated first; the 5% stop is the additional floor. `sma9_atr`
-and `sma9_1min_poll` replace the 5% floor with an ATR-scaled stop
-(`STOP_LOSS_ATR`, filled at the live LTP). Both v1.1.0 ATR scanners drop
-the fixed +5 activation / BE lock and trail by the frozen ATR distance.
+replaces the 5% floor with an ATR-scaled stop
+(`STOP_LOSS_ATR`, filled at the live LTP). The v1.1.0 ATR scanner drops
+the fixed +5 activation / BE lock and trails by the frozen ATR distance.
 `sma9_atr` gates new entries on the 15-minute-refreshed NIFTY spot regime
-(§5.6); `sma9_1min_poll` keeps A+B only (§5.3).
+(§5.6).
 
 The seven premium scanners use `/opt/tradingai/database/<key>.db`,
 `/api/<slug>/` (slug = key with `_` → `-`) and
@@ -360,30 +357,6 @@ must break the previous candle high. There is **no separate LTP > SMA
 confirmation gate**.
 
 Exit: same trail-first, then fixed 5% stop as the base SMA scanners.
-
-### 5.3 SMA9 5s poll identity (`sma9_1min_poll`)
-
-```
-signal = prev.close > SMA9 AND forming.open > SMA9
-poll   = every 5 seconds, aligned to the 5-second boundary
-entry  = paper BUY at round(LTP, 2)
-exit   = ATR trail, then ATR-scaled stop (`STOP_LOSS_ATR`),
-         both filled at the ACTUAL live LTP;
-         no candle-close or time-based exit
-```
-
-The identity (id, DB, service, user, API and page) is unchanged from the
-original 60-second scanner. v1.1.0 only changes cadence and exits: the ATR stop
-is `clamp(0.70 × ATR14, 5%, 30% of entry)` and the trail is `peak − distance`
-with no fixed +5 activation and no breakeven lock. Entry is still A+B only: no
-LTP gate, no rising-SMA9 filter and no regime gate. The scanner refuses to
-treat the previous completed candle as forming when the exchange has not
-published the current 5-minute candle yet. At most one entry per 5-minute
-candle; entry window 09:20–15:15.
-
-It replaced the retired `no_sma` (previous-high breakout) scanner on
-2026-11-19. `no_sma` history stays in `database/no_sma.db` and its page stays
-on disk, but it is no longer on the launcher or the performance report.
 
 ### 5.4 Trail (`*_trail`)
 
@@ -560,9 +533,9 @@ and `adx_threshold`, plus per-option `plus_di` / `minus_di`; open positions and 
 
 ### 5.9 Live dashboard strategy-rules panel
 
-All eight live scanner pages (`sma9`, `sma9-high`, `sma9-trail`,
-`sma9-high-trail`, `sma9-atr`, `sma9-1min-poll`, `sma9-5min`,
-`sma9-adx`) render a **Strategy rules (live)** panel.
+All seven live scanner pages (`sma9`, `sma9-high`, `sma9-trail`,
+`sma9-high-trail`, `sma9-atr`, `sma9-5min`, `sma9-adx`) render a
+**Strategy rules (live)** panel.
 The panel is display-only: it never contains prices, quotes, signals or any
 live trading state.
 
@@ -612,7 +585,7 @@ Family-specific columns:
 | HIGH | `sma_value`, `prev_high`, `condition_a`, `condition_b`, `condition_c` |
 | NO-SMA / prev-high | `prev_high`, `breakout` (retired `no_sma` and `no_sma_trail`; archive DBs only) |
 | Trail | `prev_high`, `breakout`, and `hwm`, `stop`, `be_locked` in `open_positions`; `consumed_base_trades` is a legacy artefact and is not used by current logic |
-| ATR stop (`sma9_atr`, `sma9_1min_poll`) | `atr_at_entry`, `stop_price`, `stop_k`, `stop_distance_pct`, `stop_source`, `trail_distance` (both ATR scanners). |
+| ATR stop (`sma9_atr`) | `atr_at_entry`, `stop_price`, `stop_k`, `stop_distance_pct`, `stop_source`, `trail_distance` (ATR scanner). |
 
 `exit_reason` is `STOP_LOSS_5PCT` or `TRAIL_STOP_EXIT` for the four fixed-stop
 premium scanners, and `STOP_LOSS_ATR` or `TRAIL_STOP_EXIT` for the two ATR
@@ -647,13 +620,11 @@ GET /api/<slug>/open-positions
 ```
 
 The full 9-endpoint set is served for `sma9`, `sma9-high`, `sma9-trail` and
-`sma9-high-trail`. The three newer scanners (`sma9-atr`, `sma9-1min-poll`,
-`sma9-5min`) expose the same set **except `legacy-audit`** (8 endpoints):
-`signals`, `trades`, `daily-summary`, `scanner-status`, `live-status`,
-`recent-trades`, `today`, `open-positions`. They read
-`database/sma9_atr.db`, `database/sma9_1min_poll.db` and
-`database/sma9_5min.db` respectively; the scanner
-is the only writer. The `sma9_5min` copy has the same 8-endpoint set deployed at
+`sma9-high-trail`. The two newer scanners (`sma9-atr`, `sma9-5min`) expose the same set
+**except `legacy-audit`** (8 endpoints): `signals`, `trades`,
+`daily-summary`, `scanner-status`, `live-status`, `recent-trades`, `today`,
+`open-positions`. They read `database/sma9_atr.db` and
+`database/sma9_5min.db` respectively; the scanner is the only writer. The `sma9_5min` copy has the same 8-endpoint set deployed at
 `/api/sma9-5min/*`, reading `database/sma9_5min.db` read-only; its scanner
 service is deployed and running.
 
@@ -678,11 +649,10 @@ curl -sk -H 'Host: tradingai.in' \
 | sma9_adx | https://tradingai.in/live/sma9-adx/ (deployed, scanner running) |
 | sma9_atr | https://tradingai.in/live/sma9-atr/ |
 | sma9_high | https://tradingai.in/live/sma9-high/ |
-| sma9_1min_poll | https://tradingai.in/live/sma9-1min-poll/ |
 | sma9_trail | https://tradingai.in/live/sma9-trail/ |
 | sma9_high_trail | https://tradingai.in/live/sma9-high-trail/ |
 
-All eight dashboards show **Last Closed Spot** and **Closed-Bar ATM** cards in
+All seven dashboards show **Last Closed Spot** and **Closed-Bar ATM** cards in
 addition to the live pair, which is labelled **NIFTY LTP (live)** /
 **ATM Strike (live)** to distinguish the broker's last-traded index price from
 the completed 5m close. These come from the most recent *completed*
@@ -716,10 +686,10 @@ bar-based, not live quotes.
 
 Every active scanner has a button on `https://tradingai.in/live/scalp/` — the
 buttons are `sma9`, `sma9-5min`, `sma9-adx`, `sma9-atr`, `sma9-high`,
-`sma9-1min-poll`, `sma9-trail`, `sma9-high-trail`. All eight
+`sma9-trail`, `sma9-high-trail`. All seven
 active pages share the same dark theme,
 badge/table styling, a `Back to Launcher` link, and auto-refresh without a page
-reload every 5 s. The `sma9-atr` and `sma9-1min-poll` pages show
+reload every 5 s. The `sma9-atr` page shows
 the entry ATR(14), the fixed ATR stop, the live ATR trail distance and an ATR
 stop preview for each ATM option; legacy BE-lock fields remain in the payload
 for compatibility but are always false and unused in v1.1.0.
@@ -755,7 +725,6 @@ a stale token.
 systemctl is-active tradingai-api \
   tradingai-sma9-scanner tradingai-sma9-atr-scanner \
   tradingai-sma9-high-scanner \
-  tradingai-sma9-1min-poll-scanner \
   tradingai-sma9_trail-scanner \
   tradingai-sma9_high_trail-scanner
 
@@ -773,7 +742,6 @@ not hit Kite at once:
 ```bash
 for u in tradingai-sma9-scanner tradingai-sma9-atr-scanner \
          tradingai-sma9-high-scanner \
-         tradingai-sma9-1min-poll-scanner \
          tradingai-sma9_trail-scanner \
          tradingai-sma9_high_trail-scanner; do
   sudo systemctl restart "$u"
@@ -791,8 +759,8 @@ systemctl show tradingai-sma9-scanner -p ActiveState -p NRestarts
 sudo journalctl --since '09:00' --no-pager \
   | grep -iE 'Incorrect api_key|Too many requests|readonly database|SSLEOF|Traceback'
 
-# all 7 premium-scanner APIs return 200
-for k in sma9 sma9-atr sma9-high sma9-1min-poll \
+# all remaining premium-scanner APIs return 200
+for k in sma9 sma9-atr sma9-high \
          sma9-trail sma9-high-trail; do
   printf '%s=%s ' "$k" "$(curl -sk -o /dev/null -w '%{http_code}' \
     -H 'Host: tradingai.in' "https://127.0.0.1/api/$k/scanner-status")"
@@ -819,7 +787,7 @@ The 7 active premium scanner directories are protected: `root:root`, files mode
 `444`, directories `555`. The original base/HIGH families (`sma9`, `sma9_high`)
 and their trail copies (`sma9_trail`, `sma9_high_trail`) additionally use
 `chattr +i` on every file and directory, with a SHA256 `MANIFEST.sha256` and an
-integrity timer. `sma9_atr` and `sma9_1min_poll` are installed
+integrity timer. `sma9_atr` is installed
 `root:root`, files `444`, directories `555`, without `chattr +i` or an
 integrity timer.
 
@@ -848,9 +816,9 @@ disk (it just no longer runs).
 
 ### 8.6 Rate-limit hygiene
 
-- Base plain scanners (`sma9`, `sma9_atr`, `sma9_1min_poll`):
+- Base plain scanners (`sma9`, `sma9_atr`):
   **2 quote calls per tick** — one spot-only refresh for ATM selection, plus
-  one batched spot+CE+PE quote. Offset 0. All three tick once every 5 seconds.
+  one batched spot+CE+PE quote. Offset 0. Both tick once every 5 seconds.
 - Base HIGH scanner (`sma9_high`): same **2-call** pattern, offset 2.4 s.
 - Trail scanners (`sma9_trail`, `sma9_high_trail`): self-contained since the
   2.1.0 rewrite — **1 batched spot+CE+PE quote per tick** plus historical
@@ -900,7 +868,7 @@ token.
 - **Fixed 5% stop on the four active fixed-stop scanners and staged
   `sma9_5min`.** Every position exits at `round(entry × 0.95, 2)` if LTP falls
   that far (`STOP_LOSS_5PCT`); the trail stop is the preferred, higher exit and
-  is evaluated first. `sma9_atr` and `sma9_1min_poll` use an ATR-scaled stop
+  is evaluated first. `sma9_atr` uses an ATR-scaled stop
   instead (see §5.6), filled at the live LTP. `sma9_atr` v1.1.0 also trails only at
   that ATR distance and gates entries on the daily spot regime; exits are never
   gated.
@@ -933,7 +901,7 @@ token.
 | Item | Location |
 |---|---|
 | GitHub repo | `vedurada/tradingai-lightweight`, branch `feature/zerodha-paper-trading` |
-| Newer scanner sources (git-tracked) | `scripts/sma9_atr_scanner/`, `scripts/sma9_1min_poll_scanner/`, `scripts/sma9_5min_scanner/` (staged) |
+| Newer scanner sources (git-tracked) | `scripts/sma9_atr_scanner/`, `scripts/sma9_5min_scanner/` (staged) |
 | Connectivity probe | `scripts/ops/kite_connectivity_probe.py` |
 | Per-scanner docs | `docs/scanners/` (this repo) |
 | Master doc | `SCANNERS.md` (this file) |
