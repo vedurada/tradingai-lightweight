@@ -919,9 +919,35 @@ flag, invalid symbol, unavailable lot size, gateway error or missing broker
 order id, and posts a MARKET order exactly once (no implicit retry that could
 duplicate a fill).
 
-Read-only API namespace: `/api/sma9-live/*` (including `/orders`); page:
-`/live/sma9-live/`. Both are read-only and publish no source paths, keys or
-credentials.
+### Real-trade lifecycle and broker reconciliation
+
+An order is **never** treated as filled just because the submit succeeded. The
+scanner runs a read-only reconciliation pass on every poll (also when the
+market is closed, so exits from an earlier session are still checked):
+
+| Position state | Meaning | Allowed action |
+|---|---|---|
+| `PENDING_FILL` | BUY submitted, broker fill not yet confirmed | no exits, no new entry in that leg |
+| `ACTIVE` | BUY `FILLED` confirmed at the broker | trailing stop / 5% SL exits enabled |
+| `EXIT_PENDING` | SELL submitted, broker fill not yet confirmed | no duplicate SELL, no new entry |
+| `ENTRY_UNCONFIRMED` | BUY submit failed; broker outcome unknown | no auto-retry; manual verification |
+| `EXIT_FAILED` | SELL rejected/cancelled or submit failed | no auto-retry; manual verification |
+
+`reconcile_orders()` polls `order_status` through the gateway for every real
+order still in `NEW`/`ACCEPTED`, writes `broker_status` / `status_checked_at` /
+`reconcile_attempts` back to the ledger, and appends events to
+`sma9_live_lifecycle_events`. A confirmed BUY fill activates the position; a
+rejected/cancelled BUY removes the phantom position. A position is closed and
+its trade recorded **only after** the SELL is confirmed `FILLED`; a rejected or
+cancelled SELL keeps the position in `EXIT_FAILED` and logs `CRITICAL`. There is
+never an automatic re-submission. After
+`SMA9_LIVE_RECONCILE_MAX_ATTEMPTS` (default 120) unresolved checks, a
+`RECONCILE_STALE` critical event is recorded.
+
+Read-only API namespace: `/api/sma9-live/*` (including `/orders` and the new
+`/reconciliation` view of pending fills, lifecycle states and audit events);
+page: `/live/sma9-live/`. Both are read-only and publish no source paths, keys
+or credentials.
 
 No credentials, keys or OTP/TOTP values are handled by the service; token
 refresh remains a manual operator step.

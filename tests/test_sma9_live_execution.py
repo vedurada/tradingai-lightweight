@@ -322,3 +322,160 @@ def test_mstock_executor_maps_order_status(execution):
     assert ex.order_status(record) == execution.STATUS_FILLED
     assert ex.order_status(record) == execution.STATUS_REJECTED
     assert ex.order_status(record) == execution.STATUS_ACCEPTED
+
+
+# --- real-trade lifecycle reconciliation ---------------------------------
+class FakeStatusExecutor:
+    """Read-only fake broker: exposes order_status but no place method."""
+
+    name = "mstock"
+
+    def __init__(self, statuses):
+        self.statuses = list(statuses)
+        self.polled = []
+
+    def order_status(self, record):
+        self.polled.append(record.client_order_id)
+        return self.statuses.pop(0) if self.statuses else execution.STATUS_ACCEPTED
+
+
+def _reconcile_position(mod, trade_id, side_status, lifecycle, **overrides):
+    """Persist an ACCEPTED real order plus its matching open position."""
+    ts = mod.now_ist()
+    base = dict(
+        option_type="CE", trade_id=trade_id, strike=20000.0,
+        expiry="2026-09-24", token=12345, tradingsymbol="NIFTY26SEP20000CE",
+        entry_timestamp=ts, entry_candle_start=ts, entry_candle_end=ts,
+        entry_price=100.0, sma9=99.0, prev_close=99.0, current_open=100.0,
+        condition_a=True, condition_b=True, ltp_at_entry=100.0,
+        hwm=100.0, stop=None, be_locked=False, lifecycle_state=lifecycle,
+    )
+    base.update(overrides)
+    pos = mod.Position(**base)
+    mod.save_open_position(pos)
+    scanner = mod.Sma9LiveScanner(feed=None)
+    scanner.states["CE"].restore(pos)
+    return scanner, pos
+
+
+def _accepted_order(execution, trade_id, side, **overrides):
+    base = dict(
+        client_order_id=execution.make_client_order_id(trade_id, side),
+        trade_id=trade_id, option_type="CE", side=side,
+        symbol="NFO:NIFTY26SEP20000CE", token=12345, quantity=65,
+        intended_price=105.0, limit_price=106.0, collar_pct=1.0,
+        reason="SMA9_ENTRY" if side == "BUY" else "TRAIL_STOP_EXIT",
+        dry_run=False, status=execution.STATUS_ACCEPTED,
+        broker_order_id=f"BROKER-{side}",
+    )
+    base.update(overrides)
+    return execution.OrderRecord(**base)
+
+
+def test_buy_fill_confirmation_activates_position(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RECON-BUY"
+    scanner, _ = _reconcile_position(
+        mod, trade_id, "BUY", mod.LIFECYCLE_PENDING)
+    mod.save_order_record(_accepted_order(execution, trade_id, "BUY"))
+    fake = FakeStatusExecutor([execution.STATUS_ACCEPTED, execution.STATUS_FILLED])
+    monkeypatch.setattr(mod, "EXECUTOR", fake)
+
+    # First pass leaves it pending; the next consumes the FILLED status.
+    assert scanner.reconcile_orders()["pending"] == 1
+    assert scanner.reconcile_orders()["filled"] == 1
+    assert fake.polled == [execution.make_client_order_id(trade_id, "BUY")] * 2
+    row = mod.order_status_for(trade_id, "BUY")
+    assert row["status"] == execution.STATUS_FILLED
+    assert row["broker_status"] == execution.STATUS_FILLED
+    assert scanner.states["CE"].position.lifecycle_state == mod.LIFECYCLE_ACTIVE
+    assert mod.load_open_positions()["CE"].lifecycle_state == mod.LIFECYCLE_ACTIVE
+    assert not mod.pending_order_rows()
+
+
+def test_buy_rejection_removes_phantom_position(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RECON-PHANTOM"
+    scanner, _ = _reconcile_position(
+        mod, trade_id, "BUY", mod.LIFECYCLE_PENDING)
+    mod.save_order_record(_accepted_order(execution, trade_id, "BUY"))
+    monkeypatch.setattr(mod, "EXECUTOR",
+                        FakeStatusExecutor([execution.STATUS_REJECTED]))
+
+    assert scanner.reconcile_orders()["rejected"] == 1
+    assert mod.load_open_positions().get("CE") is None
+    assert scanner.states["CE"].position is None
+    assert mod.order_status_for(trade_id, "BUY")["status"] == (
+        execution.STATUS_REJECTED)
+
+
+def test_sell_fill_confirmation_closes_trade_once(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RECON-EXIT"
+    scanner, _ = _reconcile_position(
+        mod, trade_id, "SELL", mod.LIFECYCLE_EXIT_PENDING)
+    mod.save_order_record(_accepted_order(execution, trade_id, "SELL"))
+    monkeypatch.setattr(mod, "EXECUTOR",
+                        FakeStatusExecutor([execution.STATUS_FILLED]))
+
+    assert scanner.reconcile_orders()["filled"] == 1
+    assert mod.load_open_positions().get("CE") is None
+    assert scanner.states["CE"].position is None
+    trades = mod.today_stats(mod.now_ist().date().isoformat())
+    assert trades["trades"] == 1
+    assert trades["pnl_points"] == 5.0  # 105 exit - 100 entry
+    # A second pass must not close or duplicate the trade.
+    assert scanner.reconcile_orders()["checked"] == 0
+    assert mod.today_stats(mod.now_ist().date().isoformat())["trades"] == 1
+
+
+def test_sell_cancellation_keeps_position_and_does_not_retry(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RECON-CANCEL"
+    scanner, _ = _reconcile_position(
+        mod, trade_id, "SELL", mod.LIFECYCLE_EXIT_PENDING)
+    mod.save_order_record(_accepted_order(execution, trade_id, "SELL"))
+    monkeypatch.setattr(mod, "EXECUTOR",
+                        FakeStatusExecutor([execution.STATUS_CANCELLED]))
+
+    assert scanner.reconcile_orders()["rejected"] == 1
+    assert mod.load_open_positions()["CE"].lifecycle_state == (
+        mod.LIFECYCLE_EXIT_FAILED)
+    assert scanner.states["CE"].position.lifecycle_state == (
+        mod.LIFECYCLE_EXIT_FAILED)
+    assert mod.today_stats(mod.now_ist().date().isoformat())["trades"] == 0
+    # No blind resubmission: the ledger still has exactly one SELL and it is
+    # now terminal (CANCELLED), so it is no longer polled.
+    with mod.db_conn() as conn:
+        sells = conn.execute(
+            "SELECT status FROM sma9_live_orders WHERE trade_id = ? "
+            "AND side = 'SELL'", (trade_id,)).fetchall()
+    assert [r["status"] for r in sells] == [execution.STATUS_CANCELLED]
+    assert not mod.pending_order_rows()
+    assert not hasattr(mod.EXECUTOR, "place")
+
+
+def test_reconciliation_audits_events_and_ignores_dry_run(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RECON-EVENT"
+    scanner, _ = _reconcile_position(
+        mod, trade_id, "BUY", mod.LIFECYCLE_PENDING)
+    mod.save_order_record(_accepted_order(execution, trade_id, "BUY"))
+    dry = _order(execution, client_order_id="S9L-BUY-DRY",
+                 trade_id="S9L-DRY", broker_order_id="DRY-1")
+    mod.save_order_record(dry)
+    scanner._apply_submit_result(_accepted_order(execution, trade_id, "BUY"))
+    fake = FakeStatusExecutor([execution.STATUS_FILLED])
+    monkeypatch.setattr(mod, "EXECUTOR", fake)
+
+    scanner.reconcile_orders()
+    assert fake.polled == [execution.make_client_order_id(trade_id, "BUY")]
+    with mod.db_conn() as conn:
+        events = [dict(r) for r in conn.execute(
+            "SELECT event FROM sma9_live_lifecycle_events ORDER BY id")]
+    assert [e["event"] for e in events] == ["ORDER_SUBMITTED", "BUY_FILL_CONFIRMED"]

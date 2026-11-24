@@ -53,6 +53,15 @@
 </section>
 
 <section class="section">
+  <h2>Broker reconciliation</h2>
+  <div class="stats" id="recon"></div>
+  <h2 style="margin-top:.8rem">Pending fills</h2>
+  <div id="pending"></div>
+  <h2 style="margin-top:.8rem">Lifecycle events</h2>
+  <div id="events"></div>
+</section>
+
+<section class="section">
   <h2>Open positions</h2>
   <div id="positions"></div>
 </section>
@@ -86,11 +95,12 @@ async function getJson(path) {
 
 async function refresh() {
   try {
-    const [status, orders, positions, trades] = await Promise.all([
+    const [status, orders, positions, trades, recon] = await Promise.all([
       getJson('/api/sma9-live/scanner-status'),
       getJson('/api/sma9-live/orders?limit=100'),
       getJson('/api/sma9-live/open-positions'),
       getJson('/api/sma9-live/today'),
+      getJson('/api/sma9-live/reconciliation'),
     ]);
     const h = status.health || {};
     const exec = status.execution || {};
@@ -115,14 +125,36 @@ async function refresh() {
       card('Last block', exec.last_block || 'none'),
     ].join('');
 
+    const r = recon.summary || {};
+    document.getElementById('recon').innerHTML = [
+      card('Polling', r.enabled ? 'ON' : 'OFF'),
+      card('Last check', (r.at || '--').slice(11, 19)),
+      card('Checked', r.checked ?? 0),
+      card('Fills confirmed', r.filled ?? 0),
+      card('Rejected', r.rejected ?? 0),
+      card('Still pending', r.pending ?? 0),
+      card('Status errors', r.errors ?? 0),
+    ].join('');
+    document.getElementById('pending').innerHTML = table(recon.pending_orders, [
+      ['created_at', 'Time'], ['side', 'Side'], ['symbol', 'Symbol'],
+      ['status', 'Local'], ['broker_status', 'Broker'],
+      ['broker_order_id', 'Broker ID', 'mono'],
+      ['reconcile_attempts', 'Checks'], ['last_error', 'Error'],
+    ]);
+    document.getElementById('events').innerHTML = table(recon.lifecycle_events, [
+      ['created_at', 'Time'], ['side', 'Side'], ['trade_id', 'Trade', 'mono'],
+      ['event', 'Event'], ['detail', 'Detail'],
+    ]);
     document.getElementById('orders').innerHTML = table(orders.orders, [
       ['created_at', 'Time'], ['client_order_id', 'Client ID', 'mono'],
       ['side', 'Side'], ['symbol', 'Symbol'], ['quantity', 'Qty'],
-      ['limit_price', 'Collar ref'], ['status', 'Status'], ['broker_order_id', 'Broker ID', 'mono'],
+      ['limit_price', 'Collar ref'], ['status', 'Status'],
+      ['broker_status', 'Broker'], ['broker_order_id', 'Broker ID', 'mono'],
     ]);
     document.getElementById('positions').innerHTML = table(positions.positions, [
       ['option_type', 'Leg'], ['tradingsymbol', 'Symbol', 'mono'],
-      ['strike', 'Strike'], ['entry_price', 'Entry'], ['stop', 'Stop'], ['hwm', 'HWM'],
+      ['lifecycle_state', 'Lifecycle'], ['strike', 'Strike'],
+      ['entry_price', 'Entry'], ['stop', 'Stop'], ['hwm', 'HWM'],
     ]);
     document.getElementById('trades').innerHTML = table(trades.trades, [
       ['signal_timestamp', 'Signal'], ['option_type', 'Leg'], ['entry_price', 'Entry'],

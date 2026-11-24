@@ -216,6 +216,42 @@ def orders():
         return jsonify({"success": False, "orders": [], "error": str(exc)}), 500
 
 
+@bp.route("/api/sma9-live/reconciliation", methods=["GET"])
+def reconciliation():
+    """Read-only view of broker fill monitoring and lifecycle audit events."""
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        with closing(_conn()) as conn:
+            pending = [dict(r) for r in conn.execute(
+                """SELECT client_order_id, trade_id, option_type, side, symbol,
+                          quantity, status, broker_status, broker_order_id,
+                          status_checked_at, reconcile_attempts, last_error,
+                          created_at
+                   FROM sma9_live_orders
+                   WHERE dry_run = 0 AND broker_order_id IS NOT NULL
+                     AND status IN ('NEW', 'ACCEPTED')
+                   ORDER BY created_at DESC LIMIT ?""", (limit,))]
+            events = [dict(r) for r in conn.execute(
+                """SELECT * FROM sma9_live_lifecycle_events
+                   ORDER BY id DESC LIMIT ?""", (limit,))]
+            positions = [dict(r) for r in conn.execute(
+                """SELECT option_type, trade_id, lifecycle_state, updated_at
+                   FROM sma9_live_open_positions ORDER BY option_type""")]
+        state = _live_state()
+        return jsonify({
+            "success": True,
+            "summary": state.get("execution", {}).get("reconciliation", {}),
+            "pending_orders": pending,
+            "lifecycle_events": events,
+            "positions": positions,
+        })
+    except Exception as exc:
+        return jsonify({
+            "success": False, "summary": {}, "pending_orders": [],
+            "lifecycle_events": [], "positions": [], "error": str(exc),
+        }), 500
+
+
 @bp.route("/api/sma9-live/scanner-status", methods=["GET"])
 def scanner_status():
     state = _live_state()
@@ -239,6 +275,7 @@ def scanner_status():
         "options": state.get("options", {}),
         "today": state.get("today", {}),
         "execution": state.get("execution", {}),
+        "reconciliation": state.get("execution", {}).get("reconciliation", {}),
         "errors": state.get("errors", []),
     })
 

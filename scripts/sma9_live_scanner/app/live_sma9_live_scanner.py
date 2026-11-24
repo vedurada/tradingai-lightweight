@@ -62,9 +62,26 @@ from app.live_execution import (  # noqa: E402
     make_client_order_id,
     price_collar_breached,
     real_orders_armed,
+    STATUS_ACCEPTED,
+    STATUS_CANCELLED,
+    STATUS_DRY_RUN,
     STATUS_FAILED,
+    STATUS_FILLED,
+    STATUS_NEW,
     STATUS_REJECTED,
 )
+
+# Position lifecycle states, persisted alongside the open position.
+LIFECYCLE_PENDING = "PENDING_FILL"
+LIFECYCLE_ACTIVE = "ACTIVE"
+LIFECYCLE_EXIT_PENDING = "EXIT_PENDING"
+LIFECYCLE_ENTRY_UNCONFIRMED = "ENTRY_UNCONFIRMED"
+LIFECYCLE_EXIT_FAILED = "EXIT_FAILED"
+
+FILLED_STATUSES = frozenset({STATUS_FILLED, STATUS_DRY_RUN})
+PENDING_STATUSES = frozenset({STATUS_NEW, STATUS_ACCEPTED})
+FAILED_STATUSES = frozenset({STATUS_REJECTED, STATUS_CANCELLED, STATUS_FAILED})
+ENABLED_FLAG = {"1", "true", "yes", "on"}
 
 IST = ZoneInfo("Asia/Kolkata")
 DB_PATH = os.environ.get(
@@ -99,6 +116,15 @@ def session_open_time(dt):
 def session_close_time(dt):
     return MUHURAT_SESSIONS.get(dt.date().isoformat(), (MARKET_OPEN, MARKET_CLOSE))[1]
 POLL_SECONDS = 5
+# Read-only broker order-status polling. It never places or modifies an order.
+RECONCILE_ENABLED = (
+    os.environ.get("SMA9_LIVE_RECONCILE_ENABLED", "true").strip().lower()
+    in ENABLED_FLAG
+)
+RECONCILE_MAX_ATTEMPTS = max(
+    1, int(os.environ.get("SMA9_LIVE_RECONCILE_MAX_ATTEMPTS", "120")))
+RECONCILE_BATCH = max(
+    1, int(os.environ.get("SMA9_LIVE_RECONCILE_BATCH", "50")))
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9 Live - ATM Option Strike (BUY ONLY)"
@@ -281,19 +307,49 @@ def init_db() -> None:
             dry_run INTEGER NOT NULL,
             status TEXT NOT NULL,
             broker_order_id TEXT,
+            broker_status TEXT,
+            status_checked_at TEXT,
+            reconcile_attempts INTEGER NOT NULL DEFAULT 0,
+            last_error TEXT,
             created_at TEXT NOT NULL,
             order_date TEXT NOT NULL
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_date ON sma9_live_orders(order_date);
         CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_trade ON sma9_live_orders(trade_id);
+
+        -- Append-only audit trail for the real-trade lifecycle. The API never
+        -- writes here; it is the operator-facing record of fill confirmations
+        -- and broker mismatches.
+        CREATE TABLE IF NOT EXISTS sma9_live_lifecycle_events (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            client_order_id TEXT NOT NULL,
+            trade_id TEXT NOT NULL,
+            side TEXT NOT NULL,
+            event TEXT NOT NULL,
+            detail TEXT,
+            created_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_sma9_live_events_trade
+            ON sma9_live_lifecycle_events(trade_id);
         """
     )
     pos_cols = [r[1] for r in conn.execute(
         "PRAGMA table_info(sma9_live_open_positions)")]
-    for col, decl in (("hwm", "REAL"), ("stop", "REAL"), ("be_locked", "INTEGER")):
+    for col, decl in (("hwm", "REAL"), ("stop", "REAL"), ("be_locked", "INTEGER"),
+                      ("lifecycle_state", "TEXT NOT NULL DEFAULT 'ACTIVE'")):
         if col not in pos_cols:
             conn.execute(
                 f"ALTER TABLE sma9_live_open_positions ADD COLUMN {col} {decl}")
+    order_cols = [r[1] for r in conn.execute(
+        "PRAGMA table_info(sma9_live_orders)")]
+    for col, decl in (
+        ("broker_status", "TEXT"),
+        ("status_checked_at", "TEXT"),
+        ("reconcile_attempts", "INTEGER NOT NULL DEFAULT 0"),
+        ("last_error", "TEXT"),
+    ):
+        if col not in order_cols:
+            conn.execute(f"ALTER TABLE sma9_live_orders ADD COLUMN {col} {decl}")
     conn.commit()
     conn.close()
 
@@ -327,8 +383,9 @@ def save_open_position(pos: Position) -> None:
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, prev_close, current_open, condition_a,
-                condition_b, ltp_at_entry, hwm, stop, be_locked, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                condition_b, ltp_at_entry, hwm, stop, be_locked,
+                lifecycle_state, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
@@ -336,7 +393,9 @@ def save_open_position(pos: Position) -> None:
                 pos.entry_price, pos.sma9, pos.prev_close, pos.current_open,
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
                 pos.ltp_at_entry, pos.hwm, pos.stop,
-                1 if pos.be_locked else 0, now_ist().isoformat(),
+                1 if pos.be_locked else 0,
+                getattr(pos, "lifecycle_state", LIFECYCLE_ACTIVE),
+                now_ist().isoformat(),
             ),
         )
         conn.commit()
@@ -383,6 +442,7 @@ def load_open_positions() -> dict:
             hwm=d.get("hwm") if d.get("hwm") is not None else 0.0,
             stop=d.get("stop"),
             be_locked=bool(d.get("be_locked")),
+            lifecycle_state=d.get("lifecycle_state") or LIFECYCLE_ACTIVE,
         )
     return result
 
@@ -452,26 +512,125 @@ def save_order_record(record: OrderRecord) -> bool:
         conn.close()
 
 
-def update_order_status(client_order_id: str, status: str,
-                        broker_order_id: str | None = None) -> None:
-    """Persist the executor result against the idempotency key."""
+def update_order_status(
+    client_order_id: str, status: str, broker_order_id: str | None = None,
+    *, broker_status: str | None = None, checked_at: str | None = None,
+    attempts: int | None = None, error: str | None = None,
+) -> None:
+    """Persist the executor/broker result against the idempotency key."""
+    sets = ["status = ?"]
+    values: list = [status]
+    if broker_order_id is not None:
+        sets.append("broker_order_id = ?")
+        values.append(broker_order_id)
+    if broker_status is not None:
+        sets.append("broker_status = ?")
+        values.append(broker_status)
+    if checked_at is not None:
+        sets.append("status_checked_at = ?")
+        values.append(checked_at)
+    if attempts is not None:
+        sets.append("reconcile_attempts = ?")
+        values.append(attempts)
+    if error is not None:
+        sets.append("last_error = ?")
+        values.append(error)
+    values.append(client_order_id)
     conn = db_conn()
     try:
-        if broker_order_id is None:
-            conn.execute(
-                "UPDATE sma9_live_orders SET status = ? WHERE client_order_id = ?",
-                (status, client_order_id),
-            )
-        else:
-            conn.execute(
-                """UPDATE sma9_live_orders
-                   SET status = ?, broker_order_id = ?
-                   WHERE client_order_id = ?""",
-                (status, broker_order_id, client_order_id),
-            )
+        conn.execute(
+            f"UPDATE sma9_live_orders SET {', '.join(sets)} "
+            "WHERE client_order_id = ?",
+            values,
+        )
         conn.commit()
     finally:
         conn.close()
+
+
+def pending_order_rows(limit: int | None = None) -> list:
+    """Real orders whose terminal broker status has not been confirmed yet."""
+    conn = db_conn()
+    try:
+        query = (
+            "SELECT * FROM sma9_live_orders "
+            "WHERE dry_run = 0 AND broker_order_id IS NOT NULL "
+            "AND status IN (?, ?) ORDER BY created_at ASC"
+        )
+        params = [STATUS_NEW, STATUS_ACCEPTED]
+        if limit is not None:
+            query += " LIMIT ?"
+            params.append(limit)
+        return [dict(r) for r in conn.execute(query, params).fetchall()]
+    finally:
+        conn.close()
+
+
+def record_lifecycle_event(client_order_id: str, trade_id: str, side: str,
+                           event: str, detail: str | None = None) -> None:
+    conn = db_conn()
+    try:
+        conn.execute(
+            """INSERT INTO sma9_live_lifecycle_events
+               (client_order_id, trade_id, side, event, detail, created_at)
+               VALUES (?,?,?,?,?,?)""",
+            (client_order_id, trade_id, side, event, detail,
+             now_ist().isoformat()),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
+def set_position_lifecycle(option_type: str, trade_id: str, state: str) -> bool:
+    """Update the persisted lifecycle only for the matching trade."""
+    conn = db_conn()
+    try:
+        cur = conn.execute(
+            """UPDATE sma9_live_open_positions
+               SET lifecycle_state = ?, updated_at = ?
+               WHERE option_type = ? AND trade_id = ?""",
+            (state, now_ist().isoformat(), option_type, trade_id),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def delete_open_position_by_trade(trade_id: str) -> bool:
+    conn = db_conn()
+    try:
+        cur = conn.execute(
+            "DELETE FROM sma9_live_open_positions WHERE trade_id = ?",
+            (trade_id,),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def order_record_from_row(row: dict):
+    """Rebuild an OrderRecord from a ledger row for status polling."""
+    return OrderRecord(
+        client_order_id=row["client_order_id"],
+        trade_id=row["trade_id"],
+        option_type=row["option_type"],
+        side=row["side"],
+        symbol=row["symbol"],
+        token=row["token"],
+        quantity=int(row["quantity"]),
+        intended_price=float(row["intended_price"]),
+        limit_price=float(row["limit_price"]),
+        collar_pct=float(row["collar_pct"]),
+        reason=row["reason"],
+        dry_run=bool(row["dry_run"]),
+        status=row["status"],
+        broker_order_id=row["broker_order_id"],
+        created_at=row["created_at"],
+        order_date=row["order_date"],
+    )
 
 
 def orders_today(order_date: str) -> int:
@@ -491,6 +650,7 @@ def order_status_for(trade_id: str, side: str) -> dict | None:
     try:
         row = conn.execute(
             """SELECT client_order_id, side, status, dry_run, broker_order_id,
+                      broker_status, status_checked_at, reconcile_attempts,
                       limit_price, order_date
                FROM sma9_live_orders
                WHERE trade_id = ? AND side = ?
@@ -641,9 +801,205 @@ class Sma9LiveScanner:
         self.last_closed_pe_close = None
         self.last_closed_spot_source = None
         self.last_order_block = None
+        self.last_reconcile = {
+            "enabled": RECONCILE_ENABLED, "checked": 0, "filled": 0,
+            "rejected": 0, "pending": 0, "errors": 0, "at": None,
+        }
         # Previous poll's LTP per leg; used as the pre-trade BUY collar
         # reference for MARKET orders.
         self._last_ltp: dict[str, float] = {}
+
+    # -- trade lifecycle / broker reconciliation -------------------------
+    def _set_lifecycle(self, option_type: str, trade_id: str, state: str) -> None:
+        set_position_lifecycle(option_type, trade_id, state)
+        pos = self.states[option_type].position
+        if pos is not None and pos.trade_id == trade_id:
+            pos.lifecycle_state = state
+
+    def _clear_position(self, option_type: str, trade_id: str) -> None:
+        delete_open_position_by_trade(trade_id)
+        pos = self.states[option_type].position
+        if pos is not None and pos.trade_id == trade_id:
+            self.states[option_type].position = None
+
+    def _confirm_exit(self, option_type: str, trade_id: str, price: float,
+                      reason: str) -> None:
+        """Finalise the trade only after the broker confirms the SELL fill."""
+        state = self.states[option_type]
+        pos = state.position
+        if pos is None or pos.trade_id != trade_id:
+            stored = load_open_positions().get(option_type)
+            if stored is None or stored.trade_id != trade_id:
+                # Already finalised (e.g. two reconciliation workers); make
+                # sure the open-position row cannot linger.
+                delete_open_position_by_trade(trade_id)
+                return
+            state.restore(stored)
+        symbol = pos.tradingsymbol
+        trade = state.close(now_ist(), price, reason or "EXIT_CONFIRMED")
+        if trade is not None:
+            save_trade(trade)
+            logger.info(
+                "EXIT CONFIRMED %s %s trade=%s price=%.2f reason=%s",
+                option_type, symbol, trade_id, price, reason)
+
+    def _apply_terminal_order(self, row: dict, status: str) -> None:
+        """Drive the position lifecycle from a broker-terminal order status."""
+        trade_id = row["trade_id"]
+        side = row["side"]
+        option_type = row["option_type"]
+        client_id = row["client_order_id"]
+        if side == BUY:
+            if status in FILLED_STATUSES:
+                self._set_lifecycle(option_type, trade_id, LIFECYCLE_ACTIVE)
+                record_lifecycle_event(
+                    client_id, trade_id, side, "BUY_FILL_CONFIRMED", status)
+                logger.info(
+                    "BUY FILL CONFIRMED %s trade=%s broker_id=%s",
+                    trade_id, row["broker_order_id"])
+            else:
+                # The BUY never filled: the local position is a phantom. Never
+                # generate a SELL against shares we do not actually hold.
+                self._clear_position(option_type, trade_id)
+                record_lifecycle_event(
+                    client_id, trade_id, side, "PHANTOM_POSITION_REMOVED", status)
+                logger.error(
+                    "CRITICAL: BUY %s not filled (%s); removed phantom position %s",
+                    client_id, status, trade_id)
+            return
+
+        if status in FILLED_STATUSES:
+            self._confirm_exit(
+                option_type, trade_id, float(row["intended_price"]),
+                row["reason"])
+            record_lifecycle_event(
+                client_id, trade_id, side, "EXIT_FILL_CONFIRMED", status)
+        else:
+            self._set_lifecycle(option_type, trade_id, LIFECYCLE_EXIT_FAILED)
+            record_lifecycle_event(
+                client_id, trade_id, side, "EXIT_NOT_CONFIRMED", status)
+            logger.error(
+                "CRITICAL: exit SELL %s %s not confirmed by broker (%s); "
+                "real position may still be open", option_type, trade_id, status)
+
+    def _apply_submit_result(self, record: OrderRecord) -> None:
+        """Apply the synchronous submit result before broker polling begins."""
+        row = {
+            "client_order_id": record.client_order_id,
+            "trade_id": record.trade_id,
+            "side": record.side,
+            "option_type": record.option_type,
+            "broker_order_id": record.broker_order_id,
+            "intended_price": record.intended_price,
+            "reason": record.reason,
+        }
+        if record.status in FILLED_STATUSES | FAILED_STATUSES:
+            self._apply_terminal_order(row, record.status)
+            return
+        state = (LIFECYCLE_PENDING if record.side == BUY
+                 else LIFECYCLE_EXIT_PENDING)
+        self._set_lifecycle(record.option_type, record.trade_id, state)
+        record_lifecycle_event(
+            record.client_order_id, record.trade_id, record.side,
+            "ORDER_SUBMITTED", f"{record.status}|{record.broker_order_id}")
+        logger.info(
+            "%s SUBMITTED trade=%s broker_id=%s; awaiting broker fill",
+            record.side, record.trade_id, record.broker_order_id)
+
+    def _apply_submit_failure(self, record: OrderRecord, error: str) -> None:
+        """A failed submit has unknown broker outcome - never guess or retry."""
+        state = (LIFECYCLE_ENTRY_UNCONFIRMED if record.side == BUY
+                 else LIFECYCLE_EXIT_FAILED)
+        self._set_lifecycle(record.option_type, record.trade_id, state)
+        record_lifecycle_event(
+            record.client_order_id, record.trade_id, record.side,
+            "SUBMIT_FAILED", error)
+        logger.error(
+            "CRITICAL: %s submit failed for %s (%s); outcome at broker unknown, "
+            "no automatic retry - check the mStock order book manually",
+            record.side, record.trade_id, error)
+
+    def reconcile_orders(self) -> dict:
+        """Poll broker status for every unfilled real order.
+
+        Read-only at the broker: this method never places, amends or cancels an
+        order. It only updates the local ledger and position lifecycle, so a
+        gateway failure cannot produce a duplicate order.
+        """
+        summary = {
+            "enabled": RECONCILE_ENABLED, "checked": 0, "filled": 0,
+            "rejected": 0, "pending": 0, "errors": 0,
+            "at": now_ist().isoformat(),
+        }
+        self.last_reconcile = summary
+        if not RECONCILE_ENABLED:
+            return summary
+        rows = pending_order_rows(RECONCILE_BATCH)
+        for row in rows:
+            summary["checked"] += 1
+            client_id = row["client_order_id"]
+            attempts = int(row["reconcile_attempts"] or 0) + 1
+            try:
+                status = EXECUTOR.order_status(order_record_from_row(row))
+            except Exception as exc:
+                summary["errors"] += 1
+                update_order_status(
+                    client_id, row["status"], row["broker_order_id"],
+                    checked_at=now_ist().isoformat(), attempts=attempts,
+                    error=str(exc))
+                logger.error(
+                    "Reconcile status error for %s: %s", client_id, exc)
+                continue
+            if status in PENDING_STATUSES:
+                summary["pending"] += 1
+                update_order_status(
+                    client_id, row["status"], row["broker_order_id"],
+                    broker_status=status, checked_at=now_ist().isoformat(),
+                    attempts=attempts)
+                if attempts == RECONCILE_MAX_ATTEMPTS:
+                    record_lifecycle_event(
+                        client_id, row["trade_id"], row["side"],
+                        "RECONCILE_STALE",
+                        f"no terminal status after {attempts} checks")
+                    logger.error(
+                        "CRITICAL: broker order %s still unresolved after %d "
+                        "checks; manual verification required",
+                        client_id, attempts)
+                continue
+            update_order_status(
+                client_id, status, row["broker_order_id"],
+                broker_status=status, checked_at=now_ist().isoformat(),
+                attempts=attempts)
+            if status in FILLED_STATUSES:
+                summary["filled"] += 1
+            else:
+                summary["rejected"] += 1
+            self._apply_terminal_order(row, status)
+        return summary
+
+    def _request_exit(self, state, pos: Position, price: float,
+                      reason: str):
+        """Submit one SELL and keep the position until the fill is confirmed."""
+        if pos.lifecycle_state != LIFECYCLE_ACTIVE:
+            return None
+        if order_exists(make_client_order_id(pos.trade_id, SELL)):
+            logger.info(
+                "SELL already recorded for %s; awaiting broker confirmation",
+                pos.trade_id)
+            return None
+        pos.lifecycle_state = LIFECYCLE_EXIT_PENDING
+        save_open_position(pos)
+        exit_order = self._place_order(pos, SELL, price, reason)
+        if exit_order is None or exit_order.status in FAILED_STATUSES:
+            logger.error(
+                "CRITICAL: exit SELL failed for %s %s; position retained for "
+                "manual handling", pos.option_type, pos.tradingsymbol)
+        else:
+            logger.info(
+                "EXIT SUBMITTED %s %s trade=%s price=%.2f reason=%s; "
+                "awaiting broker fill", pos.option_type, pos.tradingsymbol,
+                pos.trade_id, float(price), reason)
+        return exit_order
 
     # -- order execution -------------------------------------------------
     def _resolve_lot_size(self, pos: Position) -> int:
@@ -740,14 +1096,17 @@ class Sma9LiveScanner:
             result = EXECUTOR.place(record)
         except Exception as exc:
             # Fail closed: mark the attempt rejected and never retry blindly.
+            record.status = STATUS_REJECTED
             update_order_status(record.client_order_id, STATUS_REJECTED)
             logger.error("Executor rejected %s: %s", record.client_order_id, exc)
             self.last_order_block = "EXECUTOR_REJECTED"
+            self._apply_submit_failure(record, str(exc))
             return record
         update_order_status(result.client_order_id, result.status,
                             result.broker_order_id)
         logger.info("ORDER %s status=%s broker_id=%s", result.client_order_id,
                     result.status, result.broker_order_id)
+        self._apply_submit_result(result)
         self.last_order_block = None
         return result
 
@@ -758,11 +1117,20 @@ class Sma9LiveScanner:
             return
         now = now_ist()
         for opt, pos in positions.items():
-            logger.info("Recovered open %s position %s entry=%.2f candle=%s",
-                        opt, pos.trade_id, pos.entry_price,
-                        pos.entry_candle_start.isoformat())
+            logger.info(
+                "Recovered open %s position %s entry=%.2f candle=%s state=%s",
+                opt, pos.trade_id, pos.entry_price,
+                pos.entry_candle_start.isoformat(), pos.lifecycle_state)
             state = self.states[opt]
             state.restore(pos)
+            if pos.lifecycle_state != LIFECYCLE_ACTIVE:
+                # A pending/unconfirmed exit or entry must never be closed a
+                # second time by recovery. Broker reconciliation owns it.
+                logger.warning(
+                    "Recovered %s position %s is %s; awaiting broker "
+                    "reconciliation, no recovery SELL", opt, pos.trade_id,
+                    pos.lifecycle_state)
+                continue
             if now >= pos.entry_candle_end:
                 token = pos.token
                 if token is None:
@@ -775,18 +1143,7 @@ class Sma9LiveScanner:
                 candle = self.feed.candle_at(token, pos.entry_candle_start)
                 close_px = candle["close"] if candle else pos.entry_price
                 reason = "SAME_CANDLE_EXIT" if candle else "SAME_CANDLE_EXIT_LTP_FALLBACK"
-                trade = state.close(pos.entry_candle_end, close_px, reason,
-                                    candle_high=candle["high"] if candle else None,
-                                    candle_low=candle["low"] if candle else None)
-                save_trade(trade)
-                exit_order = self._place_order(pos, SELL, close_px, reason)
-                if (exit_order is None or exit_order.status in (
-                        STATUS_REJECTED, STATUS_FAILED)):
-                    logger.error(
-                        "CRITICAL: recovery SELL failed for %s %s; real position "
-                        "may still be open", opt, pos.tradingsymbol)
-                logger.info("Recovered %s position closed at %.2f pnl=%.2f",
-                            opt, close_px, trade["pnl_points"])
+                self._request_exit(state, pos, close_px, reason)
 
     # -- contract selection ---------------------------------------------
     def refresh_contracts(self, spot: float, force: bool = False) -> None:
@@ -941,7 +1298,9 @@ class Sma9LiveScanner:
                     reason="waiting for current 5-minute candle")
             entry_made = False
 
-            if state.position is not None and now.time() >= EXCHANGE_OPEN:
+            if (state.position is not None
+                    and state.position.lifecycle_state == LIFECYCLE_ACTIVE
+                    and now.time() >= EXCHANGE_OPEN):
                 prev_hwm, prev_stop = state.position.hwm, state.position.stop
                 stop_hit = state.update_trail(ltp)
                 # Persist a ratcheted high-water-mark/stop so a restart
@@ -953,31 +1312,21 @@ class Sma9LiveScanner:
                 sl_hit = state.check_stop_loss(ltp)
                 if stop_hit is not None:
                     exit_px = round(float(ltp), 2)
-                    trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
-                    save_trade(trade)
-                    exit_order = self._place_order(pos, SELL, exit_px, "TRAIL_STOP_EXIT")
-                    if (exit_order is None or exit_order.status in (
-                            STATUS_REJECTED, STATUS_FAILED)):
-                        logger.error(
-                            "CRITICAL: exit SELL failed for %s %s; real position "
-                            "may still be open", opt, pos.tradingsymbol)
+                    self._request_exit(state, state.position, exit_px,
+                                       "TRAIL_STOP_EXIT")
                     logger.info(
-                        "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
+                        "TRAIL EXIT requested %s %s strike=%.2f entry=%.2f "
+                        "exit=%.2f (stop=%.2f)",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        exit_px, trade["pnl_points"], pos.stop)
+                        exit_px, pos.stop)
                 elif sl_hit is not None:
-                    trade = state.close(now, sl_hit, "STOP_LOSS_5PCT")
-                    save_trade(trade)
-                    exit_order = self._place_order(pos, SELL, sl_hit, "STOP_LOSS_5PCT")
-                    if (exit_order is None or exit_order.status in (
-                            STATUS_REJECTED, STATUS_FAILED)):
-                        logger.error(
-                            "CRITICAL: exit SELL failed for %s %s; real position "
-                            "may still be open", opt, pos.tradingsymbol)
+                    self._request_exit(state, state.position, sl_hit,
+                                       "STOP_LOSS_5PCT")
                     logger.info(
-                        "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_5PCT",
+                        "STOP EXIT requested %s %s strike=%s entry=%.2f "
+                        "exit=%.2f reason=STOP_LOSS_5PCT",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        sl_hit, trade["pnl_points"])
+                        sl_hit)
             elif allow_entries and forming_is_current:
                 # Recompute per leg so a CE entry immediately counts against
                 # the two-leg limit for the PE leg (the daily cap is off).
@@ -994,18 +1343,24 @@ class Sma9LiveScanner:
                         ev, now, strike, expiry_str, token,
                         contract["tradingsymbol"], market_close_dt(now))
                     if new_pos is not None:
+                        # ACTIVE only after the broker confirms the BUY fill.
+                        new_pos.lifecycle_state = LIFECYCLE_PENDING
                         save_open_position(new_pos)
                         order = self._place_order(
                             new_pos, BUY, new_pos.entry_price, "SMA9_ENTRY")
+                        if order is None:
+                            self._set_lifecycle(
+                                new_pos.option_type, new_pos.trade_id,
+                                LIFECYCLE_ENTRY_UNCONFIRMED)
                         if (order is None or order.status in (
                                 STATUS_REJECTED, STATUS_FAILED)):
-                            # Never keep a phantom open position: recovery on
-                            # restart would otherwise try to sell shares we do
-                            # not own. The ledger row retains the rejection.
-                            delete_open_position(new_pos.option_type)
-                            self.last_order_block = "ENTRY_ORDER_REJECTED"
+                            # The submit outcome at the broker is unknown. The
+                            # position stays in ENTRY_UNCONFIRMED and no exit
+                            # or new entry is generated until it is resolved.
+                            self.last_order_block = "ENTRY_UNCONFIRMED"
                             logger.error(
-                                "ENTRY ORDER FAILED for %s %s; position removed",
+                                "ENTRY UNCONFIRMED for %s %s; awaiting manual "
+                                "verification, no automatic retry",
                                 opt, new_pos.tradingsymbol)
                         else:
                             entry_made = True
@@ -1036,6 +1391,8 @@ class Sma9LiveScanner:
                 "forming_is_current": forming_is_current,
                 "reason": ev.reason,
                 "entry_made": entry_made,
+                "lifecycle_state": (
+                    state.position.lifecycle_state if state.position else None),
                 "position": state.position.as_dict() if state.position else None,
                 "buy_order": (
                     order_status_for(state.position.trade_id, BUY)
@@ -1148,6 +1505,7 @@ class Sma9LiveScanner:
                 "order_type": "MARKET",
                 "price_collar_pct": LIMITS.collar_pct,
                 "last_block": getattr(self, "last_order_block", None),
+                "reconciliation": dict(self.last_reconcile),
             },
             "errors": errors or [],
             "last_error": self.last_error,
@@ -1160,10 +1518,11 @@ class Sma9LiveScanner:
 def main() -> int:
     logger.info(
         "SMA9 LIVE service starting (poll=%ss, db=%s, executor=%s, dry_run=%s, "
-        "max_orders=%s, lot=%s, collar=%.2f%%)",
+        "max_orders=%s, lot=%s, collar=%.2f%%, reconcile=%s)",
         POLL_SECONDS, DB_PATH, EXECUTOR.name, EXECUTOR.name == "dry_run",
         LIMITS.max_orders_per_day or "UNLIMITED",
         LIMITS.lot_size or "mstock", LIMITS.collar_pct,
+        "on" if RECONCILE_ENABLED else "off",
     )
     if EXECUTOR.name != "dry_run" and not real_orders_armed():
         logger.error("Real executor selected but orders are NOT armed; failing closed")
@@ -1188,6 +1547,14 @@ def main() -> int:
     try:
         while True:
             now = now_ist()
+            # Broker fill confirmation must keep running even when the market
+            # is closed or the day is a holiday: exits from an earlier session
+            # may still need to be reconciled.
+            try:
+                scanner.reconcile_orders()
+            except Exception as exc:
+                logger.error("Reconciliation pass failed: %s", exc)
+                traceback.print_exc()
             try:
                 if not is_weekday(now):
                     state = scanner.scan()

@@ -194,6 +194,10 @@ class Position:
     hwm: float = 0.0
     stop: Optional[float] = None
     be_locked: bool = False
+    # Broker reconciliation state. ACTIVE means the BUY fill is confirmed and
+    # exits may be generated; other states are terminal for signal handling
+    # until the broker order is reconciled.
+    lifecycle_state: str = "ACTIVE"
 
     def as_dict(self) -> dict:
         d = self.__dict__.copy()
