@@ -68,7 +68,7 @@
     <span class="badge" id="scanner-status-badge">--</span>
     <span id="scanner-status-text">--</span>
     <span class="badge idle" id="adx-config">ADX(14) &gt; 20</span>
-    <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">15</span>s auto-refresh (no page reload)</span>
+    <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">5</span>s auto-refresh (no page reload)</span>
 </div>
 
 <section class="section" id="strategy-rules-section">
@@ -148,10 +148,10 @@
 
 <script>
 // ============================================================================
-// SMA9_ADX BUY-ONLY dashboard - 15s UI refresh (scanner polls 5s)
+// SMA9_ADX BUY-ONLY dashboard - 5s UI refresh (scanner polls 5s)
 // ============================================================================
 const API_BASE = '/api/sma9-adx';
-const REFRESH_MS = 15000;
+const REFRESH_MS = 5000;
 let refreshTimer = null;
 let countdownTimer = null;
 let countdown = REFRESH_MS / 1000;
