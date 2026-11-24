@@ -21,7 +21,7 @@ from broker_gateway.errors import BrokerCallFailed, BrokerGatewayError
 SOCKET_PATH = os.environ.get("BROKER_GATEWAY_SOCKET", "/run/tradingai/broker_gateway.sock")
 SOCKET_GROUP = os.environ.get("BROKER_GATEWAY_GROUP", "ubuntu")
 READ_METHODS = {"instruments", "quote", "historical_data", "profile"}
-ORDER_METHODS = {"place_order", "order_status"}
+ORDER_METHODS = {"place_order", "order_status", "order_by_tag"}
 METHODS = READ_METHODS | ORDER_METHODS
 # Orders are opt-in at the daemon boundary. The paper fleet never calls them,
 # and a missing/invalid flag keeps the gateway read-only for every scanner.

@@ -53,6 +53,22 @@ def test_order_methods_are_disabled_until_opt_in(monkeypatch, adapter):
         daemon.dispatch(bad)
 
 
+def test_tag_lookup_is_gated_with_other_order_methods(adapter, monkeypatch):
+    request = {"broker": "mstock", "method": "order_by_tag",
+               "params": {"tag": "S9L-BUY-ABC"}}
+    monkeypatch.setattr(daemon, "_ORDERS_ENABLED", False)
+    with pytest.raises(BrokerGatewayError, match="disabled"):
+        daemon.dispatch(request)
+    seen = {}
+    monkeypatch.setattr(daemon, "_ORDERS_ENABLED", True)
+    monkeypatch.setattr(daemon, "_adapter", lambda name: adapter)
+    monkeypatch.setattr(daemon, "_require_fresh", lambda broker, adapter: None)
+    monkeypatch.setattr(adapter, "order_by_tag",
+                        lambda **params: seen.update(params) or {"orders": []})
+    assert daemon.dispatch(request) == {"orders": []}
+    assert seen == {"tag": "S9L-BUY-ABC"}
+
+
 def test_place_order_posts_typea_form_once(adapter, monkeypatch):
     seen = {}
 
@@ -162,6 +178,34 @@ def test_order_status_missing_order_has_no_fill_price(adapter, monkeypatch):
         adapter, "_get_json", lambda path: {"status": "success", "data": []})
     assert adapter.order_status(broker_order_id="MISSING") == {
         "order_id": "MISSING", "status": "UNKNOWN", "fill_price": None,
+        "filled_quantity": None,
+    }
+
+
+def test_order_by_tag_matches_our_client_tag(adapter, monkeypatch):
+    rows = [
+        {"order_id": "OTHER", "tag": "S9L-BUY-OTHER", "status": "OPEN"},
+        {"order_id": "MOCK-ORDER-1", "tag": "S9L-BUY-ABC",
+         "status": "COMPLETE", "quantity": 65, "filled_quantity": 65,
+         "average_price": "101.25"},
+    ]
+    monkeypatch.setattr(adapter, "_get_json",
+                        lambda path: {"status": "success", "data": rows})
+    result = adapter.order_by_tag(tag="S9L-BUY-ABC")
+    assert result["tag"] == "S9L-BUY-ABC"
+    assert len(result["orders"]) == 1
+    match = result["orders"][0]
+    assert match["order_id"] == "MOCK-ORDER-1"
+    assert match["status"] == "FILLED"
+    assert match["filled_quantity"] == 65.0
+    assert match["fill_price"] == 101.25
+
+
+def test_order_by_tag_missing_returns_empty(adapter, monkeypatch):
+    monkeypatch.setattr(
+        adapter, "_get_json", lambda path: {"status": "success", "data": []})
+    assert adapter.order_by_tag(tag="S9L-SELL-X") == {
+        "tag": "S9L-SELL-X", "orders": [],
     }
 
 

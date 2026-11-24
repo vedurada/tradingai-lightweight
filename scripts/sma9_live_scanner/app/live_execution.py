@@ -11,7 +11,8 @@ default:
   pre-trade BUY price-collar check are enforced before any executor is called.
 * Real orders are MARKET orders; the collar is a sanity check on the sampled
   LTP, not a broker-side limit price.
-* Client order IDs are deterministic so retries cannot duplicate an order.
+* Client order IDs are deterministic per attempt; bounded retries use a new
+  ``rN`` tag and an explicit ``retry_of`` pointer, never a blind resubmission.
 * Broker fill prices are recorded in a separate shadow log so signal-vs-fill
   slippage and estimated costs can be measured without altering trade P&L.
 
@@ -41,6 +42,35 @@ STATUS_FAILED = "FAILED"
 STATUS_FILLED = "FILLED"
 STATUS_CANCELLED = "CANCELLED"
 
+# Placement classification, kept separate from the broker's order status. The
+# broker status answers "what happened to this order"; place_status answers
+# "do we know whether the POST reached the broker at all".
+PLACE_SUBMITTED = "SUBMITTED"
+PLACE_PRE_POST_REFUSED = "PRE_POST_REFUSED"
+PLACE_AMBIGUOUS = "AMBIGUOUS"
+PLACE_DEFINITELY_REJECTED = "DEFINITELY_REJECTED"
+PLACE_RETRY_DUE = "RETRY_DUE"
+PLACE_RETRY_ATTEMPTED = "RETRY_ATTEMPTED"
+PLACE_RETRY_EXHAUSTED = "RETRY_EXHAUSTED"
+PLACE_MANUAL_REQUIRED = "MANUAL_REQUIRED"
+PLACE_RESOLVED = "RESOLVED"
+
+
+@dataclass(frozen=True)
+class OrderLookup:
+    """Result of a read-only broker order-book lookup by our client tag."""
+
+    found: bool = False
+    multiple: bool = False
+    broker_order_id: Optional[str] = None
+    status: Optional[str] = None
+    fill_price: Optional[float] = None
+    filled_quantity: Optional[float] = None
+    quantity: Optional[float] = None
+    raw_status: Optional[str] = None
+    status_message: Optional[str] = None
+    error_code: Optional[str] = None
+
 
 @dataclass(frozen=True)
 class OrderDetails:
@@ -54,6 +84,7 @@ class OrderDetails:
     fill_price: Optional[float] = None
     raw_status: Optional[str] = None
     status_message: Optional[str] = None
+    filled_quantity: Optional[float] = None
 
 
 @dataclass(frozen=True)
@@ -113,6 +144,11 @@ class OrderRecord:
     order_date: str = field(
         default_factory=lambda: datetime.now(IST).date().isoformat()
     )
+    attempt_no: int = 0
+    retry_of: Optional[str] = None
+    retry_count: int = 0
+    place_status: str = PLACE_SUBMITTED
+    counts_toward_cap: bool = True
 
     def __post_init__(self) -> None:
         if self.side not in (BUY, SELL):
@@ -123,6 +159,8 @@ class OrderRecord:
             raise ValueError("order quantity must be >= 1")
         if self.intended_price <= 0 or self.limit_price <= 0:
             raise ValueError("order prices must be positive")
+        if self.attempt_no < 0 or self.retry_count < 0:
+            raise ValueError("attempt/retry counters must be >= 0")
 
     def as_row(self) -> tuple:
         return (
@@ -131,13 +169,16 @@ class OrderRecord:
             round(self.intended_price, 2), round(self.limit_price, 2),
             self.collar_pct, self.reason, int(self.dry_run), self.status,
             self.broker_order_id, self.created_at, self.order_date,
+            self.attempt_no, self.retry_of or self.client_order_id,
+            self.retry_count, self.place_status, int(self.counts_toward_cap),
         )
 
 
 ORDER_COLUMNS = (
     "client_order_id, scanner, trade_id, option_type, side, symbol, token, "
     "quantity, intended_price, limit_price, collar_pct, reason, dry_run, "
-    "status, broker_order_id, created_at, order_date"
+    "status, broker_order_id, created_at, order_date, attempt_no, retry_of, "
+    "retry_count, place_status, counts_toward_cap"
 )
 
 
@@ -265,6 +306,10 @@ class OrderExecutor:
         """Broker status plus fills; fakes that only expose status inherit this."""
         return OrderDetails(status=self.order_status(record))
 
+    def order_by_tag(self, record: OrderRecord) -> OrderLookup:
+        """Read-only tag lookup; executors without broker support fail closed."""
+        return OrderLookup(error_code="UNSUPPORTED")
+
 
 class DryRunOrderExecutor(OrderExecutor):
     """Records orders locally and returns a synthetic fill. Never calls a broker."""
@@ -345,6 +390,8 @@ class MStockOrderExecutor(OrderExecutor):
         }
 
     def place(self, record: OrderRecord) -> OrderRecord:
+        # These checks happen before any network call: a failure here is a
+        # definite no-send and is safe to re-evaluate later.
         self._require_armed()
         params = self._order_params(record)
         try:
@@ -353,14 +400,18 @@ class MStockOrderExecutor(OrderExecutor):
         except Exception as exc:
             record.dry_run = False
             record.status = STATUS_REJECTED
-            logger.error("mStock rejected %s: %s", record.client_order_id, exc)
+            # A timeout or connection error does not prove non-acceptance.
+            record.place_status = PLACE_AMBIGUOUS
+            logger.error("mStock submit failed %s: %s", record.client_order_id, exc)
             raise
         if not broker_order_id:
             record.dry_run = False
             record.status = STATUS_REJECTED
+            record.place_status = PLACE_AMBIGUOUS
             raise RuntimeError("mStock order response did not contain an order_id")
         record.dry_run = False
         record.status = STATUS_ACCEPTED
+        record.place_status = PLACE_SUBMITTED
         record.broker_order_id = broker_order_id
         logger.info(
             "LIVE REAL MARKET ORDER %s %s %s qty=%d ref=%.2f broker_id=%s id=%s",
@@ -368,6 +419,74 @@ class MStockOrderExecutor(OrderExecutor):
             record.limit_price, broker_order_id, record.client_order_id,
         )
         return record
+
+    @staticmethod
+    def _normalise_lookup_status(value) -> str:
+        status = str(value or "").strip().upper()
+        if status in {"COMPLETE", "FILLED", "EXECUTED"}:
+            return STATUS_FILLED
+        if status in {"REJECT", "REJECTED"}:
+            return STATUS_REJECTED
+        if status in {"CANCEL", "CANCELLED", "CANCELED"}:
+            return STATUS_CANCELLED
+        if status in {"OPEN", "PENDING", "TRIGGERED", "PARTIAL", "AMENDED"}:
+            return STATUS_ACCEPTED
+        return STATUS_NEW
+
+    @staticmethod
+    def _optional_float(value) -> Optional[float]:
+        if value in (None, ""):
+            return None
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        return number if number >= 0 else None
+
+    def order_by_tag(self, record: OrderRecord) -> OrderLookup:
+        """Look up our client tag in the broker order book without placing."""
+        try:
+            result = self._call(
+                self.broker, "order_by_tag", tag=record.client_order_id
+            ) or {}
+        except Exception as exc:
+            logger.error("mStock tag lookup failed for %s: %s",
+                         record.client_order_id, exc)
+            return OrderLookup(error_code="LOOKUP_FAILED")
+        orders = [row for row in (result.get("orders") or [])
+                  if isinstance(row, dict)]
+        if not orders:
+            return OrderLookup()
+        order_ids = {
+            str(row.get("order_id") or "").strip()
+            for row in orders if str(row.get("order_id") or "").strip()
+        }
+        if len(order_ids) > 1:
+            # More than one broker order with our tag is a duplicate-risk
+            # signal. Never resolve it automatically.
+            return OrderLookup(found=True, multiple=True,
+                               error_code="MULTIPLE_ORDERS")
+        # Prefer a terminal fill, then any open order, then the first row.
+        order = next(
+            (row for row in orders
+             if self._normalise_lookup_status(row.get("status")) == STATUS_FILLED),
+            next(
+                (row for row in orders
+                 if self._normalise_lookup_status(row.get("status"))
+                 == STATUS_ACCEPTED),
+                orders[0],
+            ),
+        )
+        return OrderLookup(
+            found=True,
+            broker_order_id=str(order.get("order_id") or "").strip() or None,
+            status=self._normalise_lookup_status(order.get("status")),
+            fill_price=self._optional_float(order.get("fill_price")),
+            filled_quantity=self._optional_float(order.get("filled_quantity")),
+            quantity=self._optional_float(order.get("quantity")),
+            raw_status=order.get("raw_status"),
+            status_message=order.get("status_message"),
+        )
 
     def order_details(self, record: OrderRecord) -> OrderDetails:
         """One read-only status poll, including the broker's average fill price."""
@@ -402,6 +521,7 @@ class MStockOrderExecutor(OrderExecutor):
             fill_price=fill_price,
             raw_status=result.get("raw_status"),
             status_message=result.get("status_message"),
+            filled_quantity=self._optional_float(result.get("filled_quantity")),
         )
 
     def order_status(self, record: OrderRecord) -> str:

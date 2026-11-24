@@ -4,6 +4,7 @@ These assert that real orders stay hard-disabled by default and that the risk
 guards cannot be bypassed. No credentials or broker calls are involved.
 """
 import importlib.util
+import os
 import sys
 from pathlib import Path
 from types import SimpleNamespace
@@ -667,3 +668,407 @@ def test_reconciliation_audits_events_and_ignores_dry_run(
         events = [dict(r) for r in conn.execute(
             "SELECT event FROM sma9_live_lifecycle_events ORDER BY id")]
     assert [e["event"] for e in events] == ["ORDER_SUBMITTED", "BUY_FILL_CONFIRMED"]
+
+
+# --- Stage 1 tag lookup and Stage 2 bounded retries -----------------------
+class FakeTagExecutor:
+    """Read-only fake broker for the order-book tag lookup."""
+
+    name = "mstock"
+
+    def __init__(self, lookup):
+        self.lookup = lookup
+        self.tags = []
+
+    def order_by_tag(self, record):
+        self.tags.append(record.client_order_id)
+        return self.lookup
+
+
+class FakePlaceExecutor:
+    """Fake broker that accepts one re-placement and records its attempt tag."""
+
+    name = "mstock"
+
+    def __init__(self):
+        self.placed = []
+
+    def place(self, record):
+        self.placed.append(record)
+        record.dry_run = False
+        record.status = "ACCEPTED"
+        record.place_status = "SUBMITTED"
+        record.broker_order_id = f"RETRY-BROKER-{len(self.placed)}"
+        return record
+
+
+class FakeDetailsExecutor:
+    """Fake broker that returns one fixed read-only status/fill snapshot."""
+
+    name = "mstock"
+
+    def __init__(self, details):
+        self.details = details
+
+    def order_details(self, record):
+        return self.details
+
+
+class ChangingLotFeed(FakeMstockFeed):
+    """Feed that returns a different instrument-master lot on each lookup."""
+
+    def __init__(self, lot_size):
+        self.lot_size = lot_size
+        self.calls = 0
+
+    def find_contract(self, strike, expiry, option_type):
+        self.calls += 1
+        contract = super().find_contract(strike, expiry, option_type)
+        contract["lot_size"] = self.lot_size
+        return contract
+
+
+def _arm_real_orders(monkeypatch):
+    monkeypatch.setenv("SMA9_LIVE_ORDERS_ENABLED", "true")
+    monkeypatch.setenv("SMA9_LIVE_ARM_REAL_ORDERS", "ARMED")
+
+
+def _retry_settings(mod, execution, monkeypatch, *, attempts=1,
+                    ambiguous=False):
+    monkeypatch.setattr(mod, "RETRY_ENABLED", True)
+    monkeypatch.setattr(mod, "RETRY_MAX_ATTEMPTS", attempts)
+    monkeypatch.setattr(mod, "RETRY_AMBIGUOUS", ambiguous)
+    monkeypatch.setattr(mod, "RETRY_BASE_DELAY_SEC", 0)
+    monkeypatch.setattr(mod, "RETRY_MAX_AGE_SEC", 300)
+    monkeypatch.setattr(mod, "RETRY_SIDES",
+                        frozenset({execution.BUY, execution.SELL}))
+    monkeypatch.setattr(mod, "TAG_LOOKUP_MAX_ATTEMPTS", 1)
+
+
+def _order_row(mod, client_order_id):
+    with mod.db_conn() as conn:
+        row = conn.execute(
+            "SELECT * FROM sma9_live_orders WHERE client_order_id = ?",
+            (client_order_id,)).fetchone()
+    assert row is not None, client_order_id
+    return dict(row)
+
+
+def _event_names(mod):
+    with mod.db_conn() as conn:
+        return [r["event"] for r in conn.execute(
+            "SELECT event FROM sma9_live_lifecycle_events ORDER BY id")]
+
+
+def _stage_ambiguous_submit(mod, execution, trade_id, side, lifecycle):
+    """Persist a rejected submit with no broker id (post-POST may be pending)."""
+    record = _accepted_order(
+        execution, trade_id, side, status=execution.STATUS_REJECTED,
+        broker_order_id=None, place_status=execution.PLACE_AMBIGUOUS,
+        created_at=mod.now_ist().isoformat())
+    mod.save_order_record(record)
+    scanner, _ = _reconcile_position(mod, trade_id, side, lifecycle)
+    scanner.feed = FakeMstockFeed()
+    return scanner, record.client_order_id
+
+
+def _stage_confirmed_failure(mod, execution, monkeypatch, trade_id, side,
+                             lifecycle, status, details=None):
+    """Persist an accepted real order and drive it to a broker-confirmed loss."""
+    scanner, _ = _reconcile_position(mod, trade_id, side, lifecycle)
+    scanner.feed = FakeMstockFeed()
+    record = _accepted_order(execution, trade_id, side)
+    mod.save_order_record(record)
+    fake = (FakeDetailsExecutor(details) if details is not None
+            else FakeStatusExecutor([status]))
+    monkeypatch.setattr(mod, "EXECUTOR", fake)
+    assert scanner.reconcile_orders()["rejected"] == 1
+    return scanner, record.client_order_id
+
+
+def test_tag_lookup_resolves_ambiguous_submit_without_placing(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-TAG-RESOLVED"
+    scanner, client_id = _stage_ambiguous_submit(
+        mod, execution, trade_id, execution.BUY, mod.LIFECYCLE_ENTRY_UNCONFIRMED)
+    fake = FakeTagExecutor(execution.OrderLookup(
+        found=True, broker_order_id="MOCK-TAG-1", status=execution.STATUS_FILLED,
+        fill_price=102.0, filled_quantity=65))
+    monkeypatch.setattr(mod, "EXECUTOR", fake)
+
+    summary = scanner.resolve_unknown_submits()
+
+    assert summary["resolved"] == 1
+    assert fake.tags == [client_id]
+    row = _order_row(mod, client_id)
+    assert row["broker_order_id"] == "MOCK-TAG-1"
+    assert row["status"] == execution.STATUS_FILLED
+    assert row["place_status"] == execution.PLACE_RESOLVED
+    assert row["filled_quantity"] == 65
+    assert scanner.states["CE"].position.lifecycle_state == mod.LIFECYCLE_ACTIVE
+    events = _event_names(mod)
+    assert "TAG_LOOKUP_RESOLVED" in events
+    assert "BUY_FILL_CONFIRMED" in events
+
+
+def test_tag_lookup_multiple_orders_requires_manual(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-TAG-MULTIPLE"
+    scanner, client_id = _stage_ambiguous_submit(
+        mod, execution, trade_id, execution.BUY, mod.LIFECYCLE_ENTRY_UNCONFIRMED)
+    fake = FakeTagExecutor(execution.OrderLookup(
+        found=True, multiple=True, error_code="MULTIPLE_ORDERS"))
+    monkeypatch.setattr(mod, "EXECUTOR", fake)
+
+    summary = scanner.resolve_unknown_submits()
+
+    assert summary["manual"] == 1
+    row = _order_row(mod, client_id)
+    assert row["place_status"] == execution.PLACE_MANUAL_REQUIRED
+    assert row["last_error_code"] == "MULTIPLE_ORDERS"
+    assert "TAG_LOOKUP_MULTIPLE" in _event_names(mod)
+
+
+def test_tag_lookup_unresolved_is_manual_by_default(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-TAG-UNRESOLVED"
+    scanner, client_id = _stage_ambiguous_submit(
+        mod, execution, trade_id, execution.BUY, mod.LIFECYCLE_ENTRY_UNCONFIRMED)
+    monkeypatch.setattr(mod, "TAG_LOOKUP_MAX_ATTEMPTS", 1)
+    fake = FakeTagExecutor(execution.OrderLookup())
+    monkeypatch.setattr(mod, "EXECUTOR", fake)
+
+    summary = scanner.resolve_unknown_submits()
+
+    assert summary["manual"] == 1
+    assert summary["retry_scheduled"] == 0
+    row = _order_row(mod, client_id)
+    assert row["place_status"] == execution.PLACE_MANUAL_REQUIRED
+    assert row["last_error_code"] == "AMBIGUOUS_UNRESOLVED"
+    assert mod.retry_due_rows() == []
+
+
+def test_ambiguous_retry_requires_both_retry_and_ambiguous_flags(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    for index, (enabled, ambiguous) in enumerate(((False, True), (True, False))):
+        trade_id = f"S9L-AMBIG-GATE-{index}"
+        scanner, client_id = _stage_ambiguous_submit(
+            mod, execution, trade_id, execution.BUY,
+            mod.LIFECYCLE_ENTRY_UNCONFIRMED)
+        monkeypatch.setattr(mod, "RETRY_ENABLED", enabled)
+        monkeypatch.setattr(mod, "RETRY_MAX_ATTEMPTS", 1 if enabled else 0)
+        monkeypatch.setattr(mod, "RETRY_AMBIGUOUS", ambiguous)
+        monkeypatch.setattr(mod, "TAG_LOOKUP_MAX_ATTEMPTS", 1)
+        monkeypatch.setattr(mod, "EXECUTOR", FakeTagExecutor(
+            execution.OrderLookup()))
+
+        summary = scanner.resolve_unknown_submits()
+
+        assert summary["retry_scheduled"] == 0
+        assert summary["manual"] == 1
+        assert _order_row(mod, client_id)[
+            "place_status"] == execution.PLACE_MANUAL_REQUIRED
+    assert mod.retry_due_rows() == []
+
+
+def test_ambiguous_opt_in_retry_uses_new_tag(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-AMBIG-RETRY"
+    _retry_settings(mod, execution, monkeypatch, ambiguous=True)
+    scanner, client_id = _stage_ambiguous_submit(
+        mod, execution, trade_id, execution.BUY, mod.LIFECYCLE_ENTRY_UNCONFIRMED)
+    monkeypatch.setattr(mod, "EXECUTOR", FakeTagExecutor(execution.OrderLookup()))
+
+    lookup_summary = scanner.resolve_unknown_submits()
+    assert lookup_summary["retry_scheduled"] == 1
+    assert _order_row(mod, client_id)[
+        "place_status"] == execution.PLACE_RETRY_DUE
+
+    _arm_real_orders(monkeypatch)
+    placer = FakePlaceExecutor()
+    monkeypatch.setattr(mod, "EXECUTOR", placer)
+    assert scanner.process_retries()["submitted"] == 1
+    assert len(placer.placed) == 1
+    assert placer.placed[0].client_order_id == execution.make_client_order_id(
+        trade_id, execution.BUY, "r1")
+
+
+def test_confirmed_buy_failure_retries_with_new_tag_and_no_cap_charge(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RETRY-BUY"
+    _retry_settings(mod, execution, monkeypatch)
+    scanner, client_id = _stage_confirmed_failure(
+        mod, execution, monkeypatch, trade_id, execution.BUY,
+        mod.LIFECYCLE_PENDING, execution.STATUS_REJECTED)
+
+    assert _order_row(mod, client_id)[
+        "place_status"] == execution.PLACE_RETRY_DUE
+    assert scanner.states["CE"].position.lifecycle_state == (
+        mod.LIFECYCLE_ENTRY_RETRY_PENDING)
+
+    _arm_real_orders(monkeypatch)
+    placer = FakePlaceExecutor()
+    monkeypatch.setattr(mod, "EXECUTOR", placer)
+    today = mod.now_ist().date().isoformat()
+    before = mod.orders_today(today)
+
+    assert scanner.process_retries()["submitted"] == 1
+    assert len(placer.placed) == 1
+    attempt = placer.placed[0]
+    retry_id = execution.make_client_order_id(trade_id, execution.BUY, "r1")
+    assert attempt.client_order_id == retry_id
+    assert attempt.retry_of == client_id
+    assert attempt.attempt_no == 1
+    assert attempt.retry_count == 1
+    assert attempt.counts_toward_cap is False
+    assert attempt.quantity == 65
+    assert _order_row(mod, retry_id)["counts_toward_cap"] == 0
+    assert mod.orders_today(today) == before
+    assert "RETRY_SUBMITTED" in _event_names(mod)
+
+
+def test_confirmed_sell_failure_retries_without_closing_position(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RETRY-SELL"
+    _retry_settings(mod, execution, monkeypatch)
+    scanner, client_id = _stage_confirmed_failure(
+        mod, execution, monkeypatch, trade_id, execution.SELL,
+        mod.LIFECYCLE_EXIT_PENDING, execution.STATUS_CANCELLED)
+
+    assert _order_row(mod, client_id)[
+        "place_status"] == execution.PLACE_RETRY_DUE
+    assert scanner.states["CE"].position.lifecycle_state == (
+        mod.LIFECYCLE_EXIT_RETRY_PENDING)
+
+    _arm_real_orders(monkeypatch)
+    placer = FakePlaceExecutor()
+    monkeypatch.setattr(mod, "EXECUTOR", placer)
+    assert scanner.process_retries()["submitted"] == 1
+    assert placer.placed[0].client_order_id == execution.make_client_order_id(
+        trade_id, execution.SELL, "r1")
+    assert mod.load_open_positions()["CE"].lifecycle_state == (
+        mod.LIFECYCLE_EXIT_PENDING)
+    assert mod.today_stats(mod.now_ist().date().isoformat())["trades"] == 0
+
+
+@pytest.mark.parametrize(
+    "side,status,start_state,expected_state",
+    [
+        ("BUY", "REJECTED", "PENDING_FILL", "ENTRY_PARTIAL"),
+        ("SELL", "CANCELLED", "EXIT_PENDING", "EXIT_PARTIAL"),
+    ],
+)
+def test_partial_fill_never_retries_or_drops_position(
+        live_runner, execution, monkeypatch, side, status, start_state,
+        expected_state):
+    mod = live_runner
+    trade_id = f"S9L-PARTIAL-{side}"
+    _retry_settings(mod, execution, monkeypatch)
+    details = execution.OrderDetails(status=status, filled_quantity=5)
+    scanner, client_id = _stage_confirmed_failure(
+        mod, execution, monkeypatch, trade_id, side, start_state, status,
+        details=details)
+
+    row = _order_row(mod, client_id)
+    assert row["place_status"] == execution.PLACE_MANUAL_REQUIRED
+    assert row["last_error_code"] == "PARTIAL_FILL"
+    assert scanner.states["CE"].position.lifecycle_state == expected_state
+    assert mod.load_open_positions()["CE"].lifecycle_state == expected_state
+    assert mod.retry_due_rows() == []
+    events = _event_names(mod)
+    assert "PARTIAL_FILL_MANUAL" in events
+    assert "PHANTOM_POSITION_REMOVED" not in events
+    assert "RETRY_SCHEDULED" not in events
+
+
+def test_retry_rechecks_kill_switch_without_broker_call(
+        live_runner, execution, monkeypatch, tmp_path):
+    mod = live_runner
+    trade_id = "S9L-RETRY-KILL"
+    _retry_settings(mod, execution, monkeypatch)
+    scanner, client_id = _stage_confirmed_failure(
+        mod, execution, monkeypatch, trade_id, execution.BUY,
+        mod.LIFECYCLE_PENDING, execution.STATUS_REJECTED)
+
+    kill_file = tmp_path / "retry.KILL"
+    kill_file.write_text("stop", encoding="utf-8")
+    monkeypatch.setenv("SMA9_LIVE_KILL_FILE", str(kill_file))
+    monkeypatch.setattr(mod, "LIMITS", execution.RiskLimits(
+        max_orders_per_day=mod.LIMITS.max_orders_per_day,
+        lot_size=mod.LIMITS.lot_size,
+        collar_pct=mod.LIMITS.collar_pct,
+        kill_file=str(kill_file)))
+    _arm_real_orders(monkeypatch)
+    calls = []
+
+    def caller(*args, **kwargs):
+        calls.append(kwargs)
+        return {"order_id": "MUST-NOT-HAPPEN"}
+
+    monkeypatch.setattr(mod, "EXECUTOR", execution.MStockOrderExecutor(
+        caller=caller, environ=os.environ))
+
+    assert scanner.process_retries()["exhausted"] == 1
+
+    assert calls == []
+    retry_id = execution.make_client_order_id(trade_id, execution.BUY, "r1")
+    retry_row = _order_row(mod, retry_id)
+    assert retry_row["status"] == execution.STATUS_REJECTED
+    assert retry_row["place_status"] == execution.PLACE_PRE_POST_REFUSED
+    assert _order_row(mod, client_id)[
+        "place_status"] == execution.PLACE_RETRY_EXHAUSTED
+
+
+def test_retry_rechecks_collar_before_submit(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RETRY-COLLAR"
+    _retry_settings(mod, execution, monkeypatch)
+    scanner, client_id = _stage_confirmed_failure(
+        mod, execution, monkeypatch, trade_id, execution.BUY,
+        mod.LIFECYCLE_PENDING, execution.STATUS_REJECTED)
+    scanner._last_ltp["CE"] = 100.0  # original intended price is 105.0
+
+    _arm_real_orders(monkeypatch)
+    placer = FakePlaceExecutor()
+    monkeypatch.setattr(mod, "EXECUTOR", placer)
+
+    assert scanner.process_retries()["exhausted"] == 1
+
+    assert placer.placed == []
+    retry_id = execution.make_client_order_id(trade_id, execution.BUY, "r1")
+    assert not mod.order_exists(retry_id)
+    original = _order_row(mod, client_id)
+    assert original["place_status"] == execution.PLACE_RETRY_EXHAUSTED
+    assert original["last_error_code"] == "PRICE_COLLAR_BREACH"
+
+
+def test_retry_rechecks_lot_size_from_instrument_master(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-RETRY-LOT"
+    _retry_settings(mod, execution, monkeypatch)
+    scanner, client_id = _stage_confirmed_failure(
+        mod, execution, monkeypatch, trade_id, execution.BUY,
+        mod.LIFECYCLE_PENDING, execution.STATUS_REJECTED)
+    assert _order_row(mod, client_id)["quantity"] == 65
+    feed = ChangingLotFeed(75)
+    scanner.feed = feed
+
+    _arm_real_orders(monkeypatch)
+    placer = FakePlaceExecutor()
+    monkeypatch.setattr(mod, "EXECUTOR", placer)
+
+    assert scanner.process_retries()["submitted"] == 1
+
+    assert feed.calls == 1
+    retry_id = execution.make_client_order_id(trade_id, execution.BUY, "r1")
+    assert placer.placed[0].quantity == 75
+    assert _order_row(mod, retry_id)["quantity"] == 75

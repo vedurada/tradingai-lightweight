@@ -56,3 +56,7 @@ class BrokerAdapter(ABC):
     def order_status(self, **params) -> dict:
         """Optional live order status lookup."""
         raise BrokerGatewayError(f"{self.name}: order status is not available")
+
+    def order_by_tag(self, **params) -> dict:
+        """Optional read-only order-book lookup by our client tag."""
+        raise BrokerGatewayError(f"{self.name}: order lookup by tag is not available")

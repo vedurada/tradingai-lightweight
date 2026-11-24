@@ -937,14 +937,27 @@ the collar reference is recorded in the ledger but never sent as a broker
 limit price. Exits are never blocked by these guards.
 
 Every entry and exit writes an append-only `sma9_live_orders` ledger row keyed
-by a deterministic `client_order_id`, so a retry cannot duplicate an order.
-The executor result (`status`, `broker_order_id`) is written back to that row.
-Real execution additionally requires **both**
-`SMA9_LIVE_ORDERS_ENABLED=true` and `SMA9_LIVE_ARM_REAL_ORDERS=ARMED`, plus the
-daemon opt-in above. The `MStockOrderExecutor` fails closed on any missing
-flag, invalid symbol, unavailable lot size, gateway error or missing broker
-order id, and posts a MARKET order exactly once (no implicit retry that could
+by a deterministic `client_order_id`. One client id identifies one attempt; a
+bounded retry uses a new `rN` tag/derived id and keeps `retry_of` pointing at
+the original order. The executor result (`status`, `broker_order_id`,
+`place_status`) is written back to that row. Real execution additionally
+requires **both** `SMA9_LIVE_ORDERS_ENABLED=true` and
+`SMA9_LIVE_ARM_REAL_ORDERS=ARMED`, plus the daemon opt-in above. The
+`MStockOrderExecutor` fails closed on any missing flag, invalid symbol,
+unavailable lot size, gateway error or missing broker order id, and posts a
+MARKET order exactly once (no implicit retry in the adapter/gateway that could
 duplicate a fill).
+
+Recovery is split into two fail-closed stages. **Stage 1** is always read-only
+at the broker: an ambiguous submit (exception/timeout or no broker order id)
+is resolved by looking up our client tag in the mStock order book. A found
+order is adopted by id; multiple orders with our tag, or no order after the
+lookup budget, are marked manual. **Stage 2** adds bounded re-placement only
+for broker-confirmed terminal no-fill outcomes, and is **disabled by default**
+on the deployed unit. An ambiguous timeout is never retried unless
+`SMA9_LIVE_RETRY_AMBIGUOUS=true` is explicitly set together with
+`SMA9_LIVE_RETRY_ENABLED=true`. No OTP/TOTP, keys, passwords or credentials are
+handled by this flow.
 
 ### Real-trade lifecycle and broker reconciliation
 
@@ -957,19 +970,53 @@ market is closed, so exits from an earlier session are still checked):
 | `PENDING_FILL` | BUY submitted, broker fill not yet confirmed | no exits, no new entry in that leg |
 | `ACTIVE` | BUY `FILLED` confirmed at the broker | trailing stop / 5% SL exits enabled |
 | `EXIT_PENDING` | SELL submitted, broker fill not yet confirmed | no duplicate SELL, no new entry |
-| `ENTRY_UNCONFIRMED` | BUY submit failed; broker outcome unknown | no auto-retry; manual verification |
-| `EXIT_FAILED` | SELL rejected/cancelled or submit failed | no auto-retry; manual verification |
+| `ENTRY_UNCONFIRMED` | BUY submit outcome unknown; read-only tag lookup in progress | no exits; tag lookup then manual or explicit opt-in retry |
+| `EXIT_FAILED` | SELL rejected/cancelled or submit outcome unknown; position retained | no trade close, no blind retry; manual or explicit opt-in retry |
+| `ENTRY_BLOCKED` / `EXIT_BLOCKED` | Refused before any broker POST (arm/kill/symbol/ledger validation) | no order was sent; operator fixes config |
+| `ENTRY_RETRY_PENDING` / `EXIT_RETRY_PENDING` | Broker-confirmed no-fill; bounded retry queued | no duplicate while the retry is pending |
+| `ENTRY_PARTIAL` / `EXIT_PARTIAL` | Broker reported a partial fill; never retried | position retained for manual verification |
 
 `reconcile_orders()` polls `order_status` through the gateway for every real
 order still in `NEW`/`ACCEPTED`, writes `broker_status` / `status_checked_at` /
-`reconcile_attempts` back to the ledger, and appends events to
-`sma9_live_lifecycle_events`. A confirmed BUY fill activates the position; a
-rejected/cancelled BUY removes the phantom position. A position is closed and
-its trade recorded **only after** the SELL is confirmed `FILLED`; a rejected or
-cancelled SELL keeps the position in `EXIT_FAILED` and logs `CRITICAL`. There is
-never an automatic re-submission. After
+`reconcile_attempts` / `filled_quantity` back to the ledger, and appends events
+to `sma9_live_lifecycle_events`. A confirmed BUY fill activates the position; a
+rejected/cancelled BUY with no fill removes the phantom position unless a retry
+is queued. A position is closed and its trade recorded **only after** the SELL
+is confirmed `FILLED`; a rejected, cancelled or partially filled SELL keeps the
+position in `EXIT_FAILED` / `EXIT_PARTIAL` and logs `CRITICAL`. After
 `SMA9_LIVE_RECONCILE_MAX_ATTEMPTS` (default 120) unresolved checks, a
 `RECONCILE_STALE` critical event is recorded.
+
+`resolve_unknown_submits()` handles Stage 1 with a read-only gateway
+`order_by_tag` lookup for submits that ended with no broker order id. It can
+adopt a real `broker_order_id` and resume normal polling; multiple matches or
+an exhausted lookup budget become `MANUAL_REQUIRED`. A lookup miss is **not**
+proof of non-acceptance, so it never triggers a retry by itself.
+
+`process_retries()` implements Stage 2 only when
+`SMA9_LIVE_RETRY_ENABLED=true`. It re-places broker-confirmed terminal no-fill
+orders (`REJECTED` / `CANCELLED` / `FAILED` with `filled_quantity = 0`) using a
+new `rN` attempt tag and derived deterministic id, `retry_of` pointing at the
+original id, and `counts_toward_cap = 0` so retries do not consume the daily
+entry allowance. Every attempt rechecks arming/kill switch, the BUY collar, the
+current mStock instrument-master lot, the signal age, one-actionable-attempt
+per trade/side, and that the position still exists. Partial fills are never
+retried. Ambiguous submits are retried only when both
+`SMA9_LIVE_RETRY_ENABLED=true` and `SMA9_LIVE_RETRY_AMBIGUOUS=true` are set
+deliberately. The gateway/adapter still POSTs each attempt exactly once.
+
+| Recovery setting | Default | Meaning |
+|---|---|---|
+| `SMA9_LIVE_TAG_LOOKUP_MAX_ATTEMPTS` | `12` | read-only tag checks before an ambiguous submit becomes manual |
+| `SMA9_LIVE_RETRY_ENABLED` | `false` | master switch for Stage 2 re-placement |
+| `SMA9_LIVE_RETRY_MAX_ATTEMPTS` | `1` (capped `3`; `0` when disabled) | bounded retries per failed order family |
+| `SMA9_LIVE_RETRY_BASE_DELAY_SEC` | `30` (minimum `5`) | delay before a retry is due |
+| `SMA9_LIVE_RETRY_MAX_AGE_SEC` | `300` (minimum `60`) | maximum age of the original signal |
+| `SMA9_LIVE_RETRY_AMBIGUOUS` | `false` | opt in to retries after an unresolved ambiguous submit |
+| `SMA9_LIVE_RETRY_SIDES` | `BUY,SELL` | sides eligible for bounded retries |
+
+The deployed unit does not set any `SMA9_LIVE_RETRY_*` variable, so Stage 2
+remains off until explicitly enabled.
 
 ### Shadow execution-quality log
 
@@ -1001,8 +1048,10 @@ This log is observational: it does **not** alter the recorded trade P&L or any
 order/risk decision.
 
 Read-only API namespace: `/api/sma9-live/*` (including `/orders`,
-`/reconciliation` for pending fills, lifecycle states and audit events, and
-`/execution-quality` for the shadow log); page: `/live/sma9-live/`. Both are
+`/reconciliation` for pending fills, lifecycle states, audit events, tag-lookup
+status, unknown submits and the bounded retry queue, and `/execution-quality`
+for the shadow log). `scanner-status` also publishes `execution.tag_lookup` and
+`execution.retries` summaries. Page: `/live/sma9-live/`. Both API and page are
 read-only and publish no source paths, keys or credentials.
 
 No credentials, keys or OTP/TOTP values are handled by the service; token

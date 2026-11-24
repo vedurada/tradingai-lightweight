@@ -237,17 +237,36 @@ def reconciliation():
             positions = [dict(r) for r in conn.execute(
                 """SELECT option_type, trade_id, lifecycle_state, updated_at
                    FROM sma9_live_open_positions ORDER BY option_type""")]
+            retry_queue = [dict(r) for r in conn.execute(
+                """SELECT client_order_id, trade_id, option_type, side, status,
+                          place_status, retry_count, attempt_no, retry_of,
+                          next_retry_at, last_error_code, created_at
+                   FROM sma9_live_orders
+                   WHERE dry_run = 0 AND place_status = 'RETRY_DUE'
+                   ORDER BY next_retry_at, created_at LIMIT ?""", (limit,))]
+            unknown_submits = [dict(r) for r in conn.execute(
+                """SELECT client_order_id, trade_id, option_type, side, status,
+                          tag_lookup_attempts, last_error_code, created_at
+                   FROM sma9_live_orders
+                   WHERE dry_run = 0 AND place_status = 'AMBIGUOUS'
+                   ORDER BY created_at LIMIT ?""", (limit,))]
         state = _live_state()
+        execution = state.get("execution", {})
         return jsonify({
             "success": True,
-            "summary": state.get("execution", {}).get("reconciliation", {}),
+            "summary": execution.get("reconciliation", {}),
+            "tag_lookup": execution.get("tag_lookup", {}),
+            "retries": execution.get("retries", {}),
             "pending_orders": pending,
+            "unknown_submits": unknown_submits,
+            "retry_queue": retry_queue,
             "lifecycle_events": events,
             "positions": positions,
         })
     except Exception as exc:
         return jsonify({
             "success": False, "summary": {}, "pending_orders": [],
+            "unknown_submits": [], "retry_queue": [],
             "lifecycle_events": [], "positions": [], "error": str(exc),
         }), 500
 

@@ -57,6 +57,12 @@
   <div class="stats" id="recon"></div>
   <h2 style="margin-top:.8rem">Pending fills</h2>
   <div id="pending"></div>
+  <h2 style="margin-top:.8rem">Tag lookup / unknown submits</h2>
+  <div class="stats" id="tag-lookup"></div>
+  <div id="unknown"></div>
+  <h2 style="margin-top:.8rem">Bounded retries</h2>
+  <div class="stats" id="retry-stats"></div>
+  <div id="retry-queue"></div>
   <h2 style="margin-top:.8rem">Lifecycle events</h2>
   <div id="events"></div>
 </section>
@@ -150,6 +156,36 @@ async function refresh() {
       ['status', 'Local'], ['broker_status', 'Broker'],
       ['broker_order_id', 'Broker ID', 'mono'],
       ['reconcile_attempts', 'Checks'], ['last_error', 'Error'],
+    ]);
+    const tl = recon.tag_lookup || {};
+    document.getElementById('tag-lookup').innerHTML = [
+      card('Enabled', tl.enabled ? 'ON' : 'OFF'),
+      card('Last check', (tl.at || '--').slice(11, 19)),
+      card('Checked', tl.checked ?? 0),
+      card('Resolved', tl.resolved ?? 0),
+      card('Awaiting lookup', tl.pending ?? 0),
+      card('Retry scheduled', tl.retry_scheduled ?? 0),
+      card('Manual required', tl.manual ?? 0),
+    ].join('');
+    document.getElementById('unknown').innerHTML = table(recon.unknown_submits, [
+      ['created_at', 'Time'], ['side', 'Side'], ['trade_id', 'Trade', 'mono'],
+      ['status', 'Local'], ['tag_lookup_attempts', 'Checks'],
+      ['last_error_code', 'Reason'],
+    ]);
+    const rt = exec.retries || recon.retries || {};
+    document.getElementById('retry-stats').innerHTML = [
+      card('Retries', rt.enabled ? 'ON' : 'OFF'),
+      card('Max attempts', rt.max_attempts ?? 0),
+      card('Ambiguous opt-in', rt.ambiguous_opt_in ? 'ON' : 'OFF'),
+      card('Sides', (rt.sides || []).join('/') || '--'),
+      card('Submitted', (rt.last || {}).submitted ?? 0),
+      card('Rescheduled', (rt.last || {}).rescheduled ?? 0),
+      card('Exhausted', (rt.last || {}).exhausted ?? 0),
+    ].join('');
+    document.getElementById('retry-queue').innerHTML = table(recon.retry_queue, [
+      ['created_at', 'Time'], ['side', 'Side'], ['trade_id', 'Trade', 'mono'],
+      ['attempt_no', 'Attempt'], ['retry_count', 'Retries'],
+      ['next_retry_at', 'Next at'], ['last_error_code', 'Reason'],
     ]);
     document.getElementById('events').innerHTML = table(recon.lifecycle_events, [
       ['created_at', 'Time'], ['side', 'Side'], ['trade_id', 'Trade', 'mono'],

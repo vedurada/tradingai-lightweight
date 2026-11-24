@@ -29,6 +29,7 @@ import sys
 import time
 import traceback
 from datetime import date, datetime, time as dtime, timedelta
+from types import SimpleNamespace
 from zoneinfo import ZoneInfo
 
 BASE = "/opt/tradingai"
@@ -53,6 +54,7 @@ from app.live_execution import (  # noqa: E402
     BUY,
     SELL,
     ORDER_COLUMNS,
+    OrderLookup,
     RiskLimits,
     OrderRecord,
     apply_price_collar,
@@ -71,6 +73,15 @@ from app.live_execution import (  # noqa: E402
     STATUS_FILLED,
     STATUS_NEW,
     STATUS_REJECTED,
+    PLACE_AMBIGUOUS,
+    PLACE_DEFINITELY_REJECTED,
+    PLACE_MANUAL_REQUIRED,
+    PLACE_PRE_POST_REFUSED,
+    PLACE_RESOLVED,
+    PLACE_RETRY_ATTEMPTED,
+    PLACE_RETRY_DUE,
+    PLACE_RETRY_EXHAUSTED,
+    PLACE_SUBMITTED,
 )
 
 # Position lifecycle states, persisted alongside the open position.
@@ -79,6 +90,12 @@ LIFECYCLE_ACTIVE = "ACTIVE"
 LIFECYCLE_EXIT_PENDING = "EXIT_PENDING"
 LIFECYCLE_ENTRY_UNCONFIRMED = "ENTRY_UNCONFIRMED"
 LIFECYCLE_EXIT_FAILED = "EXIT_FAILED"
+LIFECYCLE_ENTRY_RETRY_PENDING = "ENTRY_RETRY_PENDING"
+LIFECYCLE_EXIT_RETRY_PENDING = "EXIT_RETRY_PENDING"
+LIFECYCLE_ENTRY_PARTIAL = "ENTRY_PARTIAL"
+LIFECYCLE_EXIT_PARTIAL = "EXIT_PARTIAL"
+LIFECYCLE_ENTRY_BLOCKED = "ENTRY_BLOCKED"
+LIFECYCLE_EXIT_BLOCKED = "EXIT_BLOCKED"
 
 FILLED_STATUSES = frozenset({STATUS_FILLED, STATUS_DRY_RUN})
 PENDING_STATUSES = frozenset({STATUS_NEW, STATUS_ACCEPTED})
@@ -127,6 +144,36 @@ RECONCILE_MAX_ATTEMPTS = max(
     1, int(os.environ.get("SMA9_LIVE_RECONCILE_MAX_ATTEMPTS", "120")))
 RECONCILE_BATCH = max(
     1, int(os.environ.get("SMA9_LIVE_RECONCILE_BATCH", "50")))
+
+# Stage 1: read-only broker lookup by our client tag. It can adopt a real
+# broker order id after an ambiguous submit, but a miss never places a new
+# order unless RETRY_AMBIGUOUS is explicitly enabled.
+TAG_LOOKUP_MAX_ATTEMPTS = max(
+    1, int(os.environ.get("SMA9_LIVE_TAG_LOOKUP_MAX_ATTEMPTS", "12")))
+
+# Stage 2: bounded retries, disabled by default. Retries are only for broker-
+# confirmed no-fill outcomes; an ambiguous timeout stays manual unless
+# SMA9_LIVE_RETRY_AMBIGUOUS=true is set deliberately.
+RETRY_ENABLED = (
+    os.environ.get("SMA9_LIVE_RETRY_ENABLED", "").strip().lower() in ENABLED_FLAG
+)
+RETRY_MAX_ATTEMPTS = (
+    min(3, max(0, int(os.environ.get("SMA9_LIVE_RETRY_MAX_ATTEMPTS", "1"))))
+    if RETRY_ENABLED else 0
+)
+RETRY_BASE_DELAY_SEC = max(
+    5, int(os.environ.get("SMA9_LIVE_RETRY_BASE_DELAY_SEC", "30")))
+RETRY_MAX_AGE_SEC = max(
+    60, int(os.environ.get("SMA9_LIVE_RETRY_MAX_AGE_SEC", "300")))
+RETRY_AMBIGUOUS = (
+    os.environ.get("SMA9_LIVE_RETRY_AMBIGUOUS", "").strip().lower()
+    in ENABLED_FLAG
+)
+RETRY_SIDES = frozenset(
+    side.strip().upper()
+    for side in os.environ.get("SMA9_LIVE_RETRY_SIDES", "BUY,SELL").split(",")
+    if side.strip().upper() in {BUY, SELL}
+)
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9 Live - ATM Option Strike (BUY ONLY)"
@@ -292,7 +339,8 @@ def init_db() -> None:
         );
 
         -- Append-only order ledger. The deterministic client_order_id is the
-        -- idempotency key: a retry can never create a duplicate order row.
+        -- idempotency key for one attempt. Bounded retries use a new attempt
+        -- tag but keep retry_of pointing at the original client_order_id.
         CREATE TABLE IF NOT EXISTS sma9_live_orders (
             client_order_id TEXT PRIMARY KEY,
             scanner TEXT NOT NULL,
@@ -314,10 +362,22 @@ def init_db() -> None:
             reconcile_attempts INTEGER NOT NULL DEFAULT 0,
             last_error TEXT,
             created_at TEXT NOT NULL,
-            order_date TEXT NOT NULL
+            order_date TEXT NOT NULL,
+            attempt_no INTEGER NOT NULL DEFAULT 0,
+            retry_of TEXT,
+            retry_count INTEGER NOT NULL DEFAULT 0,
+            place_status TEXT NOT NULL DEFAULT 'SUBMITTED',
+            counts_toward_cap INTEGER NOT NULL DEFAULT 1,
+            tag_lookup_attempts INTEGER NOT NULL DEFAULT 0,
+            filled_quantity REAL,
+            last_error_code TEXT,
+            next_retry_at TEXT,
+            updated_at TEXT
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_date ON sma9_live_orders(order_date);
         CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_trade ON sma9_live_orders(trade_id);
+        CREATE INDEX IF NOT EXISTS idx_sma9_live_orders_place
+            ON sma9_live_orders(place_status, next_retry_at);
 
         -- Append-only audit trail for the real-trade lifecycle. The API never
         -- writes here; it is the operator-facing record of fill confirmations
@@ -375,9 +435,24 @@ def init_db() -> None:
         ("status_checked_at", "TEXT"),
         ("reconcile_attempts", "INTEGER NOT NULL DEFAULT 0"),
         ("last_error", "TEXT"),
+        ("attempt_no", "INTEGER NOT NULL DEFAULT 0"),
+        ("retry_of", "TEXT"),
+        ("retry_count", "INTEGER NOT NULL DEFAULT 0"),
+        ("place_status", "TEXT NOT NULL DEFAULT 'SUBMITTED'"),
+        ("counts_toward_cap", "INTEGER NOT NULL DEFAULT 1"),
+        ("tag_lookup_attempts", "INTEGER NOT NULL DEFAULT 0"),
+        ("filled_quantity", "REAL"),
+        ("last_error_code", "TEXT"),
+        ("next_retry_at", "TEXT"),
+        ("updated_at", "TEXT"),
     ):
         if col not in order_cols:
             conn.execute(f"ALTER TABLE sma9_live_orders ADD COLUMN {col} {decl}")
+    # Existing rows predate the retry family pointer; point them at themselves
+    # so retry_of is always usable without nullable special cases.
+    conn.execute(
+        "UPDATE sma9_live_orders SET retry_of = client_order_id "
+        "WHERE retry_of IS NULL")
     conn.commit()
     conn.close()
 
@@ -544,10 +619,13 @@ def update_order_status(
     client_order_id: str, status: str, broker_order_id: str | None = None,
     *, broker_status: str | None = None, checked_at: str | None = None,
     attempts: int | None = None, error: str | None = None,
+    place_status: str | None = None, tag_lookup_attempts: int | None = None,
+    retry_count: int | None = None, filled_quantity: float | None = None,
+    last_error_code: str | None = None, next_retry_at: str | None = None,
 ) -> None:
     """Persist the executor/broker result against the idempotency key."""
-    sets = ["status = ?"]
-    values: list = [status]
+    sets = ["status = ?", "updated_at = ?"]
+    values: list = [status, now_ist().isoformat()]
     if broker_order_id is not None:
         sets.append("broker_order_id = ?")
         values.append(broker_order_id)
@@ -563,6 +641,24 @@ def update_order_status(
     if error is not None:
         sets.append("last_error = ?")
         values.append(error)
+    if place_status is not None:
+        sets.append("place_status = ?")
+        values.append(place_status)
+    if tag_lookup_attempts is not None:
+        sets.append("tag_lookup_attempts = ?")
+        values.append(tag_lookup_attempts)
+    if retry_count is not None:
+        sets.append("retry_count = ?")
+        values.append(retry_count)
+    if filled_quantity is not None:
+        sets.append("filled_quantity = ?")
+        values.append(filled_quantity)
+    if last_error_code is not None:
+        sets.append("last_error_code = ?")
+        values.append(last_error_code)
+    if next_retry_at is not None:
+        sets.append("next_retry_at = ?")
+        values.append(next_retry_at)
     values.append(client_order_id)
     conn = db_conn()
     try:
@@ -590,6 +686,99 @@ def pending_order_rows(limit: int | None = None) -> list:
             query += " LIMIT ?"
             params.append(limit)
         return [dict(r) for r in conn.execute(query, params).fetchall()]
+    finally:
+        conn.close()
+
+
+def tag_lookup_rows(limit: int | None = None) -> list:
+    """Ambiguous submits with no broker id, awaiting read-only tag lookup."""
+    conn = db_conn()
+    try:
+        query = (
+            "SELECT * FROM sma9_live_orders "
+            "WHERE dry_run = 0 AND broker_order_id IS NULL "
+            "AND place_status = ? AND status = ? "
+            "ORDER BY created_at ASC"
+        )
+        params = [PLACE_AMBIGUOUS, STATUS_REJECTED]
+        if limit is not None:
+            query += " LIMIT ?"
+            params.append(limit)
+        return [dict(r) for r in conn.execute(query, params).fetchall()]
+    finally:
+        conn.close()
+
+
+def retry_due_rows(limit: int | None = None) -> list:
+    """Broker-confirmed no-fill attempts whose bounded retry is due."""
+    conn = db_conn()
+    try:
+        query = (
+            "SELECT * FROM sma9_live_orders "
+            "WHERE dry_run = 0 AND place_status = ? "
+            "AND (next_retry_at IS NULL OR next_retry_at <= ?) "
+            "ORDER BY next_retry_at, created_at ASC"
+        )
+        params = [PLACE_RETRY_DUE, now_ist().isoformat()]
+        if limit is not None:
+            query += " LIMIT ?"
+            params.append(limit)
+        return [dict(r) for r in conn.execute(query, params).fetchall()]
+    finally:
+        conn.close()
+
+
+def claim_retry(client_order_id: str) -> bool:
+    """Atomically claim one due retry so restarts cannot duplicate it."""
+    conn = db_conn()
+    try:
+        cur = conn.execute(
+            """UPDATE sma9_live_orders
+               SET place_status = ?, updated_at = ?
+               WHERE client_order_id = ? AND place_status = ?""",
+            (PLACE_RETRY_ATTEMPTED, now_ist().isoformat(),
+             client_order_id, PLACE_RETRY_DUE),
+        )
+        conn.commit()
+        return cur.rowcount > 0
+    finally:
+        conn.close()
+
+
+def has_open_attempt(trade_id: str, side: str,
+                     exclude_client_id: str | None = None) -> bool:
+    """True when another attempt for this trade/side is still actionable.
+
+    ``RETRY_ATTEMPTED`` is excluded on purpose: it is the bookkeeping state of
+    an earlier attempt that has already been re-placed, not a live order.
+    """
+    conn = db_conn()
+    try:
+        row = conn.execute(
+            """SELECT 1 FROM sma9_live_orders
+               WHERE trade_id = ? AND side = ?
+                 AND client_order_id != ?
+                 AND dry_run = 0
+                 AND (status IN (?, ?)
+                      OR place_status = ?)
+               LIMIT 1""",
+            (trade_id, side, exclude_client_id or "", STATUS_NEW,
+             STATUS_ACCEPTED, PLACE_RETRY_DUE),
+        ).fetchone()
+        return row is not None
+    finally:
+        conn.close()
+
+
+def load_open_position_row(trade_id: str, option_type: str) -> dict | None:
+    conn = db_conn()
+    try:
+        row = conn.execute(
+            """SELECT * FROM sma9_live_open_positions
+               WHERE trade_id = ? AND option_type = ?""",
+            (trade_id, option_type),
+        ).fetchone()
+        return dict(row) if row else None
     finally:
         conn.close()
 
@@ -658,6 +847,11 @@ def order_record_from_row(row: dict):
         broker_order_id=row["broker_order_id"],
         created_at=row["created_at"],
         order_date=row["order_date"],
+        attempt_no=int(row.get("attempt_no") or 0),
+        retry_of=row.get("retry_of") or row["client_order_id"],
+        retry_count=int(row.get("retry_count") or 0),
+        place_status=row.get("place_status") or PLACE_SUBMITTED,
+        counts_toward_cap=bool(row.get("counts_toward_cap", 1)),
     )
 
 
@@ -718,7 +912,8 @@ def orders_today(order_date: str) -> int:
     conn = db_conn()
     try:
         row = conn.execute(
-            "SELECT COUNT(*) n FROM sma9_live_orders WHERE order_date = ?",
+            """SELECT COUNT(*) n FROM sma9_live_orders
+               WHERE order_date = ? AND counts_toward_cap = 1""",
             (order_date,),
         ).fetchone()
         return int(row["n"])
@@ -913,6 +1108,16 @@ class Sma9LiveScanner:
             "rejected": 0, "pending": 0, "errors": 0, "quality_errors": 0,
             "at": None,
         }
+        self.last_tag_lookup = {
+            "enabled": RECONCILE_ENABLED, "checked": 0, "resolved": 0,
+            "pending": 0, "retry_scheduled": 0, "manual": 0, "errors": 0,
+            "at": None,
+        }
+        self.last_retry = {
+            "enabled": RETRY_ENABLED, "checked": 0, "submitted": 0,
+            "rescheduled": 0, "exhausted": 0, "suppressed": 0,
+            "errors": 0, "at": None,
+        }
         # Previous poll's LTP per leg; used as the pre-trade BUY collar
         # reference for MARKET orders.
         self._last_ltp: dict[str, float] = {}
@@ -951,12 +1156,69 @@ class Sma9LiveScanner:
                 "EXIT CONFIRMED %s %s trade=%s price=%.2f reason=%s",
                 option_type, symbol, trade_id, price, reason)
 
+    @staticmethod
+    def _row_age_seconds(row: dict) -> float:
+        try:
+            created = datetime.fromisoformat(str(row.get("created_at") or ""))
+        except (TypeError, ValueError):
+            return 0.0
+        if created.tzinfo is None:
+            created = created.replace(tzinfo=IST)
+        return max(0.0, (now_ist() - created).total_seconds())
+
+    def _retry_decision(self, row: dict, status: str) -> tuple[bool, str]:
+        """Return whether a terminal no-fill outcome may be retried."""
+        if status not in FAILED_STATUSES:
+            return False, "NOT_TERMINAL_FAILURE"
+        if not RETRY_ENABLED or RETRY_MAX_ATTEMPTS <= 0:
+            return False, "RETRY_DISABLED"
+        if row.get("side") not in RETRY_SIDES:
+            return False, "SIDE_NOT_ALLOWED"
+        try:
+            filled = float(row.get("filled_quantity") or 0)
+        except (TypeError, ValueError):
+            filled = 0.0
+        if filled > 0:
+            return False, "PARTIAL_FILL"
+        if int(row.get("retry_count") or 0) >= RETRY_MAX_ATTEMPTS:
+            return False, "MAX_ATTEMPTS"
+        if self._row_age_seconds(row) > RETRY_MAX_AGE_SEC:
+            return False, "SIGNAL_TOO_OLD"
+        return True, "OK"
+
+    def _schedule_retry(self, row: dict, status: str, reason: str) -> None:
+        client_id = row["client_order_id"]
+        next_at = (
+            now_ist() + timedelta(seconds=RETRY_BASE_DELAY_SEC)
+        ).isoformat()
+        update_order_status(
+            client_id, status,
+            broker_status=row.get("broker_status") or status,
+            place_status=PLACE_RETRY_DUE, next_retry_at=next_at,
+            last_error_code=reason,
+        )
+        record_lifecycle_event(
+            client_id, row["trade_id"], row["side"], "RETRY_SCHEDULED", reason)
+        logger.warning(
+            "RETRY SCHEDULED %s %s after %s (%s); next attempt at %s",
+            row["side"], row["trade_id"], status, reason, next_at)
+
     def _apply_terminal_order(self, row: dict, status: str) -> None:
         """Drive the position lifecycle from a broker-terminal order status."""
         trade_id = row["trade_id"]
         side = row["side"]
         option_type = row["option_type"]
         client_id = row["client_order_id"]
+        retry_ok, retry_reason = self._retry_decision(row, status)
+
+        if status in FILLED_STATUSES:
+            update_order_status(client_id, status, place_status=PLACE_RESOLVED)
+        elif not retry_ok:
+            place = (PLACE_MANUAL_REQUIRED if retry_reason == "PARTIAL_FILL"
+                     else PLACE_DEFINITELY_REJECTED)
+            update_order_status(client_id, status, place_status=place,
+                                last_error_code=retry_reason)
+
         if side == BUY:
             if status in FILLED_STATUSES:
                 self._set_lifecycle(option_type, trade_id, LIFECYCLE_ACTIVE)
@@ -965,9 +1227,26 @@ class Sma9LiveScanner:
                 logger.info(
                     "BUY FILL CONFIRMED %s trade=%s broker_id=%s",
                     trade_id, row["broker_order_id"])
+            elif retry_ok:
+                # Keep the phantom position so a bounded retry can reuse the
+                # original signal/contract data. No SELL is generated while the
+                # BUY is unconfirmed.
+                self._schedule_retry(row, status, retry_reason)
+                self._set_lifecycle(
+                    option_type, trade_id, LIFECYCLE_ENTRY_RETRY_PENDING)
+            elif retry_reason == "PARTIAL_FILL":
+                # A partially filled BUY may represent real holdings. Keep the
+                # position for manual verification and never re-place it.
+                self._set_lifecycle(
+                    option_type, trade_id, LIFECYCLE_ENTRY_PARTIAL)
+                record_lifecycle_event(
+                    client_id, trade_id, side, "PARTIAL_FILL_MANUAL", status)
+                logger.error(
+                    "CRITICAL: BUY %s partially filled (%s); manual verification "
+                    "required for %s", client_id, status, trade_id)
             else:
-                # The BUY never filled: the local position is a phantom. Never
-                # generate a SELL against shares we do not actually hold.
+                # The BUY never filled and will not be retried: remove the
+                # phantom so no SELL can be generated against shares we do not hold.
                 self._clear_position(option_type, trade_id)
                 record_lifecycle_event(
                     client_id, trade_id, side, "PHANTOM_POSITION_REMOVED", status)
@@ -982,6 +1261,17 @@ class Sma9LiveScanner:
                 row["reason"])
             record_lifecycle_event(
                 client_id, trade_id, side, "EXIT_FILL_CONFIRMED", status)
+        elif retry_ok:
+            self._schedule_retry(row, status, retry_reason)
+            self._set_lifecycle(
+                option_type, trade_id, LIFECYCLE_EXIT_RETRY_PENDING)
+        elif retry_reason == "PARTIAL_FILL":
+            self._set_lifecycle(option_type, trade_id, LIFECYCLE_EXIT_PARTIAL)
+            record_lifecycle_event(
+                client_id, trade_id, side, "PARTIAL_FILL_MANUAL", status)
+            logger.error(
+                "CRITICAL: exit SELL %s %s partially filled (%s); manual "
+                "verification required", option_type, trade_id, status)
         else:
             self._set_lifecycle(option_type, trade_id, LIFECYCLE_EXIT_FAILED)
             record_lifecycle_event(
@@ -1000,6 +1290,10 @@ class Sma9LiveScanner:
             "broker_order_id": record.broker_order_id,
             "intended_price": record.intended_price,
             "reason": record.reason,
+            "created_at": record.created_at,
+            "retry_count": record.retry_count,
+            "place_status": record.place_status,
+            "filled_quantity": 0,
         }
         if record.status in FILLED_STATUSES | FAILED_STATUSES:
             self._apply_terminal_order(row, record.status)
@@ -1015,17 +1309,36 @@ class Sma9LiveScanner:
             record.side, record.trade_id, record.broker_order_id)
 
     def _apply_submit_failure(self, record: OrderRecord, error: str) -> None:
-        """A failed submit has unknown broker outcome - never guess or retry."""
-        state = (LIFECYCLE_ENTRY_UNCONFIRMED if record.side == BUY
-                 else LIFECYCLE_EXIT_FAILED)
+        """Classify a submit failure; ambiguous outcomes go to tag lookup."""
+        pre_post = record.place_status == PLACE_PRE_POST_REFUSED
+        if pre_post:
+            state = (LIFECYCLE_ENTRY_BLOCKED if record.side == BUY
+                     else LIFECYCLE_EXIT_BLOCKED)
+            place = PLACE_PRE_POST_REFUSED
+            event = "SUBMIT_BLOCKED_NO_SEND"
+        else:
+            state = (LIFECYCLE_ENTRY_UNCONFIRMED if record.side == BUY
+                     else LIFECYCLE_EXIT_FAILED)
+            place = PLACE_AMBIGUOUS
+            event = "SUBMIT_FAILED"
         self._set_lifecycle(record.option_type, record.trade_id, state)
+        update_order_status(
+            record.client_order_id, record.status, place_status=place,
+            last_error_code=("PRE_POST_REFUSED" if pre_post
+                             else "SUBMIT_EXCEPTION"),
+        )
         record_lifecycle_event(
-            record.client_order_id, record.trade_id, record.side,
-            "SUBMIT_FAILED", error)
-        logger.error(
-            "CRITICAL: %s submit failed for %s (%s); outcome at broker unknown, "
-            "no automatic retry - check the mStock order book manually",
-            record.side, record.trade_id, error)
+            record.client_order_id, record.trade_id, record.side, event,
+            type(error).__name__ if isinstance(error, BaseException) else "ERROR")
+        if pre_post:
+            logger.error(
+                "CRITICAL: %s submit blocked for %s before any broker call; "
+                "no order was sent", record.side, record.trade_id)
+        else:
+            logger.error(
+                "CRITICAL: %s submit failed for %s; outcome at broker unknown, "
+                "read-only tag lookup enabled and no blind retry",
+                record.side, record.trade_id)
 
     def reconcile_orders(self) -> dict:
         """Poll broker status for every unfilled real order.
@@ -1074,6 +1387,9 @@ class Sma9LiveScanner:
                 summary["quality_errors"] += 1
                 logger.error("Execution-quality log failed for %s: %s",
                              client_id, exc)
+            filled_qty = getattr(details, "filled_quantity", None)
+            if filled_qty is None:
+                filled_qty = row.get("filled_quantity")
             if status in PENDING_STATUSES:
                 summary["pending"] += 1
                 update_order_status(
@@ -1093,12 +1409,246 @@ class Sma9LiveScanner:
             update_order_status(
                 client_id, status, row["broker_order_id"],
                 broker_status=status, checked_at=now_ist().isoformat(),
-                attempts=attempts)
+                attempts=attempts, filled_quantity=filled_qty)
             if status in FILLED_STATUSES:
                 summary["filled"] += 1
             else:
                 summary["rejected"] += 1
-            self._apply_terminal_order(row, status)
+            terminal_row = dict(row)
+            terminal_row["filled_quantity"] = filled_qty
+            self._apply_terminal_order(terminal_row, status)
+        return summary
+
+    def resolve_unknown_submits(self) -> dict:
+        """Stage 1: read-only broker lookup for submits with unknown outcome."""
+        summary = {
+            "enabled": RECONCILE_ENABLED, "checked": 0, "resolved": 0,
+            "pending": 0, "retry_scheduled": 0, "manual": 0, "errors": 0,
+            "at": now_ist().isoformat(),
+        }
+        self.last_tag_lookup = summary
+        if not RECONCILE_ENABLED:
+            return summary
+        for row in tag_lookup_rows(RECONCILE_BATCH):
+            summary["checked"] += 1
+            client_id = row["client_order_id"]
+            record = order_record_from_row(row)
+            attempts = int(row.get("tag_lookup_attempts") or 0) + 1
+            update_order_status(
+                client_id, row["status"],
+                tag_lookup_attempts=attempts,
+                checked_at=now_ist().isoformat())
+            try:
+                lookup = EXECUTOR.order_by_tag(record)
+            except Exception as exc:
+                summary["errors"] += 1
+                logger.error("Tag lookup raised for %s: %s", client_id, exc)
+                lookup = OrderLookup(error_code="LOOKUP_FAILED")
+            if lookup.multiple or lookup.error_code == "MULTIPLE_ORDERS":
+                update_order_status(
+                    client_id, row["status"], place_status=PLACE_MANUAL_REQUIRED,
+                    last_error_code="MULTIPLE_ORDERS")
+                record_lifecycle_event(
+                    client_id, row["trade_id"], row["side"],
+                    "TAG_LOOKUP_MULTIPLE", "multiple broker orders with our tag")
+                logger.error(
+                    "CRITICAL: multiple broker orders found for %s; "
+                    "manual verification required", client_id)
+                summary["manual"] += 1
+                continue
+            if lookup.found and lookup.broker_order_id:
+                status = lookup.status or STATUS_NEW
+                summary["resolved"] += 1
+                update_order_status(
+                    client_id, status, lookup.broker_order_id,
+                    broker_status=status, place_status=PLACE_RESOLVED,
+                    filled_quantity=lookup.filled_quantity,
+                    checked_at=now_ist().isoformat())
+                record_lifecycle_event(
+                    client_id, row["trade_id"], row["side"],
+                    "TAG_LOOKUP_RESOLVED", f"{status}|{lookup.broker_order_id}")
+                logger.info(
+                    "TAG LOOKUP RESOLVED %s broker_id=%s status=%s",
+                    client_id, lookup.broker_order_id, status)
+                terminal_row = dict(row)
+                terminal_row.update({
+                    "status": status,
+                    "broker_order_id": lookup.broker_order_id,
+                    "broker_status": status,
+                    "filled_quantity": lookup.filled_quantity,
+                })
+                if status in PENDING_STATUSES:
+                    state = (LIFECYCLE_PENDING if row["side"] == BUY
+                             else LIFECYCLE_EXIT_PENDING)
+                    self._set_lifecycle(
+                        row["option_type"], row["trade_id"], state)
+                else:
+                    self._apply_terminal_order(terminal_row, status)
+                continue
+            if attempts < TAG_LOOKUP_MAX_ATTEMPTS:
+                summary["pending"] += 1
+                logger.info(
+                    "TAG LOOKUP pending %s attempt=%d/%d (no broker row yet)",
+                    client_id, attempts, TAG_LOOKUP_MAX_ATTEMPTS)
+                continue
+            if (RETRY_ENABLED and RETRY_AMBIGUOUS
+                    and row["side"] in RETRY_SIDES
+                    and int(row.get("retry_count") or 0) < RETRY_MAX_ATTEMPTS):
+                next_at = (
+                    now_ist() + timedelta(seconds=RETRY_BASE_DELAY_SEC)
+                ).isoformat()
+                update_order_status(
+                    client_id, row["status"], place_status=PLACE_RETRY_DUE,
+                    next_retry_at=next_at, last_error_code="AMBIGUOUS_NO_FILL")
+                self._set_lifecycle(
+                    row["option_type"], row["trade_id"],
+                    LIFECYCLE_ENTRY_RETRY_PENDING if row["side"] == BUY
+                    else LIFECYCLE_EXIT_RETRY_PENDING)
+                record_lifecycle_event(
+                    client_id, row["trade_id"], row["side"],
+                    "TAG_LOOKUP_NO_FILL_RETRY", "AMBIGUOUS_NO_FILL")
+                logger.warning(
+                    "CRITICAL: tag lookup found no broker order for %s; "
+                    "bounded retry scheduled (explicit opt-in)", client_id)
+                summary["retry_scheduled"] += 1
+            else:
+                update_order_status(
+                    client_id, row["status"], place_status=PLACE_MANUAL_REQUIRED,
+                    last_error_code="AMBIGUOUS_UNRESOLVED")
+                record_lifecycle_event(
+                    client_id, row["trade_id"], row["side"],
+                    "TAG_LOOKUP_UNRESOLVED", "AMBIGUOUS_UNRESOLVED")
+                logger.error(
+                    "CRITICAL: tag lookup could not resolve %s after %d checks; "
+                    "manual verification required", client_id, attempts)
+                summary["manual"] += 1
+        return summary
+
+    def _finish_retry(self, row: dict, retry_no: int, code: str) -> None:
+        client_id = row["client_order_id"]
+        update_order_status(
+            client_id, row["status"], place_status=PLACE_RETRY_EXHAUSTED,
+            retry_count=retry_no, last_error_code=code)
+        record_lifecycle_event(
+            client_id, row["trade_id"], row["side"], "RETRY_EXHAUSTED", code)
+        if row["side"] == BUY:
+            self._clear_position(row["option_type"], row["trade_id"])
+        else:
+            self._set_lifecycle(
+                row["option_type"], row["trade_id"], LIFECYCLE_EXIT_FAILED)
+        logger.error(
+            "CRITICAL: retry %d for %s exhausted (%s); manual verification "
+            "required", retry_no, client_id, code)
+
+    def _reschedule_retry(self, row: dict, retry_no: int, code: str) -> None:
+        next_at = (
+            now_ist() + timedelta(seconds=RETRY_BASE_DELAY_SEC)
+        ).isoformat()
+        update_order_status(
+            row["client_order_id"], row["status"], place_status=PLACE_RETRY_DUE,
+            retry_count=retry_no, next_retry_at=next_at, last_error_code=code)
+        record_lifecycle_event(
+            row["client_order_id"], row["trade_id"], row["side"],
+            "RETRY_SCHEDULED", code)
+
+    def process_retries(self) -> dict:
+        """Stage 2: bounded re-placement for broker-confirmed no-fill orders."""
+        summary = {
+            "enabled": RETRY_ENABLED, "checked": 0, "submitted": 0,
+            "rescheduled": 0, "exhausted": 0, "suppressed": 0,
+            "errors": 0, "at": now_ist().isoformat(),
+        }
+        self.last_retry = summary
+        if not RETRY_ENABLED or RETRY_MAX_ATTEMPTS <= 0:
+            return summary
+        for row in retry_due_rows(RECONCILE_BATCH):
+            client_id = row["client_order_id"]
+            if not claim_retry(client_id):
+                continue
+            summary["checked"] += 1
+            retry_no = int(row.get("retry_count") or 0) + 1
+            if retry_no > RETRY_MAX_ATTEMPTS:
+                self._finish_retry(row, retry_no - 1, "MAX_ATTEMPTS")
+                summary["exhausted"] += 1
+                continue
+            if self._row_age_seconds(row) > RETRY_MAX_AGE_SEC:
+                self._finish_retry(row, retry_no, "SIGNAL_TOO_OLD")
+                summary["exhausted"] += 1
+                continue
+            if row["side"] not in RETRY_SIDES:
+                self._finish_retry(row, retry_no, "SIDE_NOT_ALLOWED")
+                summary["suppressed"] += 1
+                continue
+            if has_open_attempt(row["trade_id"], row["side"], client_id):
+                update_order_status(
+                    client_id, row["status"], place_status=PLACE_MANUAL_REQUIRED,
+                    last_error_code="DUPLICATE_ATTEMPT")
+                record_lifecycle_event(
+                    client_id, row["trade_id"], row["side"],
+                    "RETRY_SUPPRESSED", "DUPLICATE_ATTEMPT")
+                logger.error(
+                    "CRITICAL: retry suppressed for %s; another attempt is "
+                    "still actionable", client_id)
+                summary["suppressed"] += 1
+                continue
+            pos_row = load_open_position_row(row["trade_id"], row["option_type"])
+            if not pos_row:
+                self._finish_retry(row, retry_no, "POSITION_MISSING")
+                summary["exhausted"] += 1
+                continue
+            symbol = str(row.get("symbol") or "")
+            tradingsymbol = symbol.split(":", 1)[-1] if ":" in symbol else symbol
+            pos = SimpleNamespace(
+                trade_id=row["trade_id"],
+                option_type=row["option_type"],
+                tradingsymbol=tradingsymbol or pos_row.get("tradingsymbol"),
+                token=row.get("token") or pos_row.get("token"),
+                strike=pos_row.get("strike"),
+                expiry=pos_row.get("expiry"),
+                lifecycle_state=pos_row.get("lifecycle_state"),
+            )
+            try:
+                # No quantity is passed: `_place_order` rechecks the current
+                # mStock instrument master lot for every retry attempt.
+                result = self._place_order(
+                    pos, row["side"], float(row["intended_price"]), row["reason"],
+                    tag=f"r{retry_no}",
+                    retry_of=row.get("retry_of") or client_id,
+                    attempt_no=int(row.get("attempt_no") or 0) + 1,
+                    retry_count=retry_no, counts_toward_cap=False)
+            except Exception as exc:
+                summary["errors"] += 1
+                self._finish_retry(row, retry_no, "RETRY_SUBMIT_EXCEPTION")
+                logger.error("Retry submit raised for %s: %s", client_id, exc)
+                continue
+            if result is None:
+                code = str(self.last_order_block or "BLOCKED_NO_SEND")
+                if retry_no < RETRY_MAX_ATTEMPTS:
+                    self._reschedule_retry(row, retry_no, code)
+                    summary["rescheduled"] += 1
+                else:
+                    self._finish_retry(row, retry_no, code)
+                    summary["exhausted"] += 1
+                continue
+            if result.status in FAILED_STATUSES:
+                if (result.place_status == PLACE_PRE_POST_REFUSED
+                        and retry_no < RETRY_MAX_ATTEMPTS):
+                    self._reschedule_retry(row, retry_no, "PRE_POST_REFUSED")
+                    summary["rescheduled"] += 1
+                else:
+                    code = result.place_status or "SUBMIT_FAILED"
+                    self._finish_retry(row, retry_no, code)
+                    summary["exhausted"] += 1
+                continue
+            update_order_status(client_id, row["status"],
+                                place_status=PLACE_RETRY_ATTEMPTED)
+            record_lifecycle_event(
+                client_id, row["trade_id"], row["side"], "RETRY_SUBMITTED",
+                result.client_order_id)
+            logger.info(
+                "RETRY SUBMITTED %s attempt=%d new_id=%s awaiting broker fill",
+                client_id, retry_no, result.client_order_id)
+            summary["submitted"] += 1
         return summary
 
     def _request_exit(self, state, pos: Position, price: float,
@@ -1154,17 +1704,22 @@ class Sma9LiveScanner:
             f"mStock lot size unavailable for {pos.tradingsymbol}; "
             "refusing to place an order with a guessed quantity")
 
-    def _place_order(self, pos: Position, side: str, price: float,
-                     reason: str) -> OrderRecord | None:
+    def _place_order(
+        self, pos: Position, side: str, price: float, reason: str, *,
+        tag: str = "", quantity: int | None = None, retry_of: str | None = None,
+        attempt_no: int = 0, retry_count: int = 0,
+        counts_toward_cap: bool = True,
+    ) -> OrderRecord | None:
         """Record a guarded, idempotent order and hand it to the executor.
 
-        The deterministic client_order_id makes repeated calls no-ops.  Real
-        executors need both arm flags in addition to the entry gate.  Orders are
-        MARKET orders; BUY entries are sanity-checked against the previous
-        poll's LTP, while exits are never blocked so a real position can always
-        be closed.
+        The deterministic client_order_id makes repeated calls no-ops for one
+        attempt. A bounded retry uses an ``rN`` tag and a new id while keeping
+        ``retry_of`` pointing at the original order. Real executors need both
+        arm flags in addition to the entry gate. Orders are MARKET orders; BUY
+        entries are sanity-checked against the previous poll's LTP, while exits
+        are never blocked so a real position can always be closed.
         """
-        client_order_id = make_client_order_id(pos.trade_id, side)
+        client_order_id = make_client_order_id(pos.trade_id, side, tag)
         if order_exists(client_order_id):
             logger.info("Order %s already recorded; skipping duplicate",
                         client_order_id)
@@ -1185,7 +1740,8 @@ class Sma9LiveScanner:
             self.last_order_block = "PRICE_COLLAR_BREACH"
             return None
         try:
-            quantity = self._resolve_lot_size(pos)
+            resolved_qty = (int(quantity) if quantity is not None
+                            else self._resolve_lot_size(pos))
         except Exception as exc:
             logger.error("Order blocked for %s: %s", pos.tradingsymbol, exc)
             self.last_order_block = "LOT_SIZE_UNAVAILABLE"
@@ -1198,7 +1754,7 @@ class Sma9LiveScanner:
                 side=side,
                 symbol=f"NFO:{pos.tradingsymbol}",
                 token=pos.token,
-                quantity=quantity,
+                quantity=resolved_qty,
                 intended_price=round(float(price), 2),
                 limit_price=apply_price_collar(
                     float(price), side, LIMITS.collar_pct),
@@ -1206,6 +1762,11 @@ class Sma9LiveScanner:
                 reason=reason,
                 dry_run=EXECUTOR.name == "dry_run",
                 order_date=now_ist().date().isoformat(),
+                attempt_no=attempt_no,
+                retry_of=retry_of or client_order_id,
+                retry_count=retry_count,
+                place_status=PLACE_SUBMITTED,
+                counts_toward_cap=counts_toward_cap,
             )
         except Exception as exc:
             logger.error("Invalid %s order for %s: %s", side, pos.trade_id, exc)
@@ -1219,15 +1780,29 @@ class Sma9LiveScanner:
         try:
             result = EXECUTOR.place(record)
         except Exception as exc:
-            # Fail closed: mark the attempt rejected and never retry blindly.
+            # A transport failure after the POST may still have reached the
+            # exchange. Only pre-network refusals are definite no-sends.
+            if record.place_status == PLACE_SUBMITTED:
+                record.place_status = (
+                    PLACE_PRE_POST_REFUSED
+                    if isinstance(exc, (PermissionError, ValueError))
+                    else PLACE_AMBIGUOUS
+                )
             record.status = STATUS_REJECTED
-            update_order_status(record.client_order_id, STATUS_REJECTED)
-            logger.error("Executor rejected %s: %s", record.client_order_id, exc)
-            self.last_order_block = "EXECUTOR_REJECTED"
+            code = ("PRE_POST_REFUSED"
+                    if record.place_status == PLACE_PRE_POST_REFUSED
+                    else "SUBMIT_EXCEPTION")
+            update_order_status(
+                record.client_order_id, STATUS_REJECTED,
+                place_status=record.place_status, last_error_code=code)
+            logger.error("Executor submit failed %s: %s",
+                         record.client_order_id, exc)
+            self.last_order_block = code
             self._apply_submit_failure(record, str(exc))
             return record
-        update_order_status(result.client_order_id, result.status,
-                            result.broker_order_id)
+        update_order_status(
+            result.client_order_id, result.status, result.broker_order_id,
+            place_status=result.place_status)
         logger.info("ORDER %s status=%s broker_id=%s", result.client_order_id,
                     result.status, result.broker_order_id)
         self._apply_submit_result(result)
@@ -1733,6 +2308,15 @@ class Sma9LiveScanner:
                 "price_collar_pct": LIMITS.collar_pct,
                 "last_block": getattr(self, "last_order_block", None),
                 "reconciliation": dict(self.last_reconcile),
+                "tag_lookup": dict(getattr(self, "last_tag_lookup", {})),
+                "retries": {
+                    "enabled": RETRY_ENABLED,
+                    "max_attempts": RETRY_MAX_ATTEMPTS,
+                    "ambiguous_opt_in": RETRY_AMBIGUOUS,
+                    "sides": sorted(RETRY_SIDES),
+                    "base_delay_sec": RETRY_BASE_DELAY_SEC,
+                    "last": dict(getattr(self, "last_retry", {})),
+                },
             },
             "errors": errors or [],
             "last_error": self.last_error,
@@ -1750,6 +2334,14 @@ def main() -> int:
         LIMITS.max_orders_per_day or "UNLIMITED",
         LIMITS.lot_size or "mstock", LIMITS.collar_pct,
         "on" if RECONCILE_ENABLED else "off",
+    )
+    logger.info(
+        "SMA9 LIVE recovery policy: tag_lookup=%s max_checks=%d retry=%s "
+        "max_attempts=%d delay=%ss ambiguous_retry=%s sides=%s",
+        "on" if RECONCILE_ENABLED else "off", TAG_LOOKUP_MAX_ATTEMPTS,
+        "on" if RETRY_ENABLED else "off", RETRY_MAX_ATTEMPTS,
+        RETRY_BASE_DELAY_SEC, "on" if RETRY_AMBIGUOUS else "off",
+        ",".join(sorted(RETRY_SIDES)) or "NONE",
     )
     if EXECUTOR.name != "dry_run" and not real_orders_armed():
         logger.error("Real executor selected but orders are NOT armed; failing closed")
@@ -1781,6 +2373,16 @@ def main() -> int:
                 scanner.reconcile_orders()
             except Exception as exc:
                 logger.error("Reconciliation pass failed: %s", exc)
+                traceback.print_exc()
+            try:
+                scanner.resolve_unknown_submits()
+            except Exception as exc:
+                logger.error("Tag lookup pass failed: %s", exc)
+                traceback.print_exc()
+            try:
+                scanner.process_retries()
+            except Exception as exc:
+                logger.error("Retry pass failed: %s", exc)
                 traceback.print_exc()
             try:
                 if not is_weekday(now):

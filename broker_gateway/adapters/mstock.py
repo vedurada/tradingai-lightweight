@@ -613,5 +613,58 @@ class MStockAdapter(BrokerAdapter):
                     "raw_status": row.get("status"),
                     "status_message": row.get("status_message"),
                     "fill_price": self._fill_price(row),
+                    "filled_quantity": self._numeric(row, "filled_quantity"),
                 }
-        return {"order_id": order_id, "status": "UNKNOWN", "fill_price": None}
+        return {"order_id": order_id, "status": "UNKNOWN", "fill_price": None,
+                "filled_quantity": None}
+
+    _TAG_KEYS = ("tag", "order_tag", "remarks", "client_order_id")
+
+    @staticmethod
+    def _numeric(row: dict, key: str) -> float | None:
+        value = row.get(key)
+        if value in (None, ""):
+            return None
+        try:
+            number = float(value)
+        except (TypeError, ValueError):
+            return None
+        return number if number >= 0 else None
+
+    def order_by_tag(self, *, tag: str) -> dict:
+        """Read-only order-book lookup using the client tag we submit.
+
+        mStock does not document ``tag`` as an idempotency key, so a missing row
+        is not proof that an order was never accepted. The live service treats
+        this as Stage 1 resolution only: it can adopt a broker order id, but an
+        ambiguous miss never triggers an automatic re-placement unless a
+        separate, explicit opt-in is enabled.
+        """
+        clean_tag = str(tag or "").strip()
+        if not clean_tag:
+            raise BrokerCallFailed("mStock order lookup: tag is required")
+        if any(ch in clean_tag for ch in ("&", "=", "\n", "\r")):
+            raise BrokerCallFailed("mStock order lookup: invalid tag")
+        payload = self._get_json("/orders")
+        rows = payload.get("data") or []
+        matches = []
+        for row in rows if isinstance(rows, list) else []:
+            if not isinstance(row, dict):
+                continue
+            row_tag = ""
+            for key in self._TAG_KEYS:
+                row_tag = str(row.get(key) or "").strip()
+                if row_tag:
+                    break
+            if row_tag != clean_tag:
+                continue
+            matches.append({
+                "order_id": str(row.get("order_id") or "").strip() or None,
+                "status": self._map_order_status(row),
+                "raw_status": row.get("status"),
+                "status_message": row.get("status_message"),
+                "fill_price": self._fill_price(row),
+                "quantity": self._numeric(row, "quantity"),
+                "filled_quantity": self._numeric(row, "filled_quantity"),
+            })
+        return {"tag": clean_tag, "orders": matches}
