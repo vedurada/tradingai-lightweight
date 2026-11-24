@@ -2,6 +2,7 @@
   "default": "zerodha",
   "scanners": {
     "api": "mstock",
+    "live_sma9_live_scanner.py": "mstock",
     "live_sma9_adx_scanner.py": "mstock",
     "live_sma9_5min_scanner.py": "mstock",
     "live_sma9_atr_scanner.py": "mstock",

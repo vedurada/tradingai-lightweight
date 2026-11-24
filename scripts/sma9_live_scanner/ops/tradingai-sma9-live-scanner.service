@@ -1,0 +1,56 @@
+[Unit]
+Description=TradingAI SMA9 LIVE-EXECUTION service (dry-run by default, 5s)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+# Separate identity from every paper scanner.
+User=sma9live
+Group=ubuntu
+WorkingDirectory=/opt/tradingai
+Environment=SMA9_LIVE_DB_PATH=/opt/tradingai/database/sma9_live.db
+Environment=SMA9_LIVE_EXECUTOR=dry_run
+Environment=SMA9_LIVE_ORDERS_ENABLED=false
+Environment=SMA9_LIVE_ARM_REAL_ORDERS=DISARMED
+Environment=SMA9_LIVE_KILLED=0
+Environment=SMA9_LIVE_KILL_FILE=/opt/tradingai/run/sma9_live.KILL
+Environment=SMA9_LIVE_MAX_ORDERS_PER_DAY=4
+Environment=SMA9_LIVE_LOT_SIZE=75
+Environment=SMA9_LIVE_PRICE_COLLAR_PCT=1.0
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/tradingai/sma9_live_scanner
+ExecStart=/usr/bin/python3 /opt/tradingai/sma9_live_scanner/app/live_sma9_live_scanner.py
+ExecStartPre=+/bin/sh -c 'chmod 0666 /opt/tradingai/database/sma9_live.db* 2>/dev/null || true'
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/tradingai/logs/live_sma9_live_scanner.log
+StandardError=append:/opt/tradingai/logs/live_sma9_live_scanner.log
+
+# Sandbox / privilege hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+# No /opt/tradingai/run write access: the kill file must be created by an
+# operator, never removed by the service itself.
+ReadWritePaths=/opt/tradingai/database /opt/tradingai/logs
+ReadOnlyPaths=/opt/tradingai/sma9_live_scanner
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target

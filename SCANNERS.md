@@ -19,9 +19,11 @@ return 404. Code trees and DBs remain on disk as archives; the
 retirement and its archive is `archives/sma9_slope_atr_20261124/`. The
 `sma9_1min_poll` archive is `archives/sma9_1min_poll_20261124/`.
 
-> **Paper trading only.** No scanner can place a broker order. There is no
-> `place_order` call, no order id, and no broker write path anywhere in this
-> stack. Every fill is simulated in SQLite at the sampled option LTP.
+> **Paper trading only (seven scanners).** None of the seven paper scanners can
+> place a broker order. There is no `place_order` call, no order id, and no
+> broker write path in any paper scanner. Every fill is simulated in SQLite at
+> the sampled option LTP. The separate `sma9_live` execution service described
+> in §9 is not part of this paper fleet and is dry-run by default.
 
 ---
 
@@ -857,7 +859,8 @@ token.
 
 ## 9. Safety guarantees
 
-- **Paper only.** No broker order path exists. Verify with:
+- **Paper only (seven scanners).** No broker order path exists in any paper
+  scanner. Verify with:
 
   ```bash
   sudo grep -rn 'place_order\|order_id' /opt/tradingai/*_scanner/app/ \
@@ -878,6 +881,38 @@ token.
   are never read by a scanner and are never committed.
 - **State survives restarts** via `open_positions` and `scan_state`, including
   trail `hwm`/`stop`.
+
+### 9.1 Isolated `sma9_live` execution service (dry-run scaffold)
+
+`sma9_live` is a **separate service**, not a modified paper scanner. The paper
+`sma9` tree, DB (`sma9.db`), service user, API namespace, page and gateway
+mapping are unchanged. Nothing from this section is deployed by default.
+
+| Property | Value |
+|---|---|
+| Code | `scripts/sma9_live_scanner/app/` |
+| Strategy id / version | `sma9_live` / `1.0.0` |
+| Database | `/opt/tradingai/database/sma9_live.db` (tables `sma9_live_*`) |
+| Service user / unit | `sma9live` / `tradingai-sma9-live-scanner` |
+| Gateway alias | `broker-gateway use --scanner sma9live --broker mstock` |
+| Default executor | `dry_run` — no broker call is made |
+| Real orders | Hard-disabled until the verified mStock order API contract is wired |
+
+Risk guards enforced before any BUY: kill switch (`SMA9_LIVE_KILLED` or the
+kill file), daily order cap (`SMA9_LIVE_MAX_ORDERS_PER_DAY`, default 4),
+one open position per leg, and a protective price collar
+(`SMA9_LIVE_PRICE_COLLAR_PCT`, default 1%). The default order quantity is one
+NIFTY lot (`SMA9_LIVE_LOT_SIZE=75`). Exits are never blocked by these guards.
+
+Every entry and exit writes an append-only `sma9_live_orders` ledger row keyed
+by a deterministic `client_order_id`, so a retry cannot duplicate an order.
+The executor result (`status`, `broker_order_id`) is written back to that row.
+Real execution additionally requires **both**
+`SMA9_LIVE_ORDERS_ENABLED=true` and `SMA9_LIVE_ARM_REAL_ORDERS=ARMED`; the
+`MStockOrderExecutor` stub raises instead of guessing an API contract.
+
+No credentials, keys or OTP/TOTP values are handled by the service; token
+refresh remains a manual operator step.
 
 ---
 
