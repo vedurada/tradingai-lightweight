@@ -1015,8 +1015,12 @@ deliberately. The gateway/adapter still POSTs each attempt exactly once.
 | `SMA9_LIVE_RETRY_AMBIGUOUS` | `false` | opt in to retries after an unresolved ambiguous submit |
 | `SMA9_LIVE_RETRY_SIDES` | `BUY,SELL` | sides eligible for bounded retries |
 
-The deployed unit does not set any `SMA9_LIVE_RETRY_*` variable, so Stage 2
-remains off until explicitly enabled.
+On the deployed armed unit Stage 2 is explicitly enabled with
+`SMA9_LIVE_RETRY_ENABLED=true` and `SMA9_LIVE_RETRY_MAX_ATTEMPTS=3` (the cap).
+`SMA9_LIVE_RETRY_AMBIGUOUS` remains unset/false, so an unresolved timeout still
+requires manual verification. Retries are bounded, not an endless resubmission:
+after the cap, or if the signal ages past `SMA9_LIVE_RETRY_MAX_AGE_SEC`, the
+failed exit stays open in `EXIT_FAILED` for manual handling.
 
 ### Shadow execution-quality log
 
