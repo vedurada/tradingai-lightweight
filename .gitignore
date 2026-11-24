@@ -1,0 +1,21 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+
+# Never commit credentials or key material.
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+*.env
+
+# Runtime state.
+*.db
+*.sqlite
+*.sqlite3
+*.log
+logs/
+run/

@@ -1,0 +1,18 @@
+[Unit]
+Description=TradingAI Broker Gateway (read-only, multi-broker)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+Environment=PYTHONPATH=/opt/tradingai
+ExecStart=/usr/bin/python3 /opt/tradingai/broker_gateway/daemon.py
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

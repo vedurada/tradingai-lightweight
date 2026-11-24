@@ -1,0 +1,8 @@
+{
+  "default": "mstock",
+  "scanners": {
+    "api": "mstock",
+    "live_sma9_live_scanner.py": "mstock",
+    "sma9live": "mstock"
+  }
+}
