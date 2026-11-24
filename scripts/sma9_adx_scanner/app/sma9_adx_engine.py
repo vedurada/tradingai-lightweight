@@ -5,8 +5,10 @@ BUY-ONLY rules (identical for CE and PE):
   Entry at a 5-second poll on the current 5-minute candle:
     A) previous completed candle CLOSE > SMA9
     AND
-    B) ADX(14) on completed option candles > 20
-  Entry: paper BUY at the live LTP as soon as A and B are true
+    B) Wilder ADX(14) on completed option candles > 30
+    AND
+    C) +DI > -DI on those same completed option candles
+  Entry: paper BUY at the live LTP as soon as A, B and C are true
 
 Exit (identical for CE and PE):
   1) TRAIL: once HWM exceeds entry, stop ratchets to HWM - 5%
@@ -26,10 +28,10 @@ from typing import Dict, List, Optional, Sequence
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
 STRATEGY_ID = "sma9_adx"
-STRATEGY_VERSION = "1.0.0"
+STRATEGY_VERSION = "1.1.0"
 STRATEGY_TYPE = "SMA9_ADX_BUY_ONLY"
 ADX_PERIOD = 14
-ADX_THRESHOLD = 20.0
+ADX_THRESHOLD = 30.0
 STOP_LOSS_PCT = 0.05
 TRAIL_PCT = 0.05
 
@@ -70,17 +72,25 @@ def make_trade_id(instrument: str, strike: float, option_type: str,
 
 
 # ---------------------------------------------------------------------------
-# Wilder ADX(14) on completed candles
+# Wilder ADX(14), +DI and -DI on completed candles
 # ---------------------------------------------------------------------------
-def compute_adx(candles: Sequence[dict], period: int = ADX_PERIOD) -> Optional[float]:
-    """Return Wilder ADX over completed candles, or None when insufficient.
+@dataclass(frozen=True)
+class AdxComponents:
+    adx: Optional[float] = None
+    plus_di: Optional[float] = None
+    minus_di: Optional[float] = None
+
+
+def compute_adx_components(candles: Sequence[dict],
+                           period: int = ADX_PERIOD) -> AdxComponents:
+    """Return Wilder ADX, +DI and -DI over completed candles.
 
     Only the supplied candles are used. Callers pass completed bars and exclude
     the forming bar, so no lookahead is introduced.
     """
     rows = normalize_candles(candles)
     if len(rows) < period * 2:
-        return None
+        return AdxComponents()
 
     trs: List[float] = []
     plus_dms: List[float] = []
@@ -99,35 +109,44 @@ def compute_adx(candles: Sequence[dict], period: int = ADX_PERIOD) -> Optional[f
         trs.append(tr)
 
     if len(trs) < period * 2 - 1:
-        return None
+        return AdxComponents()
 
-    def _dx(sm_tr: float, sm_plus: float, sm_minus: float) -> float:
+    def _components(sm_tr: float, sm_plus: float,
+                    sm_minus: float) -> tuple[float, float, float]:
         if sm_tr <= 0:
-            return 0.0
+            return 0.0, 0.0, 0.0
         plus_di = 100.0 * sm_plus / sm_tr
         minus_di = 100.0 * sm_minus / sm_tr
         total = plus_di + minus_di
         if total <= 0:
-            return 0.0
-        return 100.0 * abs(plus_di - minus_di) / total
+            return 0.0, 0.0, 0.0
+        return plus_di, minus_di, 100.0 * abs(plus_di - minus_di) / total
 
     sm_tr = sum(trs[:period])
     sm_plus = sum(plus_dms[:period])
     sm_minus = sum(minus_dms[:period])
-    dx_values = [_dx(sm_tr, sm_plus, sm_minus)]
+    _, _, dx = _components(sm_tr, sm_plus, sm_minus)
+    dx_values = [dx]
 
     for i in range(period, len(trs)):
         sm_tr = sm_tr - sm_tr / period + trs[i]
         sm_plus = sm_plus - sm_plus / period + plus_dms[i]
         sm_minus = sm_minus - sm_minus / period + minus_dms[i]
-        dx_values.append(_dx(sm_tr, sm_plus, sm_minus))
+        _, _, dx = _components(sm_tr, sm_plus, sm_minus)
+        dx_values.append(dx)
 
     if len(dx_values) < period:
-        return None
+        return AdxComponents()
+    plus_di, minus_di, _ = _components(sm_tr, sm_plus, sm_minus)
     adx = sum(dx_values[:period]) / period
-    for dx in dx_values[period:]:
-        adx = (adx * (period - 1) + dx) / period
-    return adx
+    for value in dx_values[period:]:
+        adx = (adx * (period - 1) + value) / period
+    return AdxComponents(adx=adx, plus_di=plus_di, minus_di=minus_di)
+
+
+def compute_adx(candles: Sequence[dict], period: int = ADX_PERIOD) -> Optional[float]:
+    """Return Wilder ADX only, for compatibility with existing callers."""
+    return compute_adx_components(candles, period).adx
 
 
 # ---------------------------------------------------------------------------
@@ -140,6 +159,8 @@ class Evaluation:
     candle_end: Optional[datetime] = None
     sma9: Optional[float] = None
     adx: Optional[float] = None
+    plus_di: Optional[float] = None
+    minus_di: Optional[float] = None
     current_open: Optional[float] = None
     prev_close: Optional[float] = None
     ltp: Optional[float] = None
@@ -158,6 +179,8 @@ class Evaluation:
             "candle_end": self.candle_end.isoformat() if self.candle_end else None,
             "sma9": round(self.sma9, 2) if self.sma9 is not None else None,
             "adx": round(self.adx, 2) if self.adx is not None else None,
+            "plus_di": round(self.plus_di, 2) if self.plus_di is not None else None,
+            "minus_di": round(self.minus_di, 2) if self.minus_di is not None else None,
             "current_open": self.current_open,
             "prev_close": self.prev_close,
             "ltp": self.ltp,
@@ -202,31 +225,42 @@ def evaluate_option(candles: Sequence[dict], option_type: str,
     forming = rows[-1]
     prev = completed[-1]
     sma = sum(c["close"] for c in window) / SMA_PERIOD
-    adx = compute_adx(completed)
+    components = compute_adx_components(completed)
+    adx = components.adx
 
     ev.candle_start = forming["start"]
     ev.candle_end = candle_end(forming["start"])
     ev.sma9 = sma
     ev.adx = adx
+    ev.plus_di = components.plus_di
+    ev.minus_di = components.minus_di
     ev.prev_close = prev["close"]
     ev.current_open = forming["open"]
-    ev.ready = adx is not None
+    ev.ready = adx is not None and components.plus_di is not None
 
     ev.condition_a = prev["close"] > sma
-    ev.condition_b = adx is not None and adx > ADX_THRESHOLD
+    ev.condition_b = bool(
+        adx is not None
+        and adx > ADX_THRESHOLD
+        and components.plus_di is not None
+        and components.minus_di is not None
+        and components.plus_di > components.minus_di
+    )
     ev.qualified = bool(ev.condition_a and ev.condition_b)
-    # informational only - the requested rule does not gate on LTP>SMA
+    # informational only - the rule does not gate on LTP>SMA
     ev.confirmation = ltp is not None and ltp > sma
     ev.signal = bool(ev.qualified)
 
-    if adx is None:
-        ev.reason = "insufficient completed candles for ADX(14)"
+    if adx is None or components.plus_di is None:
+        ev.reason = "insufficient completed candles for ADX(14)/DI"
     elif not ev.condition_a:
         ev.reason = "not qualified: prev_close<=SMA9"
-    elif not ev.condition_b:
-        ev.reason = "not qualified: ADX(14)<=20"
+    elif adx <= ADX_THRESHOLD:
+        ev.reason = "not qualified: ADX(14)<=30"
+    elif components.plus_di <= components.minus_di:
+        ev.reason = "not qualified: +DI<=-DI"
     else:
-        ev.reason = "BUY signal: prev_close>SMA9 and ADX(14)>20"
+        ev.reason = "BUY signal: prev_close>SMA9, ADX(14)>30 and +DI>-DI"
 
     return ev
 

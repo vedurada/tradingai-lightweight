@@ -22,7 +22,7 @@ DB_PATH = os.environ.get(
 )
 STRATEGY_ID = "sma9_adx"
 STRATEGY_NAME = "SMA9_ADX - ATM Option Strike (BUY ONLY)"
-STRATEGY_VERSION = "1.0.0"
+STRATEGY_VERSION = "1.1.0"
 STRATEGY_TYPE = "SMA9_ADX_BUY_ONLY"
 POLL_SECONDS = 5
 POLL_ALIGNMENT = "5s_boundary"
@@ -196,7 +196,7 @@ def scanner_status():
             "instrument": "NIFTY",
             "timeframe": "5m",
             "adx_period": 14,
-            "adx_threshold": 20.0,
+            "adx_threshold": 30.0,
             "total_trades": total,
             "wins": wins,
             "losses": losses,

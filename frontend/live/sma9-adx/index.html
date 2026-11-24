@@ -67,7 +67,7 @@
     <span>Updated: <span id="generated">--</span> IST</span>
     <span class="badge" id="scanner-status-badge">--</span>
     <span id="scanner-status-text">--</span>
-    <span class="badge idle" id="adx-config">ADX(14) &gt; 20</span>
+    <span class="badge idle" id="adx-config">ADX(14) &gt; 30 + DI aligned</span>
     <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">5</span>s auto-refresh (no page reload)</span>
 </div>
 
@@ -217,10 +217,11 @@ function renderOptionCard(opt, data) {
             ${data.metrics_strike != null && Number(data.metrics_strike) !== Number(data.strike) ? '<span class="k" style="color:#f59e0b">Signal metrics</span><span class="v" style="color:#f59e0b">from strike ' + n(data.metrics_strike, 0) + ' (heartbeat) - not recalculated for live ATM</span>' : ''}
             <span class="k">SMA9 (completed candles)</span><span class="v">${n(data.sma9)}</span>
             <span class="k">ADX(14) (completed candles)</span><span class="v">${n(data.adx)}</span>
+            <span class="k">+DI / -DI (completed candles)</span><span class="v">${n(data.plus_di)} / ${n(data.minus_di)}</span>
             <span class="k">Previous candle close</span><span class="v">${n(data.prev_close)}</span>
             <span class="k">Current candle open</span><span class="v">${n(data.current_open)}</span>
             <span class="k">Condition A: prev close &gt; SMA9</span><span class="v">${pill(data.condition_a)}</span>
-            <span class="k">Condition B: ADX(14) &gt; 20</span><span class="v">${pill(data.condition_b)}</span>
+            <span class="k">Condition B: ADX(14) &gt; 30 AND +DI &gt; -DI</span><span class="v">${pill(data.condition_b)}</span>
             <span class="k">Qualified (A AND B)</span><span class="v">${pill(data.qualified)}</span>
             <span class="k">LTP &gt; SMA9 (informational)</span><span class="v">${pill(data.confirmation)}</span>
             <span class="k">BUY signal</span><span class="v">${pill(data.signal, 'BUY', 'WAIT')}</span>

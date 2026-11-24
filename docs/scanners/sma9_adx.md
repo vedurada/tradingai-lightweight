@@ -92,9 +92,9 @@ else: hold
 | Performance report | key `sma9_adx`, label `SMA9 ADX` (deployed) |
 | Broker mapping | `live_sma9_adx_scanner.py` → `mstock` |
 
-The live-status payload exposes `adx_period` (14), `adx_threshold` (20.0), each
-option's `adx` value and both condition flags; open positions and closed trades
-persist `adx` / `adx_value`.
+The live-status payload exposes `adx_period` (14), `adx_threshold` (30.0), each
+option's `adx`, `plus_di` and `minus_di` values and the condition flags; open
+positions and closed trades persist `adx` / `adx_value`.
 
 ## Safety
 
@@ -106,5 +106,5 @@ persist `adx` / `adx_value`.
 ## Relationships
 
 - Shares the 5-second cadence and isolation model with `sma9`, but replaces the
-  forming-open gate with ADX(14) > 20 and uses a 5% HWM trail.
+  forming-open gate with ADX(14) > 30 and +DI > -DI, and uses a 5% HWM trail.
 - Other SMA variants keep their existing entry rules and identities.

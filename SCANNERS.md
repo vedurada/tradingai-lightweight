@@ -33,11 +33,11 @@ The code trees and DBs remain on disk as archives.
 | 5 | `sma9_high_trail` | Trail | self-contained entry (prev.close>SMA9 & forming.open>SMA9 & LTP>prev.high) + trail exit | trail stop, then 5% stop; otherwise hold |
 | 6 | `sma9_slope_atr` | SMA9 ATR (5s) | prev close > SMA9 **and** forming open > SMA9 **and** SMA9 > prior SMA9, polled every 5s | ATR trail, then ATR-scaled stop (both fill at the live LTP); otherwise hold |
 | 8 | `sma9_atr` | ATR stop + daily regime | prev close > SMA9 **and** forming open > SMA9 **and** regime allows that option | ATR trail, then ATR-scaled stop (both fill at live LTP); otherwise hold |
-| 9 | `sma9_adx` | SMA9 + ADX | prev completed close > SMA9 **and** ADX(14) > 20 on completed option 5m candles | HWM-5% trail, then 5% initial stop (fixed, no time exit) |
+| 9 | `sma9_adx` | SMA9 + ADX | prev completed close > SMA9 **and** ADX(14) > 30 **and** +DI > -DI on completed option 5m candles | HWM-5% trail, then 5% initial stop (fixed, no time exit) |
 
 The `sma9_5min` identity is deployed: it is an isolated copy of `sma9`
 whose only behavioural change is an aligned 5-minute poll. `sma9_adx`
-adds a Wilder ADX(14) > 20 trend filter and a 5% HWM trailing stop (see §5.8).
+adds a Wilder ADX(14) > 30 and +DI > -DI trend filter and a 5% HWM trailing stop (see §5.8).
 
 There is **no time-based exit** on any of the 9 scanners: if neither the trail
 nor the stop fires, the position stays open across candles (including overnight)
@@ -602,7 +602,7 @@ behavioural changes, both evaluated on the bought option's own **completed**
 5-minute candles (the forming bar is always excluded):
 
 - **Entry (both required, CE and PE alike):** previous completed candle close
-  > SMA9 **and** Wilder ADX(14) > 20. There is no forming-open gate and no
+  > SMA9 **and** Wilder ADX(14) > 30 **and** +DI > -DI. There is no forming-open gate and no
   LTP > SMA9 confirmation gate; `confirmation` is reported as informational
   only.
 - **Exit:** initial stop = entry premium - 5%; once the premium rises, the
@@ -622,7 +622,7 @@ before there is enough history.
 `logs/live_sma9_adx_scanner.log`, user `sma9adx`, API
 `/api/sma9-adx/*`, page `/live/sma9-adx/`, report key `sma9_adx`
 (label `SMA9 ADX`, from 2026-11-22). The status payload carries `adx_period`
-and `adx_threshold`; open positions and closed trades persist `adx` /
+and `adx_threshold`, plus per-option `plus_di` / `minus_di`; open positions and closed trades persist `adx` /
 `adx_value` so a restart resumes the same signal and stop.
 
 ### 5.9 Live dashboard strategy-rules panel

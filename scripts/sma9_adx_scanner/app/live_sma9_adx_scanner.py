@@ -5,7 +5,9 @@ Both CE and PE use the same long-only rule set:
   Qualification (per option, from its own completed 5-minute candles):
     A) previous completed candle CLOSE > SMA9
        AND
-    B) Wilder ADX(14) > 20
+    B) Wilder ADX(14) > 30
+       AND
+    C) +DI > -DI on those same completed candles
   Entry:
     paper BUY at the live LTP on the next 5s poll (no broker order)
   Exit:
@@ -738,10 +740,14 @@ class Sma9AdxLiveScanner:
                     save_open_position(new_pos)
                     entry_made = True
                     logger.info(
-                        "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f adx=%.2f A=%s B=%s candle=%s",
+                        "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f adx=%.2f "
+                        "+di=%.2f -di=%.2f A=%s B=%s candle=%s",
                         opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
-                        new_pos.sma9, new_pos.adx, new_pos.condition_a,
-                        new_pos.condition_b, new_pos.entry_candle_start.isoformat())
+                        new_pos.sma9, new_pos.adx,
+                        ev.plus_di if ev.plus_di is not None else float("nan"),
+                        ev.minus_di if ev.minus_di is not None else float("nan"),
+                        new_pos.condition_a, new_pos.condition_b,
+                        new_pos.entry_candle_start.isoformat())
 
             option_status[opt] = {
                 "tradingsymbol": contract["tradingsymbol"],
@@ -753,9 +759,15 @@ class Sma9AdxLiveScanner:
                 "quote_unavailable": ltp is None,
                 "sma9": round(ev.sma9, 2) if ev.sma9 is not None else None,
                 "adx": round(ev.adx, 2) if ev.adx is not None else None,
+                "plus_di": ev.plus_di,
+                "minus_di": ev.minus_di,
                 "prev_close": ev.prev_close,
                 "current_open": ev.current_open,
                 "condition_a": ev.condition_a,
+                "condition_adx": ev.adx is not None and ev.adx > ADX_THRESHOLD,
+                "condition_di": bool(ev.plus_di is not None
+                                     and ev.minus_di is not None
+                                     and ev.plus_di > ev.minus_di),
                 "condition_b": ev.condition_b,
                 "qualified": ev.qualified,
                 "confirmation": ev.confirmation,

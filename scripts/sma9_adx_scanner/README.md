@@ -5,9 +5,9 @@ simulated BUY recorded in SQLite.
 
 ## Rules
 
-- **Entry (both required):** previous completed option 5m candle close > SMA9
-  **and** Wilder ADX(14) > 20 on completed option 5m candles. The forming bar is
-  never used. CE and PE are evaluated independently.
+- **Entry (all required):** previous completed option 5m candle close > SMA9
+  **and** Wilder ADX(14) > 30 **and** +DI > -DI on completed option 5m candles.
+  The forming bar is never used. CE and PE are evaluated independently.
 - **Exit:** initial stop = entry - 5%; once the premium rises, the stop ratchets
   to HWM - 5% and never ratchets down. No candle-close or time-based exit.
 

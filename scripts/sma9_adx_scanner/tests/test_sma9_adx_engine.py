@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """Offline checks for the SMA9 + ADX(14) engine.
 
-Covers Wilder ADX, the two-condition entry gate, forming-candle exclusion,
-the 5% initial stop and the HWM-5% trailing stop. No network, broker or DB.
+Covers Wilder ADX with +DI/-DI, the three-condition entry gate (ADX > 30 and
++DI > -DI), forming-candle exclusion, the 5% initial stop and the HWM-5%
+trailing stop. No network, broker or DB.
 """
 import os
 import sys
@@ -19,6 +20,7 @@ from app.sma9_adx_engine import (  # noqa: E402
     STOP_LOSS_PCT,
     TRAIL_PCT,
     compute_adx,
+    compute_adx_components,
     evaluate_option,
 )
 
@@ -27,7 +29,7 @@ NOW = BASE + timedelta(minutes=80)
 
 
 def trend_candles(n=31, step=2.0):
-    """Monotonic uptrend - strong directional movement, ADX well above 20."""
+    """Monotonic uptrend - strong directional movement, ADX well above 30."""
     out = []
     for i in range(n):
         c = 100.0 + i * step
@@ -69,6 +71,19 @@ def choppy_uptrend_candles(n=31, drift=0.3):
     return out
 
 
+def rising_close_downward_wicks(n=31, drift=0.3):
+    """Closes rise (SMA9 passes) but -DI dominates because lows keep dropping."""
+    out = []
+    for i in range(n):
+        c = 100.0 + drift * i
+        out.append({
+            "start": BASE + timedelta(minutes=5 * i),
+            "open": c - drift / 2, "high": c + 0.1, "low": 100.0 - 2.0 * i,
+            "close": c, "volume": 100,
+        })
+    return out
+
+
 def make_position(entry=100.0, sma=95.0, adx=25.0):
     return Position(
         option_type="CE", trade_id="T", strike=25000, expiry="2026-11-23",
@@ -99,6 +114,13 @@ check("adx_strong_trend", trend_adx is not None and trend_adx > ADX_THRESHOLD,
 chop_adx = compute_adx(choppy_candles())
 check("adx_choppy", chop_adx is not None and chop_adx <= ADX_THRESHOLD,
       f"adx={chop_adx}")
+trend_comp = compute_adx_components(trend_candles())
+check("di_components_trend",
+      trend_comp.plus_di is not None and trend_comp.minus_di is not None
+      and trend_comp.plus_di > trend_comp.minus_di,
+      f"+di={trend_comp.plus_di} -di={trend_comp.minus_di}")
+check("di_components_insufficient",
+      compute_adx_components(trend_candles(10)).plus_di is None)
 
 # 2. Insufficient completed history -> no ADX.
 check("adx_insufficient", compute_adx(trend_candles(10)) is None)
@@ -107,14 +129,27 @@ check("adx_insufficient", compute_adx(trend_candles(10)) is None)
 ev = evaluate_option(trend_candles(), "CE", ltp=160.0)
 check("entry_signal", ev.signal and ev.qualified and ev.ready, ev.reason)
 check("entry_condition_a", ev.condition_a and ev.prev_close > ev.sma9)
-check("entry_condition_b", ev.condition_b and ev.adx > ADX_THRESHOLD,
-      f"adx={ev.adx}")
+check("entry_condition_b", ev.condition_b and ev.adx > ADX_THRESHOLD
+      and ev.plus_di > ev.minus_di,
+      f"adx={ev.adx} +di={ev.plus_di} -di={ev.minus_di}")
 check("entry_adx_recorded", ev.adx is not None, f"adx={ev.adx}")
+check("entry_di_recorded",
+      ev.plus_di is not None and ev.minus_di is not None,
+      f"+di={ev.plus_di} -di={ev.minus_di}")
 
 # 4. ADX gate alone blocks the signal on a choppy series.
 ev_chop = evaluate_option(choppy_uptrend_candles(), "CE", ltp=101.0)
 check("adx_gate_blocks", ev_chop.condition_a and (not ev_chop.condition_b)
       and (not ev_chop.signal) and "ADX" in ev_chop.reason, ev_chop.reason)
+
+# 4b. ADX > 30 alone is not enough when +DI <= -DI.
+ev_di_opposed = evaluate_option(rising_close_downward_wicks(), "CE",
+                                ltp=109.0)
+check("di_gate_blocks",
+      ev_di_opposed.condition_a and ev_di_opposed.adx > ADX_THRESHOLD
+      and ev_di_opposed.plus_di <= ev_di_opposed.minus_di
+      and not ev_di_opposed.condition_b and not ev_di_opposed.signal
+      and "+DI" in ev_di_opposed.reason, ev_di_opposed.reason)
 
 # 5. Forming candle is excluded from both SMA9 and ADX.
 candles = trend_candles()
@@ -124,8 +159,13 @@ candles[-1]["low"] = 0.0
 candles[-1]["open"] = 5000.0
 ev_after = evaluate_option(candles, "CE", ltp=160.0)
 check("forming_candle_excluded",
-      ev_after.adx == ev_before.adx and ev_after.sma9 == ev_before.sma9,
-      f"{ev_before.adx}->{ev_after.adx} {ev_before.sma9}->{ev_after.sma9}")
+      ev_after.adx == ev_before.adx and ev_after.sma9 == ev_before.sma9
+      and ev_after.plus_di == ev_before.plus_di
+      and ev_after.minus_di == ev_before.minus_di,
+      f"adx {ev_before.adx}->{ev_after.adx} "
+      f"sma {ev_before.sma9}->{ev_after.sma9} "
+      f"+di {ev_before.plus_di}->{ev_after.plus_di} "
+      f"-di {ev_before.minus_di}->{ev_after.minus_di}")
 
 # 6. LTP > SMA is informational only; it does not gate the signal.
 ev_low_ltp = evaluate_option(trend_candles(), "CE", ltp=1.0)
@@ -141,6 +181,9 @@ check("entry_initial_stop", pos is not None
       and pos.stop == round(pos.entry_price * (1.0 - STOP_LOSS_PCT), 2),
       f"stop={pos.stop if pos else None}")
 check("entry_adx_metadata", pos is not None and pos.adx == round(ev.adx, 2))
+check("evaluation_as_dict_di",
+      ev.as_dict().get("plus_di") == round(ev.plus_di, 2)
+      and ev.as_dict().get("minus_di") == round(ev.minus_di, 2))
 
 # 8. 5% initial stop loss.
 sm_sl = OptionStateMachine("CE")

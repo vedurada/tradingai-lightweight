@@ -152,7 +152,7 @@
     "sma9-adx": {
       "title": "SMA9 + ADX(14)",
       "entry": [
-        "Previous completed option-premium 5-minute close > SMA9 AND Wilder ADX(14) > 20, both computed on the bought option's completed 5-minute candles; the forming bar is always excluded.",
+        "Previous completed option-premium 5-minute close > SMA9 AND Wilder ADX(14) > 30 AND +DI > -DI, all computed on the bought option's completed 5-minute candles; the forming bar is always excluded.",
         "No forming-open gate and no LTP > SMA9 gate; the confirmation field is informational only.",
         "Paper BUY at the sampled live premium LTP; ATM CE and PE long only, one position per option."
       ],
@@ -164,7 +164,7 @@
       "scope": [
         "5-second polls; entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option.",
         "ADX needs at least 2 x 14 completed premium bars before an entry is possible; the forming candle must be the current 5-minute bucket.",
-        "ADX(14) > 20 is the only filter added to the base SMA9 entry; the 5-second identity, DB and service are otherwise unchanged. A restart can close a position from an already-ended entry candle at that candle's close (SAME_CANDLE_EXIT); normal polling has no time exit."
+        "ADX(14) > 30 and +DI > -DI are the only filters added to the base SMA9 entry; the 5-second identity, DB and service are otherwise unchanged. A restart can close a position from an already-ended entry candle at that candle's close (SAME_CANDLE_EXIT); normal polling has no time exit."
       ]
     }
   }
