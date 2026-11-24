@@ -14,8 +14,14 @@ BUY-ONLY rules (identical for CE and PE):
          (the live runner turns this into a risk-checked order)
 
 Exit (identical for CE and PE):
-  1) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level
-  2) otherwise exit at the CLOSE of the entry 5-minute candle
+  1) TRAIL: once HWM - entry >= 5.0 pts, stop ratchets to HWM - 5.0 pts;
+     a one-time +2.0 lock is applied after HWM - entry >= 6.0 pts.
+     Only a strictly profitable stop (stop > entry) can exit.
+  2) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level.
+  There is no candle-close, target or time-based exit during normal polling;
+  an open position is carried until one of these stops fires. A service restart
+  is the exception: a recovered position older than its entry candle is closed
+  at that completed candle's close.
 
 Only completed 5-minute candles are used for the signal, so no future data
 can leak into a decision.  No broker / database / network dependencies.
@@ -217,7 +223,7 @@ class Position:
         Trail activates once the peak is `ACTIVATE` above entry (stop -> breakeven),
         then ratchets at peak - TRAIL.  One-time breakeven lock at +BE_LOCK_PROFIT
         moves the stop to entry + BE_LOCK_STOP.  Only a strictly profitable stop
-        (stop > entry) may trigger an exit; otherwise hold to candle close.
+        (stop > entry) may trigger an exit; a breakeven stop is not an exit.
         """
         if ltp is None:
             return None

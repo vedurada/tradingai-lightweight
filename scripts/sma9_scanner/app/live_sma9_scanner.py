@@ -4,22 +4,24 @@
 Both CE and PE use the same long-only rule set:
   Qualification (per option, from its own 5-minute candles):
     A) previous completed candle CLOSE > SMA9
-       OR
+    AND
     B) current forming candle OPEN > SMA9
   Confirmation:
-    live option LTP > SMA9
+    LTP > SMA9 is informational only; it does not gate the entry
   Entry:
-    paper BUY immediately (no broker order)
+    paper BUY at the live LTP once A and B are true (no broker order)
   Exit:
-    at the CLOSE of the entry 5-minute candle
+    normal polling: +5 trail/+2 lock first, then fixed 5% stop; otherwise hold
+    restart recovery: a recovered position older than its entry candle closes
+      at that completed candle's close
 
 Polling is exactly every 5 seconds during market hours.  One batched quote
 call per poll provides NIFTY spot + both option LTPs; historical candles are
-fetched only when a new 5-minute candle appears (or at exit), never on every
-poll.
+fetched only when a new 5-minute candle appears (or a stop needs a fresh bar),
+never on every poll.
 
-State is persisted in database/sma9.db so a restart with an open position
-resumes correctly and still exits at the original entry candle's close.
+State is persisted in database/sma9.db so a restart resumes the stop/trail
+state; see the restart-recovery note above for the entry-candle-close case.
 """
 
 from __future__ import annotations

@@ -2,15 +2,17 @@
 """Pure SMA9 Trail strategy engine for ATM NIFTY CE and PE options.
 
 BUY-ONLY rules (identical for CE and PE):
-  Entry: consumed from the base sma9 scanner (same contract, price
-         and entry candle); this module's evaluate_option is kept only for
-         diagnostics/tests.
+  Entry: self-contained in the runner, previous completed 5m close > SMA9
+         AND forming 5m open > SMA9.  This module's evaluate_option is the
+         same rule used by the runner, not an adapter to another scanner.
   Exit: TRAILING STOP -- stop = peak - 5.0 pts, activates at +5.0 pts
-        (breakeven at activation), ratchets up only.
-        Exit at the stop ONLY if the stop is above entry price (profitable lock).
-        Breakeven or loss stops are ignored -- the trade runs to candle close.
-        Fixed stop loss: exit when LTP reaches entry - 5% of entry premium.
-        Otherwise exit at the CLOSE of the entry 5-minute candle.
+        (breakeven at activation), ratchets up only.  A one-time +2.0 lock
+        is applied after peak - entry >= 6.0 pts.  Exit at the stop ONLY if
+        the stop is above entry price (profitable lock); breakeven stops are
+        not exits.  Fixed stop loss: exit when LTP reaches
+        entry - 5% of entry premium.  There is no candle-close or time exit
+        during normal polling; a restart closes a recovered position older
+        than its entry candle at that completed candle's close.
 
 No carry forward.  No broker / database / network dependencies -- safe to
 unit test with synthetic fixtures.
@@ -270,7 +272,7 @@ class Position:
             self.stop = max(base_stop, self.entry_price + BE_LOCK_STOP)
             self.be_locked = True
         # Only exit when the stop itself is profitable (stop > entry).
-        # Breakeven or loss stops are ignored; hold until candle close.
+        # Breakeven or loss stops are ignored; there is no candle-close exit.
         if (self.stop is not None
                 and self.stop > self.entry_price
                 and ltp <= self.stop):

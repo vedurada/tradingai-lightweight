@@ -12,15 +12,18 @@ Both CE and PE use the same long-only rule set:
     paper BUY at any 5-second poll while A, C and B are all true
     (no broker order)
   Exit:
-    at the CLOSE of the entry 5-minute candle
+    normal polling: +5 trail/+2 lock first, then fixed 5% stop; otherwise hold
+    restart recovery: a recovered position older than its entry candle closes
+      at that completed candle's close
 
-Polling is staggered by a small offset so six scanners do not all request
-historical candles on the same instant.  One batched quote call per poll
-provides NIFTY spot + both option LTPs; historical candles are fetched only
-when a new 5-minute candle appears (or at exit), never on every poll.
+Polling is staggered by a small offset so the active scanners do not all
+request historical candles at the same instant.  One batched quote call per
+poll provides NIFTY spot + both option LTPs; historical candles are fetched
+only when a new 5-minute candle appears (or a stop needs a fresh bar), never
+on every poll.
 
-State is persisted in database/sma9_high.db so a restart with an open position
-resumes correctly and still exits at the original entry candle's close.
+State is persisted in database/sma9_high.db so a restart resumes the stop/trail
+state; see the restart-recovery note above for the entry-candle-close case.
 """
 
 from __future__ import annotations

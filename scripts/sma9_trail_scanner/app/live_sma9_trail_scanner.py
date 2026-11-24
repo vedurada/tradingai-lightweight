@@ -6,10 +6,12 @@ SELF-CONTAINED: entry selection is evaluated locally from fetched candles
 and exit -- no dependency on any base scanner API.
 
 Exit: TRAILING STOP -- stop = peak - 5.0 pts, activates at +5.0 pts
-      (breakeven at activation), ratchets up only.  Exit at the stop ONLY if
-      the stop is above entry price (profitable lock).  Breakeven or loss
-      stops are ignored -- the trade runs to candle close.
-      Otherwise exit at the CLOSE of the entry 5-minute candle.
+      (breakeven at activation), ratchets up only, with a one-time +2.0
+      lock after peak - entry >= 6.0 pts.  Exit at the stop ONLY if the
+      stop is above entry price (profitable lock).  A fixed 5% stop is the
+      fallback.  There is no candle-close or time-based exit during normal
+      polling; a service restart closes a recovered position older than its
+      entry candle at that completed candle's close.
 
 Polling is staggered by a small offset so scanners do not all request
 historical candles on the same instant.
