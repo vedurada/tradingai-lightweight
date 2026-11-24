@@ -825,13 +825,13 @@ rotating user. Files are `root:ubuntu 660`, and the logrotate stanza includes
 sudo chown root:ubuntu /opt/tradingai/logs/*.log
 ```
 
-### 8.5 Code locks (7 active premium scanner trees)
+### 8.5 Code locks (5 active premium scanner trees + 2 stopped duplicates)
 
-The 7 active premium scanner directories are protected: `root:root`, files mode
-`444`, directories `555`. The original base/HIGH families (`sma9`, `sma9_high`)
-and their trail copies (`sma9_trail`, `sma9_high_trail`) additionally use
-`chattr +i` on every file and directory, with a SHA256 `MANIFEST.sha256` and an
-integrity timer. `sma9_atr` is installed
+The five active premium scanner directories are protected: `root:root`, files
+mode `444`, directories `555`. The original base/HIGH families (`sma9`,
+`sma9_high`) and their stopped trail copies (`sma9_trail`, `sma9_high_trail`)
+additionally use `chattr +i` on every file and directory, with a SHA256
+`MANIFEST.sha256` and an integrity timer. `sma9_atr` is installed
 `root:root`, files `444`, directories `555`, without `chattr +i` or an
 integrity timer.
 
@@ -884,8 +884,9 @@ Read-only, writes nothing, places no order:
 sudo runuser -u ubuntu -g ubuntu -- \
   python3 /opt/tradingai/scripts/ops/kite_connectivity_probe.py
 
-# every scanner user: credentials file readable + token accepted
-for u in sma9 sma95min sma9high sma91m sma9slopeatr sma9trail sma9trailhigh; do
+# every active paper scanner user: credentials file readable + token accepted
+# (sma9 covers both sma9 and sma9_atr)
+for u in sma9 sma95min sma9high sma9adx; do
   sudo runuser -u "$u" -g ubuntu -- \
     python3 /opt/tradingai/scripts/ops/kite_connectivity_probe.py --light
 done
@@ -1102,8 +1103,8 @@ refresh remains a manual operator step.
 
 | Item | Location |
 |---|---|
-| GitHub repo | `vedurada/tradingai-lightweight`, branch `feature/zerodha-paper-trading` |
-| Newer scanner sources (git-tracked) | `scripts/sma9_atr_scanner/`, `scripts/sma9_5min_scanner/` (staged) |
+| GitHub repo | `vedurada/tradingai-lightweight`, branch `feature/sma9-live-market-orders` (local work is not pushed) |
+| Git-tracked scanner sources | `scripts/sma9_scanner/`, `scripts/sma9_high_scanner/`, `scripts/sma9_atr_scanner/`, `scripts/sma9_5min_scanner/`, `scripts/sma9_adx_scanner/`, `scripts/sma9_trail_scanner/`, `scripts/sma9_high_trail_scanner/`, `scripts/sma9_live_scanner/` |
 | Connectivity probe | `scripts/ops/kite_connectivity_probe.py` |
 | Per-scanner docs | `docs/scanners/` (this repo) |
 | Master doc | `SCANNERS.md` (this file) |
@@ -1112,11 +1113,11 @@ refresh remains a manual operator step.
 | Base HIGH builder | `/Users/satya/sma9_work/high_build/build_high.py` |
 | VM deployment | `/opt/tradingai/<key>_scanner/` + `database/` + `logs/` + systemd units |
 
-The older premium scanner trees (`sma9`, `sma9_high`, `sma9_trail`,
-`sma9_high_trail`) are maintained in the local build workspace and deployed to
-the VM; only the three newer scanner trees are tracked in this repository. The
-retired `sma3`/`sma20` families and their branches are no longer part of the
-active source set. The 09:20–15:15 entry window is present in all seven
+All eight SMA-family scanner trees are tracked in this repository and deployed
+to the VM; the build workspace under `/Users/satya/sma9_work/` holds the older
+builder/template tooling. The retired `sma3`/`sma20` families and their
+branches are no longer part of the active source set. The 09:20–15:15 entry
+window is present in all seven
 deployed premium scanner files (five active, two disabled duplicates) and in
 the trail build template.
 

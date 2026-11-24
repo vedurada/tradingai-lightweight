@@ -1,13 +1,18 @@
 # Scanner & Broker Connectivity Architecture
 
-This document describes how the eight live paper scanners reach a broker without
-any scanner source changes. Every scanner uses the same read-only gateway path:
-broker choice is a config/CLI setting, never a code change. The broker gateway is the only component that
-holds broker credentials; scanners see a read-only, Kite-shaped API.
+This document describes how the eight SMA-family scanners reach a broker
+without scanner source changes: five active paper scanners, two stopped
+duplicates and the isolated `sma9_live` real-order service. Every scanner uses
+the same read-only market-data gateway path; broker choice is a config/CLI
+setting, never a code change. The broker gateway is the only component that
+holds broker credentials; scanners see a read-only, Kite-shaped API. The live
+service's write path is separate and governed by its own execution gates.
 
 ## Design goals
 
-- **Paper only.** No `place_order`, `order_id`, or broker write path exists.
+- **Paper scanners are read-only.** The five paper scanners have no
+  `place_order`, `order_id`, or broker write path. `sma9_live` is isolated from
+  that fleet and is not covered by this read-only guarantee.
 - **Broker = config.** Switching brokers is a CLI command plus a scanner restart.
 - **Secrets stay root-only.** Scanner users never read broker credential files.
 - **Stable identities.** Scanner names, DBs, services, API routes, 5 s polling,
@@ -18,8 +23,8 @@ holds broker credentials; scanners see a read-only, Kite-shaped API.
 
 ```mermaid
 flowchart TB
-    subgraph SCANNERS["9 live paper scanners"]
-        SMA["9 x SMA scanners<br/>live_sma9*.py<br/>poll = 5 s"]
+    subgraph SCANNERS["8 SMA-family scanners"]
+        SMA["5 active paper + 2 stopped duplicates + 1 live<br/>live_sma9*.py<br/>poll = 5 s"]
         SMA5["sma9_5min / sma9_adx<br/>live_sma9_5min_scanner.py / live_sma9_adx_scanner.py<br/>aligned 5 min + 10 s / 5 s"]
     end
 
@@ -69,11 +74,15 @@ flowchart TB
 | `sma9_adx` | `live_sma9_adx_scanner.py` | `tradingai-sma9-adx-scanner` (deployed) | `sma9adx` (deployed) | `/opt/tradingai/database/sma9_adx.db` | `/api/sma9-adx/scanner-status` (deployed) |
 | `sma9_atr` | `live_sma9_atr_scanner.py` | `tradingai-sma9-atr-scanner` | `sma9` | `/opt/tradingai/database/sma9_atr.db` | `/api/sma9-atr/scanner-status` |
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
-| `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
-| `sma9_high_trail` | `live_sma9_high_trail_scanner.py` | `tradingai-sma9_high_trail-scanner` | `sma9trailhigh` | `/opt/tradingai/database/sma9_high_trail.db` | `/api/sma9-high-trail/scanner-status` |
+| `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` (`disabled`) | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
+| `sma9_high_trail` | `live_sma9_high_trail_scanner.py` | `tradingai-sma9_high_trail-scanner` (`disabled`) | `sma9trailhigh` | `/opt/tradingai/database/sma9_high_trail.db` | `/api/sma9-high-trail/scanner-status` |
+| `sma9live` | `live_sma9_live_scanner.py` | `tradingai-sma9-live-scanner` | `sma9live` | `/opt/tradingai/database/sma9_live.db` | `/api/sma9-live/*` |
 
-All seven deployed scanners resolve to broker `mstock`. The seven SMA routes are served
-by `app.api.app:app` under gunicorn.
+The five active paper scanners and the isolated `sma9live` service resolve to
+broker `mstock`; the two trail duplicates are stopped and disabled but keep
+their aliases in the mapping. Seven paper SMA routes remain served (five
+active, two stale dashboards) plus the separate `/api/sma9-live/*` namespace,
+all by `app.api.app:app` under gunicorn.
 
 Each scanner is isolated from the others: it has its own SQLite state file, its
 own log, its own API status route and its own broker alias, set in its unit as
@@ -218,7 +227,7 @@ Notable mappings and guards:
 
 | Layer | Location | Owner / mode |
 |---|---|---|
-| Source of truth | `/Users/satya/tradingai_sync` | repo on `feature/zerodha-paper-trading` |
+| Source of truth | `/Users/satya/tradingai_sync` | repo on `feature/sma9-live-market-orders` (not pushed) |
 | Gateway code | `/opt/tradingai/broker_gateway/` | root, 644 |
 | Gateway config | `config/scanners.json` | root, 644; no secrets |
 | Gateway cache | `cache/mstock_scriptmaster.csv` | root:ubuntu, 750 dir |
@@ -344,10 +353,12 @@ Broker selection itself is separate from tokens:
 
 No scanner file changes are needed.
 
-## 11. Verified production state (2026-11-21)
+## 11. Verified production state (2026-11-24)
 
-- All 8 scanners configured to `mstock`; default remains `zerodha`.
-- All 9 services (gateway + 8 scanners) active with zero systemd restarts.
+- All 8 SMA-family aliases configured to `mstock`; default remains `zerodha`.
+- Gateway, API and the five active paper scanners plus `sma9live` are active.
+  `sma9_trail` and `sma9_high_trail` are `active=inactive`,
+  `enabled=disabled` and excluded from `refresh_token.sh` restarts.
 - Gateway log clean; `probe --broker mstock` reports profile ok, 94089 NFO
   instruments, NIFTY quote ok.
 - Seven SMA APIs: `IDLE_MARKET_CLOSED`, `poll=5`, fresh scan ages, errors only
@@ -372,7 +383,8 @@ No scanner file changes are needed.
   run reports `MSTOCK_VALID | ZERODHA_INVALID` as expected.
 - Scanner state durability covered by `tests/test_scanner_state_durability.py`
   (22 tests: atomic trade insert + open-position delete with rollback on
-  failure, and HWM/stop surviving save/reload across all 7 scanners). Quote
+  failure, and HWM/stop surviving save/reload across all 7 paper scanners
+  (five active plus two stopped trail duplicates). Quote
   freshness covered by `tests/test_broker_gateway_quote_freshness.py`.
   Deployed and verified: all 10 services active, `sma9`/`sma9_high` columns
   migrated, no open positions duplicated, `/api/quote/NIFTY` `LIVE` with

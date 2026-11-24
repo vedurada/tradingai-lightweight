@@ -3,7 +3,7 @@
 **One line:** owns the `sma9` entry **and** the trailing exit in one process;
 it no longer waits for another scanner to open a position.
 
-- **Status:** active, v2.1.0
+- **Status:** stopped and disabled duplicate of `sma9`, v2.1.0; kept on disk
 - **Cadence:** every 5 seconds, offset 1.2 s
 - **Stop:** fixed 5% of entry premium, after a 5-point trail
 
@@ -87,8 +87,10 @@ tail -f /opt/tradingai/logs/live_sma9_trail_scanner.log
 ```
 
 Rate-limit profile: one batched spot+CE+PE quote per 5-second tick, historical
-candles only when a new 5-minute candle appears or at exit. The unit is
-enabled, `Restart=always`, and in `ALL_UNITS` of `refresh_token.sh`.
+candles only when a new 5-minute candle appears or at exit. The service is
+`active=inactive` and `enabled=disabled`; `TRAIL_UNITS=()` in
+`refresh_token.sh` keeps it out of the daily restart list until it is
+explicitly re-enabled. Its DB, pages, logs and code remain on disk.
 
 ## Relationships
 
