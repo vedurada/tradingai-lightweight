@@ -68,6 +68,17 @@ MUHURAT_SESSIONS = {
     "2026-11-08": (dtime(14, 0), dtime(17, 0)),
 }
 
+# NSE weekday trading holidays mirrored from app/market/nse_calendar.py
+# (NSE circular CMTR71775, verified 2026-09-28). These standalone scanners
+# cannot import app/, so the 2026 table is duplicated here. Fail-safe:
+# uncovered years fall back to the weekday rule, and scan() still refuses
+# to trade when the broker quote is unavailable.
+NSE_HOLIDAYS_2026 = frozenset({
+    "2026-01-26", "2026-03-03", "2026-03-26", "2026-03-31", "2026-04-03",
+    "2026-04-14", "2026-05-01", "2026-05-28", "2026-06-26", "2026-09-14",
+    "2026-10-02", "2026-10-20", "2026-11-10", "2026-11-24", "2026-12-25",
+})
+
 def session_open_time(dt):
     return MUHURAT_SESSIONS.get(dt.date().isoformat(), (MARKET_OPEN, MARKET_CLOSE))[0]
 
@@ -106,6 +117,8 @@ def floor_5m(dt: datetime) -> datetime:
 def is_weekday(dt: datetime) -> bool:
     if dt.date().isoformat() in MUHURAT_SESSIONS:
         return True
+    if dt.date().isoformat() in NSE_HOLIDAYS_2026:
+        return False
     return dt.weekday() < 5
 
 
