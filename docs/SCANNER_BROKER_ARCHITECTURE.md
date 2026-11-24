@@ -75,6 +75,15 @@ flowchart TB
 All seven deployed scanners resolve to broker `mstock`. The seven SMA routes are served
 by `app.api.app:app` under gunicorn.
 
+Each scanner is isolated from the others: it has its own SQLite state file, its
+own log, its own API status route and its own broker alias, set in its unit as
+`BROKER_GATEWAY_SCANNER=<alias>` and listed in `config/scanners.json`. The
+aliases are `sma9`, `sma9_5min`, `sma9_adx`, `sma9_atr`, `sma9_high`,
+`sma9_trail`, `sma9_high_trail` and `sma9live`. A scanner never reads another
+scanner's DB, heartbeat or ledger. The gateway daemon, its socket and its shared
+mStock rate limiter are deliberately common infrastructure; they do not carry
+per-scanner trade state.
+
 ## 3. How a scanner picks its broker
 
 Broker resolution happens once, when `KiteConnect(...)` is constructed. It is
@@ -123,6 +132,12 @@ flowchart LR
 - The daemon independently enforces `METHODS = {instruments, quote,
   historical_data, profile}` and a broker allowlist, so a direct socket client
   cannot widen the surface either.
+- Order methods require **both** the global `BROKER_GATEWAY_ORDERS_ENABLED=true`
+  and a caller alias in `BROKER_GATEWAY_ORDER_SCANNERS` (by default only
+  `sma9live`, plus the pre-alias script name for compatibility). Paper aliases
+  are rejected at the daemon boundary even when order methods are globally
+  enabled, so no paper scanner can reach the armed real-order path. Every order
+  audit line records the calling alias.
 - `BrokerAdapter` is an ABC with only the three data methods plus `profile()`.
 - The daemon strips any quote entry whose `last_price` is missing, non-numeric,
   non-finite or `<= 0` before returning it (`_sanitize_quote`). Scanners do

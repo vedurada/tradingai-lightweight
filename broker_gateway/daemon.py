@@ -28,6 +28,16 @@ METHODS = READ_METHODS | ORDER_METHODS
 _ORDERS_ENABLED = str(
     os.environ.get("BROKER_GATEWAY_ORDERS_ENABLED", "")
 ).strip().lower() in {"1", "true", "yes"}
+# Even with the global opt-in, only the armed scanner's alias may place or
+# inspect orders. Paper scanners share this daemon but must never reach the
+# real-order path. The script-name fallback preserves pre-alias deployments.
+_ORDER_SCANNERS = {
+    item.strip()
+    for item in os.environ.get(
+        "BROKER_GATEWAY_ORDER_SCANNERS", "sma9live,live_sma9_live_scanner.py"
+    ).split(",")
+    if item.strip()
+}
 _ADAPTERS: dict[str, object] = {}
 _LOCK = threading.Lock()
 _MAX_CALLS = max(1, int(os.environ.get("BROKER_GATEWAY_MAX_CALLS", "4")))
@@ -192,6 +202,7 @@ def dispatch(request: dict):
         raise BrokerGatewayError("request must be an object")
     broker = str(request.get("broker", "")).strip().lower()
     method = str(request.get("method", "")).strip()
+    scanner = str(request.get("scanner", "")).strip()
     params = request.get("params") or {}
     if broker not in available_brokers():
         raise BrokerGatewayError(f"unknown broker {broker!r}")
@@ -199,11 +210,16 @@ def dispatch(request: dict):
         raise BrokerGatewayError(f"method not allowed: {method!r}")
     if not isinstance(params, dict):
         raise BrokerGatewayError("params must be an object")
-    if method in ORDER_METHODS and not _ORDERS_ENABLED:
-        raise BrokerGatewayError(
-            "broker gateway order methods are disabled; "
-            "set BROKER_GATEWAY_ORDERS_ENABLED=true to opt in"
-        )
+    if method in ORDER_METHODS:
+        if not _ORDERS_ENABLED:
+            raise BrokerGatewayError(
+                "broker gateway order methods are disabled; "
+                "set BROKER_GATEWAY_ORDERS_ENABLED=true to opt in"
+            )
+        if scanner not in _ORDER_SCANNERS:
+            raise BrokerGatewayError(
+                f"scanner {scanner!r} is not allowed to use order methods"
+            )
     adapter = _adapter(broker)
     adapter.refresh_credentials_if_changed()
     _require_fresh(broker, adapter)
@@ -213,7 +229,10 @@ def dispatch(request: dict):
     if method in ORDER_METHODS:
         # Audit trail for real orders. Params never contain credentials or OTP.
         audit = json.dumps(params, sort_keys=True, default=str)
-        print(f"broker gateway ORDER {broker} {method} {audit}", file=sys.stderr, flush=True)
+        print(
+            f"broker gateway ORDER scanner={scanner} {broker} {method} {audit}",
+            file=sys.stderr, flush=True,
+        )
     with _CALL_LIMIT:
         result = func(**params)
     return _sanitize_quote(result) if method == "quote" else result

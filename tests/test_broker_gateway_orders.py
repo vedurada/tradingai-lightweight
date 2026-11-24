@@ -34,7 +34,8 @@ def adapter(monkeypatch, tmp_path):
 
 def test_order_methods_are_disabled_until_opt_in(monkeypatch, adapter):
     monkeypatch.setattr(daemon, "_ORDERS_ENABLED", False)
-    request = {"broker": "mstock", "method": "place_order", "params": {}}
+    request = {"broker": "mstock", "method": "place_order", "params": {},
+               "scanner": "sma9live"}
     with pytest.raises(BrokerGatewayError, match="disabled"):
         daemon.dispatch(request)
     monkeypatch.setattr(daemon, "_ORDERS_ENABLED", True)
@@ -55,7 +56,7 @@ def test_order_methods_are_disabled_until_opt_in(monkeypatch, adapter):
 
 def test_tag_lookup_is_gated_with_other_order_methods(adapter, monkeypatch):
     request = {"broker": "mstock", "method": "order_by_tag",
-               "params": {"tag": "S9L-BUY-ABC"}}
+               "params": {"tag": "S9L-BUY-ABC"}, "scanner": "sma9live"}
     monkeypatch.setattr(daemon, "_ORDERS_ENABLED", False)
     with pytest.raises(BrokerGatewayError, match="disabled"):
         daemon.dispatch(request)
@@ -67,6 +68,63 @@ def test_tag_lookup_is_gated_with_other_order_methods(adapter, monkeypatch):
                         lambda **params: seen.update(params) or {"orders": []})
     assert daemon.dispatch(request) == {"orders": []}
     assert seen == {"tag": "S9L-BUY-ABC"}
+
+
+def test_paper_scanner_alias_cannot_use_order_methods(monkeypatch, adapter):
+    monkeypatch.setattr(daemon, "_ORDERS_ENABLED", True)
+    monkeypatch.setattr(daemon, "_adapter", lambda name: adapter)
+    monkeypatch.setattr(daemon, "_require_fresh", lambda broker, adapter: None)
+    for method in ("place_order", "order_status", "order_by_tag"):
+        request = {"broker": "mstock", "method": method, "params": {},
+                   "scanner": "sma9"}
+        with pytest.raises(BrokerGatewayError,
+                           match="not allowed to use order methods"):
+            daemon.dispatch(request)
+
+
+def test_read_methods_allow_every_scanner_alias(monkeypatch, adapter):
+    monkeypatch.setattr(daemon, "_ORDERS_ENABLED", True)
+    monkeypatch.setattr(daemon, "_adapter", lambda name: adapter)
+    monkeypatch.setattr(daemon, "_require_fresh", lambda broker, adapter: None)
+    monkeypatch.setattr(adapter, "profile", lambda: {"user_id": "SHARED-READ"})
+    for scanner in ("sma9", "sma9_5min", "sma9_adx", "sma9_atr", "sma9_high",
+                    "sma9_trail", "sma9_high_trail", "sma9live"):
+        result = daemon.dispatch({"broker": "mstock", "method": "profile",
+                                  "params": {}, "scanner": scanner})
+        assert result == {"user_id": "SHARED-READ"}
+
+
+def test_client_sends_scanner_alias(monkeypatch):
+    from broker_gateway import client
+
+    sent = {}
+
+    class FakeSocket:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *args):
+            return False
+
+        def settimeout(self, value):
+            pass
+
+        def connect(self, path):
+            pass
+
+        def sendall(self, payload):
+            sent["request"] = json.loads(payload.decode("utf-8"))
+
+        def recv(self, size):
+            return b'{"ok": true, "result": {}}\n'
+
+    monkeypatch.setattr(client.socket, "socket", lambda *a, **k: FakeSocket())
+    monkeypatch.setenv("BROKER_GATEWAY_SCANNER", "sma9_adx")
+    assert client.call("mstock", "quote", symbols=["X"]) == {}
+    assert sent["request"] == {
+        "broker": "mstock", "method": "quote", "params": {"symbols": ["X"]},
+        "scanner": "sma9_adx",
+    }
 
 
 def test_place_order_posts_typea_form_once(adapter, monkeypatch):

@@ -5,6 +5,7 @@ import json
 import os
 import socket
 
+from broker_gateway.config import scanner_name
 from broker_gateway.errors import BrokerGatewayError
 
 SOCKET_PATH = os.environ.get("BROKER_GATEWAY_SOCKET", "/run/tradingai/broker_gateway.sock")
@@ -12,7 +13,14 @@ TIMEOUT = float(os.environ.get("BROKER_GATEWAY_TIMEOUT", "180"))
 
 
 def call(broker: str, method: str, **params):
-    request = json.dumps({"broker": broker, "method": method, "params": params}) + "\n"
+    # The alias identifies the calling scanner to the daemon so order methods
+    # can be scoped to one alias instead of every process sharing the socket.
+    request = json.dumps({
+        "broker": broker,
+        "method": method,
+        "params": params,
+        "scanner": scanner_name(),
+    }) + "\n"
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
             sock.settimeout(TIMEOUT)

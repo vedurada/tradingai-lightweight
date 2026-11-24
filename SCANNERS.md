@@ -927,6 +927,11 @@ armed unit uses the verified mStock Type A order contract.
 | Deployed executor | `mstock` via root-owned gateway (`BROKER_GATEWAY_ORDERS_ENABLED=true`) |
 | Order API | Type A `POST /orders/reg`, form-encoded; status via `GET /orders` |
 
+The gateway enforces the alias boundary: order methods require the `sma9live`
+alias as well as the global opt-in, so paper scanners sharing the daemon remain
+read-only. See `docs/SCANNER_BROKER_ARCHITECTURE.md` for the full per-scanner
+alias table.
+
 Risk guards enforced before any BUY: kill switch (`SMA9_LIVE_KILLED` or the
 kill file), one open position per leg, and a 1% pre-trade price-collar check
 (`SMA9_LIVE_PRICE_COLLAR_PCT`) against the previous poll's LTP. The deployed

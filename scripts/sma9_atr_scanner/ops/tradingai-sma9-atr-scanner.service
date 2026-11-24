@@ -15,6 +15,7 @@ Environment=SMA9_ATR_DB_PATH=/opt/tradingai/database/sma9_atr.db
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONPATH=/opt/tradingai/sma9_atr_scanner
+Environment=BROKER_GATEWAY_SCANNER=sma9_atr
 ExecStart=/usr/bin/python3 /opt/tradingai/sma9_atr_scanner/app/live_sma9_atr_scanner.py
 # The ubuntu API opens this DB read-only, but SQLite still creates -shm/-wal
 # with the main file's mode. Keep the main DB group/world writable (matching

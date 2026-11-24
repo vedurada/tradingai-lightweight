@@ -31,6 +31,7 @@ Environment=SMA9_LIVE_COST_PER_UNIT=0
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONPATH=/opt/tradingai/sma9_live_scanner
+Environment=BROKER_GATEWAY_SCANNER=sma9live
 ExecStart=/usr/bin/python3 /opt/tradingai/sma9_live_scanner/app/live_sma9_live_scanner.py
 ExecStartPre=+/bin/sh -c 'chmod 0666 /opt/tradingai/database/sma9_live.db* 2>/dev/null || true'
 Restart=always

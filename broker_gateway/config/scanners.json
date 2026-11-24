@@ -2,13 +2,21 @@
   "default": "zerodha",
   "scanners": {
     "api": "mstock",
-    "live_sma9_live_scanner.py": "mstock",
-    "live_sma9_adx_scanner.py": "mstock",
     "live_sma9_5min_scanner.py": "mstock",
+    "live_sma9_adx_scanner.py": "mstock",
     "live_sma9_atr_scanner.py": "mstock",
     "live_sma9_high_scanner.py": "mstock",
     "live_sma9_high_trail_scanner.py": "mstock",
+    "live_sma9_live_scanner.py": "mstock",
     "live_sma9_scanner.py": "mstock",
-    "live_sma9_trail_scanner.py": "mstock"
+    "live_sma9_trail_scanner.py": "mstock",
+    "sma9": "mstock",
+    "sma9_5min": "mstock",
+    "sma9_adx": "mstock",
+    "sma9_atr": "mstock",
+    "sma9_high": "mstock",
+    "sma9_high_trail": "mstock",
+    "sma9live": "mstock",
+    "sma9_trail": "mstock"
   }
 }

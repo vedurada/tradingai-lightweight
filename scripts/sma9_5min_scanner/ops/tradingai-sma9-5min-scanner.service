@@ -15,6 +15,7 @@ Environment=SMA9_5MIN_DB_PATH=/opt/tradingai/database/sma9_5min.db
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONPATH=/opt/tradingai/sma9_5min_scanner
+Environment=BROKER_GATEWAY_SCANNER=sma9_5min
 ExecStart=/usr/bin/python3 /opt/tradingai/sma9_5min_scanner/app/live_sma9_5min_scanner.py
 # The ubuntu API opens this DB read-only, but SQLite still creates -shm/-wal
 # with the main file's mode. Keep the main DB group-writable (matching the other
