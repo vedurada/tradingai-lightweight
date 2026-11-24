@@ -459,6 +459,194 @@ def test_sell_cancellation_keeps_position_and_does_not_retry(
     assert not hasattr(mod.EXECUTOR, "place")
 
 
+def test_slippage_signs_and_missing_fill(execution):
+    # BUY: paying more than the signal is adverse (positive).
+    assert execution.measure_slippage("BUY", 100, 101.5, 65) == (1.5, 1.5, 97.5)
+    # SELL: receiving less than the signal is also adverse.
+    pts, pct, value = execution.measure_slippage("SELL", 105, 103, 65)
+    assert pts == 2.0
+    assert pct == pytest.approx(1.9048, abs=1e-4)
+    assert value == 130.0
+    # A favourable SELL fill is negative: it improves on the signal.
+    assert execution.measure_slippage("SELL", 105, 106, 65)[0] == -1.0
+    for missing in (None, "", 0, -1, "not-a-price"):
+        assert execution.measure_slippage("BUY", 100, missing, 65) == (
+            None, None, None)
+
+
+def test_estimated_cost_defaults_and_env_overrides(execution):
+    assert execution.estimated_order_cost("BUY", 65, {}) == 20.0
+    env = {
+        "SMA9_LIVE_COST_BROKERAGE_PER_ORDER": "20",
+        "SMA9_LIVE_COST_OTHER_PER_ORDER": "10",
+        "SMA9_LIVE_COST_SELL_EXTRA_PER_ORDER": "5",
+        "SMA9_LIVE_COST_PER_UNIT": "0.5",
+    }
+    assert execution.estimated_order_cost("BUY", 65, env) == 62.5
+    assert execution.estimated_order_cost("SELL", 65, env) == 67.5
+    # Bad/negative values cannot create a negative cost estimate.
+    assert execution.estimated_order_cost(
+        "BUY", 65, {"SMA9_LIVE_COST_OTHER_PER_ORDER": "-5"}) == 0.0
+
+
+def test_mstock_executor_order_details_captures_fill(execution):
+    responses = [
+        {
+            "status": "complete", "raw_status": "COMPLETE",
+            "status_message": "filled", "fill_price": "101.25",
+        },
+        {"status": "OPEN", "fill_price": "0"},
+    ]
+    ex = execution.MStockOrderExecutor(caller=lambda *a, **k: responses.pop(0))
+    record = _order(execution, broker_order_id="MOCK-ORDER-1")
+    details = ex.order_details(record)
+    assert details.status == execution.STATUS_FILLED
+    assert details.fill_price == 101.25
+    assert details.raw_status == "COMPLETE"
+    assert details.status_message == "filled"
+    # The string wrapper still works and a zero price is not a fill.
+    assert ex.order_status(record) == execution.STATUS_ACCEPTED
+
+
+def test_reconcile_logs_fill_quality_once_per_leg(
+        live_runner, execution, monkeypatch):
+    mod = live_runner
+    trade_id = "S9L-QUALITY"
+    scanner, _ = _reconcile_position(
+        mod, trade_id, "BUY", mod.LIFECYCLE_PENDING)
+    record = _accepted_order(execution, trade_id, "BUY",
+                             intended_price=100.0, quantity=65)
+    mod.save_order_record(record)
+
+    class DetailsExecutor:
+        name = "mstock"
+
+        def __init__(self, details):
+            self.details = details
+            self.calls = 0
+
+        def order_details(self, received):
+            self.calls += 1
+            return self.details
+
+    fake = DetailsExecutor(execution.OrderDetails(
+        status=execution.STATUS_FILLED, fill_price=101.0,
+        raw_status="COMPLETE"))
+    monkeypatch.setattr(mod, "EXECUTOR", fake)
+
+    assert scanner.reconcile_orders()["filled"] == 1
+    with mod.db_conn() as conn:
+        rows = [dict(r) for r in conn.execute(
+            "SELECT * FROM sma9_live_execution_quality")]
+    assert len(rows) == 1
+    row = rows[0]
+    assert row["client_order_id"] == record.client_order_id
+    assert row["signal_price"] == 100.0
+    assert row["fill_price"] == 101.0
+    assert row["slippage_points"] == 1.0
+    assert row["slippage_value"] == 65.0
+    assert row["cost_estimate"] == 20.0
+    assert row["broker_status"] == execution.STATUS_FILLED
+    assert row["raw_status"] == "COMPLETE"
+
+    # A later status poll without a fill must not duplicate the row or erase
+    # the already-known fill price.
+    fake.details = execution.OrderDetails(status=execution.STATUS_FILLED)
+    mod.record_execution_quality(record, fake.details)
+    with mod.db_conn() as conn:
+        again = [dict(r) for r in conn.execute(
+            "SELECT * FROM sma9_live_execution_quality")]
+    assert len(again) == 1
+    assert again[0]["fill_price"] == 101.0
+    assert again[0]["slippage_points"] == 1.0
+
+
+def test_missing_broker_fill_never_guesses_slippage(live_runner, execution):
+    mod = live_runner
+    record = _accepted_order(execution, "S9L-QUALITY-NOFILL", "BUY",
+                             intended_price=100.0)
+    mod.save_order_record(record)
+    mod.record_execution_quality(
+        record, execution.OrderDetails(status=execution.STATUS_ACCEPTED))
+    with mod.db_conn() as conn:
+        row = dict(conn.execute(
+            "SELECT * FROM sma9_live_execution_quality").fetchone())
+    assert row["fill_price"] is None
+    assert row["slippage_points"] is None
+    assert row["slippage_pct"] is None
+    assert row["slippage_value"] is None
+    assert row["cost_estimate"] == 20.0
+
+
+@pytest.fixture
+def live_api(live_runner):
+    """Flask test client for the read-only live API on the private DB."""
+    name = "sma9_live_api_under_test"
+    spec = importlib.util.spec_from_file_location(
+        name, ROOT / "app" / "api" / "sma9_live_api.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[name] = mod
+    spec.loader.exec_module(mod)
+    from flask import Flask
+    app = Flask(__name__)
+    app.register_blueprint(mod.bp)
+    yield app.test_client()
+    for key in list(sys.modules):
+        if key == name:
+            del sys.modules[key]
+
+
+def test_execution_quality_api_aggregates_without_writing(
+        live_api, live_runner, execution):
+    mod = live_runner
+    trade_id = "S9L-QUALITY-API"
+    ts = mod.now_ist().isoformat()
+    with mod.db_conn() as conn:
+        conn.execute(
+            """INSERT INTO sma9_live_trades
+               (trade_id, trade_date, option_type, strike, expiry,
+                signal_timestamp, entry_timestamp, entry_price,
+                exit_timestamp, exit_price, pnl_points,
+                status, created_at, updated_at, dataset)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+            (trade_id, mod.now_ist().date().isoformat(), "CE", 20000.0,
+             "2026-09-24", ts, ts, 100.0, ts, 110.0, 10.0,
+             "CLOSED", ts, ts, "LIVE"),
+        )
+    buy = _accepted_order(execution, trade_id, "BUY", intended_price=100.0)
+    sell = _accepted_order(execution, trade_id, "SELL", intended_price=110.0)
+    mod.record_execution_quality(
+        buy, execution.OrderDetails(status=execution.STATUS_FILLED,
+                                    fill_price=101.0))
+    mod.record_execution_quality(
+        sell, execution.OrderDetails(status=execution.STATUS_FILLED,
+                                     fill_price=109.0))
+
+    with mod.db_conn() as conn:
+        before = conn.execute(
+            "SELECT COUNT(*) FROM sma9_live_execution_quality").fetchone()[0]
+    response = live_api.get("/api/sma9-live/execution-quality?limit=10")
+    assert response.status_code == 200
+    data = response.get_json()
+    assert data["success"] is True
+    summary = data["summary"]
+    assert summary["legs"] == 2
+    assert summary["filled_legs"] == 2
+    assert summary["missing_fills"] == 0
+    assert summary["slippage_points"] == 2.0
+    assert summary["slippage_value"] == 130.0
+    assert summary["cost_estimate"] == 40.0
+    assert summary["paper_pnl_points"] == 10.0
+    assert summary["fill_adjusted_pnl_points"] == 8.0
+    assert summary["estimated_realized_rupees"] == 480.0
+    assert len(data["legs"]) == 2
+    assert data["trades"][0]["trade_id"] == trade_id
+    with mod.db_conn() as conn:
+        after = conn.execute(
+            "SELECT COUNT(*) FROM sma9_live_execution_quality").fetchone()[0]
+    assert after == before
+
+
 def test_reconciliation_audits_events_and_ignores_dry_run(
         live_runner, execution, monkeypatch):
     mod = live_runner

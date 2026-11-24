@@ -12,6 +12,8 @@ default:
 * Real orders are MARKET orders; the collar is a sanity check on the sampled
   LTP, not a broker-side limit price.
 * Client order IDs are deterministic so retries cannot duplicate an order.
+* Broker fill prices are recorded in a separate shadow log so signal-vs-fill
+  slippage and estimated costs can be measured without altering trade P&L.
 
 No secrets, credentials, keys or OTP/TOTP values are read or stored here.
 """
@@ -38,6 +40,20 @@ STATUS_REJECTED = "REJECTED"
 STATUS_FAILED = "FAILED"
 STATUS_FILLED = "FILLED"
 STATUS_CANCELLED = "CANCELLED"
+
+
+@dataclass(frozen=True)
+class OrderDetails:
+    """Read-only broker status plus fill fields used by the shadow log.
+
+    ``fill_price`` is best-effort: mStock may omit an average price until the
+    order reaches a terminal state. A missing value is never treated as zero.
+    """
+
+    status: str
+    fill_price: Optional[float] = None
+    raw_status: Optional[str] = None
+    status_message: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -159,6 +175,57 @@ def price_collar_breached(
     return move_pct > collar_pct
 
 
+def measure_slippage(
+    side: str, signal_price: float, fill_price: Optional[float], quantity: int
+) -> tuple[Optional[float], Optional[float], Optional[float]]:
+    """Return (points, percent, rupee value) of execution gap vs signal LTP.
+
+    Positive is always adverse: a BUY filled above the signal, or a SELL filled
+    below it. Missing/invalid fills return all Nones rather than guessing.
+    """
+    if side not in (BUY, SELL):
+        raise ValueError(f"invalid order side: {side!r}")
+    if fill_price is None or signal_price <= 0 or quantity <= 0:
+        return None, None, None
+    try:
+        fill = float(fill_price)
+    except (TypeError, ValueError):
+        return None, None, None
+    if fill <= 0:
+        return None, None, None
+    points = (fill - signal_price) if side == BUY else (signal_price - fill)
+    pct = points / signal_price * 100.0
+    value = points * quantity
+    return round(points, 4), round(pct, 4), round(value, 2)
+
+
+def estimated_order_cost(side: str, quantity: int, environ=None) -> float:
+    """Configurable ESTIMATE of one order's charges, in rupees.
+
+    This is a shadow accounting figure only; it is never sent to the broker and
+    does not claim to be the actual contract note. Defaults: zero brokerage
+    (mStock plan) plus a flat per-order allowance for exchange/STT/GST/stamp.
+    Override with SMA9_LIVE_COST_BROKERAGE_PER_ORDER,
+    SMA9_LIVE_COST_OTHER_PER_ORDER, SMA9_LIVE_COST_SELL_EXTRA_PER_ORDER and
+    SMA9_LIVE_COST_PER_UNIT. Negative values are treated as zero.
+    """
+
+    env = environ if environ is not None else os.environ
+
+    def _num(key: str, default: str) -> float:
+        try:
+            return max(0.0, float(env.get(key, default)))
+        except (TypeError, ValueError):
+            return float(default)
+
+    brokerage = _num("SMA9_LIVE_COST_BROKERAGE_PER_ORDER", "0")
+    other = _num("SMA9_LIVE_COST_OTHER_PER_ORDER", "20")
+    sell_extra = (_num("SMA9_LIVE_COST_SELL_EXTRA_PER_ORDER", "0")
+                  if side == SELL else 0.0)
+    per_unit = _num("SMA9_LIVE_COST_PER_UNIT", "0")
+    return round(brokerage + other + sell_extra + per_unit * quantity, 2)
+
+
 def kill_switch_active(limits: RiskLimits, environ=None) -> bool:
     env = environ if environ is not None else os.environ
     if str(env.get("SMA9_LIVE_KILLED", "")).strip().lower() in {"1", "true", "yes"}:
@@ -193,6 +260,10 @@ class OrderExecutor:
 
     def order_status(self, record: OrderRecord) -> str:
         raise NotImplementedError
+
+    def order_details(self, record: OrderRecord) -> OrderDetails:
+        """Broker status plus fills; fakes that only expose status inherit this."""
+        return OrderDetails(status=self.order_status(record))
 
 
 class DryRunOrderExecutor(OrderExecutor):
@@ -298,19 +369,44 @@ class MStockOrderExecutor(OrderExecutor):
         )
         return record
 
-    def order_status(self, record: OrderRecord) -> str:
+    def order_details(self, record: OrderRecord) -> OrderDetails:
+        """One read-only status poll, including the broker's average fill price."""
         if not record.broker_order_id:
-            return record.status
+            return OrderDetails(status=record.status)
         result = self._call(
             self.broker, "order_status", broker_order_id=record.broker_order_id
         ) or {}
-        status = str(result.get("status") or STATUS_NEW).upper()
-        if status == "OPEN":
+        status = str(result.get("status") or STATUS_NEW).strip().upper()
+        # The adapter already normalises these, but map raw broker spellings
+        # too so a gateway version change cannot turn a fill into NEW.
+        if status in {"COMPLETE", "FILLED", "EXECUTED"}:
+            status = STATUS_FILLED
+        elif status in {"REJECT", "REJECTED"}:
+            status = STATUS_REJECTED
+        elif status in {"CANCEL", "CANCELLED", "CANCELED"}:
+            status = STATUS_CANCELLED
+        elif status in {"OPEN", "PENDING", "TRIGGERED", "PARTIAL", "AMENDED"}:
             status = STATUS_ACCEPTED
-        if status in {STATUS_NEW, STATUS_ACCEPTED, STATUS_FILLED,
-                      STATUS_CANCELLED, STATUS_REJECTED, STATUS_FAILED}:
-            return status
-        return STATUS_NEW
+        if status not in {STATUS_NEW, STATUS_ACCEPTED, STATUS_FILLED,
+                          STATUS_CANCELLED, STATUS_REJECTED, STATUS_FAILED}:
+            status = STATUS_NEW
+        raw_fill = result.get("fill_price")
+        try:
+            fill_price = float(raw_fill) if raw_fill not in (None, "") else None
+        except (TypeError, ValueError):
+            fill_price = None
+        if fill_price is not None and fill_price <= 0:
+            fill_price = None
+        return OrderDetails(
+            status=status,
+            fill_price=fill_price,
+            raw_status=result.get("raw_status"),
+            status_message=result.get("status_message"),
+        )
+
+    def order_status(self, record: OrderRecord) -> str:
+        """String-only compatibility wrapper around ``order_details``."""
+        return self.order_details(record).status
 
 
 def build_executor(environ=None) -> OrderExecutor:

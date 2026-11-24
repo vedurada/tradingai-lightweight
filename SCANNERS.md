@@ -944,10 +944,39 @@ never an automatic re-submission. After
 `SMA9_LIVE_RECONCILE_MAX_ATTEMPTS` (default 120) unresolved checks, a
 `RECONCILE_STALE` critical event is recorded.
 
-Read-only API namespace: `/api/sma9-live/*` (including `/orders` and the new
-`/reconciliation` view of pending fills, lifecycle states and audit events);
-page: `/live/sma9-live/`. Both are read-only and publish no source paths, keys
-or credentials.
+### Shadow execution-quality log
+
+Paper `sma9` assumes fills at the sampled LTP and records no charges. To measure
+that gap without changing trade P&L, every real order leg is also written to
+`sma9_live_execution_quality`, keyed by the same `client_order_id` (idempotent
+upsert, never a duplicate row). The gateway's order-status response supplies a
+best-effort broker fill price (`average_price` / `avg_price` / `fill_price` and
+similar fields). Missing or zero fill prices stay `NULL` — they are never
+guessed from the signal.
+
+| Field | Meaning |
+|---|---|
+| `signal_price` | LTP at the signal/order decision (paper-equivalent fill) |
+| `fill_price` | Broker average fill price, when reported |
+| `slippage_points` | BUY `fill - signal`; SELL `signal - fill` (positive = adverse) |
+| `slippage_pct` | `slippage_points / signal_price * 100` |
+| `slippage_value` | `slippage_points * quantity` (gross rupee impact) |
+| `cost_estimate` | Configurable **estimate** of that leg's charges in rupees |
+
+Costs are estimates only, never contract-note figures. Defaults are zero
+brokerage plus a flat `SMA9_LIVE_COST_OTHER_PER_ORDER=20` allowance; override
+with `SMA9_LIVE_COST_BROKERAGE_PER_ORDER`, `SMA9_LIVE_COST_OTHER_PER_ORDER`,
+`SMA9_LIVE_COST_SELL_EXTRA_PER_ORDER` (e.g. sell-side STT) and
+`SMA9_LIVE_COST_PER_UNIT`. The API reports per-leg rows plus per-trade
+`paper_pnl_points`, `fill_adjusted_pnl_points` and
+`estimated_realized_rupees` (both fills required for the adjusted figures).
+This log is observational: it does **not** alter the recorded trade P&L or any
+order/risk decision.
+
+Read-only API namespace: `/api/sma9-live/*` (including `/orders`,
+`/reconciliation` for pending fills, lifecycle states and audit events, and
+`/execution-quality` for the shadow log); page: `/live/sma9-live/`. Both are
+read-only and publish no source paths, keys or credentials.
 
 No credentials, keys or OTP/TOTP values are handled by the service; token
 refresh remains a manual operator step.

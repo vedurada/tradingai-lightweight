@@ -142,3 +142,31 @@ def test_order_status_maps_broker_status(adapter, monkeypatch):
     rows[0]["status"] = "Rejected"
     assert adapter.order_status(broker_order_id="MOCK-ORDER-1")["status"] == "REJECTED"
     assert adapter.order_status(broker_order_id="MISSING")["status"] == "UNKNOWN"
+
+
+def test_order_status_exposes_average_fill_price(adapter, monkeypatch):
+    rows = [{
+        "order_id": "MOCK-ORDER-1", "status": "COMPLETE",
+        "average_price": "101.25", "status_message": "filled",
+    }]
+    monkeypatch.setattr(adapter, "_get_json", lambda path: {"status": "success", "data": rows})
+    result = adapter.order_status(broker_order_id="MOCK-ORDER-1")
+    assert result["status"] == "FILLED"
+    assert result["fill_price"] == 101.25
+    assert result["raw_status"] == "COMPLETE"
+    assert result["status_message"] == "filled"
+
+
+def test_order_status_missing_order_has_no_fill_price(adapter, monkeypatch):
+    monkeypatch.setattr(
+        adapter, "_get_json", lambda path: {"status": "success", "data": []})
+    assert adapter.order_status(broker_order_id="MISSING") == {
+        "order_id": "MISSING", "status": "UNKNOWN", "fill_price": None,
+    }
+
+
+def test_fill_price_accepts_known_broker_field_names(adapter):
+    for key in MStockAdapter._FILL_PRICE_KEYS:
+        assert MStockAdapter._fill_price({key: "98.75"}) == 98.75
+    assert MStockAdapter._fill_price({"average_price": "0"}) is None
+    assert MStockAdapter._fill_price({"average_price": "bad"}) is None

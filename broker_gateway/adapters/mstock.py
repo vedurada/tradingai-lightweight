@@ -576,6 +576,26 @@ class MStockAdapter(BrokerAdapter):
             return "ACCEPTED"
         return "UNKNOWN"
 
+    _FILL_PRICE_KEYS = (
+        "average_price", "avg_price", "average_traded_price",
+        "avg_traded_price", "fill_price", "filled_price", "trade_price",
+    )
+
+    @classmethod
+    def _fill_price(cls, row: dict) -> float | None:
+        """Best-effort fill price; mStock field names vary by API version."""
+        for key in cls._FILL_PRICE_KEYS:
+            value = row.get(key)
+            if value in (None, ""):
+                continue
+            try:
+                price = float(value)
+            except (TypeError, ValueError):
+                continue
+            if price > 0:
+                return round(price, 4)
+        return None
+
     def order_status(self, *, broker_order_id: str) -> dict:
         """Resolve one broker order from the Type A order book."""
         order_id = str(broker_order_id or "").strip()
@@ -592,5 +612,6 @@ class MStockAdapter(BrokerAdapter):
                     "status": self._map_order_status(row),
                     "raw_status": row.get("status"),
                     "status_message": row.get("status_message"),
+                    "fill_price": self._fill_price(row),
                 }
-        return {"order_id": order_id, "status": "UNKNOWN"}
+        return {"order_id": order_id, "status": "UNKNOWN", "fill_price": None}

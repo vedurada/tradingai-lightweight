@@ -62,6 +62,15 @@
 </section>
 
 <section class="section">
+  <h2>Execution quality (shadow)</h2>
+  <div class="stats" id="quality"></div>
+  <h2 style="margin-top:.8rem">Per-trade vs paper</h2>
+  <div id="quality-trades"></div>
+  <h2 style="margin-top:.8rem">Per-leg fills</h2>
+  <div id="quality-legs"></div>
+</section>
+
+<section class="section">
   <h2>Open positions</h2>
   <div id="positions"></div>
 </section>
@@ -95,12 +104,13 @@ async function getJson(path) {
 
 async function refresh() {
   try {
-    const [status, orders, positions, trades, recon] = await Promise.all([
+    const [status, orders, positions, trades, recon, quality] = await Promise.all([
       getJson('/api/sma9-live/scanner-status'),
       getJson('/api/sma9-live/orders?limit=100'),
       getJson('/api/sma9-live/open-positions'),
       getJson('/api/sma9-live/today'),
       getJson('/api/sma9-live/reconciliation'),
+      getJson('/api/sma9-live/execution-quality'),
     ]);
     const h = status.health || {};
     const exec = status.execution || {};
@@ -144,6 +154,34 @@ async function refresh() {
     document.getElementById('events').innerHTML = table(recon.lifecycle_events, [
       ['created_at', 'Time'], ['side', 'Side'], ['trade_id', 'Trade', 'mono'],
       ['event', 'Event'], ['detail', 'Detail'],
+    ]);
+    const q = quality.summary || {};
+    document.getElementById('quality').innerHTML = [
+      card('Legs logged', q.legs ?? 0),
+      card('Fills known', q.filled_legs ?? 0),
+      card('Fills missing', q.missing_fills ?? 0),
+      card('Slippage pts', q.slippage_points ?? 0),
+      card('Slippage Rs', q.slippage_value ?? 0),
+      card('Cost estimate Rs', q.cost_estimate ?? 0),
+      card('Paper PnL pts', q.paper_pnl_points ?? 0),
+      card('Fill-adj PnL pts', q.fill_adjusted_pnl_points ?? 0),
+      card('Est. realised Rs', q.estimated_realized_rupees ?? 0),
+    ].join('');
+    document.getElementById('quality-trades').innerHTML = table(quality.trades, [
+      ['trade_id', 'Trade', 'mono'], ['option_type', 'Leg'],
+      ['signal_entry', 'Sig entry'], ['entry_fill', 'Fill entry'],
+      ['signal_exit', 'Sig exit'], ['exit_fill', 'Fill exit'],
+      ['paper_pnl_points', 'Paper PnL'],
+      ['fill_adjusted_pnl_points', 'Fill-adj PnL'],
+      ['slippage_points', 'Slip pts'], ['cost_estimate', 'Cost Rs'],
+      ['estimated_realized_rupees', 'Est Rs'],
+    ]);
+    document.getElementById('quality-legs').innerHTML = table(quality.legs, [
+      ['created_at', 'Time'], ['side', 'Side'], ['trade_id', 'Trade', 'mono'],
+      ['signal_price', 'Signal'], ['fill_price', 'Fill'],
+      ['slippage_points', 'Slip pts'], ['slippage_pct', 'Slip %'],
+      ['slippage_value', 'Slip Rs'], ['cost_estimate', 'Cost Rs'],
+      ['broker_status', 'Broker'], ['raw_status', 'Raw'],
     ]);
     document.getElementById('orders').innerHTML = table(orders.orders, [
       ['created_at', 'Time'], ['client_order_id', 'Client ID', 'mono'],

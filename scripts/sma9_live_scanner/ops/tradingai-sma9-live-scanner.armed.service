@@ -23,6 +23,11 @@ Environment=SMA9_LIVE_PRICE_COLLAR_PCT=1.0
 # Read-only broker order-status polling for entry/exit fill confirmation.
 Environment=SMA9_LIVE_RECONCILE_ENABLED=true
 Environment=SMA9_LIVE_RECONCILE_MAX_ATTEMPTS=120
+# Shadow-log cost ESTIMATES only (rupees); not charged from this service.
+Environment=SMA9_LIVE_COST_BROKERAGE_PER_ORDER=0
+Environment=SMA9_LIVE_COST_OTHER_PER_ORDER=20
+Environment=SMA9_LIVE_COST_SELL_EXTRA_PER_ORDER=0
+Environment=SMA9_LIVE_COST_PER_UNIT=0
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1
 Environment=PYTHONPATH=/opt/tradingai/sma9_live_scanner

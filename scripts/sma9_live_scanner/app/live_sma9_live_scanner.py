@@ -58,8 +58,10 @@ from app.live_execution import (  # noqa: E402
     apply_price_collar,
     build_executor,
     entry_allowed,
+    estimated_order_cost,
     kill_switch_active,
     make_client_order_id,
+    measure_slippage,
     price_collar_breached,
     real_orders_armed,
     STATUS_ACCEPTED,
@@ -331,6 +333,32 @@ def init_db() -> None:
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_live_events_trade
             ON sma9_live_lifecycle_events(trade_id);
+
+        -- Shadow execution quality, one row per order leg. This does NOT alter
+        -- trade P&L: it measures signal price vs broker fill and estimated cost.
+        CREATE TABLE IF NOT EXISTS sma9_live_execution_quality (
+            client_order_id TEXT PRIMARY KEY,
+            trade_id TEXT NOT NULL,
+            option_type TEXT NOT NULL CHECK(option_type IN ('CE','PE')),
+            side TEXT NOT NULL CHECK(side IN ('BUY','SELL')),
+            symbol TEXT NOT NULL,
+            quantity INTEGER NOT NULL,
+            signal_price REAL NOT NULL,
+            fill_price REAL,
+            slippage_points REAL,
+            slippage_pct REAL,
+            slippage_value REAL,
+            cost_estimate REAL NOT NULL DEFAULT 0,
+            broker_status TEXT,
+            raw_status TEXT,
+            status_message TEXT,
+            created_at TEXT NOT NULL,
+            updated_at TEXT NOT NULL
+        );
+        CREATE INDEX IF NOT EXISTS idx_sma9_live_quality_trade
+            ON sma9_live_execution_quality(trade_id);
+        CREATE INDEX IF NOT EXISTS idx_sma9_live_quality_created
+            ON sma9_live_execution_quality(created_at);
         """
     )
     pos_cols = [r[1] for r in conn.execute(
@@ -633,6 +661,59 @@ def order_record_from_row(row: dict):
     )
 
 
+def record_execution_quality(record: OrderRecord, details) -> None:
+    """Upsert one leg's signal-vs-fill measurement into the shadow log.
+
+    Idempotent on ``client_order_id``. A later poll that supplies a fill price
+    enriches the row; a missing price never erases an already-known fill. Costs
+    are estimates only and never modify the recorded trade P&L.
+    """
+    fill_price = getattr(details, "fill_price", None)
+    pts, pct, value = measure_slippage(
+        record.side, record.intended_price, fill_price, record.quantity)
+    cost = estimated_order_cost(record.side, record.quantity)
+    checked_at = now_ist().isoformat()
+    conn = db_conn()
+    try:
+        conn.execute(
+            """INSERT INTO sma9_live_execution_quality
+               (client_order_id, trade_id, option_type, side, symbol, quantity,
+                signal_price, fill_price, slippage_points, slippage_pct,
+                slippage_value, cost_estimate, broker_status, raw_status,
+                status_message, created_at, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+               ON CONFLICT(client_order_id) DO UPDATE SET
+                 fill_price = COALESCE(
+                     sma9_live_execution_quality.fill_price, excluded.fill_price),
+                 slippage_points = COALESCE(
+                     sma9_live_execution_quality.slippage_points,
+                     excluded.slippage_points),
+                 slippage_pct = COALESCE(
+                     sma9_live_execution_quality.slippage_pct,
+                     excluded.slippage_pct),
+                 slippage_value = COALESCE(
+                     sma9_live_execution_quality.slippage_value,
+                     excluded.slippage_value),
+                 cost_estimate = excluded.cost_estimate,
+                 broker_status = excluded.broker_status,
+                 raw_status = excluded.raw_status,
+                 status_message = excluded.status_message,
+                 updated_at = excluded.updated_at""",
+            (
+                record.client_order_id, record.trade_id, record.option_type,
+                record.side, record.symbol, record.quantity,
+                record.intended_price, fill_price, pts, pct, value, cost,
+                getattr(details, "status", None),
+                getattr(details, "raw_status", None),
+                getattr(details, "status_message", None),
+                checked_at, checked_at,
+            ),
+        )
+        conn.commit()
+    finally:
+        conn.close()
+
+
 def orders_today(order_date: str) -> int:
     conn = db_conn()
     try:
@@ -803,7 +884,8 @@ class Sma9LiveScanner:
         self.last_order_block = None
         self.last_reconcile = {
             "enabled": RECONCILE_ENABLED, "checked": 0, "filled": 0,
-            "rejected": 0, "pending": 0, "errors": 0, "at": None,
+            "rejected": 0, "pending": 0, "errors": 0, "quality_errors": 0,
+            "at": None,
         }
         # Previous poll's LTP per leg; used as the pre-trade BUY collar
         # reference for MARKET orders.
@@ -928,7 +1010,7 @@ class Sma9LiveScanner:
         """
         summary = {
             "enabled": RECONCILE_ENABLED, "checked": 0, "filled": 0,
-            "rejected": 0, "pending": 0, "errors": 0,
+            "rejected": 0, "pending": 0, "errors": 0, "quality_errors": 0,
             "at": now_ist().isoformat(),
         }
         self.last_reconcile = summary
@@ -939,8 +1021,17 @@ class Sma9LiveScanner:
             summary["checked"] += 1
             client_id = row["client_order_id"]
             attempts = int(row["reconcile_attempts"] or 0) + 1
+            record = order_record_from_row(row)
+            details = None
             try:
-                status = EXECUTOR.order_status(order_record_from_row(row))
+                details_fn = getattr(EXECUTOR, "order_details", None)
+                if callable(details_fn):
+                    # One gateway poll supplies both status and broker fill.
+                    details = details_fn(record)
+                    status = details.status
+                else:
+                    # Fakes/dry-run executors may only expose the string form.
+                    status = EXECUTOR.order_status(record)
             except Exception as exc:
                 summary["errors"] += 1
                 update_order_status(
@@ -950,6 +1041,13 @@ class Sma9LiveScanner:
                 logger.error(
                     "Reconcile status error for %s: %s", client_id, exc)
                 continue
+            try:
+                record_execution_quality(record, details)
+            except Exception as exc:
+                # Shadow logging must never block the fill lifecycle.
+                summary["quality_errors"] += 1
+                logger.error("Execution-quality log failed for %s: %s",
+                             client_id, exc)
             if status in PENDING_STATUSES:
                 summary["pending"] += 1
                 update_order_status(

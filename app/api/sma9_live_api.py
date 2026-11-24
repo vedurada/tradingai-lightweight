@@ -252,6 +252,103 @@ def reconciliation():
         }), 500
 
 
+@bp.route("/api/sma9-live/execution-quality", methods=["GET"])
+def execution_quality():
+    """Read-only shadow log: signal price vs broker fill, slippage and cost.
+
+    Costs are configurable estimates, not contract-note figures. Nothing here
+    writes to the scanner DB or changes recorded trade P&L.
+    """
+    try:
+        limit = min(int(request.args.get("limit", 100)), 500)
+        with closing(_conn()) as conn:
+            total = conn.execute(
+                "SELECT COUNT(*) FROM sma9_live_execution_quality"
+            ).fetchone()[0]
+            legs = [dict(r) for r in conn.execute(
+                "SELECT * FROM sma9_live_execution_quality "
+                "ORDER BY created_at DESC LIMIT ?", (limit,))]
+            agg = dict(conn.execute(
+                """SELECT COUNT(*) AS legs,
+                          COALESCE(SUM(CASE WHEN fill_price IS NOT NULL
+                                            THEN 1 ELSE 0 END), 0) AS filled_legs,
+                          COALESCE(SUM(CASE WHEN fill_price IS NULL
+                                            THEN 1 ELSE 0 END), 0) AS missing_fills,
+                          COALESCE(SUM(slippage_points), 0) AS slippage_points,
+                          COALESCE(SUM(slippage_pct), 0) AS slippage_pct,
+                          COALESCE(SUM(slippage_value), 0) AS slippage_value,
+                          COALESCE(SUM(cost_estimate), 0) AS cost_estimate
+                   FROM sma9_live_execution_quality""").fetchone())
+            grouped = [dict(r) for r in conn.execute(
+                """SELECT trade_id, MAX(option_type) AS option_type,
+                          MAX(CASE WHEN side='BUY' THEN signal_price END) AS signal_entry,
+                          MAX(CASE WHEN side='BUY' THEN fill_price END) AS entry_fill,
+                          MAX(CASE WHEN side='SELL' THEN signal_price END) AS signal_exit,
+                          MAX(CASE WHEN side='SELL' THEN fill_price END) AS exit_fill,
+                          MAX(quantity) AS quantity, COUNT(*) AS legs,
+                          SUM(CASE WHEN fill_price IS NOT NULL THEN 1 ELSE 0 END)
+                              AS filled_legs,
+                          COALESCE(SUM(slippage_points), 0) AS slippage_points,
+                          COALESCE(SUM(slippage_value), 0) AS slippage_value,
+                          COALESCE(SUM(cost_estimate), 0) AS cost_estimate
+                   FROM sma9_live_execution_quality
+                   GROUP BY trade_id ORDER BY MAX(created_at) DESC LIMIT ?""",
+                (limit,))]
+            paper = {r["trade_id"]: r["pnl_points"] for r in conn.execute(
+                "SELECT trade_id, pnl_points FROM sma9_live_trades")}
+
+        trades = []
+        for row in grouped:
+            signal_entry = row["signal_entry"]
+            signal_exit = row["signal_exit"]
+            paper_pnl = paper.get(row["trade_id"])
+            if paper_pnl is None and signal_entry and signal_exit:
+                paper_pnl = signal_exit - signal_entry
+            paper_pnl = round(float(paper_pnl or 0), 2)
+            both_fills = row["entry_fill"] is not None and row["exit_fill"] is not None
+            adjusted = (round(paper_pnl - float(row["slippage_points"]), 2)
+                        if both_fills else None)
+            qty = int(row["quantity"] or 0)
+            realized = (round(adjusted * qty - float(row["cost_estimate"]), 2)
+                        if both_fills and qty else None)
+            trades.append({
+                **row,
+                "paper_pnl_points": paper_pnl,
+                "fill_adjusted_pnl_points": adjusted,
+                "estimated_realized_rupees": realized,
+            })
+
+        complete = [t for t in trades if t["fill_adjusted_pnl_points"] is not None]
+        return jsonify({
+            "success": True,
+            "summary": {
+                **agg,
+                "total": total,
+                "trades_shown": len(trades),
+                "trades_with_both_fills": len(complete),
+                "paper_pnl_points": round(
+                    sum(t["paper_pnl_points"] for t in trades), 2),
+                "fill_adjusted_pnl_points": round(
+                    sum(t["fill_adjusted_pnl_points"] for t in complete), 2),
+                "estimated_realized_rupees": round(
+                    sum(t["estimated_realized_rupees"] for t in complete
+                        if t["estimated_realized_rupees"] is not None), 2),
+                "cost_note": (
+                    "ESTIMATE only: configurable brokerage/charge allowances; "
+                    "not contract-note figures. Slippage is positive when "
+                    "adverse versus the signal LTP."
+                ),
+            },
+            "legs": legs,
+            "trades": trades,
+        })
+    except Exception as exc:
+        return jsonify({
+            "success": False, "summary": {}, "legs": [], "trades": [],
+            "error": str(exc),
+        }), 500
+
+
 @bp.route("/api/sma9-live/scanner-status", methods=["GET"])
 def scanner_status():
     state = _live_state()
