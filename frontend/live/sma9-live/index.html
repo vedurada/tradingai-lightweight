@@ -109,7 +109,8 @@ async function refresh() {
       card('Real orders armed', flag(exec.real_orders_armed, true)),
       card('Kill switch', flag(exec.kill_switch_active, false)),
       card('Orders today', `${exec.orders_today ?? '--'} / ${exec.max_orders_per_day ?? '--'}`),
-      card('Lot size', exec.lot_size || '--'),
+      card('Lot source', exec.lot_source || '--'),
+      card('Order type', exec.order_type || '--'),
       card('Price collar', `${exec.price_collar_pct ?? '--'}%`),
       card('Last block', exec.last_block || 'none'),
     ].join('');
@@ -117,7 +118,7 @@ async function refresh() {
     document.getElementById('orders').innerHTML = table(orders.orders, [
       ['created_at', 'Time'], ['client_order_id', 'Client ID', 'mono'],
       ['side', 'Side'], ['symbol', 'Symbol'], ['quantity', 'Qty'],
-      ['limit_price', 'Limit'], ['status', 'Status'], ['broker_order_id', 'Broker ID', 'mono'],
+      ['limit_price', 'Collar ref'], ['status', 'Status'], ['broker_order_id', 'Broker ID', 'mono'],
     ]);
     document.getElementById('positions').innerHTML = table(positions.positions, [
       ['option_type', 'Leg'], ['tradingsymbol', 'Symbol', 'mono'],

@@ -7,8 +7,10 @@ default:
 * ``SMA9_LIVE_EXECUTOR`` defaults to ``dry_run``.
 * ``MStockOrderExecutor`` uses the verified mStock Type A order contract via
   the root-owned gateway, and only when both arm flags are set.
-* A kill switch, daily order cap, one-position-per-leg rule and price collar
-  are enforced before any executor is called.
+* A kill switch, optional daily order cap, one-position-per-leg rule and a
+  pre-trade BUY price-collar check are enforced before any executor is called.
+* Real orders are MARKET orders; the collar is a sanity check on the sampled
+  LTP, not a broker-side limit price.
 * Client order IDs are deterministic so retries cannot duplicate an order.
 
 No secrets, credentials, keys or OTP/TOTP values are read or stored here.
@@ -42,9 +44,11 @@ STATUS_CANCELLED = "CANCELLED"
 class RiskLimits:
     """Hard limits applied to every live-service order attempt."""
 
+    # 0 means unlimited entries; the deployed service uses 0.
     max_orders_per_day: int = 4
-    # Order quantity in underlying units. 75 = one NIFTY option lot.
-    lot_size: int = 75
+    # 0 means resolve the quantity from the mStock instrument master per
+    # contract; no hard-coded lot size in the scanner.
+    lot_size: int = 0
     collar_pct: float = 1.0
     kill_file: str = "/opt/tradingai/run/sma9_live.KILL"
 
@@ -53,7 +57,7 @@ class RiskLimits:
         env = environ if environ is not None else os.environ
         limits = cls(
             max_orders_per_day=int(env.get("SMA9_LIVE_MAX_ORDERS_PER_DAY", "4")),
-            lot_size=int(env.get("SMA9_LIVE_LOT_SIZE", "75")),
+            lot_size=int(env.get("SMA9_LIVE_LOT_SIZE", "0")),
             collar_pct=float(env.get("SMA9_LIVE_PRICE_COLLAR_PCT", "1.0")),
             kill_file=env.get("SMA9_LIVE_KILL_FILE", cls.kill_file),
         )
@@ -61,10 +65,10 @@ class RiskLimits:
         return limits
 
     def validate(self) -> None:
-        if self.max_orders_per_day < 1:
-            raise ValueError("SMA9_LIVE_MAX_ORDERS_PER_DAY must be >= 1")
-        if self.lot_size < 1:
-            raise ValueError("SMA9_LIVE_LOT_SIZE must be >= 1")
+        if self.max_orders_per_day < 0:
+            raise ValueError("SMA9_LIVE_MAX_ORDERS_PER_DAY must be >= 0 (0=unlimited)")
+        if self.lot_size < 0:
+            raise ValueError("SMA9_LIVE_LOT_SIZE must be >= 0 (0=fetch from mStock)")
         if not (0 < self.collar_pct <= 5):
             raise ValueError("SMA9_LIVE_PRICE_COLLAR_PCT must be in (0, 5]")
         if not self.kill_file:
@@ -129,11 +133,30 @@ def make_client_order_id(trade_id: str, side: str, tag: str = "") -> str:
 
 
 def apply_price_collar(ltp: float, side: str, collar_pct: float) -> float:
-    """Return a protective limit price around the sampled LTP."""
+    """Return the reference price recorded in the ledger for an order.
+
+    Real orders are MARKET orders, so this value is never sent to the broker.
+    It remains useful as an audit reference and for the BUY sanity check.
+    """
     if ltp <= 0:
         raise ValueError("ltp must be positive")
     factor = 1.0 + collar_pct / 100.0 if side == BUY else 1.0 - collar_pct / 100.0
     return round(ltp * factor, 2)
+
+
+def price_collar_breached(
+    price: float, reference: Optional[float], collar_pct: float
+) -> bool:
+    """True when a BUY price jumped more than ``collar_pct`` from the last poll.
+
+    A missing reference (first poll, restart, unavailable quote) is treated as
+    no breach so the service can still trade; exits bypass this check so a real
+    position can always be closed.
+    """
+    if not reference or reference <= 0 or price <= 0:
+        return False
+    move_pct = round(abs(float(price) / float(reference) - 1.0) * 100.0, 6)
+    return move_pct > collar_pct
 
 
 def kill_switch_active(limits: RiskLimits, environ=None) -> bool:
@@ -152,7 +175,8 @@ def entry_allowed(
     """Gate a new BUY. Exits are never blocked by these risk controls."""
     if kill_switch_active(limits, environ):
         return False, "KILL_SWITCH_ACTIVE"
-    if orders_today >= limits.max_orders_per_day:
+    if (limits.max_orders_per_day > 0
+            and orders_today >= limits.max_orders_per_day):
         return False, "DAILY_ORDER_CAP"
     if len(list(open_positions)) >= 2:
         return False, "MAX_TWO_OPEN_LEGS"
@@ -181,7 +205,7 @@ class DryRunOrderExecutor(OrderExecutor):
         record.status = STATUS_DRY_RUN
         record.broker_order_id = f"DRY-{record.client_order_id}"
         logger.info(
-            "LIVE DRY-RUN ORDER %s %s %s qty=%d limit=%.2f reason=%s id=%s",
+            "LIVE DRY-RUN ORDER %s %s %s qty=%d ref=%.2f reason=%s id=%s",
             record.side, record.option_type, record.symbol, record.quantity,
             record.limit_price, record.reason, record.client_order_id,
         )
@@ -215,7 +239,7 @@ class MStockOrderExecutor(OrderExecutor):
         self.product = str(self._env.get("SMA9_LIVE_PRODUCT", "MIS")).strip().upper()
         self.variety = "reg"
         self.validity = "DAY"
-        self.order_type = "LIMIT"
+        self.order_type = "MARKET"
 
     def _require_armed(self) -> None:
         if not real_orders_armed(self._env):
@@ -243,7 +267,9 @@ class MStockOrderExecutor(OrderExecutor):
             "quantity": int(record.quantity),
             "product": self.product,
             "validity": self.validity,
-            "price": float(record.limit_price),
+            # MARKET orders carry no price. The collar reference stays in the
+            # local ledger only; it is never sent as a broker limit price.
+            "price": 0,
             "tag": record.client_order_id,
         }
 
@@ -266,7 +292,7 @@ class MStockOrderExecutor(OrderExecutor):
         record.status = STATUS_ACCEPTED
         record.broker_order_id = broker_order_id
         logger.info(
-            "LIVE REAL ORDER %s %s %s qty=%d limit=%.2f broker_id=%s id=%s",
+            "LIVE REAL MARKET ORDER %s %s %s qty=%d ref=%.2f broker_id=%s id=%s",
             record.side, record.option_type, record.symbol, record.quantity,
             record.limit_price, broker_order_id, record.client_order_id,
         )

@@ -4,7 +4,9 @@
 Isolated from the paper ``sma9`` scanner: its own strategy id, database,
 systemd unit and order ledger.  The signal logic is the same, but every entry
 and exit is submitted through ``app.live_execution`` which applies a kill
-switch, daily order cap, one-position-per-leg rule and price collar.
+switch, one-position-per-leg rule and a pre-trade BUY price-collar check. The
+daily order cap is disabled in the deployed unit, and real orders are MARKET
+orders with the quantity fetched from mStock's instrument master.
 
 IMPORTANT: the default executor is ``dry_run``. Real mStock Type A orders are
 available only through the root-owned gateway and require both arm flags;
@@ -58,6 +60,7 @@ from app.live_execution import (  # noqa: E402
     entry_allowed,
     kill_switch_active,
     make_client_order_id,
+    price_collar_breached,
     real_orders_armed,
     STATUS_FAILED,
     STATUS_REJECTED,
@@ -638,15 +641,48 @@ class Sma9LiveScanner:
         self.last_closed_pe_close = None
         self.last_closed_spot_source = None
         self.last_order_block = None
+        # Previous poll's LTP per leg; used as the pre-trade BUY collar
+        # reference for MARKET orders.
+        self._last_ltp: dict[str, float] = {}
 
     # -- order execution -------------------------------------------------
+    def _resolve_lot_size(self, pos: Position) -> int:
+        """Return the contract quantity from mStock's instrument master.
+
+        ``SMA9_LIVE_LOT_SIZE`` is an optional override for tests/dry runs. The
+        deployed service leaves it at 0, so the exact CE/PE contract's lot_size
+        is fetched through the read-only gateway. A failed lookup refuses the
+        order rather than guessing a real-money quantity.
+        """
+        if LIMITS.lot_size > 0:
+            return LIMITS.lot_size
+        try:
+            expiry_text = str(pos.expiry or "")[:10]
+            expiry = date.fromisoformat(expiry_text) if expiry_text else None
+            contract = (
+                self.feed.find_contract(float(pos.strike), expiry, pos.option_type)
+                if expiry is not None else None
+            )
+            lot_size = int((contract or {}).get("lot_size") or 0)
+            if lot_size > 0:
+                return lot_size
+        except Exception as exc:
+            logger.warning(
+                "Could not resolve mStock lot size for %s: %s",
+                pos.tradingsymbol, exc)
+        raise RuntimeError(
+            f"mStock lot size unavailable for {pos.tradingsymbol}; "
+            "refusing to place an order with a guessed quantity")
+
     def _place_order(self, pos: Position, side: str, price: float,
                      reason: str) -> OrderRecord | None:
         """Record a guarded, idempotent order and hand it to the executor.
 
         The deterministic client_order_id makes repeated calls no-ops.  Real
-        executors need both arm flags in addition to the entry gate.  Exits are
-        never blocked by the daily cap or the open-position limit.
+        executors need both arm flags in addition to the entry gate.  Orders are
+        MARKET orders; BUY entries are sanity-checked against the previous
+        poll's LTP, while exits are never blocked so a real position can always
+        be closed.
         """
         client_order_id = make_client_order_id(pos.trade_id, side)
         if order_exists(client_order_id):
@@ -659,6 +695,21 @@ class Sma9LiveScanner:
                 side, pos.trade_id)
             self.last_order_block = "REAL_ORDERS_NOT_ARMED"
             return None
+        if side == BUY and price_collar_breached(
+                float(price), self._last_ltp.get(pos.option_type),
+                LIMITS.collar_pct):
+            reference = self._last_ltp.get(pos.option_type) or 0.0
+            logger.error(
+                "BUY blocked by price collar for %s: ref=%.2f price=%.2f",
+                pos.tradingsymbol, reference, float(price))
+            self.last_order_block = "PRICE_COLLAR_BREACH"
+            return None
+        try:
+            quantity = self._resolve_lot_size(pos)
+        except Exception as exc:
+            logger.error("Order blocked for %s: %s", pos.tradingsymbol, exc)
+            self.last_order_block = "LOT_SIZE_UNAVAILABLE"
+            return None
         try:
             record = OrderRecord(
                 client_order_id=client_order_id,
@@ -667,7 +718,7 @@ class Sma9LiveScanner:
                 side=side,
                 symbol=f"NFO:{pos.tradingsymbol}",
                 token=pos.token,
-                quantity=LIMITS.lot_size,
+                quantity=quantity,
                 intended_price=round(float(price), 2),
                 limit_price=apply_price_collar(
                     float(price), side, LIMITS.collar_pct),
@@ -682,7 +733,7 @@ class Sma9LiveScanner:
             return None
 
         if save_order_record(record):
-            logger.info("ORDER RECORDED %s %s %s qty=%d limit=%.2f dry_run=%s",
+            logger.info("ORDER RECORDED %s %s %s qty=%d ref=%.2f dry_run=%s",
                         record.client_order_id, side, record.symbol,
                         record.quantity, record.limit_price, record.dry_run)
         try:
@@ -929,7 +980,7 @@ class Sma9LiveScanner:
                         sl_hit, trade["pnl_points"])
             elif allow_entries and forming_is_current:
                 # Recompute per leg so a CE entry immediately counts against
-                # the two-leg and daily-order limits for the PE leg.
+                # the two-leg limit for the PE leg (the daily cap is off).
                 gate_ok, gate_reason = entry_allowed(
                     [p for p in (s.position for s in self.states.values())
                      if p is not None],
@@ -995,6 +1046,8 @@ class Sma9LiveScanner:
                     if state.position else None
                 ),
             }
+            if ltp is not None:
+                self._last_ltp[opt] = float(ltp)
 
         self._refresh_last_closed_spot(now, option_status)
         return self._status(now, option_status, errors=errors)
@@ -1087,8 +1140,12 @@ class Sma9LiveScanner:
                 "real_orders_armed": real_orders_armed(),
                 "kill_switch_active": kill_switch_active(LIMITS),
                 "orders_today": orders_today(today),
-                "max_orders_per_day": LIMITS.max_orders_per_day,
-                "lot_size": LIMITS.lot_size,
+                "max_orders_per_day": LIMITS.max_orders_per_day or "UNLIMITED",
+                "lot_size": LIMITS.lot_size or None,
+                "lot_source": (
+                    "mstock_instrument_master" if LIMITS.lot_size == 0
+                    else "env_override"),
+                "order_type": "MARKET",
                 "price_collar_pct": LIMITS.collar_pct,
                 "last_block": getattr(self, "last_order_block", None),
             },
@@ -1103,9 +1160,10 @@ class Sma9LiveScanner:
 def main() -> int:
     logger.info(
         "SMA9 LIVE service starting (poll=%ss, db=%s, executor=%s, dry_run=%s, "
-        "max_orders=%d, lot=%d, collar=%.2f%%)",
+        "max_orders=%s, lot=%s, collar=%.2f%%)",
         POLL_SECONDS, DB_PATH, EXECUTOR.name, EXECUTOR.name == "dry_run",
-        LIMITS.max_orders_per_day, LIMITS.lot_size, LIMITS.collar_pct,
+        LIMITS.max_orders_per_day or "UNLIMITED",
+        LIMITS.lot_size or "mstock", LIMITS.collar_pct,
     )
     if EXECUTOR.name != "dry_run" and not real_orders_armed():
         logger.error("Real executor selected but orders are NOT armed; failing closed")

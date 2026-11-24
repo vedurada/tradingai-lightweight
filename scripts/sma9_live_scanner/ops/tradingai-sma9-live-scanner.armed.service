@@ -17,8 +17,8 @@ Environment=SMA9_LIVE_ARM_REAL_ORDERS=ARMED
 Environment=SMA9_LIVE_PRODUCT=MIS
 Environment=SMA9_LIVE_KILLED=0
 Environment=SMA9_LIVE_KILL_FILE=/opt/tradingai/run/sma9_live.KILL
-Environment=SMA9_LIVE_MAX_ORDERS_PER_DAY=4
-Environment=SMA9_LIVE_LOT_SIZE=75
+Environment=SMA9_LIVE_MAX_ORDERS_PER_DAY=0
+# Lot size is resolved per contract from mStock's instrument master.
 Environment=SMA9_LIVE_PRICE_COLLAR_PCT=1.0
 Environment=PYTHONUNBUFFERED=1
 Environment=PYTHONDONTWRITEBYTECODE=1

@@ -901,10 +901,13 @@ armed unit uses the verified mStock Type A order contract.
 | Order API | Type A `POST /orders/reg`, form-encoded; status via `GET /orders` |
 
 Risk guards enforced before any BUY: kill switch (`SMA9_LIVE_KILLED` or the
-kill file), daily order cap (`SMA9_LIVE_MAX_ORDERS_PER_DAY`, default 4),
-one open position per leg, and a protective price collar
-(`SMA9_LIVE_PRICE_COLLAR_PCT`, default 1%). The default order quantity is one
-NIFTY lot (`SMA9_LIVE_LOT_SIZE=75`). Exits are never blocked by these guards.
+kill file), one open position per leg, and a 1% pre-trade price-collar check
+(`SMA9_LIVE_PRICE_COLLAR_PCT`) against the previous poll's LTP. The deployed
+unit sets `SMA9_LIVE_MAX_ORDERS_PER_DAY=0` (unlimited entries) and leaves
+`SMA9_LIVE_LOT_SIZE` unset, so each order's quantity is fetched from mStock's
+instrument master for the exact CE/PE contract. Orders are MARKET orders;
+the collar reference is recorded in the ledger but never sent as a broker
+limit price. Exits are never blocked by these guards.
 
 Every entry and exit writes an append-only `sma9_live_orders` ledger row keyed
 by a deterministic `client_order_id`, so a retry cannot duplicate an order.
@@ -912,8 +915,9 @@ The executor result (`status`, `broker_order_id`) is written back to that row.
 Real execution additionally requires **both**
 `SMA9_LIVE_ORDERS_ENABLED=true` and `SMA9_LIVE_ARM_REAL_ORDERS=ARMED`, plus the
 daemon opt-in above. The `MStockOrderExecutor` fails closed on any missing
-flag, invalid symbol, gateway error or missing broker order id, and posts a
-limit order exactly once (no implicit retry that could duplicate a fill).
+flag, invalid symbol, unavailable lot size, gateway error or missing broker
+order id, and posts a MARKET order exactly once (no implicit retry that could
+duplicate a fill).
 
 Read-only API namespace: `/api/sma9-live/*` (including `/orders`); page:
 `/live/sma9-live/`. Both are read-only and publish no source paths, keys or

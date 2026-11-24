@@ -81,6 +81,27 @@ def test_place_order_posts_typea_form_once(adapter, monkeypatch):
     assert "Content-type" in seen["headers"]
 
 
+def test_place_order_accepts_market_with_zero_price(adapter, monkeypatch):
+    seen = {}
+
+    def fake_urlopen(req, timeout=None):
+        seen["data"] = urllib.parse.parse_qs(req.data.decode("utf-8"))
+        return _Response(
+            b'{"status":"success","data":{"order_id":"MOCK-MARKET-1"}}'
+        )
+
+    monkeypatch.setattr(urllib.request, "urlopen", fake_urlopen)
+    result = adapter.place_order(
+        variety="reg", exchange="NFO", tradingsymbol="NIFTY26NOV20000CE",
+        transaction_type="BUY", order_type="MARKET", quantity=65,
+        product="MIS", validity="DAY", price=0, tag="S9L-BUY-MKT",
+    )
+    assert result["order_id"] == "MOCK-MARKET-1"
+    assert seen["data"]["order_type"] == ["MARKET"]
+    assert seen["data"]["price"] == ["0.0"]
+    assert seen["data"]["quantity"] == ["65"]
+
+
 def test_place_order_rejects_bad_fields_without_network(adapter, monkeypatch):
     def no_call(*args, **kwargs):
         raise AssertionError("network must not be called")

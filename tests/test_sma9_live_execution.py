@@ -26,8 +26,8 @@ def execution():
 
 def test_defaults_are_dry_run_and_disarmed(execution):
     limits = execution.RiskLimits.from_env({})
-    assert limits.max_orders_per_day == 4
-    assert limits.lot_size == 75
+    assert limits.max_orders_per_day == 4  # scaffold default; VM sets 0
+    assert limits.lot_size == 0  # resolve from mStock instrument master
     assert limits.collar_pct == 1.0
     assert execution.build_executor({}).name == "dry_run"
     assert execution.real_orders_armed({}) is False
@@ -56,8 +56,8 @@ def test_real_orders_require_both_flags(execution, env, expected):
 @pytest.mark.parametrize(
     "kwargs",
     [
-        {"max_orders_per_day": 0},
-        {"lot_size": 0},
+        {"max_orders_per_day": -1},
+        {"lot_size": -1},
         {"collar_pct": 0},
         {"collar_pct": 6},
         {"kill_file": ""},
@@ -81,6 +81,9 @@ def test_client_order_ids_are_stable_and_side_specific(execution):
 def test_price_collar_direction(execution):
     assert execution.apply_price_collar(100, "BUY", 1.0) == 101.0
     assert execution.apply_price_collar(100, "SELL", 1.0) == 99.0
+    assert execution.price_collar_breached(101.0, 100.0, 1.0) is False
+    assert execution.price_collar_breached(101.1, 100.0, 1.0) is True
+    assert execution.price_collar_breached(102.0, None, 1.0) is False
 
 
 def test_kill_switch_env_and_file(execution, tmp_path):
@@ -101,6 +104,14 @@ def test_entry_allowed_guards(execution, tmp_path):
     assert execution.entry_allowed([], 0, limits,
                                    {"SMA9_LIVE_KILLED": "1"}) == (
         False, "KILL_SWITCH_ACTIVE")
+
+
+def test_zero_daily_cap_means_unlimited(execution, tmp_path):
+    limits = execution.RiskLimits(
+        max_orders_per_day=0, kill_file=str(tmp_path / "missing.KILL"))
+    assert execution.RiskLimits.from_env(
+        {"SMA9_LIVE_MAX_ORDERS_PER_DAY": "0"}).max_orders_per_day == 0
+    assert execution.entry_allowed([], 999, limits, {}) == (True, "OK")
 
 
 def test_dry_run_executor_never_touches_a_broker(execution):
@@ -160,20 +171,42 @@ def live_runner(tmp_path, monkeypatch):
             del sys.modules[key]
 
 
-def test_order_ledger_is_idempotent_and_counts_for_daily_cap(
-        live_runner, execution):
-    mod = live_runner
-    scanner = mod.Sma9LiveScanner(feed=None)
-    pos = SimpleNamespace(
+class FakeMstockFeed:
+    """Minimal feed that reports the lot size mStock exposes for NIFTY options."""
+
+    def find_contract(self, strike, expiry, option_type):
+        return {
+            "lot_size": 65,
+            "tradingsymbol": "NIFTY26SEP200CE",
+            "instrument_token": 12345,
+            "strike": strike,
+            "expiry": expiry,
+        }
+
+
+def _position(**overrides):
+    base = dict(
         trade_id="S9L-TESTTRADE",
         option_type="CE",
         tradingsymbol="NIFTY26SEP200CE",
         token=12345,
+        strike=20000.0,
+        expiry="2026-09-24",
     )
+    base.update(overrides)
+    return SimpleNamespace(**base)
+
+
+def test_order_ledger_is_idempotent_and_uses_broker_lot_size(
+        live_runner, execution):
+    mod = live_runner
+    scanner = mod.Sma9LiveScanner(feed=FakeMstockFeed())
+    pos = _position()
 
     first = scanner._place_order(pos, "BUY", 100.0, "SMA9_ENTRY")
     assert first is not None
     assert first.status == execution.STATUS_DRY_RUN
+    assert first.quantity == 65
     # A repeated call at a different price must not create a second order.
     assert scanner._place_order(pos, "BUY", 101.0, "SMA9_ENTRY") is None
     today = mod.now_ist().date().isoformat()
@@ -190,6 +223,27 @@ def test_order_ledger_is_idempotent_and_counts_for_daily_cap(
     row = mod.order_status_for("S9L-TESTTRADE", "BUY")
     assert row["dry_run"] == 1
     assert row["status"] == execution.STATUS_DRY_RUN
+
+
+def test_buy_collar_breach_blocks_market_order(live_runner):
+    mod = live_runner
+    scanner = mod.Sma9LiveScanner(feed=FakeMstockFeed())
+    scanner._last_ltp["CE"] = 100.0
+    pos = _position(trade_id="S9L-COLLAR")
+
+    assert scanner._place_order(pos, "BUY", 102.0, "SMA9_ENTRY") is None
+    assert scanner.last_order_block == "PRICE_COLLAR_BREACH"
+    assert mod.order_status_for(pos.trade_id, "BUY") is None
+
+
+def test_missing_lot_size_refuses_order(live_runner):
+    mod = live_runner
+    scanner = mod.Sma9LiveScanner(feed=None)
+    pos = _position(trade_id="S9L-NOLOT")
+
+    assert scanner._place_order(pos, "BUY", 100.0, "SMA9_ENTRY") is None
+    assert scanner.last_order_block == "LOT_SIZE_UNAVAILABLE"
+    assert mod.order_status_for(pos.trade_id, "BUY") is None
 
 
 def _order(execution, **overrides):
@@ -218,7 +272,8 @@ def test_mstock_executor_requires_both_flags_and_kill_switch(execution, tmp_path
     assert ex.place(record).status == execution.STATUS_ACCEPTED
     assert len(calls) == 1
     assert calls[0]["transaction_type"] == "BUY"
-    assert calls[0]["order_type"] == "LIMIT"
+    assert calls[0]["order_type"] == "MARKET"
+    assert calls[0]["price"] == 0
     assert calls[0]["product"] == "MIS"
     assert calls[0]["tag"] == "S9L-BUY-ABC"
     assert record.dry_run is False
