@@ -36,9 +36,10 @@ parts:
 - **Daily cap:** disabled (`SMA9_LIVE_MAX_ORDERS_PER_DAY=0` means unlimited).
 - **BUY collar:** removed; `SMA9_LIVE_PRICE_COLLAR_PCT=0` in both units, so no
   sampled-LTP price gate rejects an entry.
-- **Exits:** only the 5% initial stop loss (`STOP_LOSS_5PCT`) and the trailing
-  stop (`TRAIL_STOP_EXIT`). No candle-close, target, time-based or
-  restart-recovery exit exists.
+- **Exits:** only the 5% initial stop loss (`STOP_LOSS_5PCT`) and a simple 5%
+  trailing stop (`TRAIL_STOP_EXIT`) at `highest LTP × 0.95`, ratcheted upward.
+  There is no activation threshold, points-based trail or breakeven lock, and
+  no candle-close, target, time-based or restart-recovery exit.
 - **Kill switch:** `SMA9_LIVE_KILLED=1` or the operator-created kill file
   `/opt/tradingai/run/sma9_live.KILL` stops trading. The service cannot remove
   the file itself.

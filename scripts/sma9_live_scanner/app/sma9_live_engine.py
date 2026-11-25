@@ -14,10 +14,10 @@ BUY-ONLY rules (identical for CE and PE):
          (the live runner turns this into a risk-checked order)
 
 Exit (identical for CE and PE) — the ONLY two exit conditions:
-  1) TRAIL: once HWM - entry >= 5.0 pts, stop ratchets to HWM - 5.0 pts;
-     a one-time +2.0 lock is applied after HWM - entry >= 6.0 pts.
-     Only a strictly profitable stop (stop > entry) can exit.
-  2) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level.
+  1) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level.
+  2) TRAIL: stop is 5% below the highest LTP since entry (HWM * 0.95),
+     ratcheted upward only. There is no activation threshold and no breakeven
+     lock. Only a strictly profitable stop (stop > entry) can exit.
   There is no candle-close, target, time-based or restart-recovery exit. An
   open position is carried until one of these two stops fires, including
   across service restarts.
@@ -39,10 +39,7 @@ STRATEGY_ID = "sma9_live"
 STRATEGY_VERSION = "1.0.0"
 STRATEGY_TYPE = "SMA9_LIVE_BUY_ONLY"
 STOP_LOSS_PCT = 0.05
-TRAIL = 5.0
-ACTIVATE = 5.0
-BE_LOCK_PROFIT = 6.0
-BE_LOCK_STOP = 2.0
+TRAIL_PCT = 0.05
 EXIT_STOP_LOSS = "STOP_LOSS_5PCT"
 EXIT_TRAIL = "TRAIL_STOP_EXIT"
 EXIT_REASONS = frozenset({EXIT_STOP_LOSS, EXIT_TRAIL})
@@ -201,6 +198,8 @@ class Position:
     ltp_at_entry: float
     hwm: float = 0.0
     stop: Optional[float] = None
+    # Retained for persisted-schema compatibility; the simple 5% trail no
+    # longer uses a breakeven lock.
     be_locked: bool = False
     # Broker reconciliation state. ACTIVE means the BUY fill is confirmed and
     # exits may be generated; other states are terminal for signal handling
@@ -220,30 +219,20 @@ class Position:
             data[k] = _as_dt(data[k])
         return cls(**data)
     def update_trail(self, ltp: Optional[float]) -> Optional[float]:
-        """Update high-water mark and return a trail-stop exit price.
+        """Return the simple 5% trailing-stop price when LTP crosses it.
 
-        Trail activates once the peak is `ACTIVATE` above entry (stop -> breakeven),
-        then ratchets at peak - TRAIL.  One-time breakeven lock at +BE_LOCK_PROFIT
-        moves the stop to entry + BE_LOCK_STOP.  Only a strictly profitable stop
-        (stop > entry) may trigger an exit; a breakeven stop is not an exit.
+        The stop is always ``HWM * (1 - TRAIL_PCT)`` and can only ratchet up.
+        There is no activation threshold, no points-based trail and no
+        breakeven lock. A stop at or below entry is not an exit; the fixed 5%
+        initial stop loss handles that side.
         """
         if ltp is None:
             return None
         if ltp > self.hwm:
             self.hwm = ltp
-        if self.hwm - self.entry_price >= ACTIVATE:
-            if self.stop is None:
-                self.stop = self.entry_price
-            else:
-                self.stop = max(self.stop, self.hwm - TRAIL)
-        if (not self.be_locked
-                and self.hwm - self.entry_price >= BE_LOCK_PROFIT):
-            base_stop = self.stop if self.stop is not None else self.entry_price
-            self.stop = max(base_stop, self.entry_price + BE_LOCK_STOP)
-            self.be_locked = True
-        if (self.stop is not None
-                and self.stop > self.entry_price
-                and ltp <= self.stop):
+        next_stop = round(self.hwm * (1.0 - TRAIL_PCT), 2)
+        self.stop = max(self.stop, next_stop) if self.stop is not None else next_stop
+        if self.stop > self.entry_price and ltp <= self.stop:
             return round(self.stop, 2)
         return None
 
@@ -255,7 +244,7 @@ class OptionStateMachine:
       * at most one open position for this option
       * at most one entry per 5-minute candle (duplicate-poll guard)
       * no entry whose candle would end after market close
-      * exits only on the 5% initial stop loss or the trailing stop
+      * exits only on the 5% initial stop loss or the simple 5% trailing stop
     """
 
     def __init__(self, option_type: str):

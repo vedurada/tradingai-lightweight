@@ -347,6 +347,51 @@ def test_only_stop_loss_and_trail_can_request_exit(live_runner, monkeypatch):
     assert calls[0][0][3] == "TRAIL_STOP_EXIT"
 
 
+def test_simple_five_percent_trailing_stop(live_runner):
+    mod = live_runner
+    pos = _full_position(
+        mod, trade_id="S9L-TRAIL", entry_price=100.0, hwm=100.0)
+    state = mod.OptionStateMachine("CE")
+    state.restore(pos)
+
+    assert state.update_trail(110.0) is None
+    assert pos.hwm == 110.0
+    assert pos.stop == 104.5
+    assert pos.be_locked is False
+
+    assert state.update_trail(105.0) is None
+    assert state.update_trail(104.5) == 104.5
+
+
+def test_trailing_stop_has_no_activation_or_breakeven_lock(live_runner):
+    mod = live_runner
+    pos = _full_position(
+        mod, trade_id="S9L-TRAIL-SIMPLE", entry_price=100.0, hwm=100.0)
+    state = mod.OptionStateMachine("CE")
+    state.restore(pos)
+
+    assert state.update_trail(103.0) is None
+    assert pos.stop == 97.85  # HWM * 0.95, below entry
+    assert pos.be_locked is False
+    assert state.update_trail(98.0) is None  # no profitable stop yet
+    assert state.check_stop_loss(95.0) == 95.0  # fixed 5% SL still active
+
+
+def test_trailing_stop_only_ratchets_up(live_runner):
+    mod = live_runner
+    pos = _full_position(
+        mod, trade_id="S9L-TRAIL-RATCHET", entry_price=100.0, hwm=100.0)
+    state = mod.OptionStateMachine("CE")
+    state.restore(pos)
+
+    assert state.update_trail(120.0) is None
+    first_stop = pos.stop
+    assert first_stop == 114.0
+    assert state.update_trail(115.0) is None
+    assert pos.stop == first_stop
+    assert pos.hwm == 120.0
+
+
 def test_missing_lot_size_refuses_order(live_runner):
     mod = live_runner
     scanner = mod.Sma9LiveScanner(feed=None)

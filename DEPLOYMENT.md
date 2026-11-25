@@ -133,11 +133,14 @@ order book, back up `sma9_live.db`, then explicitly remove the phantom row.
 ## Exit policy
 
 The live service creates a SELL only for `STOP_LOSS_5PCT` (LTP at or below
-entry minus 5%) or `TRAIL_STOP_EXIT` (the ratcheted trailing stop). `_request_exit`
-rejects any other reason before recording an order, and the engine refuses to
-close a trade with an unsupported reason. There is no candle-close, target,
-time-based or restart-recovery exit; a restored position resumes the two stop
-checks with its persisted high-water mark and stop.
+entry minus 5%) or `TRAIL_STOP_EXIT`. The trailing stop is simply
+`highest LTP × 0.95`, ratcheted upward only; there is no activation threshold,
+no points-based trail and no breakeven lock. Only a stop strictly above entry
+can trigger the trailing exit, so the fixed 5% stop covers the early side.
+`_request_exit` rejects any other reason before recording an order, and the
+engine refuses to close a trade with an unsupported reason. There is no
+candle-close, target, time-based or restart-recovery exit; a restored position
+resumes the two stop checks with its persisted high-water mark and stop.
 
 ## Kill switch
 
