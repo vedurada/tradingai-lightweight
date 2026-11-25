@@ -30,6 +30,9 @@ stuck even though the scanner heartbeat was healthy. Fixes now in place:
 - The server now indexes the NFO master once per hour by `(option_type, strike)`
   instead of re-fetching it for every new ATM. During market hours it uses the
   verified tokens already in the scanner heartbeat and skips the master entirely.
+- After an API restart the first `/api/live-atm` call still warms the index
+  (~18s); the dashboard shows heartbeat data immediately and fills the live
+  quote on the next poll. Measured follow-up calls: 0.01–0.14s.
 
 ## Required environment
 
