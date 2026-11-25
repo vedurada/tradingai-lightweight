@@ -1,14 +1,9 @@
-"""Phase 14: options provider — yfinance attempt with graceful unavailability.
+"""Phase 14: options provider — Zerodha only (yfinance removed).
 
-Investigation result (2026-09-20, Oracle VM):
-- yfinance: returns 404 for ^NSEI/^NSEBANK; NO Indian options data
-- NSE (nseindia.com): returns 403/000 — blocked from VM
-- Yahoo Finance API: rate-limited (429), no Indian options chain
-- No API keys, no options packages installed
-
-This provider correctly returns OPTIONS_UNAVAILABLE/OPTIONS_NO_DATA.
-NO options data is fabricated. The contract model is complete and ready
-for future provider integration.
+Indian options data is sourced from Zerodha Kite Connect via
+scripts/options_trading_engine.py (kite client). This module no longer
+attempts yfinance (which has no Indian options chain and always 404s for
+^NSEI / ^NSEBANK). No options data is fabricated.
 """
 import logging
 from concurrent.futures import ThreadPoolExecutor, TimeoutError as FuturesTimeout
@@ -37,21 +32,14 @@ def _classify_error(exc):
 
 
 def _fetch_yfinance_options(instrument):
-    """Attempt yfinance for options. Always fails for Indian symbols."""
-    import yfinance as yf
-    symbol = {"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK"}[instrument]
-    last = None
-    for attempt in range(1, _MAX_ATTEMPTS + 1):
-        try:
-            with ThreadPoolExecutor(max_workers=1) as ex:
-                fut = ex.submit(lambda s=symbol: yf.Ticker(s).options)
-                result = fut.result(timeout=_FETCH_TIMEOUT_S)
-                return tuple(result), OptionsFreshness.OPTIONS_FRESH
-        except Exception as e:
-            last = e
-            log.warning("options fetch instrument=%s attempt=%d/%d err=%s",
-                         instrument, attempt, _MAX_ATTEMPTS, str(e)[:120])
-    return None, _classify_error(last)
+    """yfinance removed: Indian options are unavailable from yfinance.
+
+    Always returns (None, OPTIONS_UNAVAILABLE) so callers fall through to
+    the Zerodha options engine (scripts/options_trading_engine.py) which
+    uses kiteconnect for exact premiums and strikes.
+    """
+    log.warning("options yfinance removed for instrument=%s; use Zerodha options engine", instrument)
+    return None, OptionsFreshness.OPTIONS_UNAVAILABLE
 
 
 def get_options_chain(instrument):
@@ -68,7 +56,9 @@ def get_options_chain(instrument):
         age, freshness = recompute_age(cached)
         return freshness.value, cached
 
-    # Attempt provider fetch
+    # Zerodha options are served by scripts/options_trading_engine.py via
+    # kiteconnect. This provider intentionally returns UNAVAILABLE here so
+    # the API layer never fabricates option chain data.
     expirations, state = _fetch_yfinance_options(instrument)
 
     if state == OptionsFreshness.OPTIONS_RATE_LIMITED:
@@ -81,7 +71,6 @@ def get_options_chain(instrument):
         return OptionsFreshness.OPTIONS_RATE_LIMITED.value, result
 
     if expirations is None or len(expirations) == 0:
-        # No options data available from any source
         result = {
             "state": "OPTIONS_UNAVAILABLE", "instrument": instrument,
             "contracts": [], "error": "NO_OPTIONS_DATA_FROM_PROVIDER",
@@ -90,7 +79,6 @@ def get_options_chain(instrument):
         cache_put(instrument, "chain", result, None, "OPTIONS_UNAVAILABLE")
         return OptionsFreshness.OPTIONS_UNAVAILABLE.value, result
 
-    # If we somehow got data, validate it
     result = {
         "state": "OPTIONS_FRESH", "instrument": instrument,
         "contracts": [], "underlying": None,
@@ -108,11 +96,9 @@ def recompute_age(payload):
 
 def get_option_contracts(instrument, expiry=None, option_type=None,
                           strike_min=None, strike_max=None):
-    """Get validated option contracts with filters.
-    Currently returns empty list — no provider accessible."""
+    """Get validated option contracts with filters."""
     state, data = get_options_chain(instrument)
     contracts = data.get("contracts", [])
-    # Apply filters if we had contracts
     if option_type and contracts:
         contracts = [c for c in contracts if c.get("option_type") == option_type]
     if expiry and contracts:

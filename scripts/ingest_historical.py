@@ -4,40 +4,43 @@ from datetime import datetime, timedelta, timezone
 from zoneinfo import ZoneInfo
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import yfinance as yf
 from app.core.db import get_conn, DB_PATH
 from app.core.config import instruments, settings
+from app.market.zerodha_provider import ZerodhaDataProvider
 
 _IST = ZoneInfo('Asia/Kolkata')
 
 SYMBOL_MAP = {
-    'NIFTY': '^NSEI',
-    'BANKNIFTY': '^NSEBANK',
-    'INDIA_VIX': '^INDIAVIX',
+    'NIFTY': 'NSE:NIFTY 50',
+    'BANKNIFTY': 'NSE:NIFTY BANK',
+    'INDIA_VIX': 'NSE:INDIA VIX',
 }
 
 MAX_5M_DAYS = 60
 
-def fetch_candles_yfinance(instrument_id, days=55):
-    symbol = SYMBOL_MAP.get(instrument_id, instrument_id)
+
+def fetch_candles_zerodha(instrument_id, days=55):
+    zsymbol = SYMBOL_MAP.get(instrument_id, instrument_id)
     end = datetime.now(_IST)
     start = end - timedelta(days=days)
     try:
-        t = yf.Ticker(symbol)
-        hist = t.history(start=start, end=end, interval='5m')
-        if hist.empty:
+        provider = ZerodhaDataProvider()
+        res = provider.get_5m_candles(zsymbol, periods=days * 75)
+        if not res or res.get('state') not in ('LIVE',) or not res.get('candles'):
+            print(f"ERROR fetching {instrument_id}: no data from Zerodha")
             return []
         candles = []
-        for idx, row in hist.iterrows():
+        for c in res['candles']:
+            ts = c.get('timestamp', '')
             candles.append({
                 'instrument_id': instrument_id,
-                'timestamp': idx.isoformat(),
-                'open': float(row['Open']),
-                'high': float(row['High']),
-                'low': float(row['Low']),
-                'close': float(row['Close']),
-                'volume': int(row['Volume']) if row['Volume'] > 0 else 0,
-                'source': 'yfinance',
+                'timestamp': ts,
+                'open': float(c['open']),
+                'high': float(c['high']),
+                'low': float(c['low']),
+                'close': float(c['close']),
+                'volume': int(c.get('volume') or 0),
+                'source': 'zerodha',
                 'data_state': 'LIVE',
                 'ingested_at': datetime.now(_IST).isoformat(),
             })
@@ -45,6 +48,7 @@ def fetch_candles_yfinance(instrument_id, days=55):
     except Exception as e:
         print(f"ERROR fetching {instrument_id}: {e}")
         return []
+
 
 def validate_candle(candle):
     issues = []
@@ -59,6 +63,7 @@ def validate_candle(candle):
         issues.append(f'non_positive_price')
     return issues
 
+
 def normalize_timestamp(ts_iso):
     try:
         dt = datetime.fromisoformat(ts_iso)
@@ -69,6 +74,7 @@ def normalize_timestamp(ts_iso):
         return dt_ist.strftime('%Y-%m-%dT%H:%M:%S+05:30')
     except:
         return ts_iso
+
 
 def ingest(instrument_id, days=55, force=False):
     print(f"\n{'='*60}")
@@ -92,13 +98,13 @@ def ingest(instrument_id, days=55, force=False):
         conn.commit()
         print("Cleared existing data for forced re-ingestion")
 
-    print(f"Fetching {days} days of 5m data from yfinance...")
-    candles = fetch_candles_yfinance(instrument_id, days)
+    print(f"Fetching {days} days of 5m data from Zerodha...")
+    candles = fetch_candles_zerodha(instrument_id, days)
     print(f"Fetched: {len(candles)} raw candles")
 
     if not candles:
         conn.close()
-        return {'status': 'NO_DATA', 'reason': 'yfinance_empty'}
+        return {'status': 'NO_DATA', 'reason': 'zerodha_empty'}
 
     validated = []
     invalid_count = 0
@@ -142,7 +148,7 @@ def ingest(instrument_id, days=55, force=False):
     timestamps = [c['timestamp'] for c in validated]
     quality = {
         'instrument': instrument_id,
-        'provider': 'yfinance',
+        'provider': 'zerodha',
         'date_range': {
             'start': timestamps[0],
             'end': timestamps[-1],
@@ -164,6 +170,7 @@ def ingest(instrument_id, days=55, force=False):
     print(f"Quality report: {report_path}")
 
     return quality
+
 
 def session_analysis(instrument_id):
     print(f"\n{'='*60}")
@@ -214,7 +221,7 @@ def session_analysis(instrument_id):
         'total_candles': total_candles,
         'expected_candles_per_session': expected,
         'coverage_percent': coverage if total_sessions > 0 else 0,
-        'data_source': 'yfinance',
+        'data_source': 'zerodha',
     }
 
     conn.close()
@@ -226,6 +233,7 @@ def session_analysis(instrument_id):
     print(f"Session report: {report_path}")
 
     return report
+
 
 def main():
     parser = argparse.ArgumentParser(description='Ingest historical 5m data')
@@ -242,6 +250,7 @@ def main():
     if result.get('status') in ('COMPLETED', 'SKIPPED'):
         session_analysis(args.instrument)
     print(f"\nResult: {result}")
+
 
 if __name__ == '__main__':
     main()

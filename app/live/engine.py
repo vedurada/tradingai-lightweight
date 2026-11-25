@@ -614,7 +614,10 @@ def _hlc_book_signal(instrument, candles, completed, live_price=None, now=None):
     - EOD flat at last session close if neither level hit
     Read-only: no DB writes. Returns {'trade': dict|None, 'reasons': [...]}."""
     from app.research.scalp_engine import _scan_signals, _live_signal
-    from app.research.cpr_trigger_engine import OPEN_MIN, OPEN_EOD
+
+    # Entry window: 09:20 to 15:20 IST (next-open entry, no lookahead)
+    OPEN_MIN = '09:20'
+    OPEN_EOD = '15:20'
 
     day_iso = completed.date().isoformat()
 

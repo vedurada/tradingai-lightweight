@@ -52,7 +52,7 @@ def ensure_table():
 def topup(days=3):
     for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
         try:
-            candles = ing.fetch_candles_yfinance(inst, days=days)
+            candles = ing.fetch_candles_zerodha(inst, days=days)
         except Exception as e:
             print(f"topup {inst} fetch failed: {e}", flush=True)
             continue

@@ -203,7 +203,7 @@ def option_trades_for_latest_session(conn, inst):
     """Return option paper trades for the latest session of an instrument."""
     return query(
         conn,
-        "SELECT trade_id, instrument, direction, option_type, expiry, strike, "
+        "SELECT trade_id, signal_id, instrument, direction, option_type, expiry, strike, "
         "spot_at_signal, premium_entry, stop_spot, target_spot, premium_exit, "
         "exit_reason, pnl_points, pnl_rupees, status, created_at, updated_at "
         "FROM paper_option_trades "
@@ -311,12 +311,12 @@ def build_rows(conn, inst, now, data_stale, price):
         exit_reason = (trade["exit_reason"] if trade else None) or "\u2014"
         # Option trade linked to this signal (ATM CE/PE)
         opt = option_for_signal(conn, sid)
-        opt_strike = fmt_num(opt["strike"]) if opt and opt.get("strike") is not None else "\u2014"
-        opt_premium = fmt_num(opt["premium_entry"]) if opt and opt.get("premium_entry") is not None else "\u2014"
-        opt_exit_premium = fmt_num(opt["premium_exit"]) if opt and opt.get("premium_exit") is not None else "\u2014"
-        opt_pnl = fmt_num(opt["pnl_rupees"]) if opt and opt.get("pnl_rupees") is not None else "\u2014"
+        opt_strike = fmt_num(opt["strike"]) if opt else "\u2014"
+        opt_premium = fmt_num(opt["premium_entry"]) if opt else "\u2014"
+        opt_exit_premium = fmt_num(opt["premium_exit"]) if opt else "\u2014"
+        opt_pnl = fmt_num(opt["pnl_rupees"]) if opt else "\u2014"
         opt_pnl_css = ""
-        if opt and opt.get("pnl_rupees") is not None:
+        if opt is not None:
             try:
                 _pnl_val = float(opt["pnl_rupees"])
                 opt_pnl_css = "pos" if _pnl_val > 0 else ("neg" if _pnl_val < 0 else "")
@@ -359,10 +359,26 @@ def build_rows(conn, inst, now, data_stale, price):
 
 
 def build_option_rows(conn, inst, now, data_stale, price):
-    """Render HTML rows for option paper trades."""
+    """Render HTML rows for option paper trades.
+
+    Each signal maps to at most one option trade. Deduplicate by trade_id
+    (and signal_id) so the same trade never repeats on the dashboard --
+    including expired trades that may persist across sessions or be
+    re-ingested after a restart.
+    """
     rows_html = []
+    seen_ids = set()
+    seen_signals = set()
     for opt in option_trades_for_latest_session(conn, inst):
         oid = opt["trade_id"]
+        sid = opt["signal_id"]
+        if oid in seen_ids:
+            continue
+        seen_ids.add(oid)
+        if sid:
+            if sid in seen_signals:
+                continue
+            seen_signals.add(sid)
         direction = (opt["direction"] or "\u2014").upper()
         option_type = opt["option_type"] or "\u2014"
         expiry = opt["expiry"] or "\u2014"

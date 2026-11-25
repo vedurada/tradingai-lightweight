@@ -4,7 +4,7 @@
 STRICT SAFETY:
 - Read-only access to the trading database (mode=ro). Never writes trades/signals.
 - Does not import or execute the signal engine or paper-trade engine.
-- External market data goes through yfinance directly (no provider_cache writes).
+- External market data goes through Zerodha directly (no provider_cache writes).
 - All monitoring output is append-only JSONL under logs/entry_shadow/.
 """
 import fcntl
@@ -132,7 +132,7 @@ def _cache_path(symbol, interval, day=None, period=None):
 
 
 def yf_candles(inst, interval, period, ttl_seconds=15, day=None):
-    """Fetch candles via yfinance with an on-disk cache. No DB writes."""
+    """Fetch candles via Zerodha with an on-disk cache. No DB writes."""
     ensure_dirs()
     symbol = symbol_for(inst)
     path = _cache_path(symbol, interval, day, period)
@@ -158,22 +158,29 @@ def yf_candles(inst, interval, period, ttl_seconds=15, day=None):
         if age <= ttl_seconds and os.path.exists(path):
             with open(path) as fh:
                 return json.load(fh).get("rows", [])
-        import yfinance as yf  # imported lazily
-
-        hist = yf.Ticker(symbol).history(period=period, interval=interval)
+        from app.market.zerodha_provider import ZerodhaDataProvider
+        provider = ZerodhaDataProvider()
+        zsym = {"NIFTY": "NSE:NIFTY 50", "BANKNIFTY": "NSE:NIFTY BANK", "INDIA_VIX": "NSE:INDIA VIX"}.get(symbol, symbol)
+        res = provider.get_5m_candles(zsym, periods=100)
         rows = []
-        for ts, row in hist.iterrows():
-            ts_ist = ts.astimezone(IST) if getattr(ts, "tzinfo", None) else ts.replace(tzinfo=IST)
-            if day and ts_ist.strftime("%Y-%m-%d") != day:
-                continue
-            try:
-                o = float(row["Open"]); h = float(row["High"])
-                l = float(row["Low"]); c = float(row["Close"])
-            except Exception:
-                continue
-            if not all(math.isfinite(x) for x in (o, h, l, c)):
-                continue
-            rows.append({"ts": iso(ts_ist), "open": o, "high": h, "low": l, "close": c})
+        if res and res.get('state') == 'LIVE':
+            for c in res.get('candles', []):
+                try:
+                    ts_ist = datetime.fromisoformat(c['timestamp'])
+                    if getattr(ts_ist, 'tzinfo', None) is None:
+                        ts_ist = ts_ist.replace(tzinfo=IST)
+                except Exception:
+                    continue
+                if day and ts_ist.strftime("%Y-%m-%d") != day:
+                    continue
+                try:
+                    o = float(c['open']); h = float(c['high'])
+                    l = float(c['low']); cpx = float(c['close'])
+                except Exception:
+                    continue
+                if not all(math.isfinite(x) for x in (o, h, l, cpx)):
+                    continue
+                rows.append({"ts": iso(ts_ist), "open": o, "high": h, "low": l, "close": cpx})
         payload = {"fetched_at": iso(now_ist()), "symbol": symbol,
                    "interval": interval, "rows": rows}
         tmp = path + ".tmp"
@@ -190,7 +197,7 @@ def yf_candles(inst, interval, period, ttl_seconds=15, day=None):
 
 
 def fast_quote(inst):
-    """Best-effort latest quote via yfinance fast_info. Timestamp = observation time."""
+    """Best-effort latest quote via Zerodha. Timestamp = observation time."""
     ensure_dirs()
     symbol = symbol_for(inst)
     path = _cache_path(symbol, "quote")
@@ -206,21 +213,13 @@ def fast_quote(inst):
             pass
     quote = None
     try:
-        import yfinance as yf
-
-        t = yf.Ticker(symbol)
-        price = None
-        try:
-            price = float(t.fast_info["last_price"])
-        except Exception:
-            price = None
-        if price is None or not math.isfinite(price) or price <= 0:
-            hist = t.history(period="1d", interval="1m")
-            if len(hist):
-                price = float(hist["Close"].iloc[-1])
-        if price is not None and math.isfinite(price) and price > 0:
-            quote = {"price": price, "ts": iso(now_ist()), "state": "FRESH",
-                     "source": "yfinance_fast_info"}
+        from app.market.zerodha_provider import ZerodhaDataProvider
+        provider = ZerodhaDataProvider()
+        zsym = {"NIFTY": "NSE:NIFTY 50", "BANKNIFTY": "NSE:NIFTY BANK", "INDIA_VIX": "NSE:INDIA VIX"}.get(symbol, symbol)
+        q = provider.get_quote(zsym)
+        if q and q.get('state') == 'LIVE' and q.get('price'):
+            quote = {"price": float(q['price']), "ts": iso(now_ist()), "state": "FRESH",
+                     "source": "zerodha_quote"}
     except Exception:
         quote = None
     tmp = path + ".tmp"

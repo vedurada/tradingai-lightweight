@@ -143,26 +143,21 @@ def yf_data(sym, interval, ttl=4.0):
     t0 = time.time()
     data = {"rows": [], "meta": {}, "fetch_ms": None, "error": None}
     try:
-        import yfinance as yf
-        tk = yf.Ticker(sym)
-        hist = tk.history(period="2d" if interval == "5m" else "5d", interval=interval)
+        from app.market.zerodha_provider import ZerodhaDataProvider
+        provider = ZerodhaDataProvider()
+        zsym = {"^NSEI": "NSE:NIFTY 50", "^NSEBANK": "NSE:NIFTY BANK", "^INDIAVIX": "NSE:INDIA VIX"}.get(sym, sym)
+        res = provider.get_5m_candles(zsym, periods=100)
         rows = []
-        for idx, row in hist.iterrows():
-            dt = _to_ist(idx)
-            if dt is None:
-                continue
-            try:
-                o, h, l, c = (float(row["Open"]), float(row["High"]),
-                              float(row["Low"]), float(row["Close"]))
-            except Exception:
-                continue
-            if all(math.isfinite(x) and x > 0 for x in (o, h, l, c)):
-                rows.append((dt, o, h, l, c))
+        if res and res.get('state') == 'LIVE':
+            for c in res.get('candles', []):
+                try:
+                    o, h, l, cpx = (float(c['open']), float(c['high']), float(c['low']), float(c['close']))
+                except Exception:
+                    continue
+                if all(math.isfinite(x) and x > 0 for x in (o, h, l, cpx)):
+                    rows.append((c.get('timestamp', ''), o, h, l, cpx))
         data["rows"] = rows
-        try:
-            data["meta"] = dict(getattr(tk, "history_metadata", {}) or {})
-        except Exception:
-            data["meta"] = {}
+        data["meta"] = {"source": "zerodha", "symbol": zsym}
     except Exception as e:
         data["error"] = f"{type(e).__name__}: {str(e)[:180]}"
     data["fetch_ms"] = round((time.time() - t0) * 1000.0, 1)

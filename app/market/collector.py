@@ -1,29 +1,27 @@
 """Production market-data collector for TradingAI.
 
 Collects completed 5-minute candles for NIFTY, BANKNIFTY, INDIA_VIX
-from yfinance and stores them in the TradingAI SQLite database.
+from Zerodha Kite Connect and stores them in the TradingAI SQLite database.
 
 - Only COMPLETED candles stored (is_complete=1)
 - Uniqueness via INSERT OR IGNORE on candle_id (no duplicates)
 - PIT invariant: only candles with timestamp <= cutoff are stored
 - Asia/Kolkata throughout
-- Uses existing MarketDataProvider (yfinance)
+- Uses ZerodhaDataProvider (yfinance removed)
 - Structured logging
 """
 import logging, os, sqlite3, sys
 from datetime import datetime, timedelta
 from zoneinfo import ZoneInfo
 
-import yfinance as yf
-
 from app.core.db import get_conn
 from app.core.config import instruments, settings
-from app.market.provider import MarketDataProvider
+from app.market.zerodha_provider import ZerodhaDataProvider
 
 _IST = ZoneInfo('Asia/Kolkata')
 log = logging.getLogger('tradingai.collector')
 
-SYMBOL_MAP = {"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "INDIA_VIX": "^INDIAVIX"}
+SYMBOL_MAP = {"NIFTY": "NSE:NIFTY 50", "BANKNIFTY": "NSE:NIFTY BANK", "INDIA_VIX": "NSE:INDIA VIX"}
 
 
 def get_completed_cutoff(now_ist):
@@ -41,23 +39,20 @@ def get_completed_cutoff(now_ist):
 def collect_instrument(instrument_id, provider=None, backfill=False, target_date=None):
     if instrument_id not in SYMBOL_MAP:
         return 0, 'UNKNOWN_INSTRUMENT:' + instrument_id
-    symbol = SYMBOL_MAP[instrument_id]
+    zsymbol = SYMBOL_MAP[instrument_id]
     now_ist = datetime.now(_IST)
     cutoff = get_completed_cutoff(now_ist)
     if cutoff is None:
         log.info('collector instrument=%s no completed candles yet', instrument_id)
         return 0, None
     if provider is None:
-        provider = MarketDataProvider()
-    # Bounded fetch: reuse provider _fetch_history (12s executor timeout + 1 retry).
-    # Never raw yf.Ticker().history without timeout (hangs gunicorn/cron).
+        provider = ZerodhaDataProvider()
     try:
-        from app.market.provider import _fetch_history as _bounded_fetch
-        hist = _bounded_fetch(symbol, '10d', '5m')
+        hist = provider.get_5m_candles(zsymbol, periods=100)
     except Exception as e:
         log.error('collector instrument=%s fetch_error err=%s', instrument_id, str(e)[:160])
         return 0, 'FETCH_ERROR:' + str(e)[:120]
-    if hist is None or hist.empty:
+    if not hist or hist.get('state') not in ('LIVE',) or not hist.get('candles'):
         log.warning('collector instrument=%s no data', instrument_id)
         return 0, None
 
@@ -66,47 +61,40 @@ def collect_instrument(instrument_id, provider=None, backfill=False, target_date
     cutoff_str = cutoff.isoformat()
     day = target_date or now_ist.date().isoformat()
 
-    for idx, row in hist.iterrows():
-        ts_utc = idx
-        if ts_utc.tzinfo is not None:
-            ts_ist = ts_utc.astimezone(_IST)
-        else:
-            ts_ist = ts_utc.replace(tzinfo=_IST)
-        ts_str = ts_ist.isoformat()
+    for c in hist['candles']:
+        ts_str = c.get('timestamp', '')
         if ts_str > cutoff_str:
             continue
-        # Backfill: when backfill=True (or target_date set) collect any past
-        # session date <= cutoff; default (live cron) collects today only.
         if not backfill and target_date is None:
-            if ts_ist.date().isoformat() != day:
+            if ts_str[:10] != day:
                 continue
         elif target_date is not None:
-            if ts_ist.date().isoformat() != day:
+            if ts_str[:10] != day:
                 continue
         else:
-            if ts_ist.date().isoformat() > day:
+            if ts_str[:10] > day:
                 continue
         try:
-            o = float(row['Open'])
-            h = float(row['High'])
-            l = float(row['Low'])
-            c = float(row['Close'])
-            v = int(row['Volume'] or 0)
+            o = float(c['open'])
+            h = float(c['high'])
+            l = float(c['low'])
+            cclose = float(c['close'])
+            v = int(c.get('volume') or 0)
         except (KeyError, TypeError, ValueError):
             continue
-        if not (o > 0 and h > 0 and l > 0 and c > 0):
+        if not (o > 0 and h > 0 and l > 0 and cclose > 0):
             continue
         if h < l:
             continue
-        if not (l <= o <= h and l <= c <= h):
+        if not (l <= o <= h and l <= cclose <= h):
             continue
-        candle_id = 'C-' + instrument_id + '-' + ts_ist.strftime('%Y%m%d%H%M%S')
+        candle_id = 'C-' + instrument_id + '-' + ts_str.replace(':', '').replace('-', '').replace('T', '')
         try:
             conn.execute(
                 'INSERT OR IGNORE INTO market_candles_5m '
                 '(candle_id, instrument_id, timestamp, open, high, low, close, volume, source, data_state, ingested_at, session_id, is_complete) '
                 'VALUES (?,?,?,?,?,?,?,?,?,?,?,?,1)',
-                (candle_id, instrument_id, ts_str, o, h, l, c, v, 'yfinance', 'LIVE', now_ist.isoformat(), None))
+                (candle_id, instrument_id, ts_str, o, h, l, cclose, v, 'zerodha', 'LIVE', now_ist.isoformat(), None))
             stored += 1
         except sqlite3.Error as e:
             log.error('collector instrument=%s insert_error candle=%s err=%s', instrument_id, ts_str, str(e)[:120])

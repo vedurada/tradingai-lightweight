@@ -13,7 +13,7 @@ from app.research.scalp_validation import validate_candle
 from app.research.scalp_signal_store import (record_signal, mark_traded, mark_failed, mark_expired, init_schema, recover_new_signals)
 from app.paper_trade.engine import PaperTradeEngine
 from app.core.db import get_conn
-from app.market.provider import MarketDataProvider
+from app.market.zerodha_provider import ZerodhaDataProvider
 
 sys.path.insert(0, os.path.join(BASE, "scripts"))
 from options_trading_engine import OptionsEngine
@@ -217,24 +217,26 @@ def _entry_time_guard(entry_time_s, now_dt=None):
 
 
 def _get_entry_price_from_provider(inst, entry_time):
-    """Get the entry candle's open price from the live provider.
+    """Get the entry candle's open price from Zerodha (real-time, no yfinance).
 
-    The entry candle's OPEN is available at candle-open time via yfinance
-    5-minute data (the forming candle's Open field is populated as soon as
-    the first tick of the interval arrives). This avoids waiting ~5 minutes
-    for the candle to be ingested into market_candles_5m as completed data.
+    Zerodha 5m candles include the forming candle whose OPEN is available at
+    candle-open time, before the candle is ingested into market_candles_5m.
+    This keeps entry timely (matching telegram alerts) instead of waiting on a
+    delayed yfinance fetch that caused signals to expire before entry.
 
     Returns the entry price as a float, or None if not yet available.
     """
     try:
-        provider = MarketDataProvider()
-        yf_symbol = {"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK"}.get(inst, inst)
-        candles_data = provider.get_5m_candles(yf_symbol)
+        provider = ZerodhaDataProvider()
+        zsymbol = {"NIFTY": "NSE:NIFTY 50", "BANKNIFTY": "NSE:NIFTY BANK"}.get(inst, inst)
+        candles_data = provider.get_5m_candles(zsymbol)
+        if not candles_data or candles_data.get('state') != 'LIVE':
+            return None
         for c in candles_data.get('candles', []):
             if c.get('timestamp') == entry_time:
                 return float(c['open'])
     except Exception as e:
-        print(f"{inst} provider entry price lookup failed: {e}", flush=True)
+        print(f"{inst} zerodha entry price lookup failed: {e}", flush=True)
     return None
 
 

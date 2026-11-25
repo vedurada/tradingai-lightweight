@@ -27,6 +27,7 @@ from app.api.sma9_5min_api import bp as sma9_5min_bp
 from app.api.sma9_adx_api import bp as sma9_adx_bp
 from app.api.sma9_live_api import bp as sma9_live_bp
 from app.api.live_atm_api import bp as live_atm_bp
+from app.api.scalp_api import bp as _scalp_api_bp
 
 app = Flask(__name__)
 # Trust exactly one hop (nginx on this host). Cloudflare/frontend IPs arrive
@@ -68,6 +69,7 @@ app.register_blueprint(sma9_5min_bp)
 app.register_blueprint(sma9_adx_bp)
 app.register_blueprint(sma9_live_bp)
 app.register_blueprint(live_atm_bp)
+app.register_blueprint(_scalp_api_bp, url_prefix="/api/scalp")
 
 market = MarketDataProvider()
 qual = QualificationEngine(settings)
@@ -75,6 +77,23 @@ ai = AIExplanation()
 scenario_engine = ScenarioEngine()
 live_engine = LiveEngine()
 _IST = ZoneInfo("Asia/Kolkata")
+
+# Zerodha provider integration (when MARKET_DATA_PROVIDER=zerodha)
+_market_provider = os.environ.get("MARKET_DATA_PROVIDER", "zerodha").lower()
+if _market_provider == "zerodha":
+    from app.market.zerodha_provider import ZerodhaDataProvider
+    _zp = ZerodhaDataProvider()
+    market = _zp
+
+    def _zp_candles(symbol, completed_ts=None):
+        """Wrap Zerodha get_5m_candles for LiveEngine: ignore completed_ts,
+        return the candles list (not the full dict)."""
+        res = _zp.get_5m_candles(symbol)
+        if not res or res.get('state') != 'LIVE':
+            return []
+        return res.get('candles', [])
+
+    live_engine = LiveEngine(quote_fn=_zp.get_quote, candles_fn=_zp_candles)
 
 # Initialize option tables on import
 try:

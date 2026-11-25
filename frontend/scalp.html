@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Scalp Model (HLC 3-bar) | TradingAI.in</title>
+<title>Scalp Model | TradingAI.in</title>
 <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
@@ -14,17 +14,38 @@ body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;b
 .card{background:#fff;padding:1.2rem;border-radius:12px;border:1px solid #e2e8f0;margin:1rem 0}
 .btn{font-size:.9rem;font-weight:700;background:#1d4ed8;color:#fff;border:none;border-radius:6px;padding:.55rem 1.2rem;margin:.3rem;cursor:pointer}
 .btn.alt{background:#0f766e}
+.btn.stop{background:#b91c1c}
 table{width:100%;border-collapse:collapse;font-size:.82rem;margin:.5rem 0}
 th,td{padding:.35rem .5rem;border-bottom:1px solid #e2e8f0;white-space:nowrap}
 .note{font-size:.8rem;color:#475569;margin-top:.5rem}
 select{padding:.4rem;margin:.3rem}
 .win{color:#15803d;font-weight:700}.loss{color:#b91c1c;font-weight:700}
+/* Tabs */
+.tabs{border-bottom:1px solid #cbd5e1;margin:1rem 0;display:flex;gap:0}
+.tab{background:#f1f5f9;border:none;border-bottom:2px solid transparent;padding:.5rem 1rem;cursor:pointer;font-size:.9rem;font-weight:600;color:#64748b}
+.tab.active{background:#fff;border-bottom:2px solid #0a7a2f;color:#0a7a2f}
+.tabpanel{display:none}
+.tabpanel.active{display:block}
+.grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:.75rem;margin:1rem 0}
+.stat{background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:.75rem}
+.stat .label{font-size:.75rem;color:#64748b;text-transform:uppercase}
+.stat .value{font-size:1.25rem;font-weight:700;color:#0f172a;margin-top:.25rem}
+.status-badge{display:inline-block;padding:.1rem .5rem;border-radius:4px;font-size:.75rem;font-weight:700}
+.status-running{background:#dcfce7;color:#15803d}
+.status-stopped{background:#fee2e2;color:#b91c1c}
+.status-closed{background:#fef3c7;color:#92400e}
 </style>
 </head>
 <body>
 <div class="topbar"><div><img src="/favicon.svg" alt="logo" style="width:26px;height:26px;vertical-align:-6px;margin-right:.45rem"><span class="brand">TradingAI<span class="dot">.in</span></span><span style="margin-left:.8rem">Scalp Model</span></div><div><a href="/" style="color:#cbd5e1;text-decoration:none">Home</a></div></div>
 <div class="wrap">
 <h1>Scalp Model — HLC 3-Bar Alignment</h1>
+<div class="tabs">
+  <button class="tab active" onclick="openTab(event,'scalp')">Scalp (HLC 3-bar)</button>
+</div>
+
+<!-- Scalp tab -->
+<div id="scalp" class="tabpanel active">
 <div class="card">
 <h2>Signal generation</h2>
 <p>Signal fires when 3 consecutive 5-minute bars all move the same direction across high, low and close: each bar's high, low and close all rise (bullish) or all fall (bearish) versus the previous bar. Evaluated on the full 5-minute history, so alignment can span sessions. Every completed alignment is a separate signal; multiple trades per session are possible.</p>
@@ -43,6 +64,9 @@ select{padding:.4rem;margin:.3rem}
 <div style="overflow-x:auto"><table id="tbl"><thead><tr><th>Date</th><th>Instrument</th><th>Source</th><th>Direction</th><th>Level</th><th>Entry time</th><th>Entry</th><th>Exit/mark date and time</th><th>Exit/mark</th><th>Spot P&amp;L (points, gross)</th><th>Outcome</th><th>Exit reason</th></tr></thead><tbody></tbody></table></div>
 </div>
 </div>
+
+<div class="notice" style="background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:8px;padding:.55rem .9rem;font-size:.78rem;margin:.7rem 0">TradingAI.in provides general educational market information based on predefined rules and public data. This content does not consider your financial circumstances, objectives, or risk profile. It is not investment advice, a research recommendation, or an instruction to buy, sell, or hold any security or derivative.</div>
+</div>
 <script>
 function $(id){return document.getElementById(id);}
 function num(v){return (v===null||v===undefined||!isFinite(Number(v)))?'—':Number(v).toLocaleString('en-IN',{maximumFractionDigits:2});}
@@ -52,6 +76,12 @@ function row(t,source){
   [t.trade_date|| (t.created_at||'').slice(0,10), t.instrument||'—', source, t.direction, t.level, (t.entry_time||'').slice(0,16).replace('T',' '), num(t.entry), (t.exit_time||'').slice(0,16).replace('T',' '), num(t.exit), num(pts), outcome, t.exit_reason||''].forEach(x=>{const td=document.createElement('td');td.textContent=x;tr.appendChild(td);});
   const oc=tr.childNodes[9]; if(oc) oc.className=(outcome==='WIN'?'win':(outcome==='LOSS'?'loss':''));
   return tr;
+}
+function openTab(evt, tabName){
+  document.querySelectorAll('.tabpanel').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(n=>n.classList.remove('active'));
+  $(tabName).classList.add('active');
+  if(evt && evt.currentTarget) evt.currentTarget.classList.add('active');
 }
 async function runLive(){
   $('status').textContent='Loading live trades…';

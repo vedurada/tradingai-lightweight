@@ -11,7 +11,7 @@
   "data": {
     "freshness_threshold_min": 30,
     "stale_threshold_min": 60,
-    "source": "yfinance"
+    "source": "zerodha"
   },
   "MAX_QUALIFIED_TRADES_PER_DAY": 1,
   "strategies": {
