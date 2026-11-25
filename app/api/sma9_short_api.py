@@ -84,9 +84,11 @@ def _health(state):
             status = "IDLE_MARKET_CLOSED"
         else:
             status = "NOT_RUNNING"
-    elif market_open and age is not None and age <= 15:
+    # Broker quote calls can occasionally take 20s. Use a 30s window so a slow
+    # single poll does not briefly flag a healthy scanner as STALE.
+    elif market_open and age is not None and age <= 30:
         status = "ACTIVE"
-    elif market_open and age is not None and age > 15:
+    elif market_open and age is not None and age > 30:
         status = "STALE"
     elif not market_open and age is not None and age <= 120:
         status = "IDLE_MARKET_CLOSED"
