@@ -75,20 +75,19 @@ flowchart TB
 | `sma9_atr` | `live_sma9_atr_scanner.py` | `tradingai-sma9-atr-scanner` | `sma9` | `/opt/tradingai/database/sma9_atr.db` | `/api/sma9-atr/scanner-status` |
 | `sma9_high` | `live_sma9_high_scanner.py` | `tradingai-sma9-high-scanner` | `sma9high` | `/opt/tradingai/database/sma9_high.db` | `/api/sma9-high/scanner-status` |
 | `sma9_trail` | `live_sma9_trail_scanner.py` | `tradingai-sma9_trail-scanner` (`disabled`) | `sma9trail` | `/opt/tradingai/database/sma9_trail.db` | `/api/sma9-trail/scanner-status` |
-| `sma9_high_trail` | `live_sma9_high_trail_scanner.py` | `tradingai-sma9_high_trail-scanner` (`disabled`) | `sma9trailhigh` | `/opt/tradingai/database/sma9_high_trail.db` | `/api/sma9-high-trail/scanner-status` |
 | `sma9live` | `live_sma9_live_scanner.py` | `tradingai-sma9-live-scanner` | `sma9live` | `/opt/tradingai/database/sma9_live.db` | `/api/sma9-live/*` |
 
 The five active paper scanners and the isolated `sma9live` service resolve to
-broker `mstock`; the two trail duplicates are stopped and disabled but keep
-their aliases in the mapping. Seven paper SMA routes remain served (five
-active, two stale dashboards) plus the separate `/api/sma9-live/*` namespace,
-all by `app.api.app:app` under gunicorn.
+broker `mstock`; the one trail duplicate is stopped and disabled but keeps its
+alias in the mapping. Six paper SMA routes remain served (five active, one stale
+dashboard) plus the separate `/api/sma9-live/*` namespace, all by
+`app.api.app:app` under gunicorn.
 
 Each scanner is isolated from the others: it has its own SQLite state file, its
 own log, its own API status route and its own broker alias, set in its unit as
 `BROKER_GATEWAY_SCANNER=<alias>` and listed in `config/scanners.json`. The
 aliases are `sma9`, `sma9_5min`, `sma9_adx`, `sma9_atr`, `sma9_high`,
-`sma9_trail`, `sma9_high_trail` and `sma9live`. A scanner never reads another
+`sma9_trail` and `sma9live`. A scanner never reads another
 scanner's DB, heartbeat or ledger. The gateway daemon, its socket and its shared
 mStock rate limiter are deliberately common infrastructure; they do not carry
 per-scanner trade state.
@@ -355,13 +354,13 @@ No scanner file changes are needed.
 
 ## 11. Verified production state (2026-11-24)
 
-- All 8 SMA-family aliases configured to `mstock`; default remains `zerodha`.
+- All 7 SMA-family aliases configured to `mstock`; default remains `zerodha`.
 - Gateway, API and the five active paper scanners plus `sma9live` are active.
-  `sma9_trail` and `sma9_high_trail` are `active=inactive`,
-  `enabled=disabled` and excluded from `refresh_token.sh` restarts.
+  `sma9_trail` is `active=inactive`, `enabled=disabled` and excluded from
+  `refresh_token.sh` restarts.
 - Gateway log clean; `probe --broker mstock` reports profile ok, 94089 NFO
   instruments, NIFTY quote ok.
-- Seven SMA APIs: `IDLE_MARKET_CLOSED`, `poll=5`, fresh scan ages, errors only
+- Six SMA APIs: `IDLE_MARKET_CLOSED`, `poll=5`, fresh scan ages, errors only
   `['weekend']`.
 - Database directory `2775 root:ubuntu`, all DB files `0660` with no
   world-writable SQLite files.

@@ -75,24 +75,6 @@
         "Nearest NIFTY weekly expiry at/after today; no separate expiry-day square-off."
       ]
     },
-    "sma9-high-trail": {
-      "title": "SMA9 HIGH Trail",
-      "entry": [
-        "Self-contained entry (no dependency on the base sma9-high scanner): previous completed 5-minute option-premium close > SMA9 AND current forming candle open > SMA9 AND sampled live premium LTP > previous completed candle's high.",
-        "Paper BUY at the sampled live premium LTP; ATM CE and PE evaluated independently, long only."
-      ],
-      "exit": [
-        "Trail first: activation at +5 points, first stop at breakeven, then ratchet to max(stop, HWM - 5 points); one-time +6-point lock sets stop to at least entry + 2 points.",
-        "Trail exit only from a strictly profitable stop, filled at the sampled LTP, reason TRAIL_STOP_EXIT.",
-        "Then fixed stop at round(entry x 0.95, 2), reason STOP_LOSS_5PCT.",
-        "No candle-close, target or time-based exit in the live loop."
-      ],
-      "scope": [
-        "5-second polls with a 3-second offset; signals from 5-minute option-premium candles.",
-        "Entry window 09:20-15:15 IST, at most one entry per 5-minute candle per option, maximum 2 open positions.",
-        "Nearest NIFTY weekly expiry at/after today; no separate expiry-day square-off."
-      ]
-    },
     "sma9-atr": {
       "title": "SMA9 ATR + daily regime",
       "entry": [

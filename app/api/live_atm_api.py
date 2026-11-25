@@ -81,12 +81,6 @@ SCANNER_STATES: dict[str, tuple[str, str]] = {
         ),
         "sma9_5pct_trail_scan_state",
     ),
-    "sma9-high-trail": (
-        os.environ.get(
-            "SMA9_HIGH_TRAIL_DB_PATH", "/opt/tradingai/database/sma9_high_trail.db"
-        ),
-        "sma9_high_trail_scan_state",
-    ),
     "sma9live": (
         os.environ.get("SMA9_LIVE_DB_PATH", "/opt/tradingai/database/sma9_live.db"),
         "sma9_live_scan_state",

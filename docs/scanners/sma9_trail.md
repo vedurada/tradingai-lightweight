@@ -95,6 +95,5 @@ explicitly re-enabled. Its DB, pages, logs and code remain on disk.
 ## Relationships
 
 - `sma9` — same entry, trail is secondary to the fixed stop.
-- `sma9_high_trail` — same exit, stricter HIGH entry.
 - The old "consume the base scanner" design is documented only as history; do
   not rely on `consumed_base_trades` for current behaviour.

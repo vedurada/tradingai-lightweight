@@ -24,7 +24,6 @@ SCANNERS = (
     ("sma9_trail", "SMA9_TRAIL_DB_PATH"),
     ("sma9_adx", "SMA9_ADX_DB_PATH"),
     ("sma9_high", "SMA9_HIGH_DB_PATH"),
-    ("sma9_high_trail", "SMA9_HIGH_TRAIL_DB_PATH"),
 )
 
 

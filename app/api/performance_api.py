@@ -115,15 +115,6 @@ SCANNERS = [
         "where": "status = 'CLOSED'",
         "open_table": "sma9_trail_open_positions",
     },
-    {
-        "key": "sma9_high_trail",
-        "label": "SMA9 HIGH Trail",
-        "db": "sma9_high_trail.db",
-        "table": "sma9_high_trail_trades",
-        "date_col": "trade_date",
-        "where": "status = 'CLOSED'",
-        "open_table": "sma9_high_trail_open_positions",
-    },
 ]
 
 

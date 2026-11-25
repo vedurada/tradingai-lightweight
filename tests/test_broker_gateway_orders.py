@@ -88,7 +88,7 @@ def test_read_methods_allow_every_scanner_alias(monkeypatch, adapter):
     monkeypatch.setattr(daemon, "_require_fresh", lambda broker, adapter: None)
     monkeypatch.setattr(adapter, "profile", lambda: {"user_id": "SHARED-READ"})
     for scanner in ("sma9", "sma9_5min", "sma9_adx", "sma9_atr", "sma9_high",
-                    "sma9_trail", "sma9_high_trail", "sma9live"):
+                    "sma9_trail", "sma9live"):
         result = daemon.dispatch({"broker": "mstock", "method": "profile",
                                   "params": {}, "scanner": scanner})
         assert result == {"user_id": "SHARED-READ"}

@@ -30,9 +30,6 @@ SCANNERS = [
      "sma9_atr_open_positions", "sma9_atr_trades"),
     ("sma9_trail_scanner/app/live_sma9_trail_scanner.py", "SMA9_TRAIL_DB_PATH",
      "sma9_trail_open_positions", "sma9_trail_trades"),
-    ("sma9_high_trail_scanner/app/live_sma9_high_trail_scanner.py",
-     "SMA9_HIGH_TRAIL_DB_PATH",
-     "sma9_high_trail_open_positions", "sma9_high_trail_trades"),
 ]
 
 

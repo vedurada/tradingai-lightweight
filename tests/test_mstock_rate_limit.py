@@ -11,7 +11,7 @@ from broker_gateway.adapters import mstock
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 FAST_SCANNERS = (
-    "sma9", "sma9_high", "sma9_trail", "sma9_high_trail",
+    "sma9", "sma9_high", "sma9_trail",
     "sma9_atr", "sma9_adx",
 )
 

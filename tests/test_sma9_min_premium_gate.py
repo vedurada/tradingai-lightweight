@@ -21,10 +21,6 @@ SCANNERS = {
     "sma9_adx": ("scripts/sma9_adx_scanner/app/live_sma9_adx_scanner.py", "Sma9AdxLiveScanner"),
     "sma9_atr": ("scripts/sma9_atr_scanner/app/live_sma9_atr_scanner.py", "Sma9AtrLiveScanner"),
     "sma9_high": ("scripts/sma9_high_scanner/app/live_sma9_high_scanner.py", "Sma9HighLiveScanner"),
-    "sma9_high_trail": (
-        "scripts/sma9_high_trail_scanner/app/live_sma9_high_trail_scanner.py",
-        "TrailLiveScanner",
-    ),
     "sma9_live": (
         "scripts/sma9_live_scanner/app/live_sma9_live_scanner.py",
         "Sma9LiveScanner",

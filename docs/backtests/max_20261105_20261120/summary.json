@@ -70,23 +70,6 @@
       }
     },
     {
-      "scanner": "sma9_high_trail",
-      "trades": 32,
-      "wins": 20,
-      "losses": 12,
-      "flat": 0,
-      "win_rate_pct": 62.5,
-      "total_points": 96.5,
-      "avg_points": 3.02,
-      "best_trade_points": 25.2,
-      "worst_trade_points": -15.84,
-      "max_drawdown_points": -62.09,
-      "exit_reasons": {
-        "STOP_LOSS_5PCT": 12,
-        "TRAIL_STOP_EXIT": 20
-      }
-    },
-    {
       "scanner": "sma9_atr",
       "trades": 250,
       "wins": 111,

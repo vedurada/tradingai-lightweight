@@ -1,9 +1,9 @@
 # Scanner docs — one page per strategy
 
 The VM runs **5 active paper scanners** plus the isolated real-order
-`sma9_live` service described in [`SCANNERS.md`](../../SCANNERS.md). Two
-duplicate paper scanners (`sma9_trail`, `sma9_high_trail`) are stopped and
-disabled but kept on disk. Each page below describes one strategy in logical
+`sma9_live` service described in [`SCANNERS.md`](../../SCANNERS.md). One
+duplicate paper scanner (`sma9_trail`) is stopped and disabled but kept on
+disk. Each page below describes one strategy in logical
 terms: why it exists, exactly when it enters, exactly when it exits, what it
 persists, and where its runtime pieces live.
 
@@ -27,13 +27,12 @@ explain the strategy.
 | `sma9_high` | `sma9` plus a live break of the previous candle high | 5 s | 5% of premium | [`sma9_high.md`](sma9_high.md) |
 | `sma9_atr` | Same entry as `sma9`, stop scaled to the option's own ATR | 5 s | `0.70 × ATR14`, clamped 5–30% | [`sma9_atr.md`](sma9_atr.md) |
 
-Stopped duplicates (services disabled, code/DBs/pages kept on disk until
+Stopped duplicate (service disabled, code/DB/page kept on disk until
 explicitly re-enabled):
 
 | Scanner | Logic in one line | Doc |
 |---|---|---|
 | `sma9_trail` | Rule-level duplicate of `sma9`; self-contained entry with a 5-point trail | [`sma9_trail.md`](sma9_trail.md) |
-| `sma9_high_trail` | Rule-level duplicate of `sma9_high`; stricter HIGH entry with a 5-point trail | [`sma9_high_trail.md`](sma9_high_trail.md) |
 
 Retired strategies (stopped, disabled, kept only as archives):
 [`retired.md`](retired.md).
@@ -60,8 +59,8 @@ bought option's average true range, so the stop stays outside normal premium
 noise on cheap contracts. These scanners also use that ATR distance as the
 trail width, with no +5 activation and no breakeven lock.
 
-**Self-contained trail family** — `sma9_trail`, `sma9_high_trail` (stopped
-duplicates). They own both entry and exit; the historical "consume the base
+**Self-contained trail family** — `sma9_trail` (stopped
+duplicate). They own both entry and exit; the historical "consume the base
 scanner's position" design is gone. The `consumed_base_trades` table is a
 legacy artefact.
 

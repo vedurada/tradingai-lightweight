@@ -259,7 +259,6 @@ SCANNER_SPECS = [
     {"key": "sma9_adx", "path": "sma9_adx_scanner/app/sma9_adx_engine.py", "family": "sma_adx", "atr": False, "regime": False},
     {"key": "sma9_high", "path": "sma9_high_scanner/app/sma9_high_engine.py", "family": "high", "atr": False, "regime": False},
     {"key": "sma9_trail", "path": "sma9_trail_scanner/app/sma9_trail_engine.py", "family": "fixed_trail", "atr": False, "regime": False},
-    {"key": "sma9_high_trail", "path": "sma9_high_trail_scanner/app/sma9_high_trail_engine.py", "family": "high_fixed_trail", "atr": False, "regime": False},
     {"key": "sma9_atr", "path": "sma9_atr_scanner/app/sma9_atr_engine.py", "family": "atr", "atr": True, "regime": True},
 ]
 
