@@ -18,12 +18,7 @@ TMP = tempfile.TemporaryDirectory()
 os.environ["SMA9_SHORT_DB_PATH"] = os.path.join(TMP.name, "sma9_short.db")
 
 import live_sma9_short_scanner as scanner_mod  # noqa: E402
-from sma9_short_engine import (  # noqa: E402
-    EOD_EXIT_REASON,
-    STOP_LOSS_PCT,
-    TRAIL_PCT,
-    Position,
-)
+from sma9_short_engine import EOD_EXIT_REASON, Position  # noqa: E402
 
 IST = ZoneInfo("Asia/Kolkata")
 NOW = datetime(2026, 11, 25, 15, 25, 5, tzinfo=IST)
@@ -88,8 +83,7 @@ class TestScannerEodExit(unittest.TestCase):
             entry_candle_end=ts(15, 0), entry_price=160.7, sma9=161.61,
             prev_close=167.6, current_open=166.7, condition_a=False,
             condition_b=False, ltp_at_entry=160.7, lowest_ltp=160.1,
-            initial_stop=round(160.7 * (1.0 + STOP_LOSS_PCT), 2),
-            stop=round(160.1 * (1.0 + TRAIL_PCT), 2),
+            initial_stop=168.7, atr_distance=8.0, stop=168.1,
         )
         scanner_mod.save_open_position(pos)
 

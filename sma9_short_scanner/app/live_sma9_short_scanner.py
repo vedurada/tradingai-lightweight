@@ -7,8 +7,8 @@ Each leg is evaluated and positioned independently:
   CE contract = nearest ATM strike + 200
   PE contract = nearest ATM strike - 200
   SHORT entry when that leg's live LTP < its SMA9 (9 completed 5m closes)
-  Initial stop = entry * 1.05
-  Trailing stop = lowest LTP since entry * 1.05, ratcheted down only
+  Initial stop = entry + (0.70 x ATR(14)), fixed at entry
+  Trailing stop = lowest LTP since entry + frozen ATR distance, ratcheted down only
   Any open short is closed flat at 15:20 IST (EOD_15_20_FLAT)
   Both CE and PE may be open at the same time.
 
@@ -33,17 +33,17 @@ if CODE_ROOT not in sys.path:
     sys.path.insert(0, CODE_ROOT)
 
 from app.sma9_short_engine import (  # noqa: E402
+    ATR_MULTIPLIER,
+    ATR_PERIOD,
     CANDLE_MINUTES,
     EOD_EXIT_REASON,
     EOD_EXIT_TIME,
     SMA_PERIOD,
-    STOP_LOSS_PCT,
     STOP_LOSS_REASON,
     STRATEGY_ID,
     STRATEGY_TYPE,
     STRATEGY_VERSION,
     STRIKE_OFFSETS,
-    TRAIL_PCT,
     Evaluation,
     OptionStateMachine,
     Position,
@@ -165,7 +165,7 @@ TRADE_COLUMNS = (
     "exit_price, exit_reason, pnl_points, status, sma9_value, candle_open, "
     "candle_high, candle_low, candle_close, created_at, updated_at, dataset, "
     "prev_close, condition_a, condition_b, ltp_at_entry, lowest_ltp, "
-    "initial_stop, final_stop, entry_candle_start, entry_candle_end"
+    "initial_stop, atr_distance, final_stop, entry_candle_start, entry_candle_end"
 )
 
 
@@ -195,7 +195,7 @@ def init_db() -> None:
             entry_price REAL NOT NULL,
             exit_timestamp TEXT NOT NULL,
             exit_price REAL NOT NULL,
-            exit_reason TEXT NOT NULL DEFAULT 'STOP_LOSS_5PCT',
+            exit_reason TEXT NOT NULL DEFAULT 'STOP_LOSS_ATR',
             pnl_points REAL NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'CLOSED',
             sma9_value REAL,
@@ -212,6 +212,7 @@ def init_db() -> None:
             ltp_at_entry REAL,
             lowest_ltp REAL,
             initial_stop REAL,
+            atr_distance REAL,
             final_stop REAL,
             entry_candle_start TEXT,
             entry_candle_end TEXT
@@ -242,6 +243,7 @@ def init_db() -> None:
             ltp_at_entry REAL,
             lowest_ltp REAL NOT NULL,
             initial_stop REAL NOT NULL,
+            atr_distance REAL,
             stop REAL NOT NULL,
             updated_at TEXT NOT NULL
         );
@@ -253,6 +255,10 @@ def init_db() -> None:
         );
         """
     )
+    for table in ("sma9_short_trades", "sma9_short_open_positions"):
+        columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
+        if "atr_distance" not in columns:
+            conn.execute(f"ALTER TABLE {table} ADD COLUMN atr_distance REAL")
     conn.commit()
     conn.close()
 
@@ -284,16 +290,17 @@ def save_open_position(pos: Position) -> None:
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, prev_close, current_open, condition_a,
-                condition_b, ltp_at_entry, lowest_ltp, initial_stop, stop,
-                updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                condition_b, ltp_at_entry, lowest_ltp, initial_stop,
+                atr_distance, stop, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
                 pos.entry_candle_start.isoformat(), pos.entry_candle_end.isoformat(),
                 pos.entry_price, pos.sma9, pos.prev_close, pos.current_open,
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
-                pos.ltp_at_entry, pos.lowest_ltp, pos.initial_stop, pos.stop,
+                pos.ltp_at_entry, pos.lowest_ltp, pos.initial_stop,
+                pos.atr_distance, pos.stop,
                 now_ist().isoformat(),
             ),
         )
@@ -312,9 +319,10 @@ def load_open_positions() -> dict:
     for r in rows:
         d = dict(r)
         entry_price = float(d["entry_price"])
-        initial_stop = float(
-            d.get("initial_stop") or round(entry_price * (1.0 + STOP_LOSS_PCT), 2)
-        )
+        initial_stop = float(d.get("initial_stop") or entry_price)
+        atr_distance = d.get("atr_distance")
+        if atr_distance is None:
+            atr_distance = round(initial_stop - entry_price, 2)
         result[d["option_type"]] = Position(
             option_type=d["option_type"],
             trade_id=d["trade_id"],
@@ -335,6 +343,7 @@ def load_open_positions() -> dict:
             lowest_ltp=float(d.get("lowest_ltp") or entry_price),
             initial_stop=initial_stop,
             stop=float(d.get("stop") or initial_stop),
+            atr_distance=float(atr_distance),
         )
     return result
 
@@ -756,6 +765,8 @@ class Sma9ShortLiveScanner:
                 "ltp_source": "broker_quote" if ltp is not None else "unavailable",
                 "quote_unavailable": ltp is None,
                 "sma9": round(ev.sma9, 2) if ev.sma9 is not None else None,
+                "atr": round(ev.atr, 4) if ev.atr is not None else None,
+                "atr_distance": ev.atr_distance,
                 "prev_close": ev.prev_close,
                 "current_open": ev.current_open,
                 "condition_a": ev.condition_a,
@@ -838,6 +849,8 @@ class Sma9ShortLiveScanner:
                 "ltp_source": "unavailable",
                 "quote_unavailable": True,
                 "sma9": None,
+                "atr": None,
+                "atr_distance": None,
                 "prev_close": None,
                 "current_open": None,
                 "condition_a": False,
@@ -884,8 +897,9 @@ class Sma9ShortLiveScanner:
             "atm_strike": self.atm_strike,
             "strike_offsets": {k: float(v) for k, v in STRIKE_OFFSETS.items()},
             "sma_period": SMA_PERIOD,
-            "stop_loss_pct": STOP_LOSS_PCT,
-            "trail_pct": TRAIL_PCT,
+            "atr_period": ATR_PERIOD,
+            "atr_multiplier": ATR_MULTIPLIER,
+            "stop_reason": STOP_LOSS_REASON,
             "eod_exit_time": eod_exit_time(now).strftime("%H:%M"),
             "eod_exit_reason": EOD_EXIT_REASON,
             "last_closed_spot": self.last_closed_spot,

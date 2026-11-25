@@ -11,12 +11,15 @@ Per-option rules (CE and PE are independent):
     the mean of the last 9 completed 5-minute premium closes. The forming bar
     is never used to calculate SMA9.
   Exit:
-    Initial stop = round(entry * 1.05, 2).
+    ATR-only risk: ATR(14) of completed 5-minute option-premium candles.
+    Distance = 0.70 x ATR, fixed at entry; no percentage floor, cap or fallback.
+    Initial SHORT stop = round(entry + distance, 2).
     Track the lowest LTP seen since entry. Ratchet the stop down to
-    round(lowest_ltp * 1.05, 2), never upward and never above the previous
+    round(lowest_ltp + distance, 2), never upward and never above the previous
     stop. A stop breach closes the short at the stop level.
     Any position still open at 15:20 IST is closed flat at the sampled LTP
     (or the 15:20 candle open on a late scan), reason EOD_15_20_FLAT.
+    Entries are skipped when ATR(14) is unavailable.
   P&L:
     entry_price - exit_price (in premium points).
 
@@ -33,11 +36,11 @@ from typing import Dict, List, Optional, Sequence
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
 STRATEGY_ID = "sma9_short"
-STRATEGY_VERSION = "1.2.0"
+STRATEGY_VERSION = "2.0.0"
 STRATEGY_TYPE = "SMA9_SHORT_ONLY"
-STOP_LOSS_PCT = 0.05
-TRAIL_PCT = 0.05
-STOP_LOSS_REASON = "STOP_LOSS_5PCT"
+ATR_PERIOD = 14
+ATR_MULTIPLIER = 0.70
+STOP_LOSS_REASON = "STOP_LOSS_ATR"
 EOD_EXIT_TIME = dtime(15, 20)
 EOD_EXIT_REASON = "EOD_15_20_FLAT"
 STRIKE_OFFSETS = {"CE": 200.0, "PE": -200.0}
@@ -71,6 +74,24 @@ def candle_end(start: datetime) -> datetime:
     return start + timedelta(minutes=CANDLE_MINUTES)
 
 
+def premium_atr(candles: Sequence[dict],
+                period: int = ATR_PERIOD) -> Optional[float]:
+    """Mean true range over completed candles; the forming bar is excluded."""
+    rows = normalize_candles(candles)
+    completed = rows[:-1]
+    if len(completed) < period + 1:
+        return None
+    window = completed[-(period + 1):]
+    trs: List[float] = []
+    for prev, cur in zip(window[:-1], window[1:]):
+        trs.append(max(
+            cur["high"] - cur["low"],
+            abs(cur["high"] - prev["close"]),
+            abs(cur["low"] - prev["close"]),
+        ))
+    return sum(trs) / len(trs) if trs else None
+
+
 def eod_bar_open(candles: Sequence[dict], eod_start: datetime) -> Optional[float]:
     """Return the opening premium of the first candle at/after the EOD cutoff.
 
@@ -97,6 +118,8 @@ class Evaluation:
     candle_start: Optional[datetime] = None
     candle_end: Optional[datetime] = None
     sma9: Optional[float] = None
+    atr: Optional[float] = None
+    atr_distance: Optional[float] = None
     current_open: Optional[float] = None
     prev_close: Optional[float] = None
     ltp: Optional[float] = None
@@ -114,6 +137,8 @@ class Evaluation:
             "candle_start": self.candle_start.isoformat() if self.candle_start else None,
             "candle_end": self.candle_end.isoformat() if self.candle_end else None,
             "sma9": round(self.sma9, 2) if self.sma9 is not None else None,
+            "atr": round(self.atr, 4) if self.atr is not None else None,
+            "atr_distance": self.atr_distance,
             "current_open": self.current_open,
             "prev_close": self.prev_close,
             "ltp": self.ltp,
@@ -173,12 +198,22 @@ def evaluate_option(candles: Sequence[dict], option_type: str,
     ev.signal = bool(ev.confirmation)
     ev.qualified = bool(ev.signal)
 
+    atr = premium_atr(rows)
+    if atr is not None and atr > 0:
+        ev.atr = round(atr, 4)
+        ev.atr_distance = round(ATR_MULTIPLIER * atr, 2)
+
     if ltp is None:
         ev.reason = "no LTP: SHORT signal unavailable"
     elif ev.signal:
         ev.reason = f"SHORT signal: LTP {ltp:.2f} < SMA9 {sma:.2f}"
     else:
         ev.reason = f"no SHORT signal: LTP {ltp:.2f} >= SMA9 {sma:.2f}"
+
+    if ev.signal and (ev.atr_distance is None or ev.atr_distance <= 0):
+        ev.signal = False
+        ev.qualified = False
+        ev.reason = "no ATR(14): SHORT entry skipped until ATR is available"
 
     return ev
 
@@ -204,6 +239,7 @@ class Position:
     lowest_ltp: float
     initial_stop: float
     stop: float
+    atr_distance: Optional[float] = None
 
     def as_dict(self) -> dict:
         d = self.__dict__.copy()
@@ -221,13 +257,17 @@ class Position:
         return cls(**data)
 
     def update_trail(self, ltp: Optional[float]) -> None:
-        """Ratchet the stop down from the lowest LTP seen since entry."""
+        """Ratchet the stop down by the ATR distance frozen at entry."""
         if ltp is None:
             return
         price = float(ltp)
         if self.lowest_ltp is None or price < self.lowest_ltp:
             self.lowest_ltp = price
-        candidate = round(float(self.lowest_ltp) * (1.0 + TRAIL_PCT), 2)
+        distance = self.atr_distance
+        if distance is None:
+            # Back-compat for rows written before ATR distance was persisted.
+            distance = round(self.initial_stop - self.entry_price, 2)
+        candidate = round(float(self.lowest_ltp) + distance, 2)
         # Never loosen: initial stop is the ceiling and each new low can only
         # pull the stop lower.
         if candidate < self.stop:
@@ -257,13 +297,16 @@ class OptionStateMachine:
             return None
         if not ev.signal or ev.ltp is None or ev.candle_start is None:
             return None
+        if ev.atr_distance is None or ev.atr_distance <= 0:
+            return None
         if ev.candle_start in self.entered_candles:
             return None
         if candle_end(ev.candle_start) > market_close:
             return None
 
         entry = round(float(ev.ltp), 2)
-        initial_stop = round(entry * (1.0 + STOP_LOSS_PCT), 2)
+        distance = round(float(ev.atr_distance), 2)
+        initial_stop = round(entry + distance, 2)
         pos = Position(
             option_type=self.option_type,
             trade_id=make_trade_id("NIFTY", strike, self.option_type,
@@ -285,6 +328,7 @@ class OptionStateMachine:
             lowest_ltp=entry,
             initial_stop=initial_stop,
             stop=initial_stop,
+            atr_distance=distance,
         )
         self.position = pos
         self.entered_candles.add(ev.candle_start)
@@ -343,6 +387,7 @@ class OptionStateMachine:
             "ltp_at_entry": pos.ltp_at_entry,
             "lowest_ltp": pos.lowest_ltp,
             "initial_stop": pos.initial_stop,
+            "atr_distance": pos.atr_distance,
             "final_stop": pos.stop,
             "entry_candle_start": pos.entry_candle_start.isoformat(),
             "entry_candle_end": pos.entry_candle_end.isoformat(),

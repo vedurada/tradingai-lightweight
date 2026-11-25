@@ -18,13 +18,16 @@ live-only snapshot is unchanged.
 - Entry: paper SHORT at the sampled live premium LTP when that leg's
   `LTP < SMA9`, where SMA9 is the mean of the last 9 completed 5-minute premium
   closes. The forming candle is never included in SMA9.
+- ATR-only risk: `ATR(14)` of completed 5-minute premium candles, with
+  `distance = 0.70 × ATR` fixed at entry. There is no percentage floor, cap or
+  fallback; entries are skipped when ATR(14) is unavailable.
 - One open position per leg. CE and PE may both be short at the same time.
-- Initial stop: `round(entry * 1.05, 2)`.
+- Initial stop: `round(entry + distance, 2)`.
 - Trailing stop: track the lowest LTP since entry and ratchet the stop down to
-  `round(lowest_ltp * 1.05, 2)`, never upward and never above the previous stop.
+  `round(lowest_ltp + distance, 2)`, never upward and never above the previous stop.
 - A stop breach closes the short at the stop level:
   - `TRAIL_STOP_EXIT` after the stop has ratcheted
-  - `STOP_LOSS_5PCT` otherwise
+  - `STOP_LOSS_ATR` otherwise
 - Any position still open at 15:20 IST is flattened at the sampled LTP, with
   reason `EOD_15_20_FLAT`. A late scan after a restart uses the 15:20 candle
   open when the exact quote was missed.

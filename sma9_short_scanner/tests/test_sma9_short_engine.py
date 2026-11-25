@@ -14,13 +14,14 @@ for candidate in (os.path.join(ROOT, "app"), os.path.join(ROOT, "deploy", "app")
         break
 
 from sma9_short_engine import (  # noqa: E402
+    ATR_MULTIPLIER,
+    ATR_PERIOD,
     EOD_EXIT_TIME,
-    STOP_LOSS_PCT,
     STOP_LOSS_REASON,
-    TRAIL_PCT,
     OptionStateMachine,
     eod_bar_open,
     evaluate_option,
+    premium_atr,
 )
 
 IST = ZoneInfo("Asia/Kolkata")
@@ -31,8 +32,8 @@ def ts(h, m, s=0, day=25):
 
 
 def candles(closes, open_price):
-    """Nine completed closes then one forming bar."""
-    assert len(closes) == 9
+    """Completed 5m bars followed by one forming bar."""
+    assert len(closes) >= 9
     start = ts(10, 0)
     rows = []
     prev = closes[0]
@@ -43,7 +44,7 @@ def candles(closes, open_price):
             "low": min(prev, close) - 1, "close": close, "volume": 1000,
         })
         prev = close
-    forming = start + timedelta(minutes=45)
+    forming = start + timedelta(minutes=5 * len(closes))
     rows.append({
         "start": forming, "open": open_price, "high": open_price + 1,
         "low": open_price - 1, "close": open_price, "volume": 500,
@@ -53,7 +54,7 @@ def candles(closes, open_price):
 
 class TestSma9ShortEngine(unittest.TestCase):
     def setUp(self):
-        self.rows = candles([100] * 9, 100)
+        self.rows = candles([100] * 15, 100)
         self.sma = 100.0
         self.market_close = ts(15, 30)
         self.now = ts(10, 45, 5)
@@ -78,29 +79,51 @@ class TestSma9ShortEngine(unittest.TestCase):
         self.assertIsNotNone(ce_pos)
         self.assertIsNone(pe_pos)
         self.assertEqual(ce_pos.entry_price, 98.0)
-        self.assertEqual(ce_pos.initial_stop, 102.9)
+        self.assertEqual(ce_pos.atr_distance, 1.4)
+        self.assertEqual(ce_pos.initial_stop, 99.4)
 
-    def test_trailing_stop_ratchets_down_only(self):
+    def test_atr_distance_has_no_percentage_floor_or_cap(self):
+        self.assertEqual(ATR_PERIOD, 14)
+        self.assertEqual(ATR_MULTIPLIER, 0.70)
+        self.assertEqual(STOP_LOSS_REASON, "STOP_LOSS_ATR")
+        self.assertEqual(premium_atr(self.rows), 2.0)
+        ev = evaluate_option(self.rows, "CE", ltp=98)
+        self.assertEqual(ev.atr, 2.0)
+        self.assertEqual(ev.atr_distance, 1.4)
+
+    def test_no_atr_blocks_entry(self):
+        short_history = candles([100] * 9, 100)
+        self.assertIsNone(premium_atr(short_history))
+        ev = evaluate_option(short_history, "CE", ltp=98)
+        self.assertFalse(ev.signal)
+        self.assertIsNone(ev.atr_distance)
+        self.assertIn("ATR", ev.reason)
+        state = OptionStateMachine("CE")
+        pos = state.try_entry(ev, self.now, 25550, "2026-12-22", 1,
+                              "NIFTY26D2225550CE", self.market_close)
+        self.assertIsNone(pos)
+
+    def test_trailing_stop_uses_frozen_atr_distance(self):
         state = OptionStateMachine("PE")
         ev = evaluate_option(self.rows, "PE", ltp=99)
         pos = state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
                               "NIFTY26D2225150PE", self.market_close)
-        self.assertEqual(pos.stop, 103.95)
+        self.assertEqual(pos.stop, 100.4)
 
         state.update_trail(90)
         self.assertEqual(pos.lowest_ltp, 90)
-        self.assertEqual(pos.stop, 94.5)
+        self.assertEqual(pos.stop, 91.4)
 
         state.update_trail(95)   # higher low: stop must not loosen
-        self.assertEqual(pos.stop, 94.5)
+        self.assertEqual(pos.stop, 91.4)
 
         state.update_trail(80)
         self.assertEqual(pos.lowest_ltp, 80)
-        self.assertEqual(pos.stop, 84.0)
+        self.assertEqual(pos.stop, 81.4)
 
         self.assertTrue(pos.trailing_active())
-        self.assertEqual(state.check_stop_loss(84.5), 84.0)
-        self.assertIsNone(state.check_stop_loss(83.5))
+        self.assertEqual(state.check_stop_loss(81.5), 81.4)
+        self.assertIsNone(state.check_stop_loss(81.3))
 
     def test_short_pnl_sign(self):
         state = OptionStateMachine("CE")
@@ -111,11 +134,6 @@ class TestSma9ShortEngine(unittest.TestCase):
         self.assertEqual(trade["pnl_points"], 9.0)
         trade = state.close(ts(11, 0), 110, STOP_LOSS_REASON)
         self.assertIsNone(trade)  # position already closed
-
-    def test_5pct_stop_constants(self):
-        self.assertEqual(STOP_LOSS_PCT, 0.05)
-        self.assertEqual(TRAIL_PCT, 0.05)
-        self.assertEqual(STOP_LOSS_REASON, "STOP_LOSS_5PCT")
 
     def test_one_entry_per_candle(self):
         state = OptionStateMachine("CE")
