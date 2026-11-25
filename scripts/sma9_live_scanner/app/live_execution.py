@@ -7,10 +7,11 @@ default:
 * ``SMA9_LIVE_EXECUTOR`` defaults to ``dry_run``.
 * ``MStockOrderExecutor`` uses the verified mStock Type A order contract via
   the root-owned gateway, and only when both arm flags are set.
-* A kill switch, optional daily order cap, one-position-per-leg rule and a
-  pre-trade BUY price-collar check are enforced before any executor is called.
-* Real orders are MARKET orders; the collar is a sanity check on the sampled
-  LTP, not a broker-side limit price.
+* A kill switch, optional daily order cap and one-position-per-leg rule are
+  enforced before any executor is called. The BUY price collar is disabled by
+  default; operators may set it to 0 to leave no price gate at all.
+* Real orders are MARKET orders; any optional collar value is only an audit
+  reference on sampled LTP, never a broker-side limit price.
 * Client order IDs are deterministic per attempt; bounded retries use a new
   ``rN`` tag and an explicit ``retry_of`` pointer, never a blind resubmission.
 * Broker fill prices are recorded in a separate shadow log so signal-vs-fill
@@ -96,7 +97,8 @@ class RiskLimits:
     # 0 means resolve the quantity from the mStock instrument master per
     # contract; no hard-coded lot size in the scanner.
     lot_size: int = 0
-    collar_pct: float = 1.0
+    # 0 disables the pre-trade price collar; the operator removed this guard.
+    collar_pct: float = 0.0
     kill_file: str = "/opt/tradingai/run/sma9_live.KILL"
 
     @classmethod
@@ -105,7 +107,7 @@ class RiskLimits:
         limits = cls(
             max_orders_per_day=int(env.get("SMA9_LIVE_MAX_ORDERS_PER_DAY", "4")),
             lot_size=int(env.get("SMA9_LIVE_LOT_SIZE", "0")),
-            collar_pct=float(env.get("SMA9_LIVE_PRICE_COLLAR_PCT", "1.0")),
+            collar_pct=float(env.get("SMA9_LIVE_PRICE_COLLAR_PCT", "0")),
             kill_file=env.get("SMA9_LIVE_KILL_FILE", cls.kill_file),
         )
         limits.validate()
@@ -116,8 +118,8 @@ class RiskLimits:
             raise ValueError("SMA9_LIVE_MAX_ORDERS_PER_DAY must be >= 0 (0=unlimited)")
         if self.lot_size < 0:
             raise ValueError("SMA9_LIVE_LOT_SIZE must be >= 0 (0=fetch from mStock)")
-        if not (0 < self.collar_pct <= 5):
-            raise ValueError("SMA9_LIVE_PRICE_COLLAR_PCT must be in (0, 5]")
+        if not (0 <= self.collar_pct <= 5):
+            raise ValueError("SMA9_LIVE_PRICE_COLLAR_PCT must be in [0, 5]")
         if not self.kill_file:
             raise ValueError("SMA9_LIVE_KILL_FILE must not be empty")
 
@@ -210,6 +212,8 @@ def price_collar_breached(
     no breach so the service can still trade; exits bypass this check so a real
     position can always be closed.
     """
+    if collar_pct <= 0:
+        return False
     if not reference or reference <= 0 or price <= 0:
         return False
     move_pct = round(abs(float(price) / float(reference) - 1.0) * 100.0, 6)

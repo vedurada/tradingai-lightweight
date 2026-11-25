@@ -29,18 +29,21 @@ parts:
 
 - **Broker:** mStock **Type A** only. No Zerodha/Kite auth, token exchange, or
   OTP/TOTP handling lives in the scanner.
-- **Order type:** `MARKET` for both entry and exit. The price collar is a
-  client-side sanity check on sampled LTP, not a broker limit price.
+- **Order type:** `MARKET` for both entry and exit. There is no price collar;
+  `SMA9_LIVE_PRICE_COLLAR_PCT=0` disables the client-side LTP gate entirely.
 - **Lot size:** resolved per contract from mStock's instrument master; there is
   no static lot-size assumption in the armed unit.
 - **Daily cap:** disabled (`SMA9_LIVE_MAX_ORDERS_PER_DAY=0` means unlimited).
-- **BUY collar:** entries are rejected when sampled LTP is more than
-  `SMA9_LIVE_PRICE_COLLAR_PCT=1.0`% away from the expected price.
+- **BUY collar:** removed; `SMA9_LIVE_PRICE_COLLAR_PCT=0` in both units, so no
+  sampled-LTP price gate rejects an entry.
+- **Exits:** only the 5% initial stop loss (`STOP_LOSS_5PCT`) and the trailing
+  stop (`TRAIL_STOP_EXIT`). No candle-close, target, time-based or
+  restart-recovery exit exists.
 - **Kill switch:** `SMA9_LIVE_KILLED=1` or the operator-created kill file
   `/opt/tradingai/run/sma9_live.KILL` stops trading. The service cannot remove
   the file itself.
-- **Position control:** at most one open position per leg; recovery on restart
-  closes stale positions at their completed entry candle close.
+- **Position control:** at most one open position per leg; a restart restores
+  the saved high-water mark/stop and leaves exits to the two stop conditions.
 - **Arming:** `SMA9_LIVE_EXECUTOR=mstock`, `SMA9_LIVE_ORDERS_ENABLED=true`,
   and `SMA9_LIVE_ARM_REAL_ORDERS=ARMED` must all be set. The default unit is
   dry-run and disarmed.

@@ -44,6 +44,9 @@ from app.sma9_live_engine import (  # noqa: E402
     STRATEGY_TYPE,
     STRATEGY_VERSION,
     Evaluation,
+    EXIT_REASONS,
+    EXIT_STOP_LOSS,
+    EXIT_TRAIL,
     OptionStateMachine,
     Position,
     candle_end,
@@ -301,7 +304,7 @@ def init_db() -> None:
             entry_price REAL NOT NULL,
             exit_timestamp TEXT NOT NULL,
             exit_price REAL NOT NULL,
-            exit_reason TEXT NOT NULL DEFAULT 'SAME_CANDLE_EXIT',
+            exit_reason TEXT NOT NULL DEFAULT 'STOP_LOSS_5PCT',
             pnl_points REAL NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'CLOSED',
             sma9_value REAL,
@@ -1074,28 +1077,6 @@ class KiteFeed:
                 return rows
         return self._fetch_candles(token)
 
-    def candle_at(self, token: int, candle_start: datetime, retries: int = 6):
-        """Return the completed candle whose start matches candle_start.
-
-        At a 5-minute boundary the exchange may take a few seconds to publish
-        the just-completed candle, so retry briefly.  We only ever return the
-        exact entry candle; a later candle is never substituted.
-        """
-        if token is None:
-            return None
-        target = candle_start.astimezone(IST)
-        for attempt in range(retries):
-            try:
-                rows = self._fetch_candles(token)
-            except Exception:
-                rows = []
-            for r in rows:
-                if r["start"] == target:
-                    return r
-            if attempt < retries - 1:
-                time.sleep(1.0)
-        return None
-
 
 # ---------------------------------------------------------------------------
 # Scanner
@@ -1168,7 +1149,9 @@ class Sma9LiveScanner:
                 return
             state.restore(stored)
         symbol = pos.tradingsymbol
-        trade = state.close(now_ist(), price, reason or "EXIT_CONFIRMED")
+        # A SELL may only exist for one of the two allowed stop exits. Fail
+        # loudly instead of recording an unapproved exit reason.
+        trade = state.close(now_ist(), price, reason)
         if trade is not None:
             save_trade(trade)
             logger.info(
@@ -1672,7 +1655,15 @@ class Sma9LiveScanner:
 
     def _request_exit(self, state, pos: Position, price: float,
                       reason: str):
-        """Submit one SELL and keep the position until the fill is confirmed."""
+        """Submit one SELL and keep the position until the fill is confirmed.
+
+        Only the 5% initial stop loss and the trailing stop may create an exit.
+        Any other reason is refused before an order is recorded or sent.
+        """
+        if reason not in EXIT_REASONS:
+            logger.error("EXIT BLOCKED: unsupported reason %s for %s",
+                         reason, pos.trade_id)
+            return None
         if pos.lifecycle_state != LIFECYCLE_ACTIVE:
             return None
         if order_exists(make_client_order_id(pos.trade_id, SELL)):
@@ -1886,7 +1877,6 @@ class Sma9LiveScanner:
         positions = load_open_positions()
         if not positions:
             return
-        now = now_ist()
         for opt, pos in positions.items():
             logger.info(
                 "Recovered open %s position %s entry=%.2f candle=%s state=%s",
@@ -1894,6 +1884,9 @@ class Sma9LiveScanner:
                 pos.entry_candle_start.isoformat(), pos.lifecycle_state)
             state = self.states[opt]
             state.restore(pos)
+            # Recovery never creates an exit. Only the live 5% stop-loss and
+            # trailing-stop checks in scan() may request a SELL; a restored
+            # position simply resumes those checks with its saved hwm/stop.
             if pos.lifecycle_state != LIFECYCLE_ACTIVE:
                 # A pending/unconfirmed exit or entry must never be closed a
                 # second time by recovery. Broker reconciliation owns it.
@@ -1901,20 +1894,6 @@ class Sma9LiveScanner:
                     "Recovered %s position %s is %s; awaiting broker "
                     "reconciliation, no recovery SELL", opt, pos.trade_id,
                     pos.lifecycle_state)
-                continue
-            if now >= pos.entry_candle_end:
-                token = pos.token
-                if token is None:
-                    try:
-                        exp = date.fromisoformat(str(pos.expiry))
-                        contract = self.feed.find_contract(pos.strike, exp, opt)
-                        token = contract["instrument_token"] if contract else None
-                    except Exception:
-                        token = None
-                candle = self.feed.candle_at(token, pos.entry_candle_start)
-                close_px = candle["close"] if candle else pos.entry_price
-                reason = "SAME_CANDLE_EXIT" if candle else "SAME_CANDLE_EXIT_LTP_FALLBACK"
-                self._request_exit(state, pos, close_px, reason)
 
     # -- contract selection ---------------------------------------------
     # -- minimum premium gate --------------------------------------------
@@ -2150,8 +2129,10 @@ class Sma9LiveScanner:
                 expiry_str = str(expiry)
 
             try:
-                force_candles = state.needs_exit(now)
-                candles = self.feed.candles(token, force=force_candles)
+                # Candles are only needed for entry signals. A live position is
+                # exited from the quote LTP via the stop-loss/trailing checks,
+                # so no forced historical fetch is required for open legs.
+                candles = self.feed.candles(token)
             except Exception as exc:
                 errors.append(f"{opt} candle error: {exc}")
                 logger.error(errors[-1])
@@ -2186,7 +2167,7 @@ class Sma9LiveScanner:
                 if stop_hit is not None:
                     exit_px = round(float(ltp), 2)
                     self._request_exit(state, state.position, exit_px,
-                                       "TRAIL_STOP_EXIT")
+                                       EXIT_TRAIL)
                     logger.info(
                         "TRAIL EXIT requested %s %s strike=%.2f entry=%.2f "
                         "exit=%.2f (stop=%.2f)",
@@ -2194,7 +2175,7 @@ class Sma9LiveScanner:
                         exit_px, pos.stop)
                 elif sl_hit is not None:
                     self._request_exit(state, state.position, sl_hit,
-                                       "STOP_LOSS_5PCT")
+                                       EXIT_STOP_LOSS)
                     logger.info(
                         "STOP EXIT requested %s %s strike=%s entry=%.2f "
                         "exit=%.2f reason=STOP_LOSS_5PCT",

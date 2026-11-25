@@ -13,15 +13,14 @@ BUY-ONLY rules (identical for CE and PE):
   Entry: BUY signal at the live LTP as soon as A and B are true
          (the live runner turns this into a risk-checked order)
 
-Exit (identical for CE and PE):
+Exit (identical for CE and PE) — the ONLY two exit conditions:
   1) TRAIL: once HWM - entry >= 5.0 pts, stop ratchets to HWM - 5.0 pts;
      a one-time +2.0 lock is applied after HWM - entry >= 6.0 pts.
      Only a strictly profitable stop (stop > entry) can exit.
   2) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level.
-  There is no candle-close, target or time-based exit during normal polling;
-  an open position is carried until one of these stops fires. A service restart
-  is the exception: a recovered position older than its entry candle is closed
-  at that completed candle's close.
+  There is no candle-close, target, time-based or restart-recovery exit. An
+  open position is carried until one of these two stops fires, including
+  across service restarts.
 
 Only completed 5-minute candles are used for the signal, so no future data
 can leak into a decision.  No broker / database / network dependencies.
@@ -44,6 +43,9 @@ TRAIL = 5.0
 ACTIVATE = 5.0
 BE_LOCK_PROFIT = 6.0
 BE_LOCK_STOP = 2.0
+EXIT_STOP_LOSS = "STOP_LOSS_5PCT"
+EXIT_TRAIL = "TRAIL_STOP_EXIT"
+EXIT_REASONS = frozenset({EXIT_STOP_LOSS, EXIT_TRAIL})
 
 
 def _as_dt(value) -> datetime:
@@ -253,8 +255,7 @@ class OptionStateMachine:
       * at most one open position for this option
       * at most one entry per 5-minute candle (duplicate-poll guard)
       * no entry whose candle would end after market close
-      * stop loss at entry - 2 points, checked on every poll
-      * exit at the entry candle's close otherwise
+      * exits only on the 5% initial stop loss or the trailing stop
     """
 
     def __init__(self, option_type: str):
@@ -319,16 +320,15 @@ class OptionStateMachine:
             return sl_price
         return None
 
-    def needs_exit(self, now: datetime) -> bool:
-        return self.position is not None and now >= self.position.entry_candle_end
-
     def close(self, exit_timestamp: datetime, exit_price: float,
-              exit_reason: str = "SAME_CANDLE_EXIT",
+              exit_reason: str,
               candle_high: Optional[float] = None,
               candle_low: Optional[float] = None) -> Optional[dict]:
         pos = self.position
         if pos is None:
             return None
+        if exit_reason not in EXIT_REASONS:
+            raise ValueError(f"unsupported exit reason: {exit_reason!r}")
         entry = pos.entry_price
         exit_px = round(float(exit_price), 2)
         pnl = round(exit_px - entry, 2)  # BUY-only: always long

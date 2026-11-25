@@ -19,7 +19,7 @@ Environment=SMA9_LIVE_KILLED=0
 Environment=SMA9_LIVE_KILL_FILE=/opt/tradingai/run/sma9_live.KILL
 Environment=SMA9_LIVE_MAX_ORDERS_PER_DAY=0
 # Lot size is resolved per contract from mStock's instrument master.
-Environment=SMA9_LIVE_PRICE_COLLAR_PCT=1.0
+Environment=SMA9_LIVE_PRICE_COLLAR_PCT=0
 # Read-only broker order-status polling for entry/exit fill confirmation.
 Environment=SMA9_LIVE_RECONCILE_ENABLED=true
 Environment=SMA9_LIVE_RECONCILE_MAX_ATTEMPTS=120

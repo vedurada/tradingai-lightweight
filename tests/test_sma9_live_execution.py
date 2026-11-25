@@ -29,7 +29,7 @@ def test_defaults_are_dry_run_and_disarmed(execution):
     limits = execution.RiskLimits.from_env({})
     assert limits.max_orders_per_day == 4  # scaffold default; VM sets 0
     assert limits.lot_size == 0  # resolve from mStock instrument master
-    assert limits.collar_pct == 1.0
+    assert limits.collar_pct == 0.0  # price collar removed by operator
     assert execution.build_executor({}).name == "dry_run"
     assert execution.real_orders_armed({}) is False
     # The real executor is wired, but it fails closed until both flags are set.
@@ -59,7 +59,7 @@ def test_real_orders_require_both_flags(execution, env, expected):
     [
         {"max_orders_per_day": -1},
         {"lot_size": -1},
-        {"collar_pct": 0},
+        {"collar_pct": -1},
         {"collar_pct": 6},
         {"kill_file": ""},
     ],
@@ -85,6 +85,14 @@ def test_price_collar_direction(execution):
     assert execution.price_collar_breached(101.0, 100.0, 1.0) is False
     assert execution.price_collar_breached(101.1, 100.0, 1.0) is True
     assert execution.price_collar_breached(102.0, None, 1.0) is False
+
+
+def test_price_collar_can_be_disabled(execution):
+    assert execution.RiskLimits.from_env(
+        {"SMA9_LIVE_PRICE_COLLAR_PCT": "0"}).collar_pct == 0.0
+    assert execution.apply_price_collar(100, "BUY", 0) == 100.0
+    assert execution.price_collar_breached(500.0, 100.0, 0) is False
+    assert execution.RiskLimits(collar_pct=5.0).validate() is None
 
 
 def test_kill_switch_env_and_file(execution, tmp_path):
@@ -243,7 +251,8 @@ def test_order_ledger_is_idempotent_and_uses_broker_lot_size(
     sell = scanner._place_order(pos, "SELL", 95.0, "TRAIL_STOP_EXIT")
     assert sell is not None
     assert sell.side == "SELL"
-    assert sell.limit_price < sell.intended_price
+    # No price collar means the audit reference equals the intended price.
+    assert sell.limit_price == sell.intended_price
     assert mod.orders_today(today) == 2
 
     row = mod.order_status_for("S9L-TESTTRADE", "BUY")
@@ -251,15 +260,18 @@ def test_order_ledger_is_idempotent_and_uses_broker_lot_size(
     assert row["status"] == execution.STATUS_DRY_RUN
 
 
-def test_buy_collar_breach_blocks_market_order(live_runner):
+def test_disabled_collar_does_not_block_large_buy_jump(
+        live_runner, execution, monkeypatch):
     mod = live_runner
+    monkeypatch.setattr(mod, "LIMITS", execution.RiskLimits(collar_pct=0.0))
     scanner = mod.Sma9LiveScanner(feed=FakeMstockFeed())
     scanner._last_ltp["CE"] = 100.0
-    pos = _position(trade_id="S9L-COLLAR")
+    pos = _position(trade_id="S9L-NO-COLLAR")
 
-    assert scanner._place_order(pos, "BUY", 102.0, "SMA9_ENTRY") is None
-    assert scanner.last_order_block == "PRICE_COLLAR_BREACH"
-    assert mod.order_status_for(pos.trade_id, "BUY") is None
+    order = scanner._place_order(pos, "BUY", 500.0, "SMA9_ENTRY")
+    assert order is not None
+    assert scanner.last_order_block is None
+    assert mod.order_status_for(pos.trade_id, "BUY") is not None
 
 
 def test_pre_submit_block_does_not_leave_phantom_position(live_runner, monkeypatch):
@@ -295,6 +307,44 @@ def test_ambiguous_submit_still_keeps_unconfirmed_position(live_runner, monkeypa
     assert saved is not None
     assert saved.lifecycle_state == mod.LIFECYCLE_ENTRY_UNCONFIRMED
     assert scanner.last_order_block == "ENTRY_UNCONFIRMED"
+
+
+def test_recovery_never_creates_an_exit(live_runner, monkeypatch):
+    mod = live_runner
+    scanner = mod.Sma9LiveScanner(feed=None)
+    pos = _full_position(mod, trade_id="S9L-RECOVER-CE")
+    monkeypatch.setattr(mod, "load_open_positions", lambda: {"CE": pos})
+    calls = []
+    monkeypatch.setattr(scanner, "_place_order", lambda *a, **k: calls.append((a, k)))
+
+    scanner.recover_open_positions()
+
+    assert calls == []
+    assert scanner.states["CE"].position.trade_id == pos.trade_id
+    assert mod.order_status_for(pos.trade_id, "SELL") is None
+
+
+def test_only_stop_loss_and_trail_can_request_exit(live_runner, monkeypatch):
+    mod = live_runner
+    scanner = mod.Sma9LiveScanner(feed=None)
+    pos = _full_position(mod, trade_id="S9L-EXIT-GUARD")
+    scanner.states["CE"].restore(pos)
+    calls = []
+    monkeypatch.setattr(scanner, "_place_order", lambda *a, **k: calls.append((a, k)))
+
+    assert scanner._request_exit(
+        scanner.states["CE"], pos, 100.0, "SAME_CANDLE_EXIT") is None
+    assert calls == []
+    assert pos.lifecycle_state == mod.LIFECYCLE_ACTIVE
+    assert mod.order_status_for(pos.trade_id, "SELL") is None
+
+    with pytest.raises(ValueError):
+        scanner.states["CE"].close(mod.now_ist(), 100.0, "SAME_CANDLE_EXIT")
+
+    assert scanner._request_exit(
+        scanner.states["CE"], pos, 100.0, "TRAIL_STOP_EXIT") is None  # no order result
+    assert len(calls) == 1
+    assert calls[0][0][3] == "TRAIL_STOP_EXIT"
 
 
 def test_missing_lot_size_refuses_order(live_runner):
@@ -1017,11 +1067,12 @@ def test_retry_rechecks_kill_switch_without_broker_call(
         "place_status"] == execution.PLACE_RETRY_EXHAUSTED
 
 
-def test_retry_rechecks_collar_before_submit(
+def test_retry_ignores_collar_when_disabled(
         live_runner, execution, monkeypatch):
     mod = live_runner
     trade_id = "S9L-RETRY-COLLAR"
     _retry_settings(mod, execution, monkeypatch)
+    monkeypatch.setattr(mod, "LIMITS", execution.RiskLimits(collar_pct=0.0))
     scanner, client_id = _stage_confirmed_failure(
         mod, execution, monkeypatch, trade_id, execution.BUY,
         mod.LIFECYCLE_PENDING, execution.STATUS_REJECTED)
@@ -1031,14 +1082,14 @@ def test_retry_rechecks_collar_before_submit(
     placer = FakePlaceExecutor()
     monkeypatch.setattr(mod, "EXECUTOR", placer)
 
-    assert scanner.process_retries()["exhausted"] == 1
+    assert scanner.process_retries()["submitted"] == 1
 
-    assert placer.placed == []
+    assert len(placer.placed) == 1
     retry_id = execution.make_client_order_id(trade_id, execution.BUY, "r1")
-    assert not mod.order_exists(retry_id)
+    assert mod.order_exists(retry_id)
     original = _order_row(mod, client_id)
-    assert original["place_status"] == execution.PLACE_RETRY_EXHAUSTED
-    assert original["last_error_code"] == "PRICE_COLLAR_BREACH"
+    assert original["place_status"] == execution.PLACE_RETRY_ATTEMPTED
+    assert original["last_error_code"] != "PRICE_COLLAR_BREACH"
 
 
 def test_retry_rechecks_lot_size_from_instrument_master(

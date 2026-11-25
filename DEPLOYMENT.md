@@ -102,7 +102,7 @@ sudo journalctl -u tradingai-broker-gateway -n 50 --no-pager
 
 Armed settings are fixed in the unit: `SMA9_LIVE_EXECUTOR=mstock`,
 `SMA9_LIVE_ORDERS_ENABLED=true`, `SMA9_LIVE_ARM_REAL_ORDERS=ARMED`,
-`SMA9_LIVE_PRODUCT=MIS`, `SMA9_LIVE_PRICE_COLLAR_PCT=1.0`, no daily cap
+`SMA9_LIVE_PRODUCT=MIS`, `SMA9_LIVE_PRICE_COLLAR_PCT=0`, no daily cap
 (`SMA9_LIVE_MAX_ORDERS_PER_DAY=0`), lot size from mStock master, and bounded
 retries for terminal broker-confirmed no-fill only. Leave
 `SMA9_LIVE_RETRY_AMBIGUOUS` unset/false.
@@ -116,9 +116,10 @@ Two changes make live-order failures diagnosable without changing risk rules:
   broker's reason (for example `Invalid order quantity`) instead of only the
   status code. Credential-shaped values in the body are replaced with
   `[REDACTED]`.
-- A BUY refused before the broker POST — price collar, missing arm flags,
-  unavailable lot size, or invalid order fields — removes its tentative local
-  position. It is also recorded as `ENTRY_BLOCKED_NO_SEND` in
+- A BUY refused before the broker POST — missing arm flags, unavailable lot
+  size, invalid order fields, or a price collar if an operator re-enables one —
+  removes its tentative local position. It is also recorded as
+  `ENTRY_BLOCKED_NO_SEND` in
   `sma9_live_lifecycle_events`. Previously such a signal could leave an
   `ENTRY_UNCONFIRMED` row that blocked both legs with `MAX_TWO_OPEN_LEGS`.
 
@@ -128,6 +129,15 @@ mStock but returned no broker order id, the position stays
 alone is not treated as proof of non-acceptance, and no blind retry is issued.
 To clear an already-stale state, an operator must verify the tag in the mStock
 order book, back up `sma9_live.db`, then explicitly remove the phantom row.
+
+## Exit policy
+
+The live service creates a SELL only for `STOP_LOSS_5PCT` (LTP at or below
+entry minus 5%) or `TRAIL_STOP_EXIT` (the ratcheted trailing stop). `_request_exit`
+rejects any other reason before recording an order, and the engine refuses to
+close a trade with an unsupported reason. There is no candle-close, target,
+time-based or restart-recovery exit; a restored position resumes the two stop
+checks with its persisted high-water mark and stop.
 
 ## Kill switch
 
@@ -152,7 +162,7 @@ sudo systemctl restart tradingai-sma9-live-scanner.armed.service
 - `broker-gateway probe --broker mstock` passes profile, NFO master, and quote.
 - `systemctl is-active tradingai-broker-gateway tradingai-sma9-live-scanner.armed.service`.
 - Log shows `executor=mstock`, `dry_run=False`, `armed=True`, `killed=False`,
-  collar `1.0`, max orders `0`, `retry_enabled=true`,
+  collar `0`, max orders `0`, `retry_enabled=true`,
   `retry_ambiguous=false`.
 - `SMA9_LIVE_DB_PATH` database shows no unexpected open positions.
 
