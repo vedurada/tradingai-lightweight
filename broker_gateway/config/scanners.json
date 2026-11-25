@@ -11,12 +11,16 @@
     "live_sma9_scanner.py": "mstock",
     "live_sma9_trail_scanner.py": "mstock",
     "sma9": "mstock",
+    "sma9_short": "mstock",
+    "live_sma9_short_scanner.py": "mstock",
     "sma9_5min": "mstock",
     "sma9_adx": "mstock",
     "sma9_atr": "mstock",
     "sma9_high": "mstock",
     "sma9_high_trail": "mstock",
     "sma9live": "mstock",
-    "sma9_trail": "mstock"
+    "sma9_trail": "mstock",
+    "live_sma9_5pct_trail_scanner.py": "mstock",
+    "sma9_5pct_trail": "mstock"
   }
 }

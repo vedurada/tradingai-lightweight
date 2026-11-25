@@ -34,3 +34,6 @@ logs/*.log.*
 logs/fb.log
 logs/selfheal.state.json
 reports/
+
+# Local staging of deployed VM files (never commit).
+deployed_base/

@@ -37,6 +37,16 @@ REPORT_START = date(2026, 11, 16)
 # key -> database/table metadata. `date_col` may be an expression.
 SCANNERS = [
     {
+        "key": "sma9_short",
+        "label": "SMA9 SHORT",
+        "db": "sma9_short.db",
+        "table": "sma9_short_trades",
+        "date_col": "trade_date",
+        "where": "status = 'CLOSED'",
+        "open_table": "sma9_short_open_positions",
+        "min_date": "2026-11-25",
+    },
+    {
         "key": "sma9",
         "label": "SMA9",
         "db": "sma9.db",
@@ -84,6 +94,17 @@ SCANNERS = [
         "date_col": "trade_date",
         "where": "status = 'CLOSED'",
         "open_table": "sma9_high_open_positions",
+    },
+    {
+        "key": "sma9_5pct_trail",
+        "label": "SMA9 5% Trail",
+        "db": "sma9_5pct_trail.db",
+        "table": "sma9_5pct_trail_trades",
+        "date_col": "trade_date",
+        "where": "status = 'CLOSED'",
+        "open_table": "sma9_5pct_trail_open_positions",
+        # Fresh standalone scanner; first live day 2026-11-25.
+        "min_date": "2026-11-25",
     },
     {
         "key": "sma9_trail",

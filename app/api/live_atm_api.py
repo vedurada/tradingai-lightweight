@@ -74,6 +74,13 @@ SCANNER_STATES: dict[str, tuple[str, str]] = {
         os.environ.get("SMA9_TRAIL_DB_PATH", "/opt/tradingai/database/sma9_trail.db"),
         "sma9_trail_scan_state",
     ),
+    "sma9-5pct-trail": (
+        os.environ.get(
+            "SMA9_5PCT_TRAIL_DB_PATH",
+            "/opt/tradingai/database/sma9_5pct_trail.db",
+        ),
+        "sma9_5pct_trail_scan_state",
+    ),
     "sma9-high-trail": (
         os.environ.get(
             "SMA9_HIGH_TRAIL_DB_PATH", "/opt/tradingai/database/sma9_high_trail.db"
@@ -86,14 +93,21 @@ SCANNER_STATES: dict[str, tuple[str, str]] = {
     ),
 }
 
+# Scanner-specific strike offsets from the live ATM strike. Only sma9_short
+# uses non-ATM contracts: CE at ATM+200 and PE at ATM-200.
+SCANNER_STRIKE_OFFSETS: dict[str, dict[str, float]] = {
+    "sma9-short": {"CE": 200.0, "PE": -200.0},
+}
+
 # Keyed by (scanner, expiry); scanner is "" when no scanner was supplied.
 _cache: dict[tuple[str, str], dict[str, Any]] = {}
 _last_good: dict[tuple[str, str], dict[str, Any]] = {}
 
-# Resolved master contracts are stable for a session; avoid re-serialising the
-# full NFO instrument master on every 10-second quote refresh.
-MASTER_CONTRACT_CACHE_SECONDS = 300
-_master_contract_cache: dict[tuple[str, float], dict[str, dict]] = {}
+# The NFO master is stable for the session. Index it once per broker instead of
+# once per (expiry, strike) pair: ATM moves every few minutes, so a per-strike
+# cache caused a full master reload on almost every quote refresh.
+MASTER_CONTRACT_CACHE_SECONDS = 3600
+_master_index_cache: dict[str, dict] = {}
 
 
 def _nearest_strike(spot: float) -> float:
@@ -199,23 +213,19 @@ def _as_int(value: Any) -> int | None:
     return int(number) if number is not None else None
 
 
-def _instrument_master_contracts(
-    broker: str, expiry: str, atm: float
-) -> tuple[dict[str, dict], str] | None:
-    """Resolve CE/PE tokens from mStock's master for callers without a scanner."""
-    key = (expiry, atm)
-    cached = _master_contract_cache.get(key)
+def _instrument_index(broker: str) -> dict | None:
+    """Return a strike-indexed NIFTY option master, fetched at most hourly."""
+    cached = _master_index_cache.get(broker)
     if cached and time.monotonic() - cached["at"] < MASTER_CONTRACT_CACHE_SECONDS:
-        return {opt: dict(contract) for opt, contract in cached["contracts"].items()}, (
-            "instrument_master"
-        )
+        return cached["index"]
 
     try:
         rows = call(broker, "instruments", exchange="NFO") or []
     except Exception:
-        return None
+        # Prefer a slightly stale index over breaking the quote endpoint.
+        return cached["index"] if cached else None
 
-    contracts: dict[str, dict] = {}
+    index: dict[tuple[str, float], list[dict]] = {}
     for row in rows:
         if not isinstance(row, dict):
             continue
@@ -225,32 +235,58 @@ def _instrument_master_contracts(
         opt = str(row.get("instrument_type") or "").strip().upper()
         if opt not in ("CE", "PE"):
             continue
-        if _as_float(row.get("strike")) != atm:
-            continue
-        if expiry and str(row.get("expiry") or "").strip() != str(expiry):
-            continue
+        strike = _as_float(row.get("strike"))
         token = _as_int(row.get("instrument_token"))
-        if token is None:
+        if strike is None or token is None:
             continue
-        contracts[opt] = {
+        expiry = str(row.get("expiry") or "").strip()
+        index.setdefault((opt, strike), []).append({
             "quote_key": str(token),
             "symbol": symbol,
             "token": token,
-            "strike": atm,
+            "strike": strike,
             "expiry": expiry,
-        }
+        })
 
-    if set(contracts) != {"CE", "PE"}:
+    _master_index_cache[broker] = {"at": time.monotonic(), "index": index}
+    return index
+
+
+def _instrument_master_contracts(
+    broker: str, expiry: str, atm: float, strikes: dict[str, float] | None = None
+) -> tuple[dict[str, dict], str] | None:
+    """Resolve CE/PE tokens from the cached mStock master for any strikes."""
+    index = _instrument_index(broker)
+    if index is None:
         return None
 
-    _master_contract_cache[key] = {"at": time.monotonic(), "contracts": contracts}
+    targets = {
+        opt: float((strikes or {}).get(opt, atm))
+        for opt in ("CE", "PE")
+    }
+    contracts: dict[str, dict] = {}
+    for opt, target in targets.items():
+        candidates = index.get((opt, target)) or []
+        if expiry:
+            candidates = [c for c in candidates if c["expiry"] == str(expiry)]
+        if not candidates:
+            return None
+        contract = dict(candidates[-1])
+        contract["expiry"] = expiry or contract["expiry"]
+        contracts[opt] = contract
+
     return contracts, "instrument_master"
 
 
 def _heartbeat_contracts(
-    scanner: str, expiry: str, atm: float
+    scanner: str, expiry: str, atm: float, strikes: dict[str, float] | None = None
 ) -> tuple[dict[str, dict], str] | None:
-    """Return CE/PE contracts from the requesting scanner's heartbeat."""
+    """Return CE/PE contracts from the requesting scanner's heartbeat.
+
+    A heartbeat contract is used only when its strike matches the requested
+    target strike (ATM, or ATM plus the scanner's offset). This prevents a
+    rolled ATM from being quoted at a stale contract for offset scanners.
+    """
     state = _scanner_state(scanner)
     if not state:
         return None
@@ -285,14 +321,19 @@ def _heartbeat_contracts(
             quote_key = f"{OPTION_PREFIX}{symbol}"
 
         strike = _as_float(item.get("strike"))
+        target = (strikes or {}).get(opt)
+        if target is not None and strike is not None and abs(strike - float(target)) > 0.01:
+            continue
         contracts[opt] = {
             "quote_key": quote_key,
             "symbol": symbol,
             "token": token,
-            "strike": strike if strike is not None else atm,
+            "strike": strike if strike is not None else float(target or atm),
             "expiry": item_expiry or heartbeat_expiry or expiry,
         }
 
+    if not contracts:
+        return None
     source = (
         "scanner_heartbeat_token"
         if all(c["token"] is not None for c in contracts.values())
@@ -301,18 +342,21 @@ def _heartbeat_contracts(
     return contracts, source
 
 
-def _derived_contracts(expiry: str, atm: float) -> tuple[dict[str, dict], str]:
-    """Legacy fallback used only when no scanner heartbeat is available."""
+def _derived_contracts(
+    expiry: str, atm: float, strikes: dict[str, float] | None = None
+) -> tuple[dict[str, dict], str]:
+    """Legacy fallback used only when no better contract source is available."""
     contracts: dict[str, dict] = {}
     for opt in ("CE", "PE"):
-        symbol = _option_symbol(atm, expiry, opt)
+        strike = float((strikes or {}).get(opt, atm))
+        symbol = _option_symbol(strike, expiry, opt)
         if not symbol:
             continue
         contracts[opt] = {
             "quote_key": symbol,
             "symbol": symbol[4:] if symbol.startswith("NFO:") else symbol,
             "token": None,
-            "strike": atm,
+            "strike": strike,
             "expiry": expiry or None,
         }
     return contracts, "derived_symbol"
@@ -331,15 +375,47 @@ def _fresh_value(scanner: str, expiry: str) -> dict | None:
     spot, source, spot_source, diverged = _effective_spot(index_quote, now)
     atm = _nearest_strike(spot)
 
-    heartbeat = _heartbeat_contracts(scanner, expiry, atm)
+    offsets = SCANNER_STRIKE_OFFSETS.get(scanner)
+    strikes = None
+    if offsets:
+        strikes = {
+            opt: round(atm + float(offset), 2)
+            for opt, offset in offsets.items()
+        }
+
+    heartbeat = _heartbeat_contracts(scanner, expiry, atm, strikes)
     if heartbeat:
         contracts, contract_source = heartbeat
     else:
-        master = _instrument_master_contracts(broker, expiry, atm)
-        if master:
-            contracts, contract_source = master
-        else:
-            contracts, contract_source = _derived_contracts(expiry, atm)
+        contracts, contract_source = {}, ""
+
+    # Use the master only to fill missing legs. A scanner heartbeat already
+    # carries verified tokens for both legs during market hours, so forcing a
+    # master lookup here made ATM moves trigger a full master reload.
+    need_master = set(contracts) != {"CE", "PE"}
+    master = (
+        _instrument_master_contracts(broker, expiry, atm, strikes)
+        if need_master else None
+    )
+    if master:
+        master_contracts, master_source = master
+        for opt, contract in master_contracts.items():
+            if opt not in contracts:
+                contracts[opt] = contract
+        if not contract_source:
+            contract_source = master_source
+        elif strikes:
+            contract_source = contract_source + "+instrument_master"
+
+    if set(contracts) != {"CE", "PE"}:
+        derived, derived_source = _derived_contracts(
+            expiry, atm, strikes or {"CE": atm, "PE": atm}
+        )
+        for opt, contract in derived.items():
+            if opt not in contracts:
+                contracts[opt] = contract
+        if not contract_source:
+            contract_source = derived_source
 
     wanted = sorted({c["quote_key"] for c in contracts.values()})
     option_quotes: dict[str, dict] = {}
@@ -393,6 +469,7 @@ def _fresh_value(scanner: str, expiry: str) -> dict | None:
         "spot": spot,
         "atm_strike": atm,
         "strike_step": STRIKE_STEP,
+        "strike_offsets": offsets or {},
         "source": source,
         "spot_source": spot_source,
         "quote_diverged": diverged,

@@ -1,15 +1,19 @@
 from flask import Flask, jsonify, request
+import sys
+sys.path.insert(0, "/opt/tradingai")
+sys.path.insert(0, "/opt/tradingai/scanners")
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 from werkzeug.middleware.proxy_fix import ProxyFix
 from app.core.db import get_conn, DB_PATH
 from app.core.config import settings, instruments
 from app.market.provider import MarketDataProvider
+from app.market.zerodha_provider import ZerodhaDataProvider
 from app.core.qualification import QualificationEngine
 from app.ai.explanation import AIExplanation
 from app.scenarios.engine import ScenarioEngine
 from app.live.engine import LiveEngine
-import json, os
+import json, os, sqlite3
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -23,8 +27,10 @@ from app.options.cache import recompute_age
 from app.api.e2_economics import bp as _e2_economics_bp
 from app.api.zerodha_paper_report import bp as zerodha_paper_bp
 from app.api.performance_api import bp as performance_bp
+from app.api.sma9_short_api import bp as sma9_short_bp
 from app.api.sma9_5min_api import bp as sma9_5min_bp
 from app.api.sma9_adx_api import bp as sma9_adx_bp
+from app.api.sma9_5pct_trail_api import bp as sma9_5pct_trail_bp
 from app.api.sma9_live_api import bp as sma9_live_bp
 from app.api.live_atm_api import bp as live_atm_bp
 
@@ -64,16 +70,33 @@ limiter = Limiter(app=app, key_func=_client_key, default_limits=["60 per minute"
 app.register_blueprint(_e2_economics_bp)
 app.register_blueprint(zerodha_paper_bp, url_prefix="/api/zerodha-paper")
 app.register_blueprint(performance_bp)
+app.register_blueprint(sma9_short_bp)
 app.register_blueprint(sma9_5min_bp)
 app.register_blueprint(sma9_adx_bp)
+app.register_blueprint(sma9_5pct_trail_bp)
 app.register_blueprint(sma9_live_bp)
 app.register_blueprint(live_atm_bp)
 
-market = MarketDataProvider()
+_market_provider = os.environ.get("MARKET_DATA_PROVIDER", "zerodha").lower()
+if _market_provider == "zerodha":
+    _zp = ZerodhaDataProvider()
+    market = _zp
+
+    def _zp_candles(symbol, completed_ts=None):
+        """Wrap Zerodha get_5m_candles for LiveEngine: ignore completed_ts,
+        return the candles list (not the full dict)."""
+        res = _zp.get_5m_candles(symbol)
+        if not res or res.get('state') != 'LIVE':
+            return []
+        return res.get('candles', [])
+
+    live_engine = LiveEngine(quote_fn=_zp.get_quote, candles_fn=_zp_candles)
+else:
+    market = MarketDataProvider()
+    live_engine = LiveEngine()
 qual = QualificationEngine(settings)
 ai = AIExplanation()
 scenario_engine = ScenarioEngine()
-live_engine = LiveEngine()
 _IST = ZoneInfo("Asia/Kolkata")
 
 # Initialize option tables on import
@@ -81,6 +104,53 @@ try:
     init_option_tables()
 except Exception:
     pass
+
+def _feed_freshness(sess, now_ist):
+    """DB-only data freshness for /api/health (no provider call).
+
+    Market OPEN must never imply data LIVE, so the session window and the
+    stored-candle freshness are reported separately.
+    """
+    today = now_ist.date().isoformat()
+    try:
+        _conn = get_conn()
+        try:
+            rows = _conn.execute(
+                'SELECT instrument_id, MAX(timestamp) AS ts FROM market_candles_5m '
+                'GROUP BY instrument_id').fetchall()
+        finally:
+            _conn.close()
+    except Exception:
+        rows = []
+    by_inst = {r["instrument_id"]: r["ts"] for r in rows}
+    order = {"LIVE": 0, "STALE": 1, "PREVIOUS_SESSION": 2,
+             "COLLECTOR_DOWN": 3, "NO_DATA": 4}
+    worst = "LIVE"
+    out = {}
+    for inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
+        ts = by_inst.get(inst)
+        age = None
+        if not ts:
+            state = "NO_DATA"
+        else:
+            try:
+                age = round((now_ist - datetime.fromisoformat(str(ts))).total_seconds() / 60.0, 1)
+            except Exception:
+                age = None
+            if str(ts)[:10] < today:
+                # Stale previous-session data while today's market is running
+                # means ingestion stopped, not that the feed is merely delayed.
+                state = "COLLECTOR_DOWN" if sess == "LIVE" else "PREVIOUS_SESSION"
+            elif age is not None and age > _STALE_CANDLE_MIN:
+                state = "STALE"
+            else:
+                state = "LIVE"
+        out[inst] = {"stored_candle": str(ts) if ts else None,
+                     "age_minutes": age, "data_state": state}
+        if order.get(state, 0) > order.get(worst, 0):
+            worst = state
+    return {"overall": worst, "instruments": out}
+
 
 @app.route("/api/health", methods=["GET"])
 def health():
@@ -94,11 +164,64 @@ def health():
     # health from market-data health. A closed market is not an app failure.
     sess = session_state(now_ist, has_data_today=True)
     hn = holiday_name(now_ist.date())
-    return jsonify({"status": "LIVE", "timestamp": now_ist.isoformat(),
+    feed = _feed_freshness(sess, now_ist)
+    return jsonify({"status": "LIVE",
+                    "app_status": "OK",
+                    "status_meaning": "application_health; market session and data freshness reported separately",
+                    "feed_state": feed["overall"],
+                    "timestamp": now_ist.isoformat(),
                     "data": {"tables": len(tables), "database": DB_PATH},
                     "market": {"session_window": sess,
                                "holiday": hn,
+                               "data": feed["instruments"],
                                "note": "application healthy; market state is informational"}})
+
+_STALE_CANDLE_MIN = 15.0
+
+def _stored_candle_state(inst, st):
+    """Attach DB-backed freshness to a summary.
+
+    `completed_candle` from LiveEngine is a CLOCK TARGET (the newest candle
+    that *should* exist), never proof that data was stored. This adds the
+    actually persisted candle and a data_state so those two cannot be
+    confused, especially when the feed is AUTH_ERROR. Read-only.
+    """
+    stored = None
+    try:
+        _conn = get_conn()
+        try:
+            row = _conn.execute(
+                'SELECT MAX(timestamp) AS ts FROM market_candles_5m '
+                'WHERE instrument_id=?', (inst,)).fetchone()
+            stored = row["ts"] if row and row["ts"] else None
+        finally:
+            _conn.close()
+    except Exception:
+        stored = None
+    now_ist = datetime.now(_IST)
+    age_min = None
+    if stored:
+        try:
+            age_min = (now_ist - datetime.fromisoformat(str(stored))).total_seconds() / 60.0
+        except Exception:
+            age_min = None
+    qs = st.get("quote_state")
+    if qs in ("AUTH_ERROR", "RATE_LIMITED", "TIMEOUT", "API_ERROR", "UNAVAILABLE"):
+        data_state = qs
+    elif not stored:
+        data_state = "NO_DATA"
+    elif age_min is None:
+        data_state = "STALE"
+    elif str(stored)[:10] < now_ist.date().isoformat():
+        data_state = "PREVIOUS_SESSION"
+    elif age_min > _STALE_CANDLE_MIN:
+        data_state = "STALE"
+    else:
+        data_state = "LIVE"
+    return {"stored_candle": str(stored) if stored else None,
+            "data_age_minutes": round(age_min, 1) if age_min is not None else None,
+            "data_state": data_state}
+
 
 @app.route("/api/<symbol>/summary", methods=["GET"])
 @limiter.limit("30 per minute")
@@ -107,6 +230,7 @@ def summary(symbol):
     if inst in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
         # Read-only: dry_run performs zero DB writes (no lock side effects).
         st = live_engine.evaluate(inst, dry_run=True)
+        st.update(_stored_candle_state(inst, st))
         return jsonify({"state": st["state"], "timestamp": st["now_ist"], "data": st})
     quote = market.get_quote(symbol)
     return jsonify({"state": quote.get("state", "UNAVAILABLE"), "timestamp": quote.get("timestamp"), "data": quote})
@@ -139,8 +263,7 @@ _QUOTE_MAP = {"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "INDIA_VIX": "^INDIAVIX
 def quote_view(instrument):
     """Lightweight 1-minute price tick (READ-ONLY, provider-cached quote).
 
-    Price only: no engine evaluation, no CPR, no decisions. The full
-    decision/CPR cycle refreshes separately on completed 5-minute candles."""
+    Price only: no engine evaluation, no decisions. The full decision cycle refreshes separately on completed 5-minute candles."""
     inst = (instrument or "").upper()
     if inst not in _QUOTE_MAP:
         return jsonify({"state": "NO_DATA", "timestamp": None, "data": None}), 404
@@ -155,7 +278,7 @@ def decision_view(instrument):
     """Phase 5 normalized intraday decision (READ-ONLY composer).
 
     Extends, never duplicates: aggregates LiveEngine dry-run evaluation,
-    previous-session CPR research fns and read-only strategy/lock state
+    previous-session reference levels and read-only strategy/lock state
     into one per-instrument decision object. Zero DB writes."""
     inst = (instrument or "").upper()
     if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
@@ -163,43 +286,7 @@ def decision_view(instrument):
                         "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
     from app.decision.view import build_decision
     d = build_decision(inst)
-    # UNIFORM SCALP OVERLAY (2026-10-26 owner directive): the website's live
-    # signal levels must come from the same scalp engine (HLC 3-bar) used by
-    # live signals, paper trades, backtest and alerts, not the legacy SMA20
-    # percentage levels. Display-only; never writes.
-    try:
-        from app.research.scalp_engine import today_state as _scalp_state
-        _sd = _scalp_state(inst)
-        if (inst in ('NIFTY', 'BANKNIFTY')
-                and _sd.get('state') == 'SIGNAL' and _sd.get('entry') is not None
-                and _sd.get('stop') is not None and _sd.get('target') is not None):
-            _dir = _sd.get('direction')
-            _bias = ('BULLISH' if _dir == 'BULL' else
-                     ('BEARISH' if _dir == 'BEAR' else _dir))
-            # Both keys: older cards read market_bias, the scalp card reads bias.
-            d['market_bias'] = _bias
-            d['bias'] = _bias
-            d['strategy'] = 'SCALP_HLC_3BAR'
-            d['level'] = _sd.get('level')
-            d['entry'] = _sd.get('entry')
-            d['stop'] = _sd.get('stop')
-            d['target'] = _sd.get('target')
-            d['signal_time'] = _sd.get('signal_time')
-            d['trade'] = {'direction': _sd.get('direction'),
-                          'level': _sd.get('level'),
-                          'entry': _sd.get('entry'),
-                          'stop': _sd.get('stop'),
-                          'target': _sd.get('target'),
-                          'entry_time': _sd.get('entry_time'),
-                          'signal_time': _sd.get('signal_time'),
-                          'strategy': 'Scalp HLC 3-bar'}
-            d['scalp'] = _sd
-            d['scalp_decision'] = ('TRADE' if d.get('data_status') in ('LIVE', 'RECENT')
-                                   else 'NO_TRADE')
-            d['scalp_reasons'] = ['SCALP_HLC_3BAR_ALIGNMENT']
-            # Never overwrite the loss-memory veto / daily-lock decision.
-    except Exception:
-        pass
+    # Strategy: HLC_3BAR_REVERSED_SHORT_V1 only. No Scalp HLC overlay.
     d['live_price'] = d.get('price')
     d['state'] = d.get('engine_state')
     d['now_ist'] = d.get('timestamp')
@@ -260,11 +347,15 @@ def candles(symbol):
                      "low": r["low"], "close": r["close"], "volume": r["volume"],
                      "is_complete": True} for r in reversed(list(_rows))]
         if _candles:
-            return jsonify({"state": "LIVE", "timestamp": now_ist.isoformat(),
+            # These candles come from the DB because the live feed is not
+            # LIVE. They are never a live quote: label them CACHE_STALE.
+            return jsonify({"state": "CACHE_STALE", "timestamp": now_ist.isoformat(),
                             "data": {"instrument": inst, "candles": _candles,
                                      "count": len(_candles),
                                      "completed_candle": completed.isoformat() if completed else None,
                                      "forming_excluded": True,
+                                     "stale": True,
+                                     "data_state": "CACHE_STALE",
                                      "data_ts": _candles[-1]["timestamp"],
                                      "reasons": ["DB_FALLBACK_LAST_SESSION"]}})
         return jsonify({"state": "NO_DATA", "timestamp": now_ist.isoformat(),
@@ -290,14 +381,13 @@ def candles(symbol):
 @app.route("/api/<symbol>/intraday", methods=["GET"])
 @limiter.limit("30 per minute")
 def intraday_session(symbol):
-    """Read-only full-session 5m price series with CPR reference levels for ONE
+    """Read-only full-session 5m price series with reference levels for ONE
     trading day (default: latest session with stored candles). Zero DB writes.
 
     Levels come from the existing pivot engine applied to the PRIOR session's
-    OHLC (same maths as /api/strategy/cpr), so the page renders backend values
+    OHLC, so the page renders backend values
     only and never estimates a level itself. ?date=YYYY-MM-DD selects a day."""
-    from app.research.cpr_strategy_engine import (
-        calculate_cpr, classify_cpr, pivot_levels)
+
     inst = (symbol or "").upper()
     if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
         return jsonify({"state": "NO_DATA", "timestamp": None,
@@ -347,23 +437,6 @@ def intraday_session(symbol):
         except Exception:
             pass
 
-    cpr = {"available": False, "session": prev_date, "reasons": []}
-    if len(prev_candles) >= 2:
-        p_h = max(float(c["high"]) for c in prev_candles)
-        p_l = min(float(c["low"]) for c in prev_candles)
-        p_c = float(prev_candles[-1]["close"])
-        base = calculate_cpr(p_h, p_l, p_c)
-        lv = pivot_levels(p_h, p_l, base["pp"])
-        cpr = {"available": True, "session": prev_date,
-               "pivot": base["pp"], "bc": base["bc"], "tc": base["tc"],
-               "width_pct": base["width_pct"],
-               "cpr_type": classify_cpr(base["width_pct"]),
-               "r1": lv["r1"], "s1": lv["s1"], "r2": lv["r2"], "s2": lv["s2"],
-               "prev_close": p_c, "prev_high": p_h, "prev_low": p_l,
-               "reasons": []}
-    else:
-        cpr["reasons"] = ["NO_PRIOR_SESSION"]
-
     points = [{"timestamp": str(r["timestamp"]), "close": float(r["close"])}
               for r in rows]
     closes = [p["close"] for p in points]
@@ -379,7 +452,6 @@ def intraday_session(symbol):
                              "latest": closes[-1] if closes else None,
                              "day_high": max(highs) if highs else None,
                              "day_low": min(lows) if lows else None,
-                             "cpr": cpr,
                              "latest_date": nav["lt"] if nav else None,
                              "prev_date": prev_date,
                              "next_date": (nav["nt"] if nav else None),
@@ -422,155 +494,26 @@ def paper_spreads():
 @app.route("/api/paper/spread/today", methods=["GET"])
 @limiter.limit("30 per minute")
 def paper_spread_today():
-    """Today's spread preview (read-only): plain trigger state + legs from
-    the real strike grid + payoff curve. Credit is live LTPs when the NSE
-    feed answers, else null (structure-only, clearly flagged)."""
-    from app.research.cpr_trigger_engine import today_state
+    """Today's spread preview (read-only): Scalp HLC strategy removed.
+    Only HLC_3BAR_REVERSED_SHORT_V1 is active."""
     from app.options.weekly_spreads import build_spread, next_expiry, payoff_curve
     from app.options import nse_chain
     inst = (request.args.get("instrument") or "NIFTY").upper()
     if inst not in ("NIFTY", "BANKNIFTY"):
         return jsonify({"state": "NO_DATA", "timestamp": None,
                         "data": {"error": "UNKNOWN_INSTRUMENT"}}), 404
-    st = today_state(inst, variant="plain")
-    if not isinstance(st, dict) or st.get("state") != "SIGNAL":
-        return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                        "data": {"trigger": st, "spread": None, "credit": None,
-                                 "payoff": None}})
-    entry = st.get("entry")
-    if entry is None:
-        q = market.get_quote({"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK"}[inst])
-        entry = q.get("price")
-    sp = build_spread(inst, st.get("direction"), entry)
-    if sp.get("error"):
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"error": sp["error"]}}), 404
-    try:
-        exp = next_expiry(inst)
-    except Exception:
-        exp = None
-    try:
-        credit = nse_chain.get_credit(inst, sp["legs"])
-    except Exception:
-        credit = None
-    sp["expiry"] = exp
     return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                    "data": {"trigger": st, "spread": sp, "credit": credit,
-                             "payoff": payoff_curve(sp, credit)}})
+                    "data": {"trigger": None, "spread": None, "credit": None,
+                             "payoff": None,
+                             "note": "Scalp HLC strategy removed; use HLC_3BAR_REVERSED_SHORT_V1"}})
 
 # REMOVED 2026-09-28: POST /api/backtest/run (BacktestEngine simulator) had 0 callers
-# (no frontend/cron). Use POST /api/backtest/cpr-triggers (opens-spec, mirrors live).
+# (no frontend/cron). Retired CPR backtest endpoint; mirrors live HLC engine.
 # IntradayExitEngine in app/research/backtest.py is still live-shared via replay.py.
 
-@app.route("/api/backtest/cpr-triggers", methods=["POST"])
-@limiter.limit("5 per minute")
-def run_cpr_trigger_backtest():
-    """No-filter CPR trigger backtest over stored 5m candles (opens execution).
 
-    Plain book only: confirmed bear reversals on PDH/R1/R2 and confirmed bull
-    reversals on PDL only. Bull S1/S2 reversals, CPR continuation and breakout
-    add-ons are excluded.
-    The historical page offers session-close and live-paper carry-forward modes."""
-    body = request.get_json() or {}
-    execution = (body.get("execution") or "session").lower()
-    if execution == "live-paper":
-        from app.research.live_paper_replay import run_live_paper_range
-        run_backtest = run_live_paper_range
-    else:
-        from app.research.cpr_trigger_engine import run_opens_range
-        run_backtest = run_opens_range
-    inst = (body.get("instrument") or "NIFTY").upper()
-    variant = "plain"  # only book; the aligned variant was retired 2026-10-14
-    if (body.get("variant") or "plain").lower() != "plain":
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"reasons": ["RETIRED_VARIANT"]}}), 404
-    if inst not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 404
-    ds = body.get("date_start", "2026-07-29")
-    de = body.get("date_end", "2026-09-25")
-    if execution == "live-paper":
-        result = run_backtest(inst, ds, de)
-    else:
-        result = run_backtest(inst, ds, de, variant)
-    if isinstance(result, dict) and result.get('error'):
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"reasons": [result['error']]}}), 404
-    paper = []
-    if execution in ("live-paper", "session-only"):
-        result["paper_trades"] = []
-        result["paper_appended"] = 0
-    else:
-        conn = None
-        try:
-            from app.research.cpr_trigger_engine import decay_win
-            conn = get_conn()
-            rows = conn.execute(
-                "SELECT session_date AS trade_date, direction, level, entry_time, "
-                "entry_price AS entry, exit_time, exit_price AS exit, exit_reason, "
-                "r_multiple, result FROM paper_align "
-                "WHERE instrument_id=? AND variant=? AND session_date>? "
-                "ORDER BY session_date", (inst, variant, de)).fetchall()
-            for r in rows:
-                d = dict(r)
-                d["source"] = "paper"
-                d["exit_reason"] = "PAPER - " + (d.get("exit_reason") or "")
-                d["win_loss"] = decay_win(d.get("direction"), d.get("entry"),
-                                          d.get("exit"), d.get("r_multiple"), inst)
-                try:
-                    en, ex = float(d["entry"]), float(d["exit"])
-                    d["points"] = round((ex - en) if d.get("direction") == "BULL"
-                                        else (en - ex), 1)
-                except (TypeError, ValueError):
-                    d["points"] = None
-                paper.append(d)
-        except Exception as e:
-            import logging as _log
-            _log.getLogger("tradingai.api").warning("paper merge failed: %s", str(e)[:120])
-            paper = []
-        finally:
-            try:
-                if conn is not None:
-                    conn.close()
-            except Exception:
-                pass
-        result["paper_trades"] = paper
-        result["paper_appended"] = len(paper)
-        if paper:
-            pw = sum(1 for t in paper if t.get("win_loss") == "WIN")
-            pl = sum(1 for t in paper if t.get("win_loss") == "LOSS")
-            pr = [t["r_multiple"] for t in paper
-                  if isinstance(t.get("r_multiple"), (int, float))]
-            result["wins"] = result.get("wins", 0) + pw
-            result["losses"] = result.get("losses", 0) + pl
-            result["signals"] = result.get("signals", 0) + len(paper)
-            n = result["signals"]
-            result["win_rate"] = round(100 * result["wins"] / n, 1) if n else 0
-            result["total_R"] = round(result.get("total_R", 0) + sum(pr), 2)
-            result["paper_included"] = True
-    return jsonify({"state": "COMPLETED", "data": result})
 
-@app.route("/api/backtest/cpr-walkforward", methods=["POST"])
-@limiter.limit("5 per minute")
-def run_cpr_walkforward_backtest():
-    """CPR + gap 09:45 walk-forward credit-spread backtest (read-only).
 
-    Validated NIFTY-only daily 09:45 short-credit structure (see
-    LEVEL_RESEARCH_REPORT.md): first-30m observation, walk-forward CPR-width /
-    gap percentiles over a trailing 20-session window, entry at the 09:45
-    price, trigger-hit and 15:15-open-exit wins. Points proxy, not premium
-    P&L. Read-only vs market_candles_5m. Date bounds optional (default full
-    range)."""
-    from app.research.cpr_gap_walkforward_engine import run_walkforward
-    body = request.get_json() or {}
-    inst = (body.get("instrument") or "NIFTY").upper()
-    ds = body.get("date_start") or ""
-    de = body.get("date_end") or ""
-    result = run_walkforward(inst, ds, de)
-    if isinstance(result, dict) and result.get('error'):
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"reasons": [result['error']]}}), 404
-    return jsonify({"state": "COMPLETED", "data": result})
 
 @app.route("/api/backtest/<run_id>", methods=["GET"])
 @limiter.limit("30 per minute")
@@ -865,130 +808,6 @@ def live_performance_instrument(instrument):
 
 
 
-@app.route("/api/strategy/cpr-triggers", methods=["GET"])
-@limiter.limit("30 per minute")
-def cpr_trigger_signal():
-    """Today's CPR trigger state (opens execution). Read-only: today's stored
-    candles so far vs previous-session CPR. Plain book only (the aligned
-    variant was retired 2026-10-14; ?variant=aligned now returns
-    RETIRED_VARIANT). SIGNAL (direction/level/entry/stop/target),
-    WATCH, or NO_DATA. Never writes, never trades."""
-    from app.research.cpr_trigger_engine import today_state, VALID
-    instrument = (request.args.get("instrument") or "NIFTY").upper()
-    variant = "plain"  # only book; the aligned variant was retired 2026-10-14
-    if (request.args.get("variant") or "plain").lower() != "plain":
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"error": "RETIRED_VARIANT"}}), 404
-    if instrument not in VALID:
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"error": "UNKNOWN_INSTRUMENT"}}), 404
-    st = today_state(instrument, variant=variant)
-    if isinstance(st, dict) and st.get('error'):
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"error": st['error']}}), 404
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                    "data": st})
-
-@app.route("/api/strategy/cpr", methods=["GET"])
-@limiter.limit("30 per minute")
-def cpr_strategy():
-    """Live CPR directional signal."""
-    instrument = (request.args.get("instrument") or "NIFTY").upper()
-    if instrument not in ("NIFTY", "BANKNIFTY", "INDIA_VIX"):
-        return jsonify({"state": "NO_DATA", "timestamp": None, "data": {"error": "UNKNOWN_INSTRUMENT"}}), 404
-    from app.live.engine import completed_candle_ts
-    from app.market.provider import MarketDataProvider
-    from app.research.cpr_strategy_engine import calculate_cpr as calc_cpr, classify_cpr as cls_cpr, classify_gap as cls_gap, classify_ladder as cls_ladder, is_virgin_cpr as is_virgin, live_signal
-    import sqlite3
-    from app.core.db import get_conn
-
-    now = datetime.now(_IST)
-    cutoff = completed_candle_ts(now)
-    provider = MarketDataProvider()
-
-    # Fetch previous session data for CPR calculation
-    conn = get_conn()
-    prev = conn.execute(
-        "SELECT MAX(timestamp) as ts FROM market_candles_5m WHERE instrument_id=? AND timestamp < ?",
-        (instrument, now.isoformat())).fetchone()
-    conn.close()
-
-    if not prev or not prev["ts"]:
-        return jsonify({"state": "NO_DATA", "timestamp": now.isoformat(),
-                         "data": {"error": "NO_PREVIOUS_SESSION", "instrument": instrument}})
-
-    # Get previous session OHLC
-    prev_date = prev["ts"][:10]
-    conn = get_conn()
-    prev_candles = conn.execute(
-        "SELECT open, high, low, close FROM market_candles_5m "
-        "WHERE instrument_id=? AND substr(timestamp,1,10)=? ORDER BY timestamp",
-        (instrument, prev_date)).fetchall()
-    conn.close()
-
-    if len(prev_candles) < 2:
-        return jsonify({"state": "NO_DATA", "timestamp": now.isoformat(),
-                         "data": {"error": "INSUFFICIENT_HISTORY", "instrument": instrument}})
-
-    prev_h = max(c["high"] for c in prev_candles)
-    prev_l = min(c["low"] for c in prev_candles)
-    prev_c = prev_candles[-1]["close"]
-
-    cpr = calc_cpr(prev_h, prev_l, prev_c)
-    cpr["r1"] = 2 * cpr["pp"] - prev_l
-    cpr["s1"] = 2 * cpr["pp"] - prev_h
-    cpr["r2"] = cpr["pp"] + (prev_h - prev_l)
-    cpr["s2"] = cpr["pp"] - (prev_h - prev_l)
-    classification = cls_cpr(cpr["width_pct"])
-
-    # Gap from previous close vs CACHED quote close only (45s TTL shared cache).
-    # Never bypasses cache (no use_cache=False) and never uses a forming-tick:
-    # today_candles below are filtered to completed candles (<= completed cutoff).
-    live_quote = provider.get_quote({"NIFTY": "^NSEI", "BANKNIFTY": "^NSEBANK", "INDIA_VIX": "^INDIAVIX"}[instrument])
-    gift_change = (live_quote.get("price", 0) - prev_c) if live_quote.get("price") else 0
-    gap = cls_gap(gift_change)
-
-    # Get current session candles for ladder/virgin check
-    conn = get_conn()
-    today_candles = conn.execute(
-        "SELECT open, high, low, close, timestamp FROM market_candles_5m "
-        "WHERE instrument_id=? AND substr(timestamp,1,10)=? AND timestamp<=? ORDER BY timestamp",
-        (instrument, now.strftime("%Y-%m-%d"), (completed_candle_ts(now) or now).isoformat())).fetchall()
-    conn.close()
-
-    if len(today_candles) >= 2:
-        today_h = max(c["high"] for c in today_candles)
-        today_l = min(c["low"] for c in today_candles)
-        ladder = cls_ladder(cpr, calc_cpr(today_h, today_l, today_candles[-1]["close"]))
-        virgin = is_virgin(today_h, today_l, cpr["tc"], cpr["bc"])
-    else:
-        ladder = "NEUTRAL"
-        virgin = False
-
-    # Real 9:15-9:45 confirmation (when formed) enables full signal
-    # evaluation incl. gap-fade; otherwise the endpoint reports state only.
-    conf_arg, open_arg = None, None
-    try:
-        oc = [c for c in today_candles
-              if "09:15" <= str(c["timestamp"])[11:16] <= "09:45"]
-        if oc:
-            conf_arg = {"open": float(oc[0]["open"]), "high": max(float(c["high"]) for c in oc),
-                        "low": min(float(c["low"]) for c in oc), "close": float(oc[-1]["close"]),
-                        "green": bool(float(oc[-1]["close"]) > float(oc[0]["open"])),
-                        "red": bool(float(oc[-1]["close"]) < float(oc[0]["open"])),
-                        "timestamp": str(oc[-1]["timestamp"])}
-            open_arg = float(today_candles[0]["open"])
-    except Exception:
-        conf_arg, open_arg = None, None
-    day_candles = [{"open": float(c["open"]), "high": float(c["high"]),
-                    "low": float(c["low"]), "close": float(c["close"]),
-                    "timestamp": str(c["timestamp"])} for c in today_candles] or None
-    signal = live_signal(instrument, cpr, gift_change, ladder, virgin,
-                         confirmation=conf_arg, opening_price=open_arg,
-                         day_candles=day_candles)
-    return jsonify({"state": "LIVE", "timestamp": now.isoformat(), "data": signal})
-
-
 
 @app.route("/api/alerts/rss", methods=["GET"])
 @limiter.limit("30 per minute")
@@ -1212,143 +1031,6 @@ def market_events():
     })
 
 
-
-@app.route("/api/strategy/scalp", methods=["GET"])
-@app.route("/api/strategy/scalp-triggers", methods=["GET"])
-@limiter.limit("30 per minute")
-def scalp_signal():
-    """Today's scalp (HLC 3-bar) trigger state. Read-only."""
-    from app.research.scalp_engine import today_state, VALID
-    inst = (request.args.get("instrument") or request.args.get("symbol") or "NIFTY").upper()
-    if inst not in VALID:
-        return jsonify({"state": "NO_DATA", "timestamp": None,
-                        "data": {"reasons": ["UNKNOWN_INSTRUMENT"]}}), 400
-    variant = request.args.get("variant", "plain")
-    try:
-        st = today_state(inst, variant=variant)
-    except Exception as e:
-        return jsonify({"state": "UNAVAILABLE", "timestamp": None,
-                        "data": {"reasons": ["ENGINE_ERROR"], "error": str(e)}}), 500
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                    "data": st})
-
-
-@app.route("/api/backtest/scalp", methods=["POST"])
-@app.route("/api/backtest/scalp-triggers", methods=["POST"])
-@limiter.limit("10 per minute")
-def run_scalp_backtest():
-    """Scalp (HLC 3-bar) backtest over stored 5m candles (opens execution)."""
-    from app.research.scalp_engine import run_opens_range, VALID
-    data = request.get_json(silent=True) or {}
-    inst = (data.get("instrument") or "NIFTY").upper()
-    if inst not in VALID:
-        return jsonify({"error": "UNKNOWN_INSTRUMENT"}), 400
-    start = data.get("start") or data.get("date_start") or "2000-01-01"
-    end = data.get("end") or data.get("date_end") or "2100-01-01"
-    variant = data.get("variant", "plain")
-    try:
-        res = run_opens_range(inst, start, end, variant=variant)
-    except Exception as e:
-        return jsonify({"error": str(e)}), 500
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                    "data": res})
-
-
-
-@app.route("/api/paper/scalp", methods=["GET"])
-@limiter.limit("30 per minute")
-def paper_scalp():
-    """Live scalp paper trades only. Read-only."""
-    from app.core.db import get_conn
-    conn = get_conn()
-    rows = []
-    try:
-        for r in conn.execute("SELECT trade_id, instrument_id, direction, entry, stop, target, entry_time, exit_time, exit_price, exit_reason, paper_pnl, status, qualification_evidence, created_at FROM paper_trades WHERE (scenario='SCALP_HLC' OR qualification_evidence LIKE '%SCALP_HLC%') AND instrument_id IN ('NIFTY','BANKNIFTY') ORDER BY created_at DESC LIMIT 500"):
-            ev = {}
-            try:
-                import json as _j
-                ev = _j.loads(r[12] or "{}")
-            except Exception:
-                ev = {}
-            points = None
-            r_multiple = ev.get("r_multiple")
-            try:
-                if r[8] is not None and r[3] is not None:
-                    sign = -1 if str(r[2] or "").upper() in ("SHORT", "BEAR", "BEARISH") else 1
-                    points = round((float(r[8]) - float(r[3])) * sign, 2)
-                    risk = abs(float(r[3]) - float(r[4])) if r[4] is not None else 0
-                    if r_multiple is None and risk:
-                        r_multiple = round(points / risk, 3)
-            except (TypeError, ValueError):
-                points = None
-            score = r_multiple if r_multiple is not None else points
-            result = "OPEN" if r[11] in ("ACTIVE","OPEN") else ("WIN" if (score or 0) > 0 else ("LOSS" if (score or 0) < 0 else "FLAT"))
-            level = ev.get("level")
-            try:
-                if level is None and ev.get("signal_time"):
-                    sig = conn.execute("SELECT reference_level FROM scalp_signals WHERE instrument_id=? AND direction=? AND source_candle_ts=?", (r[1], r[2], ev.get("signal_time"))).fetchone()
-                else:
-                    sig = None
-                if level is None and sig is not None:
-                    level = sig[0]
-                if level is None:
-                    sig = conn.execute("SELECT reference_level FROM scalp_signals WHERE instrument_id=? AND direction=? AND substr(source_candle_ts,1,10)=? ORDER BY created_at DESC LIMIT 1", (r[1], r[2], (r[6] or r[13] or "")[:10])).fetchone()
-                    if sig is not None:
-                        level = sig[0]
-            except Exception:
-                level = None
-            rows.append({"trade_id": r[0], "instrument": r[1], "direction": r[2],
-                         "level": level,
-                         "entry": r[3], "stop": r[4], "target": r[5],
-                         "entry_time": r[6], "exit_time": r[7],
-                         "exit": r[8], "exit_reason": r[9],
-                         "points": points, "pnl": r[10], "status": r[11],
-                         "r_multiple": r_multiple,
-                         "win_loss": result,
-                         "result": result,
-                         "trade_date": (r[6] or r[13] or "")[:10],
-                         "created_at": r[13], "source": "LIVE"})
-    except Exception:
-        pass
-    conn.close()
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                    "data": {"trades": rows, "count": len(rows)}})
-
-
-@app.route("/api/paper/scalp/eod", methods=["GET"])
-@limiter.limit("30 per minute")
-def paper_scalp_eod():
-    """EOD scalp paper (backtest) trades. Read-only."""
-    from app.core.db import get_conn
-    conn = get_conn()
-    rows = []
-    try:
-        for r in conn.execute("SELECT session_date, instrument_id, direction, level, entry_price, entry_time, exit_price, exit_time, exit_reason, r_multiple, result, points, created_at FROM paper_scalp WHERE instrument_id IN ('NIFTY','BANKNIFTY') ORDER BY session_date DESC LIMIT 500"):
-            rows.append({"trade_date": r[0], "instrument": r[1], "direction": r[2],
-                         "level": r[3], "entry": r[4], "entry_time": r[5],
-                         "exit": r[6], "exit_time": r[7],
-                         "exit_reason": r[8], "r_multiple": r[9], "result": r[10],
-                         "points": r[11], "created_at": r[12], "source": "EOD"})
-    except Exception:
-        pass
-    conn.close()
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                    "data": {"trades": rows, "count": len(rows)}})
-
-
-
-@app.route("/api/paper/scalp/reconciled", methods=["GET"])
-@limiter.limit("30 per minute")
-def paper_scalp_reconciled():
-    from app.core.db import get_conn
-    from app.research.scalp_reconcile import reconcile
-    conn = get_conn()
-    rows = reconcile(conn)
-    conn.close()
-    return jsonify({"state": "LIVE", "timestamp": datetime.now(_IST).isoformat(),
-                    "data": {"trades": rows, "count": len(rows)}})
-
-
 if __name__ == "__main__":
     app.run(host="127.0.0.1", port=8000)
 
@@ -1388,6 +1070,12 @@ def run_price_action_target_backtest():
     return jsonify({"state": "OK", "timestamp": None, "data": result})
 
 
+from app.api.nifty_spot_paper_api import bp as nifty_spot_paper_api_bp
+from app.api.live_api import bp as live_api_bp, init_services as init_live_api_services
+app.register_blueprint(nifty_spot_paper_api_bp, url_prefix="/api/nifty-spot-paper")
+app.register_blueprint(live_api_bp, url_prefix="/api/live")
+
+
 @app.errorhandler(404)
 def _json_404(e):
     try:
@@ -1412,3 +1100,2316 @@ def _json_500(e):
     _log.getLogger('tradingai.api').exception('unhandled API error')
     return jsonify({"state": "UNAVAILABLE", "timestamp": ts,
                     "data": {"reasons": ["ENGINE_ERROR"]}}), 500
+
+
+# ============================================================================
+# Live API Service Initialization
+# Initializes the scanner registry, repository, and service layer.
+# ============================================================================
+def init_live_services():
+    """Initialize all live API services."""
+    import sys
+    import os
+    # Ensure scanners package is importable
+    base = "/opt/tradingai"
+    if base not in sys.path:
+        sys.path.insert(0, base)
+    if f"{base}/scanners" not in sys.path:
+        sys.path.insert(0, f"{base}/scanners")
+
+    from scanners.registry import ScannerRegistry
+    from scanners.reverse_short_only.scanner import ReverseShortScanner
+    from database.connection import get_connection
+    from database.repositories import ScannerRepository
+    from services.scanner_service import ScannerService
+    from services.signal_service import SignalService
+    from services.trade_service import TradeService
+    from services.dashboard_service import DashboardService
+    from services.scanner_selector import ScannerSelector
+
+    # Initialize database connection
+    db_conn = get_connection(DB_PATH, read_only=False)
+
+    # Initialize repository
+    repo = ScannerRepository(db_conn)
+
+    # Initialize scanner registry
+    registry = ScannerRegistry()
+    registry.discover()
+
+    # Initialize services
+    scanner_service = ScannerService(registry, repo)
+    signal_service = SignalService(repo)
+    trade_service = TradeService(repo)
+    dashboard_service = DashboardService(repo, signal_service, trade_service, scanner_service)
+    scanner_selector = ScannerSelector(scanner_service)
+
+    # Initialize live API with services
+    init_live_api_services(
+        scanner_service, signal_service, trade_service,
+        dashboard_service, scanner_selector, repo
+    )
+
+    # Register Reversed Short scanner and set as active
+    registry.register(ReverseShortScanner())
+    scanner_service.start_scanner("reverse_short_only")
+
+    # Record service health
+    repo.record_health("scanner", "OK", "Reversed Short scanner active")
+    repo.record_health("database", "OK", "Database connected")
+    repo.record_health("api", "OK", "API initialized")
+
+    return registry, scanner_service, signal_service, trade_service, dashboard_service, scanner_selector, repo
+
+# Initialize services on module load
+try:
+    init_live_services()
+except Exception as e:
+    import logging
+    logging.getLogger('tradingai.api').warning(f"Live service initialization deferred: {e}")
+# ============================================================================
+# SMA9 Scanner API Endpoints (dedicated database: database/sma9.db)
+# ============================================================================
+SMA9_DB_PATH = os.environ.get(
+    "SMA9_DB_PATH", os.path.join(os.path.dirname(DB_PATH), "sma9.db")
+)
+
+
+def get_sma9_conn():
+    """Per-request connection to the dedicated SMA9 database."""
+    conn = sqlite3.connect(SMA9_DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
+    except Exception:
+        pass
+    return conn
+
+
+def _sma9_live_state():
+    """Read the scanner heartbeat/state row (empty dict when unavailable)."""
+    try:
+        conn = get_sma9_conn()
+        row = conn.execute(
+            "SELECT value, updated_at FROM sma9_scan_state WHERE key='live_status'"
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {}
+        state = json.loads(row["value"])
+        state["_state_updated_at"] = row["updated_at"]
+        return state
+    except Exception:
+        return {}
+
+
+def _sma9_scanner_health(state):
+    """Classify scanner health without pretending stale data is live."""
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    last = state.get("last_scan_at")
+    age = None
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(last)).total_seconds()
+        except Exception:
+            age = None
+    market_open = bool(state.get("market_open"))
+    if last is None:
+        status = "NOT_RUNNING"
+    elif market_open and age is not None and age <= 15:
+        status = "ACTIVE"
+    elif market_open and age is not None and age > 15:
+        status = "STALE"
+    elif not market_open and age is not None and age <= 120:
+        status = "IDLE_MARKET_CLOSED"
+    else:
+        status = "STOPPED"
+    return status, age
+
+
+def _dataset_filter(request, query, params, default=None):
+    dataset = request.args.get("dataset", default)
+    if dataset:
+        query += " AND dataset = ?"
+        params.append(dataset)
+    return query, params
+
+
+@app.route("/api/sma9/signals", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_signals():
+    """Get SMA9 signals/trades with pagination and filters."""
+    try:
+        limit = min(int(request.args.get("limit", 100)), 1000)
+        offset = int(request.args.get("offset", 0))
+        option_type = request.args.get("option_type")
+        trade_date = request.args.get("trade_date")
+        dataset = request.args.get("dataset")
+
+        conn = get_sma9_conn()
+        query = "SELECT * FROM sma9_trades WHERE 1=1"
+        params = []
+        if option_type:
+            query += " AND option_type = ?"
+            params.append(option_type.upper())
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        signals = [dict(r) for r in rows]
+        return jsonify({
+            "success": True,
+            "signals": signals,
+            "trades": signals,
+            "count": len(signals),
+            "total": total,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9/trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_trades():
+    """Alias for /api/sma9/signals."""
+    return api_sma9_signals()
+
+
+@app.route("/api/sma9/daily-summary", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_daily_summary():
+    """Daily summary, optionally scoped by dataset."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_conn()
+        query = """
+            SELECT trade_date as date,
+                   COUNT(*) as total_trades,
+                   SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins,
+                   SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses,
+                   SUM(pnl_points) as total_pnl_points,
+                   ROUND(AVG(pnl_points), 2) as avg_pnl,
+                   GROUP_CONCAT(DISTINCT dataset) as datasets
+            FROM sma9_trades
+        """
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        query += " GROUP BY trade_date ORDER BY trade_date DESC"
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        daily = [dict(r) for r in rows]
+        for d in daily:
+            d["win_rate"] = round(d["wins"] / d["total_trades"] * 100, 2) if d["total_trades"] > 0 else 0
+        return jsonify({"success": True, "daily": daily, "dataset": dataset or "ALL"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9/scanner-status", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_scanner_status():
+    """Scanner status + lifetime stats + current live evaluation."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_conn()
+        query = (
+            "SELECT COUNT(*) as total_trades, SUM(pnl_points) as total_pnl, "
+            "SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins, "
+            "SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses "
+            "FROM sma9_trades"
+        )
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        row = conn.execute(query, params).fetchone()
+        conn.close()
+        total = row["total_trades"] or 0
+        wins = row["wins"] or 0
+        losses = row["losses"] or 0
+        total_pnl = row["total_pnl"] or 0
+        win_rate = round(wins / total * 100, 2) if total > 0 else 0
+
+        state = _sma9_live_state()
+        status, age = _sma9_scanner_health(state)
+        return jsonify({
+            "success": True,
+            "scanner_id": "sma9_only",
+            "scanner_name": "SMA9 Only - ATM Option Strike (BUY ONLY)",
+            "scanner_version": "2.7.0",
+            "strategy_type": "SMA9_BUY_ONLY",
+            "instrument": "NIFTY",
+            "timeframe": "5m",
+            "total_trades": total,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "total_pnl": round(total_pnl, 2),
+            "status": status,
+            "last_scan_at": state.get("last_scan_at"),
+            "last_scan_age_seconds": round(age, 1) if age is not None else None,
+            "poll_seconds": state.get("poll_seconds", 5),
+            "actual_interval_seconds": state.get("actual_interval_seconds"),
+            "market_open": state.get("market_open"),
+            "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
+            "atm_strike": state.get("atm_strike"),
+            "last_closed_spot": state.get("last_closed_spot"),
+            "last_closed_atm_strike": state.get("last_closed_atm_strike"),
+            "last_closed_candle_start": state.get("last_closed_candle_start"),
+            "last_closed_ce_close": state.get("last_closed_ce_close"),
+            "last_closed_pe_close": state.get("last_closed_pe_close"),
+            "last_closed_spot_source": state.get("last_closed_spot_source"),
+            "expiry": state.get("expiry"),
+            "options": state.get("options", {}),
+            "today": state.get("today", {}),
+            "errors": state.get("errors", []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9/live-status", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_live_status():
+    """Raw live scanner heartbeat/evaluation for the 5-second dashboard."""
+    state = _sma9_live_state()
+    if not state:
+        return jsonify({
+            "success": False,
+            "status": "NOT_RUNNING",
+            "error": "No scanner heartbeat found",
+            "poll_seconds": 5,
+        }), 200
+    status, age = _sma9_scanner_health(state)
+    state["status"] = status
+    state["last_scan_age_seconds"] = round(age, 1) if age is not None else None
+    state["server_time"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
+    return jsonify({"success": True, "data": state})
+
+
+@app.route("/api/sma9/recent-trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_recent_trades():
+    """Recent trades, optionally scoped by dataset and trade date."""
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        dataset = request.args.get("dataset")
+        trade_date = request.args.get("trade_date")
+        conn = get_sma9_conn()
+        query = "SELECT * FROM sma9_trades WHERE 1=1"
+        params = []
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        return jsonify({"success": True, "trades": trades, "count": len(trades),
+                        "total": total, "dataset": dataset or "ALL",
+                        "trade_date": trade_date})
+    except Exception as e:
+        return jsonify({"success": False, "trades": [], "error": str(e)}), 500
+
+
+@app.route("/api/sma9/open-positions", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_open_positions():
+    """Open (unclosed) live paper positions, independent of the current ATM strike."""
+    try:
+        conn = get_sma9_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_open_positions ORDER BY entry_timestamp"
+        ).fetchall()
+        conn.close()
+        positions = [dict(r) for r in rows]
+        return jsonify({"success": True, "positions": positions,
+                        "count": len(positions)})
+    except Exception as e:
+        return jsonify({"success": False, "positions": [], "error": str(e)}), 500
+
+
+@app.route("/api/sma9/today", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_today():
+    """ONLY today's LIVE paper trades (never stale historical rows)."""
+    try:
+        today = request.args.get("trade_date") or datetime.now(
+            ZoneInfo("Asia/Kolkata")).date().isoformat()
+        conn = get_sma9_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_trades WHERE dataset='LIVE' AND trade_date=? "
+            "ORDER BY signal_timestamp DESC",
+            (today,),
+        ).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        pnl = round(sum(t["pnl_points"] or 0 for t in trades), 2)
+        wins = sum(1 for t in trades if (t["pnl_points"] or 0) > 0)
+        losses = sum(1 for t in trades if (t["pnl_points"] or 0) < 0)
+        return jsonify({
+            "success": True,
+            "trade_date": today,
+            "trades": trades,
+            "count": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "pnl_points": pnl,
+            "is_today": True,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "trades": []}), 500
+
+
+@app.route("/api/sma9/legacy-audit", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_sma9_legacy_audit():
+    """Summary + optional rows for the 339 preserved legacy trades."""
+    try:
+        include_rows = request.args.get("rows", "0") == "1"
+        conn = get_sma9_conn()
+        total = conn.execute("SELECT COUNT(*) FROM sma9_audit").fetchone()[0]
+        compliant = conn.execute("SELECT COUNT(*) FROM sma9_audit WHERE compliant=1").fetchone()[0]
+        by_opt = [dict(r) for r in conn.execute(
+            "SELECT option_type, COUNT(*) total, SUM(compliant) compliant "
+            "FROM sma9_audit GROUP BY option_type"
+        ).fetchall()]
+        reasons = [dict(r) for r in conn.execute(
+            "SELECT discrepancy_reasons, COUNT(*) n FROM sma9_audit "
+            "WHERE compliant=0 GROUP BY discrepancy_reasons ORDER BY n DESC"
+        ).fetchall()]
+        rows = []
+        if include_rows:
+            rows = [dict(r) for r in conn.execute(
+                "SELECT * FROM sma9_audit ORDER BY entry_timestamp DESC LIMIT 1000"
+            ).fetchall()]
+        conn.close()
+        return jsonify({
+            "success": True,
+            "total_audited": total,
+            "compliant": compliant,
+            "discrepant": total - compliant,
+            "compliance_rate_pct": round(compliant / total * 100, 2) if total else 0,
+            "by_option_type": by_opt,
+            "discrepancy_reason_groups": reasons,
+            "rows": rows,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+# ============================================================================
+# SMA9 ATR Scanner API Endpoints (dedicated database: database/sma9_atr.db)
+# Standalone volatility-scaled-stop scanner; read-only access to its own DB.
+# ============================================================================
+SMA9_ATR_DB_PATH = os.environ.get(
+    "SMA9_ATR_DB_PATH", os.path.join(os.path.dirname(DB_PATH), "sma9_atr.db")
+)
+
+
+def get_sma9_atr_conn():
+    """Per-request read-only connection to the dedicated SMA9 ATR database."""
+    conn = sqlite3.connect(
+        "file:" + SMA9_ATR_DB_PATH + "?mode=ro", uri=True, timeout=10
+    )
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA busy_timeout=10000")
+    except Exception:
+        pass
+    return conn
+
+
+def _sma9_atr_live_state():
+    """Read the scanner heartbeat/state row (empty dict when unavailable)."""
+    try:
+        conn = get_sma9_atr_conn()
+        row = conn.execute(
+            "SELECT value, updated_at FROM sma9_atr_scan_state WHERE key='live_status'"
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {}
+        state = json.loads(row["value"])
+        state["_state_updated_at"] = row["updated_at"]
+        return state
+    except Exception:
+        return {}
+
+
+def _sma9_atr_scanner_health(state):
+    """Classify scanner health without pretending stale data is live."""
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    last = state.get("last_scan_at")
+    age = None
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(last)).total_seconds()
+        except Exception:
+            age = None
+    heartbeat = state.get("_state_updated_at")
+    beat_age = None
+    if heartbeat:
+        try:
+            beat_age = (now - datetime.fromisoformat(heartbeat)).total_seconds()
+        except Exception:
+            beat_age = None
+    market_open = bool(state.get("market_open"))
+    if last is None:
+        # Fresh install: no completed scan yet.  A recent heartbeat with the
+        # market closed means the process is alive and idle, not dead.
+        if not market_open and beat_age is not None and beat_age <= 120:
+            status = "IDLE_MARKET_CLOSED"
+        else:
+            status = "NOT_RUNNING"
+    elif market_open and age is not None and age <= 15:
+        status = "ACTIVE"
+    elif market_open and age is not None and age > 15:
+        status = "STALE"
+    elif not market_open and age is not None and age <= 120:
+        status = "IDLE_MARKET_CLOSED"
+    else:
+        status = "STOPPED"
+    return status, age
+
+
+@app.route("/api/sma9-atr/signals", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_atr_signals():
+    """Get SMA9 ATR signals/trades with pagination and filters."""
+    try:
+        limit = min(int(request.args.get("limit", 100)), 1000)
+        offset = int(request.args.get("offset", 0))
+        option_type = request.args.get("option_type")
+        trade_date = request.args.get("trade_date")
+        dataset = request.args.get("dataset")
+
+        conn = get_sma9_atr_conn()
+        query = "SELECT * FROM sma9_atr_trades WHERE 1=1"
+        params = []
+        if option_type:
+            query += " AND option_type = ?"
+            params.append(option_type.upper())
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        signals = [dict(r) for r in rows]
+        return jsonify({
+            "success": True,
+            "signals": signals,
+            "trades": signals,
+            "count": len(signals),
+            "total": total,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-atr/trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_atr_trades():
+    """Alias for /api/sma9-atr/signals."""
+    return api_sma9_atr_signals()
+
+
+@app.route("/api/sma9-atr/daily-summary", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_atr_daily_summary():
+    """Daily summary, optionally scoped by dataset."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_atr_conn()
+        query = """
+            SELECT trade_date as date,
+                   COUNT(*) as total_trades,
+                   SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins,
+                   SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses,
+                   SUM(pnl_points) as total_pnl_points,
+                   ROUND(AVG(pnl_points), 2) as avg_pnl,
+                   GROUP_CONCAT(DISTINCT dataset) as datasets
+            FROM sma9_atr_trades
+        """
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        query += " GROUP BY trade_date ORDER BY trade_date DESC"
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        daily = [dict(r) for r in rows]
+        for d in daily:
+            d["win_rate"] = round(d["wins"] / d["total_trades"] * 100, 2) if d["total_trades"] > 0 else 0
+        return jsonify({"success": True, "daily": daily, "dataset": dataset or "ALL"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-atr/scanner-status", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_atr_scanner_status():
+    """Scanner status + lifetime stats + current live evaluation."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_atr_conn()
+        query = (
+            "SELECT COUNT(*) as total_trades, SUM(pnl_points) as total_pnl, "
+            "SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins, "
+            "SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses "
+            "FROM sma9_atr_trades"
+        )
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        row = conn.execute(query, params).fetchone()
+        conn.close()
+        total = row["total_trades"] or 0
+        wins = row["wins"] or 0
+        losses = row["losses"] or 0
+        total_pnl = row["total_pnl"] or 0
+        win_rate = round(wins / total * 100, 2) if total > 0 else 0
+
+        state = _sma9_atr_live_state()
+        status, age = _sma9_atr_scanner_health(state)
+        return jsonify({
+            "success": True,
+            "scanner_id": "sma9_atr",
+            "scanner_name": "SMA9 ATR Stop - ATM Option Strike (BUY ONLY)",
+            "scanner_version": state.get("scanner_version", "1.1.0"),
+            "strategy_type": "SMA9_ATR_STOP_BUY_ONLY",
+            "regime": state.get("regime", {}),
+            "instrument": "NIFTY",
+            "timeframe": "5m",
+            "stop_model": {
+                "type": "premium_atr",
+                "k": 0.70,
+                "atr_period": 14,
+                "floor_pct": 0.05,
+                "cap_pct": 0.30,
+                "fallback_pct": 0.10,
+                "fill": "actual_ltp",
+            },
+            "total_trades": total,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "total_pnl": round(total_pnl, 2),
+            "status": status,
+            "last_scan_at": state.get("last_scan_at"),
+            "last_scan_age_seconds": round(age, 1) if age is not None else None,
+            "poll_seconds": state.get("poll_seconds", 5),
+            "actual_interval_seconds": state.get("actual_interval_seconds"),
+            "market_open": state.get("market_open"),
+            "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
+            "atm_strike": state.get("atm_strike"),
+            "last_closed_spot": state.get("last_closed_spot"),
+            "last_closed_atm_strike": state.get("last_closed_atm_strike"),
+            "last_closed_candle_start": state.get("last_closed_candle_start"),
+            "last_closed_ce_close": state.get("last_closed_ce_close"),
+            "last_closed_pe_close": state.get("last_closed_pe_close"),
+            "last_closed_spot_source": state.get("last_closed_spot_source"),
+            "expiry": state.get("expiry"),
+            "options": state.get("options", {}),
+            "today": state.get("today", {}),
+            "errors": state.get("errors", []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-atr/live-status", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_atr_live_status():
+    """Raw live scanner heartbeat/evaluation for the 5-second dashboard."""
+    state = _sma9_atr_live_state()
+    if not state:
+        return jsonify({
+            "success": False,
+            "status": "NOT_RUNNING",
+            "error": "No scanner heartbeat found",
+            "poll_seconds": 5,
+        }), 200
+    status, age = _sma9_atr_scanner_health(state)
+    state["status"] = status
+    state["last_scan_age_seconds"] = round(age, 1) if age is not None else None
+    state["server_time"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
+    return jsonify({"success": True, "data": state})
+
+
+@app.route("/api/sma9-atr/recent-trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_atr_recent_trades():
+    """Recent trades, optionally scoped by dataset and trade date."""
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        dataset = request.args.get("dataset")
+        trade_date = request.args.get("trade_date")
+        conn = get_sma9_atr_conn()
+        query = "SELECT * FROM sma9_atr_trades WHERE 1=1"
+        params = []
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        return jsonify({"success": True, "trades": trades, "count": len(trades),
+                        "total": total, "dataset": dataset or "ALL",
+                        "trade_date": trade_date})
+    except Exception as e:
+        return jsonify({"success": False, "trades": [], "error": str(e)}), 500
+
+
+@app.route("/api/sma9-atr/open-positions", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_atr_open_positions():
+    """Open (unclosed) live paper positions, independent of the current ATM strike."""
+    try:
+        conn = get_sma9_atr_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_atr_open_positions ORDER BY entry_timestamp"
+        ).fetchall()
+        conn.close()
+        positions = [dict(r) for r in rows]
+        return jsonify({"success": True, "positions": positions,
+                        "count": len(positions)})
+    except Exception as e:
+        return jsonify({"success": False, "positions": [], "error": str(e)}), 500
+
+
+@app.route("/api/sma9-atr/today", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_atr_today():
+    """ONLY today's LIVE paper trades (never stale historical rows)."""
+    try:
+        today = request.args.get("trade_date") or datetime.now(
+            ZoneInfo("Asia/Kolkata")).date().isoformat()
+        conn = get_sma9_atr_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_atr_trades WHERE dataset='LIVE' AND trade_date=? "
+            "ORDER BY signal_timestamp DESC",
+            (today,),
+        ).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        pnl = round(sum(t["pnl_points"] or 0 for t in trades), 2)
+        wins = sum(1 for t in trades if (t["pnl_points"] or 0) > 0)
+        losses = sum(1 for t in trades if (t["pnl_points"] or 0) < 0)
+        return jsonify({
+            "success": True,
+            "trade_date": today,
+            "trades": trades,
+            "count": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "pnl_points": pnl,
+            "is_today": True,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "trades": []}), 500
+
+
+# ============================================================================
+# SMA9 HIGH Scanner API Endpoints (dedicated database: database/sma9_high.db)
+# ============================================================================
+SMA9_HIGH_DB_PATH = os.environ.get(
+    "SMA9_HIGH_DB_PATH", os.path.join(os.path.dirname(DB_PATH), "sma9_high.db")
+)
+
+
+def get_sma9_high_conn():
+    """Per-request connection to the dedicated SMA9 HIGH database."""
+    conn = sqlite3.connect(SMA9_HIGH_DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
+    except Exception:
+        pass
+    return conn
+
+
+def _sma9_high_live_state():
+    """Read the scanner heartbeat/state row (empty dict when unavailable)."""
+    try:
+        conn = get_sma9_high_conn()
+        row = conn.execute(
+            "SELECT value, updated_at FROM sma9_high_scan_state WHERE key='live_status'"
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {}
+        state = json.loads(row["value"])
+        state["_state_updated_at"] = row["updated_at"]
+        return state
+    except Exception:
+        return {}
+
+
+def _sma9_high_scanner_health(state):
+    """Classify scanner health without pretending stale data is live."""
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    last = state.get("last_scan_at")
+    age = None
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(last)).total_seconds()
+        except Exception:
+            age = None
+    market_open = bool(state.get("market_open"))
+    if last is None:
+        status = "NOT_RUNNING"
+    elif market_open and age is not None and age <= 15:
+        status = "ACTIVE"
+    elif market_open and age is not None and age > 15:
+        status = "STALE"
+    elif not market_open and age is not None and age <= 120:
+        status = "IDLE_MARKET_CLOSED"
+    else:
+        status = "STOPPED"
+    return status, age
+
+
+@app.route("/api/sma9-high/signals", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_signals():
+    """Get SMA9 HIGH signals/trades with pagination and filters."""
+    try:
+        limit = min(int(request.args.get("limit", 100)), 1000)
+        offset = int(request.args.get("offset", 0))
+        option_type = request.args.get("option_type")
+        trade_date = request.args.get("trade_date")
+        dataset = request.args.get("dataset")
+
+        conn = get_sma9_high_conn()
+        query = "SELECT * FROM sma9_high_trades WHERE 1=1"
+        params = []
+        if option_type:
+            query += " AND option_type = ?"
+            params.append(option_type.upper())
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        signals = [dict(r) for r in rows]
+        return jsonify({
+            "success": True,
+            "signals": signals,
+            "trades": signals,
+            "count": len(signals),
+            "total": total,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high/trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_trades():
+    """Alias for /api/sma9-high/signals."""
+    return api_sma9_high_signals()
+
+
+@app.route("/api/sma9-high/daily-summary", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_daily_summary():
+    """Daily summary, optionally scoped by dataset."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_high_conn()
+        query = """
+            SELECT trade_date as date,
+                   COUNT(*) as total_trades,
+                   SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins,
+                   SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses,
+                   SUM(pnl_points) as total_pnl_points,
+                   ROUND(AVG(pnl_points), 2) as avg_pnl,
+                   GROUP_CONCAT(DISTINCT dataset) as datasets
+            FROM sma9_high_trades
+        """
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        query += " GROUP BY trade_date ORDER BY trade_date DESC"
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        daily = [dict(r) for r in rows]
+        for d in daily:
+            d["win_rate"] = round(d["wins"] / d["total_trades"] * 100, 2) if d["total_trades"] > 0 else 0
+        return jsonify({"success": True, "daily": daily, "dataset": dataset or "ALL"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high/scanner-status", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_scanner_status():
+    """Scanner status + lifetime stats + current live evaluation."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_high_conn()
+        query = (
+            "SELECT COUNT(*) as total_trades, SUM(pnl_points) as total_pnl, "
+            "SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins, "
+            "SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses "
+            "FROM sma9_high_trades"
+        )
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        row = conn.execute(query, params).fetchone()
+        conn.close()
+        total = row["total_trades"] or 0
+        wins = row["wins"] or 0
+        losses = row["losses"] or 0
+        total_pnl = row["total_pnl"] or 0
+        win_rate = round(wins / total * 100, 2) if total > 0 else 0
+
+        state = _sma9_high_live_state()
+        status, age = _sma9_high_scanner_health(state)
+        return jsonify({
+            "success": True,
+            "scanner_id": "sma9_high",
+            "scanner_name": "SMA9 HIGH Only - ATM Option Strike + Prev-High Breakout (BUY ONLY)",
+            "scanner_version": "1.8.0",
+            "strategy_type": "SMA9_HIGH_BUY_ONLY",
+            "instrument": "NIFTY",
+            "timeframe": "5m",
+            "total_trades": total,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "total_pnl": round(total_pnl, 2),
+            "status": status,
+            "last_scan_at": state.get("last_scan_at"),
+            "last_scan_age_seconds": round(age, 1) if age is not None else None,
+            "poll_seconds": state.get("poll_seconds", 5),
+            "actual_interval_seconds": state.get("actual_interval_seconds"),
+            "market_open": state.get("market_open"),
+            "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
+            "atm_strike": state.get("atm_strike"),
+            "last_closed_spot": state.get("last_closed_spot"),
+            "last_closed_atm_strike": state.get("last_closed_atm_strike"),
+            "last_closed_candle_start": state.get("last_closed_candle_start"),
+            "last_closed_ce_close": state.get("last_closed_ce_close"),
+            "last_closed_pe_close": state.get("last_closed_pe_close"),
+            "last_closed_spot_source": state.get("last_closed_spot_source"),
+            "expiry": state.get("expiry"),
+            "options": state.get("options", {}),
+            "today": state.get("today", {}),
+            "errors": state.get("errors", []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high/live-status", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_high_live_status():
+    """Raw live scanner heartbeat/evaluation for the 5-second dashboard."""
+    state = _sma9_high_live_state()
+    if not state:
+        return jsonify({
+            "success": False,
+            "status": "NOT_RUNNING",
+            "error": "No scanner heartbeat found",
+            "poll_seconds": 5,
+        }), 200
+    status, age = _sma9_high_scanner_health(state)
+    state["status"] = status
+    state["last_scan_age_seconds"] = round(age, 1) if age is not None else None
+    state["server_time"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
+    return jsonify({"success": True, "data": state})
+
+
+@app.route("/api/sma9-high/recent-trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_recent_trades():
+    """Recent trades, optionally scoped by dataset and trade date."""
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        dataset = request.args.get("dataset")
+        trade_date = request.args.get("trade_date")
+        conn = get_sma9_high_conn()
+        query = "SELECT * FROM sma9_high_trades WHERE 1=1"
+        params = []
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        return jsonify({"success": True, "trades": trades, "count": len(trades),
+                        "total": total, "dataset": dataset or "ALL",
+                        "trade_date": trade_date})
+    except Exception as e:
+        return jsonify({"success": False, "trades": [], "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high/today", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_high_today():
+    """ONLY today's LIVE paper trades (never stale historical rows)."""
+    try:
+        today = request.args.get("trade_date") or datetime.now(
+            ZoneInfo("Asia/Kolkata")).date().isoformat()
+        conn = get_sma9_high_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_high_trades WHERE dataset='LIVE' AND trade_date=? "
+            "ORDER BY signal_timestamp DESC",
+            (today,),
+        ).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        pnl = round(sum(t["pnl_points"] or 0 for t in trades), 2)
+        wins = sum(1 for t in trades if (t["pnl_points"] or 0) > 0)
+        losses = sum(1 for t in trades if (t["pnl_points"] or 0) < 0)
+        return jsonify({
+            "success": True,
+            "trade_date": today,
+            "trades": trades,
+            "count": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "pnl_points": pnl,
+            "is_today": True,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "trades": []}), 500
+
+
+@app.route("/api/sma9-high/legacy-audit", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_sma9_high_legacy_audit():
+    """Stub: no legacy audit table for SMA9 HIGH."""
+    return jsonify({
+        "success": True,
+        "total_audited": 0,
+        "compliant": 0,
+        "discrepant": 0,
+        "compliance_rate_pct": 0,
+        "by_option_type": [],
+        "discrepancy_reason_groups": [],
+        "rows": [],
+    })
+
+
+@app.route("/api/sma9-high/open-positions", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_high_open_positions():
+    """Open (unclosed) live paper positions, independent of the current ATM strike."""
+    try:
+        conn = get_sma9_high_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_high_open_positions ORDER BY entry_timestamp"
+        ).fetchall()
+        conn.close()
+        positions = [dict(r) for r in rows]
+        return jsonify({"success": True, "positions": positions,
+                        "count": len(positions)})
+    except Exception as e:
+        return jsonify({"success": False, "positions": [], "error": str(e)}), 500
+
+
+# ============================================================================
+# NO-SMA Scanner API Endpoints (dedicated database: database/no_sma.db)
+# ============================================================================
+NO_SMA_DB_PATH = os.environ.get(
+    "NO_SMA_DB_PATH", os.path.join(os.path.dirname(DB_PATH), "no_sma.db")
+)
+
+
+def get_no_sma_conn():
+    """Per-request connection to the dedicated NO-SMA database."""
+    conn = sqlite3.connect(NO_SMA_DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
+    except Exception:
+        pass
+    return conn
+
+
+def _no_sma_live_state():
+    """Read the scanner heartbeat/state row (empty dict when unavailable)."""
+    try:
+        conn = get_no_sma_conn()
+        row = conn.execute(
+            "SELECT value, updated_at FROM no_sma_scan_state WHERE key='live_status'"
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {}
+        state = json.loads(row["value"])
+        state["_state_updated_at"] = row["updated_at"]
+        return state
+    except Exception:
+        return {}
+
+
+def _no_sma_scanner_health(state):
+    """Classify scanner health without pretending stale data is live."""
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    last = state.get("last_scan_at")
+    age = None
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(last)).total_seconds()
+        except Exception:
+            age = None
+    market_open = bool(state.get("market_open"))
+    if last is None:
+        status = "NOT_RUNNING"
+    elif market_open and age is not None and age <= 15:
+        status = "ACTIVE"
+    elif market_open and age is not None and age > 15:
+        status = "STALE"
+    elif not market_open and age is not None and age <= 120:
+        status = "IDLE_MARKET_CLOSED"
+    else:
+        status = "STOPPED"
+    return status, age
+
+
+@app.route("/api/no-sma/signals", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_signals():
+    """Get NO-SMA signals/trades with pagination and filters."""
+    try:
+        limit = min(int(request.args.get("limit", 100)), 1000)
+        offset = int(request.args.get("offset", 0))
+        option_type = request.args.get("option_type")
+        trade_date = request.args.get("trade_date")
+        dataset = request.args.get("dataset")
+
+        conn = get_no_sma_conn()
+        query = "SELECT * FROM no_sma_trades WHERE 1=1"
+        params = []
+        if option_type:
+            query += " AND option_type = ?"
+            params.append(option_type.upper())
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        signals = [dict(r) for r in rows]
+        return jsonify({
+            "success": True,
+            "signals": signals,
+            "trades": signals,
+            "count": len(signals),
+            "total": total,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/no-sma/trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_trades():
+    """Alias for /api/no-sma/signals."""
+    return api_no_sma_signals()
+
+
+@app.route("/api/no-sma/daily-summary", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_daily_summary():
+    """Daily summary, optionally scoped by dataset."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_no_sma_conn()
+        query = """
+            SELECT trade_date as date,
+                   COUNT(*) as total_trades,
+                   SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins,
+                   SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses,
+                   SUM(pnl_points) as total_pnl_points,
+                   ROUND(AVG(pnl_points), 2) as avg_pnl,
+                   GROUP_CONCAT(DISTINCT dataset) as datasets
+            FROM no_sma_trades
+        """
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        query += " GROUP BY trade_date ORDER BY trade_date DESC"
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        daily = [dict(r) for r in rows]
+        for d in daily:
+            d["win_rate"] = round(d["wins"] / d["total_trades"] * 100, 2) if d["total_trades"] > 0 else 0
+        return jsonify({"success": True, "daily": daily, "dataset": dataset or "ALL"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/no-sma/scanner-status", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_scanner_status():
+    """Scanner status + lifetime stats + current live evaluation."""
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_no_sma_conn()
+        query = (
+            "SELECT COUNT(*) as total_trades, SUM(pnl_points) as total_pnl, "
+            "SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins, "
+            "SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses "
+            "FROM no_sma_trades"
+        )
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        row = conn.execute(query, params).fetchone()
+        conn.close()
+        total = row["total_trades"] or 0
+        wins = row["wins"] or 0
+        losses = row["losses"] or 0
+        total_pnl = row["total_pnl"] or 0
+        win_rate = round(wins / total * 100, 2) if total > 0 else 0
+
+        state = _no_sma_live_state()
+        status, age = _no_sma_scanner_health(state)
+        return jsonify({
+            "success": True,
+            "scanner_id": "no_sma",
+            "scanner_name": "NO-SMA Only - ATM Option Strike + Prev-High Breakout (BUY ONLY)",
+            "scanner_version": "1.6.0",
+            "strategy_type": "NO_SMA_BUY_ONLY",
+            "instrument": "NIFTY",
+            "timeframe": "5m",
+            "total_trades": total,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "total_pnl": round(total_pnl, 2),
+            "status": status,
+            "last_scan_at": state.get("last_scan_at"),
+            "last_scan_age_seconds": round(age, 1) if age is not None else None,
+            "poll_seconds": state.get("poll_seconds", 5),
+            "actual_interval_seconds": state.get("actual_interval_seconds"),
+            "market_open": state.get("market_open"),
+            "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
+            "atm_strike": state.get("atm_strike"),
+            "last_closed_spot": state.get("last_closed_spot"),
+            "last_closed_atm_strike": state.get("last_closed_atm_strike"),
+            "last_closed_candle_start": state.get("last_closed_candle_start"),
+            "last_closed_ce_close": state.get("last_closed_ce_close"),
+            "last_closed_pe_close": state.get("last_closed_pe_close"),
+            "last_closed_spot_source": state.get("last_closed_spot_source"),
+            "expiry": state.get("expiry"),
+            "options": state.get("options", {}),
+            "today": state.get("today", {}),
+            "errors": state.get("errors", []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/no-sma/live-status", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_no_sma_live_status():
+    """Raw live scanner heartbeat/evaluation for the 5-second dashboard."""
+    state = _no_sma_live_state()
+    if not state:
+        return jsonify({
+            "success": False,
+            "status": "NOT_RUNNING",
+            "error": "No scanner heartbeat found",
+            "poll_seconds": 5,
+        }), 200
+    status, age = _no_sma_scanner_health(state)
+    state["status"] = status
+    state["last_scan_age_seconds"] = round(age, 1) if age is not None else None
+    state["server_time"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
+    return jsonify({"success": True, "data": state})
+
+
+@app.route("/api/no-sma/recent-trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_recent_trades():
+    """Recent trades, optionally scoped by dataset and trade date."""
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        dataset = request.args.get("dataset")
+        trade_date = request.args.get("trade_date")
+        conn = get_no_sma_conn()
+        query = "SELECT * FROM no_sma_trades WHERE 1=1"
+        params = []
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        return jsonify({"success": True, "trades": trades, "count": len(trades),
+                        "total": total, "dataset": dataset or "ALL",
+                        "trade_date": trade_date})
+    except Exception as e:
+        return jsonify({"success": False, "trades": [], "error": str(e)}), 500
+
+
+@app.route("/api/no-sma/today", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_no_sma_today():
+    """ONLY today's LIVE paper trades (never stale historical rows)."""
+    try:
+        today = request.args.get("trade_date") or datetime.now(
+            ZoneInfo("Asia/Kolkata")).date().isoformat()
+        conn = get_no_sma_conn()
+        rows = conn.execute(
+            "SELECT * FROM no_sma_trades WHERE dataset='LIVE' AND trade_date=? "
+            "ORDER BY signal_timestamp DESC",
+            (today,),
+        ).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        pnl = round(sum(t["pnl_points"] or 0 for t in trades), 2)
+        wins = sum(1 for t in trades if (t["pnl_points"] or 0) > 0)
+        losses = sum(1 for t in trades if (t["pnl_points"] or 0) < 0)
+        return jsonify({
+            "success": True,
+            "trade_date": today,
+            "trades": trades,
+            "count": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "pnl_points": pnl,
+            "is_today": True,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "trades": []}), 500
+
+
+@app.route("/api/no-sma/legacy-audit", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_no_sma_legacy_audit():
+    """Stub: no legacy audit table for NO-SMA."""
+    return jsonify({
+        "success": True,
+        "total_audited": 0,
+        "compliant": 0,
+        "discrepant": 0,
+        "compliance_rate_pct": 0,
+        "by_option_type": [],
+        "discrepancy_reason_groups": [],
+        "rows": [],
+    })
+
+
+@app.route("/api/no-sma/open-positions", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_no_sma_open_positions():
+    """Open (unclosed) live paper positions, independent of the current ATM strike."""
+    try:
+        conn = get_no_sma_conn()
+        rows = conn.execute(
+            "SELECT * FROM no_sma_open_positions ORDER BY entry_timestamp"
+        ).fetchall()
+        conn.close()
+        positions = [dict(r) for r in rows]
+        return jsonify({"success": True, "positions": positions,
+                        "count": len(positions)})
+    except Exception as e:
+        return jsonify({"success": False, "positions": [], "error": str(e)}), 500
+# ============================================================================
+# SMA9_TRAIL trail API
+# ============================================================================
+
+SMA9_TRAIL_DB_PATH = os.environ.get(
+    "SMA9_TRAIL_DB_PATH", os.path.join(os.path.dirname(DB_PATH), "sma9_trail.db")
+)
+
+
+def get_sma9_trail_conn():
+    """Per-request connection to the dedicated sma9_trail trail database."""
+    conn = sqlite3.connect(SMA9_TRAIL_DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
+    except Exception:
+        pass
+    return conn
+
+
+def _sma9_trail_live_state():
+    try:
+        conn = get_sma9_trail_conn()
+        row = conn.execute(
+            "SELECT value, updated_at FROM sma9_trail_scan_state WHERE key='live_status'"
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {}
+        state = json.loads(row["value"])
+        state["_state_updated_at"] = row["updated_at"]
+        return state
+    except Exception:
+        return {}
+
+
+def _sma9_trail_scanner_health(state):
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    last = state.get("last_scan_at")
+    age = None
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(last)).total_seconds()
+        except Exception:
+            age = None
+    market_open = bool(state.get("market_open"))
+    if last is None:
+        status = "NOT_RUNNING"
+    elif market_open and age is not None and age <= 15:
+        status = "ACTIVE"
+    elif market_open and age is not None and age > 15:
+        status = "STALE"
+    elif not market_open and age is not None and age <= 120:
+        status = "IDLE_MARKET_CLOSED"
+    else:
+        status = "STOPPED"
+    return status, age
+
+
+@app.route("/api/sma9-trail/signals", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_trail_signals():
+    try:
+        limit = min(int(request.args.get("limit", 100)), 1000)
+        offset = int(request.args.get("offset", 0))
+        option_type = request.args.get("option_type")
+        trade_date = request.args.get("trade_date")
+        dataset = request.args.get("dataset")
+        conn = get_sma9_trail_conn()
+        query = "SELECT * FROM sma9_trail_trades WHERE 1=1"
+        params = []
+        if option_type:
+            query += " AND option_type = ?"
+            params.append(option_type.upper())
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "signals": [dict(r) for r in rows],
+            "trades": [dict(r) for r in rows],
+            "count": len(rows),
+            "total": total,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-trail/trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_trail_trades():
+    return api_sma9_trail_signals()
+
+
+@app.route("/api/sma9-trail/daily-summary", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_trail_daily_summary():
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_trail_conn()
+        query = """
+            SELECT trade_date as date,
+                   COUNT(*) as total_trades,
+                   SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins,
+                   SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses,
+                   SUM(pnl_points) as total_pnl_points,
+                   ROUND(AVG(pnl_points), 2) as avg_pnl
+            FROM sma9_trail_trades
+        """
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        query += " GROUP BY trade_date ORDER BY trade_date DESC"
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        daily = [dict(r) for r in rows]
+        for d in daily:
+            d["win_rate"] = round(d["wins"] / d["total_trades"] * 100, 2) if d["total_trades"] > 0 else 0
+        return jsonify({"success": True, "daily": daily, "dataset": dataset or "ALL"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-trail/scanner-status", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_trail_scanner_status():
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_trail_conn()
+        query = (
+            "SELECT COUNT(*) as total_trades, SUM(pnl_points) as total_pnl, "
+            "SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins, "
+            "SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses "
+            "FROM sma9_trail_trades"
+        )
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        row = conn.execute(query, params).fetchone()
+        conn.close()
+        total = row["total_trades"] or 0
+        wins = row["wins"] or 0
+        losses = row["losses"] or 0
+        total_pnl = row["total_pnl"] or 0
+        win_rate = round(wins / total * 100, 2) if total > 0 else 0
+        state = _sma9_trail_live_state()
+        status, age = _sma9_trail_scanner_health(state)
+        return jsonify({
+            "success": True,
+            "scanner_id": "sma9_trail",
+            "scanner_name": "SMA9 Trail - ATM Option Strike + Trail Exit (BUY ONLY)",
+            "scanner_version": "2.1.0",
+            "strategy_type": "SMA_BUY_ONLY",
+            "instrument": "NIFTY",
+            "timeframe": "5m",
+            "total_trades": total,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "total_pnl": round(total_pnl, 2),
+            "status": status,
+            "last_scan_at": state.get("last_scan_at"),
+            "last_scan_age_seconds": round(age, 1) if age is not None else None,
+            "poll_seconds": state.get("poll_seconds", 5),
+            "actual_interval_seconds": state.get("actual_interval_seconds"),
+            "market_open": state.get("market_open"),
+            "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
+            "atm_strike": state.get("atm_strike"),
+            "last_closed_spot": state.get("last_closed_spot"),
+            "last_closed_atm_strike": state.get("last_closed_atm_strike"),
+            "last_closed_candle_start": state.get("last_closed_candle_start"),
+            "last_closed_ce_close": state.get("last_closed_ce_close"),
+            "last_closed_pe_close": state.get("last_closed_pe_close"),
+            "last_closed_spot_source": state.get("last_closed_spot_source"),
+            "expiry": state.get("expiry"),
+            "options": state.get("options", {}),
+            "today": state.get("today", {}),
+            "errors": state.get("errors", []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-trail/live-status", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_trail_live_status():
+    state = _sma9_trail_live_state()
+    if not state:
+        return jsonify({
+            "success": False,
+            "status": "NOT_RUNNING",
+            "error": "No scanner heartbeat found",
+            "poll_seconds": 5,
+        }), 200
+    status, age = _sma9_trail_scanner_health(state)
+    state["status"] = status
+    state["last_scan_age_seconds"] = round(age, 1) if age is not None else None
+    state["server_time"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
+    return jsonify({"success": True, "data": state})
+
+
+@app.route("/api/sma9-trail/recent-trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_trail_recent_trades():
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        dataset = request.args.get("dataset")
+        trade_date = request.args.get("trade_date")
+        conn = get_sma9_trail_conn()
+        query = "SELECT * FROM sma9_trail_trades WHERE 1=1"
+        params = []
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "trades": [dict(r) for r in rows],
+            "count": len(rows),
+            "total": total,
+            "dataset": dataset or "ALL",
+            "trade_date": trade_date,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "trades": [], "error": str(e)}), 500
+
+
+@app.route("/api/sma9-trail/today", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_trail_today():
+    try:
+        today = request.args.get("trade_date") or datetime.now(
+            ZoneInfo("Asia/Kolkata")).date().isoformat()
+        conn = get_sma9_trail_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_trail_trades WHERE dataset='LIVE' AND trade_date=? "
+            "ORDER BY signal_timestamp DESC",
+            (today,),
+        ).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        pnl = round(sum(t["pnl_points"] or 0 for t in trades), 2)
+        wins = sum(1 for t in trades if (t["pnl_points"] or 0) > 0)
+        losses = sum(1 for t in trades if (t["pnl_points"] or 0) < 0)
+        return jsonify({
+            "success": True,
+            "trade_date": today,
+            "trades": trades,
+            "count": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "pnl_points": pnl,
+            "is_today": True,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "trades": []}), 500
+
+
+@app.route("/api/sma9-trail/legacy-audit", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_sma9_trail_legacy_audit():
+    return jsonify({
+        "success": True,
+        "total_audited": 0,
+        "compliant": 0,
+        "discrepant": 0,
+        "compliance_rate_pct": 0,
+        "by_option_type": [],
+        "discrepancy_reason_groups": [],
+        "rows": [],
+    })
+
+
+@app.route("/api/sma9-trail/open-positions", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_trail_open_positions():
+    try:
+        conn = get_sma9_trail_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_trail_open_positions ORDER BY entry_timestamp"
+        ).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "positions": [dict(r) for r in rows],
+            "count": len(rows),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "positions": []}), 500
+
+
+# ============================================================================
+# SMA9_HIGH_TRAIL trail API
+# ============================================================================
+
+SMA9_HIGH_TRAIL_DB_PATH = os.environ.get(
+    "SMA9_HIGH_TRAIL_DB_PATH", os.path.join(os.path.dirname(DB_PATH), "sma9_high_trail.db")
+)
+
+
+def get_sma9_high_trail_conn():
+    """Per-request connection to the dedicated sma9_high_trail trail database."""
+    conn = sqlite3.connect(SMA9_HIGH_TRAIL_DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
+    except Exception:
+        pass
+    return conn
+
+
+def _sma9_high_trail_live_state():
+    try:
+        conn = get_sma9_high_trail_conn()
+        row = conn.execute(
+            "SELECT value, updated_at FROM sma9_high_trail_scan_state WHERE key='live_status'"
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {}
+        state = json.loads(row["value"])
+        state["_state_updated_at"] = row["updated_at"]
+        return state
+    except Exception:
+        return {}
+
+
+def _sma9_high_trail_scanner_health(state):
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    last = state.get("last_scan_at")
+    age = None
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(last)).total_seconds()
+        except Exception:
+            age = None
+    market_open = bool(state.get("market_open"))
+    if last is None:
+        status = "NOT_RUNNING"
+    elif market_open and age is not None and age <= 15:
+        status = "ACTIVE"
+    elif market_open and age is not None and age > 15:
+        status = "STALE"
+    elif not market_open and age is not None and age <= 120:
+        status = "IDLE_MARKET_CLOSED"
+    else:
+        status = "STOPPED"
+    return status, age
+
+
+@app.route("/api/sma9-high-trail/signals", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_trail_signals():
+    try:
+        limit = min(int(request.args.get("limit", 100)), 1000)
+        offset = int(request.args.get("offset", 0))
+        option_type = request.args.get("option_type")
+        trade_date = request.args.get("trade_date")
+        dataset = request.args.get("dataset")
+        conn = get_sma9_high_trail_conn()
+        query = "SELECT * FROM sma9_high_trail_trades WHERE 1=1"
+        params = []
+        if option_type:
+            query += " AND option_type = ?"
+            params.append(option_type.upper())
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "signals": [dict(r) for r in rows],
+            "trades": [dict(r) for r in rows],
+            "count": len(rows),
+            "total": total,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high-trail/trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_trail_trades():
+    return api_sma9_high_trail_signals()
+
+
+@app.route("/api/sma9-high-trail/daily-summary", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_trail_daily_summary():
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_high_trail_conn()
+        query = """
+            SELECT trade_date as date,
+                   COUNT(*) as total_trades,
+                   SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins,
+                   SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses,
+                   SUM(pnl_points) as total_pnl_points,
+                   ROUND(AVG(pnl_points), 2) as avg_pnl
+            FROM sma9_high_trail_trades
+        """
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        query += " GROUP BY trade_date ORDER BY trade_date DESC"
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        daily = [dict(r) for r in rows]
+        for d in daily:
+            d["win_rate"] = round(d["wins"] / d["total_trades"] * 100, 2) if d["total_trades"] > 0 else 0
+        return jsonify({"success": True, "daily": daily, "dataset": dataset or "ALL"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high-trail/scanner-status", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_trail_scanner_status():
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_sma9_high_trail_conn()
+        query = (
+            "SELECT COUNT(*) as total_trades, SUM(pnl_points) as total_pnl, "
+            "SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins, "
+            "SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses "
+            "FROM sma9_high_trail_trades"
+        )
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        row = conn.execute(query, params).fetchone()
+        conn.close()
+        total = row["total_trades"] or 0
+        wins = row["wins"] or 0
+        losses = row["losses"] or 0
+        total_pnl = row["total_pnl"] or 0
+        win_rate = round(wins / total * 100, 2) if total > 0 else 0
+        state = _sma9_high_trail_live_state()
+        status, age = _sma9_high_trail_scanner_health(state)
+        return jsonify({
+            "success": True,
+            "scanner_id": "sma9_high_trail",
+            "scanner_name": "SMA9 HIGH Trail - ATM Option Strike + Trail Exit (BUY ONLY)",
+            "scanner_version": "2.1.0",
+            "strategy_type": "SMA_HIGH_BUY_ONLY",
+            "instrument": "NIFTY",
+            "timeframe": "5m",
+            "total_trades": total,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "total_pnl": round(total_pnl, 2),
+            "status": status,
+            "last_scan_at": state.get("last_scan_at"),
+            "last_scan_age_seconds": round(age, 1) if age is not None else None,
+            "poll_seconds": state.get("poll_seconds", 5),
+            "actual_interval_seconds": state.get("actual_interval_seconds"),
+            "market_open": state.get("market_open"),
+            "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
+            "atm_strike": state.get("atm_strike"),
+            "last_closed_spot": state.get("last_closed_spot"),
+            "last_closed_atm_strike": state.get("last_closed_atm_strike"),
+            "last_closed_candle_start": state.get("last_closed_candle_start"),
+            "last_closed_ce_close": state.get("last_closed_ce_close"),
+            "last_closed_pe_close": state.get("last_closed_pe_close"),
+            "last_closed_spot_source": state.get("last_closed_spot_source"),
+            "expiry": state.get("expiry"),
+            "options": state.get("options", {}),
+            "today": state.get("today", {}),
+            "errors": state.get("errors", []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high-trail/live-status", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_high_trail_live_status():
+    state = _sma9_high_trail_live_state()
+    if not state:
+        return jsonify({
+            "success": False,
+            "status": "NOT_RUNNING",
+            "error": "No scanner heartbeat found",
+            "poll_seconds": 5,
+        }), 200
+    status, age = _sma9_high_trail_scanner_health(state)
+    state["status"] = status
+    state["last_scan_age_seconds"] = round(age, 1) if age is not None else None
+    state["server_time"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
+    return jsonify({"success": True, "data": state})
+
+
+@app.route("/api/sma9-high-trail/recent-trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_sma9_high_trail_recent_trades():
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        dataset = request.args.get("dataset")
+        trade_date = request.args.get("trade_date")
+        conn = get_sma9_high_trail_conn()
+        query = "SELECT * FROM sma9_high_trail_trades WHERE 1=1"
+        params = []
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "trades": [dict(r) for r in rows],
+            "count": len(rows),
+            "total": total,
+            "dataset": dataset or "ALL",
+            "trade_date": trade_date,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "trades": [], "error": str(e)}), 500
+
+
+@app.route("/api/sma9-high-trail/today", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_high_trail_today():
+    try:
+        today = request.args.get("trade_date") or datetime.now(
+            ZoneInfo("Asia/Kolkata")).date().isoformat()
+        conn = get_sma9_high_trail_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_high_trail_trades WHERE dataset='LIVE' AND trade_date=? "
+            "ORDER BY signal_timestamp DESC",
+            (today,),
+        ).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        pnl = round(sum(t["pnl_points"] or 0 for t in trades), 2)
+        wins = sum(1 for t in trades if (t["pnl_points"] or 0) > 0)
+        losses = sum(1 for t in trades if (t["pnl_points"] or 0) < 0)
+        return jsonify({
+            "success": True,
+            "trade_date": today,
+            "trades": trades,
+            "count": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "pnl_points": pnl,
+            "is_today": True,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "trades": []}), 500
+
+
+@app.route("/api/sma9-high-trail/legacy-audit", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_sma9_high_trail_legacy_audit():
+    return jsonify({
+        "success": True,
+        "total_audited": 0,
+        "compliant": 0,
+        "discrepant": 0,
+        "compliance_rate_pct": 0,
+        "by_option_type": [],
+        "discrepancy_reason_groups": [],
+        "rows": [],
+    })
+
+
+@app.route("/api/sma9-high-trail/open-positions", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_sma9_high_trail_open_positions():
+    try:
+        conn = get_sma9_high_trail_conn()
+        rows = conn.execute(
+            "SELECT * FROM sma9_high_trail_open_positions ORDER BY entry_timestamp"
+        ).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "positions": [dict(r) for r in rows],
+            "count": len(rows),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "positions": []}), 500
+
+
+# ============================================================================
+# NO_SMA_TRAIL trail API
+# ============================================================================
+
+NO_SMA_TRAIL_DB_PATH = os.environ.get(
+    "NO_SMA_TRAIL_DB_PATH", os.path.join(os.path.dirname(DB_PATH), "no_sma_trail.db")
+)
+
+
+def get_no_sma_trail_conn():
+    """Per-request connection to the dedicated no_sma_trail trail database."""
+    conn = sqlite3.connect(NO_SMA_TRAIL_DB_PATH, timeout=10)
+    conn.row_factory = sqlite3.Row
+    try:
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA busy_timeout=10000")
+    except Exception:
+        pass
+    return conn
+
+def _no_sma_trail_live_state():
+    try:
+        conn = get_no_sma_trail_conn()
+        row = conn.execute(
+            "SELECT value, updated_at FROM no_sma_trail_scan_state WHERE key='live_status'"
+        ).fetchone()
+        conn.close()
+        if not row:
+            return {}
+        state = json.loads(row["value"])
+        state["_state_updated_at"] = row["updated_at"]
+        return state
+    except Exception:
+        return {}
+
+
+def _no_sma_trail_scanner_health(state):
+    now = datetime.now(ZoneInfo("Asia/Kolkata"))
+    last = state.get("last_scan_at")
+    age = None
+    if last:
+        try:
+            age = (now - datetime.fromisoformat(last)).total_seconds()
+        except Exception:
+            age = None
+    market_open = bool(state.get("market_open"))
+    if last is None:
+        status = "NOT_RUNNING"
+    elif market_open and age is not None and age <= 15:
+        status = "ACTIVE"
+    elif market_open and age is not None and age > 15:
+        status = "STALE"
+    elif not market_open and age is not None and age <= 120:
+        status = "IDLE_MARKET_CLOSED"
+    else:
+        status = "STOPPED"
+    return status, age
+
+
+@app.route("/api/no-sma-trail/signals", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_trail_signals():
+    try:
+        limit = min(int(request.args.get("limit", 100)), 1000)
+        offset = int(request.args.get("offset", 0))
+        option_type = request.args.get("option_type")
+        trade_date = request.args.get("trade_date")
+        dataset = request.args.get("dataset")
+        conn = get_no_sma_trail_conn()
+        query = "SELECT * FROM no_sma_trail_trades WHERE 1=1"
+        params = []
+        if option_type:
+            query += " AND option_type = ?"
+            params.append(option_type.upper())
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ? OFFSET ?"
+        params.extend([limit, offset])
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "signals": [dict(r) for r in rows],
+            "trades": [dict(r) for r in rows],
+            "count": len(rows),
+            "total": total,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/no-sma-trail/trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_trail_trades():
+    return api_no_sma_trail_signals()
+
+
+@app.route("/api/no-sma-trail/daily-summary", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_trail_daily_summary():
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_no_sma_trail_conn()
+        query = """
+            SELECT trade_date as date,
+                   COUNT(*) as total_trades,
+                   SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins,
+                   SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses,
+                   SUM(pnl_points) as total_pnl_points,
+                   ROUND(AVG(pnl_points), 2) as avg_pnl
+            FROM no_sma_trail_trades
+        """
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        query += " GROUP BY trade_date ORDER BY trade_date DESC"
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        daily = [dict(r) for r in rows]
+        for d in daily:
+            d["win_rate"] = round(d["wins"] / d["total_trades"] * 100, 2) if d["total_trades"] > 0 else 0
+        return jsonify({"success": True, "daily": daily, "dataset": dataset or "ALL"})
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/no-sma-trail/scanner-status", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_trail_scanner_status():
+    try:
+        dataset = request.args.get("dataset")
+        conn = get_no_sma_trail_conn()
+        query = (
+            "SELECT COUNT(*) as total_trades, SUM(pnl_points) as total_pnl, "
+            "SUM(CASE WHEN pnl_points > 0 THEN 1 ELSE 0 END) as wins, "
+            "SUM(CASE WHEN pnl_points < 0 THEN 1 ELSE 0 END) as losses "
+            "FROM no_sma_trail_trades"
+        )
+        params = []
+        if dataset:
+            query += " WHERE dataset = ?"
+            params.append(dataset)
+        row = conn.execute(query, params).fetchone()
+        conn.close()
+        total = row["total_trades"] or 0
+        wins = row["wins"] or 0
+        losses = row["losses"] or 0
+        total_pnl = row["total_pnl"] or 0
+        win_rate = round(wins / total * 100, 2) if total > 0 else 0
+        state = _no_sma_trail_live_state()
+        status, age = _no_sma_trail_scanner_health(state)
+        return jsonify({
+            "success": True,
+            "scanner_id": "no_sma_trail",
+            "scanner_name": "NO-SMA Trail - ATM Option Strike + Trail Exit (BUY ONLY)",
+            "scanner_version": "2.1.0",
+            "strategy_type": "PREV_HIGH_BUY_ONLY",
+            "instrument": "NIFTY",
+            "timeframe": "5m",
+            "total_trades": total,
+            "wins": wins,
+            "losses": losses,
+            "win_rate": win_rate,
+            "total_pnl": round(total_pnl, 2),
+            "status": status,
+            "last_scan_at": state.get("last_scan_at"),
+            "last_scan_age_seconds": round(age, 1) if age is not None else None,
+            "poll_seconds": state.get("poll_seconds", 5),
+            "actual_interval_seconds": state.get("actual_interval_seconds"),
+            "market_open": state.get("market_open"),
+            "spot": state.get("spot"),
+            "spot_source": state.get("spot_source"),
+            "atm_strike": state.get("atm_strike"),
+            "last_closed_spot": state.get("last_closed_spot"),
+            "last_closed_atm_strike": state.get("last_closed_atm_strike"),
+            "last_closed_candle_start": state.get("last_closed_candle_start"),
+            "last_closed_ce_close": state.get("last_closed_ce_close"),
+            "last_closed_pe_close": state.get("last_closed_pe_close"),
+            "last_closed_spot_source": state.get("last_closed_spot_source"),
+            "expiry": state.get("expiry"),
+            "options": state.get("options", {}),
+            "today": state.get("today", {}),
+            "errors": state.get("errors", []),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e)}), 500
+
+
+@app.route("/api/no-sma-trail/live-status", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_no_sma_trail_live_status():
+    state = _no_sma_trail_live_state()
+    if not state:
+        return jsonify({
+            "success": False,
+            "status": "NOT_RUNNING",
+            "error": "No scanner heartbeat found",
+            "poll_seconds": 5,
+        }), 200
+    status, age = _no_sma_trail_scanner_health(state)
+    state["status"] = status
+    state["last_scan_age_seconds"] = round(age, 1) if age is not None else None
+    state["server_time"] = datetime.now(ZoneInfo("Asia/Kolkata")).isoformat()
+    return jsonify({"success": True, "data": state})
+
+
+@app.route("/api/no-sma-trail/recent-trades", methods=["GET"])
+@limiter.limit("120 per minute")
+def api_no_sma_trail_recent_trades():
+    try:
+        limit = min(int(request.args.get("limit", 50)), 500)
+        dataset = request.args.get("dataset")
+        trade_date = request.args.get("trade_date")
+        conn = get_no_sma_trail_conn()
+        query = "SELECT * FROM no_sma_trail_trades WHERE 1=1"
+        params = []
+        if dataset:
+            query += " AND dataset = ?"
+            params.append(dataset)
+        if trade_date:
+            query += " AND trade_date = ?"
+            params.append(trade_date)
+        count_query = query.replace("SELECT *", "SELECT COUNT(*)", 1)
+        total = conn.execute(count_query, params).fetchone()[0]
+        query += " ORDER BY signal_timestamp DESC LIMIT ?"
+        params.append(limit)
+        rows = conn.execute(query, params).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "trades": [dict(r) for r in rows],
+            "count": len(rows),
+            "total": total,
+            "dataset": dataset or "ALL",
+            "trade_date": trade_date,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "trades": [], "error": str(e)}), 500
+
+
+@app.route("/api/no-sma-trail/today", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_no_sma_trail_today():
+    try:
+        today = request.args.get("trade_date") or datetime.now(
+            ZoneInfo("Asia/Kolkata")).date().isoformat()
+        conn = get_no_sma_trail_conn()
+        rows = conn.execute(
+            "SELECT * FROM no_sma_trail_trades WHERE dataset='LIVE' AND trade_date=? "
+            "ORDER BY signal_timestamp DESC",
+            (today,),
+        ).fetchall()
+        conn.close()
+        trades = [dict(r) for r in rows]
+        pnl = round(sum(t["pnl_points"] or 0 for t in trades), 2)
+        wins = sum(1 for t in trades if (t["pnl_points"] or 0) > 0)
+        losses = sum(1 for t in trades if (t["pnl_points"] or 0) < 0)
+        return jsonify({
+            "success": True,
+            "trade_date": today,
+            "trades": trades,
+            "count": len(trades),
+            "wins": wins,
+            "losses": losses,
+            "pnl_points": pnl,
+            "is_today": True,
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "trades": []}), 500
+
+
+@app.route("/api/no-sma-trail/legacy-audit", methods=["GET"])
+@limiter.limit("60 per minute")
+def api_no_sma_trail_legacy_audit():
+    return jsonify({
+        "success": True,
+        "total_audited": 0,
+        "compliant": 0,
+        "discrepant": 0,
+        "compliance_rate_pct": 0,
+        "by_option_type": [],
+        "discrepancy_reason_groups": [],
+        "rows": [],
+    })
+
+
+@app.route("/api/no-sma-trail/open-positions", methods=["GET"])
+@limiter.limit("180 per minute")
+def api_no_sma_trail_open_positions():
+    try:
+        conn = get_no_sma_trail_conn()
+        rows = conn.execute(
+            "SELECT * FROM no_sma_trail_open_positions ORDER BY entry_timestamp"
+        ).fetchall()
+        conn.close()
+        return jsonify({
+            "success": True,
+            "positions": [dict(r) for r in rows],
+            "count": len(rows),
+        })
+    except Exception as e:
+        return jsonify({"success": False, "error": str(e), "positions": []}), 500

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>TradingAI - SMA9 5% Trail BUY-ONLY Live Dashboard</title>
+<style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0b0c15;
+        color: #e8eaf0;
+        padding: 1.5rem;
+    }
+    h1 { color: #00e5ff; font-size: 1.5rem; margin-bottom: 0.5rem; }
+    h2 { color: #9ad7ff; font-size: 1.05rem; margin: 0 0 0.6rem; }
+    .meta { color: #9aa4bf; font-size: 0.85rem; margin-bottom: 1rem; display: flex; gap: 1rem; flex-wrap: wrap; align-items: center; }
+    .section { border-top: 1px solid #1e2438; padding-top: 1rem; margin-bottom: 1.5rem; }
+    .badge { display: inline-block; padding: 0.15rem 0.55rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .badge.active, .badge.ACTIVE { background: #06301f; color: #34d399; }
+    .badge.stale, .badge.STALE { background: #3a2a06; color: #fbbf24; }
+    .badge.stopped, .badge.STOPPED, .badge.NOT_RUNNING { background: #3a0f14; color: #fb7185; }
+    .badge.idle, .badge.IDLE_MARKET_CLOSED { background: #232838; color: #94a3b8; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-top: 0.5rem; }
+    th { background: #141a2c; color: #00e5ff; text-align: left; padding: 0.5rem 0.4rem; position: sticky; top: 0; z-index: 10; white-space: nowrap; }
+    td { padding: 0.4rem 0.4rem; border-bottom: 1px solid #1c2236; white-space: nowrap; }
+    tbody tr:hover { background: #121827; }
+    .mono { font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .pos { color: #34d399; }
+    .neg { color: #fb7185; }
+    .neutral { color: #94a3b8; }
+    .empty { color: #9aa4bf; font-style: italic; }
+    .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 0.8rem; margin-bottom: 1rem; }
+    .stat-card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: 0.9rem; }
+    .stat-card .label { color: #9aa4bf; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.4rem; font-weight: 600; margin-top: 0.2rem; font-family: ui-monospace, Menlo, Consolas, monospace; }
+    .option-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 1rem; }
+    .option-card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: 1rem; }
+    .option-card h3 { font-size: 1rem; color: #00e5ff; margin-bottom: 0.6rem; }
+    .kv { display: grid; grid-template-columns: 1fr auto; gap: 0.3rem 0.8rem; font-size: 0.85rem; }
+    .kv .k { color: #9aa4bf; }
+    .kv .v { font-family: ui-monospace, Menlo, Consolas, monospace; text-align: right; }
+    .pill { display: inline-block; padding: 0.1rem 0.45rem; border-radius: 999px; font-size: 0.7rem; font-weight: 700; }
+    .pill.yes { background: #06301f; color: #34d399; }
+    .pill.no { background: #232838; color: #94a3b8; }
+    .position-box { margin-top: 0.8rem; padding: 0.7rem; border-radius: 6px; background: #0b2440; border: 1px solid #1d4ed8; font-size: 0.82rem; }
+    .position-box.flat { background: #111827; border-color: #334155; color: #94a3b8; }
+    .refresh-indicator { color: #9aa4bf; font-size: 0.8rem; }
+    .refresh-indicator .countdown { color: #fbbf24; font-weight: 700; }
+    .sub { color: #9aa4bf; font-size: 0.78rem; margin-bottom: 0.5rem; }
+    .back-link { color: #cbd5e1; text-decoration: none; font-size: 0.85rem; }
+    .back-link:hover { color: #00e5ff; }
+
+.rules-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1rem; }
+.rules-card { background: #141a2c; border: 1px solid #334155; border-radius: 8px; padding: 0.9rem; font-size: 0.85rem; }
+.rules-card h3 { color: #00e5ff; font-size: 0.9rem; margin-bottom: 0.5rem; }
+.rules-card ul { margin: 0.35rem 0 0 1.1rem; }
+.rules-card li { margin-bottom: 0.25rem; line-height: 1.35; }
+.rules-meta { color: #9aa4bf; font-size: 0.75rem; margin-top: 0.6rem; line-height: 1.5; }
+.rules-warn { color: #fbbf24; }
+</style>
+</head>
+<body>
+<h1>TradingAI - SMA9 5% Trail BUY-ONLY Live Dashboard</h1>
+<div class="meta">
+    <a href="/live/performance/?scanner=sma9_5pct_trail" class="back-link">Day-wise Performance &rarr;</a>
+    <span>Updated: <span id="generated">--</span> IST</span>
+    <span class="badge" id="scanner-status-badge">--</span>
+    <span id="scanner-status-text">--</span>
+    <span class="refresh-indicator"><span class="countdown" id="refresh-countdown">5</span>s auto-refresh (no page reload)</span>
+</div>
+
+<section class="section" id="strategy-rules-section">
+    <h2>Strategy rules (live)</h2>
+    <div id="strategy-rules" class="rules-grid">Loading strategy rules...</div>
+</section>
+
+<section class="section">
+    <h2>Live Scanner &amp; Market</h2>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="label">NIFTY LTP (live)</div><div class="value mono" id="spot">--</div></div>
+        <div class="stat-card"><div class="label">ATM Strike (live)</div><div class="value mono" id="atm">--</div></div>
+        <div class="stat-card"><div class="label">Last Closed Spot</div><div class="value mono" id="last-closed-spot">--</div></div>
+        <div class="stat-card"><div class="label">Closed-Bar ATM</div><div class="value mono" id="last-closed-atm">--</div></div>
+        <div class="stat-card"><div class="label">Expiry</div><div class="value mono" id="expiry">--</div></div>
+        <div class="stat-card"><div class="label">Last Scan</div><div class="value mono" id="last-scan">--</div></div>
+        <div class="stat-card"><div class="label">Poll Interval</div><div class="value mono" id="poll">--</div></div>
+        <div class="stat-card"><div class="label">Market</div><div class="value mono" id="market">--</div></div>
+    </div>
+</section>
+
+<section class="section">
+    <h2>ATM Option Evaluation (independent CE / PE) <span class="badge idle" id="live-atm-badge" style="margin-left:0.5rem">ATM --</span></h2>
+    <div class="option-grid">
+        <div class="option-card" id="card-CE"><h3>ATM CE</h3><div class="empty">Waiting for scanner...</div></div>
+        <div class="option-card" id="card-PE"><h3>ATM PE</h3><div class="empty">Waiting for scanner...</div></div>
+    </div>
+</section>
+
+<section class="section">
+    <h2>Today's LIVE Paper Trades (5% SL / 5% trail only)</h2>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="label">Trades</div><div class="value mono" id="today-trades">0</div></div>
+        <div class="stat-card"><div class="label">Wins</div><div class="value mono pos" id="today-wins">0</div></div>
+        <div class="stat-card"><div class="label">Losses</div><div class="value mono neg" id="today-losses">0</div></div>
+        <div class="stat-card"><div class="label">P&L (pts)</div><div class="value mono" id="today-pnl">0.00</div></div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Entry Time</th><th>Exit Time</th><th>Type</th><th>Strike</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Reason</th><th>Candle</th>
+            </tr>
+        </thead>
+        <tbody id="today-tbody"></tbody>
+    </table>
+</section>
+
+<section class="section">
+    <h2>Signals &mdash; All Scanner Trades</h2>
+    <div class="stats-grid">
+        <div class="stat-card"><div class="label">Total Signals</div><div class="value mono" id="signal-count">0</div></div>
+        <div class="stat-card"><div class="label">Wins</div><div class="value mono pos" id="signal-wins">0</div></div>
+        <div class="stat-card"><div class="label">Losses</div><div class="value mono neg" id="signal-losses">0</div></div>
+        <div class="stat-card"><div class="label">P&L (pts)</div><div class="value mono" id="signal-pnl">0.00</div></div>
+    </div>
+    <table>
+        <thead>
+            <tr>
+                <th>Signal Time</th><th>Exit Time</th><th>Type</th><th>Strike</th><th>Entry</th><th>Exit</th><th>P&L</th><th>Reason</th><th>Entry Candle</th><th>Trade ID</th>
+            </tr>
+        </thead>
+        <tbody id="signal-tbody"></tbody>
+    </table>
+</section>
+
+<script>
+const API_BASE = "/api/sma9-5pct-trail";
+const REFRESH_MS = 5000;
+let countdown = REFRESH_MS / 1000;
+let refreshTimer, countdownTimer;
+
+function n(x) {
+    if (x == null) return "--";
+    return (x > 0 ? "+" : "") + x.toFixed(2);
+}
+function cls(x) {
+    if (x > 0) return "pos";
+    if (x < 0) return "neg";
+    return "neutral";
+}
+function renderOptionCard(opt, data) {
+    const card = document.getElementById("card-" + opt);
+    if (!data || data.error) {
+        card.innerHTML = "<div class=\"empty\">" + (data && data.error ? data.error : "No data") + "</div>";
+        return;
+    }
+    let html = `
+        <div class="kv">
+            <div class="k">LTP</div><div class="v">${n(data.ltp || 0)}</div>
+            <div class="k">Quote source</div><div class="v">${String(data.ltp_source || '--')}</div>
+            ${data.metrics_strike != null && Number(data.metrics_strike) !== Number(data.strike) ? '<div class="k" style="color:#f59e0b">Signal metrics</div><div class="v" style="color:#f59e0b">from strike ' + n(data.metrics_strike, 0) + ' (heartbeat) - not recalculated for live ATM</div>' : ''}
+            <div class="k">Signal</div><div class="v ${cls(data.signal ? 1 : 0)}">${data.signal ? "YES" : "no"}</div>
+            <div class="k">Breakout</div><div class="v ${cls(data.breakout ? 1 : 0)}">${data.breakout ? "yes" : "no"}</div>
+            <div class="k">Prev High</div><div class="v mono">${n(data.prev_high || 0)}</div>
+            <div class="k">SMA</div><div class="v mono">${n(data.sma || 0)}</div>
+            <div class="k">Reason</div><div class="v">${data.reason || "--"}</div>
+        </div>
+    `;
+    if (data.position) {
+        const p = data.position;
+        html += `
+            <div class="position-box">
+                <strong>Open Position:</strong> ${p.tradingsymbol} entry=${n(p.entry_price)} hwm=${n(p.hwm || 0)} stop=${n(p.stop || 0)}<br>
+                Candle: ${p.entry_candle_start} &rarr; ${p.entry_candle_end}
+            </div>
+        `;
+    } else {
+        html += `<div class="position-box flat">No open position</div>`;
+    }
+    card.innerHTML = html;
+}
+function renderTrades(tbodyId, trades, scope) {
+    const tbody = document.getElementById(tbodyId);
+    tbody.innerHTML = "";
+    for (const t of trades) {
+        const pnl = t.pnl_points || 0;
+        const tr = `<tr>
+            <td class="mono">${t.entry_timestamp ? t.entry_timestamp.slice(11,19) : "--"}</td>
+            <td class="mono">${t.exit_timestamp ? t.exit_timestamp.slice(11,19) : "--"}</td>
+            <td>${t.option_type}</td>
+            <td>${t.strike}</td>
+            <td>${n(t.entry_price || 0)}</td>
+            <td>${n(t.exit_price || 0)}</td>
+            <td class="mono ${cls(pnl)}">${n(pnl)}</td>
+            <td>${t.exit_reason || "--"}</td>
+            <td class="mono">${t.entry_candle_start ? t.entry_candle_start.slice(11,19) : "--"}</td>
+        </tr>`;
+        tbody.insertAdjacentHTML("beforeend", tr);
+    }
+}
+function renderSignals(signals) {
+    const tbody = document.getElementById("signal-tbody");
+    tbody.innerHTML = "";
+    let wins = 0, losses = 0, pnl = 0;
+    for (const t of signals) {
+        const p = t.pnl_points || 0;
+        pnl += p;
+        if (p > 0) wins++; else if (p < 0) losses++;
+        const tr = `<tr>
+            <td class="mono">${t.signal_timestamp ? t.signal_timestamp.slice(11,19) : "--"}</td>
+            <td class="mono">${t.exit_timestamp ? t.exit_timestamp.slice(11,19) : "--"}</td>
+            <td>${t.option_type}</td>
+            <td>${t.strike}</td>
+            <td>${n(t.entry_price || 0)}</td>
+            <td>${n(t.exit_price || 0)}</td>
+            <td class="mono ${cls(p)}">${n(p)}</td>
+            <td>${t.exit_reason || "--"}</td>
+            <td class="mono">${t.entry_candle_start ? t.entry_candle_start.slice(11,19) : "--"}</td>
+            <td class="mono">${t.trade_id || "--"}</td>
+        </tr>`;
+        tbody.insertAdjacentHTML("beforeend", tr);
+    }
+    document.getElementById("signal-count").textContent = signals.length;
+    document.getElementById("signal-wins").textContent = wins;
+    document.getElementById("signal-losses").textContent = losses;
+    document.getElementById("signal-pnl").textContent = n(pnl);
+    document.getElementById("signal-pnl").className = "value mono " + cls(pnl);
+}
+
+async function applyLiveAtm(target, scannerKey) {
+    if (!target) return;
+    const badge = document.getElementById('live-atm-badge');
+    const unavailable = (msg, title) => {
+        if (badge) { badge.textContent = msg; badge.title = title; }
+    };
+    try {
+        const expiry = target.expiry ? String(target.expiry) : '';
+        const resp = await fetch('/api/live-atm?scanner=' + encodeURIComponent(scannerKey)
+            + '&expiry=' + encodeURIComponent(expiry), {
+            headers: { 'Accept': 'application/json' }, cache: 'no-store'
+        });
+        if (!resp.ok) {
+            unavailable('LIVE QUOTE UNAVAILABLE (HTTP ' + resp.status + ')',
+                'Showing last scanner heartbeat; live quote endpoint returned ' + resp.status);
+            return;
+        }
+        const payload = await resp.json();
+        if (!payload.success || !payload.data || !payload.data.atm_strike) {
+            unavailable('LIVE QUOTE UNAVAILABLE',
+                'Showing last scanner heartbeat; live quote endpoint returned no data');
+            return;
+        }
+        const a = payload.data;
+        target.atm_strike = a.atm_strike;
+        if (a.spot != null) target.spot = a.spot;
+        target.spot_source = a.spot_source || 'unavailable';
+        target.quote_diverged = !!a.quote_diverged;
+        target.live_atm_freshness = a.freshness || 'unknown_age';
+
+        const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+        let symPart = '';
+        if (expiry.length >= 7) {
+            const yy = expiry.slice(2, 4);
+            const mm = parseInt(expiry.slice(5, 7), 10);
+            if (mm >= 1 && mm <= 12) symPart = yy + months[mm - 1];
+        }
+        let metricsStrike = null;
+        let strikeMismatch = null;
+        for (const opt of ['CE', 'PE']) {
+            const p = (a.premiums || {})[opt] || {};
+            const sym = p.symbol || (symPart ? ('NFO:NIFTY' + symPart + String(a.atm_strike) + opt) : '');
+            const bare = sym ? sym.replace(/^NFO:/, '') : '';
+            const key = opt.toLowerCase();
+            if (target.options && target.options[opt]) {
+                const o = target.options[opt];
+                if (o.metrics_strike === undefined || o.metrics_strike === null) o.metrics_strike = o.strike;
+                if (o.metrics_strike != null) metricsStrike = o.metrics_strike;
+                const quoteStrike = p.strike != null ? p.strike : a.atm_strike;
+                o.strike = quoteStrike;
+                if (bare) o.tradingsymbol = bare;
+                if (p.expiry) o.expiry = p.expiry;
+                if (p.instrument_token != null) o.token = p.instrument_token;
+                if (metricsStrike != null && Number(metricsStrike) !== Number(quoteStrike)) {
+                    strikeMismatch = metricsStrike;
+                }
+                if (p.ltp != null) {
+                    o.ltp = p.ltp;
+                    o.ltp_source = p.source || 'unavailable';
+                    o.ltp_age_seconds = p.age_seconds;
+                    o.ltp_age_known = p.age_known !== false;
+                }
+            }
+            target[key + '_ltp'] = p.ltp != null ? p.ltp : null;
+            target[key + '_ltp_source'] = p.source || 'unavailable';
+            target[key + '_ltp_age_seconds'] = p.age_seconds != null ? p.age_seconds : null;
+            if (bare) target[key + '_symbol'] = bare;
+        }
+
+        if (badge) {
+            const ce = (a.premiums || {}).CE || {};
+            const pe = (a.premiums || {}).PE || {};
+            const fmt = v => (v != null ? Number(v).toFixed(2) : '--');
+            const notes = [];
+            if (a.stale || ce.stale || pe.stale) notes.push('last quote');
+            if (a.quote_diverged) notes.push('index close fallback');
+            if (a.freshness === 'unknown_age') notes.push('age not supplied');
+            if (strikeMismatch != null) {
+                notes.push('metrics @ ' + strikeMismatch);
+            }
+            badge.textContent = 'ATM ' + a.atm_strike + ' | CE ' + fmt(ce.ltp) + ' / PE ' + fmt(pe.ltp)
+                + (notes.length ? ' (' + notes.join(', ') + ')' : '');
+            badge.title = 'Spot ' + a.spot + ' via ' + (a.spot_source || 'unavailable')
+                + (a.as_of ? (' @ ' + a.as_of) : '');
+        }
+    } catch (e) {
+        unavailable('LIVE QUOTE UNAVAILABLE', 'Showing last scanner heartbeat: ' + e.message);
+        console.error('live ATM refresh failed', e);
+    }
+}
+
+
+
+async function refresh() {
+    try {
+        const [statusResp, todayResp, signalsResp] = await Promise.all([
+            fetch(API_BASE + "/scanner-status"),
+            fetch(API_BASE + "/today"),
+            fetch(API_BASE + "/signals?limit=200"),
+        ]);
+        const status = await statusResp.json();
+        const today = await todayResp.json();
+        const signals = await signalsResp.json();
+
+        if (status.success) {
+            const s = status;
+            await applyLiveAtm(s, 'sma9-5pct-trail');
+            document.getElementById("generated").textContent = new Date().toLocaleString("en-IN", {timeZone: "Asia/Kolkata", hour12: false});
+            document.getElementById("scanner-status-badge").textContent = s.status || "--";
+            document.getElementById("scanner-status-badge").className = "badge " + (s.status || "").toLowerCase().replace(" ", "_");
+            document.getElementById("scanner-status-text").textContent = s.scanner_name || "--";
+            document.getElementById("spot").textContent = n(s.spot || 0);
+            document.getElementById("atm").textContent = s.atm_strike || "--";
+            document.getElementById("last-closed-spot").textContent = n(s.last_closed_spot || 0);
+            document.getElementById("last-closed-atm").textContent = n(s.last_closed_atm_strike || 0, 0);
+            document.getElementById("last-closed-spot").title = s.last_closed_candle_start
+                ? ("Completed candle: " + s.last_closed_candle_start + " IST")
+                : "";
+            document.getElementById("expiry").textContent = s.expiry || "--";
+            document.getElementById("last-scan").textContent = s.last_scan_at ? s.last_scan_at.slice(11,19) : "--";
+            document.getElementById("poll").textContent = (s.poll_seconds || 5) + "s";
+            document.getElementById("market").textContent = s.market_open ? "OPEN" : "CLOSED";
+
+            if (s.options) {
+                renderOptionCard("CE", s.options.CE);
+                renderOptionCard("PE", s.options.PE);
+            }
+        }
+        if (today.success) {
+            document.getElementById("today-trades").textContent = today.count || 0;
+            document.getElementById("today-wins").textContent = today.wins || 0;
+            document.getElementById("today-losses").textContent = today.losses || 0;
+            const pnl = today.pnl_points || 0;
+            document.getElementById("today-pnl").textContent = n(pnl);
+            document.getElementById("today-pnl").className = "value mono " + cls(pnl);
+            renderTrades("today-tbody", today.trades || [], "today");
+        }
+        if (signals.success) {
+            renderSignals(signals.signals || signals.trades || []);
+        }
+    } catch (e) {
+        console.error("Refresh failed:", e);
+    } finally {
+        countdown = REFRESH_MS / 1000;
+    }
+}
+function startAutoRefresh() {
+    if (refreshTimer) clearInterval(refreshTimer);
+    if (countdownTimer) clearInterval(countdownTimer);
+    refreshTimer = setInterval(refresh, REFRESH_MS);
+    countdownTimer = setInterval(() => {
+        countdown = countdown <= 1 ? REFRESH_MS / 1000 : countdown - 1;
+        document.getElementById("refresh-countdown").textContent = countdown;
+    }, 1000);
+}
+document.addEventListener("DOMContentLoaded", () => {
+    refresh();
+    startAutoRefresh();
+});
+document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) refresh();
+});
+
+async function loadStrategyRules(key) {
+    const el = document.getElementById('strategy-rules');
+    if (!el) return;
+    const rulesEsc = s => String(s == null ? '--' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    const rulesList = arr => (Array.isArray(arr) ? arr : [])
+        .map(x => '<li>' + rulesEsc(x) + '</li>').join('');
+    try {
+        const resp = await fetch('/live/strategy_rules.json', {
+            headers: { 'Accept': 'application/json' }, cache: 'no-store'
+        });
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const manifest = await resp.json();
+        const rules = manifest.scanners && manifest.scanners[key];
+        if (!rules) throw new Error('no rules for ' + key);
+        el.innerHTML =
+            '<div class="rules-card"><h3>Entry conditions</h3><ul>' + rulesList(rules.entry) + '</ul></div>' +
+            '<div class="rules-card"><h3>Exit conditions</h3><ul>' + rulesList(rules.exit) + '</ul></div>' +
+            '<div class="rules-card"><h3>Scope and cadence</h3><ul>' + rulesList(rules.scope) + '</ul>' +
+            '<div class="rules-meta">Last reviewed: ' + rulesEsc(manifest.updated_at || '--') +
+            '<br>Display-only summary; the scanner engine is authoritative. See SCANNERS.md section 5.</div></div>';
+    } catch (e) {
+        el.innerHTML = '<div class="rules-card rules-warn">Strategy rules unavailable (' +
+            rulesEsc(e.message) + '). See SCANNERS.md section 5 for the authoritative rules.</div>';
+    }
+}
+loadStrategyRules('sma9-5pct-trail');
+
+</script>
+</body>
+</html>

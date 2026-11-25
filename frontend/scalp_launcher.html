@@ -42,6 +42,7 @@ h1{font-size:1.25rem;margin-bottom:.25rem}
 <div class="scanner-grid">
   <button class="scanner-btn" type="button" data-key="sma3" data-src="/live/sma3/" aria-pressed="false"><span class="scanner-icon">📊</span><span class="scanner-name">SMA3</span></button>
   <button class="scanner-btn" type="button" data-key="sma9" data-src="/live/sma9/" aria-pressed="false"><span class="scanner-icon">📊</span><span class="scanner-name">SMA9</span></button>
+  <button class="scanner-btn trail" type="button" data-key="sma9-5pct-trail" data-src="/live/sma9-5pct-trail/" aria-pressed="false"><span class="scanner-icon">📉</span><span class="scanner-name">SMA9 5% TRAIL</span></button>
   <button class="scanner-btn" type="button" data-key="sma9_5min" data-src="/live/sma9-5min/" aria-pressed="false"><span class="scanner-icon">🕒</span><span class="scanner-name">SMA9 5MIN</span></button>
   <button class="scanner-btn" type="button" data-key="sma20" data-src="/live/sma20/" aria-pressed="false"><span class="scanner-icon">📊</span><span class="scanner-name">SMA20</span></button>
   <button class="scanner-btn" type="button" data-key="green15" data-src="/live/green15/" aria-pressed="false"><span class="scanner-icon">🟢</span><span class="scanner-name">GREEN15</span></button>
@@ -126,6 +127,7 @@ h1{font-size:1.25rem;margin-bottom:.25rem}
   var initialKey = DEFAULT_KEY;
   try {
     var q = new URL(window.location.href).searchParams.get('s');
+        q = (q === 'sma9-trail') ? 'sma9-5pct-trail' : q;
     if (q && byKey[q]) { initialKey = q; }
   } catch (e) { /* ignore */ }
   show(initialKey, false);

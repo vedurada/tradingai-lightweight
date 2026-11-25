@@ -76,6 +76,7 @@
     .scanner-btn.atr { border-color: #8a5a12; }
     .scanner-btn.poll5s { border-color: #0f766e; }
     .scanner-btn.adx { border-color: #6d28d9; }
+    .scanner-btn.short { border-color: #be123c; }
     .sep { width: 1px; height: 18px; background: #2a3350; margin: 0 0.15rem; }
     .group-label {
         color: #7c8aa5;
@@ -127,6 +128,7 @@
     </div>
     <nav class="buttons" id="scanner-buttons" aria-label="Scanner selection">
         <button class="scanner-btn" type="button" data-key="sma9" data-src="/live/sma9/" aria-pressed="false">SMA9</button>
+        <button class="scanner-btn short" type="button" data-key="sma9-short" data-src="/live/sma9-short/" aria-pressed="false">SMA9 SHORT</button>
         <button class="scanner-btn" type="button" data-key="sma9-5min" data-src="/live/sma9-5min/" aria-pressed="false">SMA9 5MIN</button>
         <button class="scanner-btn atr" type="button" data-key="sma9-atr" data-src="/live/sma9-atr/" aria-pressed="false">SMA9 ATR</button>
         <span class="sep" aria-hidden="true"></span>
@@ -134,7 +136,7 @@
         <span class="sep" aria-hidden="true"></span>
         <button class="scanner-btn adx" type="button" data-key="sma9-adx" data-src="/live/sma9-adx/" aria-pressed="false">SMA9 ADX</button>
         <span class="sep" aria-hidden="true"></span>
-        <button class="scanner-btn trail" type="button" data-key="sma9-trail" data-src="/live/sma9-trail/" aria-pressed="false">SMA9 Trail</button>
+        <button class="scanner-btn trail" type="button" data-key="sma9-5pct-trail" data-src="/live/sma9-5pct-trail/" aria-pressed="false">SMA9 5% Trail</button>
         <button class="scanner-btn trail" type="button" data-key="sma9-high-trail" data-src="/live/sma9-high-trail/" aria-pressed="false">SMA9 HIGH Trail</button>
         <span class="sep" aria-hidden="true"></span>
         <button class="scanner-btn perf" type="button" data-key="performance" data-src="/live/performance/" aria-pressed="false">PERFORMANCE</button>
@@ -191,10 +193,13 @@
         b.addEventListener('click', function () { show(b.dataset.key); });
     });
 
-    // Optional deep link: /live/scalp/?s=sma9-high
+    // Optional deep link. The retired `sma9-trail` link now opens the renamed
+    // 5% SL/trail scanner; the old dashboard stays available at its own path.
+    var ALIASES = { 'sma9-trail': 'sma9-5pct-trail' };
     var initial = DEFAULT_KEY;
     try {
         var q = new URL(window.location.href).searchParams.get('s');
+        q = ALIASES[q] || q;
         if (q && byKey[q]) { initial = q; }
     } catch (e) { /* ignore */ }
     show(initial, false);
