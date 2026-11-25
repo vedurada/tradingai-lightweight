@@ -473,6 +473,19 @@ class Sma9ShortLiveScanner:
         self.last_closed_candle_start = None
         self.last_closed_spot_source = None
 
+    def prime_expiry(self) -> None:
+        """Set the nearest expiry from the in-memory master before market open.
+
+        This keeps the pre-market heartbeat useful to the dashboard: it can ask
+        /api/live-atm for the correct weekly contracts instead of falling back
+        to the last expiry in the instrument master.
+        """
+        try:
+            self.expiry = self.feed.nearest_expiry()
+            logger.info("Primed nearest expiry: %s", self.expiry)
+        except Exception as exc:
+            logger.warning("Could not prime expiry: %s", exc)
+
     def recover_open_positions(self) -> None:
         """Restore open shorts and their ratcheted stops; never force-close."""
         positions = load_open_positions()
@@ -839,6 +852,7 @@ def main() -> int:
         return 1
 
     scanner = Sma9ShortLiveScanner(feed)
+    scanner.prime_expiry()
     try:
         scanner.recover_open_positions()
     except Exception as exc:
