@@ -272,3 +272,43 @@ def test_fill_price_accepts_known_broker_field_names(adapter):
         assert MStockAdapter._fill_price({key: "98.75"}) == 98.75
     assert MStockAdapter._fill_price({"average_price": "0"}) is None
     assert MStockAdapter._fill_price({"average_price": "bad"}) is None
+
+
+def test_http_error_keeps_sanitized_broker_message(adapter, monkeypatch):
+    body = (b'{"status":"error","message":"Invalid order quantity",'
+            b'"access_token":"DO-NOT-LOG-ME"}')
+
+    def reject(req, timeout=None):
+        raise urllib.error.HTTPError(
+            req.full_url, 400, "Bad Request", {}, io.BytesIO(body))
+
+    monkeypatch.setattr(urllib.request, "urlopen", reject)
+    with pytest.raises(BrokerCallFailed) as excinfo:
+        adapter.place_order(
+            variety="reg", exchange="NFO", tradingsymbol="NIFTY26NOV20000CE",
+            transaction_type="BUY", order_type="MARKET", quantity=65,
+            product="MIS", validity="DAY", price=0, tag="S9L-BUY-ABC",
+        )
+    message = str(excinfo.value)
+    assert "HTTP 400" in message
+    assert "Invalid order quantity" in message
+    assert "DO-NOT-LOG-ME" not in message
+
+
+def test_http_error_with_plain_body_keeps_detail_but_redacts(adapter, monkeypatch):
+    body = b"Bad request: api_key=DO-NOT-LOG-ME; price must be positive"
+
+    def reject(req, timeout=None):
+        raise urllib.error.HTTPError(
+            req.full_url, 400, "Bad Request", {}, io.BytesIO(body))
+
+    monkeypatch.setattr(urllib.request, "urlopen", reject)
+    with pytest.raises(BrokerCallFailed) as excinfo:
+        adapter.place_order(
+            variety="reg", exchange="NFO", tradingsymbol="NIFTY26NOV20000CE",
+            transaction_type="BUY", order_type="LIMIT", quantity=65,
+            product="MIS", validity="DAY", price=101, tag="S9L-BUY-ABC",
+        )
+    message = str(excinfo.value)
+    assert "price must be positive" in message
+    assert "DO-NOT-LOG-ME" not in message

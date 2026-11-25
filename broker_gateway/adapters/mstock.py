@@ -26,6 +26,13 @@ _OFFSET_SUFFIX = re.compile(r"([+-]\d{2})$")
 TRANSIENT_HTTP = {429, 500, 502, 503, 504}
 TRANSIENT_TEXT = ("try again", "something went wrong", "too many requests", "rate limit")
 MAX_ATTEMPTS = 3
+# Order rejects are diagnosable only if mStock's response body is preserved.
+# Never log credentials even if a broker error echoes request headers/params.
+_SECRET_TEXT = re.compile(
+    r"(?i)\b(access[_-]?token|api[_-]?key|refresh[_-]?token|totp|otp|password|"
+    r"secret|authorization|cookie|session[_-]?id)\b(\s*[:=]\s*)([\"']?)([^\s,&;\"'}]+)"
+)
+_ERROR_DETAIL_KEYS = ("message", "error_type", "error_code", "description", "error")
 # Type A order vocabulary (official docs: /docs/v1/typeA/Orders/).
 ORDER_VARIETIES = frozenset({"reg", "amo"})
 ORDER_EXCHANGES = frozenset({"NSE", "BSE", "NFO", "BFO"})
@@ -452,6 +459,37 @@ class MStockAdapter(BrokerAdapter):
         }
 
     # -- live orders (opt-in, Type A only) --------------------------------
+    @staticmethod
+    def _sanitize_error_text(text: str) -> str:
+        """Redact credential-shaped values before an error reaches the log."""
+        clean = _SECRET_TEXT.sub(r"\1\2\3[REDACTED]", str(text or ""))
+        clean = " ".join(clean.split())
+        if len(clean) > 400:
+            clean = clean[:400] + "..."
+        return clean
+
+    @classmethod
+    def _error_detail(cls, raw: bytes, code: int) -> str:
+        """Return mStock's sanitized rejection reason, never a token."""
+        text = raw.decode("utf-8", "replace")
+        if not text.strip():
+            return f"HTTP {code}"
+        try:
+            payload = json.loads(text)
+        except (TypeError, ValueError):
+            return f"HTTP {code}: {cls._sanitize_error_text(text)}"
+        if isinstance(payload, dict):
+            parts = []
+            for key in _ERROR_DETAIL_KEYS:
+                value = payload.get(key)
+                if value not in (None, ""):
+                    part = cls._sanitize_error_text(value)
+                    if part and part not in parts:
+                        parts.append(part)
+            if parts:
+                return f"HTTP {code}: " + " | ".join(parts)
+        return f"HTTP {code}: {cls._sanitize_error_text(text)}"
+
     def _http_post_form(self, path: str, fields: dict) -> dict:
         """POST form-encoded order data exactly once.
 
@@ -468,14 +506,7 @@ class MStockAdapter(BrokerAdapter):
             with urllib.request.urlopen(req, timeout=30) as response:
                 raw = response.read()
         except urllib.error.HTTPError as exc:
-            try:
-                payload = json.loads(exc.read().decode("utf-8", "replace"))
-                message = (
-                    payload.get("message") or payload.get("error_type")
-                    or f"HTTP {exc.code}"
-                )
-            except Exception:
-                message = f"HTTP {exc.code}"
+            message = self._error_detail(exc.read(), exc.code)
             raise BrokerCallFailed(f"mStock {path}: {message}") from exc
         except (urllib.error.URLError, TimeoutError, OSError) as exc:
             # Fail closed; the caller's ledger decides whether a retry is safe.
@@ -487,8 +518,9 @@ class MStockAdapter(BrokerAdapter):
         except ValueError as exc:
             raise BrokerCallFailed(f"mStock {path}: invalid JSON") from exc
         if not isinstance(payload, dict) or payload.get("status") != "success":
-            message = payload.get("message") if isinstance(payload, dict) else payload
-            raise BrokerCallFailed(f"mStock {path}: {message}")
+            message = self._sanitize_error_text(
+                payload.get("message") if isinstance(payload, dict) else payload)
+            raise BrokerCallFailed(f"mStock {path}: {message or 'rejected'}")
         return payload
 
     @staticmethod

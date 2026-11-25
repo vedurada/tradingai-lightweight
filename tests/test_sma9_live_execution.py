@@ -198,6 +198,31 @@ def _position(**overrides):
     return SimpleNamespace(**base)
 
 
+def _full_position(mod, **overrides):
+    """A real engine Position, usable by the DB-backed entry path."""
+    now = mod.now_ist()
+    base = dict(
+        option_type="CE",
+        trade_id="S9L-FULLPOS",
+        strike=25750.0,
+        expiry="2026-12-01",
+        token=47837,
+        tradingsymbol="NIFTY26D0125750CE",
+        entry_timestamp=now,
+        entry_candle_start=now,
+        entry_candle_end=now,
+        entry_price=220.45,
+        sma9=126.93,
+        prev_close=222.95,
+        current_open=220.45,
+        condition_a=True,
+        condition_b=True,
+        ltp_at_entry=220.45,
+    )
+    base.update(overrides)
+    return mod.Position(**base)
+
+
 def test_order_ledger_is_idempotent_and_uses_broker_lot_size(
         live_runner, execution):
     mod = live_runner
@@ -235,6 +260,41 @@ def test_buy_collar_breach_blocks_market_order(live_runner):
     assert scanner._place_order(pos, "BUY", 102.0, "SMA9_ENTRY") is None
     assert scanner.last_order_block == "PRICE_COLLAR_BREACH"
     assert mod.order_status_for(pos.trade_id, "BUY") is None
+
+
+def test_pre_submit_block_does_not_leave_phantom_position(live_runner, monkeypatch):
+    mod = live_runner
+    scanner = mod.Sma9LiveScanner(feed=None)
+    pos = _full_position(mod, trade_id="S9L-PHANTOM-CE")
+
+    def blocked(*args, **kwargs):
+        scanner.last_order_block = "PRICE_COLLAR_BREACH"
+        return None
+
+    monkeypatch.setattr(scanner, "_place_order", blocked)
+
+    assert scanner._start_entry("CE", pos) is False
+    assert mod.load_open_positions().get("CE") is None
+    assert scanner.last_order_block == "PRICE_COLLAR_BREACH"
+    assert mod.order_status_for(pos.trade_id, "BUY") is None
+
+
+def test_ambiguous_submit_still_keeps_unconfirmed_position(live_runner, monkeypatch):
+    mod = live_runner
+    scanner = mod.Sma9LiveScanner(feed=None)
+    pos = _full_position(mod, trade_id="S9L-AMBIG-CE")
+
+    def ambiguous(*args, **kwargs):
+        scanner.last_order_block = "SUBMIT_EXCEPTION"
+        return None
+
+    monkeypatch.setattr(scanner, "_place_order", ambiguous)
+
+    assert scanner._start_entry("CE", pos) is False
+    saved = mod.load_open_positions().get("CE")
+    assert saved is not None
+    assert saved.lifecycle_state == mod.LIFECYCLE_ENTRY_UNCONFIRMED
+    assert scanner.last_order_block == "ENTRY_UNCONFIRMED"
 
 
 def test_missing_lot_size_refuses_order(live_runner):

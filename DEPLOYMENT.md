@@ -107,6 +107,28 @@ Armed settings are fixed in the unit: `SMA9_LIVE_EXECUTOR=mstock`,
 retries for terminal broker-confirmed no-fill only. Leave
 `SMA9_LIVE_RETRY_AMBIGUOUS` unset/false.
 
+## Order-block diagnosis
+
+Two changes make live-order failures diagnosable without changing risk rules:
+
+- The gateway now preserves mStock's **sanitized** rejection body in
+  `BrokerCallFailed`. A `/orders/reg` HTTP 400 log line should now include the
+  broker's reason (for example `Invalid order quantity`) instead of only the
+  status code. Credential-shaped values in the body are replaced with
+  `[REDACTED]`.
+- A BUY refused before the broker POST — price collar, missing arm flags,
+  unavailable lot size, or invalid order fields — removes its tentative local
+  position. It is also recorded as `ENTRY_BLOCKED_NO_SEND` in
+  `sma9_live_lifecycle_events`. Previously such a signal could leave an
+  `ENTRY_UNCONFIRMED` row that blocked both legs with `MAX_TWO_OPEN_LEGS`.
+
+Ambiguous submits are intentionally unchanged: if the POST may have reached
+mStock but returned no broker order id, the position stays
+`ENTRY_UNCONFIRMED` until an operator verifies the order book. A tag lookup miss
+alone is not treated as proof of non-acceptance, and no blind retry is issued.
+To clear an already-stale state, an operator must verify the tag in the mStock
+order book, back up `sma9_live.db`, then explicitly remove the phantom row.
+
 ## Kill switch
 
 The gateway service and scanner cannot remove the kill file. To halt trading:

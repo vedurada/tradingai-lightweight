@@ -102,6 +102,21 @@ PENDING_STATUSES = frozenset({STATUS_NEW, STATUS_ACCEPTED})
 FAILED_STATUSES = frozenset({STATUS_REJECTED, STATUS_CANCELLED, STATUS_FAILED})
 ENABLED_FLAG = {"1", "true", "yes", "on"}
 
+# Pre-submit refusals are definite no-sends: no broker POST happened, so no
+# phantom position may be left behind. Ambiguous submits are deliberately not
+# in this set; they must stay ENTRY_UNCONFIRMED until manually resolved.
+PRE_SUBMIT_NO_SEND_BLOCKS = frozenset({
+    "REAL_ORDERS_NOT_ARMED",
+    "PRICE_COLLAR_BREACH",
+    "LOT_SIZE_UNAVAILABLE",
+    "INVALID_ORDER",
+})
+
+
+def is_pre_submit_no_send(code: str | None) -> bool:
+    """True when an order was refused before any network call."""
+    return code in PRE_SUBMIT_NO_SEND_BLOCKS
+
 IST = ZoneInfo("Asia/Kolkata")
 DB_PATH = os.environ.get(
     "SMA9_LIVE_DB_PATH", os.path.join(BASE, "database", "sma9_live.db"))
@@ -1708,6 +1723,56 @@ class Sma9LiveScanner:
             f"mStock lot size unavailable for {pos.tradingsymbol}; "
             "refusing to place an order with a guessed quantity")
 
+    def _start_entry(self, opt: str, new_pos: Position) -> bool:
+        """Place a guarded BUY and keep the local position ledger truthful.
+
+        A pre-submit refusal means no broker POST happened. The tentative
+        position must be removed in that case; otherwise it blocks both legs
+        forever even though nothing exists at mStock.
+        """
+        new_pos.lifecycle_state = LIFECYCLE_PENDING
+        save_open_position(new_pos)
+        order = self._place_order(
+            new_pos, BUY, new_pos.entry_price, "SMA9_ENTRY")
+        block = self.last_order_block
+
+        if order is None and is_pre_submit_no_send(block):
+            delete_open_position_by_trade(new_pos.trade_id)
+            record_lifecycle_event(
+                make_client_order_id(new_pos.trade_id, BUY),
+                new_pos.trade_id, BUY, "ENTRY_BLOCKED_NO_SEND", str(block))
+            self.last_order_block = block
+            logger.error(
+                "ENTRY BLOCKED BEFORE BROKER for %s %s: %s; no position retained",
+                opt, new_pos.tradingsymbol, block)
+            return False
+
+        if order is None or order.status in (STATUS_REJECTED, STATUS_FAILED):
+            # The submit outcome at the broker is unknown. Keep the position in
+            # ENTRY_UNCONFIRMED; no exit or new entry until it is resolved.
+            self._set_lifecycle(
+                new_pos.option_type, new_pos.trade_id,
+                LIFECYCLE_ENTRY_UNCONFIRMED)
+            self.last_order_block = "ENTRY_UNCONFIRMED"
+            logger.error(
+                "ENTRY UNCONFIRMED for %s %s; awaiting manual verification, "
+                "no automatic retry", opt, new_pos.tradingsymbol)
+            return False
+
+        self.last_order_block = None
+        candle = getattr(new_pos, "entry_candle_start", None)
+        candle_text = (
+            candle.isoformat() if hasattr(candle, "isoformat")
+            else str(candle) if candle else "--")
+        logger.info(
+            "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s",
+            opt, new_pos.tradingsymbol, new_pos.strike,
+            float(new_pos.entry_price),
+            float(getattr(new_pos, "sma9", 0) or 0),
+            getattr(new_pos, "condition_a", None),
+            getattr(new_pos, "condition_b", None), candle_text)
+        return True
+
     def _place_order(
         self, pos: Position, side: str, price: float, reason: str, *,
         tag: str = "", quantity: int | None = None, retry_of: str | None = None,
@@ -1723,6 +1788,9 @@ class Sma9LiveScanner:
         entries are sanity-checked against the previous poll's LTP, while exits
         are never blocked so a real position can always be closed.
         """
+        # Clear any prior block so callers can distinguish a definite no-send
+        # from an ambiguous submit outcome for this specific attempt.
+        self.last_order_block = None
         client_order_id = make_client_order_id(pos.trade_id, side, tag)
         if order_exists(client_order_id):
             logger.info("Order %s already recorded; skipping duplicate",
@@ -2148,33 +2216,8 @@ class Sma9LiveScanner:
                         ev, now, strike, expiry_str, token,
                         contract["tradingsymbol"], market_close_dt(now))
                     if new_pos is not None:
-                        # ACTIVE only after the broker confirms the BUY fill.
-                        new_pos.lifecycle_state = LIFECYCLE_PENDING
-                        save_open_position(new_pos)
-                        order = self._place_order(
-                            new_pos, BUY, new_pos.entry_price, "SMA9_ENTRY")
-                        if order is None:
-                            self._set_lifecycle(
-                                new_pos.option_type, new_pos.trade_id,
-                                LIFECYCLE_ENTRY_UNCONFIRMED)
-                        if (order is None or order.status in (
-                                STATUS_REJECTED, STATUS_FAILED)):
-                            # The submit outcome at the broker is unknown. The
-                            # position stays in ENTRY_UNCONFIRMED and no exit
-                            # or new entry is generated until it is resolved.
-                            self.last_order_block = "ENTRY_UNCONFIRMED"
-                            logger.error(
-                                "ENTRY UNCONFIRMED for %s %s; awaiting manual "
-                                "verification, no automatic retry",
-                                opt, new_pos.tradingsymbol)
-                        else:
+                        if self._start_entry(opt, new_pos):
                             entry_made = True
-                            self.last_order_block = None
-                            logger.info(
-                                "ENTRY %s %s strike=%s ltp=%.2f sma9=%.2f A=%s B=%s candle=%s",
-                                opt, new_pos.tradingsymbol, strike, new_pos.entry_price,
-                                new_pos.sma9, new_pos.condition_a, new_pos.condition_b,
-                                new_pos.entry_candle_start.isoformat())
 
             option_status[opt] = {
                 "tradingsymbol": contract["tradingsymbol"],
