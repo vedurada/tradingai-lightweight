@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+*.db
+*.db-wal
+*.db-shm
+*.log
+*.env
+*.env.*
+secrets/
+.env.zerodha
+.mstock_session*
+.DS_Store

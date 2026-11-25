@@ -1,0 +1,44 @@
+[Unit]
+Description=TradingAI SMA9 SHORT ATM+200 CE / ATM-200 PE Paper Scanner (5s)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=sma9short
+Group=ubuntu
+WorkingDirectory=/opt/tradingai
+Environment=SMA9_SHORT_DB_PATH=/opt/tradingai/database/sma9_short.db
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/tradingai/sma9_lib
+Environment=BROKER_GATEWAY_SCANNER=sma9_short
+ExecStart=/usr/bin/python3 /opt/tradingai/sma9_short_scanner/app/live_sma9_short_scanner.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/tradingai/logs/live_sma9_short_scanner.log
+StandardError=append:/opt/tradingai/logs/live_sma9_short_scanner.log
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=/opt/tradingai/database /opt/tradingai/logs
+ReadOnlyPaths=/opt/tradingai/sma9_short_scanner /opt/tradingai/sma9_lib /opt/tradingai/.env.zerodha
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target
