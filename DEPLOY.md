@@ -27,6 +27,9 @@ stuck even though the scanner heartbeat was healthy. Fixes now in place:
   `last_scan_at`, so the cards show a waiting state instead of "No data".
 - `/api/live-atm` fills strike, symbol, token and LTP into those shells when it
   returns.
+- The server now indexes the NFO master once per hour by `(option_type, strike)`
+  instead of re-fetching it for every new ATM. During market hours it uses the
+  verified tokens already in the scanner heartbeat and skips the master entirely.
 
 ## Required environment
 
