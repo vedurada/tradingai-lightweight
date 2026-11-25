@@ -4,7 +4,7 @@
 import os
 import sys
 import unittest
-from datetime import datetime, timedelta
+from datetime import datetime, time as dtime, timedelta
 from zoneinfo import ZoneInfo
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -14,7 +14,9 @@ for candidate in (os.path.join(ROOT, "app"), os.path.join(ROOT, "deploy", "app")
         break
 
 from sma9_short_engine import (  # noqa: E402
+    EOD_EXIT_TIME,
     OptionStateMachine,
+    eod_bar_open,
     evaluate_option,
 )
 
@@ -116,6 +118,33 @@ class TestSma9ShortEngine(unittest.TestCase):
                                  "NIFTY26D2225550CE", self.market_close)
         self.assertIsNotNone(first)
         self.assertIsNone(second)
+
+    def test_eod_exit_due_at_1520(self):
+        state = OptionStateMachine("CE")
+        self.assertFalse(state.needs_exit(ts(15, 19, 59)))
+        self.assertTrue(state.needs_exit(ts(15, 20, 0)))
+        self.assertTrue(state.needs_exit(ts(15, 30, 0)))
+        self.assertEqual(EOD_EXIT_TIME, dtime(15, 20))
+
+    def test_eod_flat_close(self):
+        state = OptionStateMachine("PE")
+        ev = evaluate_option(self.rows, "PE", ltp=99)
+        state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
+                        "NIFTY26D2225150PE", self.market_close)
+        trade = state.close(ts(15, 20), 96.5, "EOD_15_20_FLAT")
+        self.assertEqual(trade["exit_reason"], "EOD_15_20_FLAT")
+        self.assertEqual(trade["exit_price"], 96.5)
+        self.assertEqual(trade["pnl_points"], 2.5)
+
+    def test_eod_bar_open_fallback(self):
+        rows = self.rows + [
+            {"start": ts(15, 15), "open": 101, "high": 102, "low": 100,
+             "close": 101, "volume": 1},
+            {"start": ts(15, 20), "open": 97.5, "high": 99, "low": 96,
+             "close": 97, "volume": 1},
+        ]
+        self.assertEqual(eod_bar_open(rows, ts(15, 20)), 97.5)
+        self.assertIsNone(eod_bar_open(self.rows, ts(15, 20)))
 
 
 if __name__ == "__main__":

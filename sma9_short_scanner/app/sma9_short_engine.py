@@ -15,6 +15,8 @@ Per-option rules (CE and PE are independent):
     Track the lowest LTP seen since entry. Ratchet the stop down to
     round(lowest_ltp * 1.10, 2), never upward and never above the previous
     stop. A stop breach closes the short at the stop level.
+    Any position still open at 15:20 IST is closed flat at the sampled LTP
+    (or the 15:20 candle open on a late scan), reason EOD_15_20_FLAT.
   P&L:
     entry_price - exit_price (in premium points).
 
@@ -25,16 +27,18 @@ from __future__ import annotations
 
 import hashlib
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime, time as dtime, timedelta
 from typing import Dict, List, Optional, Sequence
 
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
 STRATEGY_ID = "sma9_short"
-STRATEGY_VERSION = "1.0.0"
+STRATEGY_VERSION = "1.1.0"
 STRATEGY_TYPE = "SMA9_SHORT_ONLY"
 STOP_LOSS_PCT = 0.10
 TRAIL_PCT = 0.10
+EOD_EXIT_TIME = dtime(15, 20)
+EOD_EXIT_REASON = "EOD_15_20_FLAT"
 STRIKE_OFFSETS = {"CE": 200.0, "PE": -200.0}
 
 
@@ -64,6 +68,18 @@ def normalize_candles(candles: Sequence[dict]) -> List[dict]:
 
 def candle_end(start: datetime) -> datetime:
     return start + timedelta(minutes=CANDLE_MINUTES)
+
+
+def eod_bar_open(candles: Sequence[dict], eod_start: datetime) -> Optional[float]:
+    """Return the opening premium of the first candle at/after the EOD cutoff.
+
+    Used when a scan runs after 15:20 and the exact cutoff quote was missed.
+    The live sampled LTP remains the preferred fill when the scan is on time.
+    """
+    for row in normalize_candles(candles):
+        if row["start"] >= eod_start:
+            return round(float(row["open"]), 2)
+    return None
 
 
 def make_trade_id(instrument: str, strike: float, option_type: str,
@@ -283,9 +299,10 @@ class OptionStateMachine:
             return None
         return round(pos.stop, 2)
 
-    def needs_exit(self, now: datetime) -> bool:
-        """No time/candle exit; positions are held until a stop fires."""
-        return False
+    def needs_exit(self, now: datetime,
+                   eod_time: dtime = EOD_EXIT_TIME) -> bool:
+        """True once the daily flat cutoff has passed."""
+        return now.time() >= eod_time
 
     def close(self, exit_timestamp: datetime, exit_price: float,
               exit_reason: str = "STOP_LOSS_10PCT",

@@ -25,8 +25,11 @@ live-only snapshot is unchanged.
 - A stop breach closes the short at the stop level:
   - `TRAIL_STOP_EXIT` after the stop has ratcheted
   - `STOP_LOSS_10PCT` otherwise
+- Any position still open at 15:20 IST is flattened at the sampled LTP, with
+  reason `EOD_15_20_FLAT`. A late scan after a restart uses the 15:20 candle
+  open when the exact quote was missed.
 - P&L is `entry_price - exit_price` in premium points.
-- No target, candle-close, reverse-signal, or time-based exit in the live loop.
+- No target, candle-close or reverse-signal exit in the live loop.
 - Entry window: 09:20–15:15 IST; at most one entry per 5-minute candle per leg.
 - Poll interval: 5 seconds aligned to the wall clock.
 - State is persisted in `/opt/tradingai/database/sma9_short.db`; restarts
@@ -38,7 +41,8 @@ live-only snapshot is unchanged.
 | --- | --- |
 | `sma9_short_scanner/app/sma9_short_engine.py` | Pure engine: SMA9 evaluation, entry, stops, trail, P&L |
 | `sma9_short_scanner/app/live_sma9_short_scanner.py` | 5-second paper scanner loop and SQLite persistence |
-| `sma9_short_scanner/tests/test_sma9_short_engine.py` | 5 unit tests |
+| `sma9_short_scanner/tests/test_sma9_short_engine.py` | Pure engine tests, including the 15:20 flat rule |
+| `sma9_short_scanner/tests/test_live_sma9_short_scanner.py` | Scanner-level EOD exit tests with a temporary DB and fake feed |
 | `app/api/sma9_short_api.py` | Read-only `/api/sma9-short/*` endpoints |
 | `frontend/live/sma9-short/index.html` | Dashboard page |
 | `systemd/tradingai-sma9-short-scanner.service` | Service unit |

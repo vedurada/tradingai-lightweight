@@ -9,6 +9,7 @@ Each leg is evaluated and positioned independently:
   SHORT entry when that leg's live LTP < its SMA9 (9 completed 5m closes)
   Initial stop = entry * 1.10
   Trailing stop = lowest LTP since entry * 1.10, ratcheted down only
+  Any open short is closed flat at 15:20 IST (EOD_15_20_FLAT)
   Both CE and PE may be open at the same time.
 
 State is persisted in database/sma9_short.db so restarts restore stops.
@@ -33,6 +34,8 @@ if CODE_ROOT not in sys.path:
 
 from app.sma9_short_engine import (  # noqa: E402
     CANDLE_MINUTES,
+    EOD_EXIT_REASON,
+    EOD_EXIT_TIME,
     SMA_PERIOD,
     STRATEGY_ID,
     STRATEGY_TYPE,
@@ -42,6 +45,7 @@ from app.sma9_short_engine import (  # noqa: E402
     OptionStateMachine,
     Position,
     candle_end,
+    eod_bar_open,
     evaluate_option,
     normalize_candles,
 )
@@ -118,6 +122,28 @@ def entry_window_is_open(dt) -> bool:
 
 def market_close_dt(dt: datetime) -> datetime:
     return datetime.combine(dt.date(), session_close_time(dt), tzinfo=IST)
+
+
+def eod_exit_time(dt: datetime) -> dtime:
+    """Daily flat cutoff. Muhurat sessions flatten at their special close."""
+    if dt.date().isoformat() in MUHURAT_SESSIONS:
+        return session_close_time(dt)
+    return EOD_EXIT_TIME
+
+
+def eod_exit_dt(dt: datetime) -> datetime:
+    return datetime.combine(dt.date(), eod_exit_time(dt), tzinfo=IST)
+
+
+def eod_exit_due(dt: datetime) -> bool:
+    return dt >= eod_exit_dt(dt)
+
+
+def eod_exit_price(candles, ltp, dt: datetime):
+    """Fill at the current LTP, falling back to the 15:20 candle open."""
+    if ltp is not None:
+        return round(float(ltp), 2)
+    return eod_bar_open(candles, eod_exit_dt(dt))
 
 
 def sleep_to_next_tick() -> None:
@@ -551,6 +577,24 @@ class Sma9ShortLiveScanner:
             self.atm_strike = None
             self.spot_source = "unavailable"
 
+    def _close_eod(self, opt, state, contract, candles, ltp, now):
+        """Flatten one leg at the 15:20 cutoff; return the trade when filled."""
+        price = eod_exit_price(candles, ltp, now)
+        if price is None:
+            logger.error("EOD EXIT %s blocked: no usable LTP or 15:20 bar", opt)
+            return None
+        trade = state.close(eod_exit_dt(now), price, EOD_EXIT_REASON)
+        if trade is None:
+            return None
+        save_trade(trade)
+        logger.info(
+            "EOD EXIT %s %s strike=%.2f entry=%.2f exit=%.2f "
+            "pnl=%.2f reason=%s",
+            opt, contract.get("tradingsymbol"), float(contract.get("strike", 0)),
+            trade["entry_price"], price, trade["pnl_points"], EOD_EXIT_REASON,
+        )
+        return trade
+
     def scan(self) -> dict:
         now = now_ist()
         if self.last_scan_at:
@@ -632,11 +676,13 @@ class Sma9ShortLiveScanner:
                 expiry_str = str(expiry)
 
             candle_error = None
+            candles = []
             forming_is_current = False
+            eod_due = state.position is not None and eod_exit_due(now)
             ev = Evaluation(option_type=opt, ltp=ltp,
                             reason="waiting for current 5-minute candle")
             try:
-                candles = self.feed.candles(token)
+                candles = self.feed.candles(token, force=eod_due)
                 forming_is_current = (
                     bool(candles) and candles[-1]["start"] == current_candle
                 )
@@ -674,8 +720,15 @@ class Sma9ShortLiveScanner:
                         strike, trade["entry_price"], sl_hit, trade["pnl_points"],
                         exit_reason, sl_hit, prev_lowest,
                     )
-            elif (allow_entries and forming_is_current and ltp is not None
-                  and ev.signal):
+
+            if state.position is not None and eod_due:
+                trade = self._close_eod(opt, state, contract, candles, ltp, now)
+                if trade is not None:
+                    exit_reason = EOD_EXIT_REASON
+                    exit_price = trade["exit_price"]
+
+            if state.position is None and (allow_entries and forming_is_current
+                                           and ltp is not None and ev.signal):
                 new_pos = state.try_entry(
                     ev, now, strike, expiry_str, token,
                     contract["tradingsymbol"], market_close_dt(now),
@@ -712,6 +765,7 @@ class Sma9ShortLiveScanner:
                 "entry_made": entry_made,
                 "exit_reason": exit_reason,
                 "exit_price": exit_price,
+                "eod_due": bool(eod_due),
                 "position": state.position.as_dict() if state.position else None,
             }
 
@@ -793,6 +847,7 @@ class Sma9ShortLiveScanner:
                 "entry_made": False,
                 "exit_reason": None,
                 "exit_price": None,
+                "eod_due": eod_exit_due(now_ist()),
                 "position": pos.as_dict() if pos is not None else None,
             }
         return options
@@ -826,6 +881,8 @@ class Sma9ShortLiveScanner:
             "sma_period": SMA_PERIOD,
             "stop_loss_pct": 0.10,
             "trail_pct": 0.10,
+            "eod_exit_time": eod_exit_time(now).strftime("%H:%M"),
+            "eod_exit_reason": EOD_EXIT_REASON,
             "last_closed_spot": self.last_closed_spot,
             "last_closed_atm_strike": self.last_closed_atm_strike,
             "last_closed_candle_start": self.last_closed_candle_start,
