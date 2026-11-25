@@ -7,8 +7,8 @@ Each leg is evaluated and positioned independently:
   CE contract = nearest ATM strike + 200
   PE contract = nearest ATM strike - 200
   SHORT entry when that leg's live LTP < its SMA9 (9 completed 5m closes)
-  Initial stop = entry * 1.10
-  Trailing stop = lowest LTP since entry * 1.10, ratcheted down only
+  Initial stop = entry * 1.05
+  Trailing stop = lowest LTP since entry * 1.05, ratcheted down only
   Any open short is closed flat at 15:20 IST (EOD_15_20_FLAT)
   Both CE and PE may be open at the same time.
 
@@ -37,10 +37,13 @@ from app.sma9_short_engine import (  # noqa: E402
     EOD_EXIT_REASON,
     EOD_EXIT_TIME,
     SMA_PERIOD,
+    STOP_LOSS_PCT,
+    STOP_LOSS_REASON,
     STRATEGY_ID,
     STRATEGY_TYPE,
     STRATEGY_VERSION,
     STRIKE_OFFSETS,
+    TRAIL_PCT,
     Evaluation,
     OptionStateMachine,
     Position,
@@ -192,7 +195,7 @@ def init_db() -> None:
             entry_price REAL NOT NULL,
             exit_timestamp TEXT NOT NULL,
             exit_price REAL NOT NULL,
-            exit_reason TEXT NOT NULL DEFAULT 'STOP_LOSS_10PCT',
+            exit_reason TEXT NOT NULL DEFAULT 'STOP_LOSS_5PCT',
             pnl_points REAL NOT NULL DEFAULT 0,
             status TEXT NOT NULL DEFAULT 'CLOSED',
             sma9_value REAL,
@@ -309,7 +312,9 @@ def load_open_positions() -> dict:
     for r in rows:
         d = dict(r)
         entry_price = float(d["entry_price"])
-        initial_stop = float(d.get("initial_stop") or round(entry_price * 1.10, 2))
+        initial_stop = float(
+            d.get("initial_stop") or round(entry_price * (1.0 + STOP_LOSS_PCT), 2)
+        )
         result[d["option_type"]] = Position(
             option_type=d["option_type"],
             trade_id=d["trade_id"],
@@ -709,7 +714,7 @@ class Sma9ShortLiveScanner:
                 sl_hit = state.check_stop_loss(ltp)
                 if sl_hit is not None:
                     exit_reason = ("TRAIL_STOP_EXIT" if trail_pos.trailing_active()
-                                   else "STOP_LOSS_10PCT")
+                                   else STOP_LOSS_REASON)
                     exit_price = sl_hit
                     trade = state.close(now, sl_hit, exit_reason)
                     save_trade(trade)
@@ -879,8 +884,8 @@ class Sma9ShortLiveScanner:
             "atm_strike": self.atm_strike,
             "strike_offsets": {k: float(v) for k, v in STRIKE_OFFSETS.items()},
             "sma_period": SMA_PERIOD,
-            "stop_loss_pct": 0.10,
-            "trail_pct": 0.10,
+            "stop_loss_pct": STOP_LOSS_PCT,
+            "trail_pct": TRAIL_PCT,
             "eod_exit_time": eod_exit_time(now).strftime("%H:%M"),
             "eod_exit_reason": EOD_EXIT_REASON,
             "last_closed_spot": self.last_closed_spot,

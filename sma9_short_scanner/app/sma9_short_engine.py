@@ -11,9 +11,9 @@ Per-option rules (CE and PE are independent):
     the mean of the last 9 completed 5-minute premium closes. The forming bar
     is never used to calculate SMA9.
   Exit:
-    Initial stop = round(entry * 1.10, 2).
+    Initial stop = round(entry * 1.05, 2).
     Track the lowest LTP seen since entry. Ratchet the stop down to
-    round(lowest_ltp * 1.10, 2), never upward and never above the previous
+    round(lowest_ltp * 1.05, 2), never upward and never above the previous
     stop. A stop breach closes the short at the stop level.
     Any position still open at 15:20 IST is closed flat at the sampled LTP
     (or the 15:20 candle open on a late scan), reason EOD_15_20_FLAT.
@@ -33,10 +33,11 @@ from typing import Dict, List, Optional, Sequence
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
 STRATEGY_ID = "sma9_short"
-STRATEGY_VERSION = "1.1.0"
+STRATEGY_VERSION = "1.2.0"
 STRATEGY_TYPE = "SMA9_SHORT_ONLY"
-STOP_LOSS_PCT = 0.10
-TRAIL_PCT = 0.10
+STOP_LOSS_PCT = 0.05
+TRAIL_PCT = 0.05
+STOP_LOSS_REASON = "STOP_LOSS_5PCT"
 EOD_EXIT_TIME = dtime(15, 20)
 EOD_EXIT_REASON = "EOD_15_20_FLAT"
 STRIKE_OFFSETS = {"CE": 200.0, "PE": -200.0}
@@ -305,7 +306,7 @@ class OptionStateMachine:
         return now.time() >= eod_time
 
     def close(self, exit_timestamp: datetime, exit_price: float,
-              exit_reason: str = "STOP_LOSS_10PCT",
+              exit_reason: str = STOP_LOSS_REASON,
               candle_high: Optional[float] = None,
               candle_low: Optional[float] = None) -> Optional[dict]:
         pos = self.position

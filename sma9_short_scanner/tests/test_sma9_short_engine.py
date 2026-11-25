@@ -15,6 +15,9 @@ for candidate in (os.path.join(ROOT, "app"), os.path.join(ROOT, "deploy", "app")
 
 from sma9_short_engine import (  # noqa: E402
     EOD_EXIT_TIME,
+    STOP_LOSS_PCT,
+    STOP_LOSS_REASON,
+    TRAIL_PCT,
     OptionStateMachine,
     eod_bar_open,
     evaluate_option,
@@ -75,29 +78,29 @@ class TestSma9ShortEngine(unittest.TestCase):
         self.assertIsNotNone(ce_pos)
         self.assertIsNone(pe_pos)
         self.assertEqual(ce_pos.entry_price, 98.0)
-        self.assertEqual(ce_pos.initial_stop, 107.8)
+        self.assertEqual(ce_pos.initial_stop, 102.9)
 
     def test_trailing_stop_ratchets_down_only(self):
         state = OptionStateMachine("PE")
         ev = evaluate_option(self.rows, "PE", ltp=99)
         pos = state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
                               "NIFTY26D2225150PE", self.market_close)
-        self.assertEqual(pos.stop, 108.9)
+        self.assertEqual(pos.stop, 103.95)
 
         state.update_trail(90)
         self.assertEqual(pos.lowest_ltp, 90)
-        self.assertEqual(pos.stop, 99.0)
+        self.assertEqual(pos.stop, 94.5)
 
         state.update_trail(95)   # higher low: stop must not loosen
-        self.assertEqual(pos.stop, 99.0)
+        self.assertEqual(pos.stop, 94.5)
 
         state.update_trail(80)
         self.assertEqual(pos.lowest_ltp, 80)
-        self.assertEqual(pos.stop, 88.0)
+        self.assertEqual(pos.stop, 84.0)
 
         self.assertTrue(pos.trailing_active())
-        self.assertEqual(state.check_stop_loss(88.5), 88.0)
-        self.assertIsNone(state.check_stop_loss(87.5))
+        self.assertEqual(state.check_stop_loss(84.5), 84.0)
+        self.assertIsNone(state.check_stop_loss(83.5))
 
     def test_short_pnl_sign(self):
         state = OptionStateMachine("CE")
@@ -106,8 +109,13 @@ class TestSma9ShortEngine(unittest.TestCase):
                         "NIFTY26D2225550CE", self.market_close)
         trade = state.close(ts(11, 0), 90, "TRAIL_STOP_EXIT")
         self.assertEqual(trade["pnl_points"], 9.0)
-        trade = state.close(ts(11, 0), 110, "STOP_LOSS_10PCT")
+        trade = state.close(ts(11, 0), 110, STOP_LOSS_REASON)
         self.assertIsNone(trade)  # position already closed
+
+    def test_5pct_stop_constants(self):
+        self.assertEqual(STOP_LOSS_PCT, 0.05)
+        self.assertEqual(TRAIL_PCT, 0.05)
+        self.assertEqual(STOP_LOSS_REASON, "STOP_LOSS_5PCT")
 
     def test_one_entry_per_candle(self):
         state = OptionStateMachine("CE")
