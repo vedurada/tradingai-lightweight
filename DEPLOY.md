@@ -13,6 +13,21 @@ The first startup loads the NFO instrument master through the broker gateway
 and can take about a minute before the `SMA9 SHORT scanner ready` line appears.
 After that, heartbeat rows are written every 5 seconds.
 
+## UI loading fix
+
+The dashboard used to wait for `/api/live-atm` before rendering anything. A cold
+broker-gateway instrument-master load can take ~50s, so the page looked blank or
+stuck even though the scanner heartbeat was healthy. Fixes now in place:
+
+- The page renders scanner-heartbeat data first and then augments it with the
+  live broker quote asynchronously.
+- `/api/live-atm` has a 10s client timeout and a 5s in-page cache; one in-flight
+  request is shared across refresh cycles.
+- The scanner writes CE/PE heartbeat shells outside market hours with a real
+  `last_scan_at`, so the cards show a waiting state instead of "No data".
+- `/api/live-atm` fills strike, symbol, token and LTP into those shells when it
+  returns.
+
 ## Required environment
 
 The scanner service must set:

@@ -745,6 +745,51 @@ class Sma9ShortLiveScanner:
         except Exception:
             pass
 
+    def _idle_options(self, reason: str) -> dict:
+        """Option shells kept in the heartbeat outside the scan window.
+
+        The dashboard fills live LTP/strike from /api/live-atm. These shells mean
+        the page can render the correct contract names immediately instead of
+        showing "No data" until the first completed 5-minute candle.
+        """
+        options = {}
+        for opt in ("CE", "PE"):
+            pos = self.states[opt].position
+            contract = self.contracts.get(opt) or {}
+            expiry = contract.get("expiry")
+            options[opt] = {
+                "tradingsymbol": contract.get("tradingsymbol"),
+                "token": contract.get("instrument_token"),
+                "strike": contract.get("strike"),
+                "expiry": expiry.isoformat() if hasattr(expiry, "isoformat") else expiry,
+                "ltp": None,
+                "ltp_source": "unavailable",
+                "quote_unavailable": True,
+                "sma9": None,
+                "prev_close": None,
+                "current_open": None,
+                "condition_a": False,
+                "condition_b": False,
+                "qualified": False,
+                "confirmation": False,
+                "signal": False,
+                "ready": False,
+                "forming_is_current": False,
+                "reason": f"{reason}; waiting for first completed 5m candle",
+                "candle_error": None,
+                "entry_made": False,
+                "exit_reason": None,
+                "exit_price": None,
+                "position": pos.as_dict() if pos is not None else None,
+            }
+        return options
+
+    def _idle_status(self, now: datetime, reason: str) -> dict:
+        """Heartbeat used outside the scan window; keep last-scan visible."""
+        self.last_scan_at = now.isoformat()
+        self.quote_unavailable = True
+        return self._status(now, self._idle_options(reason), errors=[reason])
+
     def _status(self, now: datetime, options: dict, errors=None) -> dict:
         today = now.date().isoformat()
         return {
@@ -806,14 +851,12 @@ def main() -> int:
             now = now_ist()
             try:
                 if not is_weekday(now):
-                    state = scanner.scan()
-                    state["errors"] = list(state.get("errors", [])) + ["weekend"]
-                    save_scan_state(state)
+                    save_scan_state(scanner._idle_status(now, "weekend"))
                 elif now.time() < session_open_time(now):
-                    save_scan_state(scanner._status(now, {}, errors=["pre-market"]))
+                    save_scan_state(scanner._idle_status(now, "pre-market"))
                 elif now.time() >= session_close_time(now) and not any(
                         s.position for s in scanner.states.values()):
-                    save_scan_state(scanner._status(now, {}, errors=["market closed"]))
+                    save_scan_state(scanner._idle_status(now, "market closed"))
                 else:
                     save_scan_state(scanner.scan())
             except Exception as exc:
@@ -821,8 +864,7 @@ def main() -> int:
                 logger.error(scanner.last_error)
                 traceback.print_exc()
                 try:
-                    save_scan_state(
-                        scanner._status(now, {}, errors=[scanner.last_error]))
+                    save_scan_state(scanner._idle_status(now, scanner.last_error))
                 except Exception:
                     pass
             sleep_to_next_tick()
