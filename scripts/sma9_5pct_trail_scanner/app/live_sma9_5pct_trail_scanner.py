@@ -992,7 +992,11 @@ class TrailLiveScanner:
             "running": True,
             "market_open": market_is_open(now),
             "started_at": self.started_at,
-            "last_scan_at": self.last_scan_at,
+            # This value is the heartbeat timestamp consumed by the read-only
+            # API health check. Market-closed/pre-market paths emit a status
+            # without calling scan(), so use the current wall clock here to
+            # keep a fresh scanner from being reported as NOT_RUNNING.
+            "last_scan_at": now.isoformat(),
             "poll_seconds": POLL_SECONDS,
             "poll_offset_seconds": POLL_OFFSET_SECONDS,
             "stop_loss_pct": STOP_LOSS_PCT,
