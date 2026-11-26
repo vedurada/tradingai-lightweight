@@ -13,6 +13,7 @@ for candidate in (os.path.join(ROOT, "app"), os.path.join(ROOT, "deploy", "app")
         sys.path.insert(0, candidate)
         break
 
+import sma9_short_engine as engine  # noqa: E402
 from sma9_short_engine import (  # noqa: E402
     ATR_MULTIPLIER,
     ATR_PERIOD,
@@ -54,10 +55,13 @@ def candles(closes, open_price):
 
 class TestSma9ShortEngine(unittest.TestCase):
     def setUp(self):
-        self.rows = candles([100] * 15, 100)
+        # 30 completed down bars: SMA9(last 9) = 100, ATR(14) = 3 and -DI > +DI.
+        self.rows = candles(list(range(125, 95, -1)), 96)
+        # Matching up bars: SMA9(last 9) = 120, ATR(14) = 3 and +DI > -DI.
+        self.up_rows = candles(list(range(95, 125)), 124)
         self.sma = 100.0
         self.market_close = ts(15, 30)
-        self.now = ts(10, 45, 5)
+        self.now = ts(12, 30, 5)
 
     def test_entry_only_below_sma(self):
         below = evaluate_option(self.rows, "CE", ltp=98)
@@ -79,22 +83,27 @@ class TestSma9ShortEngine(unittest.TestCase):
         self.assertIsNotNone(ce_pos)
         self.assertIsNone(pe_pos)
         self.assertEqual(ce_pos.entry_price, 98.0)
-        self.assertEqual(ce_pos.atr_distance, 1.4)
-        self.assertEqual(ce_pos.initial_stop, 99.4)
+        self.assertEqual(ce_pos.atr_distance, 2.1)
+        self.assertEqual(ce_pos.initial_stop, 100.1)
 
     def test_atr_distance_has_no_percentage_floor_or_cap(self):
         self.assertEqual(ATR_PERIOD, 14)
         self.assertEqual(ATR_MULTIPLIER, 0.70)
         self.assertEqual(STOP_LOSS_REASON, "STOP_LOSS_ATR")
-        self.assertEqual(premium_atr(self.rows), 2.0)
+        self.assertEqual(premium_atr(self.rows), 3.0)
         ev = evaluate_option(self.rows, "CE", ltp=98)
-        self.assertEqual(ev.atr, 2.0)
-        self.assertEqual(ev.atr_distance, 1.4)
+        self.assertEqual(ev.atr, 3.0)
+        self.assertEqual(ev.atr_distance, 2.1)
 
     def test_no_atr_blocks_entry(self):
-        short_history = candles([100] * 9, 100)
-        self.assertIsNone(premium_atr(short_history))
-        ev = evaluate_option(short_history, "CE", ltp=98)
+        original_atr = engine.premium_atr
+        try:
+            engine.premium_atr = lambda rows, period=ATR_PERIOD: None
+            ev = evaluate_option(self.rows, "CE", ltp=98)
+        finally:
+            engine.premium_atr = original_atr
+        self.assertTrue(ev.confirmation)
+        self.assertTrue(ev.condition_di)
         self.assertFalse(ev.signal)
         self.assertIsNone(ev.atr_distance)
         self.assertIn("ATR", ev.reason)
@@ -103,26 +112,64 @@ class TestSma9ShortEngine(unittest.TestCase):
                               "NIFTY26D2225550CE", self.market_close)
         self.assertIsNone(pos)
 
+    def test_di_gate_is_additional_to_ltp_gate(self):
+        bear = evaluate_option(self.rows, "CE", ltp=98)
+        self.assertTrue(bear.confirmation)
+        self.assertTrue(bear.condition_di)
+        self.assertLess(bear.plus_di, bear.minus_di)
+        self.assertTrue(bear.signal)
+
+        bull = evaluate_option(self.up_rows, "CE", ltp=118)
+        self.assertTrue(bull.confirmation)
+        self.assertFalse(bull.condition_di)
+        self.assertGreater(bull.plus_di, bull.minus_di)
+        self.assertFalse(bull.signal)
+        self.assertIn("DI+", bull.reason)
+
+        state = OptionStateMachine("CE")
+        pos = state.try_entry(bull, self.now, 25550, "2026-12-22", 1,
+                              "NIFTY26D2225550CE", self.market_close)
+        self.assertIsNone(pos)
+
+    def test_di_unavailable_blocks_entry(self):
+        short_history = candles([100] * 9, 100)
+        ev = evaluate_option(short_history, "CE", ltp=98)
+        self.assertIsNone(ev.plus_di)
+        self.assertIsNone(ev.minus_di)
+        self.assertFalse(ev.condition_di)
+        self.assertFalse(ev.signal)
+        self.assertIn("DI+", ev.reason)
+
+    def test_forming_candle_does_not_change_di(self):
+        base = evaluate_option(self.rows, "CE", ltp=98)
+        changed_rows = list(self.rows[:-1]) + [{
+            "start": self.rows[-1]["start"], "open": 10, "high": 11,
+            "low": 9, "close": 10, "volume": 1,
+        }]
+        changed = evaluate_option(changed_rows, "CE", ltp=98)
+        self.assertEqual(base.plus_di, changed.plus_di)
+        self.assertEqual(base.minus_di, changed.minus_di)
+
     def test_trailing_stop_uses_frozen_atr_distance(self):
         state = OptionStateMachine("PE")
         ev = evaluate_option(self.rows, "PE", ltp=99)
         pos = state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
                               "NIFTY26D2225150PE", self.market_close)
-        self.assertEqual(pos.stop, 100.4)
+        self.assertEqual(pos.stop, 101.1)
 
         state.update_trail(90)
         self.assertEqual(pos.lowest_ltp, 90)
-        self.assertEqual(pos.stop, 91.4)
+        self.assertEqual(pos.stop, 92.1)
 
         state.update_trail(95)   # higher low: stop must not loosen
-        self.assertEqual(pos.stop, 91.4)
+        self.assertEqual(pos.stop, 92.1)
 
         state.update_trail(80)
         self.assertEqual(pos.lowest_ltp, 80)
-        self.assertEqual(pos.stop, 81.4)
+        self.assertEqual(pos.stop, 82.1)
 
         self.assertTrue(pos.trailing_active())
-        self.assertEqual(state.check_stop_loss(81.5), 81.4)
+        self.assertEqual(state.check_stop_loss(82.5), 82.1)
         self.assertIsNone(state.check_stop_loss(81.3))
 
     def test_short_pnl_sign(self):

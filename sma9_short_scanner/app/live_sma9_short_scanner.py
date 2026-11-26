@@ -6,7 +6,8 @@ Paper/shadow only. No broker orders are placed.
 Each leg is evaluated and positioned independently:
   CE contract = nearest ATM strike + 200
   PE contract = nearest ATM strike - 200
-  SHORT entry when that leg's live LTP < its SMA9 (9 completed 5m closes)
+  SHORT entry when live LTP < SMA9 (9 completed 5m closes) AND DI+ < DI-
+  on the same completed 5m premium candles (forming bar excluded)
   Initial stop = entry + (0.70 x ATR(14)), fixed at entry
   Trailing stop = lowest LTP since entry + frozen ATR distance, ratcheted down only
   Any open short is closed flat at 15:20 IST (EOD_15_20_FLAT)
@@ -769,6 +770,9 @@ class Sma9ShortLiveScanner:
                 "atr_distance": ev.atr_distance,
                 "prev_close": ev.prev_close,
                 "current_open": ev.current_open,
+                "plus_di": round(ev.plus_di, 2) if ev.plus_di is not None else None,
+                "minus_di": round(ev.minus_di, 2) if ev.minus_di is not None else None,
+                "condition_di": ev.condition_di,
                 "condition_a": ev.condition_a,
                 "condition_b": ev.condition_b,
                 "qualified": ev.qualified,
@@ -853,6 +857,9 @@ class Sma9ShortLiveScanner:
                 "atr_distance": None,
                 "prev_close": None,
                 "current_open": None,
+                "plus_di": None,
+                "minus_di": None,
+                "condition_di": False,
                 "condition_a": False,
                 "condition_b": False,
                 "qualified": False,

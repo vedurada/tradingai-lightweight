@@ -16,11 +16,13 @@ live-only snapshot is unchanged.
   - CE: nearest ATM strike **+200**
   - PE: nearest ATM strike **−200**
 - Entry: paper SHORT at the sampled live premium LTP when that leg's
-  `LTP < SMA9`, where SMA9 is the mean of the last 9 completed 5-minute premium
-  closes. The forming candle is never included in SMA9.
+  `LTP < SMA9` (mean of the last 9 completed 5-minute premium closes) **AND**
+  Wilder `DI+ < DI-` on those completed candles. The forming candle is never
+  included in SMA9 or DI; entries are skipped until DI is available.
 - ATR-only risk: `ATR(14)` of completed 5-minute premium candles, with
   `distance = 0.70 × ATR` fixed at entry. There is no percentage floor, cap or
-  fallback; entries are skipped when ATR(14) is unavailable.
+  fallback; entries are skipped when ATR(14) is unavailable. This stop gate is
+  unchanged by the DI entry filter.
 - One open position per leg. CE and PE may both be short at the same time.
 - Initial stop: `round(entry + distance, 2)`.
 - Trailing stop: track the lowest LTP since entry and ratchet the stop down to

@@ -7,9 +7,10 @@ Per-option rules (CE and PE are independent):
   Contract:
     CE = nearest ATM strike + 200; PE = nearest ATM strike - 200.
   Entry:
-    Paper SHORT at the sampled live premium LTP when LTP < SMA9, where SMA9 is
-    the mean of the last 9 completed 5-minute premium closes. The forming bar
-    is never used to calculate SMA9.
+    Paper SHORT at the sampled live premium LTP when LTP < SMA9 (mean of the
+    last 9 completed 5-minute premium closes) AND Wilder DI+ < DI- on the same
+    completed 5-minute premium candles. The forming bar is never used to
+    calculate SMA9 or DI.
   Exit:
     ATR-only risk: ATR(14) of completed 5-minute option-premium candles.
     Distance = 0.70 x ATR, fixed at entry; no percentage floor, cap or fallback.
@@ -19,7 +20,7 @@ Per-option rules (CE and PE are independent):
     stop. A stop breach closes the short at the stop level.
     Any position still open at 15:20 IST is closed flat at the sampled LTP
     (or the 15:20 candle open on a late scan), reason EOD_15_20_FLAT.
-    Entries are skipped when ATR(14) is unavailable.
+    Entries are skipped when ATR(14) or DI+ / DI- is unavailable.
   P&L:
     entry_price - exit_price (in premium points).
 
@@ -41,6 +42,7 @@ STRATEGY_TYPE = "SMA9_SHORT_ONLY"
 ATR_PERIOD = 14
 ATR_MULTIPLIER = 0.70
 STOP_LOSS_REASON = "STOP_LOSS_ATR"
+DI_PERIOD = 14
 EOD_EXIT_TIME = dtime(15, 20)
 EOD_EXIT_REASON = "EOD_15_20_FLAT"
 STRIKE_OFFSETS = {"CE": 200.0, "PE": -200.0}
@@ -92,6 +94,62 @@ def premium_atr(candles: Sequence[dict],
     return sum(trs) / len(trs) if trs else None
 
 
+@dataclass(frozen=True)
+class DiComponents:
+    plus_di: Optional[float] = None
+    minus_di: Optional[float] = None
+
+
+def compute_di_components(candles: Sequence[dict],
+                          period: int = DI_PERIOD) -> DiComponents:
+    """Return Wilder +DI/-DI over completed candles.
+
+    Callers pass completed bars only, so the forming candle is excluded. The
+    calculation mirrors the sma9_adx engine's Wilder DI implementation, but is
+    kept local to this scanner to avoid coupling scanner identities.
+    """
+    rows = normalize_candles(candles)
+    if len(rows) < period * 2:
+        return DiComponents()
+
+    trs: List[float] = []
+    plus_dms: List[float] = []
+    minus_dms: List[float] = []
+    for i in range(1, len(rows)):
+        cur, prev = rows[i], rows[i - 1]
+        tr = max(
+            cur["high"] - cur["low"],
+            abs(cur["high"] - prev["close"]),
+            abs(cur["low"] - prev["close"]),
+        )
+        up = cur["high"] - prev["high"]
+        down = prev["low"] - cur["low"]
+        plus_dms.append(up if up > down and up > 0 else 0.0)
+        minus_dms.append(down if down > up and down > 0 else 0.0)
+        trs.append(tr)
+
+    if len(trs) < period * 2 - 1:
+        return DiComponents()
+
+    def _di(sm_tr: float, sm_plus: float,
+            sm_minus: float) -> tuple[float, float]:
+        if sm_tr <= 0:
+            return 0.0, 0.0
+        return 100.0 * sm_plus / sm_tr, 100.0 * sm_minus / sm_tr
+
+    sm_tr = sum(trs[:period])
+    sm_plus = sum(plus_dms[:period])
+    sm_minus = sum(minus_dms[:period])
+
+    for i in range(period, len(trs)):
+        sm_tr = sm_tr - sm_tr / period + trs[i]
+        sm_plus = sm_plus - sm_plus / period + plus_dms[i]
+        sm_minus = sm_minus - sm_minus / period + minus_dms[i]
+
+    plus_di, minus_di = _di(sm_tr, sm_plus, sm_minus)
+    return DiComponents(plus_di=plus_di, minus_di=minus_di)
+
+
 def eod_bar_open(candles: Sequence[dict], eod_start: datetime) -> Optional[float]:
     """Return the opening premium of the first candle at/after the EOD cutoff.
 
@@ -123,6 +181,9 @@ class Evaluation:
     current_open: Optional[float] = None
     prev_close: Optional[float] = None
     ltp: Optional[float] = None
+    plus_di: Optional[float] = None
+    minus_di: Optional[float] = None
+    condition_di: bool = False
     condition_a: bool = False
     condition_b: bool = False
     qualified: bool = False
@@ -142,6 +203,9 @@ class Evaluation:
             "current_open": self.current_open,
             "prev_close": self.prev_close,
             "ltp": self.ltp,
+            "plus_di": round(self.plus_di, 2) if self.plus_di is not None else None,
+            "minus_di": round(self.minus_di, 2) if self.minus_di is not None else None,
+            "condition_di": self.condition_di,
             "condition_a": self.condition_a,
             "condition_b": self.condition_b,
             "qualified": self.qualified,
@@ -190,12 +254,22 @@ def evaluate_option(candles: Sequence[dict], option_type: str,
     ev.current_open = forming["open"]
     ev.ready = True
 
-    # Candle context only. The actual entry trigger is LTP < SMA9, exactly as
-    # requested; the previous close / forming open are not entry gates.
+    # Candle context only. The previous close / forming open remain diagnostic;
+    # they are not entry gates.
     ev.condition_a = prev["close"] < sma
     ev.condition_b = forming["open"] < sma
+
+    di = compute_di_components(completed)
+    ev.plus_di = di.plus_di
+    ev.minus_di = di.minus_di
+    ev.condition_di = (
+        di.plus_di is not None and di.minus_di is not None
+        and di.plus_di < di.minus_di
+    )
+
+    # Entry is an AND of the unchanged LTP < SMA9 trigger and the new DI gate.
     ev.confirmation = ltp is not None and ltp < sma
-    ev.signal = bool(ev.confirmation)
+    ev.signal = bool(ev.confirmation and ev.condition_di)
     ev.qualified = bool(ev.signal)
 
     atr = premium_atr(rows)
@@ -205,10 +279,17 @@ def evaluate_option(candles: Sequence[dict], option_type: str,
 
     if ltp is None:
         ev.reason = "no LTP: SHORT signal unavailable"
-    elif ev.signal:
-        ev.reason = f"SHORT signal: LTP {ltp:.2f} < SMA9 {sma:.2f}"
-    else:
+    elif not ev.confirmation:
         ev.reason = f"no SHORT signal: LTP {ltp:.2f} >= SMA9 {sma:.2f}"
+    elif ev.plus_di is None or ev.minus_di is None:
+        ev.reason = "no SHORT signal: DI+ / DI- unavailable; entry skipped"
+    elif not ev.condition_di:
+        ev.reason = f"no SHORT signal: DI+ {ev.plus_di:.2f} >= DI- {ev.minus_di:.2f}"
+    else:
+        ev.reason = (
+            f"SHORT signal: LTP {ltp:.2f} < SMA9 {sma:.2f} "
+            f"and DI+ {ev.plus_di:.2f} < DI- {ev.minus_di:.2f}"
+        )
 
     if ev.signal and (ev.atr_distance is None or ev.atr_distance <= 0):
         ev.signal = False
