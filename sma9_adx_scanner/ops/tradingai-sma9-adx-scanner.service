@@ -1,0 +1,51 @@
+[Unit]
+Description=TradingAI SMA9_ADX ATM CE/PE BUY-ONLY Paper Scanner, 5s Poll
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=sma9adx
+# Share the API's group so SQLite WAL/journal files created by the scanner are
+# readable/writable by the ubuntu API process (see UMask below).
+Group=ubuntu
+WorkingDirectory=/opt/tradingai
+Environment=SMA9_ADX_DB_PATH=/opt/tradingai/database/sma9_adx.db
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/tradingai/sma9_adx_scanner
+Environment=BROKER_GATEWAY_SCANNER=sma9_adx
+ExecStart=/usr/bin/python3 /opt/tradingai/sma9_adx_scanner/app/live_sma9_adx_scanner.py
+# SQLite creates -shm/-wal with the main file's mode; keep the DB writable so
+# both the scanner and the read-only API process can always open it.
+ExecStartPre=+/bin/sh -c 'chmod 0660 /opt/tradingai/database/sma9_adx.db* 2>/dev/null || true'
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/tradingai/logs/live_sma9_adx_scanner.log
+StandardError=append:/opt/tradingai/logs/live_sma9_adx_scanner.log
+
+# Sandbox / privilege hardening
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=/opt/tradingai/database /opt/tradingai/logs
+ReadOnlyPaths=/opt/tradingai/sma9_adx_scanner
+# Group read/write (not world) so the ubuntu API can share SQLite -wal/-shm.
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target
