@@ -3,8 +3,10 @@
 
 BUY-ONLY rules (identical for CE and PE):
   Entry: self-contained in the runner, previous completed 5m close > SMA9
-         AND forming 5m open > SMA9.  This module's evaluate_option is the
-         same rule used by the runner, not an adapter to another scanner.
+         AND forming 5m open > SMA9 AND Wilder DI+ > DI- on the same completed
+         5m candles.  The forming bar is excluded from SMA9 and DI.  This
+         module's evaluate_option is the same rule used by the runner, not an
+         adapter to another scanner.
 
 Exit -- the ONLY two conditions:
   1) STOP_LOSS_5PCT: LTP <= entry x 0.95; exit at that stop level.
@@ -26,6 +28,7 @@ from typing import Dict, List, Optional, Sequence
 
 SMA_PERIOD = 9
 CANDLE_MINUTES = 5
+DI_PERIOD = 14
 STOP_LOSS_PCT = 0.05
 TRAIL_PCT = 0.05
 EXIT_STOP_LOSS = "STOP_LOSS_5PCT"
@@ -73,6 +76,60 @@ def compute_sma(closes, period):
     return sum(closes[-period:]) / period
 
 
+@dataclass(frozen=True)
+class DiComponents:
+    plus_di: Optional[float] = None
+    minus_di: Optional[float] = None
+
+
+def compute_di_components(candles, period=DI_PERIOD):
+    """Return Wilder +DI/-DI over completed candles.
+
+    Callers pass completed bars only, so the forming candle is excluded. This
+    mirrors the sma9_adx engine's Wilder DI calculation but is kept local to
+    this scanner so scanner identities remain isolated.
+    """
+    rows = normalize_candles(candles)
+    if len(rows) < period * 2:
+        return DiComponents()
+
+    trs = []
+    plus_dms = []
+    minus_dms = []
+    for i in range(1, len(rows)):
+        cur, prev = rows[i], rows[i - 1]
+        tr = max(
+            cur["high"] - cur["low"],
+            abs(cur["high"] - prev["close"]),
+            abs(cur["low"] - prev["close"]),
+        )
+        up = cur["high"] - prev["high"]
+        down = prev["low"] - cur["low"]
+        plus_dms.append(up if up > down and up > 0 else 0.0)
+        minus_dms.append(down if down > up and down > 0 else 0.0)
+        trs.append(tr)
+
+    if len(trs) < period * 2 - 1:
+        return DiComponents()
+
+    def _di(sm_tr, sm_plus, sm_minus):
+        if sm_tr <= 0:
+            return 0.0, 0.0
+        return 100.0 * sm_plus / sm_tr, 100.0 * sm_minus / sm_tr
+
+    sm_tr = sum(trs[:period])
+    sm_plus = sum(plus_dms[:period])
+    sm_minus = sum(minus_dms[:period])
+
+    for i in range(period, len(trs)):
+        sm_tr = sm_tr - sm_tr / period + trs[i]
+        sm_plus = sm_plus - sm_plus / period + plus_dms[i]
+        sm_minus = sm_minus - sm_minus / period + minus_dms[i]
+
+    plus_di, minus_di = _di(sm_tr, sm_plus, sm_minus)
+    return DiComponents(plus_di=plus_di, minus_di=minus_di)
+
+
 def make_trade_id(instrument, strike, option_type, entry_candle_start,
                   prefix="S9T5-"):
     ts = _as_dt(entry_candle_start).isoformat()
@@ -93,6 +150,9 @@ class Evaluation:
     prev_high: Optional[float] = None
     current_open: Optional[float] = None
     ltp: Optional[float] = None
+    plus_di: Optional[float] = None
+    minus_di: Optional[float] = None
+    condition_di: bool = False
     condition_a: bool = False
     condition_b: bool = False
     condition_c: bool = False
@@ -113,6 +173,9 @@ class Evaluation:
             "prev_high": self.prev_high,
             "current_open": self.current_open,
             "ltp": self.ltp,
+            "plus_di": round(self.plus_di, 2) if self.plus_di is not None else None,
+            "minus_di": round(self.minus_di, 2) if self.minus_di is not None else None,
+            "condition_di": self.condition_di,
             "condition_a": self.condition_a,
             "condition_b": self.condition_b,
             "condition_c": self.condition_c,
@@ -160,6 +223,14 @@ def evaluate_option(candles, option_type, ltp=None):
     ev.prev_close = prev["close"]
     ev.prev_high = prev["high"]
 
+    di = compute_di_components(completed)
+    ev.plus_di = di.plus_di
+    ev.minus_di = di.minus_di
+    ev.condition_di = (
+        di.plus_di is not None and di.minus_di is not None
+        and di.plus_di > di.minus_di
+    )
+
     entry_type = "sma"
     if entry_type == "prev_high":
         ev.breakout = ltp is not None and ltp > prev["high"]
@@ -171,13 +242,20 @@ def evaluate_option(candles, option_type, ltp=None):
         ev.condition_b = sma is not None and forming["open"] > sma
         ev.qualified = ev.condition_a and ev.condition_b
         ev.confirmation = ev.qualified
-        ev.signal = bool(ev.qualified)
+        # DI+ > DI- is an extra AND gate on the unchanged SMA entry rule.
+        ev.signal = bool(ev.qualified and ev.condition_di)
         if not ev.condition_a:
             ev.reason = "not qualified: prev_close<=SMA"
         elif not ev.condition_b:
             ev.reason = "not qualified: current_open<=SMA"
+        elif ev.plus_di is None or ev.minus_di is None:
+            ev.reason = "not qualified: DI+ / DI- unavailable"
+        elif not ev.condition_di:
+            ev.reason = (f"not qualified: DI+ {ev.plus_di:.2f} "
+                         f"<= DI- {ev.minus_di:.2f}")
         else:
-            ev.reason = "BUY signal: prev_close>SMA and current_open>SMA"
+            ev.reason = ("BUY signal: prev_close>SMA and current_open>SMA "
+                         "and DI+>DI-")
     elif entry_type == "sma_high":
         ev.condition_a = sma is not None and prev["close"] > sma
         ev.condition_b = ltp is not None and ltp > prev["high"]

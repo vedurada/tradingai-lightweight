@@ -26,10 +26,14 @@ for reference.
 
 ## Rules
 
-Entry (unchanged from the retired scanner, self-contained in the runner):
+Entry (self-contained in the runner):
 
 - Previous completed 5-minute option-premium close > SMA9.
 - Current forming 5-minute option-premium open > SMA9.
+- Wilder `DI+ > DI-` on the same completed 5-minute premium candles. The forming
+  candle is excluded from both SMA9 and DI; entries are skipped until DI(14) is
+  available (at least 28 completed bars). This is an additional AND gate and
+  does not change the two SMA conditions.
 - ATM CE and PE are evaluated independently; long only; at most one position
   per option.
 

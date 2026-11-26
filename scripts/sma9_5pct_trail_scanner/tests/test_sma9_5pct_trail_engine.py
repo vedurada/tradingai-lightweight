@@ -15,6 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "app"))
 
 from sma9_5pct_trail_engine import (  # noqa: E402
+    DI_PERIOD,
     EXIT_REASONS,
     EXIT_STOP_LOSS,
     EXIT_TRAIL,
@@ -25,7 +26,34 @@ from sma9_5pct_trail_engine import (  # noqa: E402
     TRAIL_PCT,
     Evaluation,
     OptionStateMachine,
+    compute_di_components,
+    evaluate_option,
 )
+
+
+def _di_candles(closes, forming_open):
+    """Completed bars followed by one forming bar; up/down bars are directional."""
+    start = datetime(2026, 11, 25, 9, 15, tzinfo=timezone.utc)
+    rows = []
+    for i, close in enumerate(closes):
+        prev = closes[i - 1] if i else close - 1
+        rows.append({
+            "start": start + timedelta(minutes=5 * i),
+            "open": prev,
+            "high": max(prev, close) + 1,
+            "low": min(prev, close) - 1,
+            "close": close,
+            "volume": 1,
+        })
+    rows.append({
+        "start": start + timedelta(minutes=5 * len(closes)),
+        "open": forming_open,
+        "high": forming_open + 1,
+        "low": forming_open - 1,
+        "close": forming_open,
+        "volume": 1,
+    })
+    return rows
 
 
 def _signal(candle_start: datetime, ltp: float) -> Evaluation:
@@ -128,6 +156,80 @@ class Sma95PctTrailEngineTest(unittest.TestCase):
                     self.start + timedelta(minutes=1), 100.0, reason
                 )
         self.assertIsNotNone(self.state.position)
+
+
+class DiGateTest(unittest.TestCase):
+    def _uptrend_rows(self):
+        # 30 completed up bars: SMA9(last 9) = 125, prev close 129 > SMA,
+        # forming open 130 > SMA and Wilder +DI > -DI.
+        return _di_candles(list(range(100, 130)), 130)
+
+    def _late_recovery_rows(self):
+        # 20 steep down bars then 10 mild up bars: the last 9 closes are above
+        # SMA9 and the forming open is above SMA9, but -DI still dominates.
+        downtrend = [200 - 5 * i for i in range(20)]
+        recovery = [106 + i for i in range(10)]
+        return _di_candles(downtrend + recovery, 116)
+
+    def test_di_gate_is_additional_to_unchanged_sma_gate(self):
+        self.assertEqual(DI_PERIOD, 14)
+        up = evaluate_option(self._uptrend_rows(), "CE", ltp=130)
+        self.assertTrue(up.condition_a)
+        self.assertTrue(up.condition_b)
+        self.assertTrue(up.qualified)
+        self.assertTrue(up.condition_di)
+        self.assertGreater(up.plus_di, up.minus_di)
+        self.assertTrue(up.signal)
+        self.assertIn("DI+>DI-", up.reason)
+
+        late = evaluate_option(self._late_recovery_rows(), "CE", ltp=116)
+        self.assertTrue(late.condition_a)
+        self.assertTrue(late.condition_b)
+        self.assertTrue(late.qualified)
+        self.assertFalse(late.condition_di)
+        self.assertLess(late.plus_di, late.minus_di)
+        self.assertFalse(late.signal)
+        self.assertIn("DI+", late.reason)
+
+        state = OptionStateMachine("CE")
+        pos = state.try_entry(
+            late,
+            datetime(2026, 11, 25, 12, 0, tzinfo=timezone.utc),
+            strike=25000,
+            expiry="2026-11-26",
+            token=12345,
+            tradingsymbol="NIFTY26D0125000CE",
+            market_close=datetime(2026, 11, 25, 15, 30, tzinfo=timezone.utc),
+        )
+        self.assertIsNone(pos)
+
+    def test_di_unavailable_blocks_entry(self):
+        # Only 9 completed bars: SMA conditions hold, but DI(14) needs 28 bars.
+        rows = _di_candles(list(range(100, 109)), 109)
+        ev = evaluate_option(rows, "CE", ltp=109)
+        self.assertTrue(ev.qualified)
+        self.assertIsNone(ev.plus_di)
+        self.assertIsNone(ev.minus_di)
+        self.assertFalse(ev.condition_di)
+        self.assertFalse(ev.signal)
+        self.assertIn("DI+", ev.reason)
+
+    def test_forming_candle_does_not_change_di(self):
+        base = evaluate_option(self._uptrend_rows(), "CE", ltp=130)
+        rows = self._uptrend_rows()
+        rows[-1] = {"start": rows[-1]["start"], "open": 130, "high": 999,
+                    "low": 1, "close": 500, "volume": 1}
+        changed = evaluate_option(rows, "CE", ltp=130)
+        self.assertEqual(base.plus_di, changed.plus_di)
+        self.assertEqual(base.minus_di, changed.minus_di)
+        self.assertEqual(base.condition_di, changed.condition_di)
+
+    def test_di_fields_exposed_in_evaluation_dict(self):
+        ev = evaluate_option(self._uptrend_rows(), "CE", ltp=130)
+        d = ev.as_dict()
+        for key in ("plus_di", "minus_di", "condition_di"):
+            self.assertIn(key, d)
+        self.assertEqual(d["condition_di"], True)
 
 
 class RemovedExitRulesSourceGuardTest(unittest.TestCase):

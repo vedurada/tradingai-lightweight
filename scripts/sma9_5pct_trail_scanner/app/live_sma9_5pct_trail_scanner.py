@@ -2,7 +2,8 @@
 """SMA9 5% Trail live paper scanner - BUY ONLY.
 
 SELF-CONTAINED: entry is evaluated locally from fetched candles (previous
-close > SMA9 AND current open > SMA9).  The scanner owns both entry and exit.
+close > SMA9 AND current open > SMA9 AND DI+ > DI- on the same completed 5m
+candles; forming bar excluded).  The scanner owns both entry and exit.
 
 Exit -- the ONLY two conditions:
   1) STOP_LOSS_5PCT: LTP <= entry x 0.95, exit at that stop level.
@@ -902,6 +903,9 @@ class TrailLiveScanner:
                     "prev_close": ev_local.prev_close,
                     "prev_high": ev_local.prev_high,
                     "current_open": ev_local.current_open,
+                    "plus_di": round(ev_local.plus_di, 2) if ev_local.plus_di is not None else None,
+                    "minus_di": round(ev_local.minus_di, 2) if ev_local.minus_di is not None else None,
+                    "condition_di": ev_local.condition_di,
                     "condition_a": ev_local.condition_a,
                     "condition_b": ev_local.condition_b,
                     "condition_c": ev_local.condition_c,
@@ -923,6 +927,9 @@ class TrailLiveScanner:
                     "ltp": ltp,
                 "ltp_source": "broker_quote" if ltp is not None else "unavailable",
                 "quote_unavailable": ltp is None,
+                    "plus_di": None,
+                    "minus_di": None,
+                    "condition_di": False,
                     "entry_made": entry_made,
                     "position": state.position.as_dict() if state.position else None,
                 }
