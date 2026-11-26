@@ -1,0 +1,44 @@
+[Unit]
+Description=TradingAI SMA9 HIGH ATM CE/PE BUY-ONLY Prev-High Breakout Paper Scanner (5s)
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=0
+
+[Service]
+Type=simple
+User=sma9high
+Group=ubuntu
+WorkingDirectory=/opt/tradingai
+Environment=SMA9_HIGH_DB_PATH=/opt/tradingai/database/sma9_high.db
+Environment=PYTHONUNBUFFERED=1
+Environment=PYTHONDONTWRITEBYTECODE=1
+Environment=PYTHONPATH=/opt/tradingai/sma9_high_lib
+Environment=BROKER_GATEWAY_SCANNER=sma9_high
+ExecStart=/usr/bin/python3 /opt/tradingai/sma9_high_scanner/app/live_sma9_high_scanner.py
+Restart=always
+RestartSec=5
+StandardOutput=append:/opt/tradingai/logs/live_sma9_high_scanner.log
+StandardError=append:/opt/tradingai/logs/live_sma9_high_scanner.log
+
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectControlGroups=true
+ProtectClock=true
+RestrictRealtime=true
+RestrictSUIDSGID=true
+RemoveIPC=true
+LockPersonality=true
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX AF_NETLINK
+CapabilityBoundingSet=
+AmbientCapabilities=
+ReadWritePaths=/opt/tradingai/database /opt/tradingai/logs
+ReadOnlyPaths=/opt/tradingai/sma9_high_scanner /opt/tradingai/sma9_high_lib
+UMask=0007
+
+[Install]
+WantedBy=multi-user.target

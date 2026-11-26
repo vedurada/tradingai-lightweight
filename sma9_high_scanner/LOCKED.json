@@ -1,0 +1,8 @@
+{
+  "locked_at": "2026-11-24T17:25:55+05:30",
+  "locked_by": "lock_code.sh",
+  "root": "/opt/tradingai/sma9_high_scanner",
+  "manifest_sha256": "d2aa0d62148f345aa671e5c30155207936c5b37a4e93d9d9ddfda7e053915517",
+  "file_count": 21,
+  "policy": "root-owned, read-only, immutable (chattr +i); service runs as unprivileged user sma9high"
+}
