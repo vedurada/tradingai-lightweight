@@ -101,7 +101,10 @@ def _patch(monkeypatch, db=None, *, master_rows=True):
     monkeypatch.setattr(m, "call", fake_call)
     monkeypatch.setattr(m, "_cache", {})
     monkeypatch.setattr(m, "_last_good", {})
-    monkeypatch.setattr(m, "_master_contract_cache", {})
+    monkeypatch.setattr(m, "_master_index_cache", {})
+    monkeypatch.setattr(m, "_quote_cache", {})
+    monkeypatch.setattr(m, "_refresh_inflight", set())
+    monkeypatch.setattr(m, "_refresh_attempted", {})
 
 
 def test_heartbeat_token_wins_over_derived_month_symbol(tmp_path, monkeypatch):

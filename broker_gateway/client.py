@@ -12,7 +12,14 @@ SOCKET_PATH = os.environ.get("BROKER_GATEWAY_SOCKET", "/run/tradingai/broker_gat
 TIMEOUT = float(os.environ.get("BROKER_GATEWAY_TIMEOUT", "180"))
 
 
-def call(broker: str, method: str, **params):
+def call(broker: str, method: str, *, timeout: float | None = None, **params):
+    """Call the gateway once. ``timeout`` is a client-side deadline only; it is
+    never forwarded as a broker method parameter.
+
+    Read-only dashboards pass a short timeout so a slow broker cannot pin a
+    gunicorn thread until the 180-second default expires. Order and scanner
+    calls keep the default unless they explicitly opt in.
+    """
     # The alias identifies the calling scanner to the daemon so order methods
     # can be scoped to one alias instead of every process sharing the socket.
     request = json.dumps({
@@ -23,7 +30,7 @@ def call(broker: str, method: str, **params):
     }) + "\n"
     try:
         with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as sock:
-            sock.settimeout(TIMEOUT)
+            sock.settimeout(TIMEOUT if timeout is None else timeout)
             sock.connect(SOCKET_PATH)
             sock.sendall(request.encode("utf-8"))
             buffer = b""

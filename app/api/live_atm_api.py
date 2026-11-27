@@ -19,6 +19,7 @@ from __future__ import annotations
 
 import os
 import sqlite3
+import threading
 import time
 from contextlib import closing
 from datetime import datetime, time as dtime
@@ -38,6 +39,13 @@ INDEX_SYMBOL = "NSE:NIFTY 50"
 OPTION_PREFIX = "NFO:NIFTY"
 STRIKE_STEP = 50
 CACHE_SECONDS = 10
+# Broker quotes are shared across scanners for a few seconds. All ATM scanners
+# ask for the same NIFTY symbol, and most ask for the same CE/PE tokens, so one
+# gateway snapshot replaces up to seven identical round trips per refresh.
+QUOTE_CACHE_SECONDS = 5.0
+QUOTE_TIMEOUT_SECONDS = 4.0
+MASTER_TIMEOUT_SECONDS = 8.0
+REFRESH_RETRY_SECONDS = 2.0
 STALE_QUOTE_SECONDS = 60
 MARKET_OPEN = dtime(9, 0)
 MARKET_CLOSE = dtime(15, 30)
@@ -97,6 +105,16 @@ SCANNER_STRIKE_OFFSETS: dict[str, dict[str, float]] = {
 _cache: dict[tuple[str, str], dict[str, Any]] = {}
 _last_good: dict[tuple[str, str], dict[str, Any]] = {}
 
+# Shared, short-lived broker snapshots keyed by (broker, sorted symbols).
+_quote_cache: dict[tuple[str, tuple[str, ...]], dict[str, Any]] = {}
+_quote_cache_lock = threading.Lock()
+
+# Stale-while-revalidate: at most one background refresh per scanner/expiry,
+# with a retry floor so a persistently failing broker is not polled per request.
+_refresh_lock = threading.Lock()
+_refresh_inflight: set[tuple[str, str]] = set()
+_refresh_attempted: dict[tuple[str, str], float] = {}
+
 # The NFO master is stable for the session. Index it once per broker instead of
 # once per (expiry, strike) pair: ATM moves every few minutes, so a per-strike
 # cache caused a full master reload on almost every quote refresh.
@@ -140,6 +158,40 @@ def _is_stale(item: dict) -> bool:
 def _market_is_open(now: datetime) -> bool:
     local = now.astimezone(IST)
     return local.weekday() < 5 and MARKET_OPEN <= local.time() < MARKET_CLOSE
+
+
+def _broker_quotes(
+    broker: str,
+    symbols: list[str],
+    timeout: float = QUOTE_TIMEOUT_SECONDS,
+) -> dict:
+    """Return broker quotes, reusing one very short-lived shared snapshot.
+
+    The timeout is deliberately short: this endpoint feeds a dashboard, not an
+    order. A frozen broker must not occupy a gunicorn thread until the gateway's
+    180-second default expires. A failed refresh falls back to the last quoted
+    snapshot so the page still renders with an explicit stale label.
+    """
+    wanted = tuple(sorted(set(str(s) for s in symbols)))
+    if not wanted:
+        return {}
+    key = (broker, wanted)
+    now = time.monotonic()
+    with _quote_cache_lock:
+        entry = _quote_cache.get(key)
+        if entry and now - entry["at"] < QUOTE_CACHE_SECONDS:
+            return dict(entry["quotes"])
+
+    try:
+        quotes = call(broker, "quote", timeout=timeout, symbols=list(wanted)) or {}
+    except Exception:
+        with _quote_cache_lock:
+            entry = _quote_cache.get(key)
+            return dict(entry["quotes"]) if entry else {}
+
+    with _quote_cache_lock:
+        _quote_cache[key] = {"at": time.monotonic(), "quotes": dict(quotes)}
+    return dict(quotes)
 
 
 def _effective_spot(index_quote: dict, now: datetime) -> tuple[float, str, str, bool]:
@@ -214,7 +266,9 @@ def _instrument_index(broker: str) -> dict | None:
         return cached["index"]
 
     try:
-        rows = call(broker, "instruments", exchange="NFO") or []
+        rows = call(
+            broker, "instruments", timeout=MASTER_TIMEOUT_SECONDS, exchange="NFO"
+        ) or []
     except Exception:
         # Prefer a slightly stale index over breaking the quote endpoint.
         return cached["index"] if cached else None
@@ -359,7 +413,7 @@ def _derived_contracts(
 def _fresh_value(scanner: str, expiry: str) -> dict | None:
     """Fetch a live index quote plus the CE/PE premiums for the real contracts."""
     broker = broker_for("api")  # API process identity in scanners.json
-    quotes = call(broker, "quote", symbols=[INDEX_SYMBOL]) or {}
+    quotes = _broker_quotes(broker, [INDEX_SYMBOL])
     index_quote = quotes.get(INDEX_SYMBOL) or {}
     price = index_quote.get("last_price")
     if price is None:
@@ -412,9 +466,7 @@ def _fresh_value(scanner: str, expiry: str) -> dict | None:
             contract_source = derived_source
 
     wanted = sorted({c["quote_key"] for c in contracts.values()})
-    option_quotes: dict[str, dict] = {}
-    if wanted:
-        option_quotes = call(broker, "quote", symbols=wanted) or {}
+    option_quotes = _broker_quotes(broker, wanted) if wanted else {}
 
     premiums: dict[str, Any] = {}
     for opt in ("CE", "PE"):
@@ -499,26 +551,59 @@ def _stale_value(key: tuple[str, str]) -> dict | None:
     return stale_copy
 
 
+def _request_background_refresh(scanner: str, expiry: str) -> None:
+    """Refresh an expired snapshot off the request path."""
+    key = (scanner, expiry)
+    now = time.monotonic()
+    with _refresh_lock:
+        if key in _refresh_inflight:
+            return
+        last = _refresh_attempted.get(key)
+        if last is not None and now - last < REFRESH_RETRY_SECONDS:
+            return
+        _refresh_attempted[key] = now
+        _refresh_inflight.add(key)
+
+    def refresh() -> None:
+        try:
+            _fresh_value(scanner, expiry)
+        except Exception:
+            # Keep serving the last good quote; the next request may retry.
+            pass
+        finally:
+            with _refresh_lock:
+                _refresh_inflight.discard(key)
+
+    threading.Thread(
+        target=refresh,
+        name="live-atm-refresh-" + (scanner or "default"),
+        daemon=True,
+    ).start()
+
+
 @bp.route("/api/live-atm", methods=["GET"])
 def live_atm():
     """Current NIFTY spot, ATM strike and real CE/PE premiums."""
     expiry = (request.args.get("expiry") or "").strip()
     scanner = (request.args.get("scanner") or "").strip()
     key = (scanner, expiry)
+
+    entry = _cache.get(key)
+    if entry and time.monotonic() - entry["at"] < CACHE_SECONDS:
+        return jsonify({"success": True, "data": dict(entry["value"])})
+
+    # Stale-while-revalidate: never make the browser wait for a cold broker
+    # quote when a previously verified snapshot is available.
+    cached = _stale_value(key)
+    if cached:
+        _request_background_refresh(scanner, expiry)
+        return jsonify({"success": True, "data": cached})
+
+    # First request for this scanner: there is nothing to serve yet.
     try:
-        now = time.monotonic()
-        entry = _cache.get(key)
-        if entry and now - entry["at"] < CACHE_SECONDS:
-            return jsonify({"success": True, "data": dict(entry["value"])})
         fresh = _fresh_value(scanner, expiry)
-        if fresh:
-            return jsonify({"success": True, "data": fresh})
-        cached = _stale_value(key)
-        if cached:
-            return jsonify({"success": True, "data": cached})
-        return jsonify({"success": False, "error": "no NIFTY quote available"})
     except Exception as exc:
-        cached = _stale_value(key)
-        if cached:
-            return jsonify({"success": True, "data": cached})
         return jsonify({"success": False, "error": str(exc)})
+    if fresh:
+        return jsonify({"success": True, "data": fresh})
+    return jsonify({"success": False, "error": "no NIFTY quote available"})
