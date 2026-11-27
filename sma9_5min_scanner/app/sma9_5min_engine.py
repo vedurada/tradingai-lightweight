@@ -8,18 +8,18 @@ BUY-ONLY rules (identical for CE and PE):
     B) current (forming) candle OPEN > SMA9
   Entry: paper BUY at the live LTP as soon as A and B are true
 
-Exit (identical for CE and PE):
-  1) TRAIL: once HWM - entry >= 5.0 pts, stop ratchets to HWM - 5.0 pts;
-     a one-time +2.0 lock is applied after HWM - entry >= 6.0 pts.
-     Only a strictly profitable stop (stop > entry) can exit.
-  2) STOP LOSS: live LTP <= entry - 5% of entry premium -> exit at that level.
-  There is no candle-close, target or time-based exit during normal polling;
-  an open position is carried until one of these stops fires. A service restart
-  is the exception: a recovered position older than its entry candle is closed
-  at that completed candle's close.
+Exit policies (selected by the persisted Position.exit_policy):
+  * 'LEGACY' (default for every pre-existing open row): unchanged behavior.
+    TRAIL once HWM - entry >= 5.0 pts with a one-time +2.0 lock, then a fixed
+    5% stop; restart recovers a position older than its entry candle at that
+    candle's close.
+  * 'SL_TARGET_1_2' (all new entries): fixed 5% initial stop, persisted at
+    entry and never ratcheted, plus a 1:2 target. The only exits are
+    STOP_LOSS_INITIAL and TARGET_1_2, both filled at the persisted level.
+    No trailing stops, EOD exit, restart same-candle recovery or stale exit.
 
-Only completed 5-minute candles are used for the signal, so no future data
-can leak into a decision.  No broker / database / network dependencies.
+Only completed 5-minute candles are used for the entry signal, so no future
+data can leak into a decision.  No broker / database / network dependencies.
 """
 
 from __future__ import annotations
@@ -39,6 +39,31 @@ TRAIL = 5.0
 ACTIVATE = 5.0
 BE_LOCK_PROFIT = 6.0
 BE_LOCK_STOP = 2.0
+
+LEGACY_EXIT_POLICY = "LEGACY"
+SL_TARGET_EXIT_POLICY = "SL_TARGET_1_2"
+EXIT_POLICIES = (LEGACY_EXIT_POLICY, SL_TARGET_EXIT_POLICY)
+TARGET_MULTIPLE = 2.0
+
+
+def initial_stop_for_entry(entry_price: float, direction: str = "LONG") -> float:
+    """Fixed 5% initial stop for the current scanners' SL basis."""
+    if direction not in ("LONG", "SHORT"):
+        raise ValueError("direction must be LONG or SHORT")
+    pct = STOP_LOSS_PCT if direction == "LONG" else -STOP_LOSS_PCT
+    return round(float(entry_price) * (1.0 - pct), 2)
+
+
+def target_for_entry(entry_price: float, initial_stop: float,
+                     direction: str = "LONG") -> float:
+    """1:2 reward:risk target; supports both long and short arithmetic."""
+    if direction not in ("LONG", "SHORT"):
+        raise ValueError("direction must be LONG or SHORT")
+    entry = float(entry_price)
+    stop = float(initial_stop)
+    if direction == "SHORT":
+        return round(entry - TARGET_MULTIPLE * (stop - entry), 2)
+    return round(entry + TARGET_MULTIPLE * (entry - stop), 2)
 
 
 def _as_dt(value) -> datetime:
@@ -195,11 +220,17 @@ class Position:
     hwm: float = 0.0
     stop: Optional[float] = None
     be_locked: bool = False
+    exit_policy: str = LEGACY_EXIT_POLICY
+    initial_stop: Optional[float] = None
+    target_price: Optional[float] = None
 
     def as_dict(self) -> dict:
         d = self.__dict__.copy()
         for k in ("entry_timestamp", "entry_candle_start", "entry_candle_end"):
             d[k] = d[k].isoformat()
+        d["exit_policy"] = self.exit_policy
+        d["initial_stop"] = self.initial_stop
+        d["target_price"] = self.target_price
         return d
 
     @classmethod
@@ -207,7 +238,17 @@ class Position:
         data = dict(d)
         for k in ("entry_timestamp", "entry_candle_start", "entry_candle_end"):
             data[k] = _as_dt(data[k])
+        data.setdefault("exit_policy", LEGACY_EXIT_POLICY)
+        data.setdefault("initial_stop", None)
+        data.setdefault("target_price", None)
+        if data["exit_policy"] not in EXIT_POLICIES:
+            data["exit_policy"] = LEGACY_EXIT_POLICY
         return cls(**data)
+
+    @property
+    def is_sl_target(self) -> bool:
+        return self.exit_policy == SL_TARGET_EXIT_POLICY
+
     def update_trail(self, ltp: Optional[float]) -> Optional[float]:
         """Update high-water mark and return a trail-stop exit price.
 
@@ -216,6 +257,8 @@ class Position:
         moves the stop to entry + BE_LOCK_STOP.  Only a strictly profitable stop
         (stop > entry) may trigger an exit; a breakeven stop is not an exit.
         """
+        if self.exit_policy != LEGACY_EXIT_POLICY:
+            return None
         if ltp is None:
             return None
         if ltp > self.hwm:
@@ -244,8 +287,8 @@ class OptionStateMachine:
       * at most one open position for this option
       * at most one entry per 5-minute candle (duplicate-poll guard)
       * no entry whose candle would end after market close
-      * stop loss at entry - 2 points, checked on every poll
-      * exit at the entry candle's close otherwise
+      * LEGACY rows keep the trail/5% stop and entry-candle-close recovery
+      * SL_TARGET_1_2 rows have a fixed initial stop and a 1:2 target only
     """
 
     def __init__(self, option_type: str):
@@ -268,6 +311,8 @@ class OptionStateMachine:
         if candle_end(ev.candle_start) > market_close:
             return None
 
+        entry_price = round(float(ev.ltp), 2)
+        initial_stop = initial_stop_for_entry(entry_price)
         pos = Position(
             option_type=self.option_type,
             trade_id=make_trade_id("NIFTY", strike, self.option_type,
@@ -279,7 +324,7 @@ class OptionStateMachine:
             entry_timestamp=now,
             entry_candle_start=ev.candle_start,
             entry_candle_end=candle_end(ev.candle_start),
-            entry_price=round(float(ev.ltp), 2),
+            entry_price=entry_price,
             sma9=round(float(ev.sma9), 2),
             prev_close=float(ev.prev_close),
             current_open=float(ev.current_open),
@@ -289,6 +334,9 @@ class OptionStateMachine:
             hwm=round(float(ev.ltp), 2),
             stop=None,
             be_locked=False,
+            exit_policy=SL_TARGET_EXIT_POLICY,
+            initial_stop=initial_stop,
+            target_price=target_for_entry(entry_price, initial_stop),
         )
         self.position = pos
         self.entered_candles.add(ev.candle_start)
@@ -296,22 +344,49 @@ class OptionStateMachine:
 
     # -- exit ------------------------------------------------------------
     def update_trail(self, ltp: Optional[float]) -> Optional[float]:
-        if self.position is None:
+        if self.position is None or self.position.exit_policy != LEGACY_EXIT_POLICY:
             return None
         return self.position.update_trail(ltp)
 
     def check_stop_loss(self, ltp: Optional[float]) -> Optional[float]:
-        """Return the stop-loss exit price when LTP has breached it."""
+        """Return the LEGACY 5% stop price when LTP has breached it."""
         pos = self.position
-        if pos is None or ltp is None:
+        if pos is None or ltp is None or pos.exit_policy != LEGACY_EXIT_POLICY:
             return None
         sl_price = round(pos.entry_price * (1.0 - STOP_LOSS_PCT), 2)
         if ltp <= sl_price:
             return sl_price
         return None
 
+    def check_initial_stop(self, ltp: Optional[float]) -> Optional[float]:
+        """Return the persisted initial stop when a new-policy LTP crosses it."""
+        pos = self.position
+        if (pos is None or ltp is None
+                or pos.exit_policy != SL_TARGET_EXIT_POLICY
+                or pos.initial_stop is None):
+            return None
+        stop = round(float(pos.initial_stop), 2)
+        if float(ltp) <= stop:
+            return stop
+        return None
+
+    def check_target(self, ltp: Optional[float]) -> Optional[float]:
+        """Return the persisted 1:2 target when a new-policy LTP crosses it."""
+        pos = self.position
+        if (pos is None or ltp is None
+                or pos.exit_policy != SL_TARGET_EXIT_POLICY
+                or pos.target_price is None):
+            return None
+        target = round(float(pos.target_price), 2)
+        if float(ltp) >= target:
+            return target
+        return None
+
     def needs_exit(self, now: datetime) -> bool:
-        return self.position is not None and now >= self.position.entry_candle_end
+        """Only LEGACY rows use entry-candle-close / restart recovery."""
+        pos = self.position
+        return (pos is not None and pos.exit_policy == LEGACY_EXIT_POLICY
+                and now >= pos.entry_candle_end)
 
     def close(self, exit_timestamp: datetime, exit_price: float,
               exit_reason: str = "SAME_CANDLE_EXIT",
@@ -337,6 +412,9 @@ class OptionStateMachine:
             "exit_timestamp": exit_timestamp.isoformat(),
             "exit_price": exit_px,
             "exit_reason": exit_reason,
+            "exit_policy": pos.exit_policy,
+            "initial_stop": pos.initial_stop,
+            "target_price": pos.target_price,
             "pnl_points": pnl,
             "status": "CLOSED",
             "sma9_value": pos.sma9,
