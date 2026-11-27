@@ -14,6 +14,10 @@ Each leg is evaluated and positioned independently:
   Both CE and PE may be open at the same time.
   After an exit, that leg waits for the next 5-minute candle before re-entry.
 
+Polling is once every 5 minutes, aligned to the exchange 5-minute candle
+boundary plus a 10-second publication offset. Trail updates and SL checks run
+on every aligned poll.
+
 State is persisted in database/sma9_short.db so restarts restore stops.
 """
 
@@ -37,6 +41,7 @@ if CODE_ROOT not in sys.path:
 from app.sma9_short_engine import (  # noqa: E402
     ATR_MULTIPLIER,
     ATR_PERIOD,
+    CANDLE_MINUTES,
     EOD_EXIT_REASON,
     EOD_EXIT_TIME,
     SMA_PERIOD,
@@ -66,7 +71,8 @@ MARKET_CLOSE = dtime(15, 30)
 EXCHANGE_OPEN = dtime(9, 15)
 ENTRY_START = dtime(9, 20)
 ENTRY_END = dtime(15, 15)
-POLL_SECONDS = 5
+POLL_SECONDS = 300
+POLL_OFFSET_SEC = 10
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9 SHORT - ATM+200 CE / ATM-200 PE (PAPER)"
@@ -146,10 +152,22 @@ def eod_exit_price(candles, ltp, dt: datetime):
     return eod_bar_open(candles, eod_exit_dt(dt))
 
 
+def next_poll_time(now: datetime) -> datetime:
+    """Next aligned 5m poll: exchange boundary + publication offset."""
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=IST)
+    candidate = now.replace(
+        minute=(now.minute // CANDLE_MINUTES) * CANDLE_MINUTES,
+        second=POLL_OFFSET_SEC,
+        microsecond=0,
+    )
+    if candidate <= now:
+        candidate += timedelta(minutes=CANDLE_MINUTES)
+    return candidate.astimezone(IST)
+
+
 def sleep_to_next_tick() -> None:
-    now = now_ist()
-    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
-    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
+    target = next_poll_time(now_ist())
     time.sleep(max(0.2, (target - now_ist()).total_seconds()))
 
 
@@ -927,6 +945,7 @@ class Sma9ShortLiveScanner:
             "started_at": self.started_at,
             "last_scan_at": self.last_scan_at,
             "poll_seconds": POLL_SECONDS,
+            "poll_alignment": "5m_boundary_plus_10s",
             "actual_interval_seconds": self.actual_interval_seconds,
             "spot": self.spot,
             "spot_source": self.spot_source or "unavailable",
