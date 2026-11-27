@@ -18,9 +18,14 @@ from sma9_short_engine import (  # noqa: E402
     ATR_MULTIPLIER,
     ATR_PERIOD,
     EOD_EXIT_TIME,
+    EXIT_POLICY_LEGACY,
+    EXIT_POLICY_SL_TARGET,
     NEXT_CANDLE_EXIT_BLOCK_REASON,
+    STOP_LOSS_INITIAL_REASON,
     STOP_LOSS_REASON,
+    TARGET_1_2_REASON,
     OptionStateMachine,
+    Position,
     eod_bar_open,
     evaluate_option,
     floor_5m,
@@ -87,6 +92,8 @@ class TestSma9ShortEngine(unittest.TestCase):
         self.assertEqual(ce_pos.entry_price, 98.0)
         self.assertEqual(ce_pos.atr_distance, 2.1)
         self.assertEqual(ce_pos.initial_stop, 100.1)
+        self.assertEqual(ce_pos.exit_policy, EXIT_POLICY_SL_TARGET)
+        self.assertEqual(ce_pos.target_price, 93.8)  # entry - 2 * ATR distance
 
     def test_atr_distance_has_no_percentage_floor_or_cap(self):
         self.assertEqual(ATR_PERIOD, 14)
@@ -96,6 +103,95 @@ class TestSma9ShortEngine(unittest.TestCase):
         ev = evaluate_option(self.rows, "CE", ltp=98)
         self.assertEqual(ev.atr, 3.0)
         self.assertEqual(ev.atr_distance, 2.1)
+
+    def test_new_policy_target_math_uses_atr_stop(self):
+        state = OptionStateMachine("CE")
+        ev = evaluate_option(self.rows, "CE", ltp=98)
+        pos = state.try_entry(ev, self.now, 25550, "2026-12-22", 1,
+                              "NIFTY26D2225550CE", self.market_close)
+        self.assertEqual(pos.exit_policy, EXIT_POLICY_SL_TARGET)
+        self.assertEqual(pos.atr_distance, 2.1)
+        self.assertEqual(pos.initial_stop, 100.1)
+        self.assertEqual(pos.target_price, 93.8)
+        self.assertLess(pos.target_price, pos.entry_price)
+
+    def test_new_policy_exits_fill_at_frozen_levels(self):
+        state = OptionStateMachine("CE")
+        ev = evaluate_option(self.rows, "CE", ltp=98)
+        state.try_entry(ev, self.now, 25550, "2026-12-22", 1,
+                        "NIFTY26D2225550CE", self.market_close)
+        self.assertIsNone(state.check_sl_target_exit(97.0))
+        hit = state.check_sl_target_exit(101.5)
+        self.assertEqual(hit, (100.1, STOP_LOSS_INITIAL_REASON))
+        trade = state.close(ts(12, 30, 10), hit[0], hit[1])
+        self.assertEqual(trade["exit_price"], 100.1)  # not the sampled 101.5
+        self.assertEqual(trade["exit_reason"], STOP_LOSS_INITIAL_REASON)
+        self.assertEqual(trade["exit_policy"], EXIT_POLICY_SL_TARGET)
+        self.assertEqual(trade["initial_stop"], 100.1)
+        self.assertEqual(trade["target_price"], 93.8)
+        self.assertEqual(trade["pnl_points"], round(98.0 - 100.1, 2))
+
+        state2 = OptionStateMachine("PE")
+        state2.try_entry(ev, self.now, 25150, "2026-12-22", 2,
+                         "NIFTY26D2225150PE", self.market_close)
+        self.assertIsNone(state2.check_sl_target_exit(94.0))
+        hit2 = state2.check_sl_target_exit(93.0)
+        self.assertEqual(hit2, (93.8, TARGET_1_2_REASON))
+        trade2 = state2.close(ts(12, 30, 10), hit2[0], hit2[1])
+        self.assertEqual(trade2["exit_price"], 93.8)  # not the sampled 93.0
+        self.assertEqual(trade2["exit_reason"], TARGET_1_2_REASON)
+
+    def test_new_policy_never_trails_or_eod_exits(self):
+        state = OptionStateMachine("CE")
+        ev = evaluate_option(self.rows, "CE", ltp=98)
+        pos = state.try_entry(ev, self.now, 25550, "2026-12-22", 1,
+                              "NIFTY26D2225550CE", self.market_close)
+        self.assertIsNone(state.update_trail(80.0))
+        self.assertEqual(pos.lowest_ltp, 98.0)
+        self.assertEqual(pos.stop, 100.1)
+        self.assertEqual(pos.target_price, 93.8)
+        self.assertIsNone(state.check_stop_loss(101.5))
+        self.assertFalse(state.needs_exit(ts(15, 20)))
+        self.assertFalse(state.needs_exit(ts(15, 30)))
+
+    def test_new_policy_exit_keeps_next_candle_reentry_block(self):
+        state = OptionStateMachine("CE")
+        ev = evaluate_option(self.rows, "CE", ltp=98)
+        state.try_entry(ev, self.now, 25550, "2026-12-22", 1,
+                        "NIFTY26D2225550CE", self.market_close)
+        trade = state.close(ts(12, 30, 35), 93.8, TARGET_1_2_REASON)
+        self.assertIsNotNone(trade)
+        second = state.try_entry(ev, ts(12, 30, 40), 25550, "2026-12-22", 1,
+                                 "NIFTY26D2225550CE", self.market_close)
+        self.assertIsNone(second)
+        self.assertEqual(state.last_entry_block_reason,
+                         NEXT_CANDLE_EXIT_BLOCK_REASON)
+        next_rows = [
+            dict(row, start=row["start"] + timedelta(minutes=5))
+            for row in self.rows
+        ]
+        next_ev = evaluate_option(next_rows, "CE", ltp=98)
+        self.assertIsNotNone(state.try_entry(
+            next_ev, ts(12, 35, 5), 25550, "2026-12-22", 1,
+            "NIFTY26D2225550CE", self.market_close))
+
+    def test_position_roundtrip_and_legacy_defaults(self):
+        state = OptionStateMachine("CE")
+        ev = evaluate_option(self.rows, "CE", ltp=98)
+        pos = state.try_entry(ev, self.now, 25550, "2026-12-22", 1,
+                              "NIFTY26D2225550CE", self.market_close)
+        restored = Position.from_dict(pos.as_dict())
+        self.assertEqual(restored.exit_policy, EXIT_POLICY_SL_TARGET)
+        self.assertEqual(restored.initial_stop, 100.1)
+        self.assertEqual(restored.target_price, 93.8)
+        self.assertEqual(restored.as_dict()["side"], "SHORT")
+        legacy = Position.from_dict({
+            k: v for k, v in pos.as_dict().items()
+            if k not in ("exit_policy", "initial_stop", "target_price")
+        })
+        self.assertEqual(legacy.exit_policy, EXIT_POLICY_LEGACY)
+        self.assertIsNone(legacy.initial_stop)
+        self.assertIsNone(legacy.target_price)
 
     def test_no_atr_blocks_entry(self):
         original_atr = engine.premium_atr
@@ -155,9 +251,13 @@ class TestSma9ShortEngine(unittest.TestCase):
     def test_trailing_stop_uses_frozen_atr_distance(self):
         state = OptionStateMachine("PE")
         ev = evaluate_option(self.rows, "PE", ltp=99)
-        pos = state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
-                              "NIFTY26D2225150PE", self.market_close)
-        self.assertEqual(pos.stop, 101.1)
+        new_pos = state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
+                                  "NIFTY26D2225150PE", self.market_close)
+        self.assertEqual(new_pos.stop, 101.1)
+        # Trail belongs to LEGACY rows only; restore a legacy copy of it.
+        pos = Position.from_dict({**new_pos.as_dict(),
+                                  "exit_policy": EXIT_POLICY_LEGACY})
+        state.restore(pos)
 
         state.update_trail(90)
         self.assertEqual(pos.lowest_ltp, 90)
@@ -240,8 +340,15 @@ class TestSma9ShortEngine(unittest.TestCase):
         self.assertEqual(state.exited_candle, ts(11, 20, day=27))
         self.assertEqual(floor_5m(ts(11, 23, 45, day=27)), ts(11, 20, day=27))
 
-    def test_eod_exit_due_at_1520(self):
+    def test_eod_exit_due_at_1520_legacy_only(self):
         state = OptionStateMachine("CE")
+        ev = evaluate_option(self.rows, "CE", ltp=98)
+        pos = state.try_entry(ev, self.now, 25550, "2026-12-22", 1,
+                              "NIFTY26D2225550CE", self.market_close)
+        self.assertFalse(state.needs_exit(ts(15, 19, 59)))
+        self.assertFalse(state.needs_exit(ts(15, 20, 0)))
+        self.assertFalse(state.needs_exit(ts(15, 30, 0)))
+        pos.exit_policy = EXIT_POLICY_LEGACY
         self.assertFalse(state.needs_exit(ts(15, 19, 59)))
         self.assertTrue(state.needs_exit(ts(15, 20, 0)))
         self.assertTrue(state.needs_exit(ts(15, 30, 0)))
@@ -250,8 +357,10 @@ class TestSma9ShortEngine(unittest.TestCase):
     def test_eod_flat_close(self):
         state = OptionStateMachine("PE")
         ev = evaluate_option(self.rows, "PE", ltp=99)
-        state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
-                        "NIFTY26D2225150PE", self.market_close)
+        pos = state.try_entry(ev, self.now, 25150, "2026-12-22", 2,
+                              "NIFTY26D2225150PE", self.market_close)
+        pos.exit_policy = EXIT_POLICY_LEGACY
+        self.assertTrue(state.needs_exit(ts(15, 20)))
         trade = state.close(ts(15, 20), 96.5, "EOD_15_20_FLAT")
         self.assertEqual(trade["exit_reason"], "EOD_15_20_FLAT")
         self.assertEqual(trade["exit_price"], 96.5)

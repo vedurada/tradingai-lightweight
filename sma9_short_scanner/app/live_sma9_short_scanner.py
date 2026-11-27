@@ -8,15 +8,22 @@ Each leg is evaluated and positioned independently:
   PE contract = nearest ATM strike - 200
   SHORT entry when live LTP < SMA9 (9 completed 5m closes) AND DI+ < DI-
   on the same completed 5m premium candles (forming bar excluded)
-  Initial stop = entry + (0.70 x ATR(14)), fixed at entry
-  Trailing stop = lowest LTP since entry + frozen ATR distance, ratcheted down only
-  Any open short is closed flat at 15:20 IST (EOD_15_20_FLAT)
+  Exit policy is persisted on each open position:
+    LEGACY (all pre-existing rows): initial stop = entry + (0.70 x ATR(14)),
+      trailing stop = lowest LTP + that frozen ATR distance (ratcheted down
+      only), EOD flatten at 15:20 IST (EOD_15_20_FLAT).
+    SL_TARGET_1_2 (all new entries): the ATR stop is frozen as `initial_stop`,
+      `target_price = entry - 2 x distance` is persisted BELOW entry, and the
+      only exits are STOP_LOSS_INITIAL (LTP >= initial_stop) and TARGET_1_2
+      (LTP <= target_price), both filled at the persisted level. No trail and
+      no EOD flat for these positions.
   Both CE and PE may be open at the same time.
-  After an exit, that leg waits for the next 5-minute candle before re-entry.
+  After an exit, that leg waits for the next 5-minute candle before re-entry
+  (unchanged for both policies).
 
-Polling is once every 5 minutes, aligned to the exchange 5-minute candle
-boundary plus a 10-second publication offset. Trail updates and SL checks run
-on every aligned poll.
+Polling is on exact wall-clock 5-second boundaries (:00, :05, :10, ...);
+there is no 5-minute poll offset or poll-alignment status field. Trail checks
+run on every poll for LEGACY positions; new-policy levels are checked too.
 
 State is persisted in database/sma9_short.db so restarts restore stops.
 """
@@ -41,9 +48,10 @@ if CODE_ROOT not in sys.path:
 from app.sma9_short_engine import (  # noqa: E402
     ATR_MULTIPLIER,
     ATR_PERIOD,
-    CANDLE_MINUTES,
     EOD_EXIT_REASON,
     EOD_EXIT_TIME,
+    EXIT_POLICY_LEGACY,
+    EXIT_POLICY_SL_TARGET,
     SMA_PERIOD,
     STOP_LOSS_REASON,
     STRATEGY_ID,
@@ -71,8 +79,7 @@ MARKET_CLOSE = dtime(15, 30)
 EXCHANGE_OPEN = dtime(9, 15)
 ENTRY_START = dtime(9, 20)
 ENTRY_END = dtime(15, 15)
-POLL_SECONDS = 300
-POLL_OFFSET_SEC = 10
+POLL_SECONDS = 5
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9 SHORT - ATM+200 CE / ATM-200 PE (PAPER)"
@@ -152,22 +159,11 @@ def eod_exit_price(candles, ltp, dt: datetime):
     return eod_bar_open(candles, eod_exit_dt(dt))
 
 
-def next_poll_time(now: datetime) -> datetime:
-    """Next aligned 5m poll: exchange boundary + publication offset."""
-    if now.tzinfo is None:
-        now = now.replace(tzinfo=IST)
-    candidate = now.replace(
-        minute=(now.minute // CANDLE_MINUTES) * CANDLE_MINUTES,
-        second=POLL_OFFSET_SEC,
-        microsecond=0,
-    )
-    if candidate <= now:
-        candidate += timedelta(minutes=CANDLE_MINUTES)
-    return candidate.astimezone(IST)
-
-
 def sleep_to_next_tick() -> None:
-    target = next_poll_time(now_ist())
+    """Sleep until the next exact wall-clock 5-second boundary."""
+    now = now_ist()
+    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
+    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
     time.sleep(max(0.2, (target - now_ist()).total_seconds()))
 
 
@@ -180,7 +176,8 @@ TRADE_COLUMNS = (
     "exit_price, exit_reason, pnl_points, status, sma9_value, candle_open, "
     "candle_high, candle_low, candle_close, created_at, updated_at, dataset, "
     "prev_close, condition_a, condition_b, ltp_at_entry, lowest_ltp, "
-    "initial_stop, atr_distance, final_stop, entry_candle_start, entry_candle_end"
+    "initial_stop, atr_distance, final_stop, entry_candle_start, entry_candle_end, "
+    "exit_policy, target_price"
 )
 
 
@@ -230,7 +227,9 @@ def init_db() -> None:
             atr_distance REAL,
             final_stop REAL,
             entry_candle_start TEXT,
-            entry_candle_end TEXT
+            entry_candle_end TEXT,
+            exit_policy TEXT NOT NULL DEFAULT 'LEGACY',
+            target_price REAL
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_short_trades_date
             ON sma9_short_trades(trade_date);
@@ -260,6 +259,8 @@ def init_db() -> None:
             initial_stop REAL NOT NULL,
             atr_distance REAL,
             stop REAL NOT NULL,
+            exit_policy TEXT NOT NULL DEFAULT 'LEGACY',
+            target_price REAL,
             updated_at TEXT NOT NULL
         );
 
@@ -270,10 +271,24 @@ def init_db() -> None:
         );
         """
     )
-    for table in ("sma9_short_trades", "sma9_short_open_positions"):
+    # Idempotent migrations: older rows default to LEGACY with no target.
+    migrations = {
+        "sma9_short_trades": {
+            "atr_distance": "REAL",
+            "exit_policy": "TEXT NOT NULL DEFAULT 'LEGACY'",
+            "target_price": "REAL",
+        },
+        "sma9_short_open_positions": {
+            "atr_distance": "REAL",
+            "exit_policy": "TEXT NOT NULL DEFAULT 'LEGACY'",
+            "target_price": "REAL",
+        },
+    }
+    for table, columns_to_add in migrations.items():
         columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
-        if "atr_distance" not in columns:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN atr_distance REAL")
+        for col, declaration in columns_to_add.items():
+            if col not in columns:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {declaration}")
     conn.commit()
     conn.close()
 
@@ -306,8 +321,8 @@ def save_open_position(pos: Position) -> None:
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, prev_close, current_open, condition_a,
                 condition_b, ltp_at_entry, lowest_ltp, initial_stop,
-                atr_distance, stop, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                atr_distance, stop, exit_policy, target_price, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
@@ -316,6 +331,7 @@ def save_open_position(pos: Position) -> None:
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
                 pos.ltp_at_entry, pos.lowest_ltp, pos.initial_stop,
                 pos.atr_distance, pos.stop,
+                pos.exit_policy, pos.target_price,
                 now_ist().isoformat(),
             ),
         )
@@ -359,6 +375,8 @@ def load_open_positions() -> dict:
             initial_stop=initial_stop,
             stop=float(d.get("stop") or initial_stop),
             atr_distance=float(atr_distance),
+            exit_policy=d.get("exit_policy") or EXIT_POLICY_LEGACY,
+            target_price=d.get("target_price"),
         )
     return result
 
@@ -636,7 +654,10 @@ class Sma9ShortLiveScanner:
             self.spot_source = "unavailable"
 
     def _close_eod(self, opt, state, contract, candles, ltp, now):
-        """Flatten one leg at the 15:20 cutoff; return the trade when filled."""
+        """Flatten one LEGACY leg at 15:20; new-policy legs never EOD-exit."""
+        if (state.position is None
+                or state.position.exit_policy != EXIT_POLICY_LEGACY):
+            return None
         price = eod_exit_price(candles, ltp, now)
         if price is None:
             logger.error("EOD EXIT %s blocked: no usable LTP or 15:20 bar", opt)
@@ -736,7 +757,9 @@ class Sma9ShortLiveScanner:
             candle_error = None
             candles = []
             forming_is_current = False
-            eod_due = state.position is not None and eod_exit_due(now)
+            eod_due = (state.position is not None
+                       and state.position.exit_policy == EXIT_POLICY_LEGACY
+                       and eod_exit_due(now))
             ev = Evaluation(option_type=opt, ltp=ltp,
                             reason="waiting for current 5-minute candle")
             try:
@@ -757,28 +780,44 @@ class Sma9ShortLiveScanner:
             exit_reason = None
             exit_price = None
             if state.position is not None and now.time() >= EXCHANGE_OPEN and ltp is not None:
-                prev_lowest = state.position.lowest_ltp
-                prev_stop = state.position.stop
-                state.update_trail(ltp)
-                trail_pos = state.position
-                if (trail_pos is not None
-                        and (trail_pos.lowest_ltp != prev_lowest
-                             or trail_pos.stop != prev_stop)):
-                    save_open_position(trail_pos)
-                sl_hit = state.check_stop_loss(ltp)
-                if sl_hit is not None:
-                    exit_reason = ("TRAIL_STOP_EXIT" if trail_pos.trailing_active()
-                                   else STOP_LOSS_REASON)
-                    exit_price = sl_hit
-                    trade = state.close(now, sl_hit, exit_reason)
-                    save_trade(trade)
-                    logger.info(
-                        "EXIT %s %s strike=%.2f entry=%.2f exit=%.2f "
-                        "pnl=%.2f reason=%s stop=%.2f lowest=%.2f",
-                        opt, pos.tradingsymbol if pos is not None else contract["tradingsymbol"],
-                        strike, trade["entry_price"], sl_hit, trade["pnl_points"],
-                        exit_reason, sl_hit, prev_lowest,
-                    )
+                pos = state.position
+                if pos.exit_policy == EXIT_POLICY_SL_TARGET:
+                    # Frozen levels only; no trail ratchet and no LTP fill.
+                    hit = state.check_sl_target_exit(ltp)
+                    if hit is not None:
+                        exit_price, exit_reason = hit
+                        trade = state.close(now, exit_price, exit_reason)
+                        save_trade(trade)
+                        logger.info(
+                            "SL/TARGET EXIT %s %s strike=%.2f entry=%.2f exit=%.2f "
+                            "pnl=%.2f reason=%s initial_stop=%s target=%s",
+                            opt, pos.tradingsymbol, strike, trade["entry_price"],
+                            exit_price, trade["pnl_points"], exit_reason,
+                            pos.initial_stop, pos.target_price,
+                        )
+                else:
+                    prev_lowest = pos.lowest_ltp
+                    prev_stop = pos.stop
+                    state.update_trail(ltp)
+                    trail_pos = state.position
+                    if (trail_pos is not None
+                            and (trail_pos.lowest_ltp != prev_lowest
+                                 or trail_pos.stop != prev_stop)):
+                        save_open_position(trail_pos)
+                    sl_hit = state.check_stop_loss(ltp)
+                    if sl_hit is not None:
+                        exit_reason = ("TRAIL_STOP_EXIT" if trail_pos.trailing_active()
+                                       else STOP_LOSS_REASON)
+                        exit_price = sl_hit
+                        trade = state.close(now, sl_hit, exit_reason)
+                        save_trade(trade)
+                        logger.info(
+                            "EXIT %s %s strike=%.2f entry=%.2f exit=%.2f "
+                            "pnl=%.2f reason=%s stop=%.2f lowest=%.2f",
+                            opt, pos.tradingsymbol if pos is not None else contract["tradingsymbol"],
+                            strike, trade["entry_price"], sl_hit, trade["pnl_points"],
+                            exit_reason, sl_hit, prev_lowest,
+                        )
 
             if state.position is not None and eod_due:
                 trade = self._close_eod(opt, state, contract, candles, ltp, now)
@@ -834,6 +873,12 @@ class Sma9ShortLiveScanner:
                 "exit_reason": exit_reason,
                 "exit_price": exit_price,
                 "eod_due": bool(eod_due),
+                "exit_policy": (state.position.exit_policy if state.position
+                                else EXIT_POLICY_LEGACY),
+                "initial_stop": (state.position.initial_stop if state.position
+                                 else None),
+                "target_price": (state.position.target_price if state.position
+                                 else None),
                 "position": state.position.as_dict() if state.position else None,
             }
 
@@ -921,6 +966,10 @@ class Sma9ShortLiveScanner:
                 "exit_reason": None,
                 "exit_price": None,
                 "eod_due": eod_exit_due(now_ist()),
+                "exit_policy": (pos.exit_policy if pos is not None
+                                else EXIT_POLICY_LEGACY),
+                "initial_stop": pos.initial_stop if pos is not None else None,
+                "target_price": pos.target_price if pos is not None else None,
                 "position": pos.as_dict() if pos is not None else None,
             }
         return options
@@ -945,7 +994,6 @@ class Sma9ShortLiveScanner:
             "started_at": self.started_at,
             "last_scan_at": self.last_scan_at,
             "poll_seconds": POLL_SECONDS,
-            "poll_alignment": "5m_boundary_plus_10s",
             "actual_interval_seconds": self.actual_interval_seconds,
             "spot": self.spot,
             "spot_source": self.spot_source or "unavailable",

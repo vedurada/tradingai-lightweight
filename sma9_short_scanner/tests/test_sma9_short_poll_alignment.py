@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Regression tests for sma9-short 5m boundary+10s polling."""
+"""Regression tests for sma9-short exact 5-second boundary polling."""
 from __future__ import annotations
 
 import os
@@ -29,44 +29,42 @@ else:
 IST = ZoneInfo("Asia/Kolkata")
 
 
-class TestSma9ShortPollAlignment(unittest.TestCase):
+class TestSma9ShortFiveSecondPolling(unittest.TestCase):
     @classmethod
     def tearDownClass(cls) -> None:
         TMP.cleanup()
 
-    def test_poll_constants_match_sma9_5min(self):
-        self.assertEqual(live.POLL_SECONDS, 300)
-        self.assertEqual(live.POLL_OFFSET_SEC, 10)
+    def test_poll_constants_have_no_offset_or_alignment(self):
+        self.assertEqual(live.POLL_SECONDS, 5)
+        for name in ("POLL_OFFSET_SECONDS", "POLL_OFFSET_SEC", "POLL_OFFSET",
+                     "next_poll_time", "poll_alignment"):
+            self.assertFalse(hasattr(live, name), name)
         self.assertFalse(hasattr(live, "TRAIL_INTERVAL_SECONDS"))
         self.assertFalse(hasattr(live, "SL_INTERVAL_SECONDS"))
 
-    def test_next_poll_time_uses_boundary_plus_ten_seconds(self):
+    def test_sleep_targets_exact_wall_clock_boundaries(self):
         cases = [
-            (datetime(2026, 11, 27, 8, 56, 30, tzinfo=IST),
-             datetime(2026, 11, 27, 9, 0, 10, tzinfo=IST)),
-            (datetime(2026, 11, 27, 9, 0, 9, 500000, tzinfo=IST),
-             datetime(2026, 11, 27, 9, 0, 10, tzinfo=IST)),
-            (datetime(2026, 11, 27, 9, 0, 10, tzinfo=IST),
-             datetime(2026, 11, 27, 9, 5, 10, tzinfo=IST)),
+            (datetime(2026, 11, 27, 8, 56, 30, tzinfo=IST), 5.0),
+            (datetime(2026, 11, 27, 9, 0, 3, 700000, tzinfo=IST), 1.3),
+            (datetime(2026, 11, 27, 9, 0, 5, tzinfo=IST), 5.0),
+            (datetime(2026, 11, 27, 9, 59, 59, 500000, tzinfo=IST), 0.5),
         ]
         for now, expected in cases:
             with self.subTest(now=now.isoformat()):
-                self.assertEqual(live.next_poll_time(now), expected)
+                with patch.object(live, "now_ist", return_value=now), \
+                        patch.object(live.time, "sleep") as sleep:
+                    live.sleep_to_next_tick()
+                sleep.assert_called_once()
+                self.assertAlmostEqual(sleep.call_args[0][0], expected, places=6)
 
-    def test_sleep_targets_next_boundary_plus_ten_seconds(self):
-        now = datetime(2026, 11, 27, 8, 56, 30, tzinfo=IST)
-        with patch.object(live, "now_ist", return_value=now), \
-                patch.object(live.time, "sleep") as sleep:
-            live.sleep_to_next_tick()
-        sleep.assert_called_once_with(220.0)
-
-    def test_status_exposes_poll_alignment(self):
+    def test_status_exposes_five_seconds_without_alignment(self):
         live.init_db()
         scanner = live.Sma9ShortLiveScanner(object())
         status = scanner._status(
-            datetime(2026, 11, 27, 9, 0, 10, tzinfo=IST), {})
-        self.assertEqual(status["poll_seconds"], 300)
-        self.assertEqual(status["poll_alignment"], "5m_boundary_plus_10s")
+            datetime(2026, 11, 27, 9, 0, 5, tzinfo=IST), {})
+        self.assertEqual(status["poll_seconds"], 5)
+        self.assertNotIn("poll_alignment", status)
+        self.assertNotIn("poll_offset", status)
         self.assertNotIn("trail_interval_seconds", status)
         self.assertNotIn("sl_interval_seconds", status)
 

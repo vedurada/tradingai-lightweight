@@ -11,18 +11,21 @@ Per-option rules (CE and PE are independent):
     last 9 completed 5-minute premium closes) AND Wilder DI+ < DI- on the same
     completed 5-minute premium candles. The forming bar is never used to
     calculate SMA9 or DI.
-  Exit:
-    ATR-only risk: ATR(14) of completed 5-minute option-premium candles.
-    Distance = 0.70 x ATR, fixed at entry; no percentage floor, cap or fallback.
-    Initial SHORT stop = round(entry + distance, 2).
-    Track the lowest LTP seen since entry. Ratchet the stop down to
-    round(lowest_ltp + distance, 2), never upward and never above the previous
-    stop. A stop breach closes the short at the stop level.
-    Any position still open at 15:20 IST is closed flat at the sampled LTP
-    (or the 15:20 candle open on a late scan), reason EOD_15_20_FLAT.
+  Exit policy (persisted per open position):
+    LEGACY (all pre-existing rows): the historical behaviour is preserved -
+      ATR(14) distance fixed at entry (0.70 x ATR, no floor/cap/fallback),
+      initial stop round(entry + distance, 2), stop ratcheted down to
+      round(lowest_ltp + distance, 2), stop breach fills at the stop level,
+      and any open position is flattened at 15:20 IST (EOD_15_20_FLAT).
+    SL_TARGET_1_2 (all new entries): the same ATR distance is frozen as
+      `initial_stop`; `target_price = round(entry - 2 * distance, 2)` is
+      persisted BELOW entry. Exits are ONLY STOP_LOSS_INITIAL when LTP >=
+      initial_stop (filled at initial_stop) and TARGET_1_2 when LTP <=
+      target_price (filled at target_price). No trailing ratchet and no EOD
+      flatten for these positions.
     Entries are skipped when ATR(14) or DI+ / DI- is unavailable.
-    After a close, that option waits for the next 5-minute candle before
-    opening another position.
+    After ANY close, that option waits for the next 5-minute candle before
+    opening another position (unchanged entry gate for both policies).
   P&L:
     entry_price - exit_price (in premium points).
 
@@ -44,6 +47,10 @@ STRATEGY_TYPE = "SMA9_SHORT_ONLY"
 ATR_PERIOD = 14
 ATR_MULTIPLIER = 0.70
 STOP_LOSS_REASON = "STOP_LOSS_ATR"
+EXIT_POLICY_LEGACY = "LEGACY"
+EXIT_POLICY_SL_TARGET = "SL_TARGET_1_2"
+STOP_LOSS_INITIAL_REASON = "STOP_LOSS_INITIAL"
+TARGET_1_2_REASON = "TARGET_1_2"
 DI_PERIOD = 14
 EOD_EXIT_TIME = dtime(15, 20)
 EOD_EXIT_REASON = "EOD_15_20_FLAT"
@@ -327,9 +334,13 @@ class Position:
     condition_b: bool
     ltp_at_entry: float
     lowest_ltp: float
-    initial_stop: float
     stop: float
     atr_distance: Optional[float] = None
+    # Frozen ATR stop captured at entry; used by SL_TARGET_1_2 only, never a
+    # ratcheted `stop`. LEGACY rows may deserialize this as None.
+    initial_stop: Optional[float] = None
+    exit_policy: str = EXIT_POLICY_LEGACY
+    target_price: Optional[float] = None
 
     def as_dict(self) -> dict:
         d = self.__dict__.copy()
@@ -340,15 +351,19 @@ class Position:
 
     @classmethod
     def from_dict(cls, d: dict) -> "Position":
-        data = dict(d)
-        data.pop("side", None)
+        # Status/rows written before the exit-policy rollout lack these
+        # fields: defaults supply LEGACY/None/None.
+        allowed = set(cls.__dataclass_fields__)
+        data = {k: v for k, v in d.items() if k in allowed}
+        if data.get("exit_policy") is None:
+            data["exit_policy"] = EXIT_POLICY_LEGACY
         for k in ("entry_timestamp", "entry_candle_start", "entry_candle_end"):
             data[k] = _as_dt(data[k])
         return cls(**data)
 
     def update_trail(self, ltp: Optional[float]) -> None:
-        """Ratchet the stop down by the ATR distance frozen at entry."""
-        if ltp is None:
+        """LEGACY only: ratchet the stop down by the ATR distance at entry."""
+        if self.exit_policy != EXIT_POLICY_LEGACY or ltp is None:
             return
         price = float(ltp)
         if self.lowest_ltp is None or price < self.lowest_ltp:
@@ -364,10 +379,12 @@ class Position:
             self.stop = candidate
 
     def trailing_active(self) -> bool:
-        return self.stop < self.initial_stop
+        return (self.stop is not None and self.initial_stop is not None
+                and self.stop < self.initial_stop)
 
     def stop_is_hit(self, ltp: Optional[float]) -> bool:
-        return ltp is not None and float(ltp) >= self.stop
+        return (self.stop is not None and ltp is not None
+                and float(ltp) >= self.stop)
 
 
 class OptionStateMachine:
@@ -430,9 +447,11 @@ class OptionStateMachine:
             condition_b=bool(ev.condition_b),
             ltp_at_entry=entry,
             lowest_ltp=entry,
-            initial_stop=initial_stop,
             stop=initial_stop,
             atr_distance=distance,
+            initial_stop=initial_stop,
+            exit_policy=EXIT_POLICY_SL_TARGET,
+            target_price=round(entry - 2.0 * (initial_stop - entry), 2),
         )
         self.position = pos
         self.entered_candles.add(ev.candle_start)
@@ -443,15 +462,37 @@ class OptionStateMachine:
             self.position.update_trail(ltp)
 
     def check_stop_loss(self, ltp: Optional[float]) -> Optional[float]:
+        """LEGACY only: a stop breach fills at the ratcheted stop level."""
         pos = self.position
-        if pos is None or not pos.stop_is_hit(ltp):
+        if (pos is None or pos.exit_policy != EXIT_POLICY_LEGACY
+                or not pos.stop_is_hit(ltp)):
             return None
         return round(pos.stop, 2)
 
+    def check_sl_target_exit(self, ltp: Optional[float]) -> Optional[tuple]:
+        """SL_TARGET_1_2 only: return (fill_price, reason) for an exit.
+
+        The SHORT target is below entry; both levels are frozen at entry and
+        fills are at the level, never at an overshooting sampled LTP.
+        """
+        pos = self.position
+        if (pos is None or pos.exit_policy != EXIT_POLICY_SL_TARGET
+                or ltp is None):
+            return None
+        price = float(ltp)
+        if (pos.initial_stop is not None
+                and price >= pos.initial_stop):
+            return round(float(pos.initial_stop), 2), STOP_LOSS_INITIAL_REASON
+        if pos.target_price is not None and price <= pos.target_price:
+            return round(float(pos.target_price), 2), TARGET_1_2_REASON
+        return None
+
     def needs_exit(self, now: datetime,
                    eod_time: dtime = EOD_EXIT_TIME) -> bool:
-        """True once the daily flat cutoff has passed."""
-        return now.time() >= eod_time
+        """LEGACY only: the 15:20 flat never touches new-policy positions."""
+        return (self.position is not None
+                and self.position.exit_policy == EXIT_POLICY_LEGACY
+                and now.time() >= eod_time)
 
     def close(self, exit_timestamp: datetime, exit_price: float,
               exit_reason: str = STOP_LOSS_REASON,
@@ -495,6 +536,9 @@ class OptionStateMachine:
             "final_stop": pos.stop,
             "entry_candle_start": pos.entry_candle_start.isoformat(),
             "entry_candle_end": pos.entry_candle_end.isoformat(),
+            "exit_policy": pos.exit_policy,
+            "initial_stop": pos.initial_stop,
+            "target_price": pos.target_price,
         }
         self.position = None
         self.set_exited_candle(exit_timestamp)
