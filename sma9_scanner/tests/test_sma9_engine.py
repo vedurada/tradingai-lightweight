@@ -12,6 +12,7 @@ if CODE_ROOT not in sys.path:
     sys.path.insert(0, CODE_ROOT)
 
 from app.sma9_engine import (  # noqa: E402
+    LEGACY_EXIT_POLICY,
     OptionStateMachine,
     Position,
     evaluate_option,
@@ -147,7 +148,8 @@ class TestSma9BuyOnly(unittest.TestCase):
         candles = make_candles(closes, current_open=sma + 1)
         ev = evaluate_option(candles, "CE", ltp=sma - 0.5)
         self.assertTrue(ev.qualified)
-        self.assertTrue(ev.confirmation)
+        # LTP>SMA9 is informational only, not an entry gate.
+        self.assertFalse(ev.confirmation)
         self.assertTrue(ev.signal)
         self.assertLess(ev.ltp, ev.sma9)
 
@@ -208,6 +210,9 @@ class TestSma9BuyOnly(unittest.TestCase):
         state = OptionStateMachine("CE")
         pos = state.try_entry(ev, ts(10, 46), 24850, "2026-11-09", 1,
                               "CE-SYM", self.market_close)
+        pos = Position.from_dict(dict(
+            pos.as_dict(), exit_policy=LEGACY_EXIT_POLICY))
+        state.restore(pos)
         self.assertFalse(state.needs_exit(ts(10, 49, 59)))
         self.assertTrue(state.needs_exit(ts(10, 50, 0)))
         trade = state.close(pos.entry_candle_end, 120.0)
@@ -225,6 +230,9 @@ class TestSma9BuyOnly(unittest.TestCase):
         state = OptionStateMachine("CE")
         pos = state.try_entry(ev, ts(10, 46), 24850, "2026-11-09", 1,
                               "CE-SYM", self.market_close)
+        legacy_payload = pos.as_dict()
+        legacy_payload["exit_policy"] = LEGACY_EXIT_POLICY
+        pos = Position.from_dict(legacy_payload)
         payload = pos.as_dict()
         restored = Position.from_dict(payload)
         new_state = OptionStateMachine("CE")

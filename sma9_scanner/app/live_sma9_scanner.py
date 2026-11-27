@@ -10,18 +10,21 @@ Both CE and PE use the same long-only rule set:
     LTP > SMA9 is informational only; it does not gate the entry
   Entry:
     paper BUY at the live LTP once A and B are true (no broker order)
-  Exit:
-    normal polling: +5 trail/+2 lock first, then fixed 5% stop; otherwise hold
-    restart recovery: a recovered position older than its entry candle closes
-      at that completed candle's close
+  Exit policies (persisted per position):
+    new entries (SL_TARGET_1_2): fixed 5% initial stop, never ratcheted, plus a
+      1:2 target; only STOP_LOSS_INITIAL / TARGET_1_2 exits at those levels.
+      No trailing stops, EOD flatten, restart same-candle or stale exits.
+    legacy open positions (LEGACY, default for existing rows): unchanged
+      +5 trail/+2 lock, fixed 5% stop and entry-candle-close restart recovery.
 
-Polling is exactly every 5 seconds during market hours.  One batched quote
-call per poll provides NIFTY spot + both option LTPs; historical candles are
-fetched only when a new 5-minute candle appears (or a stop needs a fresh bar),
-never on every poll.
+Polling is on exact wall-clock 5-second boundaries (:00, :05, :10, ...)
+during market hours.  One batched quote call per poll provides NIFTY spot +
+both option LTPs; historical candles are fetched only when a new 5-minute
+candle appears, never on every poll.
 
-State is persisted in database/sma9.db so a restart resumes the stop/trail
-state; see the restart-recovery note above for the entry-candle-close case.
+State is persisted in database/sma9.db so a restart resumes legacy trail
+state; new-policy positions resume with their persisted initial stop and
+target only.
 """
 
 from __future__ import annotations
@@ -48,6 +51,8 @@ from app.sma9_engine import (  # noqa: E402
     STRATEGY_TYPE,
     STRATEGY_VERSION,
     Evaluation,
+    LEGACY_EXIT_POLICY,
+    SL_TARGET_EXIT_POLICY,
     OptionStateMachine,
     Position,
     candle_end,
@@ -238,6 +243,9 @@ def init_db() -> None:
             hwm REAL,
             stop REAL,
             be_locked INTEGER,
+            exit_policy TEXT NOT NULL DEFAULT 'LEGACY',
+            initial_stop REAL,
+            target_price REAL,
             updated_at TEXT NOT NULL
         );
 
@@ -250,7 +258,9 @@ def init_db() -> None:
     )
     pos_cols = [r[1] for r in conn.execute(
         "PRAGMA table_info(sma9_open_positions)")]
-    for col, decl in (("hwm", "REAL"), ("stop", "REAL"), ("be_locked", "INTEGER")):
+    for col, decl in (("hwm", "REAL"), ("stop", "REAL"), ("be_locked", "INTEGER"),
+                      ("exit_policy", "TEXT NOT NULL DEFAULT 'LEGACY'"),
+                      ("initial_stop", "REAL"), ("target_price", "REAL")):
         if col not in pos_cols:
             conn.execute(
                 f"ALTER TABLE sma9_open_positions ADD COLUMN {col} {decl}")
@@ -287,8 +297,9 @@ def save_open_position(pos: Position) -> None:
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, prev_close, current_open, condition_a,
-                condition_b, ltp_at_entry, hwm, stop, be_locked, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                condition_b, ltp_at_entry, hwm, stop, be_locked,
+                exit_policy, initial_stop, target_price, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
@@ -296,7 +307,9 @@ def save_open_position(pos: Position) -> None:
                 pos.entry_price, pos.sma9, pos.prev_close, pos.current_open,
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
                 pos.ltp_at_entry, pos.hwm, pos.stop,
-                1 if pos.be_locked else 0, now_ist().isoformat(),
+                1 if pos.be_locked else 0,
+                pos.exit_policy, pos.initial_stop, pos.target_price,
+                now_ist().isoformat(),
             ),
         )
         conn.commit()
@@ -343,6 +356,9 @@ def load_open_positions() -> dict:
             hwm=d.get("hwm") if d.get("hwm") is not None else 0.0,
             stop=d.get("stop"),
             be_locked=bool(d.get("be_locked")),
+            exit_policy=d.get("exit_policy") or LEGACY_EXIT_POLICY,
+            initial_stop=d.get("initial_stop"),
+            target_price=d.get("target_price"),
         )
     return result
 
@@ -566,6 +582,11 @@ class Sma9LiveScanner:
                         pos.entry_candle_start.isoformat())
             state = self.states[opt]
             state.restore(pos)
+            if pos.exit_policy == SL_TARGET_EXIT_POLICY:
+                logger.info(
+                    "Recovered %s position %s uses SL/target exits only; no candle recovery",
+                    opt, pos.trade_id)
+                continue
             if now >= pos.entry_candle_end:
                 token = pos.token
                 if token is None:
@@ -841,30 +862,52 @@ class Sma9LiveScanner:
             entry_made = False
 
             if state.position is not None and now.time() >= EXCHANGE_OPEN:
-                prev_hwm, prev_stop = state.position.hwm, state.position.stop
-                stop_hit = state.update_trail(ltp)
-                # Persist a ratcheted high-water-mark/stop so a restart
-                # cannot roll the trailing stop back to a lower level.
-                trail_pos = state.position
-                if (trail_pos is not None
-                        and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
-                    save_open_position(trail_pos)
-                sl_hit = state.check_stop_loss(ltp)
-                if stop_hit is not None:
-                    exit_px = round(float(ltp), 2)
-                    trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
-                    save_trade(trade)
-                    logger.info(
-                        "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
-                        opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        exit_px, trade["pnl_points"], pos.stop)
-                elif sl_hit is not None:
-                    trade = state.close(now, sl_hit, "STOP_LOSS_5PCT")
-                    save_trade(trade)
-                    logger.info(
-                        "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_5PCT",
-                        opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        sl_hit, trade["pnl_points"])
+                current = state.position
+                if current.exit_policy == SL_TARGET_EXIT_POLICY:
+                    initial_hit = state.check_initial_stop(ltp)
+                    target_hit = (None if initial_hit is not None
+                                  else state.check_target(ltp))
+                    if initial_hit is not None:
+                        trade = state.close(now, initial_hit, "STOP_LOSS_INITIAL")
+                        save_trade(trade)
+                        logger.info(
+                            "SL EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_INITIAL",
+                            opt, current.tradingsymbol, current.strike,
+                            current.entry_price, initial_hit, trade["pnl_points"])
+                    elif target_hit is not None:
+                        trade = state.close(now, target_hit, "TARGET_1_2")
+                        save_trade(trade)
+                        logger.info(
+                            "TARGET EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=TARGET_1_2",
+                            opt, current.tradingsymbol, current.strike,
+                            current.entry_price, target_hit, trade["pnl_points"])
+                else:
+                    prev_hwm, prev_stop = current.hwm, current.stop
+                    stop_hit = state.update_trail(ltp)
+                    # Persist a ratcheted high-water-mark/stop so a restart
+                    # cannot roll the trailing stop back to a lower level.
+                    trail_pos = state.position
+                    if (trail_pos is not None
+                            and (trail_pos.hwm != prev_hwm
+                                 or trail_pos.stop != prev_stop)):
+                        save_open_position(trail_pos)
+                    sl_hit = state.check_stop_loss(ltp)
+                    if stop_hit is not None:
+                        exit_px = round(float(ltp), 2)
+                        trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
+                        save_trade(trade)
+                        logger.info(
+                            "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
+                            opt, current.tradingsymbol, current.strike,
+                            current.entry_price, exit_px, trade["pnl_points"],
+                            current.stop)
+                    elif sl_hit is not None:
+                        trade = state.close(now, sl_hit, "STOP_LOSS_5PCT")
+                        save_trade(trade)
+                        logger.info(
+                            "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_5PCT",
+                            opt, current.tradingsymbol, current.strike,
+                            current.entry_price, sl_hit, trade["pnl_points"])
             elif allow_entries and forming_is_current and self._premium_ok(opt):
                 new_pos = state.try_entry(
                     ev, now, strike, expiry_str, token,
@@ -898,6 +941,10 @@ class Sma9LiveScanner:
                 "forming_is_current": forming_is_current,
                 "reason": ev.reason,
                 "entry_made": entry_made,
+                "exit_policy": (state.position.exit_policy if state.position
+                                else LEGACY_EXIT_POLICY),
+                "initial_stop": state.position.initial_stop if state.position else None,
+                "target_price": state.position.target_price if state.position else None,
                 "position": state.position.as_dict() if state.position else None,
             }
 
