@@ -8,7 +8,24 @@ BUY-ONLY rules (identical to the SMA9 scanner):
     B) current (forming) candle OPEN > SMA9
   Entry: paper BUY at the live LTP as soon as A and B are true
 
-Exit (identical for CE and PE):
+Two exit policies, selected by a persisted field on each open position:
+
+  LEGACY (default for every pre-existing position): the historical behaviour
+    is preserved exactly - ATR initial stop filled at the actual live LTP,
+    ratcheted ATR-width trail, same-candle restart recovery and stale exit.
+
+  SL_TARGET_1_2 (all new entries):
+    stop_distance = clamp(k * ATR(14) of the option premium,
+                          floor% of entry, cap% of entry), frozen at entry
+    initial_stop  = round(entry - stop_distance, 2)
+    target_price  = round(entry + 2 * stop_distance, 2)
+    Exits are ONLY STOP_LOSS_INITIAL (LTP <= initial_stop, filled at
+    initial_stop) and TARGET_1_2 (LTP >= target_price, filled at target_price).
+    No trailing stop, no HWM ratchet, no EOD/time exit, no restart recovery.
+
+The higher-timeframe daily regime gate lives in the runner, not here.
+
+Historical (legacy) CE/PE exit rules:
   1) INITIAL STOP: live LTP <= entry - stop_distance
      stop_distance = clamp(k * ATR(14) of the option premium,
                            floor% of entry, cap% of entry)
@@ -18,8 +35,6 @@ Exit (identical for CE and PE):
      upward on every poll.  There is no fixed 5-point activation and no
      breakeven lock.
   3) otherwise hold (no time-based exit)
-
-The higher-timeframe daily regime gate lives in the runner, not here.
 
 Why ATR instead of a fixed 5%:
   ATM option premium noise is roughly constant in absolute points (~11-15)
@@ -44,6 +59,12 @@ CANDLE_MINUTES = 5
 STRATEGY_ID = "sma9_atr"
 STRATEGY_VERSION = "1.1.0"
 STRATEGY_TYPE = "SMA9_ATR_STOP_BUY_ONLY"
+
+# Persisted exit policy: old rows default to LEGACY, new entries use 1:2.
+EXIT_POLICY_LEGACY = "LEGACY"
+EXIT_POLICY_SL_TARGET = "SL_TARGET_1_2"
+STOP_LOSS_INITIAL_REASON = "STOP_LOSS_INITIAL"
+TARGET_1_2_REASON = "TARGET_1_2"
 
 # Initial-stop model.
 ATR_PERIOD = 14
@@ -259,6 +280,11 @@ class Position:
     # Kept only so positions persisted by v1.0.0 can be restored.  The
     # breakeven lock is no longer used by this scanner.
     be_locked: bool = False
+    exit_policy: str = EXIT_POLICY_LEGACY
+    # ATR initial stop frozen at entry. New-policy exits never consult the
+    # ratcheted trail (`stop`) when deciding the stop-loss fill level.
+    initial_stop: Optional[float] = None
+    target_price: Optional[float] = None
 
     def as_dict(self) -> dict:
         d = self.__dict__.copy()
@@ -268,7 +294,12 @@ class Position:
 
     @classmethod
     def from_dict(cls, d: dict) -> "Position":
-        data = dict(d)
+        # Rows/status written before the exit-policy rollout lack these
+        # fields; the dataclass defaults supply LEGACY/None/None.
+        allowed = set(cls.__dataclass_fields__)
+        data = {k: v for k, v in d.items() if k in allowed}
+        if data.get("exit_policy") is None:
+            data["exit_policy"] = EXIT_POLICY_LEGACY
         for k in ("entry_timestamp", "entry_candle_start", "entry_candle_end"):
             data[k] = _as_dt(data[k])
         return cls(**data)
@@ -281,8 +312,10 @@ class Position:
         entry (there is no fixed +5 activation threshold).  The stop can never
         ratchet down.  If the premium has not yet moved in our favour the
         initial ATR stop remains the only exit, so a loss is never labelled as
-        a trail exit.
+        a trail exit.  New SL_TARGET_1_2 positions never trail.
         """
+        if self.exit_policy != EXIT_POLICY_LEGACY:
+            return None
         if ltp is None:
             return None
         if ltp > self.hwm:
@@ -312,8 +345,10 @@ class OptionStateMachine:
       * at most one open position for this option
       * at most one entry per 5-minute candle (duplicate-poll guard)
       * no entry whose candle would end after market close
-      * ATR-scaled initial stop checked on every poll, filled at live LTP
-      * ATR-width trailing stop (peak - initial ATR distance), no BE lock
+      * new entries: frozen ATR initial stop / 1:2 target, both filled at
+        their persisted levels; no trail, EOD exit or restart recovery
+      * LEGACY rows: ATR initial stop filled at live LTP plus ATR-width trail
+        (peak - initial ATR distance), no BE lock
     """
 
     def __init__(self, option_type: str):
@@ -367,6 +402,9 @@ class OptionStateMachine:
             hwm=entry_price,
             stop=None,
             be_locked=False,
+            exit_policy=EXIT_POLICY_SL_TARGET,
+            initial_stop=stop_price,
+            target_price=round(entry_price + 2.0 * (entry_price - stop_price), 2),
         )
         self.position = pos
         self.entered_candles.add(ev.candle_start)
@@ -379,13 +417,14 @@ class OptionStateMachine:
         return self.position.update_trail(ltp)
 
     def check_stop_loss(self, ltp: Optional[float]) -> Optional[float]:
-        """Return the ACTUAL exit price when LTP has breached the ATR stop.
+        """LEGACY only: fill at the ACTUAL LTP when the ATR stop is breached.
 
         The fill is the live LTP, not the theoretical stop price: a fast move
         can trade through the stop, and paper fills must reflect that.
+        SL_TARGET_1_2 positions use check_sl_target_exit() instead.
         """
         pos = self.position
-        if pos is None or ltp is None:
+        if pos is None or pos.exit_policy != EXIT_POLICY_LEGACY or ltp is None:
             return None
         stop_price = pos.stop_price
         if stop_price is None:
@@ -395,8 +434,28 @@ class OptionStateMachine:
             return round(float(ltp), 2)
         return None
 
+    def check_sl_target_exit(self, ltp: Optional[float]) -> Optional[tuple]:
+        """SL_TARGET_1_2 only: return (fill_price, reason) for an exit.
+
+        Both levels are frozen at entry. Fills are at the persisted level,
+        never at the ratcheted trail and never at an overshooting LTP.
+        """
+        pos = self.position
+        if (pos is None or pos.exit_policy != EXIT_POLICY_SL_TARGET
+                or ltp is None):
+            return None
+        price = float(ltp)
+        if pos.initial_stop is not None and price <= pos.initial_stop:
+            return round(float(pos.initial_stop), 2), STOP_LOSS_INITIAL_REASON
+        if pos.target_price is not None and price >= pos.target_price:
+            return round(float(pos.target_price), 2), TARGET_1_2_REASON
+        return None
+
     def needs_exit(self, now: datetime) -> bool:
-        return self.position is not None and now >= self.position.entry_candle_end
+        """LEGACY only: entry-candle-close recovery never touches new policy."""
+        return (self.position is not None
+                and self.position.exit_policy == EXIT_POLICY_LEGACY
+                and now >= self.position.entry_candle_end)
 
     def close(self, exit_timestamp: datetime, exit_price: float,
               exit_reason: str = "SAME_CANDLE_EXIT",
@@ -444,6 +503,9 @@ class OptionStateMachine:
             "stop_distance_pct": pos.stop_distance_pct,
             "stop_source": pos.stop_source,
             "trail_distance": pos.trail_distance,
+            "exit_policy": pos.exit_policy,
+            "initial_stop": pos.initial_stop,
+            "target_price": pos.target_price,
         }
         self.position = None
         return trade

@@ -8,6 +8,7 @@ import sqlite3
 import sys
 import tempfile
 from datetime import date, datetime, time as dtime, timedelta
+from unittest.mock import patch
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, ROOT)
@@ -15,6 +16,10 @@ sys.path.insert(0, ROOT)
 import app.live_sma9_atr_scanner as live  # noqa: E402
 from app.live_sma9_atr_scanner import compute_spot_regime  # noqa: E402
 from app.sma9_atr_engine import (  # noqa: E402
+    EXIT_POLICY_LEGACY,
+    EXIT_POLICY_SL_TARGET,
+    STOP_LOSS_INITIAL_REASON,
+    TARGET_1_2_REASON,
     OptionStateMachine,
     Position,
     compute_stop,
@@ -102,7 +107,7 @@ candles[-1]["open"] = 125.0
 ev = evaluate_option(candles, "CE", ltp=125.0)
 check("entry_signal", ev.signal and ev.ready, ev.reason)
 
-# 5. Entry stores the ATR stop and trail distance; stop fills at actual LTP.
+# 5. Entry freezes the ATR stop/target; both new-policy exits fill at the level.
 sm = OptionStateMachine("CE")
 pos = sm.try_entry(ev, BASE + timedelta(minutes=80), 25000, "2026-11-23",
                    1, "NIFTY26NOV25000CE", BASE + timedelta(hours=6), atr=10.0)
@@ -113,9 +118,20 @@ check("entry_stop_price", pos.stop_price == expected_stop,
       f"stop={pos.stop_price} entry={pos.entry_price} expected={expected_stop}")
 check("entry_trail_distance", pos.trail_distance == expected_dist,
       f"trail_distance={pos.trail_distance} expected={expected_dist}")
-check("stop_not_hit", sm.check_stop_loss(pos.stop_price + 0.5) is None)
-fill = sm.check_stop_loss(pos.stop_price - 1.5)
-check("stop_fill_at_ltp", fill == round(pos.stop_price - 1.5, 2), f"fill={fill}")
+expected_target = round(pos.entry_price + 2.0 * (pos.entry_price - expected_stop), 2)
+check("entry_policy_and_target",
+      pos.exit_policy == EXIT_POLICY_SL_TARGET
+      and pos.initial_stop == expected_stop
+      and pos.target_price == expected_target,
+      f"policy={pos.exit_policy} stop={pos.initial_stop} target={pos.target_price}")
+check("stop_not_hit", sm.check_sl_target_exit(pos.initial_stop + 0.5) is None)
+sl_fill = sm.check_sl_target_exit(pos.initial_stop - 1.5)
+check("sl_fill_at_initial_stop", sl_fill == (expected_stop, STOP_LOSS_INITIAL_REASON),
+      f"fill={sl_fill}")
+check("target_not_hit", sm.check_sl_target_exit(pos.target_price - 0.5) is None)
+target_fill = sm.check_sl_target_exit(pos.target_price + 1.5)
+check("target_fill_at_level", target_fill == (expected_target, TARGET_1_2_REASON),
+      f"fill={target_fill}")
 
 # 6. ATR trail only: any new high ratchets by the ATR distance; no BE lock.
 p = Position(
@@ -148,13 +164,19 @@ check("roundtrip_stop",
       and p2.trail_distance == 7.0,
       f"stop={p2.stop_price} trail={p2.trail_distance}")
 
-# 8. Closed trade carries the stop + trail metadata.
-trade = sm.close(BASE + timedelta(minutes=85), 108.5, "STOP_LOSS_ATR")
+# 8. Closed new-policy trade carries the frozen stop/target metadata.
+sl_hit = sm.check_sl_target_exit(pos.initial_stop - 2.0)
+trade = sm.close(BASE + timedelta(minutes=85), sl_hit[0], sl_hit[1])
 check("trade_metadata",
       trade["stop_price"] == pos.stop_price and trade["stop_k"] == 0.7
       and trade["stop_source"] == "atr"
       and trade["trail_distance"] == expected_dist
-      and trade["pnl_points"] == round(108.5 - pos.entry_price, 2),
+      and trade["exit_policy"] == EXIT_POLICY_SL_TARGET
+      and trade["initial_stop"] == pos.initial_stop
+      and trade["target_price"] == pos.target_price
+      and trade["exit_reason"] == STOP_LOSS_INITIAL_REASON
+      and trade["exit_price"] == pos.initial_stop
+      and trade["pnl_points"] == round(pos.initial_stop - pos.entry_price, 2),
       f"{trade.get('stop_price')} {trade.get('pnl_points')}")
 
 # 9. Daily regime: rising spot above VWAP/rising EMA9 -> CE only.
@@ -232,11 +254,175 @@ try:
           and legacy.stop == round(126.0 - expected_distance, 2)
           and legacy.be_locked is False,
           f"dist={legacy.trail_distance} stop={legacy.stop} be={legacy.be_locked}")
+    check("legacy_db_defaults",
+          legacy.exit_policy == EXIT_POLICY_LEGACY
+          and legacy.initial_stop is None
+          and legacy.target_price is None,
+          f"policy={legacy.exit_policy} stop={legacy.initial_stop} "
+          f"target={legacy.target_price}")
+    live.save_open_position(pos)
+    reloaded = live.load_open_positions()["CE"]
+    check("new_db_roundtrip",
+          reloaded.exit_policy == EXIT_POLICY_SL_TARGET
+          and reloaded.initial_stop == pos.initial_stop
+          and reloaded.target_price == pos.target_price,
+          f"policy={reloaded.exit_policy} stop={reloaded.initial_stop} "
+          f"target={reloaded.target_price}")
 finally:
     live.DB_PATH = old_db_path
     for suffix in ("", "-wal", "-shm"):
         try:
             os.remove(legacy_db + suffix)
+        except FileNotFoundError:
+            pass
+
+# 15. Exact wall-clock 5-second polling, with no offset/alignment leftovers.
+check("poll_seconds_five", live.POLL_SECONDS == 5, f"poll={live.POLL_SECONDS}")
+check("no_offset_constants",
+      not any(hasattr(live, name) for name in (
+          "POLL_OFFSET_SECONDS", "POLL_OFFSET_SEC", "POLL_OFFSET",
+          "next_poll_time", "poll_alignment")))
+for sample, expected_delay in (
+    (datetime(2026, 11, 18, 10, 0, 3, 700000, tzinfo=live.IST), 1.3),
+    (datetime(2026, 11, 18, 10, 0, 5, 0, tzinfo=live.IST), 5.0),
+    (datetime(2026, 11, 18, 10, 0, 59, 500000, tzinfo=live.IST), 0.5),
+):
+    with patch.object(live, "now_ist", return_value=sample), \
+            patch.object(live.time, "sleep") as sleep:
+        live.sleep_to_next_tick()
+    delay = sleep.call_args[0][0]
+    check(f"sleep_exact_5s_{sample.second}_{sample.microsecond}",
+          abs(delay - expected_delay) < 1e-6,
+          f"delay={delay} expected={expected_delay}")
+status_now = datetime(2026, 11, 18, 10, 0, 5, tzinfo=live.IST)
+with patch.object(live, "today_stats", return_value={}):
+    status = live.Sma9AtrLiveScanner(object())._status(status_now, {})
+check("status_has_no_alignment",
+      status["poll_seconds"] == 5
+      and not any(k in status for k in ("poll_offset", "poll_offset_seconds",
+                                        "poll_alignment", "next_poll_time")))
+
+# 16. New policy never trails / EOD-recovers; legacy still does both.
+new_sm = OptionStateMachine("CE")
+new_pos = new_sm.try_entry(ev, BASE + timedelta(minutes=80), 25000, "2026-11-23",
+                           1, "NIFTY26NOV25000CE", BASE + timedelta(hours=6),
+                           atr=10.0)
+hwm_before, stop_before = new_pos.hwm, new_pos.stop
+check("new_policy_no_trail",
+      new_sm.update_trail(new_pos.entry_price + 20) is None
+      and new_pos.hwm == hwm_before and new_pos.stop == stop_before)
+check("new_policy_no_legacy_sl",
+      new_sm.check_stop_loss(new_pos.initial_stop - 5.0) is None)
+check("new_policy_no_recovery_exit",
+      new_sm.needs_exit(new_pos.entry_candle_end + timedelta(hours=2)) is False)
+
+legacy_d = pos.as_dict()
+legacy_d["exit_policy"] = EXIT_POLICY_LEGACY
+legacy_pos = Position.from_dict(legacy_d)
+legacy_sm = OptionStateMachine("CE")
+legacy_sm.restore(legacy_pos)
+check("legacy_still_trails",
+      legacy_sm.update_trail(legacy_pos.entry_price + 15.0) is None
+      and legacy_pos.stop is not None
+      and legacy_pos.stop > legacy_pos.stop_price,
+      f"stop={legacy_pos.stop} stop_price={legacy_pos.stop_price}")
+check("legacy_sl_fills_at_ltp",
+      legacy_sm.check_stop_loss(legacy_pos.stop_price - 2.5)
+      == round(legacy_pos.stop_price - 2.5, 2),
+      f"stop_price={legacy_pos.stop_price}")
+check("legacy_recovery_exit_unchanged",
+      legacy_sm.needs_exit(legacy_pos.entry_candle_end + timedelta(seconds=1))
+      is True)
+
+# 17. Round-trip and legacy defaults for the new persisted fields.
+restored = Position.from_dict(new_pos.as_dict())
+check("roundtrip_exit_fields",
+      restored.exit_policy == EXIT_POLICY_SL_TARGET
+      and restored.initial_stop == new_pos.initial_stop
+      and restored.target_price == new_pos.target_price,
+      f"{restored.exit_policy} {restored.initial_stop} {restored.target_price}")
+legacy_from_dict = Position.from_dict({
+    k: v for k, v in new_pos.as_dict().items()
+    if k not in ("exit_policy", "initial_stop", "target_price")
+})
+check("from_dict_legacy_defaults",
+      legacy_from_dict.exit_policy == EXIT_POLICY_LEGACY
+      and legacy_from_dict.initial_stop is None
+      and legacy_from_dict.target_price is None,
+      f"{legacy_from_dict.exit_policy} {legacy_from_dict.initial_stop} "
+      f"{legacy_from_dict.target_price}")
+
+# 18. Live scan closes a new-policy position at the frozen stop level.
+class _ScannerFeed:
+    def __init__(self):
+        self.kite = type("Kite", (), {
+            "historical_data": lambda self, *a, **k: [],
+        })()
+
+    def quote(self, symbols):
+        out = {}
+        for sym in symbols:
+            if sym == "NSE:NIFTY 50":
+                out[sym] = {"last_price": 25000.0}
+            elif sym.endswith("CE"):
+                out[sym] = {"last_price": pos_scan.initial_stop - 2.5}
+            else:
+                out[sym] = {"last_price": 200.0}
+        return out
+
+    def candles(self, token, force=False):
+        return rising_candles()
+
+
+fd_live, db_live = tempfile.mkstemp(suffix=".db")
+os.close(fd_live)
+old_db_live = live.DB_PATH
+try:
+    live.DB_PATH = db_live
+    live.init_db()
+    scan_now = BASE + timedelta(minutes=80, seconds=5)
+    scan_ev = evaluate_option(rising_candles(), "CE", ltp=125.0)
+    scan_sm = OptionStateMachine("CE")
+    pos_scan = scan_sm.try_entry(
+        scan_ev, scan_now, 25000, "2026-11-23", 1, "NIFTY26NOV25000CE",
+        BASE + timedelta(hours=6), atr=10.0)
+    live.save_open_position(pos_scan)
+    scanner = live.Sma9AtrLiveScanner(_ScannerFeed())
+    scanner.states["CE"].restore(pos_scan)
+    scanner.contracts = {
+        "CE": {"tradingsymbol": "NIFTY26NOV25000CE", "instrument_token": 1,
+               "strike": 25000.0, "expiry": date(2026, 11, 23)},
+        "PE": {"tradingsymbol": "NIFTY26NOV25000PE", "instrument_token": 2,
+               "strike": 25000.0, "expiry": date(2026, 11, 23)},
+    }
+    scanner.atm_strike = 25000
+    scanner.expiry = date(2026, 11, 23)
+    scanner.regime_state = {"bias": "BULLISH", "allowed_option": "CE",
+                            "error": None}
+    scanner.regime_evaluated_at = scan_now
+    with patch.object(live, "now_ist", return_value=scan_now):
+        scan_status = scanner.scan()
+    conn = sqlite3.connect(db_live)
+    try:
+        row = conn.execute(
+            "SELECT exit_reason, exit_price FROM sma9_atr_trades"
+        ).fetchone()
+        open_left = conn.execute(
+            "SELECT COUNT(*) FROM sma9_atr_open_positions WHERE option_type='CE'"
+        ).fetchone()[0]
+    finally:
+        conn.close()
+    check("live_frozen_stop_exit",
+          row == (STOP_LOSS_INITIAL_REASON, pos_scan.initial_stop),
+          f"row={row} stop={pos_scan.initial_stop}")
+    check("live_exit_clears_position",
+          scan_status["options"]["CE"]["position"] is None and open_left == 0,
+          f"open_left={open_left}")
+finally:
+    live.DB_PATH = old_db_live
+    for suffix in ("", "-wal", "-shm"):
+        try:
+            os.remove(db_live + suffix)
         except FileNotFoundError:
             pass
 

@@ -11,13 +11,15 @@ Entry (per option, from its own 5-minute candles):
     B) current forming candle OPEN > SMA9
   Entry: paper BUY immediately at the live LTP (no broker order)
 
-Exit:
-    1) ATR-scaled initial stop, filled at the ACTUAL live LTP
-       distance = clamp(0.70 * premium ATR(14), 5% of entry, 30% of entry)
-    2) ATR trail only: stop = peak - that same ATR distance, ratcheted up
-       once price is above entry.  No fixed 5-point activation and no
-       breakeven lock.
-    3) otherwise hold (no time-based exit)
+Exit policy (persisted per open position):
+    LEGACY (all pre-existing rows): unchanged behaviour - ATR initial stop
+      filled at the ACTUAL live LTP, ATR trail ratcheted from the peak, and
+      same-candle / stale-restart recovery.
+    SL_TARGET_1_2 (all new entries): the ATR distance is frozen at entry as
+      `initial_stop`, and `target_price = entry + 2 * distance` is persisted.
+      Exits are ONLY STOP_LOSS_INITIAL (LTP <= initial_stop, filled at
+      initial_stop) and TARGET_1_2 (LTP >= target_price, filled at
+      target_price). No trail/HWM ratchet, EOD exit or restart recovery.
 
 Daily regime gate (this scanner only):
     Completed 5-minute NIFTY spot candles are evaluated from 09:20 IST and
@@ -25,9 +27,10 @@ Daily regime gate (this scanner only):
     CE entries only; price < VWAP and below a falling EMA9 allows PE entries
     only; anything else allows no new entries.  Exits are never gated.
 
-Polling is exactly every 5 seconds during market hours.  One batched quote
-call per poll provides NIFTY spot + both option LTPs; historical candles are
-fetched only when a new 5-minute candle appears, never on every poll.
+Polling is exactly on the wall-clock 5-second boundaries (:00, :05, :10, ...)
+during market hours. One batched quote call per poll provides NIFTY spot +
+both option LTPs; historical candles are fetched only when a new 5-minute
+candle appears, never on every poll. No poll offset or alignment field exists.
 
 State is persisted in database/sma9_atr.db so a restart with an open position
 resumes correctly with its original ATR stop.
@@ -55,6 +58,8 @@ from app.sma9_atr_engine import (  # noqa: E402
     ATR_PERIOD,
     CANDLE_MINUTES,
     SMA_PERIOD,
+    EXIT_POLICY_LEGACY,
+    EXIT_POLICY_SL_TARGET,
     STOP_K,
     STRATEGY_ID,
     STRATEGY_TYPE,
@@ -104,7 +109,6 @@ def session_open_time(dt):
 def session_close_time(dt):
     return MUHURAT_SESSIONS.get(dt.date().isoformat(), (MARKET_OPEN, MARKET_CLOSE))[1]
 POLL_SECONDS = 5
-POLL_OFFSET_SECONDS = 0.6  # stagger Data API history fetches across scanners
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9 ATR Stop - ATM Option Strike (BUY ONLY)"
@@ -244,12 +248,11 @@ def compute_spot_regime(candles, now: datetime,
 
 
 def sleep_to_next_tick() -> None:
-    """Sleep until this scanner's next staggered 5-second tick."""
-    epoch = now_ist().timestamp()
-    target = (
-        (int(epoch - POLL_OFFSET_SECONDS) // POLL_SECONDS) + 1
-    ) * POLL_SECONDS + POLL_OFFSET_SECONDS
-    time.sleep(max(0.2, target - epoch))
+    """Sleep until the next exact wall-clock 5-second boundary."""
+    now = now_ist()
+    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
+    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
+    time.sleep(max(0.2, (target - now_ist()).total_seconds()))
 
 
 # ---------------------------------------------------------------------------
@@ -262,7 +265,7 @@ TRADE_COLUMNS = (
     "candle_high, candle_low, candle_close, created_at, updated_at, dataset, "
     "prev_close, condition_a, condition_b, ltp_at_entry, entry_candle_start, "
     "entry_candle_end, atr_at_entry, stop_price, stop_k, stop_distance_pct, "
-    "stop_source, trail_distance"
+    "stop_source, trail_distance, exit_policy, initial_stop, target_price"
 )
 
 
@@ -314,7 +317,10 @@ def init_db() -> None:
             stop_k REAL,
             stop_distance_pct REAL,
             stop_source TEXT,
-            trail_distance REAL
+            trail_distance REAL,
+            exit_policy TEXT NOT NULL DEFAULT 'LEGACY',
+            initial_stop REAL,
+            target_price REAL
         );
         CREATE INDEX IF NOT EXISTS idx_sma9_atr_trades_date
             ON sma9_atr_trades(trade_date);
@@ -351,6 +357,9 @@ def init_db() -> None:
             hwm REAL,
             trail_stop REAL,
             be_locked INTEGER,
+            exit_policy TEXT NOT NULL DEFAULT 'LEGACY',
+            initial_stop REAL,
+            target_price REAL,
             updated_at TEXT NOT NULL
         );
 
@@ -361,11 +370,27 @@ def init_db() -> None:
         );
         """
     )
-    # Idempotent migration for databases created by v1.0.0.
-    for table in ("sma9_atr_trades", "sma9_atr_open_positions"):
+    # Idempotent migrations: v1.0.0 lacked trail_distance; older databases
+    # lack the exit-policy columns. Missing values mean LEGACY/None/None.
+    migrations = {
+        "sma9_atr_trades": {
+            "trail_distance": "REAL",
+            "exit_policy": "TEXT NOT NULL DEFAULT 'LEGACY'",
+            "initial_stop": "REAL",
+            "target_price": "REAL",
+        },
+        "sma9_atr_open_positions": {
+            "trail_distance": "REAL",
+            "exit_policy": "TEXT NOT NULL DEFAULT 'LEGACY'",
+            "initial_stop": "REAL",
+            "target_price": "REAL",
+        },
+    }
+    for table, columns_to_add in migrations.items():
         columns = {row[1] for row in conn.execute(f"PRAGMA table_info({table})")}
-        if "trail_distance" not in columns:
-            conn.execute(f"ALTER TABLE {table} ADD COLUMN trail_distance REAL")
+        for col, declaration in columns_to_add.items():
+            if col not in columns:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {col} {declaration}")
     conn.commit()
     conn.close()
 
@@ -401,8 +426,8 @@ def save_open_position(pos: Position) -> None:
                 entry_price, sma9, prev_close, current_open, condition_a,
                 condition_b, ltp_at_entry, atr_at_entry, stop_price, stop_k,
                 stop_distance_pct, stop_source, trail_distance, hwm, trail_stop,
-                be_locked, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                be_locked, exit_policy, initial_stop, target_price, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
@@ -412,6 +437,7 @@ def save_open_position(pos: Position) -> None:
                 pos.ltp_at_entry, pos.atr_at_entry, pos.stop_price, pos.stop_k,
                 pos.stop_distance_pct, pos.stop_source, pos.trail_distance,
                 pos.hwm, pos.stop, 1 if pos.be_locked else 0,
+                pos.exit_policy, pos.initial_stop, pos.target_price,
                 now_ist().isoformat(),
             ),
         )
@@ -476,6 +502,9 @@ def load_open_positions() -> dict:
             hwm=hwm,
             stop=stop,
             be_locked=be_locked,
+            exit_policy=d.get("exit_policy") or EXIT_POLICY_LEGACY,
+            initial_stop=d.get("initial_stop"),
+            target_price=d.get("target_price"),
         )
     return result
 
@@ -744,6 +773,15 @@ class Sma9AtrLiveScanner:
         for opt, pos in positions.items():
             state = self.states[opt]
             state.restore(pos)
+            if pos.exit_policy == EXIT_POLICY_SL_TARGET:
+                # New policy has no restart same-candle/entry-close recovery
+                # and no stale-recovery exit: only its frozen levels can exit.
+                logger.info(
+                    "Resumed SL_TARGET_1_2 %s position %s entry=%.2f "
+                    "initial_stop=%s target=%s (no restart recovery)",
+                    opt, pos.trade_id, pos.entry_price,
+                    pos.initial_stop, pos.target_price)
+                continue
             if now.date() <= pos.entry_candle_start.date():
                 # Same session: keep the position and let the live loop manage
                 # the ATR stop / trail exactly as if there had been no restart.
@@ -1089,33 +1127,49 @@ class Sma9AtrLiveScanner:
             entry_allowed = bool(allow_entries and allowed_option == opt)
 
             if state.position is not None and now.time() >= EXCHANGE_OPEN:
-                prev_hwm, prev_stop = state.position.hwm, state.position.stop
-                stop_hit = state.update_trail(ltp)
-                # Persist a ratcheted high-water-mark/stop so a restart
-                # cannot roll the trailing stop back to a lower level.
-                trail_pos = state.position
-                if (trail_pos is not None
-                        and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
-                    save_open_position(trail_pos)
-                sl_hit = state.check_stop_loss(ltp)
-                if stop_hit is not None:
-                    exit_px = round(float(ltp), 2)
-                    trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
-                    save_trade(trade)
-                    logger.info(
-                        "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
-                        opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        exit_px, trade["pnl_points"], pos.stop)
-                elif sl_hit is not None:
-                    trade = state.close(now, sl_hit, "STOP_LOSS_ATR")
-                    save_trade(trade)
-                    logger.info(
-                        "STOP EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f "
-                        "stop_price=%.2f atr=%s reason=STOP_LOSS_ATR",
-                        opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        sl_hit, trade["pnl_points"],
-                        pos.stop_price if pos.stop_price is not None else -1.0,
-                        pos.atr_at_entry)
+                pos = state.position
+                if pos.exit_policy == EXIT_POLICY_SL_TARGET:
+                    # Only the frozen initial stop and 1:2 target can exit;
+                    # never trail, never fill at an overshooting LTP.
+                    hit = state.check_sl_target_exit(ltp)
+                    if hit is not None:
+                        exit_px, exit_reason = hit
+                        trade = state.close(now, exit_px, exit_reason)
+                        save_trade(trade)
+                        logger.info(
+                            "SL/TARGET EXIT %s %s strike=%s entry=%.2f exit=%.2f "
+                            "pnl=%.2f reason=%s initial_stop=%s target=%s",
+                            opt, pos.tradingsymbol, pos.strike, pos.entry_price,
+                            exit_px, trade["pnl_points"], exit_reason,
+                            pos.initial_stop, pos.target_price)
+                else:
+                    prev_hwm, prev_stop = pos.hwm, pos.stop
+                    stop_hit = state.update_trail(ltp)
+                    # Persist a ratcheted high-water-mark/stop so a restart
+                    # cannot roll the trailing stop back to a lower level.
+                    trail_pos = state.position
+                    if (trail_pos is not None
+                            and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
+                        save_open_position(trail_pos)
+                    sl_hit = state.check_stop_loss(ltp)
+                    if stop_hit is not None:
+                        exit_px = round(float(ltp), 2)
+                        trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
+                        save_trade(trade)
+                        logger.info(
+                            "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
+                            opt, pos.tradingsymbol, pos.strike, pos.entry_price,
+                            exit_px, trade["pnl_points"], pos.stop)
+                    elif sl_hit is not None:
+                        trade = state.close(now, sl_hit, "STOP_LOSS_ATR")
+                        save_trade(trade)
+                        logger.info(
+                            "STOP EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f "
+                            "stop_price=%.2f atr=%s reason=STOP_LOSS_ATR",
+                            opt, pos.tradingsymbol, pos.strike, pos.entry_price,
+                            sl_hit, trade["pnl_points"],
+                            pos.stop_price if pos.stop_price is not None else -1.0,
+                            pos.atr_at_entry)
             elif allow_entries and forming_is_current and self._premium_ok(opt):
                 if not entry_allowed:
                     gate_reason = f"regime {regime.get('bias')} allows {allowed_option or 'no option'}"
@@ -1165,6 +1219,12 @@ class Sma9AtrLiveScanner:
                 "regime_allowed_option": allowed_option,
                 "atr": round(atr, 2) if atr is not None else None,
                 "stop_preview": compute_stop(ltp, atr)[0] if ltp else None,
+                "exit_policy": (state.position.exit_policy if state.position
+                                else EXIT_POLICY_LEGACY),
+                "initial_stop": (state.position.initial_stop if state.position
+                                 else None),
+                "target_price": (state.position.target_price if state.position
+                                 else None),
                 "position": state.position.as_dict() if state.position else None,
             }
 

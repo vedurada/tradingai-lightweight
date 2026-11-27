@@ -25,23 +25,40 @@ Both must hold. Entry is a paper BUY at the live LTP.
 
 ## Exit
 
-1. **ATR-scaled initial stop** (the only behavioural change)
+Every open position has a persisted `exit_policy`. There are two policies:
 
-   ```
-   atr      = mean True Range of the option premium over 14 completed 5m candles
-   distance = clamp(0.70 * atr, 5% * entry, 30% * entry)
-   stop     = entry - distance
-   ```
+### New entries: `SL_TARGET_1_2`
 
-   When LTP <= stop, the trade is closed at the **actual live LTP**, not at
-   the theoretical stop price. If ATR is unavailable (a contract with less
-   than 15 completed candles), the stop falls back to 10% of entry and
-   `stop_source = 'fallback_pct'`.
+The ATR distance is frozen at entry:
 
-2. **Trailing stop** (unchanged): +5 activates breakeven, then ratchets at
-   peak - 5; a one-time breakeven lock at +6 moves the stop to entry + 2.
+```
+atr          = mean True Range of the option premium over 14 completed 5m candles
+distance     = clamp(0.70 * atr, 5% * entry, 30% * entry)
+initial_stop = round(entry - distance, 2)
+target_price = round(entry + 2 * distance, 2)
+```
 
-3. No time-based exit; positions are held until the ATR stop or the trail.
+If ATR is unavailable (a contract with less than 15 completed candles), the
+distance falls back to 10% of entry and `stop_source = 'fallback_pct'`.
+
+The only exits are `STOP_LOSS_INITIAL` when LTP <= `initial_stop` (filled at
+`initial_stop`) and `TARGET_1_2` when LTP >= `target_price` (filled at
+`target_price`). Both levels are persisted and never move: there is no trail,
+no HWM ratchet, no EOD flatten and no restart same-candle / stale recovery.
+Fills are at the persisted level, even if the sampled LTP overshoots it.
+
+### Pre-existing positions: `LEGACY`
+
+All rows created before this change default to `LEGACY` and keep the exact
+historical behaviour: the ATR-scaled initial stop fills at the **actual live
+LTP**, and the ATR-width trail ratchets upward from the premium peak (no fixed
+activation threshold and no breakeven lock). Same-session restart and stale
+position recovery are unchanged. No target is retroactively added.
+
+## Polling
+
+The scanner wakes on exact wall-clock 5-second boundaries (`:00`, `:05`,
+`:10`, ...); there is no poll offset or alignment setting.
 
 ## Why
 
