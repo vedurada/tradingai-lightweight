@@ -8,8 +8,16 @@ simulated BUY recorded in SQLite.
 - **Entry (all required):** previous completed option 5m candle close > SMA9
   **and** Wilder ADX(14) > 30 **and** +DI > -DI on completed option 5m candles.
   The forming bar is never used. CE and PE are evaluated independently.
-- **Exit:** initial stop = entry - 5%; once the premium rises, the stop ratchets
-  to HWM - 5% and never ratchets down. No candle-close or time-based exit.
+- **Polling:** exactly every 5 seconds on wall-clock boundaries (`:00`, `:05`,
+  ...); no per-scanner phase offset.
+- **Exit, selected by persisted `exit_policy`:**
+  - `LEGACY` (all pre-existing rows): initial stop = entry - 5%; once the
+    premium rises, the stop ratchets to HWM - 5% and never ratchets down, with
+    the original entry-candle restart recovery.
+  - `SL_TARGET_1_2` (all new entries): only `STOP_LOSS_INITIAL`, filling at the
+    fixed 5% entry stop, and `TARGET_1_2`, filling at
+    `round(entry + 2 x (entry - initial_stop), 2)`. No trailing stop, HWM
+    update, EOD flatten, stale recovery or restart same-candle exit.
 
 ## Files
 

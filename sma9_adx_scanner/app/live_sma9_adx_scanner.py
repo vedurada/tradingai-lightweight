@@ -10,16 +10,20 @@ Both CE and PE use the same long-only rule set:
     C) +DI > -DI on those same completed candles
   Entry:
     paper BUY at the live LTP on the next 5s poll (no broker order)
-  Exit:
-    5% initial stop, ratcheted to HWM - 5% as the premium rises
+  Exit, selected by the persisted ``exit_policy`` on each open position:
+    LEGACY (all pre-existing rows): 5% initial stop, ratcheted to HWM - 5% as
+      the premium rises, with same-candle restart recovery.
+    SL_TARGET_1_2 (all new entries): only STOP_LOSS_INITIAL at the fixed 5%
+      entry stop and TARGET_1_2 at entry + 2 x (entry - initial_stop). Both
+      fill at the stored level; there is no trailing or same-candle exit.
 
-Polling is exactly every 5 seconds during market hours.  One batched quote
-call per poll provides NIFTY spot + both option LTPs; historical candles are
-fetched only when a new 5-minute candle appears (or at exit), never on every
-poll.
+Polling is exactly every 5 seconds on wall-clock boundaries (:00, :05, ...)
+during market hours.  One batched quote call per poll provides NIFTY spot +
+both option LTPs; historical candles are fetched only when a new 5-minute
+candle appears, never on every poll.
 
 State is persisted in database/sma9_adx.db so a restart with an open position
-resumes correctly and still exits at the original entry candle's close.
+resumes correctly; only LEGACY rows use the original entry-candle recovery.
 """
 
 from __future__ import annotations
@@ -47,6 +51,8 @@ from app.sma9_adx_engine import (  # noqa: E402
     STRATEGY_ID,
     STRATEGY_TYPE,
     STRATEGY_VERSION,
+    EXIT_POLICY_LEGACY,
+    EXIT_POLICY_SL_TARGET,
     Evaluation,
     OptionStateMachine,
     Position,
@@ -87,7 +93,6 @@ def session_open_time(dt):
 def session_close_time(dt):
     return MUHURAT_SESSIONS.get(dt.date().isoformat(), (MARKET_OPEN, MARKET_CLOSE))[1]
 POLL_SECONDS = 5
-POLL_OFFSET_SECONDS = 4.2  # stagger Data API history fetches across scanners
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9_ADX - ATM Option Strike (BUY ONLY)"
@@ -151,12 +156,11 @@ def market_close_dt(dt: datetime) -> datetime:
 
 
 def sleep_to_next_tick() -> None:
-    """Sleep until this scanner's next staggered 5-second tick."""
-    epoch = now_ist().timestamp()
-    target = (
-        (int(epoch - POLL_OFFSET_SECONDS) // POLL_SECONDS) + 1
-    ) * POLL_SECONDS + POLL_OFFSET_SECONDS
-    time.sleep(max(0.2, target - epoch))
+    """Sleep until the next exact wall-clock 5-second boundary."""
+    now = now_ist()
+    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
+    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
+    time.sleep(max(0.2, (target - now_ist()).total_seconds()))
 
 
 # ---------------------------------------------------------------------------
@@ -244,6 +248,9 @@ def init_db() -> None:
             hwm REAL,
             stop REAL,
             be_locked INTEGER,
+            exit_policy TEXT NOT NULL DEFAULT 'LEGACY',
+            initial_stop REAL,
+            target_price REAL,
             updated_at TEXT NOT NULL
         );
 
@@ -257,7 +264,9 @@ def init_db() -> None:
     pos_cols = [r[1] for r in conn.execute(
         "PRAGMA table_info(sma9_adx_open_positions)")]
     for col, decl in (("adx", "REAL"), ("hwm", "REAL"),
-                      ("stop", "REAL"), ("be_locked", "INTEGER")):
+                      ("stop", "REAL"), ("be_locked", "INTEGER"),
+                      ("exit_policy", "TEXT NOT NULL DEFAULT 'LEGACY'"),
+                      ("initial_stop", "REAL"), ("target_price", "REAL")):
         if col not in pos_cols:
             conn.execute(
                 f"ALTER TABLE sma9_adx_open_positions ADD COLUMN {col} {decl}")
@@ -294,8 +303,9 @@ def save_open_position(pos: Position) -> None:
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, sma9, adx, prev_close, current_open, condition_a,
-                condition_b, ltp_at_entry, hwm, stop, be_locked, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                condition_b, ltp_at_entry, hwm, stop, be_locked, exit_policy,
+                initial_stop, target_price, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
@@ -303,7 +313,8 @@ def save_open_position(pos: Position) -> None:
                 pos.entry_price, pos.sma9, pos.adx, pos.prev_close, pos.current_open,
                 1 if pos.condition_a else 0, 1 if pos.condition_b else 0,
                 pos.ltp_at_entry, pos.hwm, pos.stop,
-                1 if pos.be_locked else 0, now_ist().isoformat(),
+                1 if pos.be_locked else 0, pos.exit_policy, pos.initial_stop,
+                pos.target_price, now_ist().isoformat(),
             ),
         )
         conn.commit()
@@ -351,6 +362,9 @@ def load_open_positions() -> dict:
             hwm=d.get("hwm") if d.get("hwm") is not None else 0.0,
             stop=d.get("stop"),
             be_locked=bool(d.get("be_locked")),
+            exit_policy=d.get("exit_policy") or EXIT_POLICY_LEGACY,
+            initial_stop=d.get("initial_stop"),
+            target_price=d.get("target_price"),
         )
     return result
 
@@ -574,6 +588,10 @@ class Sma9AdxLiveScanner:
                         pos.entry_candle_start.isoformat())
             state = self.states[opt]
             state.restore(pos)
+            # New entries carry their own fixed levels across restarts; the
+            # legacy same-candle/entry-close recovery never applies to them.
+            if pos.exit_policy == EXIT_POLICY_SL_TARGET:
+                continue
             if now >= pos.entry_candle_end:
                 token = pos.token
                 if token is None:
@@ -848,31 +866,42 @@ class Sma9AdxLiveScanner:
                     reason="waiting for current 5-minute candle")
             entry_made = False
 
-            if state.position is not None and now.time() >= EXCHANGE_OPEN:
-                prev_hwm, prev_stop = state.position.hwm, state.position.stop
-                stop_hit = state.update_trail(ltp)
-                # Persist a ratcheted high-water-mark/stop so a restart
-                # cannot roll the trailing stop back to a lower level.
-                trail_pos = state.position
-                if (trail_pos is not None
-                        and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
-                    save_open_position(trail_pos)
-                sl_hit = state.check_stop_loss(ltp)
-                if stop_hit is not None:
-                    exit_px = round(float(ltp), 2)
-                    trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
+            pos = state.position
+            if pos is not None and now.time() >= EXCHANGE_OPEN:
+                new_exit = state.check_new_policy_exit(ltp)
+                if new_exit is not None:
+                    exit_px, reason = new_exit
+                    trade = state.close(now, exit_px, reason)
                     save_trade(trade)
                     logger.info(
-                        "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
+                        "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=%s",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        exit_px, trade["pnl_points"], pos.stop)
-                elif sl_hit is not None:
-                    trade = state.close(now, sl_hit, "STOP_LOSS_5PCT")
-                    save_trade(trade)
-                    logger.info(
-                        "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_5PCT",
-                        opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        sl_hit, trade["pnl_points"])
+                        exit_px, trade["pnl_points"], reason)
+                elif pos.exit_policy == EXIT_POLICY_LEGACY:
+                    prev_hwm, prev_stop = pos.hwm, pos.stop
+                    stop_hit = state.update_trail(ltp)
+                    # Persist a ratcheted high-water-mark/stop so a restart
+                    # cannot roll the trailing stop back to a lower level.
+                    trail_pos = state.position
+                    if (trail_pos is not None
+                            and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
+                        save_open_position(trail_pos)
+                    sl_hit = state.check_stop_loss(ltp)
+                    if stop_hit is not None:
+                        exit_px = round(float(ltp), 2)
+                        trail_trade = state.close(now, exit_px, "TRAIL_STOP_EXIT")
+                        save_trade(trail_trade)
+                        logger.info(
+                            "TRAIL EXIT %s %s strike=%.2f entry=%.2f exit=%.2f pnl=%.2f (stop=%.2f)",
+                            opt, pos.tradingsymbol, pos.strike, pos.entry_price,
+                            exit_px, trail_trade["pnl_points"], pos.stop)
+                    elif sl_hit is not None:
+                        sl_trade = state.close(now, sl_hit, "STOP_LOSS_5PCT")
+                        save_trade(sl_trade)
+                        logger.info(
+                            "EXIT %s %s strike=%s entry=%.2f exit=%.2f pnl=%.2f reason=STOP_LOSS_5PCT",
+                            opt, pos.tradingsymbol, pos.strike, pos.entry_price,
+                            sl_hit, sl_trade["pnl_points"])
             elif allow_entries and forming_is_current and self._premium_ok(opt):
                 new_pos = state.try_entry(
                     ev, now, strike, expiry_str, token,
@@ -918,6 +947,12 @@ class Sma9AdxLiveScanner:
                 "reason": ev.reason,
                 "entry_made": entry_made,
                 "position": state.position.as_dict() if state.position else None,
+                "exit_policy": (state.position.exit_policy if state.position
+                                else EXIT_POLICY_LEGACY),
+                "initial_stop": (state.position.initial_stop if state.position
+                                 else None),
+                "target_price": (state.position.target_price if state.position
+                                 else None),
             }
 
         self._refresh_last_closed_spot(now, option_status)
