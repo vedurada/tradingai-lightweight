@@ -1,8 +1,9 @@
 """Unit tests for the isolated sma9_5pct_trail scanner.
 
-The scanner must have exactly two exits: a fixed 5% initial stop and a simple
-5% trailing stop. No activation threshold, points trail, breakeven lock,
-candle-close exit, target, time exit or restart-recovery exit is allowed.
+LEGACY rows keep the fixed 5% initial stop and the simple 5% trailing stop.
+New entries use only the persisted 5% initial stop and the 1:2 target. No
+activation threshold, points trail, breakeven lock, candle-close, time exit or
+restart-recovery exit is allowed under either policy.
 """
 from __future__ import annotations
 
@@ -16,9 +17,14 @@ sys.path.insert(0, str(ROOT / "app"))
 
 from sma9_5pct_trail_engine import (  # noqa: E402
     DI_PERIOD,
+    EXIT_POLICY_SL_TARGET,
     EXIT_REASONS,
     EXIT_STOP_LOSS,
+    EXIT_STOP_LOSS_INITIAL,
+    EXIT_TARGET_1_2,
     EXIT_TRAIL,
+    LEGACY_EXIT_REASONS,
+    NEW_POLICY_EXIT_REASONS,
     STRATEGY_ID,
     STRATEGY_TYPE,
     STRATEGY_VERSION,
@@ -26,8 +32,11 @@ from sma9_5pct_trail_engine import (  # noqa: E402
     TRAIL_PCT,
     Evaluation,
     OptionStateMachine,
+    Position,
     compute_di_components,
+    compute_target_price,
     evaluate_option,
+    initial_stop_price,
 )
 
 
@@ -90,17 +99,27 @@ class Sma95PctTrailEngineTest(unittest.TestCase):
             market_close=self.start + timedelta(minutes=10),
         )
         self.assertIsNotNone(pos)
+        # These checks describe LEGACY behavior for pre-existing rows; new
+        # entries are covered separately in NewPolicyEngineTest.
+        pos.exit_policy = "LEGACY"
+        pos.initial_stop = None
+        pos.target_price = None
         self.pos = pos
 
-    def test_identity_and_only_two_exit_reasons(self):
+    def test_identity_and_exit_reasons(self):
         self.assertEqual(STRATEGY_ID, "sma9_5pct_trail")
         self.assertEqual(STRATEGY_VERSION, "3.0.0")
         self.assertEqual(STRATEGY_TYPE, "SMA9_5PCT_TRAIL_BUY_ONLY")
         self.assertEqual(STOP_LOSS_PCT, 0.05)
         self.assertEqual(TRAIL_PCT, 0.05)
-        self.assertEqual(
-            EXIT_REASONS, frozenset({"STOP_LOSS_5PCT", "TRAIL_STOP_EXIT"})
-        )
+        # TARGET_1_2 is now valid for new entries; the two legacy reasons
+        # remain accepted for restored LEGACY rows.
+        self.assertEqual(LEGACY_EXIT_REASONS,
+                         frozenset({"STOP_LOSS_5PCT", "TRAIL_STOP_EXIT"}))
+        self.assertEqual(NEW_POLICY_EXIT_REASONS,
+                         frozenset({"STOP_LOSS_INITIAL", "TARGET_1_2"}))
+        self.assertEqual(EXIT_REASONS,
+                         LEGACY_EXIT_REASONS | NEW_POLICY_EXIT_REASONS)
 
     def test_entry_sets_initial_stop_at_five_percent(self):
         self.assertEqual(self.pos.entry_price, 100.0)
@@ -149,6 +168,8 @@ class Sma95PctTrailEngineTest(unittest.TestCase):
         self.assertFalse(hasattr(self.state, "needs_exit"))
 
     def test_unsupported_exit_reasons_are_rejected(self):
+        # "TARGET" (without the policy suffix) is not a valid reason; only the
+        # explicit new-policy constants are accepted.
         for reason in ("SAME_CANDLE_EXIT", "SAME_CANDLE_EXIT_LTP_FALLBACK",
                        "TARGET", "TIME_EXIT"):
             with self.assertRaises(ValueError):
@@ -156,6 +177,18 @@ class Sma95PctTrailEngineTest(unittest.TestCase):
                     self.start + timedelta(minutes=1), 100.0, reason
                 )
         self.assertIsNotNone(self.state.position)
+
+    def test_new_policy_target_reason_is_accepted(self):
+        pos = self.pos
+        pos.exit_policy = EXIT_POLICY_SL_TARGET
+        pos.initial_stop = 95.0
+        pos.target_price = compute_target_price(pos.entry_price, pos.initial_stop)
+        trade = self.state.close(
+            self.start + timedelta(minutes=1), pos.target_price, EXIT_TARGET_1_2
+        )
+        self.assertEqual(trade["exit_reason"], "TARGET_1_2")
+        self.assertEqual(trade["exit_price"], 110.0)
+        self.assertEqual(trade["pnl_points"], 10.0)
 
 
 class DiGateTest(unittest.TestCase):
@@ -232,6 +265,60 @@ class DiGateTest(unittest.TestCase):
         self.assertEqual(d["condition_di"], True)
 
 
+class NewPolicyEngineTest(unittest.TestCase):
+    def setUp(self):
+        self.start = datetime(2026, 11, 27, 10, 0, tzinfo=timezone.utc)
+        self.state = OptionStateMachine("CE")
+        self.pos = self.state.try_entry(
+            _signal(self.start, 100.123), self.start + timedelta(seconds=1),
+            strike=25000, expiry="2026-12-24", token=1,
+            tradingsymbol="TESTCE",
+            market_close=self.start + timedelta(hours=6),
+        )
+        self.assertIsNotNone(self.pos)
+
+    def test_entry_stores_fixed_initial_stop_and_target(self):
+        self.assertEqual(self.pos.entry_price, 100.12)
+        self.assertEqual(self.pos.initial_stop, 95.11)
+        self.assertEqual(self.pos.stop, 95.11)
+        self.assertEqual(self.pos.target_price, 110.14)
+        self.assertEqual(self.pos.exit_policy, EXIT_POLICY_SL_TARGET)
+        self.assertEqual(initial_stop_price(100.12), 95.11)
+
+    def test_roundtrip_keeps_policy_fields(self):
+        restored = Position.from_dict(self.pos.as_dict())
+        for key in ("exit_policy", "initial_stop", "target_price", "stop",
+                    "hwm"):
+            self.assertEqual(getattr(restored, key), getattr(self.pos, key), key)
+
+    def test_missing_fields_default_to_legacy(self):
+        data = self.pos.as_dict()
+        for key in ("exit_policy", "initial_stop", "target_price"):
+            data.pop(key)
+        legacy = Position.from_dict(data)
+        self.assertEqual(legacy.exit_policy, "LEGACY")
+        self.assertIsNone(legacy.initial_stop)
+        self.assertIsNone(legacy.target_price)
+
+    def test_new_policy_exits_fill_at_stored_levels(self):
+        self.assertIsNone(self.state.check_new_policy_exit(105.0))
+        self.assertEqual(self.state.check_new_policy_exit(95.0),
+                         (95.11, EXIT_STOP_LOSS_INITIAL))
+        self.assertEqual(self.state.check_new_policy_exit(111.0),
+                         (110.14, EXIT_TARGET_1_2))
+        trade = self.state.close(self.start + timedelta(minutes=1), 110.14,
+                                 EXIT_TARGET_1_2)
+        self.assertEqual(trade["exit_reason"], "TARGET_1_2")
+        self.assertEqual(trade["exit_price"], 110.14)
+
+    def test_new_policy_does_not_trail_or_use_legacy_stop(self):
+        self.assertIsNone(self.state.update_trail(130.0))
+        self.assertEqual(self.pos.hwm, 100.12)
+        self.assertEqual(self.pos.stop, 95.11)
+        self.assertIsNone(self.state.check_stop_loss(94.0))
+        self.assertIsNone(self.state.check_new_policy_exit(None))
+
+
 class RemovedExitRulesSourceGuardTest(unittest.TestCase):
     def test_engine_and_runner_have_no_removed_exit_logic(self):
         forbidden = (
@@ -250,6 +337,16 @@ class RemovedExitRulesSourceGuardTest(unittest.TestCase):
                 self.assertNotIn(token, text, f"{token} found in {rel}")
             self.assertNotIn("\nTRAIL = ", text, f"points TRAIL found in {rel}")
             self.assertNotIn("\nACTIVATE = ", text, f"activation found in {rel}")
+
+    def test_target_1_2_is_deliberately_allowed(self):
+        # The old guard forbade any "TARGET" exit. The new policy reason is
+        # explicitly allowed in the engine and runner; legacy reasons remain.
+        engine_text = (ROOT / "app/sma9_5pct_trail_engine.py").read_text()
+        runner_text = (ROOT / "app/live_sma9_5pct_trail_scanner.py").read_text()
+        for text in (engine_text, runner_text):
+            self.assertIn("TARGET_1_2", text)
+        for reason in EXIT_STOP_LOSS, EXIT_TRAIL, EXIT_STOP_LOSS_INITIAL, EXIT_TARGET_1_2:
+            self.assertIn(reason, EXIT_REASONS)
 
 
 if __name__ == "__main__":

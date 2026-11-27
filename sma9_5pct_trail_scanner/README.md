@@ -22,7 +22,7 @@ for reference.
 | Code | `/opt/tradingai/sma9_5pct_trail_scanner/` |
 | Python path | `/opt/tradingai/sma9_5pct_trail_lib` |
 | Broker alias | `sma9_5pct_trail` (mStock) |
-| Poll offset | 1.8 seconds in the aligned 5-second window |
+| Polling | Exact wall-clock 5-second boundaries (`:00`, `:05`, ...); no offset |
 
 ## Rules
 
@@ -37,18 +37,23 @@ Entry (self-contained in the runner):
 - ATM CE and PE are evaluated independently; long only; at most one position
   per option.
 
-Exits — **the only two conditions**:
+Exits are selected by the persisted `exit_policy` on each open position:
 
-1. `STOP_LOSS_5PCT`: LTP <= `round(entry x 0.95, 2)`. Fill is at that stop
-   level.
-2. `TRAIL_STOP_EXIT`: stop = `max(previous stop, round(HWM x 0.95, 2))`,
-   ratcheted upward only. A stop strictly above entry that is breached fills
-   at the stop level.
+- `LEGACY` (all pre-existing rows, the default for restored old rows):
+  1. `STOP_LOSS_5PCT`: LTP <= `round(entry x 0.95, 2)`. Fill is at that stop
+     level.
+  2. `TRAIL_STOP_EXIT`: stop = `max(previous stop, round(HWM x 0.95, 2))`,
+     ratcheted upward only. A stop strictly above entry that is breached fills
+     at the stop level.
+- `SL_TARGET_1_2` (all new entries): only `STOP_LOSS_INITIAL` at the fixed 5%
+  entry stop and `TARGET_1_2` at
+  `round(entry + 2 x (entry - initial_stop), 2)`. Both fill at the stored
+  level. The initial stop is never ratcheted, the HWM is not updated and there
+  is no EOD, stale or restart-recovery exit.
 
 There is no activation threshold, points-based trail, breakeven lock,
-candle-close exit, target, time-based exit or restart-recovery exit. A
-restored open position simply resumes the two live stop checks with its saved
-`hwm` and `stop`.
+candle-close or time-based exit under either policy. A restored open position
+resumes with its saved policy, `hwm`, `stop`, `initial_stop` and `target_price`.
 
 ## Tests
 

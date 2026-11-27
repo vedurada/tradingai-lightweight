@@ -5,15 +5,16 @@ SELF-CONTAINED: entry is evaluated locally from fetched candles (previous
 close > SMA9 AND current open > SMA9 AND DI+ > DI- on the same completed 5m
 candles; forming bar excluded).  The scanner owns both entry and exit.
 
-Exit -- the ONLY two conditions:
-  1) STOP_LOSS_5PCT: LTP <= entry x 0.95, exit at that stop level.
-  2) TRAIL_STOP_EXIT: stop = HWM x 0.95, ratcheted upward only, exit at the
-     stop level once it is above entry.  No activation threshold, points
-     trail, breakeven lock, candle-close, target, time or restart exit.
+Exit, selected by the persisted ``exit_policy`` on each open position:
+  * LEGACY (all pre-existing rows): STOP_LOSS_5PCT at entry x 0.95 and
+    TRAIL_STOP_EXIT at the HWM x 0.95 stop, ratcheted upward only.
+  * SL_TARGET_1_2 (all new entries): only STOP_LOSS_INITIAL at the fixed 5%
+    entry stop and TARGET_1_2 at entry + 2 x (entry - initial_stop). Both
+    fill at the stored level; no HWM update, trailing, EOD or stale exit.
 
-Polling is staggered by a small offset so scanners do not all request
-historical candles on the same instant.  Open positions are restored on
-restart and remain governed only by the two stops above.
+Polling is exactly every 5 seconds on wall-clock boundaries (:00, :05, ...),
+with no per-scanner offset. Open positions are restored on restart with their
+persisted policy and levels.
 """
 
 from __future__ import annotations
@@ -36,6 +37,7 @@ if CODE_ROOT not in sys.path:
 
 from app.sma9_5pct_trail_engine import (  # noqa: E402
     CANDLE_MINUTES,
+    EXIT_POLICY_LEGACY,
     EXIT_REASONS,
     EXIT_STOP_LOSS,
     EXIT_TRAIL,
@@ -93,11 +95,6 @@ def session_close_time(dt):
 
 
 POLL_SECONDS = 5
-# Per-scanner phase offset (seconds) inside the 5s tick window.  Without this
-# every scanner re-aligns to the same wall-clock boundary and they all hit the
-# Kite historical/quote endpoints at the same instant, which triggers
-# "Too many requests".  Each variant gets a distinct offset from VARIANTS.
-POLL_OFFSET_SECONDS = 1.8
 # Historical lookback: 1 day is enough on normal days (previous session is
 # included).  If fewer than CANDLE_MIN_ROWS rows come back (e.g. Monday, when
 # 1 day back is Sunday) widen once to the fallback window so SMA20 still has
@@ -168,17 +165,11 @@ def market_close_dt(dt):
 
 
 def sleep_to_next_tick():
-    """Sleep until the next 5s tick for THIS scanner.
-
-    Ticks are aligned to ``POLL_OFFSET_SECONDS + k*POLL_SECONDS`` so the 7
-    trail scanners fire at different instants instead of all together.
-    """
+    """Sleep until the next exact wall-clock 5-second boundary."""
     now = now_ist()
-    epoch = now.timestamp()
-    target = (
-        (int(epoch - POLL_OFFSET_SECONDS) // POLL_SECONDS) + 1
-    ) * POLL_SECONDS + POLL_OFFSET_SECONDS
-    time.sleep(max(0.2, target - epoch))
+    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
+    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
+    time.sleep(max(0.2, (target - now_ist()).total_seconds()))
 
 
 # ---------------------------------------------------------------------------
@@ -258,6 +249,9 @@ def init_db():
             ltp_at_entry REAL,
             hwm REAL,
             stop REAL,
+            exit_policy TEXT NOT NULL DEFAULT 'LEGACY',
+            initial_stop REAL,
+            target_price REAL,
             updated_at TEXT NOT NULL
         );
 
@@ -268,6 +262,13 @@ def init_db():
         );
         """
     )
+    pos_cols = [r[1] for r in conn.execute(
+        "PRAGMA table_info(sma9_5pct_trail_open_positions)")]
+    for col, decl in (("exit_policy", "TEXT NOT NULL DEFAULT 'LEGACY'"),
+                      ("initial_stop", "REAL"), ("target_price", "REAL")):
+        if col not in pos_cols:
+            conn.execute(
+                f"ALTER TABLE sma9_5pct_trail_open_positions ADD COLUMN {col} {decl}")
     conn.commit()
     conn.close()
 
@@ -301,16 +302,16 @@ def save_open_position(pos):
                (option_type, trade_id, strike, expiry, token, tradingsymbol,
                 entry_timestamp, entry_candle_start, entry_candle_end,
                 entry_price, prev_high, current_open, breakout, ltp_at_entry,
-                hwm, stop, updated_at)
-               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                hwm, stop, exit_policy, initial_stop, target_price, updated_at)
+               VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
             (
                 pos.option_type, pos.trade_id, pos.strike, pos.expiry, pos.token,
                 pos.tradingsymbol, pos.entry_timestamp.isoformat(),
                 pos.entry_candle_start.isoformat(), pos.entry_candle_end.isoformat(),
                 pos.entry_price, pos.prev_high, pos.current_open,
                 1 if pos.breakout else 0, pos.ltp_at_entry,
-                pos.hwm, pos.stop,
-                now_ist().isoformat(),
+                pos.hwm, pos.stop, pos.exit_policy, pos.initial_stop,
+                pos.target_price, now_ist().isoformat(),
             ),
         )
         conn.commit()
@@ -354,6 +355,9 @@ def load_open_positions():
             ltp_at_entry=d["ltp_at_entry"],
             hwm=d["hwm"],
             stop=d["stop"],
+            exit_policy=d.get("exit_policy") or EXIT_POLICY_LEGACY,
+            initial_stop=d.get("initial_stop"),
+            target_price=d.get("target_price"),
         )
     return result
 
@@ -861,33 +865,45 @@ class TrailLiveScanner:
                 errors.append(f"entry eval error ({opt}): {exc}")
                 logger.error(errors[-1])
 
-            # --- exits: 5% initial stop loss and simple 5% trail only ---
+            # --- exits: policy-selected persistent levels or LEGACY stops ---
+            pos = state.position
             if pos is not None and now.time() >= EXCHANGE_OPEN:
-                prev_hwm, prev_stop = state.position.hwm, state.position.stop
-                stop_hit = state.update_trail(ltp)
-                # Persist a ratcheted high-water-mark/stop so a restart
-                # cannot roll the trailing stop back to a lower level.
-                trail_pos = state.position
-                if (trail_pos is not None
-                        and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
-                    save_open_position(trail_pos)
-                sl_hit = state.check_stop_loss(ltp)
-                if stop_hit is not None:
-                    trade = state.close(now, stop_hit, EXIT_TRAIL)
-                    save_trade(trade)
-                    logger.info(
-                        "TRAIL EXIT %s %s strike=%s entry=%.2f exit=%.2f "
-                        "pnl=%.2f (stop=%.2f)",
-                        opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        stop_hit, trade["pnl_points"], pos.stop)
-                elif sl_hit is not None:
-                    trade = state.close(now, sl_hit, EXIT_STOP_LOSS)
+                new_exit = state.check_new_policy_exit(ltp)
+                if new_exit is not None:
+                    exit_px, reason = new_exit
+                    trade = state.close(now, exit_px, reason)
                     save_trade(trade)
                     logger.info(
                         "EXIT %s %s strike=%s entry=%.2f exit=%.2f "
-                        "pnl=%.2f reason=STOP_LOSS_5PCT",
+                        "pnl=%.2f reason=%s",
                         opt, pos.tradingsymbol, pos.strike, pos.entry_price,
-                        sl_hit, trade["pnl_points"])
+                        exit_px, trade["pnl_points"], reason)
+                elif pos.exit_policy == EXIT_POLICY_LEGACY:
+                    prev_hwm, prev_stop = pos.hwm, pos.stop
+                    stop_hit = state.update_trail(ltp)
+                    # Persist a ratcheted high-water-mark/stop so a restart
+                    # cannot roll the trailing stop back to a lower level.
+                    trail_pos = state.position
+                    if (trail_pos is not None
+                            and (trail_pos.hwm != prev_hwm or trail_pos.stop != prev_stop)):
+                        save_open_position(trail_pos)
+                    sl_hit = state.check_stop_loss(ltp)
+                    if stop_hit is not None:
+                        trail_trade = state.close(now, stop_hit, EXIT_TRAIL)
+                        save_trade(trail_trade)
+                        logger.info(
+                            "TRAIL EXIT %s %s strike=%s entry=%.2f exit=%.2f "
+                            "pnl=%.2f (stop=%.2f)",
+                            opt, pos.tradingsymbol, pos.strike, pos.entry_price,
+                            stop_hit, trail_trade["pnl_points"], pos.stop)
+                    elif sl_hit is not None:
+                        sl_trade = state.close(now, sl_hit, EXIT_STOP_LOSS)
+                        save_trade(sl_trade)
+                        logger.info(
+                            "EXIT %s %s strike=%s entry=%.2f exit=%.2f "
+                            "pnl=%.2f reason=STOP_LOSS_5PCT",
+                            opt, pos.tradingsymbol, pos.strike, pos.entry_price,
+                            sl_hit, sl_trade["pnl_points"])
 
             # --- build status from local evaluation ---
             if ev_local is not None:
@@ -917,6 +933,12 @@ class TrailLiveScanner:
                     "reason": ev_local.reason,
                     "entry_made": entry_made,
                     "position": state.position.as_dict() if state.position else None,
+                    "exit_policy": (state.position.exit_policy if state.position
+                                    else EXIT_POLICY_LEGACY),
+                    "initial_stop": (state.position.initial_stop if state.position
+                                     else None),
+                    "target_price": (state.position.target_price if state.position
+                                     else None),
                 }
             else:
                 option_status[opt] = {
@@ -932,6 +954,12 @@ class TrailLiveScanner:
                     "condition_di": False,
                     "entry_made": entry_made,
                     "position": state.position.as_dict() if state.position else None,
+                    "exit_policy": (state.position.exit_policy if state.position
+                                    else EXIT_POLICY_LEGACY),
+                    "initial_stop": (state.position.initial_stop if state.position
+                                     else None),
+                    "target_price": (state.position.target_price if state.position
+                                     else None),
                 }
 
         self._refresh_last_closed_spot(now, option_status)
@@ -1005,7 +1033,6 @@ class TrailLiveScanner:
             # keep a fresh scanner from being reported as NOT_RUNNING.
             "last_scan_at": now.isoformat(),
             "poll_seconds": POLL_SECONDS,
-            "poll_offset_seconds": POLL_OFFSET_SECONDS,
             "stop_loss_pct": STOP_LOSS_PCT,
             "trail_pct": TRAIL_PCT,
             "exit_reasons": sorted(EXIT_REASONS),
