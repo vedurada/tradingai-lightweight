@@ -12,8 +12,10 @@ if CODE_ROOT not in sys.path:
     sys.path.insert(0, CODE_ROOT)
 
 from app.sma9_high_engine import (  # noqa: E402
+    LEGACY_EXIT_POLICY,
     SMA_PERIOD,
     OptionStateMachine,
+    Position,
     candle_end,
     evaluate_option,
 )
@@ -185,6 +187,9 @@ class TestSma9HighBuyOnly(unittest.TestCase):
         now = ev.candle_start + timedelta(seconds=10)
         pos = state.try_entry(ev, now, 25000, "2026-11-09", 1, "CE-SYM",
                               self.market_close)
+        pos = Position.from_dict(dict(
+            pos.as_dict(), exit_policy=LEGACY_EXIT_POLICY))
+        state.restore(pos)
         self.assertFalse(state.needs_exit(pos.entry_candle_end - timedelta(seconds=1)))
         self.assertTrue(state.needs_exit(pos.entry_candle_end))
         trade = state.close(pos.entry_candle_end, 103.5)
@@ -198,6 +203,8 @@ class TestSma9HighBuyOnly(unittest.TestCase):
         now = ev.candle_start + timedelta(seconds=10)
         pos = state.try_entry(ev, now, 25000, "2026-11-09", 1, "CE-SYM",
                               self.market_close)
+        pos = Position.from_dict(dict(
+            pos.as_dict(), exit_policy=LEGACY_EXIT_POLICY))
         other = OptionStateMachine("CE")
         other.restore(pos)
         self.assertEqual(other.position.trade_id, pos.trade_id)
