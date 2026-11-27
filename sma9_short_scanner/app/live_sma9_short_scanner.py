@@ -13,6 +13,7 @@ Each leg is evaluated and positioned independently:
   Any open short is closed flat at 15:20 IST (EOD_15_20_FLAT)
   Both CE and PE may be open at the same time.
   After an exit, that leg waits for the next 5-minute candle before re-entry.
+  Poll, trailing-stop update and SL check all run every 5 minutes.
 
 State is persisted in database/sma9_short.db so restarts restore stops.
 """
@@ -66,7 +67,9 @@ MARKET_CLOSE = dtime(15, 30)
 EXCHANGE_OPEN = dtime(9, 15)
 ENTRY_START = dtime(9, 20)
 ENTRY_END = dtime(15, 15)
-POLL_SECONDS = 5
+POLL_SECONDS = 300
+TRAIL_INTERVAL_SECONDS = 300
+SL_INTERVAL_SECONDS = 300
 INSTRUMENT = "NIFTY"
 TIMEFRAME = "5m"
 SCANNER_NAME = "SMA9 SHORT - ATM+200 CE / ATM-200 PE (PAPER)"
@@ -147,10 +150,22 @@ def eod_exit_price(candles, ltp, dt: datetime):
 
 
 def sleep_to_next_tick() -> None:
+    """Sleep to the next wall-clock multiple of POLL_SECONDS.
+
+    With a 5-minute poll this aligns scans with 5-minute candle boundaries;
+    with the old 5-second poll it keeps the original second-boundary behavior.
+    """
     now = now_ist()
-    next_second = ((now.second // POLL_SECONDS) + 1) * POLL_SECONDS
-    target = now.replace(microsecond=0) + timedelta(seconds=next_second - now.second)
+    midnight = now.replace(hour=0, minute=0, second=0, microsecond=0)
+    elapsed = (now - midnight).total_seconds()
+    next_boundary = (int(elapsed // POLL_SECONDS) + 1) * POLL_SECONDS
+    target = midnight + timedelta(seconds=next_boundary)
     time.sleep(max(0.2, (target - now_ist()).total_seconds()))
+
+
+def _interval_due(last: float | None, now: float, interval: float) -> bool:
+    """True when an interval has elapsed, or has never run."""
+    return last is None or (now - last) >= interval
 
 
 # ---------------------------------------------------------------------------
@@ -520,6 +535,8 @@ class Sma9ShortLiveScanner:
         self.started_at = now_ist().isoformat()
         self.last_scan_at = None
         self.actual_interval_seconds = None
+        self.last_trail_check = None
+        self.last_sl_check = None
         self.contracts = {"CE": None, "PE": None}
         self.atm_strike = None
         self.expiry = None
@@ -646,6 +663,11 @@ class Sma9ShortLiveScanner:
         self.last_scan_at = now.isoformat()
         errors = []
         allow_entries = entry_window_is_open(now)
+        tick_mono = time.monotonic()
+        trail_due = _interval_due(
+            self.last_trail_check, tick_mono, TRAIL_INTERVAL_SECONDS)
+        sl_due = _interval_due(
+            self.last_sl_check, tick_mono, SL_INTERVAL_SECONDS)
 
         try:
             nifty = self.feed.quote(["NSE:NIFTY 50"])
@@ -741,13 +763,18 @@ class Sma9ShortLiveScanner:
             if state.position is not None and now.time() >= EXCHANGE_OPEN and ltp is not None:
                 prev_lowest = state.position.lowest_ltp
                 prev_stop = state.position.stop
-                state.update_trail(ltp)
                 trail_pos = state.position
-                if (trail_pos is not None
-                        and (trail_pos.lowest_ltp != prev_lowest
-                             or trail_pos.stop != prev_stop)):
-                    save_open_position(trail_pos)
-                sl_hit = state.check_stop_loss(ltp)
+                if trail_due:
+                    state.update_trail(ltp)
+                    self.last_trail_check = tick_mono
+                    trail_pos = state.position
+                    if (trail_pos is not None
+                            and (trail_pos.lowest_ltp != prev_lowest
+                                 or trail_pos.stop != prev_stop)):
+                        save_open_position(trail_pos)
+                sl_hit = state.check_stop_loss(ltp) if sl_due else None
+                if sl_due:
+                    self.last_sl_check = tick_mono
                 if sl_hit is not None:
                     exit_reason = ("TRAIL_STOP_EXIT" if trail_pos.trailing_active()
                                    else STOP_LOSS_REASON)
@@ -927,6 +954,8 @@ class Sma9ShortLiveScanner:
             "started_at": self.started_at,
             "last_scan_at": self.last_scan_at,
             "poll_seconds": POLL_SECONDS,
+            "trail_interval_seconds": TRAIL_INTERVAL_SECONDS,
+            "sl_interval_seconds": SL_INTERVAL_SECONDS,
             "actual_interval_seconds": self.actual_interval_seconds,
             "spot": self.spot,
             "spot_source": self.spot_source or "unavailable",
@@ -953,8 +982,11 @@ class Sma9ShortLiveScanner:
 
 
 def main() -> int:
-    logger.info("SMA9 SHORT paper scanner starting (poll=%ss, db=%s)",
-                POLL_SECONDS, DB_PATH)
+    logger.info(
+        "SMA9 SHORT paper scanner starting "
+        "(poll=%ss, trail=%ss, sl=%ss, db=%s)",
+        POLL_SECONDS, TRAIL_INTERVAL_SECONDS, SL_INTERVAL_SECONDS, DB_PATH,
+    )
     init_db()
     try:
         feed = KiteFeed()
